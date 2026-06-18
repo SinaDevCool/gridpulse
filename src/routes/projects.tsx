@@ -56,7 +56,7 @@ function ProjectsPage() {
         <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-accent">Project Database</div>
         <h1 className="mt-2 font-display text-3xl md:text-5xl font-bold tracking-tight">Global BESS projects</h1>
         <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
-          Demo data · {projects.length} verified utility-scale projects. Click any row for full specs.
+          Live · {projects.length} verified utility-scale projects. Click any row for full specs.
         </p>
 
         <div className="mt-6 grid gap-3 md:grid-cols-3">
@@ -113,7 +113,9 @@ function ProjectsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border/50">
-              {list.length === 0 ? (
+              {isLoading ? (
+                <tr><td colSpan={8} className="py-12 text-center text-muted-foreground">Loading projects…</td></tr>
+              ) : list.length === 0 ? (
                 <tr><td colSpan={8} className="py-12 text-center text-muted-foreground">No projects match your filters.</td></tr>
               ) : list.map((p) => (
                 <tr key={p.id} className="hover:bg-surface/40 cursor-pointer transition-colors">
