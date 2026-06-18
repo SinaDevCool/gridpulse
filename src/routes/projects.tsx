@@ -1,9 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Search, MapPin } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
-import { projects, type Project } from "@/lib/gridpulse-data";
+import { type Project } from "@/lib/gridpulse-data";
+import { projectsQuery } from "@/lib/gridpulse-repo";
 
 export const Route = createFileRoute("/projects")({
   head: () => ({
@@ -27,6 +29,7 @@ function ProjectsPage() {
   const [status, setStatus] = useState<string>("All");
   const [region, setRegion] = useState<string>("All");
   const [tech, setTech] = useState<string>("All");
+  const { data: projects = [], isLoading } = useQuery(projectsQuery());
 
   const statuses = ["All", ...Array.from(new Set(projects.map((p) => p.status)))];
   const regions = ["All", ...Array.from(new Set(projects.map((p) => p.region)))];
@@ -34,14 +37,14 @@ function ProjectsPage() {
 
   const list = useMemo(() => {
     const ql = q.trim().toLowerCase();
-    return projects.filter((p) => {
+    return projects.filter((p: Project) => {
       if (status !== "All" && p.status !== status) return false;
       if (region !== "All" && p.region !== region) return false;
       if (tech !== "All" && p.technology !== tech) return false;
       if (ql && !(p.name + " " + p.developer + " " + p.location).toLowerCase().includes(ql)) return false;
       return true;
     });
-  }, [q, status, region, tech]);
+  }, [q, status, region, tech, projects]);
 
   const totalMw = list.reduce((s, p) => s + p.capacityMw, 0);
   const totalMwh = list.reduce((s, p) => s + p.capacityMwh, 0);
