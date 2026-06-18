@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowUpRight, TrendingUp, TrendingDown, Activity, MapPin, Cpu } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { CountUp } from "@/components/site/CountUp";
@@ -7,13 +8,12 @@ import { ArticleRow, FeaturedCard } from "@/components/site/ArticleCard";
 import { NewsletterForm } from "@/components/site/NewsletterForm";
 import { useMemo, useState } from "react";
 import {
-  articles,
   heroStats,
   marketRegions,
   trendingTopics,
-  upcomingProjects,
   type ArticleCategory,
 } from "@/lib/gridpulse-data";
+import { articlesQuery, projectsQuery } from "@/lib/gridpulse-repo";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -40,6 +40,7 @@ const filterTabs: { label: string; value: ArticleCategory | "all" }[] = [
 ];
 
 function HomePage() {
+  const { data: articles = [], isLoading } = useQuery(articlesQuery());
   const featured = articles.slice(0, 3);
   const [filter, setFilter] = useState<ArticleCategory | "all">("all");
   const [count, setCount] = useState(5);
@@ -47,7 +48,7 @@ function HomePage() {
   const feed = useMemo(() => {
     const rest = articles.slice(3);
     return filter === "all" ? rest : rest.filter((a) => a.category === filter);
-  }, [filter]);
+  }, [filter, articles]);
   const shown = feed.slice(0, count);
 
   return (
@@ -61,7 +62,7 @@ function HomePage() {
           <div className="flex items-center gap-2">
             <span className="inline-flex h-2 w-2 rounded-full bg-green-accent animate-pulse" />
             <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
-              Demo data · {articles.length} stories tracked
+              Live · {articles.length} stories tracked
             </span>
           </div>
           <h1 className="mt-5 max-w-5xl font-display text-4xl font-bold leading-[1.05] tracking-tight md:text-6xl lg:text-7xl">
@@ -246,6 +247,8 @@ function TrendingWidget() {
 }
 
 function UpcomingProjectsWidget() {
+  const { data: projects = [] } = useQuery(projectsQuery());
+  const upcoming = projects.filter((p) => p.status !== "Operational").slice(0, 5);
   const statusColor: Record<string, string> = {
     Permitting: "bg-amber-accent/15 text-amber-accent border-amber-accent/40",
     Construction: "bg-cyan-accent/15 text-cyan-accent border-cyan-accent/40",
@@ -261,7 +264,7 @@ function UpcomingProjectsWidget() {
         <Link to="/projects" className="text-[11px] text-muted-foreground hover:text-cyan-accent">All →</Link>
       </div>
       <ul className="mt-4 space-y-3.5">
-        {upcomingProjects.map((p) => (
+        {upcoming.map((p) => (
           <li key={p.id} className="border-b border-border/40 pb-3 last:border-0 last:pb-0">
             <div className="flex items-start justify-between gap-2">
               <Link to="/projects/$id" params={{ id: p.id }} className="text-sm font-medium text-foreground hover:text-cyan-accent">

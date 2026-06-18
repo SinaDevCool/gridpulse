@@ -1,9 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Search, MapPin } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
-import { projects, type Project } from "@/lib/gridpulse-data";
+import { type Project } from "@/lib/gridpulse-data";
+import { projectsQuery } from "@/lib/gridpulse-repo";
 
 export const Route = createFileRoute("/projects")({
   head: () => ({
@@ -27,6 +29,7 @@ function ProjectsPage() {
   const [status, setStatus] = useState<string>("All");
   const [region, setRegion] = useState<string>("All");
   const [tech, setTech] = useState<string>("All");
+  const { data: projects = [], isLoading } = useQuery(projectsQuery());
 
   const statuses = ["All", ...Array.from(new Set(projects.map((p) => p.status)))];
   const regions = ["All", ...Array.from(new Set(projects.map((p) => p.region)))];
@@ -34,14 +37,14 @@ function ProjectsPage() {
 
   const list = useMemo(() => {
     const ql = q.trim().toLowerCase();
-    return projects.filter((p) => {
+    return projects.filter((p: Project) => {
       if (status !== "All" && p.status !== status) return false;
       if (region !== "All" && p.region !== region) return false;
       if (tech !== "All" && p.technology !== tech) return false;
       if (ql && !(p.name + " " + p.developer + " " + p.location).toLowerCase().includes(ql)) return false;
       return true;
     });
-  }, [q, status, region, tech]);
+  }, [q, status, region, tech, projects]);
 
   const totalMw = list.reduce((s, p) => s + p.capacityMw, 0);
   const totalMwh = list.reduce((s, p) => s + p.capacityMwh, 0);
@@ -53,7 +56,7 @@ function ProjectsPage() {
         <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-accent">Project Database</div>
         <h1 className="mt-2 font-display text-3xl md:text-5xl font-bold tracking-tight">Global BESS projects</h1>
         <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
-          Demo data · {projects.length} verified utility-scale projects. Click any row for full specs.
+          Live · {projects.length} verified utility-scale projects. Click any row for full specs.
         </p>
 
         <div className="mt-6 grid gap-3 md:grid-cols-3">
@@ -110,7 +113,9 @@ function ProjectsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border/50">
-              {list.length === 0 ? (
+              {isLoading ? (
+                <tr><td colSpan={8} className="py-12 text-center text-muted-foreground">Loading projects…</td></tr>
+              ) : list.length === 0 ? (
                 <tr><td colSpan={8} className="py-12 text-center text-muted-foreground">No projects match your filters.</td></tr>
               ) : list.map((p) => (
                 <tr key={p.id} className="hover:bg-surface/40 cursor-pointer transition-colors">

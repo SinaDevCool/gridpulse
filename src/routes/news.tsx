@@ -2,10 +2,12 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { z } from "zod";
+import { useQuery } from "@tanstack/react-query";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { ArticleRow } from "@/components/site/ArticleCard";
-import { articles, type ArticleCategory } from "@/lib/gridpulse-data";
+import { type ArticleCategory } from "@/lib/gridpulse-data";
+import { articlesQuery } from "@/lib/gridpulse-repo";
 
 const searchSchema = z.object({
   q: z.string().optional(),
@@ -39,6 +41,7 @@ function NewsPage() {
   const [query, setQuery] = useState(initialQ ?? "");
   const [filter, setFilter] = useState<ArticleCategory | "all">("all");
   const [count, setCount] = useState(10);
+  const { data: articles = [], isLoading } = useQuery(articlesQuery());
 
   const list = useMemo(() => {
     const ql = query.trim().toLowerCase();
@@ -47,7 +50,7 @@ function NewsPage() {
       if (ql && !(a.headline + " " + a.summary + " " + a.tags.join(" ")).toLowerCase().includes(ql)) return false;
       return true;
     });
-  }, [query, filter]);
+  }, [query, filter, articles]);
   const shown = list.slice(0, count);
 
   return (
@@ -88,7 +91,9 @@ function NewsPage() {
         </div>
 
         <div className="mt-8 divide-y divide-border/50">
-          {shown.length === 0 ? (
+          {isLoading ? (
+            <div className="py-16 text-center text-sm text-muted-foreground">Loading stories…</div>
+          ) : shown.length === 0 ? (
             <div className="py-16 text-center">
               <div className="text-sm text-muted-foreground">No stories found. Try a different filter.</div>
               <Link to="/news" className="mt-3 inline-block text-cyan-accent text-sm">Reset filters</Link>
