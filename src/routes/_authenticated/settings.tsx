@@ -102,6 +102,20 @@ function Settings() {
         </div>
 
         <div className="mt-6 rounded-lg border border-border bg-surface/40 p-6">
+          <div className="text-sm font-medium text-foreground">Alerts &amp; saved searches</div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Get notified when new articles mention your companies, technologies, or keywords (Pro feature).
+          </p>
+          <Link
+            to="/alerts"
+            className="mt-3 inline-block rounded-md border border-border px-4 py-2 text-sm text-foreground hover:border-cyan-accent hover:text-cyan-accent"
+          >
+            Manage alerts
+          </Link>
+        </div>
+
+
+        <div className="mt-6 rounded-lg border border-border bg-surface/40 p-6">
           <div className="text-sm font-medium text-foreground">News pipeline (admin)</div>
           <p className="mt-1 text-xs text-muted-foreground">
             Trigger ingestion and review run history. Admin role required.
