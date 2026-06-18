@@ -68,7 +68,7 @@ export function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/60 glass-card backdrop-blur-xl">
-      <div className="border-b border-border/40 bg-background/40 overflow-hidden">
+      <div className="w-full max-w-[100vw] border-b border-border/40 bg-background/40 overflow-hidden">
         <div className="flex animate-ticker whitespace-nowrap py-1.5 text-[11px] font-mono-data">
           {[...tickerItems, ...tickerItems].map((t, i) => (
             <div key={i} className="flex items-center gap-2 px-6 shrink-0">
