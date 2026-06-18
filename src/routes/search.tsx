@@ -41,9 +41,9 @@ function SearchPage() {
   const saveFn = useServerFn(saveSearch);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setAuthed(Boolean(data.session?.user)));
+    supabase.auth.getSession().then(({ data }) => setUserId(data.session?.user.id));
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
-      setAuthed(Boolean(session?.user));
+      setUserId(session?.user.id);
     });
     return () => sub.subscription.unsubscribe();
   }, []);
