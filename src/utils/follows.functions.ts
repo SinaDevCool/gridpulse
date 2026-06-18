@@ -16,10 +16,10 @@ const followInput = z.object({
   target_label: z.string().trim().min(1).max(200).optional(),
 });
 
-async function getTier(supabase: { rpc: (n: string, a: Record<string, unknown>) => Promise<{ data: unknown }> }, userId: string): Promise<"free" | "pro" | "enterprise"> {
+type Tier = "free" | "pro" | "enterprise";
+async function getTier(supabase: { rpc: (fn: "get_user_tier", args: { _user_id: string }) => Promise<{ data: string | null }> }, userId: string): Promise<Tier> {
   const { data } = await supabase.rpc("get_user_tier", { _user_id: userId });
-  const t = typeof data === "string" ? data : "free";
-  if (t === "enterprise" || t === "pro" || t === "free") return t;
+  if (data === "enterprise" || data === "pro" || data === "free") return data;
   return "free";
 }
 
