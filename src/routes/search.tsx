@@ -40,7 +40,7 @@ function SearchPage() {
   const saveFn = useServerFn(saveSearch);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setAuthed(Boolean(data.user)));
+    supabase.auth.getSession().then(({ data }) => setAuthed(Boolean(data.session?.user)));
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
       setAuthed(Boolean(session?.user));
     });
