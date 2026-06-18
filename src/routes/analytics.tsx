@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Project } from "@/lib/gridpulse-data";
 
 export const Route = createFileRoute("/analytics")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Analytics — GridPulse" },
@@ -22,6 +23,29 @@ export const Route = createFileRoute("/analytics")({
     ],
   }),
   component: AnalyticsPage,
+  pendingComponent: () => (
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="mx-auto w-full max-w-[1400px] px-4 py-10 lg:px-8">
+        <div className="h-8 w-64 animate-pulse rounded bg-surface" />
+        <div className="mt-4 h-4 w-96 animate-pulse rounded bg-surface" />
+        <div className="mt-6 grid gap-3 md:grid-cols-4">
+          {[0,1,2,3].map(i => <div key={i} className="h-24 animate-pulse rounded-xl bg-surface" />)}
+        </div>
+        <div className="mt-6 grid gap-4 lg:grid-cols-2">
+          {[0,1,2,3].map(i => <div key={i} className="h-[320px] animate-pulse rounded-xl bg-surface" />)}
+        </div>
+      </div>
+    </div>
+  ),
+  errorComponent: ({ error }: { error: Error }) => (
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="mx-auto max-w-3xl px-4 py-16">
+        <h1 className="font-display text-2xl font-bold">Analytics failed to load</h1>
+        <p className="mt-2 text-sm text-muted-foreground">{error?.message || "Unknown error"}</p>
+        <a href="/analytics" className="mt-6 inline-flex rounded-md border border-border/60 bg-surface/60 px-4 py-2 text-sm font-medium hover:bg-surface">Retry</a>
+      </div>
+    </div>
+  ),
 });
 
 const COLORS = ["#22d3ee", "#34d399", "#fbbf24", "#a78bfa", "#fb7185", "#60a5fa", "#f472b6", "#facc15", "#4ade80", "#f87171"];
