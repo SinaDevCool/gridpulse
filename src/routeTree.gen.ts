@@ -13,7 +13,6 @@ import { Route as TechnologyRouteImport } from './routes/technology'
 import { Route as SubscribeRouteImport } from './routes/subscribe'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as RegionsRouteImport } from './routes/regions'
-import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as PolicyRouteImport } from './routes/policy'
 import { Route as NewsletterRouteImport } from './routes/newsletter'
 import { Route as NewsRouteImport } from './routes/news'
@@ -23,6 +22,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ProjectsIndexRouteImport } from './routes/projects.index'
 import { Route as ProjectsSlugRouteImport } from './routes/projects.$slug'
 import { Route as NewsSlugRouteImport } from './routes/news.$slug'
 import { Route as CheckoutReturnRouteImport } from './routes/checkout.return'
@@ -54,11 +54,6 @@ const SearchRoute = SearchRouteImport.update({
 const RegionsRoute = RegionsRouteImport.update({
   id: '/regions',
   path: '/regions',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProjectsRoute = ProjectsRouteImport.update({
-  id: '/projects',
-  path: '/projects',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PolicyRoute = PolicyRouteImport.update({
@@ -105,10 +100,15 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
+  id: '/projects/',
+  path: '/projects/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProjectsSlugRoute = ProjectsSlugRouteImport.update({
-  id: '/$slug',
-  path: '/$slug',
-  getParentRoute: () => ProjectsRoute,
+  id: '/projects/$slug',
+  path: '/projects/$slug',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const NewsSlugRoute = NewsSlugRouteImport.update({
   id: '/$slug',
@@ -177,7 +177,6 @@ export interface FileRoutesByFullPath {
   '/news': typeof NewsRouteWithChildren
   '/newsletter': typeof NewsletterRoute
   '/policy': typeof PolicyRoute
-  '/projects': typeof ProjectsRouteWithChildren
   '/regions': typeof RegionsRoute
   '/search': typeof SearchRoute
   '/subscribe': typeof SubscribeRoute
@@ -191,6 +190,7 @@ export interface FileRoutesByFullPath {
   '/checkout/return': typeof CheckoutReturnRoute
   '/news/$slug': typeof NewsSlugRoute
   '/projects/$slug': typeof ProjectsSlugRoute
+  '/projects/': typeof ProjectsIndexRoute
   '/api/public/alerts/run': typeof ApiPublicAlertsRunRoute
   '/api/public/news/ingest': typeof ApiPublicNewsIngestRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
@@ -204,7 +204,6 @@ export interface FileRoutesByTo {
   '/news': typeof NewsRouteWithChildren
   '/newsletter': typeof NewsletterRoute
   '/policy': typeof PolicyRoute
-  '/projects': typeof ProjectsRouteWithChildren
   '/regions': typeof RegionsRoute
   '/search': typeof SearchRoute
   '/subscribe': typeof SubscribeRoute
@@ -218,6 +217,7 @@ export interface FileRoutesByTo {
   '/checkout/return': typeof CheckoutReturnRoute
   '/news/$slug': typeof NewsSlugRoute
   '/projects/$slug': typeof ProjectsSlugRoute
+  '/projects': typeof ProjectsIndexRoute
   '/api/public/alerts/run': typeof ApiPublicAlertsRunRoute
   '/api/public/news/ingest': typeof ApiPublicNewsIngestRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
@@ -233,7 +233,6 @@ export interface FileRoutesById {
   '/news': typeof NewsRouteWithChildren
   '/newsletter': typeof NewsletterRoute
   '/policy': typeof PolicyRoute
-  '/projects': typeof ProjectsRouteWithChildren
   '/regions': typeof RegionsRoute
   '/search': typeof SearchRoute
   '/subscribe': typeof SubscribeRoute
@@ -247,6 +246,7 @@ export interface FileRoutesById {
   '/checkout/return': typeof CheckoutReturnRoute
   '/news/$slug': typeof NewsSlugRoute
   '/projects/$slug': typeof ProjectsSlugRoute
+  '/projects/': typeof ProjectsIndexRoute
   '/api/public/alerts/run': typeof ApiPublicAlertsRunRoute
   '/api/public/news/ingest': typeof ApiPublicNewsIngestRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
@@ -262,7 +262,6 @@ export interface FileRouteTypes {
     | '/news'
     | '/newsletter'
     | '/policy'
-    | '/projects'
     | '/regions'
     | '/search'
     | '/subscribe'
@@ -276,6 +275,7 @@ export interface FileRouteTypes {
     | '/checkout/return'
     | '/news/$slug'
     | '/projects/$slug'
+    | '/projects/'
     | '/api/public/alerts/run'
     | '/api/public/news/ingest'
     | '/api/public/payments/webhook'
@@ -289,7 +289,6 @@ export interface FileRouteTypes {
     | '/news'
     | '/newsletter'
     | '/policy'
-    | '/projects'
     | '/regions'
     | '/search'
     | '/subscribe'
@@ -303,6 +302,7 @@ export interface FileRouteTypes {
     | '/checkout/return'
     | '/news/$slug'
     | '/projects/$slug'
+    | '/projects'
     | '/api/public/alerts/run'
     | '/api/public/news/ingest'
     | '/api/public/payments/webhook'
@@ -317,7 +317,6 @@ export interface FileRouteTypes {
     | '/news'
     | '/newsletter'
     | '/policy'
-    | '/projects'
     | '/regions'
     | '/search'
     | '/subscribe'
@@ -331,6 +330,7 @@ export interface FileRouteTypes {
     | '/checkout/return'
     | '/news/$slug'
     | '/projects/$slug'
+    | '/projects/'
     | '/api/public/alerts/run'
     | '/api/public/news/ingest'
     | '/api/public/payments/webhook'
@@ -346,12 +346,13 @@ export interface RootRouteChildren {
   NewsRoute: typeof NewsRouteWithChildren
   NewsletterRoute: typeof NewsletterRoute
   PolicyRoute: typeof PolicyRoute
-  ProjectsRoute: typeof ProjectsRouteWithChildren
   RegionsRoute: typeof RegionsRoute
   SearchRoute: typeof SearchRoute
   SubscribeRoute: typeof SubscribeRoute
   TechnologyRoute: typeof TechnologyRoute
   CheckoutReturnRoute: typeof CheckoutReturnRoute
+  ProjectsSlugRoute: typeof ProjectsSlugRoute
+  ProjectsIndexRoute: typeof ProjectsIndexRoute
   ApiPublicAlertsRunRoute: typeof ApiPublicAlertsRunRoute
   ApiPublicNewsIngestRoute: typeof ApiPublicNewsIngestRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
@@ -385,13 +386,6 @@ declare module '@tanstack/react-router' {
       path: '/regions'
       fullPath: '/regions'
       preLoaderRoute: typeof RegionsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/projects': {
-      id: '/projects'
-      path: '/projects'
-      fullPath: '/projects'
-      preLoaderRoute: typeof ProjectsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/policy': {
@@ -457,12 +451,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/projects/': {
+      id: '/projects/'
+      path: '/projects'
+      fullPath: '/projects/'
+      preLoaderRoute: typeof ProjectsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/projects/$slug': {
       id: '/projects/$slug'
-      path: '/$slug'
+      path: '/projects/$slug'
       fullPath: '/projects/$slug'
       preLoaderRoute: typeof ProjectsSlugRouteImport
-      parentRoute: typeof ProjectsRoute
+      parentRoute: typeof rootRouteImport
     }
     '/news/$slug': {
       id: '/news/$slug'
@@ -575,18 +576,6 @@ const NewsRouteChildren: NewsRouteChildren = {
 
 const NewsRouteWithChildren = NewsRoute._addFileChildren(NewsRouteChildren)
 
-interface ProjectsRouteChildren {
-  ProjectsSlugRoute: typeof ProjectsSlugRoute
-}
-
-const ProjectsRouteChildren: ProjectsRouteChildren = {
-  ProjectsSlugRoute: ProjectsSlugRoute,
-}
-
-const ProjectsRouteWithChildren = ProjectsRoute._addFileChildren(
-  ProjectsRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
@@ -597,12 +586,13 @@ const rootRouteChildren: RootRouteChildren = {
   NewsRoute: NewsRouteWithChildren,
   NewsletterRoute: NewsletterRoute,
   PolicyRoute: PolicyRoute,
-  ProjectsRoute: ProjectsRouteWithChildren,
   RegionsRoute: RegionsRoute,
   SearchRoute: SearchRoute,
   SubscribeRoute: SubscribeRoute,
   TechnologyRoute: TechnologyRoute,
   CheckoutReturnRoute: CheckoutReturnRoute,
+  ProjectsSlugRoute: ProjectsSlugRoute,
+  ProjectsIndexRoute: ProjectsIndexRoute,
   ApiPublicAlertsRunRoute: ApiPublicAlertsRunRoute,
   ApiPublicNewsIngestRoute: ApiPublicNewsIngestRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,

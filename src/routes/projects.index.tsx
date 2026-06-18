@@ -22,7 +22,7 @@ const searchSchema = z.object({
   codYear: z.string().optional().default("All"),
 });
 
-export const Route = createFileRoute("/projects")({
+export const Route = createFileRoute("/projects/")({
   validateSearch: searchSchema,
   head: () => ({
     meta: [
