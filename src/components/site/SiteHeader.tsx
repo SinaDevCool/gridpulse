@@ -223,7 +223,7 @@ export function SiteHeader() {
                   {results.projects.map((p) => (
                     <button
                       key={p.id}
-                      onClick={() => { setSearchOpen(false); navigate({ to: "/projects/$id", params: { id: p.id } }); }}
+                      onClick={() => { setSearchOpen(false); navigate({ to: "/projects/$slug", params: { slug: p.slug ?? p.id } }); }}
                       className="block w-full text-left rounded-md px-3 py-2 text-sm hover:bg-surface-elevated"
                     >
                       <div className="text-foreground">{p.name}</div>
