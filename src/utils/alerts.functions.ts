@@ -13,7 +13,7 @@ const saveSearchSchema = z.object({
   name: z.string().trim().min(1).max(120),
   query: z.string().max(200).default(""),
   filters: z.record(z.string(), z.unknown()).default({}),
-});
+}).transform((v) => ({ ...v, filters: v.filters as Json }));
 
 export const saveSearch = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
