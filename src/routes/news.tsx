@@ -91,7 +91,9 @@ function NewsPage() {
         </div>
 
         <div className="mt-8 divide-y divide-border/50">
-          {shown.length === 0 ? (
+          {isLoading ? (
+            <div className="py-16 text-center text-sm text-muted-foreground">Loading stories…</div>
+          ) : shown.length === 0 ? (
             <div className="py-16 text-center">
               <div className="text-sm text-muted-foreground">No stories found. Try a different filter.</div>
               <Link to="/news" className="mt-3 inline-block text-cyan-accent text-sm">Reset filters</Link>
