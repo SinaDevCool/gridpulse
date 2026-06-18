@@ -27,6 +27,7 @@ import { Route as ProjectsIndexRouteImport } from './routes/projects.index'
 import { Route as CompaniesIndexRouteImport } from './routes/companies.index'
 import { Route as ProjectsSlugRouteImport } from './routes/projects.$slug'
 import { Route as NewsSlugRouteImport } from './routes/news.$slug'
+import { Route as CompaniesSlugRouteImport } from './routes/companies.$slug'
 import { Route as CheckoutReturnRouteImport } from './routes/checkout.return'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
@@ -127,6 +128,11 @@ const NewsSlugRoute = NewsSlugRouteImport.update({
   path: '/$slug',
   getParentRoute: () => NewsRoute,
 } as any)
+const CompaniesSlugRoute = CompaniesSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => CompaniesRoute,
+} as any)
 const CheckoutReturnRoute = CheckoutReturnRouteImport.update({
   id: '/checkout/return',
   path: '/checkout/return',
@@ -201,6 +207,7 @@ export interface FileRoutesByFullPath {
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/checkout/return': typeof CheckoutReturnRoute
+  '/companies/$slug': typeof CompaniesSlugRoute
   '/news/$slug': typeof NewsSlugRoute
   '/projects/$slug': typeof ProjectsSlugRoute
   '/companies/': typeof CompaniesIndexRoute
@@ -229,6 +236,7 @@ export interface FileRoutesByTo {
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/checkout/return': typeof CheckoutReturnRoute
+  '/companies/$slug': typeof CompaniesSlugRoute
   '/news/$slug': typeof NewsSlugRoute
   '/projects/$slug': typeof ProjectsSlugRoute
   '/companies': typeof CompaniesIndexRoute
@@ -260,6 +268,7 @@ export interface FileRoutesById {
   '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/checkout/return': typeof CheckoutReturnRoute
+  '/companies/$slug': typeof CompaniesSlugRoute
   '/news/$slug': typeof NewsSlugRoute
   '/projects/$slug': typeof ProjectsSlugRoute
   '/companies/': typeof CompaniesIndexRoute
@@ -291,6 +300,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/settings'
     | '/checkout/return'
+    | '/companies/$slug'
     | '/news/$slug'
     | '/projects/$slug'
     | '/companies/'
@@ -319,6 +329,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/settings'
     | '/checkout/return'
+    | '/companies/$slug'
     | '/news/$slug'
     | '/projects/$slug'
     | '/companies'
@@ -349,6 +360,7 @@ export interface FileRouteTypes {
     | '/_authenticated/notifications'
     | '/_authenticated/settings'
     | '/checkout/return'
+    | '/companies/$slug'
     | '/news/$slug'
     | '/projects/$slug'
     | '/companies/'
@@ -509,6 +521,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NewsSlugRouteImport
       parentRoute: typeof NewsRoute
     }
+    '/companies/$slug': {
+      id: '/companies/$slug'
+      path: '/$slug'
+      fullPath: '/companies/$slug'
+      preLoaderRoute: typeof CompaniesSlugRouteImport
+      parentRoute: typeof CompaniesRoute
+    }
     '/checkout/return': {
       id: '/checkout/return'
       path: '/checkout/return'
@@ -604,10 +623,12 @@ const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
 interface CompaniesRouteChildren {
+  CompaniesSlugRoute: typeof CompaniesSlugRoute
   CompaniesIndexRoute: typeof CompaniesIndexRoute
 }
 
 const CompaniesRouteChildren: CompaniesRouteChildren = {
+  CompaniesSlugRoute: CompaniesSlugRoute,
   CompaniesIndexRoute: CompaniesIndexRoute,
 }
 
