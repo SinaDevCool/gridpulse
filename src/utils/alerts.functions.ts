@@ -5,6 +5,8 @@ import { z } from "zod";
 const ALERT_TYPES = ["keyword", "tag", "company", "region", "technology", "market", "category"] as const;
 const FREQUENCIES = ["instant", "daily", "weekly", "off"] as const;
 
+type Json = string | number | boolean | null | { [key: string]: Json } | Json[];
+
 // ---------- Saved searches ----------
 
 const saveSearchSchema = z.object({
