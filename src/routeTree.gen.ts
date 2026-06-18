@@ -24,7 +24,6 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProjectsSlugRouteImport } from './routes/projects.$slug'
-import { Route as ProjectsIdRouteImport } from './routes/projects.$id'
 import { Route as NewsSlugRouteImport } from './routes/news.$slug'
 import { Route as CheckoutReturnRouteImport } from './routes/checkout.return'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
@@ -111,11 +110,6 @@ const ProjectsSlugRoute = ProjectsSlugRouteImport.update({
   path: '/$slug',
   getParentRoute: () => ProjectsRoute,
 } as any)
-const ProjectsIdRoute = ProjectsIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => ProjectsRoute,
-} as any)
 const NewsSlugRoute = NewsSlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
@@ -196,7 +190,6 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/news/$slug': typeof NewsSlugRoute
-  '/projects/$id': typeof ProjectsIdRoute
   '/projects/$slug': typeof ProjectsSlugRoute
   '/api/public/alerts/run': typeof ApiPublicAlertsRunRoute
   '/api/public/news/ingest': typeof ApiPublicNewsIngestRoute
@@ -224,7 +217,6 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/news/$slug': typeof NewsSlugRoute
-  '/projects/$id': typeof ProjectsIdRoute
   '/projects/$slug': typeof ProjectsSlugRoute
   '/api/public/alerts/run': typeof ApiPublicAlertsRunRoute
   '/api/public/news/ingest': typeof ApiPublicNewsIngestRoute
@@ -254,7 +246,6 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/news/$slug': typeof NewsSlugRoute
-  '/projects/$id': typeof ProjectsIdRoute
   '/projects/$slug': typeof ProjectsSlugRoute
   '/api/public/alerts/run': typeof ApiPublicAlertsRunRoute
   '/api/public/news/ingest': typeof ApiPublicNewsIngestRoute
@@ -284,7 +275,6 @@ export interface FileRouteTypes {
     | '/settings'
     | '/checkout/return'
     | '/news/$slug'
-    | '/projects/$id'
     | '/projects/$slug'
     | '/api/public/alerts/run'
     | '/api/public/news/ingest'
@@ -312,7 +302,6 @@ export interface FileRouteTypes {
     | '/settings'
     | '/checkout/return'
     | '/news/$slug'
-    | '/projects/$id'
     | '/projects/$slug'
     | '/api/public/alerts/run'
     | '/api/public/news/ingest'
@@ -341,7 +330,6 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/checkout/return'
     | '/news/$slug'
-    | '/projects/$id'
     | '/projects/$slug'
     | '/api/public/alerts/run'
     | '/api/public/news/ingest'
@@ -476,13 +464,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjectsSlugRouteImport
       parentRoute: typeof ProjectsRoute
     }
-    '/projects/$id': {
-      id: '/projects/$id'
-      path: '/$id'
-      fullPath: '/projects/$id'
-      preLoaderRoute: typeof ProjectsIdRouteImport
-      parentRoute: typeof ProjectsRoute
-    }
     '/news/$slug': {
       id: '/news/$slug'
       path: '/$slug'
@@ -595,12 +576,10 @@ const NewsRouteChildren: NewsRouteChildren = {
 const NewsRouteWithChildren = NewsRoute._addFileChildren(NewsRouteChildren)
 
 interface ProjectsRouteChildren {
-  ProjectsIdRoute: typeof ProjectsIdRoute
   ProjectsSlugRoute: typeof ProjectsSlugRoute
 }
 
 const ProjectsRouteChildren: ProjectsRouteChildren = {
-  ProjectsIdRoute: ProjectsIdRoute,
   ProjectsSlugRoute: ProjectsSlugRoute,
 }
 
