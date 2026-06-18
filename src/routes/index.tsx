@@ -247,6 +247,8 @@ function TrendingWidget() {
 }
 
 function UpcomingProjectsWidget() {
+  const { data: projects = [] } = useQuery(projectsQuery());
+  const upcoming = projects.filter((p) => p.status !== "Operational").slice(0, 5);
   const statusColor: Record<string, string> = {
     Permitting: "bg-amber-accent/15 text-amber-accent border-amber-accent/40",
     Construction: "bg-cyan-accent/15 text-cyan-accent border-cyan-accent/40",
@@ -262,7 +264,7 @@ function UpcomingProjectsWidget() {
         <Link to="/projects" className="text-[11px] text-muted-foreground hover:text-cyan-accent">All →</Link>
       </div>
       <ul className="mt-4 space-y-3.5">
-        {upcomingProjects.map((p) => (
+        {upcoming.map((p) => (
           <li key={p.id} className="border-b border-border/40 pb-3 last:border-0 last:pb-0">
             <div className="flex items-start justify-between gap-2">
               <Link to="/projects/$id" params={{ id: p.id }} className="text-sm font-medium text-foreground hover:text-cyan-accent">
