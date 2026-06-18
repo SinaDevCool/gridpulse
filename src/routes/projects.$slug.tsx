@@ -4,6 +4,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { ArticleRow } from "@/components/site/ArticleCard";
+import { FollowButton } from "@/components/site/FollowButton";
 import {
   articlesQuery,
   projectBySlugQuery,
@@ -111,6 +112,7 @@ function ProjectDetail() {
               <ShieldCheck className="h-3 w-3" /> Verified {verifiedDate}
             </span>
           )}
+          <FollowButton targetType="project" targetKey={p.slug ?? p.id} targetLabel={p.name} size="sm" />
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
           <span>{p.developer || "Developer TBD"}</span>

@@ -31,8 +31,10 @@ export const Route = createFileRoute("/api/public/alerts/run")({
 
         try {
           const { runAlertMatcher } = await import("@/lib/alerts.server");
+          const { runFollowMatcher } = await import("@/lib/follows.server");
           const result = await runAlertMatcher(freq);
-          return Response.json({ ok: true, frequency: freq, ...result });
+          const followResult = await runFollowMatcher();
+          return Response.json({ ok: true, frequency: freq, ...result, follows: followResult });
         } catch (e) {
           const msg = e instanceof Error ? e.message : String(e);
           console.error("Alert matcher failed:", msg);

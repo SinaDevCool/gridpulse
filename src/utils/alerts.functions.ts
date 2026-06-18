@@ -184,5 +184,8 @@ export const runAlertsNow = createServerFn({ method: "POST" })
     });
     if (!isAdmin) throw new Error("Forbidden: admin role required");
     const { runAlertMatcher } = await import("@/lib/alerts.server");
-    return runAlertMatcher(data.frequency);
+    const { runFollowMatcher } = await import("@/lib/follows.server");
+    const alerts = await runAlertMatcher(data.frequency);
+    const follows = await runFollowMatcher();
+    return { ...alerts, follows };
   });
