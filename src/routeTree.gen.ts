@@ -18,6 +18,7 @@ import { Route as NewsletterRouteImport } from './routes/newsletter'
 import { Route as NewsRouteImport } from './routes/news'
 import { Route as MarketsRouteImport } from './routes/markets'
 import { Route as DataRouteImport } from './routes/data'
+import { Route as CompaniesRouteImport } from './routes/companies'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
@@ -79,6 +80,11 @@ const MarketsRoute = MarketsRouteImport.update({
 const DataRoute = DataRouteImport.update({
   id: '/data',
   path: '/data',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CompaniesRoute = CompaniesRouteImport.update({
+  id: '/companies',
+  path: '/companies',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -172,6 +178,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
+  '/companies': typeof CompaniesRoute
   '/data': typeof DataRoute
   '/markets': typeof MarketsRoute
   '/news': typeof NewsRouteWithChildren
@@ -199,6 +206,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
+  '/companies': typeof CompaniesRoute
   '/data': typeof DataRoute
   '/markets': typeof MarketsRoute
   '/news': typeof NewsRouteWithChildren
@@ -228,6 +236,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
+  '/companies': typeof CompaniesRoute
   '/data': typeof DataRoute
   '/markets': typeof MarketsRoute
   '/news': typeof NewsRouteWithChildren
@@ -257,6 +266,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/auth'
+    | '/companies'
     | '/data'
     | '/markets'
     | '/news'
@@ -284,6 +294,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/auth'
+    | '/companies'
     | '/data'
     | '/markets'
     | '/news'
@@ -312,6 +323,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/about'
     | '/auth'
+    | '/companies'
     | '/data'
     | '/markets'
     | '/news'
@@ -341,6 +353,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AboutRoute: typeof AboutRoute
   AuthRoute: typeof AuthRoute
+  CompaniesRoute: typeof CompaniesRoute
   DataRoute: typeof DataRoute
   MarketsRoute: typeof MarketsRoute
   NewsRoute: typeof NewsRouteWithChildren
@@ -421,6 +434,13 @@ declare module '@tanstack/react-router' {
       path: '/data'
       fullPath: '/data'
       preLoaderRoute: typeof DataRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/companies': {
+      id: '/companies'
+      path: '/companies'
+      fullPath: '/companies'
+      preLoaderRoute: typeof CompaniesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -581,6 +601,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AboutRoute: AboutRoute,
   AuthRoute: AuthRoute,
+  CompaniesRoute: CompaniesRoute,
   DataRoute: DataRoute,
   MarketsRoute: MarketsRoute,
   NewsRoute: NewsRouteWithChildren,
