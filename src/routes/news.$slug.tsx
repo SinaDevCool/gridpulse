@@ -99,13 +99,13 @@ function ArticlePage() {
         </div>
 
         <div className="prose prose-invert mt-8 max-w-none text-foreground/90">
-          {article.content.split("\n\n").map((p, i) => (
+          {article.content.split("\n\n").map((p: string, i: number) => (
             <p key={i} className="text-base leading-relaxed mb-5">{p}</p>
           ))}
         </div>
 
         <div className="mt-8 flex flex-wrap gap-2">
-          {article.tags.map((t) => (
+          {article.tags.map((t: string) => (
             <Link key={t} to="/news" search={{ q: t }} className="tag-chip hover:border-cyan-accent/50 hover:text-cyan-accent">
               #{t}
             </Link>
