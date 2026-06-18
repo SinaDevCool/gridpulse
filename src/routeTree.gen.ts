@@ -29,6 +29,7 @@ import { Route as ProjectsSlugRouteImport } from './routes/projects.$slug'
 import { Route as NewsSlugRouteImport } from './routes/news.$slug'
 import { Route as CompaniesSlugRouteImport } from './routes/companies.$slug'
 import { Route as CheckoutReturnRouteImport } from './routes/checkout.return'
+import { Route as AuthenticatedWatchlistRouteImport } from './routes/_authenticated/watchlist'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
@@ -138,6 +139,11 @@ const CheckoutReturnRoute = CheckoutReturnRouteImport.update({
   path: '/checkout/return',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedWatchlistRoute = AuthenticatedWatchlistRouteImport.update({
+  id: '/watchlist',
+  path: '/watchlist',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -206,6 +212,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/watchlist': typeof AuthenticatedWatchlistRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/companies/$slug': typeof CompaniesSlugRoute
   '/news/$slug': typeof NewsSlugRoute
@@ -235,6 +242,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/watchlist': typeof AuthenticatedWatchlistRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/companies/$slug': typeof CompaniesSlugRoute
   '/news/$slug': typeof NewsSlugRoute
@@ -267,6 +275,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/watchlist': typeof AuthenticatedWatchlistRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/companies/$slug': typeof CompaniesSlugRoute
   '/news/$slug': typeof NewsSlugRoute
@@ -299,6 +308,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/notifications'
     | '/settings'
+    | '/watchlist'
     | '/checkout/return'
     | '/companies/$slug'
     | '/news/$slug'
@@ -328,6 +338,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/notifications'
     | '/settings'
+    | '/watchlist'
     | '/checkout/return'
     | '/companies/$slug'
     | '/news/$slug'
@@ -359,6 +370,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/notifications'
     | '/_authenticated/settings'
+    | '/_authenticated/watchlist'
     | '/checkout/return'
     | '/companies/$slug'
     | '/news/$slug'
@@ -535,6 +547,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CheckoutReturnRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/watchlist': {
+      id: '/_authenticated/watchlist'
+      path: '/watchlist'
+      fullPath: '/watchlist'
+      preLoaderRoute: typeof AuthenticatedWatchlistRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/settings': {
       id: '/_authenticated/settings'
       path: '/settings'
@@ -608,6 +627,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedWatchlistRoute: typeof AuthenticatedWatchlistRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -617,6 +637,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedWatchlistRoute: AuthenticatedWatchlistRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
