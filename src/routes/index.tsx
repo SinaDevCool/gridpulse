@@ -267,7 +267,7 @@ function UpcomingProjectsWidget() {
         {upcoming.map((p) => (
           <li key={p.id} className="border-b border-border/40 pb-3 last:border-0 last:pb-0">
             <div className="flex items-start justify-between gap-2">
-              <Link to="/projects/$id" params={{ id: p.id }} className="text-sm font-medium text-foreground hover:text-cyan-accent">
+              <Link to="/projects/$slug" params={{ slug: p.slug ?? p.id }} className="text-sm font-medium text-foreground hover:text-cyan-accent">
                 {p.name}
               </Link>
               <span className={`shrink-0 rounded border px-1.5 py-0.5 text-[9px] font-semibold tracking-wider ${statusColor[p.status]}`}>
