@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Battery, Search, Command, Menu, X } from "lucide-react";
-import { tickerItems, articles, projects } from "@/lib/gridpulse-data";
+import { Battery, Search, Command, Menu, X, Loader2 } from "lucide-react";
+import { tickerItems } from "@/lib/gridpulse-data";
+import { searchAll, type SearchResults } from "@/lib/search-client";
 import { UserMenu } from "@/components/site/UserMenu";
+import { NotificationBell } from "@/components/site/NotificationBell";
 
 const navItems = [
   { label: "News", to: "/news" },
