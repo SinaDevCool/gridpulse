@@ -41,7 +41,9 @@ function ArticlePage() {
   const { article } = Route.useLoaderData();
 
   const related = articles.filter((a) => a.id !== article.id && a.category === article.category).slice(0, 3);
-  const relatedProjects: Project[] = (article.relatedProjectIds ?? []).map(getProjectById).filter((p): p is Project => Boolean(p));
+  const relatedProjects: Project[] = (article.relatedProjectIds ?? [])
+    .map((id: string) => getProjectById(id))
+    .filter((p: Project | undefined): p is Project => !!p);
 
   function share(kind: "twitter" | "linkedin" | "copy") {
     const url = typeof window !== "undefined" ? window.location.href : "";
