@@ -29,6 +29,7 @@ import { Route as CheckoutReturnRouteImport } from './routes/checkout.return'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedBillingRouteImport } from './routes/_authenticated/billing'
+import { Route as AuthenticatedAlertsRouteImport } from './routes/_authenticated/alerts'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 import { Route as ApiPublicNewsIngestRouteImport } from './routes/api/public/news/ingest'
@@ -133,6 +134,11 @@ const AuthenticatedBillingRoute = AuthenticatedBillingRouteImport.update({
   path: '/billing',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAlertsRoute = AuthenticatedAlertsRouteImport.update({
+  id: '/alerts',
+  path: '/alerts',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -170,6 +176,7 @@ export interface FileRoutesByFullPath {
   '/subscribe': typeof SubscribeRoute
   '/technology': typeof TechnologyRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/alerts': typeof AuthenticatedAlertsRoute
   '/billing': typeof AuthenticatedBillingRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -195,6 +202,7 @@ export interface FileRoutesByTo {
   '/subscribe': typeof SubscribeRoute
   '/technology': typeof TechnologyRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/alerts': typeof AuthenticatedAlertsRoute
   '/billing': typeof AuthenticatedBillingRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -222,6 +230,7 @@ export interface FileRoutesById {
   '/subscribe': typeof SubscribeRoute
   '/technology': typeof TechnologyRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
+  '/_authenticated/alerts': typeof AuthenticatedAlertsRoute
   '/_authenticated/billing': typeof AuthenticatedBillingRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
@@ -249,6 +258,7 @@ export interface FileRouteTypes {
     | '/subscribe'
     | '/technology'
     | '/admin'
+    | '/alerts'
     | '/billing'
     | '/dashboard'
     | '/settings'
@@ -274,6 +284,7 @@ export interface FileRouteTypes {
     | '/subscribe'
     | '/technology'
     | '/admin'
+    | '/alerts'
     | '/billing'
     | '/dashboard'
     | '/settings'
@@ -300,6 +311,7 @@ export interface FileRouteTypes {
     | '/subscribe'
     | '/technology'
     | '/_authenticated/admin'
+    | '/_authenticated/alerts'
     | '/_authenticated/billing'
     | '/_authenticated/dashboard'
     | '/_authenticated/settings'
@@ -474,6 +486,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBillingRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/alerts': {
+      id: '/_authenticated/alerts'
+      path: '/alerts'
+      fullPath: '/alerts'
+      preLoaderRoute: typeof AuthenticatedAlertsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin': {
       id: '/_authenticated/admin'
       path: '/admin'
@@ -507,6 +526,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
+  AuthenticatedAlertsRoute: typeof AuthenticatedAlertsRoute
   AuthenticatedBillingRoute: typeof AuthenticatedBillingRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
@@ -514,6 +534,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
+  AuthenticatedAlertsRoute: AuthenticatedAlertsRoute,
   AuthenticatedBillingRoute: AuthenticatedBillingRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
