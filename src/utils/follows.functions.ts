@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 
 const TARGET_TYPES = ["company", "project"] as const;
 
@@ -17,7 +19,7 @@ const followInput = z.object({
 });
 
 type Tier = "free" | "pro" | "enterprise";
-async function getTier(supabase: any, userId: string): Promise<Tier> {
+async function getTier(supabase: SupabaseClient<Database>, userId: string): Promise<Tier> {
   const { data } = await supabase.rpc("get_user_tier", { _user_id: userId });
   if (data === "enterprise" || data === "pro" || data === "free") return data;
   return "free";
