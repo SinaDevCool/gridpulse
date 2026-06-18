@@ -17,7 +17,7 @@ const followInput = z.object({
 });
 
 type Tier = "free" | "pro" | "enterprise";
-async function getTier(supabase: { rpc: (fn: "get_user_tier", args: { _user_id: string }) => Promise<{ data: string | null }> }, userId: string): Promise<Tier> {
+async function getTier(supabase: any, userId: string): Promise<Tier> {
   const { data } = await supabase.rpc("get_user_tier", { _user_id: userId });
   if (data === "enterprise" || data === "pro" || data === "free") return data;
   return "free";
