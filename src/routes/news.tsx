@@ -2,10 +2,12 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { z } from "zod";
+import { useQuery } from "@tanstack/react-query";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { ArticleRow } from "@/components/site/ArticleCard";
-import { articles, type ArticleCategory } from "@/lib/gridpulse-data";
+import { type ArticleCategory } from "@/lib/gridpulse-data";
+import { articlesQuery } from "@/lib/gridpulse-repo";
 
 const searchSchema = z.object({
   q: z.string().optional(),
@@ -39,6 +41,7 @@ function NewsPage() {
   const [query, setQuery] = useState(initialQ ?? "");
   const [filter, setFilter] = useState<ArticleCategory | "all">("all");
   const [count, setCount] = useState(10);
+  const { data: articles = [], isLoading } = useQuery(articlesQuery());
 
   const list = useMemo(() => {
     const ql = query.trim().toLowerCase();
@@ -47,7 +50,7 @@ function NewsPage() {
       if (ql && !(a.headline + " " + a.summary + " " + a.tags.join(" ")).toLowerCase().includes(ql)) return false;
       return true;
     });
-  }, [query, filter]);
+  }, [query, filter, articles]);
   const shown = list.slice(0, count);
 
   return (
