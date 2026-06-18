@@ -102,6 +102,20 @@ function Settings() {
         </div>
 
         <div className="mt-6 rounded-lg border border-border bg-surface/40 p-6">
+          <div className="text-sm font-medium text-foreground">News pipeline (admin)</div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Trigger ingestion and review run history. Admin role required.
+          </p>
+          <Link
+            to="/admin"
+            className="mt-3 inline-block rounded-md border border-border px-4 py-2 text-sm text-foreground hover:border-cyan-accent hover:text-cyan-accent"
+          >
+            Open admin
+          </Link>
+        </div>
+
+
+        <div className="mt-6 rounded-lg border border-border bg-surface/40 p-6">
           <div className="text-sm font-medium text-foreground">Sign out</div>
           <p className="mt-1 text-xs text-muted-foreground">End your session on this device.</p>
           <button

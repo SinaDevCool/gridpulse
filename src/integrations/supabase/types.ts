@@ -92,6 +92,84 @@ export type Database = {
         }
         Relationships: []
       }
+      ingestion_runs: {
+        Row: {
+          error: string | null
+          failed_count: number
+          fetched_count: number
+          finished_at: string | null
+          id: string
+          inserted_count: number
+          started_at: string
+          status: string
+          summarized_count: number
+          triggered_by: string
+        }
+        Insert: {
+          error?: string | null
+          failed_count?: number
+          fetched_count?: number
+          finished_at?: string | null
+          id?: string
+          inserted_count?: number
+          started_at?: string
+          status?: string
+          summarized_count?: number
+          triggered_by?: string
+        }
+        Update: {
+          error?: string | null
+          failed_count?: number
+          fetched_count?: number
+          finished_at?: string | null
+          id?: string
+          inserted_count?: number
+          started_at?: string
+          status?: string
+          summarized_count?: number
+          triggered_by?: string
+        }
+        Relationships: []
+      }
+      news_sources: {
+        Row: {
+          active: boolean
+          category: string
+          created_at: string
+          feed_url: string
+          id: string
+          last_error: string | null
+          last_run_at: string | null
+          last_status: string | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          category?: string
+          created_at?: string
+          feed_url: string
+          id?: string
+          last_error?: string | null
+          last_run_at?: string | null
+          last_status?: string | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          category?: string
+          created_at?: string
+          feed_url?: string
+          id?: string
+          last_error?: string | null
+          last_run_at?: string | null
+          last_status?: string | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       newsletter_subscribers: {
         Row: {
           email: string
