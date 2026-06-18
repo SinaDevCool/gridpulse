@@ -24,8 +24,11 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProjectsIdRouteImport } from './routes/projects.$id'
 import { Route as NewsSlugRouteImport } from './routes/news.$slug'
+import { Route as CheckoutReturnRouteImport } from './routes/checkout.return'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedBillingRouteImport } from './routes/_authenticated/billing'
+import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 
 const TechnologyRoute = TechnologyRouteImport.update({
   id: '/technology',
@@ -101,6 +104,11 @@ const NewsSlugRoute = NewsSlugRouteImport.update({
   path: '/$slug',
   getParentRoute: () => NewsRoute,
 } as any)
+const CheckoutReturnRoute = CheckoutReturnRouteImport.update({
+  id: '/checkout/return',
+  path: '/checkout/return',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -111,6 +119,17 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedBillingRoute = AuthenticatedBillingRouteImport.update({
+  id: '/billing',
+  path: '/billing',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const ApiPublicPaymentsWebhookRoute =
+  ApiPublicPaymentsWebhookRouteImport.update({
+    id: '/api/public/payments/webhook',
+    path: '/api/public/payments/webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -125,10 +144,13 @@ export interface FileRoutesByFullPath {
   '/regions': typeof RegionsRoute
   '/subscribe': typeof SubscribeRoute
   '/technology': typeof TechnologyRoute
+  '/billing': typeof AuthenticatedBillingRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/checkout/return': typeof CheckoutReturnRoute
   '/news/$slug': typeof NewsSlugRoute
   '/projects/$id': typeof ProjectsIdRoute
+  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -143,10 +165,13 @@ export interface FileRoutesByTo {
   '/regions': typeof RegionsRoute
   '/subscribe': typeof SubscribeRoute
   '/technology': typeof TechnologyRoute
+  '/billing': typeof AuthenticatedBillingRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/checkout/return': typeof CheckoutReturnRoute
   '/news/$slug': typeof NewsSlugRoute
   '/projects/$id': typeof ProjectsIdRoute
+  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -163,10 +188,13 @@ export interface FileRoutesById {
   '/regions': typeof RegionsRoute
   '/subscribe': typeof SubscribeRoute
   '/technology': typeof TechnologyRoute
+  '/_authenticated/billing': typeof AuthenticatedBillingRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/checkout/return': typeof CheckoutReturnRoute
   '/news/$slug': typeof NewsSlugRoute
   '/projects/$id': typeof ProjectsIdRoute
+  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -183,10 +211,13 @@ export interface FileRouteTypes {
     | '/regions'
     | '/subscribe'
     | '/technology'
+    | '/billing'
     | '/dashboard'
     | '/settings'
+    | '/checkout/return'
     | '/news/$slug'
     | '/projects/$id'
+    | '/api/public/payments/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -201,10 +232,13 @@ export interface FileRouteTypes {
     | '/regions'
     | '/subscribe'
     | '/technology'
+    | '/billing'
     | '/dashboard'
     | '/settings'
+    | '/checkout/return'
     | '/news/$slug'
     | '/projects/$id'
+    | '/api/public/payments/webhook'
   id:
     | '__root__'
     | '/'
@@ -220,10 +254,13 @@ export interface FileRouteTypes {
     | '/regions'
     | '/subscribe'
     | '/technology'
+    | '/_authenticated/billing'
     | '/_authenticated/dashboard'
     | '/_authenticated/settings'
+    | '/checkout/return'
     | '/news/$slug'
     | '/projects/$id'
+    | '/api/public/payments/webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -240,6 +277,8 @@ export interface RootRouteChildren {
   RegionsRoute: typeof RegionsRoute
   SubscribeRoute: typeof SubscribeRoute
   TechnologyRoute: typeof TechnologyRoute
+  CheckoutReturnRoute: typeof CheckoutReturnRoute
+  ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -349,6 +388,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NewsSlugRouteImport
       parentRoute: typeof NewsRoute
     }
+    '/checkout/return': {
+      id: '/checkout/return'
+      path: '/checkout/return'
+      fullPath: '/checkout/return'
+      preLoaderRoute: typeof CheckoutReturnRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/settings': {
       id: '/_authenticated/settings'
       path: '/settings'
@@ -363,15 +409,31 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/billing': {
+      id: '/_authenticated/billing'
+      path: '/billing'
+      fullPath: '/billing'
+      preLoaderRoute: typeof AuthenticatedBillingRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/public/payments/webhook': {
+      id: '/api/public/payments/webhook'
+      path: '/api/public/payments/webhook'
+      fullPath: '/api/public/payments/webhook'
+      preLoaderRoute: typeof ApiPublicPaymentsWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedBillingRoute: typeof AuthenticatedBillingRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedBillingRoute: AuthenticatedBillingRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
 }
@@ -415,6 +477,8 @@ const rootRouteChildren: RootRouteChildren = {
   RegionsRoute: RegionsRoute,
   SubscribeRoute: SubscribeRoute,
   TechnologyRoute: TechnologyRoute,
+  CheckoutReturnRoute: CheckoutReturnRoute,
+  ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

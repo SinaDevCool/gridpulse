@@ -34,11 +34,12 @@ export function useSubscription(userId: string | undefined) {
     }
 
     let active = true;
+    const uid = userId;
     async function load() {
       const { data } = await supabase
         .from("subscriptions")
         .select("*")
-        .eq("user_id", userId)
+        .eq("user_id", uid)
         .eq("environment", env)
         .order("created_at", { ascending: false })
         .limit(1)
