@@ -1,15 +1,17 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { ArrowLeft, CheckCircle2, Clock, Share2, Twitter, Linkedin, Link as LinkIcon } from "lucide-react";
 import { toast } from "sonner";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { ArticleRow, CategoryBadge } from "@/components/site/ArticleCard";
 import { TimeAgo } from "@/components/site/TimeAgo";
-import { articles, getArticleBySlug, getProjectById, type Project } from "@/lib/gridpulse-data";
+import { type Project } from "@/lib/gridpulse-data";
+import { articleBySlugQuery, articlesQuery, projectsQuery } from "@/lib/gridpulse-repo";
 
 export const Route = createFileRoute("/news/$slug")({
-  loader: ({ params }) => {
-    const article = getArticleBySlug(params.slug);
+  loader: async ({ params, context }) => {
+    const article = await context.queryClient.ensureQueryData(articleBySlugQuery(params.slug));
     if (!article) throw notFound();
     return { article };
   },
@@ -23,6 +25,17 @@ export const Route = createFileRoute("/news/$slug")({
         ]
       : [],
   }),
+  errorComponent: ({ error }) => (
+    <div className="min-h-screen bg-background text-foreground">
+      <SiteHeader />
+      <div className="mx-auto max-w-2xl px-4 py-24 text-center">
+        <h1 className="font-display text-2xl font-bold">Couldn't load this story</h1>
+        <p className="mt-2 text-sm text-muted-foreground">{error.message}</p>
+        <Link to="/news" className="mt-6 inline-block text-cyan-accent">← Back to all news</Link>
+      </div>
+      <SiteFooter />
+    </div>
+  ),
   notFoundComponent: () => (
     <div className="min-h-screen bg-background text-foreground">
       <SiteHeader />
@@ -38,16 +51,23 @@ export const Route = createFileRoute("/news/$slug")({
 });
 
 function ArticlePage() {
-  const { article } = Route.useLoaderData();
+  const { slug } = Route.useParams();
+  const { data: article } = useSuspenseQuery(articleBySlugQuery(slug));
+  const { data: allArticles = [] } = useSuspenseQuery(articlesQuery());
+  const { data: allProjects = [] } = useSuspenseQuery(projectsQuery());
 
-  const related = articles.filter((a) => a.id !== article.id && a.category === article.category).slice(0, 3);
+  if (!article) {
+    throw notFound();
+  }
+
+  const related = allArticles.filter((a) => a.id !== article.id && a.category === article.category).slice(0, 3);
   const relatedProjects: Project[] = (article.relatedProjectIds ?? [])
-    .map((id: string) => getProjectById(id))
-    .filter((p: Project | undefined): p is Project => !!p);
+    .map((id: string) => allProjects.find((p) => p.id === id))
+    .filter((p): p is Project => !!p);
 
   function share(kind: "twitter" | "linkedin" | "copy") {
     const url = typeof window !== "undefined" ? window.location.href : "";
-    const text = `${article.headline} — via GridPulse`;
+    const text = `${article!.headline} — via GridPulse`;
     if (kind === "twitter") window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, "_blank");
     else if (kind === "linkedin") window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, "_blank");
     else {
