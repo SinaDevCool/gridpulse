@@ -32,6 +32,8 @@ export interface Article {
 
 export interface Project {
   id: string;
+  slug?: string;
+
   name: string;
   developer: string;
   capacityMw: number;
@@ -45,7 +47,15 @@ export interface Project {
   status: "Permitting" | "Construction" | "Commissioning" | "Operational";
   cod: string;
   description?: string;
+  owner?: string;
+  operator?: string;
+  chemistry?: string;
+  useCase?: string;
+  offtaker?: string;
+  sourceUrls?: string[];
+  lastVerifiedAt?: string;
 }
+
 
 export interface TickerItem {
   label: string;

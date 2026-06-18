@@ -19,6 +19,7 @@ export interface ArticleHit {
 export interface ProjectHit {
   kind: "project";
   id: string;
+  slug: string | null;
   name: string;
   developer: string | null;
   technology: string | null;
@@ -27,6 +28,7 @@ export interface ProjectHit {
   capacity_mw: number | null;
   status: string | null;
 }
+
 
 export type SearchHit = ArticleHit | ProjectHit;
 
@@ -61,7 +63,7 @@ export async function searchAll(rawQuery: string, limit = 20): Promise<SearchRes
       .limit(limit),
     supabase
       .from("projects")
-      .select("id,name,developer,technology,location,region,capacity_mw,status")
+      .select("id,slug,name,developer,technology,location,region,capacity_mw,status")
       .textSearch("search_tsv", q, { type: "websearch", config: "english" })
       .order("capacity_mw", { ascending: false })
       .limit(limit),
@@ -83,6 +85,7 @@ export async function searchAll(rawQuery: string, limit = 20): Promise<SearchRes
   const projects: ProjectHit[] = (projectsRes.data ?? []).map((r) => ({
     kind: "project",
     id: r.id as string,
+    slug: (r.slug as string) ?? null,
     name: r.name as string,
     developer: (r.developer as string) ?? null,
     technology: (r.technology as string) ?? null,
@@ -91,6 +94,7 @@ export async function searchAll(rawQuery: string, limit = 20): Promise<SearchRes
     capacity_mw: (r.capacity_mw as number) ?? null,
     status: (r.status as string) ?? null,
   }));
+
 
   return {
     articles,

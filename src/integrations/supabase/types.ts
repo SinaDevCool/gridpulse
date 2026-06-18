@@ -330,6 +330,7 @@ export type Database = {
         Row: {
           capacity_mw: number
           capacity_mwh: number
+          chemistry: string | null
           cod: string
           country: string
           created_at: string
@@ -338,19 +339,27 @@ export type Database = {
           external_id: string | null
           id: string
           image_url: string | null
+          last_verified_at: string
           lat: number
           lng: number
           location: string
           name: string
+          offtaker: string | null
+          operator: string | null
+          owner: string | null
           region: string
           search_tsv: unknown
+          slug: string
+          source_urls: string[]
           status: string
           technology: string
           updated_at: string
+          use_case: string | null
         }
         Insert: {
           capacity_mw: number
           capacity_mwh: number
+          chemistry?: string | null
           cod: string
           country: string
           created_at?: string
@@ -359,19 +368,27 @@ export type Database = {
           external_id?: string | null
           id?: string
           image_url?: string | null
+          last_verified_at?: string
           lat: number
           lng: number
           location: string
           name: string
+          offtaker?: string | null
+          operator?: string | null
+          owner?: string | null
           region: string
           search_tsv?: unknown
+          slug: string
+          source_urls?: string[]
           status: string
           technology: string
           updated_at?: string
+          use_case?: string | null
         }
         Update: {
           capacity_mw?: number
           capacity_mwh?: number
+          chemistry?: string | null
           cod?: string
           country?: string
           created_at?: string
@@ -380,15 +397,22 @@ export type Database = {
           external_id?: string | null
           id?: string
           image_url?: string | null
+          last_verified_at?: string
           lat?: number
           lng?: number
           location?: string
           name?: string
+          offtaker?: string | null
+          operator?: string | null
+          owner?: string | null
           region?: string
           search_tsv?: unknown
+          slug?: string
+          source_urls?: string[]
           status?: string
           technology?: string
           updated_at?: string
+          use_case?: string | null
         }
         Relationships: []
       }

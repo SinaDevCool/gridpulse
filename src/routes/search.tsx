@@ -217,8 +217,8 @@ function SearchPage() {
               {data.projects.map((p) => (
                 <li key={p.id} className="p-4 hover:bg-surface-elevated/60">
                   <Link
-                    to="/projects/$id"
-                    params={{ id: p.id }}
+                    to="/projects/$slug"
+                    params={{ slug: p.slug ?? p.id }}
                     className="block"
                   >
                     <div className="flex items-baseline gap-2 text-[11px] font-mono-data text-muted-foreground">
