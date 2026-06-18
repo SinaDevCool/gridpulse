@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      alert_rules: {
+        Row: {
+          active: boolean
+          created_at: string
+          frequency: Database["public"]["Enums"]["alert_frequency"]
+          id: string
+          last_matched_at: string | null
+          last_run_at: string | null
+          name: string
+          rule_type: Database["public"]["Enums"]["alert_rule_type"]
+          updated_at: string
+          user_id: string
+          values: string[]
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          frequency?: Database["public"]["Enums"]["alert_frequency"]
+          id?: string
+          last_matched_at?: string | null
+          last_run_at?: string | null
+          name: string
+          rule_type: Database["public"]["Enums"]["alert_rule_type"]
+          updated_at?: string
+          user_id: string
+          values?: string[]
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          frequency?: Database["public"]["Enums"]["alert_frequency"]
+          id?: string
+          last_matched_at?: string | null
+          last_run_at?: string | null
+          name?: string
+          rule_type?: Database["public"]["Enums"]["alert_rule_type"]
+          updated_at?: string
+          user_id?: string
+          values?: string[]
+        }
+        Relationships: []
+      }
       articles: {
         Row: {
           also_reported_by: string[]
@@ -191,6 +233,60 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          alert_rule_id: string | null
+          article_id: string | null
+          body: string | null
+          created_at: string
+          id: string
+          link: string | null
+          read_at: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          alert_rule_id?: string | null
+          article_id?: string | null
+          body?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          read_at?: string | null
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          alert_rule_id?: string | null
+          article_id?: string | null
+          body?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          read_at?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_alert_rule_id_fkey"
+            columns: ["alert_rule_id"]
+            isOneToOne: false
+            referencedRelation: "alert_rules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -247,6 +343,7 @@ export type Database = {
           location: string
           name: string
           region: string
+          search_tsv: unknown
           status: string
           technology: string
           updated_at: string
@@ -267,6 +364,7 @@ export type Database = {
           location: string
           name: string
           region: string
+          search_tsv?: unknown
           status: string
           technology: string
           updated_at?: string
@@ -287,9 +385,40 @@ export type Database = {
           location?: string
           name?: string
           region?: string
+          search_tsv?: unknown
           status?: string
           technology?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      saved_searches: {
+        Row: {
+          created_at: string
+          filters: Json
+          id: string
+          name: string
+          query: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          filters?: Json
+          id?: string
+          name: string
+          query?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          filters?: Json
+          id?: string
+          name?: string
+          query?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -371,6 +500,7 @@ export type Database = {
         Args: { check_env?: string; user_uuid: string }
         Returns: boolean
       }
+      has_paid_plan: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -380,6 +510,15 @@ export type Database = {
       }
     }
     Enums: {
+      alert_frequency: "instant" | "daily" | "weekly" | "off"
+      alert_rule_type:
+        | "keyword"
+        | "tag"
+        | "company"
+        | "region"
+        | "technology"
+        | "market"
+        | "category"
       app_role: "admin" | "editor" | "pro" | "enterprise" | "user"
     }
     CompositeTypes: {
@@ -508,6 +647,16 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      alert_frequency: ["instant", "daily", "weekly", "off"],
+      alert_rule_type: [
+        "keyword",
+        "tag",
+        "company",
+        "region",
+        "technology",
+        "market",
+        "category",
+      ],
       app_role: ["admin", "editor", "pro", "enterprise", "user"],
     },
   },
