@@ -35,8 +35,9 @@ function SearchPage() {
   const navigate = useNavigate({ from: "/search" });
   const [input, setInput] = useState(initialQ);
   const [debouncedQ, setDebouncedQ] = useState(initialQ);
-  const [authed, setAuthed] = useState<boolean>(false);
-  const { isActive } = useSubscription();
+  const [userId, setUserId] = useState<string | undefined>(undefined);
+  const authed = Boolean(userId);
+  const { isActive } = useSubscription(userId);
   const saveFn = useServerFn(saveSearch);
 
   useEffect(() => {
