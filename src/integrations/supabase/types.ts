@@ -134,6 +134,33 @@ export type Database = {
         }
         Relationships: []
       }
+      follows: {
+        Row: {
+          created_at: string
+          id: string
+          target_key: string
+          target_label: string | null
+          target_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          target_key: string
+          target_label?: string | null
+          target_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          target_key?: string
+          target_label?: string | null
+          target_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ingestion_runs: {
         Row: {
           error: string | null
@@ -520,6 +547,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_user_tier: { Args: { _user_id: string }; Returns: string }
       has_active_subscription: {
         Args: { check_env?: string; user_uuid: string }
         Returns: boolean
