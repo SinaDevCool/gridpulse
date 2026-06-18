@@ -110,11 +110,12 @@ export function SiteHeader() {
           <button
             type="button"
             onClick={() => setSearchOpen(true)}
-            className="hidden md:flex items-center gap-2 rounded-md border border-border bg-surface/60 px-3 py-1.5 text-xs text-muted-foreground hover:border-cyan-accent/40 hover:text-foreground transition-colors cursor-pointer"
+            aria-label="Search"
+            className="hidden md:flex items-center gap-2 rounded-md border border-border bg-surface/60 px-3 py-1.5 text-xs text-muted-foreground hover:border-cyan-accent/40 hover:text-foreground transition-colors cursor-pointer min-w-0"
           >
-            <Search className="h-3.5 w-3.5" />
-            <span>Search articles, projects, companies…</span>
-            <kbd className="ml-4 inline-flex items-center gap-0.5 rounded border border-border/80 bg-background/60 px-1.5 py-0.5 font-mono-data text-[10px]">
+            <Search className="h-3.5 w-3.5 shrink-0" />
+            <span className="hidden xl:inline truncate">Search articles, projects, companies…</span>
+            <kbd className="hidden xl:inline-flex ml-4 items-center gap-0.5 rounded border border-border/80 bg-background/60 px-1.5 py-0.5 font-mono-data text-[10px]">
               <Command className="h-2.5 w-2.5" /> K
             </kbd>
           </button>
