@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TechnologyRouteImport } from './routes/technology'
 import { Route as SubscribeRouteImport } from './routes/subscribe'
+import { Route as SearchRouteImport } from './routes/search'
 import { Route as RegionsRouteImport } from './routes/regions'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as PolicyRouteImport } from './routes/policy'
@@ -26,11 +27,14 @@ import { Route as ProjectsIdRouteImport } from './routes/projects.$id'
 import { Route as NewsSlugRouteImport } from './routes/news.$slug'
 import { Route as CheckoutReturnRouteImport } from './routes/checkout.return'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedBillingRouteImport } from './routes/_authenticated/billing'
+import { Route as AuthenticatedAlertsRouteImport } from './routes/_authenticated/alerts'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 import { Route as ApiPublicNewsIngestRouteImport } from './routes/api/public/news/ingest'
+import { Route as ApiPublicAlertsRunRouteImport } from './routes/api/public/alerts/run'
 
 const TechnologyRoute = TechnologyRouteImport.update({
   id: '/technology',
@@ -40,6 +44,11 @@ const TechnologyRoute = TechnologyRouteImport.update({
 const SubscribeRoute = SubscribeRouteImport.update({
   id: '/subscribe',
   path: '/subscribe',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SearchRoute = SearchRouteImport.update({
+  id: '/search',
+  path: '/search',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RegionsRoute = RegionsRouteImport.update({
@@ -116,6 +125,12 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedNotificationsRoute =
+  AuthenticatedNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -124,6 +139,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
 const AuthenticatedBillingRoute = AuthenticatedBillingRouteImport.update({
   id: '/billing',
   path: '/billing',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAlertsRoute = AuthenticatedAlertsRouteImport.update({
+  id: '/alerts',
+  path: '/alerts',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
@@ -142,6 +162,11 @@ const ApiPublicNewsIngestRoute = ApiPublicNewsIngestRouteImport.update({
   path: '/api/public/news/ingest',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicAlertsRunRoute = ApiPublicAlertsRunRouteImport.update({
+  id: '/api/public/alerts/run',
+  path: '/api/public/alerts/run',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -154,15 +179,19 @@ export interface FileRoutesByFullPath {
   '/policy': typeof PolicyRoute
   '/projects': typeof ProjectsRouteWithChildren
   '/regions': typeof RegionsRoute
+  '/search': typeof SearchRoute
   '/subscribe': typeof SubscribeRoute
   '/technology': typeof TechnologyRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/alerts': typeof AuthenticatedAlertsRoute
   '/billing': typeof AuthenticatedBillingRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/notifications': typeof AuthenticatedNotificationsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/news/$slug': typeof NewsSlugRoute
   '/projects/$id': typeof ProjectsIdRoute
+  '/api/public/alerts/run': typeof ApiPublicAlertsRunRoute
   '/api/public/news/ingest': typeof ApiPublicNewsIngestRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
@@ -177,15 +206,19 @@ export interface FileRoutesByTo {
   '/policy': typeof PolicyRoute
   '/projects': typeof ProjectsRouteWithChildren
   '/regions': typeof RegionsRoute
+  '/search': typeof SearchRoute
   '/subscribe': typeof SubscribeRoute
   '/technology': typeof TechnologyRoute
   '/admin': typeof AuthenticatedAdminRoute
+  '/alerts': typeof AuthenticatedAlertsRoute
   '/billing': typeof AuthenticatedBillingRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/notifications': typeof AuthenticatedNotificationsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/news/$slug': typeof NewsSlugRoute
   '/projects/$id': typeof ProjectsIdRoute
+  '/api/public/alerts/run': typeof ApiPublicAlertsRunRoute
   '/api/public/news/ingest': typeof ApiPublicNewsIngestRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
@@ -202,15 +235,19 @@ export interface FileRoutesById {
   '/policy': typeof PolicyRoute
   '/projects': typeof ProjectsRouteWithChildren
   '/regions': typeof RegionsRoute
+  '/search': typeof SearchRoute
   '/subscribe': typeof SubscribeRoute
   '/technology': typeof TechnologyRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
+  '/_authenticated/alerts': typeof AuthenticatedAlertsRoute
   '/_authenticated/billing': typeof AuthenticatedBillingRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/news/$slug': typeof NewsSlugRoute
   '/projects/$id': typeof ProjectsIdRoute
+  '/api/public/alerts/run': typeof ApiPublicAlertsRunRoute
   '/api/public/news/ingest': typeof ApiPublicNewsIngestRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
@@ -227,15 +264,19 @@ export interface FileRouteTypes {
     | '/policy'
     | '/projects'
     | '/regions'
+    | '/search'
     | '/subscribe'
     | '/technology'
     | '/admin'
+    | '/alerts'
     | '/billing'
     | '/dashboard'
+    | '/notifications'
     | '/settings'
     | '/checkout/return'
     | '/news/$slug'
     | '/projects/$id'
+    | '/api/public/alerts/run'
     | '/api/public/news/ingest'
     | '/api/public/payments/webhook'
   fileRoutesByTo: FileRoutesByTo
@@ -250,15 +291,19 @@ export interface FileRouteTypes {
     | '/policy'
     | '/projects'
     | '/regions'
+    | '/search'
     | '/subscribe'
     | '/technology'
     | '/admin'
+    | '/alerts'
     | '/billing'
     | '/dashboard'
+    | '/notifications'
     | '/settings'
     | '/checkout/return'
     | '/news/$slug'
     | '/projects/$id'
+    | '/api/public/alerts/run'
     | '/api/public/news/ingest'
     | '/api/public/payments/webhook'
   id:
@@ -274,15 +319,19 @@ export interface FileRouteTypes {
     | '/policy'
     | '/projects'
     | '/regions'
+    | '/search'
     | '/subscribe'
     | '/technology'
     | '/_authenticated/admin'
+    | '/_authenticated/alerts'
     | '/_authenticated/billing'
     | '/_authenticated/dashboard'
+    | '/_authenticated/notifications'
     | '/_authenticated/settings'
     | '/checkout/return'
     | '/news/$slug'
     | '/projects/$id'
+    | '/api/public/alerts/run'
     | '/api/public/news/ingest'
     | '/api/public/payments/webhook'
   fileRoutesById: FileRoutesById
@@ -299,9 +348,11 @@ export interface RootRouteChildren {
   PolicyRoute: typeof PolicyRoute
   ProjectsRoute: typeof ProjectsRouteWithChildren
   RegionsRoute: typeof RegionsRoute
+  SearchRoute: typeof SearchRoute
   SubscribeRoute: typeof SubscribeRoute
   TechnologyRoute: typeof TechnologyRoute
   CheckoutReturnRoute: typeof CheckoutReturnRoute
+  ApiPublicAlertsRunRoute: typeof ApiPublicAlertsRunRoute
   ApiPublicNewsIngestRoute: typeof ApiPublicNewsIngestRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
 }
@@ -320,6 +371,13 @@ declare module '@tanstack/react-router' {
       path: '/subscribe'
       fullPath: '/subscribe'
       preLoaderRoute: typeof SubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/search': {
+      id: '/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof SearchRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/regions': {
@@ -427,6 +485,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/notifications': {
+      id: '/_authenticated/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof AuthenticatedNotificationsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -439,6 +504,13 @@ declare module '@tanstack/react-router' {
       path: '/billing'
       fullPath: '/billing'
       preLoaderRoute: typeof AuthenticatedBillingRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/alerts': {
+      id: '/_authenticated/alerts'
+      path: '/alerts'
+      fullPath: '/alerts'
+      preLoaderRoute: typeof AuthenticatedAlertsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/admin': {
@@ -462,20 +534,31 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicNewsIngestRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/alerts/run': {
+      id: '/api/public/alerts/run'
+      path: '/api/public/alerts/run'
+      fullPath: '/api/public/alerts/run'
+      preLoaderRoute: typeof ApiPublicAlertsRunRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
+  AuthenticatedAlertsRoute: typeof AuthenticatedAlertsRoute
   AuthenticatedBillingRoute: typeof AuthenticatedBillingRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
+  AuthenticatedAlertsRoute: AuthenticatedAlertsRoute,
   AuthenticatedBillingRoute: AuthenticatedBillingRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
 }
 
@@ -516,9 +599,11 @@ const rootRouteChildren: RootRouteChildren = {
   PolicyRoute: PolicyRoute,
   ProjectsRoute: ProjectsRouteWithChildren,
   RegionsRoute: RegionsRoute,
+  SearchRoute: SearchRoute,
   SubscribeRoute: SubscribeRoute,
   TechnologyRoute: TechnologyRoute,
   CheckoutReturnRoute: CheckoutReturnRoute,
+  ApiPublicAlertsRunRoute: ApiPublicAlertsRunRoute,
   ApiPublicNewsIngestRoute: ApiPublicNewsIngestRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
 }

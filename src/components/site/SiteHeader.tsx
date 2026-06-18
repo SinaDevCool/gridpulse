@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Battery, Search, Command, Menu, X } from "lucide-react";
-import { tickerItems, articles, projects } from "@/lib/gridpulse-data";
+import { Battery, Search, Command, Menu, X, Loader2 } from "lucide-react";
+import { tickerItems } from "@/lib/gridpulse-data";
+import { searchAll, type SearchResults } from "@/lib/search-client";
 import { UserMenu } from "@/components/site/UserMenu";
+import { NotificationBell } from "@/components/site/NotificationBell";
 
 const navItems = [
   { label: "News", to: "/news" },
@@ -33,18 +35,36 @@ export function SiteHeader() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const results = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return { articles: articles.slice(0, 4), projects: projects.slice(0, 4) };
-    return {
-      articles: articles.filter((a) =>
-        (a.headline + " " + a.summary + " " + a.tags.join(" ")).toLowerCase().includes(q),
-      ).slice(0, 6),
-      projects: projects.filter((p) =>
-        (p.name + " " + p.developer + " " + p.location).toLowerCase().includes(q),
-      ).slice(0, 6),
-    };
+  const [debouncedQ, setDebouncedQ] = useState("");
+  const [results, setResults] = useState<SearchResults>({ articles: [], projects: [], total: 0 });
+  const [searching, setSearching] = useState(false);
+
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedQ(query.trim()), 200);
+    return () => clearTimeout(id);
   }, [query]);
+
+  useEffect(() => {
+    if (!debouncedQ) {
+      setResults({ articles: [], projects: [], total: 0 });
+      return;
+    }
+    let cancelled = false;
+    setSearching(true);
+    searchAll(debouncedQ, 5)
+      .then((r) => {
+        if (!cancelled) setResults(r);
+      })
+      .catch(() => {
+        if (!cancelled) setResults({ articles: [], projects: [], total: 0 });
+      })
+      .finally(() => {
+        if (!cancelled) setSearching(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedQ]);
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/60 glass-card backdrop-blur-xl">
@@ -98,6 +118,7 @@ export function SiteHeader() {
               <Command className="h-2.5 w-2.5" /> K
             </kbd>
           </button>
+          <NotificationBell />
           <UserMenu />
           <Link
             to="/subscribe"
@@ -156,14 +177,30 @@ export function SiteHeader() {
                 autoFocus
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && query.trim()) {
+                    setSearchOpen(false);
+                    navigate({ to: "/search", search: { q: query.trim() } });
+                  }
+                }}
                 placeholder="Search articles, projects, companies…"
                 className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
               />
               <kbd className="text-[10px] text-muted-foreground font-mono-data">ESC</kbd>
             </div>
             <div className="max-h-[60vh] overflow-y-auto p-2">
-              {results.articles.length === 0 && results.projects.length === 0 && (
-                <div className="px-4 py-8 text-center text-sm text-muted-foreground">No results for "{query}"</div>
+              {debouncedQ && searching && (
+                <div className="flex items-center justify-center gap-2 px-4 py-6 text-sm text-muted-foreground">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Searching…
+                </div>
+              )}
+              {!searching && debouncedQ && results.total === 0 && (
+                <div className="px-4 py-8 text-center text-sm text-muted-foreground">No results for &ldquo;{debouncedQ}&rdquo;</div>
+              )}
+              {!debouncedQ && (
+                <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                  Search articles, projects, companies, technologies, regions…
+                </div>
               )}
               {results.articles.length > 0 && (
                 <div className="mb-2">
@@ -175,7 +212,7 @@ export function SiteHeader() {
                       className="block w-full text-left rounded-md px-3 py-2 text-sm hover:bg-surface-elevated"
                     >
                       <div className="text-foreground">{a.headline}</div>
-                      <div className="text-[11px] text-muted-foreground font-mono-data">{a.source.name} · {a.region}</div>
+                      <div className="text-[11px] text-muted-foreground font-mono-data">{a.source_name ?? "GridPulse"} · {a.region}</div>
                     </button>
                   ))}
                 </div>
@@ -190,9 +227,19 @@ export function SiteHeader() {
                       className="block w-full text-left rounded-md px-3 py-2 text-sm hover:bg-surface-elevated"
                     >
                       <div className="text-foreground">{p.name}</div>
-                      <div className="text-[11px] text-muted-foreground font-mono-data">{p.developer} · {p.capacityMw} MW · {p.location}</div>
+                      <div className="text-[11px] text-muted-foreground font-mono-data">{p.developer ?? "—"} · {p.capacity_mw ?? "—"} MW · {p.location ?? "—"}</div>
                     </button>
                   ))}
+                </div>
+              )}
+              {debouncedQ && results.total > 0 && (
+                <div className="border-t border-border mt-2 pt-2">
+                  <button
+                    onClick={() => { setSearchOpen(false); navigate({ to: "/search", search: { q: debouncedQ } }); }}
+                    className="block w-full rounded-md px-3 py-2 text-center text-xs font-medium text-cyan-accent hover:bg-cyan-accent/10"
+                  >
+                    View all results for &ldquo;{debouncedQ}&rdquo; →
+                  </button>
                 </div>
               )}
             </div>
