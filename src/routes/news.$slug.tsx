@@ -152,7 +152,7 @@ function ArticlePage() {
             <h2 className="font-display text-xl font-bold tracking-tight">Related projects</h2>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               {relatedProjects.map((p: Project) => (
-                <Link key={p.id} to="/projects/$id" params={{ id: p.id }} className="glass-card rounded-lg p-4 hover-lift">
+                <Link key={p.id} to="/projects/$slug" params={{ slug: p.slug ?? p.id }} className="glass-card rounded-lg p-4 hover-lift">
                   <div className="text-sm font-medium text-foreground">{p.name}</div>
                   <div className="mt-1 text-[11px] text-muted-foreground font-mono-data">
                     {p.capacityMw} MW · {p.technology} · {p.location}
