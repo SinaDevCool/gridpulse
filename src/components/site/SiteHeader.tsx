@@ -35,18 +35,36 @@ export function SiteHeader() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const results = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return { articles: articles.slice(0, 4), projects: projects.slice(0, 4) };
-    return {
-      articles: articles.filter((a) =>
-        (a.headline + " " + a.summary + " " + a.tags.join(" ")).toLowerCase().includes(q),
-      ).slice(0, 6),
-      projects: projects.filter((p) =>
-        (p.name + " " + p.developer + " " + p.location).toLowerCase().includes(q),
-      ).slice(0, 6),
-    };
+  const [debouncedQ, setDebouncedQ] = useState("");
+  const [results, setResults] = useState<SearchResults>({ articles: [], projects: [], total: 0 });
+  const [searching, setSearching] = useState(false);
+
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedQ(query.trim()), 200);
+    return () => clearTimeout(id);
   }, [query]);
+
+  useEffect(() => {
+    if (!debouncedQ) {
+      setResults({ articles: [], projects: [], total: 0 });
+      return;
+    }
+    let cancelled = false;
+    setSearching(true);
+    searchAll(debouncedQ, 5)
+      .then((r) => {
+        if (!cancelled) setResults(r);
+      })
+      .catch(() => {
+        if (!cancelled) setResults({ articles: [], projects: [], total: 0 });
+      })
+      .finally(() => {
+        if (!cancelled) setSearching(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [debouncedQ]);
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/60 glass-card backdrop-blur-xl">
