@@ -30,6 +30,7 @@ type ArticleRow = {
 type ProjectRow = {
   id: string;
   external_id: string | null;
+  slug: string | null;
   name: string;
   developer: string | null;
   capacity_mw: number | null;
@@ -43,7 +44,15 @@ type ProjectRow = {
   status: string | null;
   cod: string | null;
   description: string | null;
+  owner: string | null;
+  operator: string | null;
+  chemistry: string | null;
+  use_case: string | null;
+  offtaker: string | null;
+  source_urls: string[] | null;
+  last_verified_at: string | null;
 };
+
 
 function mapArticle(r: ArticleRow): Article {
   const published = r.published_at ? new Date(r.published_at).getTime() : Date.now();
@@ -72,6 +81,7 @@ function mapArticle(r: ArticleRow): Article {
 function mapProject(r: ProjectRow): Project {
   return {
     id: r.external_id ?? r.id,
+    slug: r.slug ?? undefined,
     name: r.name,
     developer: r.developer ?? "",
     capacityMw: Number(r.capacity_mw ?? 0),
@@ -85,6 +95,13 @@ function mapProject(r: ProjectRow): Project {
     status: (r.status as Project["status"]) ?? "Permitting",
     cod: r.cod ?? "",
     description: r.description ?? undefined,
+    owner: r.owner ?? undefined,
+    operator: r.operator ?? undefined,
+    chemistry: r.chemistry ?? undefined,
+    useCase: r.use_case ?? undefined,
+    offtaker: r.offtaker ?? undefined,
+    sourceUrls: r.source_urls ?? [],
+    lastVerifiedAt: r.last_verified_at ?? undefined,
   };
 }
 
@@ -92,7 +109,7 @@ const ARTICLE_COLS =
   "id,slug,headline,summary,content,why_it_matters,category,source_name,source_domain,author,read_minutes,verified,is_breaking,tags,region,also_reported_by,related_project_ids,published_at";
 
 const PROJECT_COLS =
-  "id,external_id,name,developer,capacity_mw,capacity_mwh,technology,location,country,region,lat,lng,status,cod,description";
+  "id,external_id,slug,name,developer,capacity_mw,capacity_mwh,technology,location,country,region,lat,lng,status,cod,description,owner,operator,chemistry,use_case,offtaker,source_urls,last_verified_at";
 
 export async function fetchArticles(): Promise<Article[]> {
   const { data, error } = await supabase
@@ -134,6 +151,23 @@ export async function fetchProjectByExternalId(extId: string): Promise<Project |
   return data ? mapProject(data as ProjectRow) : null;
 }
 
+export async function fetchProjectBySlugOrExternalId(key: string): Promise<Project | null> {
+  // Try slug first, then external_id as fallback for legacy URLs
+  const { data: bySlug } = await supabase
+    .from("projects")
+    .select(PROJECT_COLS)
+    .eq("slug", key)
+    .maybeSingle();
+  if (bySlug) return mapProject(bySlug as ProjectRow);
+  const { data: byExt, error } = await supabase
+    .from("projects")
+    .select(PROJECT_COLS)
+    .eq("external_id", key)
+    .maybeSingle();
+  if (error) throw error;
+  return byExt ? mapProject(byExt as ProjectRow) : null;
+}
+
 export const articlesQuery = () =>
   queryOptions({ queryKey: ["articles"], queryFn: fetchArticles, staleTime: 60_000 });
 
@@ -153,3 +187,11 @@ export const projectByExternalIdQuery = (id: string) =>
     queryFn: () => fetchProjectByExternalId(id),
     staleTime: 5 * 60_000,
   });
+
+export const projectBySlugQuery = (key: string) =>
+  queryOptions({
+    queryKey: ["project-slug", key],
+    queryFn: () => fetchProjectBySlugOrExternalId(key),
+    staleTime: 5 * 60_000,
+  });
+
