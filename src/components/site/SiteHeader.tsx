@@ -10,10 +10,10 @@ const navItems = [
   { label: "News", to: "/news" },
   { label: "Data", to: "/data" },
   { label: "Projects", to: "/projects" },
+  { label: "Companies", to: "/companies" },
   { label: "Markets", to: "/markets" },
-  { label: "Policy", to: "/policy" },
-  { label: "Technology", to: "/technology" },
   { label: "Regions", to: "/regions" },
+  { label: "Watchlist", to: "/watchlist" },
   { label: "Newsletter", to: "/newsletter" },
 ] as const;
 
