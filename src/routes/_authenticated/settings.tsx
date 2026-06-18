@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -89,6 +89,17 @@ function Settings() {
             {saving ? "Saving…" : "Save changes"}
           </button>
         </form>
+
+        <div className="mt-6 rounded-lg border border-border bg-surface/40 p-6">
+          <div className="text-sm font-medium text-foreground">Billing & subscription</div>
+          <p className="mt-1 text-xs text-muted-foreground">Upgrade your plan or manage your subscription.</p>
+          <Link
+            to="/billing"
+            className="mt-3 inline-block rounded-md border border-border px-4 py-2 text-sm text-foreground hover:border-cyan-accent hover:text-cyan-accent"
+          >
+            Go to billing
+          </Link>
+        </div>
 
         <div className="mt-6 rounded-lg border border-border bg-surface/40 p-6">
           <div className="text-sm font-medium text-foreground">Sign out</div>
