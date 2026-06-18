@@ -118,6 +118,7 @@ export function SiteHeader() {
               <Command className="h-2.5 w-2.5" /> K
             </kbd>
           </button>
+          <NotificationBell />
           <UserMenu />
           <Link
             to="/subscribe"
