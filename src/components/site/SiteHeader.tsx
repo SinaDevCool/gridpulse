@@ -182,8 +182,18 @@ export function SiteHeader() {
               <kbd className="text-[10px] text-muted-foreground font-mono-data">ESC</kbd>
             </div>
             <div className="max-h-[60vh] overflow-y-auto p-2">
-              {results.articles.length === 0 && results.projects.length === 0 && (
-                <div className="px-4 py-8 text-center text-sm text-muted-foreground">No results for "{query}"</div>
+              {debouncedQ && searching && (
+                <div className="flex items-center justify-center gap-2 px-4 py-6 text-sm text-muted-foreground">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Searching…
+                </div>
+              )}
+              {!searching && debouncedQ && results.total === 0 && (
+                <div className="px-4 py-8 text-center text-sm text-muted-foreground">No results for &ldquo;{debouncedQ}&rdquo;</div>
+              )}
+              {!debouncedQ && (
+                <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                  Search articles, projects, companies, technologies, regions…
+                </div>
               )}
               {results.articles.length > 0 && (
                 <div className="mb-2">
@@ -195,7 +205,7 @@ export function SiteHeader() {
                       className="block w-full text-left rounded-md px-3 py-2 text-sm hover:bg-surface-elevated"
                     >
                       <div className="text-foreground">{a.headline}</div>
-                      <div className="text-[11px] text-muted-foreground font-mono-data">{a.source.name} · {a.region}</div>
+                      <div className="text-[11px] text-muted-foreground font-mono-data">{a.source_name ?? "GridPulse"} · {a.region}</div>
                     </button>
                   ))}
                 </div>
@@ -210,9 +220,19 @@ export function SiteHeader() {
                       className="block w-full text-left rounded-md px-3 py-2 text-sm hover:bg-surface-elevated"
                     >
                       <div className="text-foreground">{p.name}</div>
-                      <div className="text-[11px] text-muted-foreground font-mono-data">{p.developer} · {p.capacityMw} MW · {p.location}</div>
+                      <div className="text-[11px] text-muted-foreground font-mono-data">{p.developer ?? "—"} · {p.capacity_mw ?? "—"} MW · {p.location ?? "—"}</div>
                     </button>
                   ))}
+                </div>
+              )}
+              {debouncedQ && results.total > 0 && (
+                <div className="border-t border-border mt-2 pt-2">
+                  <button
+                    onClick={() => { setSearchOpen(false); navigate({ to: "/search", search: { q: debouncedQ } }); }}
+                    className="block w-full rounded-md px-3 py-2 text-center text-xs font-medium text-cyan-accent hover:bg-cyan-accent/10"
+                  >
+                    View all results for &ldquo;{debouncedQ}&rdquo; →
+                  </button>
                 </div>
               )}
             </div>
