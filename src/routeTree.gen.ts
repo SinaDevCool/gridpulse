@@ -31,6 +31,7 @@ import { Route as AuthenticatedBillingRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 import { Route as ApiPublicNewsIngestRouteImport } from './routes/api/public/news/ingest'
+import { Route as ApiPublicAlertsRunRouteImport } from './routes/api/public/alerts/run'
 
 const TechnologyRoute = TechnologyRouteImport.update({
   id: '/technology',
@@ -142,6 +143,11 @@ const ApiPublicNewsIngestRoute = ApiPublicNewsIngestRouteImport.update({
   path: '/api/public/news/ingest',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicAlertsRunRoute = ApiPublicAlertsRunRouteImport.update({
+  id: '/api/public/alerts/run',
+  path: '/api/public/alerts/run',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -163,6 +169,7 @@ export interface FileRoutesByFullPath {
   '/checkout/return': typeof CheckoutReturnRoute
   '/news/$slug': typeof NewsSlugRoute
   '/projects/$id': typeof ProjectsIdRoute
+  '/api/public/alerts/run': typeof ApiPublicAlertsRunRoute
   '/api/public/news/ingest': typeof ApiPublicNewsIngestRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
@@ -186,6 +193,7 @@ export interface FileRoutesByTo {
   '/checkout/return': typeof CheckoutReturnRoute
   '/news/$slug': typeof NewsSlugRoute
   '/projects/$id': typeof ProjectsIdRoute
+  '/api/public/alerts/run': typeof ApiPublicAlertsRunRoute
   '/api/public/news/ingest': typeof ApiPublicNewsIngestRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
@@ -211,6 +219,7 @@ export interface FileRoutesById {
   '/checkout/return': typeof CheckoutReturnRoute
   '/news/$slug': typeof NewsSlugRoute
   '/projects/$id': typeof ProjectsIdRoute
+  '/api/public/alerts/run': typeof ApiPublicAlertsRunRoute
   '/api/public/news/ingest': typeof ApiPublicNewsIngestRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
@@ -236,6 +245,7 @@ export interface FileRouteTypes {
     | '/checkout/return'
     | '/news/$slug'
     | '/projects/$id'
+    | '/api/public/alerts/run'
     | '/api/public/news/ingest'
     | '/api/public/payments/webhook'
   fileRoutesByTo: FileRoutesByTo
@@ -259,6 +269,7 @@ export interface FileRouteTypes {
     | '/checkout/return'
     | '/news/$slug'
     | '/projects/$id'
+    | '/api/public/alerts/run'
     | '/api/public/news/ingest'
     | '/api/public/payments/webhook'
   id:
@@ -283,6 +294,7 @@ export interface FileRouteTypes {
     | '/checkout/return'
     | '/news/$slug'
     | '/projects/$id'
+    | '/api/public/alerts/run'
     | '/api/public/news/ingest'
     | '/api/public/payments/webhook'
   fileRoutesById: FileRoutesById
@@ -302,6 +314,7 @@ export interface RootRouteChildren {
   SubscribeRoute: typeof SubscribeRoute
   TechnologyRoute: typeof TechnologyRoute
   CheckoutReturnRoute: typeof CheckoutReturnRoute
+  ApiPublicAlertsRunRoute: typeof ApiPublicAlertsRunRoute
   ApiPublicNewsIngestRoute: typeof ApiPublicNewsIngestRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
 }
@@ -462,6 +475,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicNewsIngestRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/alerts/run': {
+      id: '/api/public/alerts/run'
+      path: '/api/public/alerts/run'
+      fullPath: '/api/public/alerts/run'
+      preLoaderRoute: typeof ApiPublicAlertsRunRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -519,6 +539,7 @@ const rootRouteChildren: RootRouteChildren = {
   SubscribeRoute: SubscribeRoute,
   TechnologyRoute: TechnologyRoute,
   CheckoutReturnRoute: CheckoutReturnRoute,
+  ApiPublicAlertsRunRoute: ApiPublicAlertsRunRoute,
   ApiPublicNewsIngestRoute: ApiPublicNewsIngestRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
 }
