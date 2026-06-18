@@ -1,16 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
-import { marketRegions, projects, articles } from "@/lib/gridpulse-data";
+import { marketRegions } from "@/lib/gridpulse-data";
+import { projectsQuery, articlesQuery } from "@/lib/gridpulse-repo";
 
-export const Route = createFileRoute("/regions")({
-  head: () => ({
-    meta: [
-      { title: "Regions — GridPulse" },
-      { name: "description", content: "Browse grid-scale battery storage activity by world region." },
-    ],
-  }),
-  component: () => (
+function RegionsPage() {
+  const { data: projects = [] } = useQuery(projectsQuery());
+  const { data: articles = [] } = useQuery(articlesQuery());
+  return (
     <div className="min-h-screen bg-background text-foreground">
       <SiteHeader />
       <main className="mx-auto max-w-[1100px] px-4 py-12 lg:px-8">
@@ -35,5 +33,15 @@ export const Route = createFileRoute("/regions")({
       </main>
       <SiteFooter />
     </div>
-  ),
+  );
+}
+
+export const Route = createFileRoute("/regions")({
+  head: () => ({
+    meta: [
+      { title: "Regions — GridPulse" },
+      { name: "description", content: "Browse grid-scale battery storage activity by world region." },
+    ],
+  }),
+  component: RegionsPage,
 });
