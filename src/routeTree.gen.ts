@@ -28,7 +28,9 @@ import { Route as CheckoutReturnRouteImport } from './routes/checkout.return'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedBillingRouteImport } from './routes/_authenticated/billing'
+import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
+import { Route as ApiPublicNewsIngestRouteImport } from './routes/api/public/news/ingest'
 
 const TechnologyRoute = TechnologyRouteImport.update({
   id: '/technology',
@@ -124,12 +126,22 @@ const AuthenticatedBillingRoute = AuthenticatedBillingRouteImport.update({
   path: '/billing',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const ApiPublicPaymentsWebhookRoute =
   ApiPublicPaymentsWebhookRouteImport.update({
     id: '/api/public/payments/webhook',
     path: '/api/public/payments/webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicNewsIngestRoute = ApiPublicNewsIngestRouteImport.update({
+  id: '/api/public/news/ingest',
+  path: '/api/public/news/ingest',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -144,12 +156,14 @@ export interface FileRoutesByFullPath {
   '/regions': typeof RegionsRoute
   '/subscribe': typeof SubscribeRoute
   '/technology': typeof TechnologyRoute
+  '/admin': typeof AuthenticatedAdminRoute
   '/billing': typeof AuthenticatedBillingRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/news/$slug': typeof NewsSlugRoute
   '/projects/$id': typeof ProjectsIdRoute
+  '/api/public/news/ingest': typeof ApiPublicNewsIngestRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRoutesByTo {
@@ -165,12 +179,14 @@ export interface FileRoutesByTo {
   '/regions': typeof RegionsRoute
   '/subscribe': typeof SubscribeRoute
   '/technology': typeof TechnologyRoute
+  '/admin': typeof AuthenticatedAdminRoute
   '/billing': typeof AuthenticatedBillingRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/news/$slug': typeof NewsSlugRoute
   '/projects/$id': typeof ProjectsIdRoute
+  '/api/public/news/ingest': typeof ApiPublicNewsIngestRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRoutesById {
@@ -188,12 +204,14 @@ export interface FileRoutesById {
   '/regions': typeof RegionsRoute
   '/subscribe': typeof SubscribeRoute
   '/technology': typeof TechnologyRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/billing': typeof AuthenticatedBillingRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/news/$slug': typeof NewsSlugRoute
   '/projects/$id': typeof ProjectsIdRoute
+  '/api/public/news/ingest': typeof ApiPublicNewsIngestRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
 export interface FileRouteTypes {
@@ -211,12 +229,14 @@ export interface FileRouteTypes {
     | '/regions'
     | '/subscribe'
     | '/technology'
+    | '/admin'
     | '/billing'
     | '/dashboard'
     | '/settings'
     | '/checkout/return'
     | '/news/$slug'
     | '/projects/$id'
+    | '/api/public/news/ingest'
     | '/api/public/payments/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -232,12 +252,14 @@ export interface FileRouteTypes {
     | '/regions'
     | '/subscribe'
     | '/technology'
+    | '/admin'
     | '/billing'
     | '/dashboard'
     | '/settings'
     | '/checkout/return'
     | '/news/$slug'
     | '/projects/$id'
+    | '/api/public/news/ingest'
     | '/api/public/payments/webhook'
   id:
     | '__root__'
@@ -254,12 +276,14 @@ export interface FileRouteTypes {
     | '/regions'
     | '/subscribe'
     | '/technology'
+    | '/_authenticated/admin'
     | '/_authenticated/billing'
     | '/_authenticated/dashboard'
     | '/_authenticated/settings'
     | '/checkout/return'
     | '/news/$slug'
     | '/projects/$id'
+    | '/api/public/news/ingest'
     | '/api/public/payments/webhook'
   fileRoutesById: FileRoutesById
 }
@@ -278,6 +302,7 @@ export interface RootRouteChildren {
   SubscribeRoute: typeof SubscribeRoute
   TechnologyRoute: typeof TechnologyRoute
   CheckoutReturnRoute: typeof CheckoutReturnRoute
+  ApiPublicNewsIngestRoute: typeof ApiPublicNewsIngestRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
 }
 
@@ -416,6 +441,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBillingRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin': {
+      id: '/_authenticated/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthenticatedAdminRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/payments/webhook': {
       id: '/api/public/payments/webhook'
       path: '/api/public/payments/webhook'
@@ -423,16 +455,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicPaymentsWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/news/ingest': {
+      id: '/api/public/news/ingest'
+      path: '/api/public/news/ingest'
+      fullPath: '/api/public/news/ingest'
+      preLoaderRoute: typeof ApiPublicNewsIngestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedBillingRoute: typeof AuthenticatedBillingRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedBillingRoute: AuthenticatedBillingRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
@@ -478,6 +519,7 @@ const rootRouteChildren: RootRouteChildren = {
   SubscribeRoute: SubscribeRoute,
   TechnologyRoute: TechnologyRoute,
   CheckoutReturnRoute: CheckoutReturnRoute,
+  ApiPublicNewsIngestRoute: ApiPublicNewsIngestRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
 }
 export const routeTree = rootRouteImport
