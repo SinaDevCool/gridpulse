@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TechnologyRouteImport } from './routes/technology'
 import { Route as SubscribeRouteImport } from './routes/subscribe'
+import { Route as SearchRouteImport } from './routes/search'
 import { Route as RegionsRouteImport } from './routes/regions'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as PolicyRouteImport } from './routes/policy'
@@ -41,6 +42,11 @@ const TechnologyRoute = TechnologyRouteImport.update({
 const SubscribeRoute = SubscribeRouteImport.update({
   id: '/subscribe',
   path: '/subscribe',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SearchRoute = SearchRouteImport.update({
+  id: '/search',
+  path: '/search',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RegionsRoute = RegionsRouteImport.update({
@@ -160,6 +166,7 @@ export interface FileRoutesByFullPath {
   '/policy': typeof PolicyRoute
   '/projects': typeof ProjectsRouteWithChildren
   '/regions': typeof RegionsRoute
+  '/search': typeof SearchRoute
   '/subscribe': typeof SubscribeRoute
   '/technology': typeof TechnologyRoute
   '/admin': typeof AuthenticatedAdminRoute
@@ -184,6 +191,7 @@ export interface FileRoutesByTo {
   '/policy': typeof PolicyRoute
   '/projects': typeof ProjectsRouteWithChildren
   '/regions': typeof RegionsRoute
+  '/search': typeof SearchRoute
   '/subscribe': typeof SubscribeRoute
   '/technology': typeof TechnologyRoute
   '/admin': typeof AuthenticatedAdminRoute
@@ -210,6 +218,7 @@ export interface FileRoutesById {
   '/policy': typeof PolicyRoute
   '/projects': typeof ProjectsRouteWithChildren
   '/regions': typeof RegionsRoute
+  '/search': typeof SearchRoute
   '/subscribe': typeof SubscribeRoute
   '/technology': typeof TechnologyRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
@@ -236,6 +245,7 @@ export interface FileRouteTypes {
     | '/policy'
     | '/projects'
     | '/regions'
+    | '/search'
     | '/subscribe'
     | '/technology'
     | '/admin'
@@ -260,6 +270,7 @@ export interface FileRouteTypes {
     | '/policy'
     | '/projects'
     | '/regions'
+    | '/search'
     | '/subscribe'
     | '/technology'
     | '/admin'
@@ -285,6 +296,7 @@ export interface FileRouteTypes {
     | '/policy'
     | '/projects'
     | '/regions'
+    | '/search'
     | '/subscribe'
     | '/technology'
     | '/_authenticated/admin'
@@ -311,6 +323,7 @@ export interface RootRouteChildren {
   PolicyRoute: typeof PolicyRoute
   ProjectsRoute: typeof ProjectsRouteWithChildren
   RegionsRoute: typeof RegionsRoute
+  SearchRoute: typeof SearchRoute
   SubscribeRoute: typeof SubscribeRoute
   TechnologyRoute: typeof TechnologyRoute
   CheckoutReturnRoute: typeof CheckoutReturnRoute
@@ -333,6 +346,13 @@ declare module '@tanstack/react-router' {
       path: '/subscribe'
       fullPath: '/subscribe'
       preLoaderRoute: typeof SubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/search': {
+      id: '/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof SearchRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/regions': {
@@ -536,6 +556,7 @@ const rootRouteChildren: RootRouteChildren = {
   PolicyRoute: PolicyRoute,
   ProjectsRoute: ProjectsRouteWithChildren,
   RegionsRoute: RegionsRoute,
+  SearchRoute: SearchRoute,
   SubscribeRoute: SubscribeRoute,
   TechnologyRoute: TechnologyRoute,
   CheckoutReturnRoute: CheckoutReturnRoute,
