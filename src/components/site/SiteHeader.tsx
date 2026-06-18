@@ -177,6 +177,12 @@ export function SiteHeader() {
                 autoFocus
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && query.trim()) {
+                    setSearchOpen(false);
+                    navigate({ to: "/search", search: { q: query.trim() } });
+                  }
+                }}
                 placeholder="Search articles, projects, companies…"
                 className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
               />
