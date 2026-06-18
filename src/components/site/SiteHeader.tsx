@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Battery, Search, Command, Menu, X } from "lucide-react";
 import { tickerItems, articles, projects } from "@/lib/gridpulse-data";
+import { UserMenu } from "@/components/site/UserMenu";
 
 const navItems = [
   { label: "News", to: "/news" },
@@ -97,12 +98,7 @@ export function SiteHeader() {
               <Command className="h-2.5 w-2.5" /> K
             </kbd>
           </button>
-          <Link
-            to="/auth"
-            className="hidden sm:inline-flex text-sm text-muted-foreground hover:text-foreground"
-          >
-            Sign in
-          </Link>
+          <UserMenu />
           <Link
             to="/subscribe"
             className="inline-flex items-center rounded-md bg-cyan-accent px-3.5 py-1.5 text-sm font-medium text-primary-foreground hover:brightness-110 transition"
