@@ -5,7 +5,7 @@ import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { ArticleRow, CategoryBadge } from "@/components/site/ArticleCard";
 import { TimeAgo } from "@/components/site/TimeAgo";
-import { articles, getArticleBySlug, getProjectById } from "@/lib/gridpulse-data";
+import { articles, getArticleBySlug, getProjectById, type Project } from "@/lib/gridpulse-data";
 
 export const Route = createFileRoute("/news/$slug")({
   loader: ({ params }) => {
@@ -41,7 +41,7 @@ function ArticlePage() {
   const { article } = Route.useLoaderData();
 
   const related = articles.filter((a) => a.id !== article.id && a.category === article.category).slice(0, 3);
-  const relatedProjects = (article.relatedProjectIds ?? []).map(getProjectById).filter((p): p is NonNullable<typeof p> => Boolean(p));
+  const relatedProjects: Project[] = (article.relatedProjectIds ?? []).map(getProjectById).filter((p): p is Project => Boolean(p));
 
   function share(kind: "twitter" | "linkedin" | "copy") {
     const url = typeof window !== "undefined" ? window.location.href : "";
@@ -129,7 +129,7 @@ function ArticlePage() {
           <section className="mt-12">
             <h2 className="font-display text-xl font-bold tracking-tight">Related projects</h2>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              {relatedProjects.map((p) => p && (
+              {relatedProjects.map((p: Project) => (
                 <Link key={p.id} to="/projects/$id" params={{ id: p.id }} className="glass-card rounded-lg p-4 hover-lift">
                   <div className="text-sm font-medium text-foreground">{p.name}</div>
                   <div className="mt-1 text-[11px] text-muted-foreground font-mono-data">
