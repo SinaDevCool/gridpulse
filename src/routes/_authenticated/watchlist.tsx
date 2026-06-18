@@ -100,13 +100,13 @@ function WatchlistPage() {
               ) : (
                 <ul className="divide-y divide-border/50 rounded-lg border border-border">
                   {projects.map((f) => (
-                    <li key={f.id} className="flex items-center justify-between px-4 py-3">
-                      <Link to="/projects/$slug" params={{ slug: f.target_key }} className="text-sm font-medium hover:text-cyan-accent">
+                    <li key={f.id} className="flex items-center justify-between gap-3 px-4 py-3">
+                      <Link to="/projects/$slug" params={{ slug: f.target_key }} className="min-w-0 truncate text-sm font-medium hover:text-cyan-accent">
                         {f.target_label ?? f.target_key}
                       </Link>
                       <button
                         onClick={() => rmMut.mutate({ target_type: "project", target_key: f.target_key })}
-                        className="text-muted-foreground hover:text-destructive"
+                        className="shrink-0 text-muted-foreground hover:text-destructive"
                         aria-label="Unfollow"
                       >
                         <X className="h-4 w-4" />
