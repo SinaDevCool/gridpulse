@@ -1,24 +1,36 @@
 import { useState } from "react";
 import { Mail } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export function NewsletterForm({ compact = false }: { compact?: boolean }) {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
-    const trimmed = email.trim();
+    const trimmed = email.trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
       toast.error("Please enter a valid email address.");
       return;
     }
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      setEmail("");
-      toast.success("You're on the list — first brief arrives tomorrow at 7AM ET.");
-    }, 600);
+    const { error } = await supabase
+      .from("newsletter_subscribers")
+      .insert({ email: trimmed });
+    setLoading(false);
+    if (error) {
+      // Unique violation = already subscribed (treat as success for UX).
+      if (error.code === "23505") {
+        setEmail("");
+        toast.success("You're already on the list — see you at 7AM ET.");
+        return;
+      }
+      toast.error("Couldn't subscribe right now. Please try again.");
+      return;
+    }
+    setEmail("");
+    toast.success("You're on the list — first brief arrives tomorrow at 7AM ET.");
   }
 
   return (
