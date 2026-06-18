@@ -12,6 +12,7 @@ const navItems = [
   { label: "Projects", to: "/projects" },
   { label: "Companies", to: "/companies" },
   { label: "Markets", to: "/markets" },
+  { label: "Analytics", to: "/analytics" },
   { label: "Regions", to: "/regions" },
   { label: "Watchlist", to: "/watchlist" },
   { label: "Newsletter", to: "/newsletter" },
