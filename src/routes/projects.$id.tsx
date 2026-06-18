@@ -1,13 +1,18 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { ArrowLeft, MapPin } from "lucide-react";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { ArticleRow } from "@/components/site/ArticleCard";
-import { articles, getProjectById, projects } from "@/lib/gridpulse-data";
+import {
+  articlesQuery,
+  projectByExternalIdQuery,
+  projectsQuery,
+} from "@/lib/gridpulse-repo";
 
 export const Route = createFileRoute("/projects/$id")({
-  loader: ({ params }) => {
-    const project = getProjectById(params.id);
+  loader: async ({ params, context }) => {
+    const project = await context.queryClient.ensureQueryData(projectByExternalIdQuery(params.id));
     if (!project) throw notFound();
     return { project };
   },
@@ -19,6 +24,17 @@ export const Route = createFileRoute("/projects/$id")({
         ]
       : [],
   }),
+  errorComponent: ({ error }) => (
+    <div className="min-h-screen bg-background text-foreground">
+      <SiteHeader />
+      <div className="mx-auto max-w-2xl px-4 py-24 text-center">
+        <h1 className="font-display text-2xl font-bold">Couldn't load this project</h1>
+        <p className="mt-2 text-sm text-muted-foreground">{error.message}</p>
+        <Link to="/projects" className="mt-6 inline-block text-cyan-accent">← Back to projects</Link>
+      </div>
+      <SiteFooter />
+    </div>
+  ),
   notFoundComponent: () => (
     <div className="min-h-screen bg-background text-foreground">
       <SiteHeader />
@@ -33,7 +49,11 @@ export const Route = createFileRoute("/projects/$id")({
 });
 
 function ProjectDetail() {
-  const { project: p } = Route.useLoaderData();
+  const { id } = Route.useParams();
+  const { data: p } = useSuspenseQuery(projectByExternalIdQuery(id));
+  const { data: articles = [] } = useSuspenseQuery(articlesQuery());
+  const { data: projects = [] } = useSuspenseQuery(projectsQuery());
+  if (!p) throw notFound();
   const related = articles.filter((a) => a.relatedProjectIds?.includes(p.id) || a.region === p.region).slice(0, 4);
   const similar = projects.filter((x) => x.id !== p.id && x.technology === p.technology).slice(0, 4);
 
