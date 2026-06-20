@@ -104,8 +104,13 @@ function ProjectsPage() {
         <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-accent">Project Database</div>
         <h1 className="mt-2 font-display text-3xl md:text-5xl font-bold tracking-tight">Global BESS projects</h1>
         <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
-          {isLoading ? "Loading…" : `Live · ${projects.length} verified utility-scale projects.`} Click any row for full specs and sources.
+          {isLoading ? "Loading…" : `Live · ${projects.length} tracked utility-scale projects.`} Each project carries provenance fields; rows tagged "Demo" or "Seed" are not yet verified live records. Click any row for full specs and sources.
         </p>
+        {!isLoading && projects.some((p) => p.verificationStatus === "demo") && (
+          <div className="mt-3 rounded-md border border-amber-accent/40 bg-amber-accent/10 p-3 text-xs text-amber-accent">
+            <strong className="uppercase tracking-wider">Heads-up:</strong> {projects.filter((p) => p.verificationStatus === "demo").length} of {projects.length} projects in the database are manual seed records for demo purposes. Verified-source ingestion is on the roadmap.
+          </div>
+        )}
 
         <div className="mt-6 grid gap-3 md:grid-cols-3">
           <Stat label="Projects" value={list.length.toString()} />

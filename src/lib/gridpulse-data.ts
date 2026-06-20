@@ -28,6 +28,12 @@ export interface Article {
   isBreaking?: boolean;
   alsoReportedBy?: string[];
   relatedProjectIds?: string[];
+  // Provenance
+  sourceUrl?: string | null;
+  sourceType?: string; // 'rss' | 'manual' | 'seed'
+  fetchedAt?: string | null;
+  lastVerifiedAt?: string | null;
+  verificationStatus?: string; // 'verified' | 'unverified' | 'demo'
 }
 
 export interface Project {
@@ -54,6 +60,10 @@ export interface Project {
   offtaker?: string;
   sourceUrls?: string[];
   lastVerifiedAt?: string;
+  // Provenance
+  sourceType?: string; // 'rss' | 'manual' | 'seed'
+  fetchedAt?: string | null;
+  verificationStatus?: string; // 'verified' | 'unverified' | 'demo'
 }
 
 

@@ -77,7 +77,8 @@ function HomePage() {
           </p>
           <div className="mt-10 grid gap-4 md:grid-cols-3">
             {heroStats.map((s) => (
-              <div key={s.label} className="glass-card rounded-xl p-5 hover-lift">
+              <div key={s.label} className="glass-card rounded-xl p-5 hover-lift relative">
+                <span className="absolute right-3 top-3 rounded border border-amber-accent/40 bg-amber-accent/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-amber-accent" title="Reference industry figure — not a live feed">Demo</span>
                 <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">{s.label}</div>
                 <div className="mt-3 flex items-baseline gap-1.5">
                   <span className="font-display text-4xl font-bold text-foreground">
@@ -174,7 +175,9 @@ function MarketPulseWidget() {
         <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-accent flex items-center gap-1.5">
           <Activity className="h-3.5 w-3.5" /> Market Pulse
         </div>
-        <span className="inline-flex h-1.5 w-1.5 rounded-full bg-green-accent animate-pulse" />
+        <span className="rounded border border-amber-accent/40 bg-amber-accent/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-amber-accent" title="Reference values — not a live market feed">
+          Demo
+        </span>
       </div>
       <div className="mt-4 space-y-4">
         <Metric label="Global operational" value={<><CountUp value={412.8} decimals={1} /> GWh</>} delta="+18.4% YoY" up />
@@ -207,7 +210,10 @@ function Metric({ label, value, delta, up }: { label: string; value: React.React
 function RegionMixWidget() {
   return (
     <Link to="/regions" className="block glass-card rounded-xl p-5 hover-lift cursor-pointer">
-      <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-accent">Regional Capacity Mix</div>
+      <div className="flex items-center justify-between">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-accent">Regional Capacity Mix</div>
+        <span className="rounded border border-amber-accent/40 bg-amber-accent/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-amber-accent">Demo</span>
+      </div>
       <div className="mt-4 space-y-2.5">
         {marketRegions.map((r) => (
           <div key={r.name}>

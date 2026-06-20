@@ -5,6 +5,7 @@ import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { ArticleRow } from "@/components/site/ArticleCard";
 import { FollowButton } from "@/components/site/FollowButton";
+import { DemoBadge, provenanceVariant } from "@/components/site/DemoBadge";
 import {
   articlesQuery,
   projectBySlugQuery,
@@ -107,7 +108,8 @@ function ProjectDetail() {
           <span className="rounded border border-cyan-accent/40 bg-cyan-accent/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-cyan-accent">
             {p.status}
           </span>
-          {verifiedDate && (
+          <DemoBadge variant={provenanceVariant(p.sourceType, p.verificationStatus)} />
+          {verifiedDate && p.verificationStatus !== "demo" && (
             <span className="inline-flex items-center gap-1 rounded border border-green-accent/40 bg-green-accent/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-green-accent">
               <ShieldCheck className="h-3 w-3" /> Verified {verifiedDate}
             </span>
