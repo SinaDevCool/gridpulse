@@ -70,7 +70,10 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-border/60 glass-card backdrop-blur-xl">
       <div className="relative w-full border-b border-border/40 bg-background/40 overflow-hidden h-[30px]">
-        <div className="absolute left-0 top-0 flex animate-ticker whitespace-nowrap py-1.5 text-[11px] font-mono-data">
+        <div className="absolute left-0 top-0 z-10 h-full px-2 flex items-center bg-background/80 backdrop-blur-sm text-[9px] font-semibold tracking-wider text-amber-accent uppercase border-r border-border/40" title="Reference / demo market metrics — not live tickers">
+          Demo metrics
+        </div>
+        <div className="absolute left-0 top-0 flex animate-ticker whitespace-nowrap py-1.5 pl-[110px] text-[11px] font-mono-data">
           {[...tickerItems, ...tickerItems].map((t, i) => (
             <div key={i} className="flex items-center gap-2 px-6 shrink-0">
               <span className="text-muted-foreground tracking-wider">{t.label}</span>
