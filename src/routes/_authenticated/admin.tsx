@@ -167,6 +167,42 @@ function AdminPage() {
           )}
         </div>
 
+        <section className="mt-12">
+          <h2 className="font-semibold mb-3">Data audit — live vs. demo / seed</h2>
+          <p className="text-sm text-muted-foreground mb-4 max-w-2xl">
+            Provenance snapshot of every row in <code>articles</code> and <code>projects</code>. Rows tagged
+            <code className="mx-1">seed</code>/<code>demo</code> are not live-sourced and are labeled across the site.
+          </p>
+          {auditQ.isLoading ? (
+            <div className="text-sm text-muted-foreground">Loading audit…</div>
+          ) : auditQ.error ? (
+            <div className="text-sm text-destructive">{(auditQ.error as Error).message}</div>
+          ) : auditQ.data ? (
+            <div className="grid gap-4 md:grid-cols-2">
+              <AuditCard
+                title="Articles"
+                total={auditQ.data.articles.total}
+                bySourceType={auditQ.data.articles.bySourceType}
+                byVerification={auditQ.data.articles.byVerification}
+                withSource={auditQ.data.articles.withSourceUrl}
+                withoutSource={auditQ.data.articles.withoutSourceUrl}
+                lastEvent={auditQ.data.articles.latestFetchedAt}
+                lastEventLabel="Latest fetched_at"
+              />
+              <AuditCard
+                title="Projects"
+                total={auditQ.data.projects.total}
+                bySourceType={auditQ.data.projects.bySourceType}
+                byVerification={auditQ.data.projects.byVerification}
+                withSource={auditQ.data.projects.withSourceUrls}
+                withoutSource={auditQ.data.projects.withoutSourceUrls}
+                lastEvent={auditQ.data.projects.latestVerifiedAt}
+                lastEventLabel="Latest last_verified_at"
+              />
+            </div>
+          ) : null}
+        </section>
+
         <div className="mt-8 text-sm">
           <Link to="/news" className="text-cyan-accent hover:underline">
             → View news feed
@@ -174,6 +210,81 @@ function AdminPage() {
         </div>
       </main>
       <SiteFooter />
+    </div>
+  );
+}
+
+function AuditCard({
+  title,
+  total,
+  bySourceType,
+  byVerification,
+  withSource,
+  withoutSource,
+  lastEvent,
+  lastEventLabel,
+}: {
+  title: string;
+  total: number;
+  bySourceType: Record<string, number>;
+  byVerification: Record<string, number>;
+  withSource: number;
+  withoutSource: number;
+  lastEvent: string | null;
+  lastEventLabel: string;
+}) {
+  return (
+    <div className="rounded-lg border border-border bg-surface/60 p-5">
+      <div className="flex items-baseline justify-between">
+        <h3 className="font-semibold">{title}</h3>
+        <span className="font-mono-data text-sm text-muted-foreground">{total} rows</span>
+      </div>
+      <div className="mt-4 grid gap-3 text-sm">
+        <BreakdownRow label="By source_type" entries={bySourceType} />
+        <BreakdownRow label="By verification_status" entries={byVerification} />
+        <div className="flex justify-between border-t border-border/40 pt-2 text-xs text-muted-foreground">
+          <span>With source URL(s)</span>
+          <span className="font-mono-data text-foreground">
+            {withSource} / {total - withSource - withoutSource + withSource + withoutSource > 0 ? total : total}
+            {" "}({total > 0 ? Math.round((withSource / total) * 100) : 0}%)
+          </span>
+        </div>
+        <div className="flex justify-between text-xs text-muted-foreground">
+          <span>{lastEventLabel}</span>
+          <span className="font-mono-data text-foreground">
+            {lastEvent ? new Date(lastEvent).toLocaleString() : "—"}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BreakdownRow({ label, entries }: { label: string; entries: Record<string, number> }) {
+  const keys = Object.keys(entries).sort();
+  return (
+    <div>
+      <div className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="mt-1 flex flex-wrap gap-1.5">
+        {keys.length === 0 ? (
+          <span className="text-xs text-muted-foreground">—</span>
+        ) : (
+          keys.map((k) => {
+            const isDemo = k === "demo" || k === "seed";
+            const isGood = k === "verified" || k === "rss";
+            const cls = isDemo
+              ? "border-amber-accent/40 bg-amber-accent/10 text-amber-accent"
+              : isGood
+                ? "border-green-accent/40 bg-green-accent/10 text-green-accent"
+                : "border-border bg-surface text-muted-foreground";
+            return (
+              <span key={k} className={`rounded border px-2 py-0.5 text-[11px] font-mono-data ${cls}`}>
+                {k}: {entries[k]}
+              </span>
+            );
+          })
+        )}
+      </div>
     </div>
   );
 }
