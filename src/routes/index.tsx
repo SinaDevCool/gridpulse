@@ -77,7 +77,8 @@ function HomePage() {
           </p>
           <div className="mt-10 grid gap-4 md:grid-cols-3">
             {heroStats.map((s) => (
-              <div key={s.label} className="glass-card rounded-xl p-5 hover-lift">
+              <div key={s.label} className="glass-card rounded-xl p-5 hover-lift relative">
+                <span className="absolute right-3 top-3 rounded border border-amber-accent/40 bg-amber-accent/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-amber-accent" title="Reference industry figure — not a live feed">Demo</span>
                 <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">{s.label}</div>
                 <div className="mt-3 flex items-baseline gap-1.5">
                   <span className="font-display text-4xl font-bold text-foreground">
