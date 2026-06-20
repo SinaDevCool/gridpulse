@@ -16,6 +16,7 @@ type ArticleRow = {
   category: string;
   source_name: string | null;
   source_domain: string | null;
+  source_url: string | null;
   author: string | null;
   read_minutes: number | null;
   verified: boolean | null;
@@ -25,6 +26,10 @@ type ArticleRow = {
   also_reported_by: string[] | null;
   related_project_ids: string[] | null;
   published_at: string | null;
+  source_type: string | null;
+  fetched_at: string | null;
+  last_verified_at: string | null;
+  verification_status: string | null;
 };
 
 type ProjectRow = {
@@ -51,6 +56,9 @@ type ProjectRow = {
   offtaker: string | null;
   source_urls: string[] | null;
   last_verified_at: string | null;
+  source_type: string | null;
+  fetched_at: string | null;
+  verification_status: string | null;
 };
 
 
@@ -75,6 +83,11 @@ function mapArticle(r: ArticleRow): Article {
     isBreaking: !!r.is_breaking,
     alsoReportedBy: r.also_reported_by ?? undefined,
     relatedProjectIds: r.related_project_ids ?? undefined,
+    sourceUrl: r.source_url,
+    sourceType: r.source_type ?? "manual",
+    fetchedAt: r.fetched_at,
+    lastVerifiedAt: r.last_verified_at,
+    verificationStatus: r.verification_status ?? "unverified",
   };
 }
 
@@ -102,14 +115,17 @@ function mapProject(r: ProjectRow): Project {
     offtaker: r.offtaker ?? undefined,
     sourceUrls: r.source_urls ?? [],
     lastVerifiedAt: r.last_verified_at ?? undefined,
+    sourceType: r.source_type ?? "manual",
+    fetchedAt: r.fetched_at,
+    verificationStatus: r.verification_status ?? "unverified",
   };
 }
 
 const ARTICLE_COLS =
-  "id,slug,headline,summary,content,why_it_matters,category,source_name,source_domain,author,read_minutes,verified,is_breaking,tags,region,also_reported_by,related_project_ids,published_at";
+  "id,slug,headline,summary,content,why_it_matters,category,source_name,source_domain,source_url,author,read_minutes,verified,is_breaking,tags,region,also_reported_by,related_project_ids,published_at,source_type,fetched_at,last_verified_at,verification_status";
 
 const PROJECT_COLS =
-  "id,external_id,slug,name,developer,capacity_mw,capacity_mwh,technology,location,country,region,lat,lng,status,cod,description,owner,operator,chemistry,use_case,offtaker,source_urls,last_verified_at";
+  "id,external_id,slug,name,developer,capacity_mw,capacity_mwh,technology,location,country,region,lat,lng,status,cod,description,owner,operator,chemistry,use_case,offtaker,source_urls,last_verified_at,source_type,fetched_at,verification_status";
 
 export async function fetchArticles(): Promise<Article[]> {
   const { data, error } = await supabase
