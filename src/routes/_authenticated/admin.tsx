@@ -8,6 +8,7 @@ import { SiteFooter } from "@/components/site/SiteFooter";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { runNewsIngestion, listIngestionRuns } from "@/utils/news.functions";
+import { getDataAudit, type DataAuditCounts } from "@/utils/data-audit.functions";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [{ title: "Admin — GridPulse" }] }),
