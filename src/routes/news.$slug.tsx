@@ -6,6 +6,7 @@ import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { ArticleRow, CategoryBadge } from "@/components/site/ArticleCard";
 import { TimeAgo } from "@/components/site/TimeAgo";
+import { DemoBadge, provenanceVariant } from "@/components/site/DemoBadge";
 import { type Project } from "@/lib/gridpulse-data";
 import { articleBySlugQuery, articlesQuery, projectsQuery } from "@/lib/gridpulse-repo";
 
