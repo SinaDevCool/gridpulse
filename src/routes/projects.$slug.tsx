@@ -5,6 +5,7 @@ import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { ArticleRow } from "@/components/site/ArticleCard";
 import { FollowButton } from "@/components/site/FollowButton";
+import { DemoBadge, provenanceVariant } from "@/components/site/DemoBadge";
 import {
   articlesQuery,
   projectBySlugQuery,
