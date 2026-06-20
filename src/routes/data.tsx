@@ -29,7 +29,11 @@ function DataPage() {
       <main className="mx-auto max-w-[1400px] px-4 py-12 lg:px-8">
         <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-accent">Market Data</div>
         <h1 className="mt-2 font-display text-3xl md:text-5xl font-bold tracking-tight">Global BESS dashboard</h1>
-        <p className="mt-3 text-sm text-muted-foreground">Demo data · sources include EIA, IEA, BNEF, Wood Mackenzie, and ISO interconnection queues.</p>
+        <div className="mt-4 rounded-md border border-amber-accent/40 bg-amber-accent/10 p-3 text-xs text-amber-accent">
+          <strong className="uppercase tracking-wider">Demo data</strong> — every chart on this page is illustrative reference data, not a live feed.
+          For live, database-backed aggregates see <a className="underline" href="/markets">/markets</a> and <a className="underline" href="/analytics">/analytics</a>.
+          Reference sources include EIA, IEA, BNEF, Wood Mackenzie, and ISO interconnection queues.
+        </div>
 
         <div className="mt-8 grid gap-4 md:grid-cols-4">
           <Stat label="Global operational" value={<><CountUp value={412.8} decimals={1} /> GWh</>} sub="+18.4% YoY" />
