@@ -65,8 +65,13 @@ function MarketsPage() {
         <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-accent">Market Dashboard</div>
         <h1 className="mt-2 font-display text-3xl md:text-5xl font-bold tracking-tight">Grid-scale storage, by the numbers</h1>
         <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
-          Live aggregates from {projects.length.toLocaleString()} tracked projects. Slice the pipeline by region, status, chemistry, and upcoming COD year.
+          Live aggregates from {projects.length.toLocaleString()} tracked projects in the GridPulse database. Slice the pipeline by region, status, chemistry, and upcoming COD year.
         </p>
+        {projects.some((p) => p.verificationStatus === "demo") && (
+          <div className="mt-3 rounded-md border border-amber-accent/40 bg-amber-accent/10 p-3 text-xs text-amber-accent">
+            Aggregates include {projects.filter((p) => p.verificationStatus === "demo").length} manual seed (demo) project{projects.filter((p) => p.verificationStatus === "demo").length === 1 ? "" : "s"}. Filter / inspect provenance per project on the detail page.
+          </div>
+        )}
 
         <div className="mt-8 grid gap-3 md:grid-cols-4">
           <Stat label="Tracked projects" value={projects.length.toLocaleString()} />
