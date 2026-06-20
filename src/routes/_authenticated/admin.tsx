@@ -39,12 +39,19 @@ function AdminPage() {
   const qc = useQueryClient();
   const runFn = useServerFn(runNewsIngestion);
   const listFn = useServerFn(listIngestionRuns);
+  const auditFn = useServerFn(getDataAudit);
   const [lastResult, setLastResult] = useState<string | null>(null);
 
   const runsQ = useQuery<Run[]>({
     queryKey: ["ingestion_runs"],
     queryFn: () => listFn() as Promise<Run[]>,
     refetchInterval: 5000,
+  });
+
+  const auditQ = useQuery<DataAuditCounts>({
+    queryKey: ["data_audit"],
+    queryFn: () => auditFn() as Promise<DataAuditCounts>,
+    refetchInterval: 30_000,
   });
 
   const mut = useMutation({
