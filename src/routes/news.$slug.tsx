@@ -87,14 +87,15 @@ function ArticlePage() {
 
         <div className="mt-5 flex flex-wrap items-center gap-2">
           <CategoryBadge category={article.category} />
-          {article.verified && (
-            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-green-accent">
-              <CheckCircle2 className="h-3 w-3" /> VERIFIED
-            </span>
-          )}
+          <DemoBadge variant={provenanceVariant(article.sourceType, article.verificationStatus)} />
           <span className="text-[11px] text-muted-foreground font-mono-data">
             {article.source.name} · <TimeAgo minutesAgo={article.minutesAgo} />
           </span>
+          {article.sourceUrl && (
+            <a href={article.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-[11px] text-cyan-accent hover:underline inline-flex items-center gap-1">
+              <LinkIcon className="h-3 w-3" /> Original source
+            </a>
+          )}
         </div>
 
         <h1 className="mt-4 font-display text-3xl md:text-5xl font-bold leading-[1.1] tracking-tight">
