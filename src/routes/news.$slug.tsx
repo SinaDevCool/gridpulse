@@ -1,5 +1,5 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { ArrowLeft, CheckCircle2, Clock, Share2, Twitter, Linkedin, Link as LinkIcon } from "lucide-react";
+import { ArrowLeft, Clock, Share2, Twitter, Linkedin, Link as LinkIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { SiteHeader } from "@/components/site/SiteHeader";
