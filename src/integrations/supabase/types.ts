@@ -63,10 +63,12 @@ export type Database = {
           category: string
           content: string
           created_at: string
+          fetched_at: string | null
           headline: string
           hero_image_url: string | null
           id: string
           is_breaking: boolean
+          last_verified_at: string | null
           published_at: string
           read_minutes: number
           region: string
@@ -75,10 +77,12 @@ export type Database = {
           slug: string
           source_domain: string
           source_name: string
+          source_type: string
           source_url: string | null
           summary: string
           tags: string[]
           updated_at: string
+          verification_status: string
           verified: boolean
           why_it_matters: string
         }
@@ -88,10 +92,12 @@ export type Database = {
           category: string
           content: string
           created_at?: string
+          fetched_at?: string | null
           headline: string
           hero_image_url?: string | null
           id?: string
           is_breaking?: boolean
+          last_verified_at?: string | null
           published_at?: string
           read_minutes?: number
           region: string
@@ -100,10 +106,12 @@ export type Database = {
           slug: string
           source_domain: string
           source_name: string
+          source_type?: string
           source_url?: string | null
           summary: string
           tags?: string[]
           updated_at?: string
+          verification_status?: string
           verified?: boolean
           why_it_matters: string
         }
@@ -113,10 +121,12 @@ export type Database = {
           category?: string
           content?: string
           created_at?: string
+          fetched_at?: string | null
           headline?: string
           hero_image_url?: string | null
           id?: string
           is_breaking?: boolean
+          last_verified_at?: string | null
           published_at?: string
           read_minutes?: number
           region?: string
@@ -125,10 +135,12 @@ export type Database = {
           slug?: string
           source_domain?: string
           source_name?: string
+          source_type?: string
           source_url?: string | null
           summary?: string
           tags?: string[]
           updated_at?: string
+          verification_status?: string
           verified?: boolean
           why_it_matters?: string
         }
@@ -364,6 +376,7 @@ export type Database = {
           description: string | null
           developer: string
           external_id: string | null
+          fetched_at: string | null
           id: string
           image_url: string | null
           last_verified_at: string
@@ -377,11 +390,13 @@ export type Database = {
           region: string
           search_tsv: unknown
           slug: string
+          source_type: string
           source_urls: string[]
           status: string
           technology: string
           updated_at: string
           use_case: string | null
+          verification_status: string
         }
         Insert: {
           capacity_mw: number
@@ -393,6 +408,7 @@ export type Database = {
           description?: string | null
           developer: string
           external_id?: string | null
+          fetched_at?: string | null
           id?: string
           image_url?: string | null
           last_verified_at?: string
@@ -406,11 +422,13 @@ export type Database = {
           region: string
           search_tsv?: unknown
           slug: string
+          source_type?: string
           source_urls?: string[]
           status: string
           technology: string
           updated_at?: string
           use_case?: string | null
+          verification_status?: string
         }
         Update: {
           capacity_mw?: number
@@ -422,6 +440,7 @@ export type Database = {
           description?: string | null
           developer?: string
           external_id?: string | null
+          fetched_at?: string | null
           id?: string
           image_url?: string | null
           last_verified_at?: string
@@ -435,11 +454,13 @@ export type Database = {
           region?: string
           search_tsv?: unknown
           slug?: string
+          source_type?: string
           source_urls?: string[]
           status?: string
           technology?: string
           updated_at?: string
           use_case?: string | null
+          verification_status?: string
         }
         Relationships: []
       }
