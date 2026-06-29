@@ -7,13 +7,9 @@ import { CountUp } from "@/components/site/CountUp";
 import { ArticleRow, FeaturedCard } from "@/components/site/ArticleCard";
 import { NewsletterForm } from "@/components/site/NewsletterForm";
 import { useMemo, useState } from "react";
-import {
-  heroStats,
-  marketRegions,
-  trendingTopics,
-  type ArticleCategory,
-} from "@/lib/gridpulse-data";
-import { articlesQuery, projectsQuery } from "@/lib/gridpulse-repo";
+import { trendingTopics, type ArticleCategory } from "@/lib/gridpulse-data";
+import { articlesQuery, projectsQuery, type GridProject } from "@/lib/gridpulse-repo";
+import { marketDataQuery, type MarketDataPoint } from "@/lib/market-data";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -39,8 +35,51 @@ const filterTabs: { label: string; value: ArticleCategory | "all" }[] = [
   { label: "Markets", value: "markets" },
 ];
 
+// Live aggregation from the project database.
+function useProjectAggregates() {
+  const { data: projects = [] } = useQuery(projectsQuery());
+  return useMemo(() => {
+    let opMw = 0;
+    let opMwh = 0;
+    let pipelineMw = 0;
+    let pipelineMwh = 0;
+    const byRegion: Record<string, number> = {};
+    for (const p of projects) {
+      const isOp = p.status === "Operational";
+      if (isOp) {
+        opMw += p.capacityMw ?? 0;
+        opMwh += p.capacityMwh ?? 0;
+      } else {
+        pipelineMw += p.capacityMw ?? 0;
+        pipelineMwh += p.capacityMwh ?? 0;
+      }
+      const region = p.region ?? "Other";
+      byRegion[region] = (byRegion[region] ?? 0) + (p.capacityMw ?? 0);
+    }
+    const totalRegionMw = Object.values(byRegion).reduce((a, b) => a + b, 0) || 1;
+    const regions = Object.entries(byRegion)
+      .map(([name, mw]) => ({ name, mw, pct: (mw / totalRegionMw) * 100 }))
+      .sort((a, b) => b.mw - a.mw);
+    return {
+      projects,
+      opMw,
+      opMwh,
+      pipelineMw,
+      pipelineMwh,
+      totalProjects: projects.length,
+      regions,
+    };
+  }, [projects]);
+}
+
+function findMetric(data: MarketDataPoint[] | undefined, symbol: string) {
+  return data?.find((p) => p.symbol === symbol);
+}
+
 function HomePage() {
-  const { data: articles = [], isLoading } = useQuery(articlesQuery());
+  const { data: articles = [] } = useQuery(articlesQuery());
+  const agg = useProjectAggregates();
+  const { data: market } = useQuery(marketDataQuery());
   const featured = articles.slice(0, 3);
   const [filter, setFilter] = useState<ArticleCategory | "all">("all");
   const [count, setCount] = useState(5);
@@ -50,6 +89,35 @@ function HomePage() {
     return filter === "all" ? rest : rest.filter((a) => a.category === filter);
   }, [filter, articles]);
   const shown = feed.slice(0, count);
+
+  const lfp = findMetric(market, "LFP_CELL_USD_KWH");
+  const systemCost = findMetric(market, "BESS_SYSTEM_USD_KWH_DC");
+
+  // Live hero tiles, derived from the project database + market_data.
+  const heroTiles = [
+    {
+      label: "Operational capacity tracked",
+      value: agg.opMwh,
+      decimals: 0,
+      unit: "MWh",
+      footnote: `${agg.totalProjects} projects in database`,
+    },
+    {
+      label: "Pipeline capacity",
+      value: agg.pipelineMw / 1000,
+      decimals: 2,
+      unit: "GW",
+      footnote: `${agg.pipelineMw.toLocaleString()} MW announced`,
+    },
+    {
+      label: systemCost?.label ?? "Avg system cost",
+      value: systemCost?.value ?? 0,
+      decimals: 0,
+      unit: systemCost?.unit ?? "USD/kWh DC",
+      footnote: systemCost ? `Source: ${systemCost.sourceName}` : "Awaiting market feed",
+      prefix: "$",
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -76,23 +144,23 @@ function HomePage() {
             and the ISO interconnection queues.
           </p>
           <div className="mt-10 grid gap-4 md:grid-cols-3">
-            {heroStats.map((s) => (
+            {heroTiles.map((s) => (
               <div key={s.label} className="glass-card rounded-xl p-5 hover-lift relative">
-                <span className="absolute right-3 top-3 rounded border border-amber-accent/40 bg-amber-accent/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-amber-accent" title="Reference industry figure — not a live feed">Demo</span>
+                <span
+                  className="absolute right-3 top-3 rounded border border-green-accent/40 bg-green-accent/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-green-accent"
+                  title="Live aggregate computed from the project and market databases"
+                >
+                  Live
+                </span>
                 <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">{s.label}</div>
                 <div className="mt-3 flex items-baseline gap-1.5">
                   <span className="font-display text-4xl font-bold text-foreground">
-                    {s.value.includes(".") ? (
-                      <CountUp value={parseFloat(s.value)} decimals={1} />
-                    ) : s.value.startsWith("$") ? (
-                      <>$<CountUp value={parseFloat(s.value.slice(1))} /></>
-                    ) : (
-                      <CountUp value={parseFloat(s.value)} />
-                    )}
+                    {s.prefix}
+                    <CountUp value={s.value} decimals={s.decimals} />
                   </span>
                   <span className="text-sm text-muted-foreground font-mono-data">{s.unit}</span>
                 </div>
-                <div className="mt-2 text-xs text-green-accent font-mono-data">{s.delta}</div>
+                <div className="mt-2 text-xs text-muted-foreground font-mono-data">{s.footnote}</div>
               </div>
             ))}
           </div>
@@ -154,10 +222,10 @@ function HomePage() {
           </div>
 
           <aside className="space-y-6 lg:sticky lg:top-32 lg:self-start">
-            <MarketPulseWidget />
-            <RegionMixWidget />
+            <MarketPulseWidget agg={agg} lfp={lfp} systemCost={systemCost} />
+            <RegionMixWidget regions={agg.regions} />
             <TrendingWidget />
-            <UpcomingProjectsWidget />
+            <UpcomingProjectsWidget projects={agg.projects} />
             <NewsletterForm />
           </aside>
         </div>
@@ -168,23 +236,64 @@ function HomePage() {
   );
 }
 
-function MarketPulseWidget() {
+function MarketPulseWidget({
+  agg,
+  lfp,
+  systemCost,
+}: {
+  agg: ReturnType<typeof useProjectAggregates>;
+  lfp?: MarketDataPoint;
+  systemCost?: MarketDataPoint;
+}) {
+  const lfpDelta = lfp?.changePct != null ? `${lfp.changePct >= 0 ? "+" : ""}${lfp.changePct.toFixed(1)}% QoQ` : undefined;
+  const sysDelta = systemCost?.changePct != null ? `${systemCost.changePct >= 0 ? "+" : ""}${systemCost.changePct.toFixed(1)}% YoY` : undefined;
   return (
     <div className="glass-card rounded-xl p-5">
       <div className="flex items-center justify-between">
         <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-accent flex items-center gap-1.5">
           <Activity className="h-3.5 w-3.5" /> Market Pulse
         </div>
-        <span className="rounded border border-amber-accent/40 bg-amber-accent/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-amber-accent" title="Reference values — not a live market feed">
-          Demo
+        <span
+          className="rounded border border-green-accent/40 bg-green-accent/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-green-accent"
+          title="Live aggregates from the project database and market_data"
+        >
+          Live
         </span>
       </div>
       <div className="mt-4 space-y-4">
-        <Metric label="Global operational" value={<><CountUp value={412.8} decimals={1} /> GWh</>} delta="+18.4% YoY" up />
-        <Metric label="Q3 additions (US)" value={<><CountUp value={9.2} decimals={1} /> GW</>} delta="+62% QoQ" up />
-        <Metric label="LFP cell cost" value={<>$<CountUp value={58} />/kWh</>} delta="-6% QoQ" up />
-        <Metric label="2027 pipeline" value={<><CountUp value={243} /> GW</>} delta="41 markets" />
+        <Metric
+          label="Operational tracked"
+          value={<><CountUp value={agg.opMwh} /> MWh</>}
+          delta={`${agg.totalProjects} projects`}
+        />
+        <Metric
+          label="Pipeline capacity"
+          value={<><CountUp value={agg.pipelineMw / 1000} decimals={2} /> GW</>}
+          delta={`${agg.pipelineMw.toLocaleString()} MW announced`}
+          up
+        />
+        {lfp && (
+          <Metric
+            label={`${lfp.label} cost`}
+            value={<>$<CountUp value={lfp.value} />/kWh</>}
+            delta={lfpDelta}
+            up={lfp.changePct != null ? lfp.changePct <= 0 : undefined}
+          />
+        )}
+        {systemCost && (
+          <Metric
+            label={systemCost.label}
+            value={<>$<CountUp value={systemCost.value} /> {systemCost.unit.replace(/^USD\/?/, "")}</>}
+            delta={sysDelta}
+            up={systemCost.changePct != null ? systemCost.changePct <= 0 : undefined}
+          />
+        )}
       </div>
+      {(lfp || systemCost) && (
+        <div className="mt-3 border-t border-border/40 pt-2 text-[10px] text-muted-foreground">
+          Cell &amp; system prices: {lfp?.sourceName ?? systemCost?.sourceName}
+        </div>
+      )}
     </div>
   );
 }
@@ -207,25 +316,41 @@ function Metric({ label, value, delta, up }: { label: string; value: React.React
   );
 }
 
-function RegionMixWidget() {
+function RegionMixWidget({ regions }: { regions: { name: string; mw: number; pct: number }[] }) {
+  const top = regions.slice(0, 6);
+  const maxPct = top[0]?.pct ?? 1;
   return (
     <Link to="/regions" className="block glass-card rounded-xl p-5 hover-lift cursor-pointer">
       <div className="flex items-center justify-between">
         <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-accent">Regional Capacity Mix</div>
-        <span className="rounded border border-amber-accent/40 bg-amber-accent/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-amber-accent">Demo</span>
+        <span className="rounded border border-green-accent/40 bg-green-accent/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-green-accent">
+          Live
+        </span>
       </div>
-      <div className="mt-4 space-y-2.5">
-        {marketRegions.map((r) => (
-          <div key={r.name}>
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-foreground">{r.name}</span>
-              <span className="font-mono-data text-muted-foreground">{r.gw} GW · {r.pct}%</span>
+      {top.length === 0 ? (
+        <div className="mt-4 text-xs text-muted-foreground">No region data yet.</div>
+      ) : (
+        <div className="mt-4 space-y-2.5">
+          {top.map((r) => (
+            <div key={r.name}>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-foreground">{r.name}</span>
+                <span className="font-mono-data text-muted-foreground">
+                  {(r.mw / 1000).toFixed(2)} GW · {r.pct.toFixed(1)}%
+                </span>
+              </div>
+              <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-elevated">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-cyan-accent to-green-accent"
+                  style={{ width: `${(r.pct / maxPct) * 100}%` }}
+                />
+              </div>
             </div>
-            <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-elevated">
-              <div className="h-full rounded-full bg-gradient-to-r from-cyan-accent to-green-accent" style={{ width: `${r.pct * 2.4}%` }} />
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
+      )}
+      <div className="mt-3 border-t border-border/40 pt-2 text-[10px] text-muted-foreground">
+        Aggregated from {regions.reduce((a, b) => a + (b.mw > 0 ? 1 : 0), 0)} regions in the project database
       </div>
     </Link>
   );
@@ -252,8 +377,7 @@ function TrendingWidget() {
   );
 }
 
-function UpcomingProjectsWidget() {
-  const { data: projects = [] } = useQuery(projectsQuery());
+function UpcomingProjectsWidget({ projects }: { projects: GridProject[] }) {
   const upcoming = projects.filter((p) => p.status !== "Operational").slice(0, 5);
   const statusColor: Record<string, string> = {
     Permitting: "bg-amber-accent/15 text-amber-accent border-amber-accent/40",
