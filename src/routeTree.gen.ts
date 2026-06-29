@@ -39,6 +39,7 @@ import { Route as AuthenticatedAlertsRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 import { Route as ApiPublicNewsIngestRouteImport } from './routes/api/public/news/ingest'
+import { Route as ApiPublicCronFetchMarketRatesRouteImport } from './routes/api/public/cron/fetch-market-rates'
 import { Route as ApiPublicAlertsRunRouteImport } from './routes/api/public/alerts/run'
 
 const TechnologyRoute = TechnologyRouteImport.update({
@@ -192,6 +193,12 @@ const ApiPublicNewsIngestRoute = ApiPublicNewsIngestRouteImport.update({
   path: '/api/public/news/ingest',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicCronFetchMarketRatesRoute =
+  ApiPublicCronFetchMarketRatesRouteImport.update({
+    id: '/api/public/cron/fetch-market-rates',
+    path: '/api/public/cron/fetch-market-rates',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicAlertsRunRoute = ApiPublicAlertsRunRouteImport.update({
   id: '/api/public/alerts/run',
   path: '/api/public/alerts/run',
@@ -227,6 +234,7 @@ export interface FileRoutesByFullPath {
   '/companies/': typeof CompaniesIndexRoute
   '/projects/': typeof ProjectsIndexRoute
   '/api/public/alerts/run': typeof ApiPublicAlertsRunRoute
+  '/api/public/cron/fetch-market-rates': typeof ApiPublicCronFetchMarketRatesRoute
   '/api/public/news/ingest': typeof ApiPublicNewsIngestRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
@@ -258,6 +266,7 @@ export interface FileRoutesByTo {
   '/companies': typeof CompaniesIndexRoute
   '/projects': typeof ProjectsIndexRoute
   '/api/public/alerts/run': typeof ApiPublicAlertsRunRoute
+  '/api/public/cron/fetch-market-rates': typeof ApiPublicCronFetchMarketRatesRoute
   '/api/public/news/ingest': typeof ApiPublicNewsIngestRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
@@ -292,6 +301,7 @@ export interface FileRoutesById {
   '/companies/': typeof CompaniesIndexRoute
   '/projects/': typeof ProjectsIndexRoute
   '/api/public/alerts/run': typeof ApiPublicAlertsRunRoute
+  '/api/public/cron/fetch-market-rates': typeof ApiPublicCronFetchMarketRatesRoute
   '/api/public/news/ingest': typeof ApiPublicNewsIngestRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
@@ -326,6 +336,7 @@ export interface FileRouteTypes {
     | '/companies/'
     | '/projects/'
     | '/api/public/alerts/run'
+    | '/api/public/cron/fetch-market-rates'
     | '/api/public/news/ingest'
     | '/api/public/payments/webhook'
   fileRoutesByTo: FileRoutesByTo
@@ -357,6 +368,7 @@ export interface FileRouteTypes {
     | '/companies'
     | '/projects'
     | '/api/public/alerts/run'
+    | '/api/public/cron/fetch-market-rates'
     | '/api/public/news/ingest'
     | '/api/public/payments/webhook'
   id:
@@ -390,6 +402,7 @@ export interface FileRouteTypes {
     | '/companies/'
     | '/projects/'
     | '/api/public/alerts/run'
+    | '/api/public/cron/fetch-market-rates'
     | '/api/public/news/ingest'
     | '/api/public/payments/webhook'
   fileRoutesById: FileRoutesById
@@ -414,6 +427,7 @@ export interface RootRouteChildren {
   ProjectsSlugRoute: typeof ProjectsSlugRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
   ApiPublicAlertsRunRoute: typeof ApiPublicAlertsRunRoute
+  ApiPublicCronFetchMarketRatesRoute: typeof ApiPublicCronFetchMarketRatesRoute
   ApiPublicNewsIngestRoute: typeof ApiPublicNewsIngestRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
 }
@@ -630,6 +644,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicNewsIngestRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/cron/fetch-market-rates': {
+      id: '/api/public/cron/fetch-market-rates'
+      path: '/api/public/cron/fetch-market-rates'
+      fullPath: '/api/public/cron/fetch-market-rates'
+      preLoaderRoute: typeof ApiPublicCronFetchMarketRatesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/alerts/run': {
       id: '/api/public/alerts/run'
       path: '/api/public/alerts/run'
@@ -707,6 +728,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProjectsSlugRoute: ProjectsSlugRoute,
   ProjectsIndexRoute: ProjectsIndexRoute,
   ApiPublicAlertsRunRoute: ApiPublicAlertsRunRoute,
+  ApiPublicCronFetchMarketRatesRoute: ApiPublicCronFetchMarketRatesRoute,
   ApiPublicNewsIngestRoute: ApiPublicNewsIngestRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
 }

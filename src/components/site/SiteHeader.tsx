@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { Battery, Search, Command, Menu, X, Loader2 } from "lucide-react";
-import { tickerItems } from "@/lib/gridpulse-data";
+import { marketDataQuery, formatMarketValue, formatDelta } from "@/lib/market-data";
 import { searchAll, type SearchResults } from "@/lib/search-client";
 import { UserMenu } from "@/components/site/UserMenu";
 import { NotificationBell } from "@/components/site/NotificationBell";
@@ -69,23 +70,8 @@ export function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/60 glass-card backdrop-blur-xl">
-      <div className="relative w-full border-b border-border/40 bg-background/40 overflow-hidden h-[30px]">
-        <div className="absolute left-0 top-0 z-10 h-full px-2 flex items-center bg-background/80 backdrop-blur-sm text-[9px] font-semibold tracking-wider text-amber-accent uppercase border-r border-border/40" title="Reference / demo market metrics — not live tickers">
-          Demo metrics
-        </div>
-        <div className="absolute left-0 top-0 flex animate-ticker whitespace-nowrap py-1.5 pl-[110px] text-[11px] font-mono-data">
-          {[...tickerItems, ...tickerItems].map((t, i) => (
-            <div key={i} className="flex items-center gap-2 px-6 shrink-0">
-              <span className="text-muted-foreground tracking-wider">{t.label}</span>
-              <span className="text-foreground font-medium">{t.value}</span>
-              {t.delta && (
-                <span className={t.positive ? "text-green-accent" : "text-red-accent"}>{t.delta}</span>
-              )}
-              <span className="text-border">•</span>
-            </div>
-          ))}
-        </div>
-      </div>
+      <LiveTicker />
+
 
       <div className="mx-auto flex max-w-[1400px] items-center gap-6 px-4 py-3 lg:px-8">
         <Link to="/" className="flex items-center gap-2.5 group">
@@ -254,3 +240,56 @@ export function SiteHeader() {
     </header>
   );
 }
+
+function LiveTicker() {
+  const { data, isLoading } = useQuery(marketDataQuery());
+  const items = data ?? [];
+  // Stable display order: stocks first, then commodities, then indices/metrics.
+  const order: Record<string, number> = { stock: 0, commodity: 1, index: 2, metric: 3 };
+  const sorted = [...items].sort(
+    (a, b) => (order[a.kind] ?? 9) - (order[b.kind] ?? 9) || a.label.localeCompare(b.label),
+  );
+
+  return (
+    <div className="relative w-full border-b border-border/40 bg-background/40 overflow-hidden h-[30px]">
+      <div
+        className="absolute left-0 top-0 z-10 h-full px-2 flex items-center bg-background/80 backdrop-blur-sm text-[9px] font-semibold tracking-wider text-green-accent uppercase border-r border-border/40"
+        title="Live and verified market data — sourced from Finnhub (stocks) and BloombergNEF Battery Price Survey (cell prices)"
+      >
+        Live market
+      </div>
+      {isLoading && sorted.length === 0 ? (
+        <div className="pl-[110px] py-1.5 text-[11px] font-mono-data text-muted-foreground">
+          Loading market data…
+        </div>
+      ) : sorted.length === 0 ? (
+        <div className="pl-[110px] py-1.5 text-[11px] font-mono-data text-muted-foreground">
+          Market data unavailable
+        </div>
+      ) : (
+        <div className="absolute left-0 top-0 flex animate-ticker whitespace-nowrap py-1.5 pl-[110px] text-[11px] font-mono-data">
+          {[...sorted, ...sorted].map((p, i) => {
+            const delta = formatDelta(p);
+            return (
+              <div
+                key={`${p.symbol}-${i}`}
+                className="flex items-center gap-2 px-6 shrink-0"
+                title={`${p.label} • Source: ${p.sourceName} (${p.sourceType === "api" ? "live API" : p.sourceType})`}
+              >
+                <span className="text-muted-foreground tracking-wider">{p.label}</span>
+                <span className="text-foreground font-medium">{formatMarketValue(p)}</span>
+                {delta && (
+                  <span className={delta.positive ? "text-green-accent" : "text-red-accent"}>
+                    {delta.text}
+                  </span>
+                )}
+                <span className="text-border">•</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
