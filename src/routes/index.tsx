@@ -7,8 +7,8 @@ import { CountUp } from "@/components/site/CountUp";
 import { ArticleRow, FeaturedCard } from "@/components/site/ArticleCard";
 import { NewsletterForm } from "@/components/site/NewsletterForm";
 import { useMemo, useState } from "react";
-import { trendingTopics, type ArticleCategory } from "@/lib/gridpulse-data";
-import { articlesQuery, projectsQuery, type GridProject } from "@/lib/gridpulse-repo";
+import { trendingTopics, type ArticleCategory, type Project } from "@/lib/gridpulse-data";
+import { articlesQuery, projectsQuery } from "@/lib/gridpulse-repo";
 import { marketDataQuery, type MarketDataPoint } from "@/lib/market-data";
 
 export const Route = createFileRoute("/")({
