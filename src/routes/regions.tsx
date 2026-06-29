@@ -72,8 +72,8 @@ function RegionsPage() {
                   {r.mwh > 0 && <> · <span className="text-foreground">{r.mwh.toLocaleString()} MWh</span></>}
                 </div>
                 <div className="mt-4 flex gap-3 text-sm">
-                  <Link to="/projects" search={{ region: r.name }} className="text-cyan-accent hover:underline">Projects →</Link>
-                  <Link to="/news" search={{ region: r.name }} className="text-cyan-accent hover:underline">News →</Link>
+                  <Link to="/projects" search={{ region: r.name } as never} className="text-cyan-accent hover:underline">Projects →</Link>
+                  <Link to="/news" className="text-cyan-accent hover:underline">News →</Link>
                 </div>
               </div>
             ))}
