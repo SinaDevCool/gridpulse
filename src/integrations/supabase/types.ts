@@ -212,6 +212,66 @@ export type Database = {
         }
         Relationships: []
       }
+      market_data: {
+        Row: {
+          captured_at: string
+          change_abs: number | null
+          change_pct: number | null
+          created_at: string
+          currency: string | null
+          fetched_at: string
+          id: string
+          kind: string
+          label: string
+          metadata: Json
+          source_name: string
+          source_type: string
+          symbol: string
+          unit: string
+          updated_at: string
+          value: number
+          verification_status: string
+        }
+        Insert: {
+          captured_at?: string
+          change_abs?: number | null
+          change_pct?: number | null
+          created_at?: string
+          currency?: string | null
+          fetched_at?: string
+          id?: string
+          kind: string
+          label: string
+          metadata?: Json
+          source_name: string
+          source_type?: string
+          symbol: string
+          unit: string
+          updated_at?: string
+          value: number
+          verification_status?: string
+        }
+        Update: {
+          captured_at?: string
+          change_abs?: number | null
+          change_pct?: number | null
+          created_at?: string
+          currency?: string | null
+          fetched_at?: string
+          id?: string
+          kind?: string
+          label?: string
+          metadata?: Json
+          source_name?: string
+          source_type?: string
+          symbol?: string
+          unit?: string
+          updated_at?: string
+          value?: number
+          verification_status?: string
+        }
+        Relationships: []
+      }
       news_sources: {
         Row: {
           active: boolean
@@ -565,7 +625,26 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      market_data_latest: {
+        Row: {
+          captured_at: string | null
+          change_abs: number | null
+          change_pct: number | null
+          currency: string | null
+          fetched_at: string | null
+          id: string | null
+          kind: string | null
+          label: string | null
+          metadata: Json | null
+          source_name: string | null
+          source_type: string | null
+          symbol: string | null
+          unit: string | null
+          value: number | null
+          verification_status: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       get_user_tier: { Args: { _user_id: string }; Returns: string }
