@@ -377,7 +377,7 @@ function TrendingWidget() {
   );
 }
 
-function UpcomingProjectsWidget({ projects }: { projects: GridProject[] }) {
+function UpcomingProjectsWidget({ projects }: { projects: Project[] }) {
   const upcoming = projects.filter((p) => p.status !== "Operational").slice(0, 5);
   const statusColor: Record<string, string> = {
     Permitting: "bg-amber-accent/15 text-amber-accent border-amber-accent/40",
