@@ -152,6 +152,31 @@ function AdminPage() {
           )}
         </div>
 
+        <div className="mt-4 rounded-lg border border-border bg-surface/60 p-6">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h2 className="font-semibold">Trigger Project Ingestion Pipeline</h2>
+              <p className="text-sm text-muted-foreground">
+                Scans recent articles and uses Gemini to extract BESS project metadata (name, MW/MWh,
+                chemistry, grid, status). New rows land as <code>source_type: rss</code>,{" "}
+                <code>verification_status: unverified</code>.
+              </p>
+            </div>
+            <Button
+              onClick={() => projectMut.mutate()}
+              disabled={projectMut.isPending}
+              variant="secondary"
+            >
+              {projectMut.isPending ? "Extracting…" : "Run project ingestion"}
+            </Button>
+          </div>
+          {lastProjectResult && (
+            <div className="mt-4 rounded-md bg-background/60 border border-border px-3 py-2 text-sm">
+              {lastProjectResult}
+            </div>
+          )}
+        </div>
+
         <div className="mt-10">
           <h2 className="font-semibold mb-3">Recent runs</h2>
           {runsQ.isLoading ? (
