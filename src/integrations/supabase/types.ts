@@ -69,6 +69,8 @@ export type Database = {
           id: string
           is_breaking: boolean
           last_verified_at: string | null
+          project_extraction_at: string | null
+          project_extraction_status: string | null
           published_at: string
           read_minutes: number
           region: string
@@ -98,6 +100,8 @@ export type Database = {
           id?: string
           is_breaking?: boolean
           last_verified_at?: string | null
+          project_extraction_at?: string | null
+          project_extraction_status?: string | null
           published_at?: string
           read_minutes?: number
           region: string
@@ -127,6 +131,8 @@ export type Database = {
           id?: string
           is_breaking?: boolean
           last_verified_at?: string | null
+          project_extraction_at?: string | null
+          project_extraction_status?: string | null
           published_at?: string
           read_minutes?: number
           region?: string
