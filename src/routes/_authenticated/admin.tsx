@@ -8,6 +8,7 @@ import { SiteFooter } from "@/components/site/SiteFooter";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { runNewsIngestion, listIngestionRuns } from "@/utils/news.functions";
+import { runProjectIngestion } from "@/utils/projects.functions";
 import { getDataAudit, type DataAuditCounts } from "@/utils/data-audit.functions";
 
 export const Route = createFileRoute("/_authenticated/admin")({
@@ -40,7 +41,9 @@ function AdminPage() {
   const runFn = useServerFn(runNewsIngestion);
   const listFn = useServerFn(listIngestionRuns);
   const auditFn = useServerFn(getDataAudit);
+  const runProjectsFn = useServerFn(runProjectIngestion);
   const [lastResult, setLastResult] = useState<string | null>(null);
+  const [lastProjectResult, setLastProjectResult] = useState<string | null>(null);
 
   const runsQ = useQuery<Run[]>({
     queryKey: ["ingestion_runs"],
@@ -76,6 +79,45 @@ function AdminPage() {
     },
   });
 
+  const projectMut = useMutation({
+    mutationFn: async () => {
+      const toastId = toast.loading("Extracting BESS project metrics via Gemini…");
+      try {
+        const res = await runProjectsFn();
+        toast.dismiss(toastId);
+        return res;
+      } catch (e) {
+        toast.dismiss(toastId);
+        throw e;
+      }
+    },
+    onSuccess: (res) => {
+      if ("ok" in res && res.ok) {
+        setLastProjectResult(
+          `Scanned ${res.scanned} article${res.scanned === 1 ? "" : "s"} — extracted ${res.extracted}, inserted ${res.inserted} new project${res.inserted === 1 ? "" : "s"}, updated ${res.updated}, skipped ${res.skipped}, failed ${res.failed} in ${(res.durationMs / 1000).toFixed(1)}s.`,
+        );
+        toast.success(
+          `Projects: +${res.inserted} new, ${res.updated} updated (${res.scanned} articles scanned)`,
+        );
+        qc.invalidateQueries({ queryKey: ["data_audit"] });
+        qc.invalidateQueries({ queryKey: ["projects"] });
+        qc.invalidateQueries({ queryKey: ["project"] });
+        qc.invalidateQueries({ queryKey: ["companies"] });
+        qc.invalidateQueries({ queryKey: ["analytics"] });
+        qc.invalidateQueries({ queryKey: ["markets"] });
+      } else {
+        const err = "error" in res ? res.error : "Unknown error";
+        setLastProjectResult(`Failed: ${err}`);
+        toast.error(err);
+      }
+    },
+    onError: (e) => {
+      const msg = e instanceof Error ? e.message : String(e);
+      setLastProjectResult(`Failed: ${msg}`);
+      toast.error(msg);
+    },
+  });
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <SiteHeader />
@@ -106,6 +148,31 @@ function AdminPage() {
           {lastResult && (
             <div className="mt-4 rounded-md bg-background/60 border border-border px-3 py-2 text-sm">
               {lastResult}
+            </div>
+          )}
+        </div>
+
+        <div className="mt-4 rounded-lg border border-border bg-surface/60 p-6">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h2 className="font-semibold">Trigger Project Ingestion Pipeline</h2>
+              <p className="text-sm text-muted-foreground">
+                Scans recent articles and uses Gemini to extract BESS project metadata (name, MW/MWh,
+                chemistry, grid, status). New rows land as <code>source_type: rss</code>,{" "}
+                <code>verification_status: unverified</code>.
+              </p>
+            </div>
+            <Button
+              onClick={() => projectMut.mutate()}
+              disabled={projectMut.isPending}
+              variant="secondary"
+            >
+              {projectMut.isPending ? "Extracting…" : "Run project ingestion"}
+            </Button>
+          </div>
+          {lastProjectResult && (
+            <div className="mt-4 rounded-md bg-background/60 border border-border px-3 py-2 text-sm">
+              {lastProjectResult}
             </div>
           )}
         </div>
