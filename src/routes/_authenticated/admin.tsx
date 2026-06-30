@@ -41,7 +41,9 @@ function AdminPage() {
   const runFn = useServerFn(runNewsIngestion);
   const listFn = useServerFn(listIngestionRuns);
   const auditFn = useServerFn(getDataAudit);
+  const runProjectsFn = useServerFn(runProjectIngestion);
   const [lastResult, setLastResult] = useState<string | null>(null);
+  const [lastProjectResult, setLastProjectResult] = useState<string | null>(null);
 
   const runsQ = useQuery<Run[]>({
     queryKey: ["ingestion_runs"],
