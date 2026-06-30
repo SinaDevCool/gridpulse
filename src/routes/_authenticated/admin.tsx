@@ -79,6 +79,45 @@ function AdminPage() {
     },
   });
 
+  const projectMut = useMutation({
+    mutationFn: async () => {
+      const toastId = toast.loading("Extracting BESS project metrics via Gemini…");
+      try {
+        const res = await runProjectsFn();
+        toast.dismiss(toastId);
+        return res;
+      } catch (e) {
+        toast.dismiss(toastId);
+        throw e;
+      }
+    },
+    onSuccess: (res) => {
+      if ("ok" in res && res.ok) {
+        setLastProjectResult(
+          `Scanned ${res.scanned} article${res.scanned === 1 ? "" : "s"} — extracted ${res.extracted}, inserted ${res.inserted} new project${res.inserted === 1 ? "" : "s"}, updated ${res.updated}, skipped ${res.skipped}, failed ${res.failed} in ${(res.durationMs / 1000).toFixed(1)}s.`,
+        );
+        toast.success(
+          `Projects: +${res.inserted} new, ${res.updated} updated (${res.scanned} articles scanned)`,
+        );
+        qc.invalidateQueries({ queryKey: ["data_audit"] });
+        qc.invalidateQueries({ queryKey: ["projects"] });
+        qc.invalidateQueries({ queryKey: ["project"] });
+        qc.invalidateQueries({ queryKey: ["companies"] });
+        qc.invalidateQueries({ queryKey: ["analytics"] });
+        qc.invalidateQueries({ queryKey: ["markets"] });
+      } else {
+        const err = "error" in res ? res.error : "Unknown error";
+        setLastProjectResult(`Failed: ${err}`);
+        toast.error(err);
+      }
+    },
+    onError: (e) => {
+      const msg = e instanceof Error ? e.message : String(e);
+      setLastProjectResult(`Failed: ${msg}`);
+      toast.error(msg);
+    },
+  });
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <SiteHeader />
