@@ -27,7 +27,7 @@ const cols: { title: string; items: { label: string; to?: string; href?: string 
     items: [
       { label: "News", to: "/news" },
       { label: "Project Database", to: "/projects" },
-      { label: "Market Dashboards", to: "/data" },
+      { label: "Analytics", to: "/analytics" },
       { label: "Markets", to: "/markets" },
       { label: "Policy Tracker", to: "/policy" },
       { label: "Technology", to: "/technology" },

@@ -71,6 +71,10 @@ function AdminPage() {
         toast.error(err);
       }
       qc.invalidateQueries({ queryKey: ["ingestion_runs"] });
+      qc.invalidateQueries({ queryKey: ["articles"] });
+      qc.invalidateQueries({ queryKey: ["article"] });
+      qc.invalidateQueries({ queryKey: ["data_audit"] });
+
     },
     onError: (e) => {
       const msg = e instanceof Error ? e.message : String(e);
@@ -105,6 +109,9 @@ function AdminPage() {
         qc.invalidateQueries({ queryKey: ["companies"] });
         qc.invalidateQueries({ queryKey: ["analytics"] });
         qc.invalidateQueries({ queryKey: ["markets"] });
+        qc.invalidateQueries({ queryKey: ["project-slug"] });
+        qc.invalidateQueries({ queryKey: ["regions"] });
+
       } else {
         const err = "error" in res ? res.error : "Unknown error";
         setLastProjectResult(`Failed: ${err}`);

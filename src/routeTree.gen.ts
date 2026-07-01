@@ -17,7 +17,6 @@ import { Route as PolicyRouteImport } from './routes/policy'
 import { Route as NewsletterRouteImport } from './routes/newsletter'
 import { Route as NewsRouteImport } from './routes/news'
 import { Route as MarketsRouteImport } from './routes/markets'
-import { Route as DataRouteImport } from './routes/data'
 import { Route as CompaniesRouteImport } from './routes/companies'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
@@ -81,11 +80,6 @@ const NewsRoute = NewsRouteImport.update({
 const MarketsRoute = MarketsRouteImport.update({
   id: '/markets',
   path: '/markets',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DataRoute = DataRouteImport.update({
-  id: '/data',
-  path: '/data',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CompaniesRoute = CompaniesRouteImport.update({
@@ -218,7 +212,6 @@ export interface FileRoutesByFullPath {
   '/analytics': typeof AnalyticsRoute
   '/auth': typeof AuthRoute
   '/companies': typeof CompaniesRouteWithChildren
-  '/data': typeof DataRoute
   '/markets': typeof MarketsRoute
   '/news': typeof NewsRouteWithChildren
   '/newsletter': typeof NewsletterRoute
@@ -251,7 +244,6 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/analytics': typeof AnalyticsRoute
   '/auth': typeof AuthRoute
-  '/data': typeof DataRoute
   '/markets': typeof MarketsRoute
   '/news': typeof NewsRouteWithChildren
   '/newsletter': typeof NewsletterRoute
@@ -287,7 +279,6 @@ export interface FileRoutesById {
   '/analytics': typeof AnalyticsRoute
   '/auth': typeof AuthRoute
   '/companies': typeof CompaniesRouteWithChildren
-  '/data': typeof DataRoute
   '/markets': typeof MarketsRoute
   '/news': typeof NewsRouteWithChildren
   '/newsletter': typeof NewsletterRoute
@@ -323,7 +314,6 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/auth'
     | '/companies'
-    | '/data'
     | '/markets'
     | '/news'
     | '/newsletter'
@@ -356,7 +346,6 @@ export interface FileRouteTypes {
     | '/about'
     | '/analytics'
     | '/auth'
-    | '/data'
     | '/markets'
     | '/news'
     | '/newsletter'
@@ -391,7 +380,6 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/auth'
     | '/companies'
-    | '/data'
     | '/markets'
     | '/news'
     | '/newsletter'
@@ -427,7 +415,6 @@ export interface RootRouteChildren {
   AnalyticsRoute: typeof AnalyticsRoute
   AuthRoute: typeof AuthRoute
   CompaniesRoute: typeof CompaniesRouteWithChildren
-  DataRoute: typeof DataRoute
   MarketsRoute: typeof MarketsRoute
   NewsRoute: typeof NewsRouteWithChildren
   NewsletterRoute: typeof NewsletterRoute
@@ -502,13 +489,6 @@ declare module '@tanstack/react-router' {
       path: '/markets'
       fullPath: '/markets'
       preLoaderRoute: typeof MarketsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/data': {
-      id: '/data'
-      path: '/data'
-      fullPath: '/data'
-      preLoaderRoute: typeof DataRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/companies': {
@@ -736,7 +716,6 @@ const rootRouteChildren: RootRouteChildren = {
   AnalyticsRoute: AnalyticsRoute,
   AuthRoute: AuthRoute,
   CompaniesRoute: CompaniesRouteWithChildren,
-  DataRoute: DataRoute,
   MarketsRoute: MarketsRoute,
   NewsRoute: NewsRouteWithChildren,
   NewsletterRoute: NewsletterRoute,
