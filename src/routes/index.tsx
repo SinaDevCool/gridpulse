@@ -43,15 +43,20 @@ function useProjectAggregates() {
     let opMwh = 0;
     let pipelineMw = 0;
     let pipelineMwh = 0;
+    let verifiedOpMw = 0;
+    let verifiedPipelineMw = 0;
     const byRegion: Record<string, number> = {};
     for (const p of projects) {
       const isOp = p.status === "Operational";
+      const isDemo = p.verificationStatus === "demo";
       if (isOp) {
         opMw += p.capacityMw ?? 0;
         opMwh += p.capacityMwh ?? 0;
+        if (!isDemo) verifiedOpMw += p.capacityMw ?? 0;
       } else {
         pipelineMw += p.capacityMw ?? 0;
         pipelineMwh += p.capacityMwh ?? 0;
+        if (!isDemo) verifiedPipelineMw += p.capacityMw ?? 0;
       }
       const region = p.region ?? "Other";
       byRegion[region] = (byRegion[region] ?? 0) + (p.capacityMw ?? 0);
@@ -60,6 +65,8 @@ function useProjectAggregates() {
     const regions = Object.entries(byRegion)
       .map(([name, mw]) => ({ name, mw, pct: (mw / totalRegionMw) * 100 }))
       .sort((a, b) => b.mw - a.mw);
+    const verifiedTotalGw = (verifiedOpMw + verifiedPipelineMw) / 1000;
+    const allTotalGw = (opMw + pipelineMw) / 1000;
     return {
       projects,
       opMw,
@@ -68,9 +75,12 @@ function useProjectAggregates() {
       pipelineMwh,
       totalProjects: projects.length,
       regions,
+      verifiedTotalGw,
+      allTotalGw,
     };
   }, [projects]);
 }
+
 
 function findMetric(data: MarketDataPoint[] | undefined, symbol: string) {
   return data?.find((p) => p.symbol === symbol);
