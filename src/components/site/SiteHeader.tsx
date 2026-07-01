@@ -10,7 +10,7 @@ import { NotificationBell } from "@/components/site/NotificationBell";
 const navItems = [
   { label: "News", to: "/news" },
   { label: "Projects", to: "/projects" },
-  { label: "Projects", to: "/projects" },
+
   { label: "Companies", to: "/companies" },
   { label: "Markets", to: "/markets" },
   { label: "Analytics", to: "/analytics" },
