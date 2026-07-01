@@ -109,6 +109,9 @@ function AdminPage() {
         qc.invalidateQueries({ queryKey: ["companies"] });
         qc.invalidateQueries({ queryKey: ["analytics"] });
         qc.invalidateQueries({ queryKey: ["markets"] });
+        qc.invalidateQueries({ queryKey: ["project-slug"] });
+        qc.invalidateQueries({ queryKey: ["regions"] });
+
       } else {
         const err = "error" in res ? res.error : "Unknown error";
         setLastProjectResult(`Failed: ${err}`);
