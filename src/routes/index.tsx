@@ -144,10 +144,13 @@ function HomePage() {
             </span>
           </div>
           <h1 className="mt-5 max-w-5xl font-display text-4xl font-bold leading-[1.05] tracking-tight md:text-6xl lg:text-7xl">
-            <span className="text-cyan-accent"><CountUp value={243} duration={1800} /> GW</span>{" "}
-            of grid-scale storage is coming online by 2027.{" "}
+            <span className="text-cyan-accent">
+              <CountUp value={agg.verifiedTotalGw > 0 ? agg.verifiedTotalGw : agg.allTotalGw} decimals={agg.verifiedTotalGw < 10 ? 2 : 1} duration={1800} /> GW
+            </span>{" "}
+            of grid-scale storage tracked across our verified project database.{" "}
             <span className="text-muted-foreground">We track every megawatt.</span>
           </h1>
+
           <p className="mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground md:text-lg">
             GridPulse is the intelligence layer for grid-scale battery energy storage — real-time
             news, a verified project database, and market data sourced from EIA, IEA, FERC, BNEF,
