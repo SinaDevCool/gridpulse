@@ -71,6 +71,10 @@ function AdminPage() {
         toast.error(err);
       }
       qc.invalidateQueries({ queryKey: ["ingestion_runs"] });
+      qc.invalidateQueries({ queryKey: ["articles"] });
+      qc.invalidateQueries({ queryKey: ["article"] });
+      qc.invalidateQueries({ queryKey: ["data_audit"] });
+
     },
     onError: (e) => {
       const msg = e instanceof Error ? e.message : String(e);
