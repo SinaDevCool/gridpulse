@@ -8,6 +8,7 @@ import {
 import { Download, Lock, Filter, X } from "lucide-react";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
+import { AuthWall } from "@/components/site/AuthWall";
 import { projectsQuery } from "@/lib/gridpulse-repo";
 import { supabase } from "@/integrations/supabase/client";
 import type { Project } from "@/lib/gridpulse-data";
