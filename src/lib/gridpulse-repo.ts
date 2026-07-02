@@ -211,3 +211,48 @@ export const projectBySlugQuery = (key: string) =>
     staleTime: 5 * 60_000,
   });
 
+export interface TrendingTopic {
+  tag: string;
+  weight: number; // 1..6, scaled for font-size
+  count: number;
+}
+
+export async function fetchTrendingTopics(): Promise<TrendingTopic[]> {
+  // Aggregate articles.tags frequency over the last 30 days. The tags GIN
+  // index accelerates the published_at filter path; aggregation is small.
+  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const { data, error } = await supabase
+    .from("articles")
+    .select("tags")
+    .gte("published_at", since)
+    .limit(1000);
+  if (error) throw error;
+  const counts = new Map<string, number>();
+  for (const row of (data ?? []) as { tags: string[] | null }[]) {
+    for (const raw of row.tags ?? []) {
+      const tag = (raw ?? "").trim();
+      if (!tag) continue;
+      counts.set(tag, (counts.get(tag) ?? 0) + 1);
+    }
+  }
+  const sorted = Array.from(counts.entries())
+    .map(([tag, count]) => ({ tag, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 14);
+  if (sorted.length === 0) return [];
+  const max = sorted[0].count;
+  return sorted.map(({ tag, count }) => ({
+    tag,
+    count,
+    weight: Math.max(1, Math.round((count / max) * 5) + 1),
+  }));
+}
+
+export const trendingTopicsQuery = () =>
+  queryOptions({
+    queryKey: ["trending-topics"],
+    queryFn: fetchTrendingTopics,
+    staleTime: 5 * 60_000,
+  });
+
+
