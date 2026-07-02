@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TechnologyRouteImport } from './routes/technology'
 import { Route as SubscribeRouteImport } from './routes/subscribe'
 import { Route as SearchRouteImport } from './routes/search'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RegionsRouteImport } from './routes/regions'
 import { Route as PolicyRouteImport } from './routes/policy'
 import { Route as NewsletterRouteImport } from './routes/newsletter'
@@ -55,6 +56,11 @@ const SubscribeRoute = SubscribeRouteImport.update({
 const SearchRoute = SearchRouteImport.update({
   id: '/search',
   path: '/search',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RegionsRoute = RegionsRouteImport.update({
@@ -217,6 +223,7 @@ export interface FileRoutesByFullPath {
   '/newsletter': typeof NewsletterRoute
   '/policy': typeof PolicyRoute
   '/regions': typeof RegionsRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/search': typeof SearchRoute
   '/subscribe': typeof SubscribeRoute
   '/technology': typeof TechnologyRoute
@@ -249,6 +256,7 @@ export interface FileRoutesByTo {
   '/newsletter': typeof NewsletterRoute
   '/policy': typeof PolicyRoute
   '/regions': typeof RegionsRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/search': typeof SearchRoute
   '/subscribe': typeof SubscribeRoute
   '/technology': typeof TechnologyRoute
@@ -284,6 +292,7 @@ export interface FileRoutesById {
   '/newsletter': typeof NewsletterRoute
   '/policy': typeof PolicyRoute
   '/regions': typeof RegionsRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/search': typeof SearchRoute
   '/subscribe': typeof SubscribeRoute
   '/technology': typeof TechnologyRoute
@@ -319,6 +328,7 @@ export interface FileRouteTypes {
     | '/newsletter'
     | '/policy'
     | '/regions'
+    | '/reset-password'
     | '/search'
     | '/subscribe'
     | '/technology'
@@ -351,6 +361,7 @@ export interface FileRouteTypes {
     | '/newsletter'
     | '/policy'
     | '/regions'
+    | '/reset-password'
     | '/search'
     | '/subscribe'
     | '/technology'
@@ -385,6 +396,7 @@ export interface FileRouteTypes {
     | '/newsletter'
     | '/policy'
     | '/regions'
+    | '/reset-password'
     | '/search'
     | '/subscribe'
     | '/technology'
@@ -420,6 +432,7 @@ export interface RootRouteChildren {
   NewsletterRoute: typeof NewsletterRoute
   PolicyRoute: typeof PolicyRoute
   RegionsRoute: typeof RegionsRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   SearchRoute: typeof SearchRoute
   SubscribeRoute: typeof SubscribeRoute
   TechnologyRoute: typeof TechnologyRoute
@@ -454,6 +467,13 @@ declare module '@tanstack/react-router' {
       path: '/search'
       fullPath: '/search'
       preLoaderRoute: typeof SearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/regions': {
@@ -721,6 +741,7 @@ const rootRouteChildren: RootRouteChildren = {
   NewsletterRoute: NewsletterRoute,
   PolicyRoute: PolicyRoute,
   RegionsRoute: RegionsRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   SearchRoute: SearchRoute,
   SubscribeRoute: SubscribeRoute,
   TechnologyRoute: TechnologyRoute,

@@ -8,6 +8,7 @@ import {
 import { Download, Lock, Filter, X } from "lucide-react";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
+import { AuthWall } from "@/components/site/AuthWall";
 import { projectsQuery } from "@/lib/gridpulse-repo";
 import { supabase } from "@/integrations/supabase/client";
 import type { Project } from "@/lib/gridpulse-data";
@@ -22,7 +23,7 @@ export const Route = createFileRoute("/analytics")({
       { property: "og:description", content: "Slice the global BESS pipeline by region, technology, status, developer, and year." },
     ],
   }),
-  component: AnalyticsPage,
+  component: GatedAnalyticsPage,
   pendingComponent: () => (
     <div className="min-h-screen bg-background text-foreground">
       <div className="mx-auto w-full max-w-[1400px] px-4 py-10 lg:px-8">
@@ -116,6 +117,17 @@ function uniq(values: Array<string | undefined | null>): string[] {
     if (s) set.add(s);
   }
   return Array.from(set).sort();
+}
+
+function GatedAnalyticsPage() {
+  return (
+    <AuthWall
+      title="Sign in to unlock GridPulse Analytics"
+      message="Filter the global BESS pipeline, compare developers, and export project-level data. Free account required."
+    >
+      <AnalyticsPage />
+    </AuthWall>
+  );
 }
 
 function AnalyticsPage() {
