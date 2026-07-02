@@ -119,6 +119,17 @@ function uniq(values: Array<string | undefined | null>): string[] {
   return Array.from(set).sort();
 }
 
+function GatedAnalyticsPage() {
+  return (
+    <AuthWall
+      title="Sign in to unlock GridPulse Analytics"
+      message="Filter the global BESS pipeline, compare developers, and export project-level data. Free account required."
+    >
+      <AnalyticsPage />
+    </AuthWall>
+  );
+}
+
 function AnalyticsPage() {
   const { data: projects = [], isLoading, isError, error, refetch } = useQuery(projectsQuery());
   const tier = useTier();
