@@ -371,25 +371,42 @@ function RegionMixWidget({ regions }: { regions: { name: string; mw: number; pct
 }
 
 function TrendingWidget() {
+  const { data: topics = [], isLoading } = useQuery(trendingTopicsQuery());
   return (
     <div className="glass-card rounded-xl p-5">
-      <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-accent">Trending Topics</div>
+      <div className="flex items-center justify-between">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-accent">Trending Topics</div>
+        <span
+          className="rounded border border-green-accent/40 bg-green-accent/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-green-accent"
+          title="Aggregated from article tags in the last 30 days"
+        >
+          Live
+        </span>
+      </div>
       <div className="mt-4 flex flex-wrap gap-1.5">
-        {trendingTopics.map((t) => (
-          <Link
-            key={t.tag}
-            to="/news"
-            search={{ q: t.tag }}
-            className="tag-chip hover:border-cyan-accent/50 hover:text-cyan-accent transition-colors cursor-pointer"
-            style={{ fontSize: `${10 + t.weight}px` }}
-          >
-            #{t.tag}
-          </Link>
-        ))}
+        {isLoading ? (
+          <span className="text-xs text-muted-foreground">Loading…</span>
+        ) : topics.length === 0 ? (
+          <span className="text-xs text-muted-foreground">No tagged stories yet.</span>
+        ) : (
+          topics.map((t: TrendingTopic) => (
+            <Link
+              key={t.tag}
+              to="/news"
+              search={{ q: t.tag }}
+              className="tag-chip hover:border-cyan-accent/50 hover:text-cyan-accent transition-colors cursor-pointer"
+              style={{ fontSize: `${10 + t.weight}px` }}
+              title={`${t.count} article${t.count === 1 ? "" : "s"} in last 30 days`}
+            >
+              #{t.tag}
+            </Link>
+          ))
+        )}
       </div>
     </div>
   );
 }
+
 
 function UpcomingProjectsWidget({ projects }: { projects: Project[] }) {
   const upcoming = projects.filter((p) => p.status !== "Operational").slice(0, 5);
