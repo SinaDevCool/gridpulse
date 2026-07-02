@@ -22,7 +22,7 @@ export const Route = createFileRoute("/analytics")({
       { property: "og:description", content: "Slice the global BESS pipeline by region, technology, status, developer, and year." },
     ],
   }),
-  component: AnalyticsPage,
+  component: GatedAnalyticsPage,
   pendingComponent: () => (
     <div className="min-h-screen bg-background text-foreground">
       <div className="mx-auto w-full max-w-[1400px] px-4 py-10 lg:px-8">
