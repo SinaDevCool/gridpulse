@@ -75,8 +75,19 @@ export const Route = createFileRoute("/projects/$slug")({
       <SiteFooter />
     </div>
   ),
-  component: ProjectDetail,
+  component: GatedProjectDetail,
 });
+
+function GatedProjectDetail() {
+  return (
+    <AuthWall
+      title="Sign in to view project deep-dives"
+      message="Create a free account to see full project profiles, verified sources, and add projects to your watchlist."
+    >
+      <ProjectDetail />
+    </AuthWall>
+  );
+}
 
 function ProjectDetail() {
   const { slug } = Route.useParams();
