@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { runNewsIngestion, listIngestionRuns } from "@/utils/news.functions";
 import { runProjectIngestion } from "@/utils/projects.functions";
+import { runQueueIngestion } from "@/utils/queue.functions";
 import { getDataAudit, type DataAuditCounts } from "@/utils/data-audit.functions";
 
 export const Route = createFileRoute("/_authenticated/admin")({
@@ -42,8 +43,10 @@ function AdminPage() {
   const listFn = useServerFn(listIngestionRuns);
   const auditFn = useServerFn(getDataAudit);
   const runProjectsFn = useServerFn(runProjectIngestion);
+  const runQueueFn = useServerFn(runQueueIngestion);
   const [lastResult, setLastResult] = useState<string | null>(null);
   const [lastProjectResult, setLastProjectResult] = useState<string | null>(null);
+  const [lastQueueResult, setLastQueueResult] = useState<string | null>(null);
 
   const runsQ = useQuery<Run[]>({
     queryKey: ["ingestion_runs"],
@@ -125,6 +128,48 @@ function AdminPage() {
     },
   });
 
+  const queueMut = useMutation({
+    mutationFn: async () => {
+      const toastId = toast.loading("Ingesting regional interconnection queues…");
+      try {
+        const res = await runQueueFn();
+        toast.dismiss(toastId);
+        return res;
+      } catch (e) {
+        toast.dismiss(toastId);
+        throw e;
+      }
+    },
+    onSuccess: (res) => {
+      if ("ok" in res && res.ok) {
+        setLastQueueResult(
+          `Generated ${res.generated} queue entries — inserted ${res.inserted} new, updated ${res.updated}, failed ${res.failed} in ${(res.durationMs / 1000).toFixed(1)}s.`,
+        );
+        toast.success(
+          `Queues: +${res.inserted} new, ${res.updated} updated (${res.generated} generated)`,
+        );
+        qc.invalidateQueries({ queryKey: ["projects"] });
+        qc.invalidateQueries({ queryKey: ["project"] });
+        qc.invalidateQueries({ queryKey: ["project-slug"] });
+        qc.invalidateQueries({ queryKey: ["analytics"] });
+        qc.invalidateQueries({ queryKey: ["markets"] });
+        qc.invalidateQueries({ queryKey: ["regions"] });
+        qc.invalidateQueries({ queryKey: ["companies"] });
+        qc.invalidateQueries({ queryKey: ["data_audit"] });
+      } else {
+        const err = "error" in res ? res.error : "Unknown error";
+        setLastQueueResult(`Failed: ${err}`);
+        toast.error(err);
+      }
+    },
+    onError: (e) => {
+      const msg = e instanceof Error ? e.message : String(e);
+      setLastQueueResult(`Failed: ${msg}`);
+      toast.error(msg);
+    },
+  });
+
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <SiteHeader />
@@ -183,6 +228,36 @@ function AdminPage() {
             </div>
           )}
         </div>
+
+        <div className="mt-4 rounded-lg border border-border bg-surface/60 p-6">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-accent">
+            Regional Grid Queue Ingestion Pipeline
+          </div>
+          <div className="mt-2 flex items-center justify-between gap-4">
+            <div>
+              <h2 className="font-semibold">Ingest Bulk Interconnection Queues</h2>
+              <p className="text-sm text-muted-foreground max-w-xl">
+                Generates 50–100 high-density BESS &amp; solar+storage hybrid entries across CAISO,
+                ERCOT, PJM, ISO-NE, MISO, NYISO, SERC. Rows land as{" "}
+                <code>source_type: queue_import</code>, <code>verification_status: unverified_queue</code>.
+              </p>
+            </div>
+            <Button
+              onClick={() => queueMut.mutate()}
+              disabled={queueMut.isPending}
+              variant="secondary"
+            >
+              {queueMut.isPending ? "Ingesting…" : "Ingest Bulk Interconnection Queues"}
+            </Button>
+          </div>
+          {lastQueueResult && (
+            <div className="mt-4 rounded-md bg-background/60 border border-border px-3 py-2 text-sm">
+              {lastQueueResult}
+            </div>
+          )}
+        </div>
+
+
 
         <div className="mt-10">
           <h2 className="font-semibold mb-3">Recent runs</h2>
