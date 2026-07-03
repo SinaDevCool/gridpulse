@@ -45,6 +45,7 @@ function AdminPage() {
   const runProjectsFn = useServerFn(runProjectIngestion);
   const runQueueFn = useServerFn(runQueueIngestion);
   const [lastResult, setLastResult] = useState<string | null>(null);
+  const [lastProjectResult, setLastProjectResult] = useState<string | null>(null);
   const [lastQueueResult, setLastQueueResult] = useState<string | null>(null);
 
   const runsQ = useQuery<Run[]>({
