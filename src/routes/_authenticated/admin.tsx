@@ -229,6 +229,36 @@ function AdminPage() {
           )}
         </div>
 
+        <div className="mt-4 rounded-lg border border-border bg-surface/60 p-6">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-accent">
+            Regional Grid Queue Ingestion Pipeline
+          </div>
+          <div className="mt-2 flex items-center justify-between gap-4">
+            <div>
+              <h2 className="font-semibold">Ingest Bulk Interconnection Queues</h2>
+              <p className="text-sm text-muted-foreground max-w-xl">
+                Generates 50–100 high-density BESS &amp; solar+storage hybrid entries across CAISO,
+                ERCOT, PJM, ISO-NE, MISO, NYISO, SERC. Rows land as{" "}
+                <code>source_type: queue_import</code>, <code>verification_status: unverified_queue</code>.
+              </p>
+            </div>
+            <Button
+              onClick={() => queueMut.mutate()}
+              disabled={queueMut.isPending}
+              variant="secondary"
+            >
+              {queueMut.isPending ? "Ingesting…" : "Ingest Bulk Interconnection Queues"}
+            </Button>
+          </div>
+          {lastQueueResult && (
+            <div className="mt-4 rounded-md bg-background/60 border border-border px-3 py-2 text-sm">
+              {lastQueueResult}
+            </div>
+          )}
+        </div>
+
+
+
         <div className="mt-10">
           <h2 className="font-semibold mb-3">Recent runs</h2>
           {runsQ.isLoading ? (
