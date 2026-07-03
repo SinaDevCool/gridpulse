@@ -128,6 +128,48 @@ function AdminPage() {
     },
   });
 
+  const queueMut = useMutation({
+    mutationFn: async () => {
+      const toastId = toast.loading("Ingesting regional interconnection queues…");
+      try {
+        const res = await runQueueFn();
+        toast.dismiss(toastId);
+        return res;
+      } catch (e) {
+        toast.dismiss(toastId);
+        throw e;
+      }
+    },
+    onSuccess: (res) => {
+      if ("ok" in res && res.ok) {
+        setLastQueueResult(
+          `Generated ${res.generated} queue entries — inserted ${res.inserted} new, updated ${res.updated}, failed ${res.failed} in ${(res.durationMs / 1000).toFixed(1)}s.`,
+        );
+        toast.success(
+          `Queues: +${res.inserted} new, ${res.updated} updated (${res.generated} generated)`,
+        );
+        qc.invalidateQueries({ queryKey: ["projects"] });
+        qc.invalidateQueries({ queryKey: ["project"] });
+        qc.invalidateQueries({ queryKey: ["project-slug"] });
+        qc.invalidateQueries({ queryKey: ["analytics"] });
+        qc.invalidateQueries({ queryKey: ["markets"] });
+        qc.invalidateQueries({ queryKey: ["regions"] });
+        qc.invalidateQueries({ queryKey: ["companies"] });
+        qc.invalidateQueries({ queryKey: ["data_audit"] });
+      } else {
+        const err = "error" in res ? res.error : "Unknown error";
+        setLastQueueResult(`Failed: ${err}`);
+        toast.error(err);
+      }
+    },
+    onError: (e) => {
+      const msg = e instanceof Error ? e.message : String(e);
+      setLastQueueResult(`Failed: ${msg}`);
+      toast.error(msg);
+    },
+  });
+
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <SiteHeader />
