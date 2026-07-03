@@ -43,6 +43,7 @@ function AdminPage() {
   const listFn = useServerFn(listIngestionRuns);
   const auditFn = useServerFn(getDataAudit);
   const runProjectsFn = useServerFn(runProjectIngestion);
+  const runQueueFn = useServerFn(runQueueIngestion);
   const [lastResult, setLastResult] = useState<string | null>(null);
   const [lastProjectResult, setLastProjectResult] = useState<string | null>(null);
 
