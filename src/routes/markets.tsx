@@ -8,6 +8,7 @@ import {
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { projectsQuery } from "@/lib/gridpulse-repo";
+import { isLiveProject, type Project } from "@/lib/gridpulse-data";
 import { type Project } from "@/lib/gridpulse-data";
 
 export const Route = createFileRoute("/markets")({
