@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { projectsQuery, articlesQuery } from "@/lib/gridpulse-repo";
+import { isLiveProject } from "@/lib/gridpulse-data";
 
 function RegionsPage() {
   const { data: projects = [], isLoading: pLoading } = useQuery(projectsQuery());
