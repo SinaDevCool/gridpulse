@@ -223,6 +223,7 @@ export type Database = {
           captured_at: string
           change_abs: number | null
           change_pct: number | null
+          country_code: string | null
           created_at: string
           currency: string | null
           fetched_at: string
@@ -242,6 +243,7 @@ export type Database = {
           captured_at?: string
           change_abs?: number | null
           change_pct?: number | null
+          country_code?: string | null
           created_at?: string
           currency?: string | null
           fetched_at?: string
@@ -261,6 +263,7 @@ export type Database = {
           captured_at?: string
           change_abs?: number | null
           change_pct?: number | null
+          country_code?: string | null
           created_at?: string
           currency?: string | null
           fetched_at?: string
@@ -438,6 +441,7 @@ export type Database = {
           chemistry: string | null
           cod: string
           country: string
+          country_code: string | null
           created_at: string
           description: string | null
           developer: string
@@ -470,6 +474,7 @@ export type Database = {
           chemistry?: string | null
           cod: string
           country: string
+          country_code?: string | null
           created_at?: string
           description?: string | null
           developer: string
@@ -502,6 +507,7 @@ export type Database = {
           chemistry?: string | null
           cod?: string
           country?: string
+          country_code?: string | null
           created_at?: string
           description?: string | null
           developer?: string

@@ -11,7 +11,7 @@ import { SiteFooter } from "@/components/site/SiteFooter";
 import { AuthWall } from "@/components/site/AuthWall";
 import { projectsQuery } from "@/lib/gridpulse-repo";
 import { supabase } from "@/integrations/supabase/client";
-import type { Project } from "@/lib/gridpulse-data";
+import { isLiveProject, type Project } from "@/lib/gridpulse-data";
 
 export const Route = createFileRoute("/analytics")({
   ssr: false,
@@ -131,12 +131,14 @@ function GatedAnalyticsPage() {
 }
 
 function AnalyticsPage() {
-  const { data: projects = [], isLoading, isError, error, refetch } = useQuery(projectsQuery());
+  const { data: allProjects = [], isLoading, isError, error, refetch } = useQuery(projectsQuery());
+  // Enterprise dashboards exclude demo seed rows so metrics reflect live pipeline only.
+  const projects = useMemo(() => allProjects.filter(isLiveProject), [allProjects]);
   const tier = useTier();
   const canExportAdvanced = tier === "pro" || tier === "enterprise";
 
   const [region, setRegion] = useState("");
-  const [country, setCountry] = useState("");
+  const [country, setCountry] = useState(""); // country_code (ISO-alpha-2) when known, else country name
   const [status, setStatus] = useState("");
   const [chemistry, setChemistry] = useState("");
   const [developer, setDeveloper] = useState("");
@@ -144,7 +146,19 @@ function AnalyticsPage() {
   const [compare, setCompare] = useState<string[]>([]);
 
   const regions = useMemo(() => uniq(projects.map((p) => p.region)), [projects]);
-  const countries = useMemo(() => uniq(projects.map((p) => p.country)), [projects]);
+  // Country options deduped by country_code (so US/USA/United States collapse to one chip).
+  const countryOptions = useMemo(() => {
+    const map = new Map<string, string>(); // key → label
+    for (const p of projects) {
+      const key = (p.countryCode ?? p.country ?? "").trim();
+      const label = (p.country ?? "").trim() || key;
+      if (!key) continue;
+      if (!map.has(key)) map.set(key, label);
+    }
+    return Array.from(map.entries())
+      .map(([value, label]) => ({ value, label }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [projects]);
   const statuses = useMemo(() => uniq(projects.map((p) => p.status)), [projects]);
   const chemistries = useMemo(() => uniq(projects.map((p) => p.chemistry ?? p.technology)), [projects]);
   const developers = useMemo(() => uniq(projects.map((p) => p.developer)), [projects]);
@@ -156,7 +170,10 @@ function AnalyticsPage() {
   const filtered = useMemo(() => {
     return projects.filter((p) => {
       if (region && p.region !== region) return false;
-      if (country && p.country !== country) return false;
+      if (country) {
+        const key = (p.countryCode ?? p.country ?? "").trim();
+        if (key !== country) return false;
+      }
       if (status && p.status !== status) return false;
       if (chemistry && (p.chemistry ?? p.technology) !== chemistry) return false;
       if (developer && p.developer !== developer) return false;
@@ -287,7 +304,17 @@ function AnalyticsPage() {
           </div>
           <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-6">
             <FilterSelect label="Region" value={region} onChange={setRegion} options={regions} />
-            <FilterSelect label="Country" value={country} onChange={setCountry} options={countries} />
+            <label className="flex min-w-0 flex-col gap-1">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Country</span>
+              <select
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+                className="w-full truncate rounded-md border border-border/60 bg-background px-2 py-1.5 text-xs"
+              >
+                <option value="">All</option>
+                {countryOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </label>
             <FilterSelect label="Status" value={status} onChange={setStatus} options={statuses} />
             <FilterSelect label="Chemistry" value={chemistry} onChange={setChemistry} options={chemistries} />
             <FilterSelect label="Developer" value={developer} onChange={setDeveloper} options={developers} />

@@ -43,6 +43,7 @@ type ProjectRow = {
   technology: string | null;
   location: string | null;
   country: string | null;
+  country_code: string | null;
   region: string | null;
   lat: number | null;
   lng: number | null;
@@ -102,6 +103,7 @@ function mapProject(r: ProjectRow): Project {
     technology: r.technology ?? "LFP",
     location: r.location ?? "",
     country: r.country ?? "",
+    countryCode: r.country_code ?? null,
     region: r.region ?? "",
     lat: Number(r.lat ?? 0),
     lng: Number(r.lng ?? 0),
@@ -125,7 +127,7 @@ const ARTICLE_COLS =
   "id,slug,headline,summary,content,why_it_matters,category,source_name,source_domain,source_url,author,read_minutes,verified,is_breaking,tags,region,also_reported_by,related_project_ids,published_at,source_type,fetched_at,last_verified_at,verification_status";
 
 const PROJECT_COLS =
-  "id,external_id,slug,name,developer,capacity_mw,capacity_mwh,technology,location,country,region,lat,lng,status,cod,description,owner,operator,chemistry,use_case,offtaker,source_urls,last_verified_at,source_type,fetched_at,verification_status";
+  "id,external_id,slug,name,developer,capacity_mw,capacity_mwh,technology,location,country,country_code,region,lat,lng,status,cod,description,owner,operator,chemistry,use_case,offtaker,source_urls,last_verified_at,source_type,fetched_at,verification_status";
 
 export async function fetchArticles(): Promise<Article[]> {
   const { data, error } = await supabase

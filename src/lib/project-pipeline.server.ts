@@ -57,24 +57,53 @@ function slugify(s: string): string {
     .slice(0, 90);
 }
 
-function regionDefaults(r: Region | null): { country: string; lat: number; lng: number } {
+function regionDefaults(r: Region | null): { country: string; countryCode: string; lat: number; lng: number } {
   switch (r) {
     case "north-america":
-      return { country: "United States", lat: 39.5, lng: -98.35 };
+      return { country: "United States", countryCode: "US", lat: 39.5, lng: -98.35 };
     case "europe":
-      return { country: "Germany", lat: 51.16, lng: 10.45 };
+      return { country: "Germany", countryCode: "DE", lat: 51.16, lng: 10.45 };
     case "asia-pacific":
-      return { country: "China", lat: 35.86, lng: 104.19 };
+      return { country: "China", countryCode: "CN", lat: 35.86, lng: 104.19 };
     case "middle-east":
-      return { country: "UAE", lat: 24.0, lng: 54.0 };
+      return { country: "United Arab Emirates", countryCode: "AE", lat: 24.0, lng: 54.0 };
     case "africa":
-      return { country: "South Africa", lat: -8.78, lng: 34.5 };
+      return { country: "South Africa", countryCode: "ZA", lat: -8.78, lng: 34.5 };
     case "latin-america":
-      return { country: "Chile", lat: -14.23, lng: -51.92 };
+      return { country: "Chile", countryCode: "CL", lat: -14.23, lng: -51.92 };
     default:
-      return { country: "Unknown", lat: 0, lng: 0 };
+      return { country: "Unknown", countryCode: "", lat: 0, lng: 0 };
   }
 }
+
+// Map country strings (from AI extraction) → ISO-3166 alpha-2 uppercase code.
+// Also returns a normalized canonical country name.
+function normalizeCountry(input: string | null): { country: string; countryCode: string | null } {
+  const raw = (input ?? "").trim();
+  if (!raw) return { country: "", countryCode: null };
+  const key = raw.toLowerCase();
+  const table: Record<string, [string, string]> = {
+    "us": ["United States", "US"], "usa": ["United States", "US"], "u.s.": ["United States", "US"],
+    "united states": ["United States", "US"], "united states of america": ["United States", "US"],
+    "uk": ["United Kingdom", "GB"], "gb": ["United Kingdom", "GB"],
+    "britain": ["United Kingdom", "GB"], "united kingdom": ["United Kingdom", "GB"],
+    "germany": ["Germany", "DE"], "de": ["Germany", "DE"], "deutschland": ["Germany", "DE"],
+    "australia": ["Australia", "AU"], "china": ["China", "CN"], "japan": ["Japan", "JP"],
+    "india": ["India", "IN"], "chile": ["Chile", "CL"], "spain": ["Spain", "ES"],
+    "saudi arabia": ["Saudi Arabia", "SA"], "new zealand": ["New Zealand", "NZ"],
+    "uae": ["United Arab Emirates", "AE"], "united arab emirates": ["United Arab Emirates", "AE"],
+    "south africa": ["South Africa", "ZA"], "france": ["France", "FR"],
+    "italy": ["Italy", "IT"], "netherlands": ["Netherlands", "NL"], "canada": ["Canada", "CA"],
+    "mexico": ["Mexico", "MX"], "brazil": ["Brazil", "BR"], "korea": ["South Korea", "KR"],
+    "south korea": ["South Korea", "KR"], "sweden": ["Sweden", "SE"], "poland": ["Poland", "PL"],
+    "ireland": ["Ireland", "IE"], "philippines": ["Philippines", "PH"], "indonesia": ["Indonesia", "ID"],
+  };
+  const hit = table[key];
+  if (hit) return { country: hit[0], countryCode: hit[1] };
+  // Pass through unrecognized names; leave code null so filter chips stay clean.
+  return { country: raw, countryCode: null };
+}
+
 
 async function extractFromArticle(a: ArticleRow): Promise<Extracted> {
   const apiKey = process.env.LOVABLE_API_KEY;
@@ -197,6 +226,11 @@ export async function runProjectPipeline(opts: {
         new Set([...(existing?.source_urls ?? []), a.source_url].filter(Boolean)),
       );
 
+      const defaultsCountry = { country: defaults.country, countryCode: defaults.countryCode };
+      const normalized = data.country ? normalizeCountry(data.country) : defaultsCountry;
+      const finalCountry = normalized.country || defaults.country;
+      const finalCode = normalized.countryCode || defaults.countryCode || null;
+
       const baseFields = {
         name: data.name,
         developer: data.developer ?? "Unknown",
@@ -207,8 +241,9 @@ export async function runProjectPipeline(opts: {
         capacity_mwh: data.capacity_mwh ?? (data.capacity_mw ?? 0) * 2,
         chemistry: data.chemistry,
         technology: data.technology ?? (data.chemistry ? `${data.chemistry} BESS` : "Lithium-ion BESS"),
-        location: data.location ?? data.grid ?? defaults.country,
-        country: data.country ?? defaults.country,
+        location: data.location ?? data.grid ?? finalCountry,
+        country: finalCountry,
+        country_code: finalCode,
         region,
         status: data.status ?? "Announced",
         cod: data.cod ?? "TBD",
