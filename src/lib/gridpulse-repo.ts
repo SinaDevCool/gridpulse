@@ -43,6 +43,7 @@ type ProjectRow = {
   technology: string | null;
   location: string | null;
   country: string | null;
+  country_code: string | null;
   region: string | null;
   lat: number | null;
   lng: number | null;
