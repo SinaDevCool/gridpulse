@@ -304,7 +304,17 @@ function AnalyticsPage() {
           </div>
           <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-6">
             <FilterSelect label="Region" value={region} onChange={setRegion} options={regions} />
-            <FilterSelect label="Country" value={country} onChange={setCountry} options={countries} />
+            <label className="flex min-w-0 flex-col gap-1">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Country</span>
+              <select
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+                className="w-full truncate rounded-md border border-border/60 bg-background px-2 py-1.5 text-xs"
+              >
+                <option value="">All</option>
+                {countryOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </label>
             <FilterSelect label="Status" value={status} onChange={setStatus} options={statuses} />
             <FilterSelect label="Chemistry" value={chemistry} onChange={setChemistry} options={chemistries} />
             <FilterSelect label="Developer" value={developer} onChange={setDeveloper} options={developers} />
