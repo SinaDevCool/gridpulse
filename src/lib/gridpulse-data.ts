@@ -46,6 +46,7 @@ export interface Project {
   technology: string;
   location: string;
   country: string;
+  countryCode?: string | null; // ISO-3166 alpha-2 (uppercase)
   region: string;
   lat: number;
   lng: number;
@@ -60,9 +61,14 @@ export interface Project {
   sourceUrls?: string[];
   lastVerifiedAt?: string;
   // Provenance
-  sourceType?: string; // 'rss' | 'manual' | 'seed'
+  sourceType?: string; // 'rss' | 'manual' | 'seed' | 'queue_import'
   fetchedAt?: string | null;
-  verificationStatus?: string; // 'verified' | 'unverified' | 'demo'
+  verificationStatus?: string; // 'verified' | 'unverified' | 'demo' | 'unverified_queue'
+}
+
+// Aggregation predicate: enterprise dashboards exclude demo seed rows.
+export function isLiveProject(p: Pick<Project, "verificationStatus" | "sourceType">): boolean {
+  return p.verificationStatus !== "demo" && p.sourceType !== "seed";
 }
 
 export const categoryStyles: Record<ArticleCategory, { label: string; className: string }> = {
