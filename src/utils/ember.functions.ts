@@ -5,7 +5,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-const EMBER_BASE = "https://api.ember-energy.org/v1";
+type JsonValue = string | number | boolean | null | JsonValue[] | { [k: string]: JsonValue };
 const USER_AGENT = "GridPulseBot/1.0 (+https://gridpulseinsights.com)";
 
 async function emberFetch(path: string, init?: RequestInit): Promise<unknown> {
