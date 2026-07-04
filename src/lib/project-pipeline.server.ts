@@ -226,6 +226,11 @@ export async function runProjectPipeline(opts: {
         new Set([...(existing?.source_urls ?? []), a.source_url].filter(Boolean)),
       );
 
+      const defaultsCountry = { country: defaults.country, countryCode: defaults.countryCode };
+      const normalized = data.country ? normalizeCountry(data.country) : defaultsCountry;
+      const finalCountry = normalized.country || defaults.country;
+      const finalCode = normalized.countryCode || defaults.countryCode || null;
+
       const baseFields = {
         name: data.name,
         developer: data.developer ?? "Unknown",
@@ -236,8 +241,9 @@ export async function runProjectPipeline(opts: {
         capacity_mwh: data.capacity_mwh ?? (data.capacity_mw ?? 0) * 2,
         chemistry: data.chemistry,
         technology: data.technology ?? (data.chemistry ? `${data.chemistry} BESS` : "Lithium-ion BESS"),
-        location: data.location ?? data.grid ?? defaults.country,
-        country: data.country ?? defaults.country,
+        location: data.location ?? data.grid ?? finalCountry,
+        country: finalCountry,
+        country_code: finalCode,
         region,
         status: data.status ?? "Announced",
         cod: data.cod ?? "TBD",
