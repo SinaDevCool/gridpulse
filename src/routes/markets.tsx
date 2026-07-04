@@ -41,7 +41,8 @@ function rollup(projects: Project[], key: (p: Project) => string) {
 }
 
 function MarketsPage() {
-  const { data: projects = [], isLoading, isError, error, refetch } = useQuery(projectsQuery());
+  const { data: allProjects = [], isLoading, isError, error, refetch } = useQuery(projectsQuery());
+  const projects = useMemo(() => allProjects.filter(isLiveProject), [allProjects]);
 
   const byRegion = useMemo(() => rollup(projects, (p) => p.region).sort((a, b) => b.mw - a.mw), [projects]);
   const byStatus = useMemo(() => rollup(projects, (p) => p.status), [projects]);
