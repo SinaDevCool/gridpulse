@@ -42,7 +42,7 @@ export const fetchEmberCountryProfile = createServerFn({ method: "GET" })
     // (e.g. `/electricity/generation?country=${data.countryCode}&year=...`).
     const qs = new URLSearchParams({ country: data.countryCode });
     if (data.year) qs.set("year", String(data.year));
-    const payload = await emberFetch(`/electricity/generation?${qs.toString()}`);
+    const payload = (await emberFetch(`/electricity/generation?${qs.toString()}`)) as Record<string, unknown>;
     return { ok: true as const, countryCode: data.countryCode, payload };
   });
 
