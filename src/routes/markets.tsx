@@ -64,7 +64,7 @@ function MarketsPage() {
       <SiteHeader />
       <main className="mx-auto max-w-[1400px] px-4 py-12 lg:px-8">
         <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-accent">Market Dashboard</div>
-        <h1 className="mt-2 font-display text-3xl md:text-5xl font-bold tracking-tight">Grid-scale storage, by the numbers</h1>
+        <h1 className="mt-2 font-display text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight leading-tight">Grid-scale storage, by the numbers</h1>
         <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
           Live aggregates from {projects.length.toLocaleString()} tracked projects in the GridPulse database. Slice the pipeline by region, status, chemistry, and upcoming COD year.
         </p>

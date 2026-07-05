@@ -130,9 +130,9 @@ export function SiteHeader() {
 
       {/* Mobile drawer */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-[60] lg:hidden">
-          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
-          <div className="absolute right-0 top-0 h-full w-[280px] bg-surface border-l border-border p-5 flex flex-col gap-2">
+        <div className="fixed inset-0 z-[70] lg:hidden">
+          <div className="absolute inset-0 bg-background/95 backdrop-blur-md" onClick={() => setMobileOpen(false)} />
+          <div className="absolute right-0 top-0 h-full w-[280px] max-w-[85vw] bg-surface border-l border-border p-5 flex flex-col gap-2 shadow-2xl overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <span className="font-display text-lg font-bold">Menu</span>
               <button onClick={() => setMobileOpen(false)} aria-label="Close" className="h-9 w-9 inline-flex items-center justify-center rounded-md border border-border">

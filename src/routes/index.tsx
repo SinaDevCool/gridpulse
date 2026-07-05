@@ -144,7 +144,7 @@ function HomePage() {
               Live · {articles.length} stories tracked
             </span>
           </div>
-          <h1 className="mt-5 max-w-5xl font-display text-4xl font-bold leading-[1.05] tracking-tight md:text-6xl lg:text-7xl">
+          <h1 className="mt-5 max-w-5xl font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold leading-[1.05] tracking-tight">
             <span className="text-cyan-accent">
               <CountUp value={agg.verifiedTotalGw > 0 ? agg.verifiedTotalGw : agg.allTotalGw} decimals={agg.verifiedTotalGw < 10 ? 2 : 1} duration={1800} /> GW
             </span>{" "}
@@ -168,7 +168,7 @@ function HomePage() {
                 </span>
                 <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">{s.label}</div>
                 <div className="mt-3 flex items-baseline gap-1.5">
-                  <span className="font-display text-4xl font-bold text-foreground">
+                  <span className="font-display text-3xl sm:text-4xl font-bold text-foreground leading-none tracking-tight">
                     {s.prefix}
                     <CountUp value={s.value} decimals={s.decimals} />
                   </span>
