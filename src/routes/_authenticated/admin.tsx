@@ -306,6 +306,55 @@ function AdminPage() {
           )}
         </div>
 
+        <div className="mt-4 rounded-lg border border-border bg-surface/60 p-6">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-accent">
+            International Grid Data — Ember Energy
+          </div>
+          <div className="mt-2 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="font-semibold">Fetch Live International Grid Data</h2>
+              <p className="text-sm text-muted-foreground max-w-xl">
+                Pulls annual generation mix (Solar, Wind, Nuclear, …) from the public Ember
+                Energy REST API and upserts each series into <code>market_data</code> as{" "}
+                <code>source_type: api</code>, <code>verification_status: verified</code>.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Select value={emberCountry} onValueChange={setEmberCountry}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Country" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="DE">Germany (DE)</SelectItem>
+                  <SelectItem value="GB">United Kingdom (GB)</SelectItem>
+                  <SelectItem value="FR">France (FR)</SelectItem>
+                  <SelectItem value="ES">Spain (ES)</SelectItem>
+                  <SelectItem value="IT">Italy (IT)</SelectItem>
+                  <SelectItem value="US">United States (US)</SelectItem>
+                  <SelectItem value="CN">China (CN)</SelectItem>
+                  <SelectItem value="IN">India (IN)</SelectItem>
+                  <SelectItem value="JP">Japan (JP)</SelectItem>
+                  <SelectItem value="AU">Australia (AU)</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                onClick={() => emberMut.mutate()}
+                disabled={emberMut.isPending}
+                variant="secondary"
+              >
+                {emberMut.isPending ? "Fetching…" : "Fetch Live International Grid Data"}
+              </Button>
+            </div>
+          </div>
+          {lastEmberResult && (
+            <div className="mt-4 rounded-md bg-background/60 border border-border px-3 py-2 text-sm">
+              {lastEmberResult}
+            </div>
+          )}
+        </div>
+
+
+
 
 
         <div className="mt-10">
