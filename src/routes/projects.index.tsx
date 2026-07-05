@@ -102,7 +102,7 @@ function ProjectsPage() {
       <SiteHeader />
       <main className="mx-auto max-w-[1400px] px-4 py-12 lg:px-8">
         <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-accent">Project Database</div>
-        <h1 className="mt-2 font-display text-3xl md:text-5xl font-bold tracking-tight">Global BESS projects</h1>
+        <h1 className="mt-2 font-display text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight leading-tight">Global BESS projects</h1>
         <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
           {isLoading ? "Loading…" : `Live · ${projects.length} tracked utility-scale projects.`} Each project carries provenance fields; rows tagged "Demo" or "Seed" are not yet verified live records. Click any row for full specs and sources.
         </p>
