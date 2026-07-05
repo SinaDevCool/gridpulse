@@ -176,8 +176,9 @@ function ProjectsPage() {
           <RangeInput label="MWh max" value={sp.mwhMax} onChange={(v) => set({ mwhMax: v })} placeholder="Any" />
         </div>
 
-        <div className="mt-6 overflow-x-auto rounded-xl border border-border">
-          <table className="w-full text-sm">
+        <div className="mt-6 overflow-x-auto w-full max-w-full rounded-xl border border-border">
+          <table className="w-full min-w-[820px] text-sm">
+
             <thead className="bg-surface/60 text-[10px] uppercase tracking-wider text-muted-foreground">
               <tr>
                 <th className="px-4 py-3 text-left">Project</th>
