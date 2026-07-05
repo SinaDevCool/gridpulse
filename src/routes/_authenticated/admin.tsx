@@ -10,7 +10,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { runNewsIngestion, listIngestionRuns } from "@/utils/news.functions";
 import { runProjectIngestion } from "@/utils/projects.functions";
 import { runQueueIngestion } from "@/utils/queue.functions";
+import { syncEmberCountryGeneration } from "@/utils/ember.functions";
 import { getDataAudit, type DataAuditCounts } from "@/utils/data-audit.functions";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [{ title: "Admin — GridPulse" }] }),
@@ -47,6 +55,9 @@ function AdminPage() {
   const [lastResult, setLastResult] = useState<string | null>(null);
   const [lastProjectResult, setLastProjectResult] = useState<string | null>(null);
   const [lastQueueResult, setLastQueueResult] = useState<string | null>(null);
+  const [lastEmberResult, setLastEmberResult] = useState<string | null>(null);
+  const [emberCountry, setEmberCountry] = useState<string>("DE");
+  const emberFn = useServerFn(syncEmberCountryGeneration);
 
   const runsQ = useQuery<Run[]>({
     queryKey: ["ingestion_runs"],
@@ -169,6 +180,44 @@ function AdminPage() {
     },
   });
 
+  const emberMut = useMutation({
+    mutationFn: async () => {
+      const toastId = toast.loading("Fetching live metrics from Ember Energy...");
+      try {
+        const res = await emberFn({ data: { countryCode: emberCountry } });
+        toast.dismiss(toastId);
+        return res;
+      } catch (e) {
+        toast.dismiss(toastId);
+        throw e;
+      }
+    },
+    onSuccess: (res) => {
+      if ("ok" in res && res.ok) {
+        setLastEmberResult(
+          `Synchronized ${res.upserted} generation series for ${res.countryCode} (year ${res.year}) in ${(res.durationMs / 1000).toFixed(1)}s.`,
+        );
+        toast.success(`Successfully synchronized live ${res.countryCode} grid profile!`);
+        qc.invalidateQueries({ queryKey: ["market-data-latest"] });
+        qc.invalidateQueries({ queryKey: ["markets"] });
+        qc.invalidateQueries({ queryKey: ["analytics"] });
+        qc.invalidateQueries({ queryKey: ["regions"] });
+        qc.invalidateQueries({ queryKey: ["data_audit"] });
+      } else {
+        const err = "error" in res ? res.error : "Unknown error";
+        setLastEmberResult(`Failed: ${err}`);
+        toast.error(err);
+      }
+    },
+    onError: (e) => {
+      const msg = e instanceof Error ? e.message : String(e);
+      setLastEmberResult(`Failed: ${msg}`);
+      toast.error(msg);
+    },
+  });
+
+
+
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -256,6 +305,55 @@ function AdminPage() {
             </div>
           )}
         </div>
+
+        <div className="mt-4 rounded-lg border border-border bg-surface/60 p-6">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-accent">
+            International Grid Data — Ember Energy
+          </div>
+          <div className="mt-2 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="font-semibold">Fetch Live International Grid Data</h2>
+              <p className="text-sm text-muted-foreground max-w-xl">
+                Pulls annual generation mix (Solar, Wind, Nuclear, …) from the public Ember
+                Energy REST API and upserts each series into <code>market_data</code> as{" "}
+                <code>source_type: api</code>, <code>verification_status: verified</code>.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Select value={emberCountry} onValueChange={setEmberCountry}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Country" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="DE">Germany (DE)</SelectItem>
+                  <SelectItem value="GB">United Kingdom (GB)</SelectItem>
+                  <SelectItem value="FR">France (FR)</SelectItem>
+                  <SelectItem value="ES">Spain (ES)</SelectItem>
+                  <SelectItem value="IT">Italy (IT)</SelectItem>
+                  <SelectItem value="US">United States (US)</SelectItem>
+                  <SelectItem value="CN">China (CN)</SelectItem>
+                  <SelectItem value="IN">India (IN)</SelectItem>
+                  <SelectItem value="JP">Japan (JP)</SelectItem>
+                  <SelectItem value="AU">Australia (AU)</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                onClick={() => emberMut.mutate()}
+                disabled={emberMut.isPending}
+                variant="secondary"
+              >
+                {emberMut.isPending ? "Fetching…" : "Fetch Live International Grid Data"}
+              </Button>
+            </div>
+          </div>
+          {lastEmberResult && (
+            <div className="mt-4 rounded-md bg-background/60 border border-border px-3 py-2 text-sm">
+              {lastEmberResult}
+            </div>
+          )}
+        </div>
+
+
 
 
 
