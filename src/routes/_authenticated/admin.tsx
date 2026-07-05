@@ -180,6 +180,44 @@ function AdminPage() {
     },
   });
 
+  const emberMut = useMutation({
+    mutationFn: async () => {
+      const toastId = toast.loading("Fetching live metrics from Ember Energy...");
+      try {
+        const res = await emberFn({ data: { countryCode: emberCountry } });
+        toast.dismiss(toastId);
+        return res;
+      } catch (e) {
+        toast.dismiss(toastId);
+        throw e;
+      }
+    },
+    onSuccess: (res) => {
+      if ("ok" in res && res.ok) {
+        setLastEmberResult(
+          `Synchronized ${res.upserted} generation series for ${res.countryCode} (year ${res.year}) in ${(res.durationMs / 1000).toFixed(1)}s.`,
+        );
+        toast.success(`Successfully synchronized live ${res.countryCode} grid profile!`);
+        qc.invalidateQueries({ queryKey: ["market-data-latest"] });
+        qc.invalidateQueries({ queryKey: ["markets"] });
+        qc.invalidateQueries({ queryKey: ["analytics"] });
+        qc.invalidateQueries({ queryKey: ["regions"] });
+        qc.invalidateQueries({ queryKey: ["data_audit"] });
+      } else {
+        const err = "error" in res ? res.error : "Unknown error";
+        setLastEmberResult(`Failed: ${err}`);
+        toast.error(err);
+      }
+    },
+    onError: (e) => {
+      const msg = e instanceof Error ? e.message : String(e);
+      setLastEmberResult(`Failed: ${msg}`);
+      toast.error(msg);
+    },
+  });
+
+
+
 
   return (
     <div className="min-h-screen bg-background text-foreground">
