@@ -368,8 +368,9 @@ function AdminPage() {
           ) : (runsQ.data ?? []).length === 0 ? (
             <div className="text-sm text-muted-foreground">No runs yet.</div>
           ) : (
-            <div className="overflow-hidden rounded-lg border border-border">
-              <table className="w-full text-sm">
+            <div className="overflow-x-auto w-full max-w-full rounded-lg border border-border">
+              <table className="w-full min-w-[640px] text-sm">
+
                 <thead className="bg-surface/60 text-xs uppercase tracking-wide text-muted-foreground">
                   <tr>
                     <th className="px-3 py-2 text-left">Started</th>
