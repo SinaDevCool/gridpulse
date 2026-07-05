@@ -168,7 +168,7 @@ function HomePage() {
                 </span>
                 <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">{s.label}</div>
                 <div className="mt-3 flex items-baseline gap-1.5">
-                  <span className="font-display text-4xl font-bold text-foreground">
+                  <span className="font-display text-3xl sm:text-4xl font-bold text-foreground leading-none tracking-tight">
                     {s.prefix}
                     <CountUp value={s.value} decimals={s.decimals} />
                   </span>
