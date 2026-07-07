@@ -9,7 +9,7 @@ import { lovable } from "@/integrations/lovable";
 
 const authSearchSchema = z.object({
   redirect: z.string().optional(),
-  mode: z.enum(["signin", "signup"]).optional(),
+  mode: z.enum(["signin", "signup", "reset"]).optional(),
 });
 
 export const Route = createFileRoute("/auth")({
