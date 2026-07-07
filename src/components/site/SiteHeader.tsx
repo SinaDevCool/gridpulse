@@ -128,8 +128,9 @@ export function SiteHeader() {
           </button>
         </div>
       </div>
+    </header>
 
-      {/* Mobile drawer */}
+    {/* Mobile drawer */}
       {mobileOpen && (
         <div className="fixed inset-0 z-[70] lg:hidden">
           <div className="absolute inset-0 bg-background/95 backdrop-blur-md" onClick={() => setMobileOpen(false)} />
