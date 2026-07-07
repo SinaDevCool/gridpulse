@@ -132,26 +132,28 @@ export function SiteHeader() {
       {mobileOpen && (
         <div className="fixed inset-0 z-[70] lg:hidden">
           <div className="absolute inset-0 bg-background/95 backdrop-blur-md" onClick={() => setMobileOpen(false)} />
-          <div className="absolute right-0 top-0 h-full w-[280px] max-w-[85vw] bg-surface border-l border-border p-5 flex flex-col gap-2 shadow-2xl overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <span className="font-display text-lg font-bold">Menu</span>
-              <button onClick={() => setMobileOpen(false)} aria-label="Close" className="h-9 w-9 inline-flex items-center justify-center rounded-md border border-border">
+          <div className="absolute right-0 top-0 h-full w-[280px] max-w-[85vw] bg-surface border-l border-border pt-24 pb-6 shadow-2xl overflow-y-auto">
+            <div className="flex items-center justify-between px-6 mb-6">
+              <span className="font-display text-lg font-bold text-slate-100">Menu</span>
+              <button onClick={() => setMobileOpen(false)} aria-label="Close" className="h-9 w-9 inline-flex items-center justify-center rounded-md border border-border text-slate-100 hover:text-cyan-400 transition-colors">
                 <X className="h-4 w-4" />
               </button>
             </div>
-            {navItems.map((n) => (
-              <Link
-                key={n.to}
-                to={n.to}
-                onClick={() => setMobileOpen(false)}
-                className="rounded-md px-3 py-2.5 text-sm text-foreground hover:bg-surface-elevated"
-              >
-                {n.label}
-              </Link>
-            ))}
-            <div className="mt-4 grid gap-2">
-              <Link to="/auth" onClick={() => setMobileOpen(false)} className="rounded-md border border-border px-3 py-2 text-center text-sm">Sign in</Link>
-              <Link to="/subscribe" onClick={() => setMobileOpen(false)} className="rounded-md bg-cyan-accent px-3 py-2 text-center text-sm font-medium text-primary-foreground">Subscribe</Link>
+            <div className="flex flex-col items-start justify-start gap-6 px-6 w-full">
+              {navItems.map((n) => (
+                <Link
+                  key={n.to}
+                  to={n.to}
+                  onClick={() => setMobileOpen(false)}
+                  className="text-base font-medium text-slate-100 hover:text-cyan-400 transition-colors"
+                >
+                  {n.label}
+                </Link>
+              ))}
+            </div>
+            <div className="mt-6 px-6 grid gap-2">
+              <Link to="/auth" onClick={() => setMobileOpen(false)} className="rounded-md border border-border px-3 py-2 text-center text-sm text-slate-100 hover:text-cyan-400 transition-colors">Sign in</Link>
+              <Link to="/subscribe" onClick={() => setMobileOpen(false)} className="rounded-md bg-cyan-accent px-3 py-2 text-center text-sm font-medium text-primary-foreground hover:brightness-110 transition">Subscribe</Link>
             </div>
           </div>
         </div>
