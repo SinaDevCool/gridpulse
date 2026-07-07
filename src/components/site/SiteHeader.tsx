@@ -69,7 +69,8 @@ export function SiteHeader() {
   }, [debouncedQ]);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border/60 glass-card backdrop-blur-xl">
+    <>
+      <header className="sticky top-0 z-50 border-b border-border/60 glass-card backdrop-blur-xl">
       <LiveTicker />
 
 
