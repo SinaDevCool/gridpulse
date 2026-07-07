@@ -147,7 +147,7 @@ export function SiteHeader() {
                   key={n.to}
                   to={n.to}
                   onClick={() => setMobileOpen(false)}
-                  className="text-base font-medium text-slate-100 hover:text-cyan-400 transition-colors"
+                  className="py-3 text-base font-medium text-slate-100 hover:text-cyan-400 transition-colors"
                 >
                   {n.label}
                 </Link>
