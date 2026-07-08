@@ -11,6 +11,7 @@ import { runNewsIngestion, listIngestionRuns } from "@/utils/news.functions";
 import { runProjectIngestion } from "@/utils/projects.functions";
 import { runQueueIngestion } from "@/utils/queue.functions";
 import { syncEmberCountryGeneration } from "@/utils/ember.functions";
+import { runSmardIngestion } from "@/utils/smard.functions";
 import { getDataAudit, type DataAuditCounts } from "@/utils/data-audit.functions";
 import {
   Select,
@@ -56,8 +57,10 @@ function AdminPage() {
   const [lastProjectResult, setLastProjectResult] = useState<string | null>(null);
   const [lastQueueResult, setLastQueueResult] = useState<string | null>(null);
   const [lastEmberResult, setLastEmberResult] = useState<string | null>(null);
+  const [lastSmardResult, setLastSmardResult] = useState<string | null>(null);
   const [emberCountry, setEmberCountry] = useState<string>("DE");
   const emberFn = useServerFn(syncEmberCountryGeneration);
+  const smardFn = useServerFn(runSmardIngestion);
 
   const runsQ = useQuery<Run[]>({
     queryKey: ["ingestion_runs"],
@@ -216,6 +219,41 @@ function AdminPage() {
     },
   });
 
+  const smardMut = useMutation({
+    mutationFn: async () => {
+      const toastId = toast.loading("Fetching live Germany spot prices from SMARD…");
+      try {
+        const res = await smardFn();
+        toast.dismiss(toastId);
+        return res;
+      } catch (e) {
+        toast.dismiss(toastId);
+        throw e;
+      }
+    },
+    onSuccess: (res) => {
+      if ("ok" in res && res.ok) {
+        setLastSmardResult(
+          `DE day-ahead spot: €${res.price.toFixed(2)}/MWh @ ${new Date(res.latestTimestamp).toLocaleString()} (${res.points} hourly points) in ${(res.durationMs / 1000).toFixed(1)}s.`,
+        );
+        toast.success("Successfully synchronized live Germany spot prices!");
+        qc.invalidateQueries({ queryKey: ["market-data-latest"] });
+        qc.invalidateQueries({ queryKey: ["markets"] });
+        qc.invalidateQueries({ queryKey: ["analytics"] });
+        qc.invalidateQueries({ queryKey: ["data_audit"] });
+      } else {
+        const err = "error" in res ? res.error : "Unknown error";
+        setLastSmardResult(`Failed: ${err}`);
+        toast.error(err);
+      }
+    },
+    onError: (e) => {
+      const msg = e instanceof Error ? e.message : String(e);
+      setLastSmardResult(`Failed: ${msg}`);
+      toast.error(msg);
+    },
+  });
+
 
 
 
@@ -280,15 +318,16 @@ function AdminPage() {
 
         <div className="mt-4 rounded-lg border border-border bg-surface/60 p-6">
           <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-accent">
-            Regional Grid Queue Ingestion Pipeline
+            Germany — Marktstammdatenregister (MaStR)
           </div>
           <div className="mt-2 flex items-center justify-between gap-4">
             <div>
-              <h2 className="font-semibold">Ingest Bulk Interconnection Queues</h2>
+              <h2 className="font-semibold">Sync live German utility asset registry</h2>
               <p className="text-sm text-muted-foreground max-w-xl">
-                Generates 50–100 high-density BESS &amp; solar+storage hybrid entries across CAISO,
-                ERCOT, PJM, ISO-NE, MISO, NYISO, SERC. Rows land as{" "}
-                <code>source_type: queue_import</code>, <code>verification_status: unverified_queue</code>.
+                Pulls battery-storage, wind, and solar units from the Bundesnetzagentur
+                Marktstammdatenregister Open Data API and upserts them into <code>projects</code>{" "}
+                as <code>country_code: DE</code>, <code>source_type: api</code>,{" "}
+                <code>verification_status: verified</code>. Non-German rows are untouched.
               </p>
             </div>
             <Button
@@ -296,7 +335,7 @@ function AdminPage() {
               disabled={queueMut.isPending}
               variant="secondary"
             >
-              {queueMut.isPending ? "Ingesting…" : "Ingest Bulk Interconnection Queues"}
+              {queueMut.isPending ? "Ingesting…" : "Sync MaStR (Germany)"}
             </Button>
           </div>
           {lastQueueResult && (
@@ -344,11 +383,24 @@ function AdminPage() {
               >
                 {emberMut.isPending ? "Fetching…" : "Fetch Live International Grid Data"}
               </Button>
+              <Button
+                onClick={() => smardMut.mutate()}
+                disabled={smardMut.isPending || emberCountry !== "DE"}
+                variant="secondary"
+                title={emberCountry !== "DE" ? "SMARD is Germany-only" : undefined}
+              >
+                {smardMut.isPending ? "Fetching…" : "Sync SMARD spot price (DE)"}
+              </Button>
             </div>
           </div>
           {lastEmberResult && (
             <div className="mt-4 rounded-md bg-background/60 border border-border px-3 py-2 text-sm">
               {lastEmberResult}
+            </div>
+          )}
+          {lastSmardResult && (
+            <div className="mt-2 rounded-md bg-background/60 border border-border px-3 py-2 text-sm">
+              {lastSmardResult}
             </div>
           )}
         </div>

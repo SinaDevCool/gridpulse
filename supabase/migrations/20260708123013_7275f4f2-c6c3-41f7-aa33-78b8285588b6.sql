@@ -1,0 +1,2 @@
+ALTER TABLE public.market_data DROP CONSTRAINT IF EXISTS market_data_kind_check;
+ALTER TABLE public.market_data ADD CONSTRAINT market_data_kind_check CHECK (kind IN ('stock','commodity','index','metric','price'));
