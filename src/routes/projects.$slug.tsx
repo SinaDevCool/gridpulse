@@ -133,7 +133,7 @@ function ProjectDetail() {
           <FollowButton targetType="project" targetKey={p.slug ?? p.id} targetLabel={p.name} size="sm" />
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-          <span>{p.developer || "Developer TBD"}</span>
+          <span>{developerLabel}</span>
           <span>·</span>
           <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{p.location}</span>
           <span>·</span>
