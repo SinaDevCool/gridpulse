@@ -11,6 +11,7 @@ import { runNewsIngestion, listIngestionRuns } from "@/utils/news.functions";
 import { runProjectIngestion } from "@/utils/projects.functions";
 import { runQueueIngestion } from "@/utils/queue.functions";
 import { syncEmberCountryGeneration } from "@/utils/ember.functions";
+import { runSmardIngestion } from "@/utils/smard.functions";
 import { getDataAudit, type DataAuditCounts } from "@/utils/data-audit.functions";
 import {
   Select,
