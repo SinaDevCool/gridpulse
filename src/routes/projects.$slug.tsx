@@ -142,9 +142,9 @@ function ProjectDetail() {
 
         <div className="mt-8 grid gap-4 md:grid-cols-4">
           <Stat label="Power" value={`${p.capacityMw.toLocaleString()} MW`} />
-          <Stat label="Energy" value={`${p.capacityMwh.toLocaleString()} MWh`} />
+          <Stat label="Energy" value={energyLabel} />
           <Stat label="Duration" value={`${duration} hr`} />
-          <Stat label="Chemistry" value={p.chemistry ?? p.technology} />
+          <Stat label="Chemistry" value={chemistryLabel} />
         </div>
 
         {p.description && (
