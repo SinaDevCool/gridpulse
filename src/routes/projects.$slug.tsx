@@ -102,7 +102,11 @@ function ProjectDetail() {
   const similar = projects
     .filter((x) => x.id !== p.id && (x.chemistry ?? x.technology) === (p.chemistry ?? p.technology))
     .slice(0, 4);
-  const duration = p.capacityMw > 0 ? (p.capacityMwh / p.capacityMw).toFixed(1) : "—";
+  const duration = p.capacityMw > 0 && p.capacityMwh ? (p.capacityMwh / p.capacityMw).toFixed(1) : "—";
+  const isDE = p.countryCode === "DE" || p.country === "Germany";
+  const developerLabel = p.developer || (isDE ? "Registered Operator Private" : "Developer TBD");
+  const energyLabel = p.capacityMwh ? `${p.capacityMwh.toLocaleString()} MWh` : "—";
+  const chemistryLabel = p.chemistry ? p.chemistry.toUpperCase() : (p.technology || "Unspecified Technology");
   const verifiedDate = p.lastVerifiedAt
     ? new Date(p.lastVerifiedAt).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })
     : null;
