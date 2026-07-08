@@ -25,7 +25,7 @@ export const Route = createFileRoute("/projects/$slug")({
           { title: `${loaderData.project.name} — GridPulse` },
           {
             name: "description",
-            content: `${loaderData.project.capacityMw} MW / ${loaderData.project.capacityMwh} MWh ${loaderData.project.technology} project in ${loaderData.project.location}.`,
+            content: `${loaderData.project.capacityMw} MW${loaderData.project.capacityMwh ? ` / ${loaderData.project.capacityMwh} MWh` : ""} ${loaderData.project.technology} project in ${loaderData.project.location}.`,
           },
           { property: "og:title", content: `${loaderData.project.name} — GridPulse` },
           {
