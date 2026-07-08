@@ -318,15 +318,16 @@ function AdminPage() {
 
         <div className="mt-4 rounded-lg border border-border bg-surface/60 p-6">
           <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-accent">
-            Regional Grid Queue Ingestion Pipeline
+            Germany — Marktstammdatenregister (MaStR)
           </div>
           <div className="mt-2 flex items-center justify-between gap-4">
             <div>
-              <h2 className="font-semibold">Ingest Bulk Interconnection Queues</h2>
+              <h2 className="font-semibold">Sync live German utility asset registry</h2>
               <p className="text-sm text-muted-foreground max-w-xl">
-                Generates 50–100 high-density BESS &amp; solar+storage hybrid entries across CAISO,
-                ERCOT, PJM, ISO-NE, MISO, NYISO, SERC. Rows land as{" "}
-                <code>source_type: queue_import</code>, <code>verification_status: unverified_queue</code>.
+                Pulls battery-storage, wind, and solar units from the Bundesnetzagentur
+                Marktstammdatenregister Open Data API and upserts them into <code>projects</code>{" "}
+                as <code>country_code: DE</code>, <code>source_type: api</code>,{" "}
+                <code>verification_status: verified</code>. Non-German rows are untouched.
               </p>
             </div>
             <Button
@@ -334,7 +335,7 @@ function AdminPage() {
               disabled={queueMut.isPending}
               variant="secondary"
             >
-              {queueMut.isPending ? "Ingesting…" : "Ingest Bulk Interconnection Queues"}
+              {queueMut.isPending ? "Ingesting…" : "Sync MaStR (Germany)"}
             </Button>
           </div>
           {lastQueueResult && (
