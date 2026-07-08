@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 export interface MarketDataPoint {
   id: string;
   symbol: string;
-  kind: "stock" | "commodity" | "index" | "metric";
+  kind: "stock" | "commodity" | "index" | "metric" | "price";
   label: string;
   value: number;
   unit: string;
