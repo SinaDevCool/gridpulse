@@ -219,6 +219,41 @@ function AdminPage() {
     },
   });
 
+  const smardMut = useMutation({
+    mutationFn: async () => {
+      const toastId = toast.loading("Fetching live Germany spot prices from SMARD…");
+      try {
+        const res = await smardFn();
+        toast.dismiss(toastId);
+        return res;
+      } catch (e) {
+        toast.dismiss(toastId);
+        throw e;
+      }
+    },
+    onSuccess: (res) => {
+      if ("ok" in res && res.ok) {
+        setLastSmardResult(
+          `DE day-ahead spot: €${res.price.toFixed(2)}/MWh @ ${new Date(res.latestTimestamp).toLocaleString()} (${res.points} hourly points) in ${(res.durationMs / 1000).toFixed(1)}s.`,
+        );
+        toast.success("Successfully synchronized live Germany spot prices!");
+        qc.invalidateQueries({ queryKey: ["market-data-latest"] });
+        qc.invalidateQueries({ queryKey: ["markets"] });
+        qc.invalidateQueries({ queryKey: ["analytics"] });
+        qc.invalidateQueries({ queryKey: ["data_audit"] });
+      } else {
+        const err = "error" in res ? res.error : "Unknown error";
+        setLastSmardResult(`Failed: ${err}`);
+        toast.error(err);
+      }
+    },
+    onError: (e) => {
+      const msg = e instanceof Error ? e.message : String(e);
+      setLastSmardResult(`Failed: ${msg}`);
+      toast.error(msg);
+    },
+  });
+
 
 
 
