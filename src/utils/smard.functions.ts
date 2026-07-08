@@ -12,7 +12,7 @@ export const runSmardIngestion = createServerFn({ method: "POST" })
     try {
       const { runSmardPricePipeline } = await import("@/lib/smard.server");
       const res = await runSmardPricePipeline();
-      return { ok: true as const, ...res };
+      return { ...res, ok: true as const };
     } catch (e) {
       return { ok: false as const, error: e instanceof Error ? e.message : String(e) };
     }
