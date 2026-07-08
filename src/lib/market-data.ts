@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 export interface MarketDataPoint {
   id: string;
   symbol: string;
-  kind: "stock" | "commodity" | "index" | "metric";
+  kind: "stock" | "commodity" | "index" | "metric" | "price";
   label: string;
   value: number;
   unit: string;
@@ -86,7 +86,15 @@ export const marketDataQuery = () =>
 // Formatting helpers
 export function formatMarketValue(p: MarketDataPoint): string {
   const v = p.value;
-  const symbol = p.currency === "USD" ? "$" : p.currency === "CNY" ? "¥" : p.currency === "HKD" ? "HK$" : "";
+  const symbol =
+    p.currency === "USD" ? "$" :
+    p.currency === "EUR" ? "€" :
+    p.currency === "CNY" ? "¥" :
+    p.currency === "HKD" ? "HK$" : "";
+  // German SMARD spot price or any EUR/MWh symbol → format as €/MWh, never USD.
+  if (p.symbol === "DE-SPOT-PRICE" || p.unit === "EUR/MWh" || p.currency === "EUR") {
+    return `€${v.toLocaleString(undefined, { maximumFractionDigits: 2 })} EUR/MWh`;
+  }
   if (p.unit.startsWith("USD/kWh") || p.unit === "USD/kWh DC") {
     return `$${v.toFixed(0)}/kWh${p.unit.endsWith("DC") ? " DC" : ""}`;
   }

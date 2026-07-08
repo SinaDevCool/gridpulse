@@ -25,7 +25,7 @@ export const Route = createFileRoute("/projects/$slug")({
           { title: `${loaderData.project.name} — GridPulse` },
           {
             name: "description",
-            content: `${loaderData.project.capacityMw} MW / ${loaderData.project.capacityMwh} MWh ${loaderData.project.technology} project in ${loaderData.project.location}.`,
+            content: `${loaderData.project.capacityMw} MW${loaderData.project.capacityMwh ? ` / ${loaderData.project.capacityMwh} MWh` : ""} ${loaderData.project.technology} project in ${loaderData.project.location}.`,
           },
           { property: "og:title", content: `${loaderData.project.name} — GridPulse` },
           {
@@ -102,7 +102,11 @@ function ProjectDetail() {
   const similar = projects
     .filter((x) => x.id !== p.id && (x.chemistry ?? x.technology) === (p.chemistry ?? p.technology))
     .slice(0, 4);
-  const duration = p.capacityMw > 0 ? (p.capacityMwh / p.capacityMw).toFixed(1) : "—";
+  const duration = p.capacityMw > 0 && p.capacityMwh ? (p.capacityMwh / p.capacityMw).toFixed(1) : "—";
+  const isDE = p.countryCode === "DE" || p.country === "Germany";
+  const developerLabel = p.developer || (isDE ? "Registered Operator Private" : "Developer TBD");
+  const energyLabel = p.capacityMwh ? `${p.capacityMwh.toLocaleString()} MWh` : "—";
+  const chemistryLabel = p.chemistry ? p.chemistry.toUpperCase() : (p.technology || "Unspecified Technology");
   const verifiedDate = p.lastVerifiedAt
     ? new Date(p.lastVerifiedAt).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })
     : null;
@@ -129,7 +133,7 @@ function ProjectDetail() {
           <FollowButton targetType="project" targetKey={p.slug ?? p.id} targetLabel={p.name} size="sm" />
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-          <span>{p.developer || "Developer TBD"}</span>
+          <span>{developerLabel}</span>
           <span>·</span>
           <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{p.location}</span>
           <span>·</span>
@@ -138,9 +142,9 @@ function ProjectDetail() {
 
         <div className="mt-8 grid gap-4 md:grid-cols-4">
           <Stat label="Power" value={`${p.capacityMw.toLocaleString()} MW`} />
-          <Stat label="Energy" value={`${p.capacityMwh.toLocaleString()} MWh`} />
+          <Stat label="Energy" value={energyLabel} />
           <Stat label="Duration" value={`${duration} hr`} />
-          <Stat label="Chemistry" value={p.chemistry ?? p.technology} />
+          <Stat label="Chemistry" value={chemistryLabel} />
         </div>
 
         {p.description && (
@@ -151,7 +155,7 @@ function ProjectDetail() {
         )}
 
         <div className="mt-8 grid gap-x-8 gap-y-1 md:grid-cols-2">
-          <DetailRow k="Developer" v={p.developer || "—"} />
+          <DetailRow k="Developer" v={developerLabel} />
           <DetailRow k="Owner" v={p.owner || "—"} />
           <DetailRow k="Operator" v={p.operator || "—"} />
           <DetailRow k="Offtaker" v={p.offtaker || "—"} />
