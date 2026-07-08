@@ -210,10 +210,10 @@ function ProjectsPage() {
                       {p.name}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">{p.developer || "—"}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{p.developer || ((p.countryCode === "DE" || p.country === "Germany") ? "Registered Operator Private" : "—")}</td>
                   <td className="px-4 py-3 text-right font-mono-data">{p.capacityMw.toLocaleString()}</td>
-                  <td className="px-4 py-3 text-right font-mono-data">{p.capacityMwh.toLocaleString()}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{p.chemistry ?? p.technology}</td>
+                  <td className="px-4 py-3 text-right font-mono-data">{p.capacityMwh ? p.capacityMwh.toLocaleString() : "—"}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{p.chemistry ? p.chemistry.toUpperCase() : (p.technology || "Unspecified Technology")}</td>
                   <td className="px-4 py-3 text-muted-foreground">
                     <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" /> {p.location}</span>
                   </td>
