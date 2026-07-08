@@ -57,8 +57,10 @@ function AdminPage() {
   const [lastProjectResult, setLastProjectResult] = useState<string | null>(null);
   const [lastQueueResult, setLastQueueResult] = useState<string | null>(null);
   const [lastEmberResult, setLastEmberResult] = useState<string | null>(null);
+  const [lastSmardResult, setLastSmardResult] = useState<string | null>(null);
   const [emberCountry, setEmberCountry] = useState<string>("DE");
   const emberFn = useServerFn(syncEmberCountryGeneration);
+  const smardFn = useServerFn(runSmardIngestion);
 
   const runsQ = useQuery<Run[]>({
     queryKey: ["ingestion_runs"],
