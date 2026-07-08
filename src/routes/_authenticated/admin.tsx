@@ -383,11 +383,24 @@ function AdminPage() {
               >
                 {emberMut.isPending ? "Fetching…" : "Fetch Live International Grid Data"}
               </Button>
+              <Button
+                onClick={() => smardMut.mutate()}
+                disabled={smardMut.isPending || emberCountry !== "DE"}
+                variant="secondary"
+                title={emberCountry !== "DE" ? "SMARD is Germany-only" : undefined}
+              >
+                {smardMut.isPending ? "Fetching…" : "Sync SMARD spot price (DE)"}
+              </Button>
             </div>
           </div>
           {lastEmberResult && (
             <div className="mt-4 rounded-md bg-background/60 border border-border px-3 py-2 text-sm">
               {lastEmberResult}
+            </div>
+          )}
+          {lastSmardResult && (
+            <div className="mt-2 rounded-md bg-background/60 border border-border px-3 py-2 text-sm">
+              {lastSmardResult}
             </div>
           )}
         </div>
