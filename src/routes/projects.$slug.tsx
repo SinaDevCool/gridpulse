@@ -155,7 +155,7 @@ function ProjectDetail() {
         )}
 
         <div className="mt-8 grid gap-x-8 gap-y-1 md:grid-cols-2">
-          <DetailRow k="Developer" v={p.developer || "—"} />
+          <DetailRow k="Developer" v={developerLabel} />
           <DetailRow k="Owner" v={p.owner || "—"} />
           <DetailRow k="Operator" v={p.operator || "—"} />
           <DetailRow k="Offtaker" v={p.offtaker || "—"} />
