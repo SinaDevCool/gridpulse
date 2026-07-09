@@ -247,12 +247,16 @@ export function SiteHeader() {
 
 function LiveTicker() {
   const { data, isLoading } = useQuery(marketDataQuery());
-  const items = data ?? [];
-  // Stable display order: stocks first, then commodities, then indices/metrics.
-  const order: Record<string, number> = { stock: 0, commodity: 1, index: 2, metric: 3 };
-  const sorted = [...items].sort(
-    (a, b) => (order[a.kind] ?? 9) - (order[b.kind] ?? 9) || a.label.localeCompare(b.label),
-  );
+  // Memoize sort so the ticker doesn't rebuild the array on every re-render
+  // (e.g. when a parent nav toggles). Recomputes only when the fetched
+  // market payload changes.
+  const sorted = useMemo(() => {
+    const items = data ?? [];
+    const order: Record<string, number> = { stock: 0, commodity: 1, index: 2, metric: 3, price: 4 };
+    return [...items].sort(
+      (a, b) => (order[a.kind] ?? 9) - (order[b.kind] ?? 9) || a.label.localeCompare(b.label),
+    );
+  }, [data]);
 
   return (
     <div className="relative w-full border-b border-border/40 bg-background/40 overflow-hidden h-[30px]">
