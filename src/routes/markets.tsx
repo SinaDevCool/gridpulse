@@ -22,6 +22,35 @@ export const Route = createFileRoute("/markets")({
 
 const COLORS = ["#22d3ee", "#34d399", "#fbbf24", "#a78bfa", "#fb7185", "#60a5fa", "#f472b6", "#facc15"];
 
+const EU_COUNTRY_CODES = new Set([
+  "DE","FR","ES","IT","NL","BE","PL","PT","IE","SE","DK","FI","AT","CZ","GR","HU","RO","BG","HR","SI","SK","LT","LV","EE","LU","MT","CY","NO","CH","GB","UK","IS",
+]);
+
+function regionOf(p: Project): string {
+  const cc = (p.countryCode ?? "").toUpperCase();
+  if (EU_COUNTRY_CODES.has(cc)) return "Europe";
+  const r = (p.region ?? "").toLowerCase();
+  if (["europe","eu","emea","de","germany"].some((s) => r.includes(s))) return "Europe";
+  return p.region || "Unknown";
+}
+
+const CHEMISTRY_ALIASES: Array<[RegExp, string]> = [
+  [/redox|flow/i, "Redox-Flow"],
+  [/sodium|natrium|na[- ]?ion/i, "Sodium-ion"],
+  [/lead|blei/i, "Lead-acid"],
+  [/vanadium/i, "Vanadium"],
+  [/lfp|nmc|li[- ]?ion|lithium|bess|battery|speicher/i, "Lithium-ion"],
+];
+
+function normalizeChemistry(p: Project): string {
+  const raw = `${p.chemistry ?? ""} ${p.technology ?? ""}`.trim();
+  if (!raw) return "Unspecified";
+  for (const [re, label] of CHEMISTRY_ALIASES) if (re.test(raw)) return label;
+  if (/wind/i.test(raw)) return "Wind";
+  if (/solar|pv/i.test(raw)) return "Solar PV";
+  return "Other";
+}
+
 function codYearOf(p: Project): string {
   const m = (p.cod || "").match(/\b(20\d{2})\b/);
   return m ? m[1] : "Unknown";
@@ -39,6 +68,7 @@ function rollup(projects: Project[], key: (p: Project) => string) {
   }
   return Array.from(map.entries()).map(([name, v]) => ({ name, ...v }));
 }
+
 
 function MarketsPage() {
   const { data: allProjects = [], isLoading, isError, error, refetch } = useQuery(projectsQuery());
