@@ -52,7 +52,8 @@ function uniq(arr: (string | null | undefined)[]): string[] {
 function ProjectsPage() {
   const sp = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
-  const { data: projects = [], isLoading, isError, error, refetch } = useQuery(projectsQuery());
+  const { data: allProjects = [], isLoading, isError, error, refetch } = useQuery(projectsQuery());
+  const projects = useMemo(() => allProjects.filter(isLiveProject), [allProjects]);
 
   const set = (patch: Partial<typeof sp>) =>
     navigate({ search: (prev: typeof sp) => ({ ...prev, ...patch }), replace: true });
