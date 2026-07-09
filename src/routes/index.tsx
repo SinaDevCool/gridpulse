@@ -105,8 +105,6 @@ function HomePage() {
   // every unrelated re-render (filter toggle, count paging, etc).
   const lfp = useMemo(() => findMetric(market, "LFP_CELL_USD_KWH"), [market]);
   const systemCost = useMemo(() => findMetric(market, "BESS_SYSTEM_USD_KWH_DC"), [market]);
-  const deSpot = useMemo(() => findMetric(market, "DE-SPOT-PRICE"), [market]);
-  void deSpot;
 
   // Live hero tiles, derived from the project database + market_data.
   const heroTiles = [
