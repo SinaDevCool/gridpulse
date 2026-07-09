@@ -175,7 +175,7 @@ function AnalyticsPage() {
   const [codYear, setCodYear] = useState("");
   const [compare, setCompare] = useState<string[]>([]);
 
-  const regions = useMemo(() => uniq(projects.map((p) => p.region)), [projects]);
+  const regions = useMemo(() => uniq(projects.map(regionOf)), [projects]);
   // Country options deduped by country_code (so US/USA/United States collapse to one chip).
   const countryOptions = useMemo(() => {
     const map = new Map<string, string>(); // key → label
