@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
-import { type Project } from "@/lib/gridpulse-data";
+import { isLiveProject, type Project } from "@/lib/gridpulse-data";
 import { projectsQuery } from "@/lib/gridpulse-repo";
 
 const searchSchema = z.object({
@@ -52,7 +52,8 @@ function uniq(arr: (string | null | undefined)[]): string[] {
 function ProjectsPage() {
   const sp = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
-  const { data: projects = [], isLoading, isError, error, refetch } = useQuery(projectsQuery());
+  const { data: allProjects = [], isLoading, isError, error, refetch } = useQuery(projectsQuery());
+  const projects = useMemo(() => allProjects.filter(isLiveProject), [allProjects]);
 
   const set = (patch: Partial<typeof sp>) =>
     navigate({ search: (prev: typeof sp) => ({ ...prev, ...patch }), replace: true });
@@ -104,8 +105,9 @@ function ProjectsPage() {
         <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-accent">Project Database</div>
         <h1 className="mt-2 font-display text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight leading-tight">Global BESS projects</h1>
         <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
-          {isLoading ? "Loading…" : `Live · ${projects.length} tracked utility-scale projects.`} Each project carries provenance fields sourced from public regulatory registries. Click any row for full specs and sources.
+          Live tracking of verified utility-scale battery energy storage systems (BESS) across global and European grid networks. Data sourced directly from official regulatory registries.
         </p>
+
 
 
         <div className="mt-6 grid gap-3 md:grid-cols-3">
