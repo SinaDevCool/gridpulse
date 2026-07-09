@@ -190,7 +190,7 @@ function AnalyticsPage() {
       .sort((a, b) => a.label.localeCompare(b.label));
   }, [projects]);
   const statuses = useMemo(() => uniq(projects.map((p) => p.status)), [projects]);
-  const chemistries = useMemo(() => uniq(projects.map((p) => p.chemistry ?? p.technology)), [projects]);
+  const chemistries = useMemo(() => uniq(projects.map(normalizeChemistry)), [projects]);
   const developers = useMemo(() => uniq(projects.map((p) => p.developer)), [projects]);
   const codYears = useMemo(
     () => uniq(projects.map(codYearOf)).filter((y) => /^20\d{2}$/.test(y)),
