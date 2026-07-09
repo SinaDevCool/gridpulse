@@ -101,8 +101,10 @@ function HomePage() {
   }, [filter, articles]);
   const shown = feed.slice(0, count);
 
-  const lfp = findMetric(market, "LFP_CELL_USD_KWH");
-  const systemCost = findMetric(market, "BESS_SYSTEM_USD_KWH_DC");
+  // Memoize per-symbol lookups so hero tiles don't re-scan the array on
+  // every unrelated re-render (filter toggle, count paging, etc).
+  const lfp = useMemo(() => findMetric(market, "LFP_CELL_USD_KWH"), [market]);
+  const systemCost = useMemo(() => findMetric(market, "BESS_SYSTEM_USD_KWH_DC"), [market]);
 
   // Live hero tiles, derived from the project database + market_data.
   const heroTiles = [
