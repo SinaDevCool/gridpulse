@@ -212,8 +212,8 @@ function AnalyticsPage() {
     });
   }, [projects, region, country, status, chemistry, developer, codYear]);
 
-  const byRegion = useMemo(() => rollup(filtered, (p) => p.region).sort((a, b) => b.mw - a.mw), [filtered]);
-  const byChem = useMemo(() => rollup(filtered, (p) => p.chemistry ?? p.technology).sort((a, b) => b.mw - a.mw), [filtered]);
+  const byRegion = useMemo(() => rollup(filtered, regionOf).sort((a, b) => b.mw - a.mw), [filtered]);
+  const byChem = useMemo(() => rollup(filtered, normalizeChemistry).sort((a, b) => b.mw - a.mw), [filtered]);
   const byStatus = useMemo(() => rollup(filtered, (p) => p.status), [filtered]);
   const byCodYear = useMemo(
     () => rollup(filtered, codYearOf).filter((r) => /^20\d{2}$/.test(r.name)).sort((a, b) => a.name.localeCompare(b.name)),
