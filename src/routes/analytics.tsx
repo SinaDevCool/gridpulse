@@ -58,6 +58,36 @@ function codYearOf(p: Project): string {
   return m ? m[1] : "Unknown";
 }
 
+const EU_COUNTRY_CODES = new Set([
+  "DE","FR","ES","IT","NL","BE","PL","PT","IE","SE","DK","FI","AT","CZ","GR","HU","RO","BG","HR","SI","SK","LT","LV","EE","LU","MT","CY","NO","CH","GB","UK","IS",
+]);
+
+function regionOf(p: Project): string {
+  const cc = (p.countryCode ?? "").toUpperCase();
+  if (EU_COUNTRY_CODES.has(cc)) return "Europe";
+  const r = (p.region ?? "").toLowerCase();
+  if (["europe","eu","emea","de","germany"].some((s) => r.includes(s))) return "Europe";
+  return p.region || "Unknown";
+}
+
+const CHEMISTRY_ALIASES: Array<[RegExp, string]> = [
+  [/redox|flow/i, "Redox-Flow"],
+  [/sodium|natrium|na[- ]?ion/i, "Sodium-ion"],
+  [/lead|blei/i, "Lead-acid"],
+  [/vanadium/i, "Vanadium"],
+  [/lfp|nmc|li[- ]?ion|lithium|bess|battery|speicher/i, "Lithium-ion"],
+];
+
+function normalizeChemistry(p: Project): string {
+  const raw = `${p.chemistry ?? ""} ${p.technology ?? ""}`.trim();
+  if (!raw) return "Unspecified";
+  for (const [re, label] of CHEMISTRY_ALIASES) if (re.test(raw)) return label;
+  if (/wind/i.test(raw)) return "Wind";
+  if (/solar|pv/i.test(raw)) return "Solar PV";
+  return "Other";
+}
+
+
 function rollup<T extends Project>(items: T[], key: (p: T) => string) {
   const map = new Map<string, { mw: number; mwh: number; count: number }>();
   for (const p of items) {
