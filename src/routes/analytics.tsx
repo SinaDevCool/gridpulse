@@ -199,13 +199,13 @@ function AnalyticsPage() {
 
   const filtered = useMemo(() => {
     return projects.filter((p) => {
-      if (region && p.region !== region) return false;
+      if (region && regionOf(p) !== region) return false;
       if (country) {
         const key = (p.countryCode ?? p.country ?? "").trim();
         if (key !== country) return false;
       }
       if (status && p.status !== status) return false;
-      if (chemistry && (p.chemistry ?? p.technology) !== chemistry) return false;
+      if (chemistry && normalizeChemistry(p) !== chemistry) return false;
       if (developer && p.developer !== developer) return false;
       if (codYear && codYearOf(p) !== codYear) return false;
       return true;
