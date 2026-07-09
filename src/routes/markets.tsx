@@ -22,6 +22,35 @@ export const Route = createFileRoute("/markets")({
 
 const COLORS = ["#22d3ee", "#34d399", "#fbbf24", "#a78bfa", "#fb7185", "#60a5fa", "#f472b6", "#facc15"];
 
+const EU_COUNTRY_CODES = new Set([
+  "DE","FR","ES","IT","NL","BE","PL","PT","IE","SE","DK","FI","AT","CZ","GR","HU","RO","BG","HR","SI","SK","LT","LV","EE","LU","MT","CY","NO","CH","GB","UK","IS",
+]);
+
+function regionOf(p: Project): string {
+  const cc = (p.countryCode ?? "").toUpperCase();
+  if (EU_COUNTRY_CODES.has(cc)) return "Europe";
+  const r = (p.region ?? "").toLowerCase();
+  if (["europe","eu","emea","de","germany"].some((s) => r.includes(s))) return "Europe";
+  return p.region || "Unknown";
+}
+
+const CHEMISTRY_ALIASES: Array<[RegExp, string]> = [
+  [/redox|flow/i, "Redox-Flow"],
+  [/sodium|natrium|na[- ]?ion/i, "Sodium-ion"],
+  [/lead|blei/i, "Lead-acid"],
+  [/vanadium/i, "Vanadium"],
+  [/lfp|nmc|li[- ]?ion|lithium|bess|battery|speicher/i, "Lithium-ion"],
+];
+
+function normalizeChemistry(p: Project): string {
+  const raw = `${p.chemistry ?? ""} ${p.technology ?? ""}`.trim();
+  if (!raw) return "Unspecified";
+  for (const [re, label] of CHEMISTRY_ALIASES) if (re.test(raw)) return label;
+  if (/wind/i.test(raw)) return "Wind";
+  if (/solar|pv/i.test(raw)) return "Solar PV";
+  return "Other";
+}
+
 function codYearOf(p: Project): string {
   const m = (p.cod || "").match(/\b(20\d{2})\b/);
   return m ? m[1] : "Unknown";
@@ -40,13 +69,14 @@ function rollup(projects: Project[], key: (p: Project) => string) {
   return Array.from(map.entries()).map(([name, v]) => ({ name, ...v }));
 }
 
+
 function MarketsPage() {
   const { data: allProjects = [], isLoading, isError, error, refetch } = useQuery(projectsQuery());
   const projects = useMemo(() => allProjects.filter(isLiveProject), [allProjects]);
 
-  const byRegion = useMemo(() => rollup(projects, (p) => p.region).sort((a, b) => b.mw - a.mw), [projects]);
+  const byRegion = useMemo(() => rollup(projects, regionOf).sort((a, b) => b.mw - a.mw), [projects]);
   const byStatus = useMemo(() => rollup(projects, (p) => p.status), [projects]);
-  const byChemistry = useMemo(() => rollup(projects, (p) => p.chemistry ?? p.technology).sort((a, b) => b.mw - a.mw), [projects]);
+  const byChemistry = useMemo(() => rollup(projects, normalizeChemistry).sort((a, b) => b.mw - a.mw), [projects]);
   const byCodYear = useMemo(
     () => rollup(projects, codYearOf)
       .filter((r) => /^20\d{2}$/.test(r.name))
@@ -68,11 +98,6 @@ function MarketsPage() {
         <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
           Live aggregates from {projects.length.toLocaleString()} tracked projects in the GridPulse database. Slice the pipeline by region, status, chemistry, and upcoming COD year.
         </p>
-        {projects.some((p) => p.verificationStatus === "demo") && (
-          <div className="mt-3 rounded-md border border-amber-accent/40 bg-amber-accent/10 p-3 text-xs text-amber-accent">
-            Aggregates include {projects.filter((p) => p.verificationStatus === "demo").length} manual seed (demo) project{projects.filter((p) => p.verificationStatus === "demo").length === 1 ? "" : "s"}. Filter / inspect provenance per project on the detail page.
-          </div>
-        )}
 
         <div className="mt-8 grid gap-3 md:grid-cols-4">
           <Stat label="Tracked projects" value={projects.length.toLocaleString()} />

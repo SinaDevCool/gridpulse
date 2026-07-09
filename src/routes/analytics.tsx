@@ -58,6 +58,36 @@ function codYearOf(p: Project): string {
   return m ? m[1] : "Unknown";
 }
 
+const EU_COUNTRY_CODES = new Set([
+  "DE","FR","ES","IT","NL","BE","PL","PT","IE","SE","DK","FI","AT","CZ","GR","HU","RO","BG","HR","SI","SK","LT","LV","EE","LU","MT","CY","NO","CH","GB","UK","IS",
+]);
+
+function regionOf(p: Project): string {
+  const cc = (p.countryCode ?? "").toUpperCase();
+  if (EU_COUNTRY_CODES.has(cc)) return "Europe";
+  const r = (p.region ?? "").toLowerCase();
+  if (["europe","eu","emea","de","germany"].some((s) => r.includes(s))) return "Europe";
+  return p.region || "Unknown";
+}
+
+const CHEMISTRY_ALIASES: Array<[RegExp, string]> = [
+  [/redox|flow/i, "Redox-Flow"],
+  [/sodium|natrium|na[- ]?ion/i, "Sodium-ion"],
+  [/lead|blei/i, "Lead-acid"],
+  [/vanadium/i, "Vanadium"],
+  [/lfp|nmc|li[- ]?ion|lithium|bess|battery|speicher/i, "Lithium-ion"],
+];
+
+function normalizeChemistry(p: Project): string {
+  const raw = `${p.chemistry ?? ""} ${p.technology ?? ""}`.trim();
+  if (!raw) return "Unspecified";
+  for (const [re, label] of CHEMISTRY_ALIASES) if (re.test(raw)) return label;
+  if (/wind/i.test(raw)) return "Wind";
+  if (/solar|pv/i.test(raw)) return "Solar PV";
+  return "Other";
+}
+
+
 function rollup<T extends Project>(items: T[], key: (p: T) => string) {
   const map = new Map<string, { mw: number; mwh: number; count: number }>();
   for (const p of items) {
@@ -145,7 +175,7 @@ function AnalyticsPage() {
   const [codYear, setCodYear] = useState("");
   const [compare, setCompare] = useState<string[]>([]);
 
-  const regions = useMemo(() => uniq(projects.map((p) => p.region)), [projects]);
+  const regions = useMemo(() => uniq(projects.map(regionOf)), [projects]);
   // Country options deduped by country_code (so US/USA/United States collapse to one chip).
   const countryOptions = useMemo(() => {
     const map = new Map<string, string>(); // key → label
@@ -160,7 +190,7 @@ function AnalyticsPage() {
       .sort((a, b) => a.label.localeCompare(b.label));
   }, [projects]);
   const statuses = useMemo(() => uniq(projects.map((p) => p.status)), [projects]);
-  const chemistries = useMemo(() => uniq(projects.map((p) => p.chemistry ?? p.technology)), [projects]);
+  const chemistries = useMemo(() => uniq(projects.map(normalizeChemistry)), [projects]);
   const developers = useMemo(() => uniq(projects.map((p) => p.developer)), [projects]);
   const codYears = useMemo(
     () => uniq(projects.map(codYearOf)).filter((y) => /^20\d{2}$/.test(y)),
@@ -169,21 +199,21 @@ function AnalyticsPage() {
 
   const filtered = useMemo(() => {
     return projects.filter((p) => {
-      if (region && p.region !== region) return false;
+      if (region && regionOf(p) !== region) return false;
       if (country) {
         const key = (p.countryCode ?? p.country ?? "").trim();
         if (key !== country) return false;
       }
       if (status && p.status !== status) return false;
-      if (chemistry && (p.chemistry ?? p.technology) !== chemistry) return false;
+      if (chemistry && normalizeChemistry(p) !== chemistry) return false;
       if (developer && p.developer !== developer) return false;
       if (codYear && codYearOf(p) !== codYear) return false;
       return true;
     });
   }, [projects, region, country, status, chemistry, developer, codYear]);
 
-  const byRegion = useMemo(() => rollup(filtered, (p) => p.region).sort((a, b) => b.mw - a.mw), [filtered]);
-  const byChem = useMemo(() => rollup(filtered, (p) => p.chemistry ?? p.technology).sort((a, b) => b.mw - a.mw), [filtered]);
+  const byRegion = useMemo(() => rollup(filtered, regionOf).sort((a, b) => b.mw - a.mw), [filtered]);
+  const byChem = useMemo(() => rollup(filtered, normalizeChemistry).sort((a, b) => b.mw - a.mw), [filtered]);
   const byStatus = useMemo(() => rollup(filtered, (p) => p.status), [filtered]);
   const byCodYear = useMemo(
     () => rollup(filtered, codYearOf).filter((r) => /^20\d{2}$/.test(r.name)).sort((a, b) => a.name.localeCompare(b.name)),
@@ -256,11 +286,6 @@ function AnalyticsPage() {
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
               Interactive view of {projects.length.toLocaleString()} tracked grid-scale storage projects from the live database. Filter, compare, and export.
             </p>
-            {projects.some((p) => p.verificationStatus === "demo") && (
-              <div className="mt-3 max-w-2xl rounded-md border border-amber-accent/40 bg-amber-accent/10 p-2.5 text-[11px] text-amber-accent">
-                Analytics include {projects.filter((p) => p.verificationStatus === "demo").length} manual seed (demo) project{projects.filter((p) => p.verificationStatus === "demo").length === 1 ? "" : "s"}. Each row carries a provenance tag on the project detail page.
-              </div>
-            )}
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button
