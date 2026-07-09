@@ -286,11 +286,6 @@ function AnalyticsPage() {
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
               Interactive view of {projects.length.toLocaleString()} tracked grid-scale storage projects from the live database. Filter, compare, and export.
             </p>
-            {projects.some((p) => p.verificationStatus === "demo") && (
-              <div className="mt-3 max-w-2xl rounded-md border border-amber-accent/40 bg-amber-accent/10 p-2.5 text-[11px] text-amber-accent">
-                Analytics include {projects.filter((p) => p.verificationStatus === "demo").length} manual seed (demo) project{projects.filter((p) => p.verificationStatus === "demo").length === 1 ? "" : "s"}. Each row carries a provenance tag on the project detail page.
-              </div>
-            )}
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button
