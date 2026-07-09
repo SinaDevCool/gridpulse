@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
-import { type Project } from "@/lib/gridpulse-data";
+import { isLiveProject, type Project } from "@/lib/gridpulse-data";
 import { projectsQuery } from "@/lib/gridpulse-repo";
 
 const searchSchema = z.object({
