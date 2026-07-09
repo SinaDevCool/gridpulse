@@ -119,8 +119,11 @@ export const companiesQuery = () =>
     queryFn: async () => {
       // Reuse the projects fetcher rather than touching the DB twice.
       const opts = projectsQuery();
-      const projects = await opts.queryFn!({} as never);
-      return deriveCompanies(projects as Project[]);
+      const projects = (await opts.queryFn!({} as never)) as Project[];
+      const live = projects.filter(
+        (p) => p.verificationStatus !== "demo" && p.sourceType !== "seed",
+      );
+      return deriveCompanies(live);
     },
     staleTime: 5 * 60_000,
   });
