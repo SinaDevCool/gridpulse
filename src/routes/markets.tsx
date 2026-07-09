@@ -74,9 +74,9 @@ function MarketsPage() {
   const { data: allProjects = [], isLoading, isError, error, refetch } = useQuery(projectsQuery());
   const projects = useMemo(() => allProjects.filter(isLiveProject), [allProjects]);
 
-  const byRegion = useMemo(() => rollup(projects, (p) => p.region).sort((a, b) => b.mw - a.mw), [projects]);
+  const byRegion = useMemo(() => rollup(projects, regionOf).sort((a, b) => b.mw - a.mw), [projects]);
   const byStatus = useMemo(() => rollup(projects, (p) => p.status), [projects]);
-  const byChemistry = useMemo(() => rollup(projects, (p) => p.chemistry ?? p.technology).sort((a, b) => b.mw - a.mw), [projects]);
+  const byChemistry = useMemo(() => rollup(projects, normalizeChemistry).sort((a, b) => b.mw - a.mw), [projects]);
   const byCodYear = useMemo(
     () => rollup(projects, codYearOf)
       .filter((r) => /^20\d{2}$/.test(r.name))
