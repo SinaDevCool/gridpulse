@@ -156,19 +156,6 @@ function GatedAnalyticsPage() {
 
 function AnalyticsPage() {
   const { data: allProjects = [], isLoading, isError, error, refetch } = useQuery(projectsQuery());
-  // Enterprise dashboards exclude demo seed rows so metrics reflect live pipeline only.
-  const projects = useMemo(() => allProjects.filter(isLiveProject), [allProjects]);
-  const tier = useTier();
-  const canExportAdvanced = tier === "pro" || tier === "enterprise";
-
-  const [region, setRegion] = useState("");
-  const [country, setCountry] = useState(""); // country_code (ISO-alpha-2) when known, else country name
-  const [status, setStatus] = useState("");
-  const [chemistry, setChemistry] = useState("");
-  const [developer, setDeveloper] = useState("");
-  const [codYear, setCodYear] = useState("");
-function AnalyticsPage() {
-  const { data: allProjects = [], isLoading, isError, error, refetch } = useQuery(projectsQuery());
   // Enterprise European dashboards exclude demo seed rows AND non-European
   // projects so metrics reflect the live EU/UK pipeline only.
   const projects = useMemo(
