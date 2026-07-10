@@ -70,21 +70,21 @@ export function SiteHeader() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 border-b border-border/60 glass-card backdrop-blur-xl">
+      <header className="sticky top-0 z-50 w-full max-w-full overflow-x-hidden border-b border-border/60 glass-card backdrop-blur-xl">
       <LiveTicker />
 
 
-      <div className="mx-auto flex max-w-[1400px] items-center gap-6 px-4 py-3 lg:px-8">
-        <Link to="/" className="flex items-center gap-2.5 group">
-          <span className="relative inline-flex h-8 w-8 items-center justify-center rounded-md bg-cyan-accent/15 text-cyan-accent animate-pulse-ring">
+      <div className="mx-auto flex w-full max-w-[1400px] items-center gap-3 sm:gap-6 px-3 sm:px-4 py-2.5 sm:py-3 lg:px-8">
+        <Link to="/" className="flex items-center gap-2 shrink-0 group min-w-0">
+          <span className="relative inline-flex h-8 w-8 items-center justify-center rounded-md bg-cyan-accent/15 text-cyan-accent animate-pulse-ring shrink-0">
             <Battery className="h-4 w-4 rotate-90" strokeWidth={2.5} />
           </span>
-          <span className="font-display text-xl font-bold tracking-tight text-foreground">
+          <span className="font-display text-base sm:text-xl font-bold tracking-tight text-foreground truncate">
             GRID<span className="text-cyan-accent">PULSE</span>
           </span>
         </Link>
 
-        <nav className="hidden lg:flex items-center gap-1 text-sm">
+        <nav className="hidden lg:flex items-center gap-1 text-sm min-w-0">
           {navItems.map((n) => (
             <Link
               key={n.to}
@@ -97,7 +97,7 @@ export function SiteHeader() {
           ))}
         </nav>
 
-        <div className="ml-auto flex items-center gap-3">
+        <div className="ml-auto flex items-center gap-1.5 sm:gap-3 shrink-0">
           <button
             type="button"
             onClick={() => setSearchOpen(true)}
@@ -114,7 +114,7 @@ export function SiteHeader() {
           <UserMenu />
           <Link
             to="/subscribe"
-            className="inline-flex items-center rounded-md bg-cyan-accent px-3.5 py-1.5 text-sm font-medium text-primary-foreground hover:brightness-110 transition"
+            className="hidden sm:inline-flex items-center rounded-md bg-cyan-accent px-3 py-1.5 text-xs sm:text-sm font-medium text-primary-foreground hover:brightness-110 transition shrink-0"
           >
             Subscribe
           </Link>
@@ -122,7 +122,7 @@ export function SiteHeader() {
             type="button"
             aria-label="Open menu"
             onClick={() => setMobileOpen(true)}
-            className="lg:hidden inline-flex h-9 w-9 items-center justify-center rounded-md border border-border text-muted-foreground hover:text-foreground"
+            className="lg:hidden inline-flex h-9 w-9 items-center justify-center rounded-md border border-border text-muted-foreground hover:text-foreground shrink-0"
           >
             <Menu className="h-4 w-4" />
           </button>
@@ -133,21 +133,26 @@ export function SiteHeader() {
     {/* Mobile drawer */}
       {mobileOpen && (
         <div className="fixed inset-0 z-[70] lg:hidden">
-          <div className="absolute inset-0 bg-background/95 backdrop-blur-md" onClick={() => setMobileOpen(false)} />
-          <div className="absolute right-0 top-0 h-full w-[280px] max-w-[85vw] bg-surface border-l border-border pt-24 pb-6 shadow-2xl overflow-y-auto">
+          <button
+            type="button"
+            aria-label="Close menu"
+            onClick={() => setMobileOpen(false)}
+            className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm cursor-pointer"
+          />
+          <div className="absolute right-0 top-0 h-full w-[280px] max-w-[85vw] bg-surface/90 backdrop-blur-xl border-l border-border/60 pt-6 pb-6 shadow-2xl overflow-y-auto">
             <div className="flex items-center justify-between px-6 mb-6">
               <span className="font-display text-lg font-bold text-slate-100">Menu</span>
               <button onClick={() => setMobileOpen(false)} aria-label="Close" className="h-9 w-9 inline-flex items-center justify-center rounded-md border border-border text-slate-100 hover:text-cyan-400 transition-colors">
                 <X className="h-4 w-4" />
               </button>
             </div>
-            <div className="flex flex-col items-start justify-start gap-6 px-6 w-full">
+            <div className="flex flex-col items-start justify-start gap-2 px-6 w-full">
               {navItems.map((n) => (
                 <Link
                   key={n.to}
                   to={n.to}
                   onClick={() => setMobileOpen(false)}
-                  className="py-3 text-base font-medium text-slate-100 hover:text-cyan-400 transition-colors"
+                  className="py-2 text-base font-medium text-slate-100 hover:text-cyan-400 transition-colors"
                 >
                   {n.label}
                 </Link>
