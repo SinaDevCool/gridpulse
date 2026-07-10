@@ -58,16 +58,10 @@ function codYearOf(p: Project): string {
   return m ? m[1] : "Unknown";
 }
 
-const EU_COUNTRY_CODES = new Set([
-  "DE","FR","ES","IT","NL","BE","PL","PT","IE","SE","DK","FI","AT","CZ","GR","HU","RO","BG","HR","SI","SK","LT","LV","EE","LU","MT","CY","NO","CH","GB","UK","IS",
-]);
+import { euRegionOf, isEuropeanProject, EU_REGIONS, type EuRegion } from "@/lib/eu-regions";
 
-function regionOf(p: Project): string {
-  const cc = (p.countryCode ?? "").toUpperCase();
-  if (EU_COUNTRY_CODES.has(cc)) return "Europe";
-  const r = (p.region ?? "").toLowerCase();
-  if (["europe","eu","emea","de","germany"].some((s) => r.includes(s))) return "Europe";
-  return p.region || "Unknown";
+function regionOf(p: Project): EuRegion {
+  return euRegionOf(p) ?? "Rest of Europe (EU)";
 }
 
 const CHEMISTRY_ALIASES: Array<[RegExp, string]> = [
