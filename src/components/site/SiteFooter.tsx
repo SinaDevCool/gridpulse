@@ -93,7 +93,7 @@ export function SiteFooter() {
         <div className="mt-12 flex flex-col gap-3 border-t border-border/50 pt-6 text-xs text-muted-foreground md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-2 font-mono-data">
             <Database className="h-3 w-3" />
-            <span>Demo data · 14 sources tracked</span>
+            <span>Institutional Registry Data Feed • Active Integration: Bundesnetzagentur MaStR, SMARD, &amp; ENTSO-E</span>
           </div>
           <div className="flex flex-wrap items-center gap-4">
             <span>© {new Date().getFullYear()} GridPulse Intelligence, Inc.</span>

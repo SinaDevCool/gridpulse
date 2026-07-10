@@ -58,16 +58,10 @@ function codYearOf(p: Project): string {
   return m ? m[1] : "Unknown";
 }
 
-const EU_COUNTRY_CODES = new Set([
-  "DE","FR","ES","IT","NL","BE","PL","PT","IE","SE","DK","FI","AT","CZ","GR","HU","RO","BG","HR","SI","SK","LT","LV","EE","LU","MT","CY","NO","CH","GB","UK","IS",
-]);
+import { euRegionOf, isEuropeanProject, EU_REGIONS, type EuRegion } from "@/lib/eu-regions";
 
-function regionOf(p: Project): string {
-  const cc = (p.countryCode ?? "").toUpperCase();
-  if (EU_COUNTRY_CODES.has(cc)) return "Europe";
-  const r = (p.region ?? "").toLowerCase();
-  if (["europe","eu","emea","de","germany"].some((s) => r.includes(s))) return "Europe";
-  return p.region || "Unknown";
+function regionOf(p: Project): EuRegion {
+  return euRegionOf(p) ?? "Rest of Europe (EU)";
 }
 
 const CHEMISTRY_ALIASES: Array<[RegExp, string]> = [
@@ -162,8 +156,12 @@ function GatedAnalyticsPage() {
 
 function AnalyticsPage() {
   const { data: allProjects = [], isLoading, isError, error, refetch } = useQuery(projectsQuery());
-  // Enterprise dashboards exclude demo seed rows so metrics reflect live pipeline only.
-  const projects = useMemo(() => allProjects.filter(isLiveProject), [allProjects]);
+  // Enterprise European dashboards exclude demo seed rows AND non-European
+  // projects so metrics reflect the live EU/UK pipeline only.
+  const projects = useMemo(
+    () => allProjects.filter((p) => isLiveProject(p) && isEuropeanProject(p)),
+    [allProjects],
+  );
   const tier = useTier();
   const canExportAdvanced = tier === "pro" || tier === "enterprise";
 
@@ -175,7 +173,9 @@ function AnalyticsPage() {
   const [codYear, setCodYear] = useState("");
   const [compare, setCompare] = useState<string[]>([]);
 
-  const regions = useMemo(() => uniq(projects.map(regionOf)), [projects]);
+  // Canonical European regional taxonomy — enterprise UI never shows
+  // "north-america" / "asia-pacific" / "latin-america" here.
+  const regions = EU_REGIONS;
   // Country options deduped by country_code (so US/USA/United States collapse to one chip).
   const countryOptions = useMemo(() => {
     const map = new Map<string, string>(); // key → label

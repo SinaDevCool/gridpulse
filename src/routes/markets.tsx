@@ -9,12 +9,13 @@ import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { projectsQuery } from "@/lib/gridpulse-repo";
 import { isLiveProject, type Project } from "@/lib/gridpulse-data";
+import { euRegionOf, isEuropeanProject, EU_REGIONS, type EuRegion } from "@/lib/eu-regions";
 
 export const Route = createFileRoute("/markets")({
   head: () => ({
     meta: [
-      { title: "Market Dashboard — GridPulse" },
-      { name: "description", content: "Live market intelligence for grid-scale battery storage: capacity by region, status, chemistry, and upcoming COD year." },
+      { title: "European Market Dashboard — GridPulse" },
+      { name: "description", content: "Institutional market intelligence for grid-scale battery storage across Germany, the United Kingdom, and the rest of Europe: capacity, status, chemistry, and upcoming COD year." },
     ],
   }),
   component: MarketsPage,
@@ -22,16 +23,8 @@ export const Route = createFileRoute("/markets")({
 
 const COLORS = ["#22d3ee", "#34d399", "#fbbf24", "#a78bfa", "#fb7185", "#60a5fa", "#f472b6", "#facc15"];
 
-const EU_COUNTRY_CODES = new Set([
-  "DE","FR","ES","IT","NL","BE","PL","PT","IE","SE","DK","FI","AT","CZ","GR","HU","RO","BG","HR","SI","SK","LT","LV","EE","LU","MT","CY","NO","CH","GB","UK","IS",
-]);
-
-function regionOf(p: Project): string {
-  const cc = (p.countryCode ?? "").toUpperCase();
-  if (EU_COUNTRY_CODES.has(cc)) return "Europe";
-  const r = (p.region ?? "").toLowerCase();
-  if (["europe","eu","emea","de","germany"].some((s) => r.includes(s))) return "Europe";
-  return p.region || "Unknown";
+function regionOf(p: Project): EuRegion {
+  return euRegionOf(p) ?? "Rest of Europe (EU)";
 }
 
 const CHEMISTRY_ALIASES: Array<[RegExp, string]> = [
@@ -72,9 +65,25 @@ function rollup(projects: Project[], key: (p: Project) => string) {
 
 function MarketsPage() {
   const { data: allProjects = [], isLoading, isError, error, refetch } = useQuery(projectsQuery());
-  const projects = useMemo(() => allProjects.filter(isLiveProject), [allProjects]);
+  // Enterprise European view: live rows only, and only projects located in
+  // Germany, the UK, or the rest of Europe.
+  const projects = useMemo(
+    () => allProjects.filter((p) => isLiveProject(p) && isEuropeanProject(p)),
+    [allProjects],
+  );
 
-  const byRegion = useMemo(() => rollup(projects, regionOf).sort((a, b) => b.mw - a.mw), [projects]);
+  const byRegion = useMemo(() => {
+    const rows = rollup(projects, regionOf);
+    // Sort in the canonical order so charts read Germany → UK → Rest of EU.
+    const order: Record<EuRegion, number> = {
+      "Germany (DE)": 0,
+      "United Kingdom (UK)": 1,
+      "Rest of Europe (EU)": 2,
+    };
+    return EU_REGIONS
+      .map((name) => rows.find((r) => r.name === name) ?? { name, mw: 0, mwh: 0, count: 0 })
+      .sort((a, b) => order[a.name as EuRegion] - order[b.name as EuRegion]);
+  }, [projects]);
   const byStatus = useMemo(() => rollup(projects, (p) => p.status), [projects]);
   const byChemistry = useMemo(() => rollup(projects, normalizeChemistry).sort((a, b) => b.mw - a.mw), [projects]);
   const byCodYear = useMemo(
@@ -93,10 +102,10 @@ function MarketsPage() {
     <div className="min-h-screen bg-background text-foreground">
       <SiteHeader />
       <main className="mx-auto max-w-[1400px] px-4 py-12 lg:px-8">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-accent">Market Dashboard</div>
-        <h1 className="mt-2 font-display text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight leading-tight">Grid-scale storage, by the numbers</h1>
+        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-accent">European Market Dashboard</div>
+        <h1 className="mt-2 font-display text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight leading-tight">Grid-scale storage across Germany, the UK &amp; Europe</h1>
         <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
-          Live aggregates from {projects.length.toLocaleString()} tracked projects in the GridPulse database. Slice the pipeline by region, status, chemistry, and upcoming COD year.
+          Institutional aggregates from {projects.length.toLocaleString()} tracked European projects — sourced from Bundesnetzagentur MaStR, SMARD, ENTSO-E, and national grid registries. Slice the pipeline by region, status, chemistry, and upcoming COD year.
         </p>
 
         <div className="mt-8 grid gap-3 md:grid-cols-4">

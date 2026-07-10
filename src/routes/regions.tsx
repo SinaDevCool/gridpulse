@@ -5,32 +5,43 @@ import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { projectsQuery, articlesQuery } from "@/lib/gridpulse-repo";
 import { isLiveProject } from "@/lib/gridpulse-data";
+import { euRegionOf, isEuropeanProject, EU_REGIONS, type EuRegion } from "@/lib/eu-regions";
 
 function RegionsPage() {
   const { data: allProjects = [], isLoading: pLoading } = useQuery(projectsQuery());
-  const projects = useMemo(() => allProjects.filter(isLiveProject), [allProjects]);
+  const projects = useMemo(
+    () => allProjects.filter((p) => isLiveProject(p) && isEuropeanProject(p)),
+    [allProjects],
+  );
   const { data: articles = [] } = useQuery(articlesQuery());
 
   const regions = useMemo(() => {
-    const map = new Map<string, { mw: number; mwh: number; projects: number; stories: number; operational: number; pipeline: number }>();
+    const zero = () => ({ mw: 0, mwh: 0, projects: 0, stories: 0, operational: 0, pipeline: 0 });
+    const map = new Map<EuRegion, ReturnType<typeof zero>>(
+      EU_REGIONS.map((r) => [r, zero()] as const),
+    );
     for (const p of projects) {
-      const region = p.region ?? "Other";
-      const cur = map.get(region) ?? { mw: 0, mwh: 0, projects: 0, stories: 0, operational: 0, pipeline: 0 };
+      const region = euRegionOf(p);
+      if (!region) continue;
+      const cur = map.get(region)!;
       cur.mw += p.capacityMw ?? 0;
       cur.mwh += p.capacityMwh ?? 0;
       cur.projects += 1;
       if (p.status === "Operational") cur.operational += p.capacityMw ?? 0;
       else cur.pipeline += p.capacityMw ?? 0;
-      map.set(region, cur);
     }
+    // Story counts: any article tagged with a European region rolls into
+    // "Rest of Europe (EU)" unless it names Germany or the UK directly.
     for (const a of articles) {
-      if (!a.region) continue;
-      const cur = map.get(a.region);
-      if (cur) cur.stories += 1;
+      const raw = (a.region ?? "").toLowerCase();
+      if (!raw) continue;
+      let bucket: EuRegion | null = null;
+      if (raw.includes("german") || raw === "de") bucket = "Germany (DE)";
+      else if (raw.includes("united kingdom") || raw === "uk" || raw === "gb") bucket = "United Kingdom (UK)";
+      else if (raw.includes("europe") || raw === "eu" || raw === "emea") bucket = "Rest of Europe (EU)";
+      if (bucket) map.get(bucket)!.stories += 1;
     }
-    return [...map.entries()]
-      .map(([name, v]) => ({ name, ...v }))
-      .sort((a, b) => b.mw - a.mw);
+    return EU_REGIONS.map((name) => ({ name, ...map.get(name)! }));
   }, [projects, articles]);
 
   return (
