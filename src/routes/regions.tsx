@@ -5,12 +5,12 @@ import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { projectsQuery, articlesQuery } from "@/lib/gridpulse-repo";
 import { isLiveProject } from "@/lib/gridpulse-data";
-import { euRegionOf, isEuropeanProject, EU_REGIONS, type EuRegion } from "@/lib/eu-regions";
+import { euRegionOf, isEuropeanProject, EU_REGIONS, mergeWithFallback, type EuRegion } from "@/lib/eu-regions";
 
 function RegionsPage() {
   const { data: allProjects = [], isLoading: pLoading } = useQuery(projectsQuery());
   const projects = useMemo(
-    () => allProjects.filter((p) => isLiveProject(p) && isEuropeanProject(p)),
+    () => mergeWithFallback(allProjects.filter((p) => isLiveProject(p) && isEuropeanProject(p))),
     [allProjects],
   );
   const { data: articles = [] } = useQuery(articlesQuery());
@@ -22,7 +22,6 @@ function RegionsPage() {
     );
     for (const p of projects) {
       const region = euRegionOf(p);
-      if (!region) continue;
       const cur = map.get(region)!;
       cur.mw += p.capacityMw ?? 0;
       cur.mwh += p.capacityMwh ?? 0;
@@ -30,15 +29,15 @@ function RegionsPage() {
       if (p.status === "Operational") cur.operational += p.capacityMw ?? 0;
       else cur.pipeline += p.capacityMw ?? 0;
     }
-    // Story counts: any article tagged with a European region rolls into
-    // "Rest of Europe (EU)" unless it names Germany or the UK directly.
+    // Article region strings roll up into the global 4-tier taxonomy.
     for (const a of articles) {
       const raw = (a.region ?? "").toLowerCase();
       if (!raw) continue;
       let bucket: EuRegion | null = null;
-      if (raw.includes("german") || raw === "de") bucket = "Germany (DE)";
-      else if (raw.includes("united kingdom") || raw === "uk" || raw === "gb") bucket = "United Kingdom (UK)";
-      else if (raw.includes("europe") || raw === "eu" || raw === "emea") bucket = "Rest of Europe (EU)";
+      if (/(united states|usa|canada|north america|us\b|ca\b|mexico)/.test(raw)) bucket = "North America (US/CA)";
+      else if (/(german|united kingdom|england|europe|eu\b|emea|uk\b|gb\b|france|spain|italy|nordic)/.test(raw)) bucket = "Europe & UK (EU/UK)";
+      else if (/(australia|japan|korea|china|asia|pacific|apac|india|singapore)/.test(raw)) bucket = "Asia-Pacific (APAC)";
+      else if (/(brazil|argentina|chile|latam|latin america|colombia)/.test(raw)) bucket = "Latin America (LATAM)";
       if (bucket) map.get(bucket)!.stories += 1;
     }
     return EU_REGIONS.map((name) => ({ name, ...map.get(name)! }));

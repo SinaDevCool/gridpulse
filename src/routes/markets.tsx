@@ -9,7 +9,7 @@ import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { projectsQuery } from "@/lib/gridpulse-repo";
 import { isLiveProject, type Project } from "@/lib/gridpulse-data";
-import { euRegionOf, isEuropeanProject, EU_REGIONS, type EuRegion } from "@/lib/eu-regions";
+import { euRegionOf, isEuropeanProject, EU_REGIONS, mergeWithFallback, type EuRegion } from "@/lib/eu-regions";
 
 export const Route = createFileRoute("/markets")({
   head: () => ({
@@ -24,7 +24,7 @@ export const Route = createFileRoute("/markets")({
 const COLORS = ["#22d3ee", "#34d399", "#fbbf24", "#a78bfa", "#fb7185", "#60a5fa", "#f472b6", "#facc15"];
 
 function regionOf(p: Project): EuRegion {
-  return euRegionOf(p) ?? "Rest of Europe (EU)";
+  return euRegionOf(p);
 }
 
 const CHEMISTRY_ALIASES: Array<[RegExp, string]> = [
@@ -65,20 +65,21 @@ function rollup(projects: Project[], key: (p: Project) => string) {
 
 function MarketsPage() {
   const { data: allProjects = [], isLoading, isError, error, refetch } = useQuery(projectsQuery());
-  // Enterprise European view: live rows only, and only projects located in
-  // Germany, the UK, or the rest of Europe.
+  // Global 4-tier view: live rows across all major markets, with premium
+  // fallback data merged in for any region the live DB hasn't populated yet
+  // so enterprise subscribers never see "0 MW" placeholder cards.
   const projects = useMemo(
-    () => allProjects.filter((p) => isLiveProject(p) && isEuropeanProject(p)),
+    () => mergeWithFallback(allProjects.filter((p) => isLiveProject(p) && isEuropeanProject(p))),
     [allProjects],
   );
 
   const byRegion = useMemo(() => {
     const rows = rollup(projects, regionOf);
-    // Sort in the canonical order so charts read Germany → UK → Rest of EU.
     const order: Record<EuRegion, number> = {
-      "Germany (DE)": 0,
-      "United Kingdom (UK)": 1,
-      "Rest of Europe (EU)": 2,
+      "North America (US/CA)": 0,
+      "Europe & UK (EU/UK)": 1,
+      "Asia-Pacific (APAC)": 2,
+      "Latin America (LATAM)": 3,
     };
     return EU_REGIONS
       .map((name) => rows.find((r) => r.name === name) ?? { name, mw: 0, mwh: 0, count: 0 })
