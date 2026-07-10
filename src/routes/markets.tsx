@@ -65,9 +65,25 @@ function rollup(projects: Project[], key: (p: Project) => string) {
 
 function MarketsPage() {
   const { data: allProjects = [], isLoading, isError, error, refetch } = useQuery(projectsQuery());
-  const projects = useMemo(() => allProjects.filter(isLiveProject), [allProjects]);
+  // Enterprise European view: live rows only, and only projects located in
+  // Germany, the UK, or the rest of Europe.
+  const projects = useMemo(
+    () => allProjects.filter((p) => isLiveProject(p) && isEuropeanProject(p)),
+    [allProjects],
+  );
 
-  const byRegion = useMemo(() => rollup(projects, regionOf).sort((a, b) => b.mw - a.mw), [projects]);
+  const byRegion = useMemo(() => {
+    const rows = rollup(projects, regionOf);
+    // Sort in the canonical order so charts read Germany → UK → Rest of EU.
+    const order: Record<EuRegion, number> = {
+      "Germany (DE)": 0,
+      "United Kingdom (UK)": 1,
+      "Rest of Europe (EU)": 2,
+    };
+    return EU_REGIONS
+      .map((name) => rows.find((r) => r.name === name) ?? { name, mw: 0, mwh: 0, count: 0 })
+      .sort((a, b) => order[a.name as EuRegion] - order[b.name as EuRegion]);
+  }, [projects]);
   const byStatus = useMemo(() => rollup(projects, (p) => p.status), [projects]);
   const byChemistry = useMemo(() => rollup(projects, normalizeChemistry).sort((a, b) => b.mw - a.mw), [projects]);
   const byCodYear = useMemo(
