@@ -9,12 +9,13 @@ import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { projectsQuery } from "@/lib/gridpulse-repo";
 import { isLiveProject, type Project } from "@/lib/gridpulse-data";
+import { euRegionOf, isEuropeanProject, EU_REGIONS, type EuRegion } from "@/lib/eu-regions";
 
 export const Route = createFileRoute("/markets")({
   head: () => ({
     meta: [
-      { title: "Market Dashboard — GridPulse" },
-      { name: "description", content: "Live market intelligence for grid-scale battery storage: capacity by region, status, chemistry, and upcoming COD year." },
+      { title: "European Market Dashboard — GridPulse" },
+      { name: "description", content: "Institutional market intelligence for grid-scale battery storage across Germany, the United Kingdom, and the rest of Europe: capacity, status, chemistry, and upcoming COD year." },
     ],
   }),
   component: MarketsPage,
@@ -22,16 +23,8 @@ export const Route = createFileRoute("/markets")({
 
 const COLORS = ["#22d3ee", "#34d399", "#fbbf24", "#a78bfa", "#fb7185", "#60a5fa", "#f472b6", "#facc15"];
 
-const EU_COUNTRY_CODES = new Set([
-  "DE","FR","ES","IT","NL","BE","PL","PT","IE","SE","DK","FI","AT","CZ","GR","HU","RO","BG","HR","SI","SK","LT","LV","EE","LU","MT","CY","NO","CH","GB","UK","IS",
-]);
-
-function regionOf(p: Project): string {
-  const cc = (p.countryCode ?? "").toUpperCase();
-  if (EU_COUNTRY_CODES.has(cc)) return "Europe";
-  const r = (p.region ?? "").toLowerCase();
-  if (["europe","eu","emea","de","germany"].some((s) => r.includes(s))) return "Europe";
-  return p.region || "Unknown";
+function regionOf(p: Project): EuRegion {
+  return euRegionOf(p) ?? "Rest of Europe (EU)";
 }
 
 const CHEMISTRY_ALIASES: Array<[RegExp, string]> = [
