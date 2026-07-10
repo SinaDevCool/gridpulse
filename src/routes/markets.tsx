@@ -14,8 +14,8 @@ import { euRegionOf, isEuropeanProject, EU_REGIONS, mergeWithFallback, type EuRe
 export const Route = createFileRoute("/markets")({
   head: () => ({
     meta: [
-      { title: "European Market Dashboard — GridPulse" },
-      { name: "description", content: "Institutional market intelligence for grid-scale battery storage across Germany, the United Kingdom, and the rest of Europe: capacity, status, chemistry, and upcoming COD year." },
+      { title: "Global Market Dashboard — GridPulse" },
+      { name: "description", content: "Institutional market intelligence for grid-scale battery storage across North America, Europe & UK, Asia-Pacific, and Latin America: capacity, status, chemistry, and upcoming COD year." },
     ],
   }),
   component: MarketsPage,
