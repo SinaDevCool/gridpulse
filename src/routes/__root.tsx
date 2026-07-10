@@ -147,7 +147,9 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
+      <div className="w-full max-w-full overflow-x-hidden">
+        <Outlet />
+      </div>
       <Toaster theme="dark" position="bottom-right" richColors closeButton />
     </QueryClientProvider>
   );

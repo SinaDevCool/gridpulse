@@ -58,10 +58,10 @@ function codYearOf(p: Project): string {
   return m ? m[1] : "Unknown";
 }
 
-import { euRegionOf, isEuropeanProject, EU_REGIONS, type EuRegion } from "@/lib/eu-regions";
+import { euRegionOf, isEuropeanProject, EU_REGIONS, mergeWithFallback, type EuRegion } from "@/lib/eu-regions";
 
 function regionOf(p: Project): EuRegion {
-  return euRegionOf(p) ?? "Rest of Europe (EU)";
+  return euRegionOf(p);
 }
 
 const CHEMISTRY_ALIASES: Array<[RegExp, string]> = [
@@ -156,10 +156,11 @@ function GatedAnalyticsPage() {
 
 function AnalyticsPage() {
   const { data: allProjects = [], isLoading, isError, error, refetch } = useQuery(projectsQuery());
-  // Enterprise European dashboards exclude demo seed rows AND non-European
-  // projects so metrics reflect the live EU/UK pipeline only.
+  // Global 4-tier taxonomy: exclude demo seed rows but keep every real market
+  // (NA / EU-UK / APAC / LATAM). Fallback projects are merged for regions
+  // where the live DB is still empty.
   const projects = useMemo(
-    () => allProjects.filter((p) => isLiveProject(p) && isEuropeanProject(p)),
+    () => mergeWithFallback(allProjects.filter((p) => isLiveProject(p) && isEuropeanProject(p))),
     [allProjects],
   );
   const tier = useTier();
