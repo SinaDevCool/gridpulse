@@ -103,10 +103,10 @@ function MarketsPage() {
     <div className="min-h-screen bg-background text-foreground">
       <SiteHeader />
       <main className="mx-auto max-w-[1400px] px-4 py-12 lg:px-8">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-accent">European Market Dashboard</div>
-        <h1 className="mt-2 font-display text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight leading-tight">Grid-scale storage across Germany, the UK &amp; Europe</h1>
+        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-accent">Global Market Dashboard</div>
+        <h1 className="mt-2 font-display text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight leading-tight">Grid-scale storage across North America, Europe, APAC &amp; LATAM</h1>
         <p className="mt-3 max-w-2xl text-sm text-muted-foreground">
-          Institutional aggregates from {projects.length.toLocaleString()} tracked European projects — sourced from Bundesnetzagentur MaStR, SMARD, ENTSO-E, and national grid registries. Slice the pipeline by region, status, chemistry, and upcoming COD year.
+          Institutional aggregates from {projects.length.toLocaleString()} tracked utility-scale projects — sourced from open power feeds and national regulatory registries. Slice the pipeline by region, status, chemistry, and upcoming COD year.
         </p>
 
         <div className="mt-8 grid gap-3 md:grid-cols-4">
