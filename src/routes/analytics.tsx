@@ -167,9 +167,28 @@ function AnalyticsPage() {
   const [chemistry, setChemistry] = useState("");
   const [developer, setDeveloper] = useState("");
   const [codYear, setCodYear] = useState("");
+function AnalyticsPage() {
+  const { data: allProjects = [], isLoading, isError, error, refetch } = useQuery(projectsQuery());
+  // Enterprise European dashboards exclude demo seed rows AND non-European
+  // projects so metrics reflect the live EU/UK pipeline only.
+  const projects = useMemo(
+    () => allProjects.filter((p) => isLiveProject(p) && isEuropeanProject(p)),
+    [allProjects],
+  );
+  const tier = useTier();
+  const canExportAdvanced = tier === "pro" || tier === "enterprise";
+
+  const [region, setRegion] = useState("");
+  const [country, setCountry] = useState(""); // country_code (ISO-alpha-2) when known, else country name
+  const [status, setStatus] = useState("");
+  const [chemistry, setChemistry] = useState("");
+  const [developer, setDeveloper] = useState("");
+  const [codYear, setCodYear] = useState("");
   const [compare, setCompare] = useState<string[]>([]);
 
-  const regions = useMemo(() => uniq(projects.map(regionOf)), [projects]);
+  // Canonical European regional taxonomy — enterprise UI never shows
+  // "north-america" / "asia-pacific" / "latin-america" here.
+  const regions = EU_REGIONS;
   // Country options deduped by country_code (so US/USA/United States collapse to one chip).
   const countryOptions = useMemo(() => {
     const map = new Map<string, string>(); // key → label
