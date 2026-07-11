@@ -250,6 +250,18 @@ export function SiteHeader() {
   );
 }
 
+// Maps a raw source_name onto the enterprise "Live Feed:" badge label per
+// the compliant ingestion spec (EIA v2 / SMARD / ENTSO-E / Finnhub).
+function liveFeedLabel(sourceName: string, sourceType: string): string {
+  const n = sourceName.toLowerCase();
+  if (n.includes("eia")) return "Live Feed: US EIA API v2";
+  if (n.includes("smard") || n.includes("bundesnetzagentur")) return "Live Feed: SMARD Grid API";
+  if (n.includes("entso")) return "Live Feed: ENTSO-E System Data";
+  if (n.includes("finnhub")) return "Live Feed: Finnhub Equities";
+  if (sourceType === "api") return `Live Feed: ${sourceName}`;
+  return `Source: ${sourceName}`;
+}
+
 function LiveTicker() {
   const { data, isLoading } = useQuery(marketDataQuery());
   // Memoize sort so the ticker doesn't rebuild the array on every re-render
