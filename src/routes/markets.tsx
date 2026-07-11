@@ -210,17 +210,33 @@ function MarketsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/40">
-                {byRegion.map((r) => (
-                  <tr key={r.name}>
-                    <td className="py-2">
-                      <Link to="/projects" search={{ region: r.name }} className="hover:text-cyan-accent">{r.name}</Link>
-                    </td>
-                    <td className="py-2 text-right font-mono-data">{r.count}</td>
-                    <td className="py-2 text-right font-mono-data">{r.mw.toLocaleString()}</td>
-                    <td className="py-2 text-right font-mono-data">{r.mwh.toLocaleString()}</td>
-                    <td className="py-2 text-right font-mono-data">{totalMw > 0 ? ((r.mw / totalMw) * 100).toFixed(1) : "0"}%</td>
-                  </tr>
-                ))}
+                {byRegion.map((r) => {
+                  const isLive = r.sourceLabel.startsWith("Live Feed:");
+                  return (
+                    <tr key={r.name}>
+                      <td className="py-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Link to="/projects" search={{ region: r.name }} className="hover:text-cyan-accent">{r.name}</Link>
+                          <span
+                            className={
+                              "whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wider " +
+                              (isLive
+                                ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
+                                : "border-border/60 bg-surface/60 text-muted-foreground")
+                            }
+                            title={r.sourceLabel}
+                          >
+                            {isLive ? r.sourceLabel.replace("Live Feed: ", "● ") : "Registry cache"}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-2 text-right font-mono-data">{r.count}</td>
+                      <td className="py-2 text-right font-mono-data">{r.mw.toLocaleString()}</td>
+                      <td className="py-2 text-right font-mono-data">{r.mwh.toLocaleString()}</td>
+                      <td className="py-2 text-right font-mono-data">{totalMw > 0 ? ((r.mw / totalMw) * 100).toFixed(1) : "0"}%</td>
+                    </tr>
+                  );
+                })}
                 {!isLoading && byRegion.length === 0 && (
                   <tr><td colSpan={5} className="py-6 text-center text-muted-foreground">No projects yet.</td></tr>
                 )}
