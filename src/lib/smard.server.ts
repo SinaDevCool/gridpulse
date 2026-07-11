@@ -5,8 +5,10 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const SMARD_BASE = "https://www.smard.de/app/chart_data";
 const FILTER = "4169"; // Großhandelspreise (Day-Ahead) DE/LU
-const REGION = "DE";
-const RESOLUTION = "hour";
+const REGION = "DE"; // Localized bidding-zone code per SMARD API spec
+// Compliant double-fetch: attempt higher-resolution quarterhour index first,
+// gracefully fall back to hourly (native resolution for Day-Ahead prices).
+const RESOLUTIONS = ["quarterhour", "hour"] as const;
 const USER_AGENT = "GridPulseBot/1.0 (+https://gridpulseinsights.com)";
 
 interface IndexResponse {
