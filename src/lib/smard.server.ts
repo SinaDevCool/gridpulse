@@ -5,8 +5,10 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const SMARD_BASE = "https://www.smard.de/app/chart_data";
 const FILTER = "4169"; // Großhandelspreise (Day-Ahead) DE/LU
-const REGION = "DE";
-const RESOLUTION = "hour";
+const REGION = "DE"; // Localized bidding-zone code per SMARD API spec
+// Compliant double-fetch: attempt higher-resolution quarterhour index first,
+// gracefully fall back to hourly (native resolution for Day-Ahead prices).
+const RESOLUTIONS = ["quarterhour", "hour"] as const;
 const USER_AGENT = "GridPulseBot/1.0 (+https://gridpulseinsights.com)";
 
 interface IndexResponse {
@@ -37,14 +39,30 @@ export interface SmardIngestResult {
 
 export async function runSmardPricePipeline(): Promise<SmardIngestResult> {
   const started = Date.now();
-  const index = await smardGet<IndexResponse>(
-    `${SMARD_BASE}/${FILTER}/${REGION}/index_${RESOLUTION}.json`,
-  );
-  const timestamps = (index.timestamps ?? []).slice().sort((a, b) => a - b);
-  if (timestamps.length === 0) throw new Error("SMARD index empty");
+
+  let resolution: (typeof RESOLUTIONS)[number] | null = null;
+  let timestamps: number[] = [];
+  let lastErr: unknown = null;
+  for (const r of RESOLUTIONS) {
+    try {
+      const index = await smardGet<IndexResponse>(
+        `${SMARD_BASE}/${FILTER}/${REGION}/index_${r}.json`,
+      );
+      const ts = (index.timestamps ?? []).slice().sort((a, b) => a - b);
+      if (ts.length > 0) {
+        resolution = r;
+        timestamps = ts;
+        break;
+      }
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  if (!resolution) throw new Error(`SMARD index empty for all resolutions: ${lastErr instanceof Error ? lastErr.message : ""}`);
+
   const latest = timestamps[timestamps.length - 1];
   const series = await smardGet<SeriesResponse>(
-    `${SMARD_BASE}/${FILTER}/${REGION}/${FILTER}_${REGION}_${RESOLUTION}_${latest}.json`,
+    `${SMARD_BASE}/${FILTER}/${REGION}/${FILTER}_${REGION}_${resolution}_${latest}.json`,
   );
 
   const points = (series.series ?? []).filter(
@@ -52,7 +70,6 @@ export async function runSmardPricePipeline(): Promise<SmardIngestResult> {
   ) as [number, number][];
   if (points.length === 0) throw new Error("SMARD series has no numeric points");
 
-  // Most-recent hour with data.
   const [tsMs, priceEurMwh] = points[points.length - 1];
   const prev = points.length > 1 ? points[points.length - 2][1] : null;
   const changeAbs = prev !== null ? priceEurMwh - prev : null;
@@ -70,7 +87,7 @@ export async function runSmardPricePipeline(): Promise<SmardIngestResult> {
     change_abs: changeAbs,
     change_pct: changePct,
     country_code: "DE",
-    source_name: "Bundesnetzagentur SMARD",
+    source_name: "SMARD Grid API",
     source_type: "api",
     verification_status: "verified",
     captured_at: capturedAt,
@@ -79,7 +96,7 @@ export async function runSmardPricePipeline(): Promise<SmardIngestResult> {
       provider: "smard",
       filter: FILTER,
       region: REGION,
-      resolution: RESOLUTION,
+      resolution,
       window_start_ts: latest,
     },
   };
