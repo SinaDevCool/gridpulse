@@ -244,6 +244,12 @@ function MarketsPage() {
             </table>
           </div>
         </section>
+
+        <p className="mt-6 text-[11px] text-muted-foreground">
+          {live && live.activeSources.length > 0
+            ? `Active live feeds: ${live.activeSources.join(" · ")} · SMARD Grid API (spot prices)`
+            : "Live federal endpoints rate-limited or offline — displaying verified registry cache."}
+        </p>
       </main>
       <SiteFooter />
     </div>
