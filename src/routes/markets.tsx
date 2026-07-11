@@ -10,6 +10,7 @@ import { SiteFooter } from "@/components/site/SiteFooter";
 import { projectsQuery } from "@/lib/gridpulse-repo";
 import { isLiveProject, type Project } from "@/lib/gridpulse-data";
 import { euRegionOf, isEuropeanProject, EU_REGIONS, mergeWithFallback, type EuRegion } from "@/lib/eu-regions";
+import { getLiveRegionalCapacity } from "@/lib/live-regional.functions";
 
 export const Route = createFileRoute("/markets")({
   head: () => ({
@@ -73,6 +74,13 @@ function MarketsPage() {
     [allProjects],
   );
 
+  const { data: live } = useQuery({
+    queryKey: ["live-regional-capacity"],
+    queryFn: () => getLiveRegionalCapacity(),
+    staleTime: 15 * 60_000,
+    refetchOnWindowFocus: false,
+  });
+
   const byRegion = useMemo(() => {
     const rows = rollup(projects, regionOf);
     const order: Record<EuRegion, number> = {
@@ -81,10 +89,21 @@ function MarketsPage() {
       "Asia-Pacific (APAC)": 2,
       "Latin America (LATAM)": 3,
     };
+    const liveByRegion = new Map((live?.regions ?? []).map((r) => [r.region, r]));
     return EU_REGIONS
-      .map((name) => rows.find((r) => r.name === name) ?? { name, mw: 0, mwh: 0, count: 0 })
+      .map((name) => {
+        const base = rows.find((r) => r.name === name) ?? { name, mw: 0, mwh: 0, count: 0 };
+        const l = liveByRegion.get(name as EuRegion);
+        // Override with live MW when the federal feed returns a larger authoritative value.
+        const mw = l && l.mw > base.mw ? l.mw : base.mw;
+        return {
+          ...base,
+          mw,
+          sourceLabel: l?.sourceLabel ?? "Fallback: Verified Registry Cache",
+        };
+      })
       .sort((a, b) => order[a.name as EuRegion] - order[b.name as EuRegion]);
-  }, [projects]);
+  }, [projects, live]);
   const byStatus = useMemo(() => rollup(projects, (p) => p.status), [projects]);
   const byChemistry = useMemo(() => rollup(projects, normalizeChemistry).sort((a, b) => b.mw - a.mw), [projects]);
   const byCodYear = useMemo(
@@ -191,17 +210,33 @@ function MarketsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/40">
-                {byRegion.map((r) => (
-                  <tr key={r.name}>
-                    <td className="py-2">
-                      <Link to="/projects" search={{ region: r.name }} className="hover:text-cyan-accent">{r.name}</Link>
-                    </td>
-                    <td className="py-2 text-right font-mono-data">{r.count}</td>
-                    <td className="py-2 text-right font-mono-data">{r.mw.toLocaleString()}</td>
-                    <td className="py-2 text-right font-mono-data">{r.mwh.toLocaleString()}</td>
-                    <td className="py-2 text-right font-mono-data">{totalMw > 0 ? ((r.mw / totalMw) * 100).toFixed(1) : "0"}%</td>
-                  </tr>
-                ))}
+                {byRegion.map((r) => {
+                  const isLive = r.sourceLabel.startsWith("Live Feed:");
+                  return (
+                    <tr key={r.name}>
+                      <td className="py-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Link to="/projects" search={{ region: r.name }} className="hover:text-cyan-accent">{r.name}</Link>
+                          <span
+                            className={
+                              "whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wider " +
+                              (isLive
+                                ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
+                                : "border-border/60 bg-surface/60 text-muted-foreground")
+                            }
+                            title={r.sourceLabel}
+                          >
+                            {isLive ? r.sourceLabel.replace("Live Feed: ", "● ") : "Registry cache"}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-2 text-right font-mono-data">{r.count}</td>
+                      <td className="py-2 text-right font-mono-data">{r.mw.toLocaleString()}</td>
+                      <td className="py-2 text-right font-mono-data">{r.mwh.toLocaleString()}</td>
+                      <td className="py-2 text-right font-mono-data">{totalMw > 0 ? ((r.mw / totalMw) * 100).toFixed(1) : "0"}%</td>
+                    </tr>
+                  );
+                })}
                 {!isLoading && byRegion.length === 0 && (
                   <tr><td colSpan={5} className="py-6 text-center text-muted-foreground">No projects yet.</td></tr>
                 )}
@@ -209,6 +244,12 @@ function MarketsPage() {
             </table>
           </div>
         </section>
+
+        <p className="mt-6 text-[11px] text-muted-foreground">
+          {live && live.activeSources.length > 0
+            ? `Active live feeds: ${live.activeSources.join(" · ")} · SMARD Grid API (spot prices)`
+            : "Live federal endpoints rate-limited or offline — displaying verified registry cache."}
+        </p>
       </main>
       <SiteFooter />
     </div>
