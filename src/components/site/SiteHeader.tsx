@@ -287,7 +287,7 @@ function LiveTicker() {
               <div
                 key={`${p.symbol}-${i}`}
                 className="flex items-center gap-2 px-6 shrink-0"
-                title={`${p.label} • Source: ${p.sourceName} (${p.sourceType === "api" ? "live API" : p.sourceType})`}
+                title={`${p.label} • ${liveFeedLabel(p.sourceName, p.sourceType)}`}
               >
                 <span className="text-muted-foreground tracking-wider">{p.label}</span>
                 <span className="text-foreground font-medium">{formatMarketValue(p)}</span>
