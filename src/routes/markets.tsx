@@ -74,6 +74,13 @@ function MarketsPage() {
     [allProjects],
   );
 
+  const { data: live } = useQuery({
+    queryKey: ["live-regional-capacity"],
+    queryFn: () => getLiveRegionalCapacity(),
+    staleTime: 15 * 60_000,
+    refetchOnWindowFocus: false,
+  });
+
   const byRegion = useMemo(() => {
     const rows = rollup(projects, regionOf);
     const order: Record<EuRegion, number> = {
@@ -82,10 +89,21 @@ function MarketsPage() {
       "Asia-Pacific (APAC)": 2,
       "Latin America (LATAM)": 3,
     };
+    const liveByRegion = new Map((live?.regions ?? []).map((r) => [r.region, r]));
     return EU_REGIONS
-      .map((name) => rows.find((r) => r.name === name) ?? { name, mw: 0, mwh: 0, count: 0 })
+      .map((name) => {
+        const base = rows.find((r) => r.name === name) ?? { name, mw: 0, mwh: 0, count: 0 };
+        const l = liveByRegion.get(name as EuRegion);
+        // Override with live MW when the federal feed returns a larger authoritative value.
+        const mw = l && l.mw > base.mw ? l.mw : base.mw;
+        return {
+          ...base,
+          mw,
+          sourceLabel: l?.sourceLabel ?? "Fallback: Verified Registry Cache",
+        };
+      })
       .sort((a, b) => order[a.name as EuRegion] - order[b.name as EuRegion]);
-  }, [projects]);
+  }, [projects, live]);
   const byStatus = useMemo(() => rollup(projects, (p) => p.status), [projects]);
   const byChemistry = useMemo(() => rollup(projects, normalizeChemistry).sort((a, b) => b.mw - a.mw), [projects]);
   const byCodYear = useMemo(
