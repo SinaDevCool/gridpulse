@@ -10,6 +10,7 @@ import { SiteFooter } from "@/components/site/SiteFooter";
 import { projectsQuery } from "@/lib/gridpulse-repo";
 import { isLiveProject, type Project } from "@/lib/gridpulse-data";
 import { euRegionOf, isEuropeanProject, EU_REGIONS, mergeWithFallback, type EuRegion } from "@/lib/eu-regions";
+import { getLiveRegionalCapacity } from "@/lib/live-regional.functions";
 
 export const Route = createFileRoute("/markets")({
   head: () => ({
