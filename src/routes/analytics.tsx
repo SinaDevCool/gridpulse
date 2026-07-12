@@ -547,11 +547,14 @@ function AnalyticsPage() {
           </div>
         </section>
 
+        <SitingScorecard filtered={filtered} country={country} />
+
         <p className="mt-8 text-xs text-muted-foreground">
           Source: live GridPulse project database. {!canExportAdvanced && (
             <>Upgrade to <Link to="/subscribe" className="text-cyan-accent hover:underline">Pro</Link> for full per-project CSV exports with owner, operator, offtaker, and source-verification fields.</>
           )}
         </p>
+
       </main>
       <SiteFooter />
     </div>
