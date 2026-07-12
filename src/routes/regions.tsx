@@ -1,11 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { projectsQuery, articlesQuery } from "@/lib/gridpulse-repo";
 import { isLiveProject } from "@/lib/gridpulse-data";
 import { euRegionOf, isEuropeanProject, EU_REGIONS, mergeWithFallback, type EuRegion } from "@/lib/eu-regions";
+import { TSO_ZONES, tsoZoneOf, nodeClassLabel, nodeClassStyles, sitingScore } from "@/lib/tso-zones";
+import { Activity, Zap } from "lucide-react";
+
 
 function RegionsPage() {
   const { data: allProjects = [], isLoading: pLoading } = useQuery(projectsQuery());
