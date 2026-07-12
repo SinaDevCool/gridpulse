@@ -1,12 +1,15 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo } from "react";
-import { Search, MapPin, X } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Search, MapPin, X, Layers, Sparkles } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { isLiveProject, type Project } from "@/lib/gridpulse-data";
 import { projectsQuery } from "@/lib/gridpulse-repo";
+import { tsoZoneOf } from "@/lib/tso-zones";
+import { CoLocationCalculator } from "@/components/site/CoLocationCalculator";
+
 
 const searchSchema = z.object({
   q: z.string().optional().default(""),
