@@ -61,6 +61,15 @@ function ProjectsPage() {
   const set = (patch: Partial<typeof sp>) =>
     navigate({ search: (prev: typeof sp) => ({ ...prev, ...patch }), replace: true });
 
+  // Map overlay controls (client-only UI state — kept out of the URL to
+  // avoid noisy history entries while toggling visual layers).
+  const [showAssets, setShowAssets] = useState(true);
+  const [showCongestion, setShowCongestion] = useState(false);
+  const [showFastTrack, setShowFastTrack] = useState(false);
+  const [calcOpen, setCalcOpen] = useState(false);
+
+
+
 
   const statuses = ["All", ...uniq(projects.map((p) => p.status))];
   const regions = ["All", ...uniq(projects.map((p) => p.region))];
