@@ -547,7 +547,7 @@ function AnalyticsPage() {
           </div>
         </section>
 
-        <SitingScorecard filtered={filtered} country={country} />
+        <SitingScorecard filtered={filtered} country={country} region={region} />
 
         <p className="mt-8 text-xs text-muted-foreground">
           Source: live GridPulse project database. {!canExportAdvanced && (
