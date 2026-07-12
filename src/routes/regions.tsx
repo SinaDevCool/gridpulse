@@ -78,6 +78,87 @@ function RegionsPage() {
           Capacity totals, project counts, and story counts are aggregated live from the GridPulse project and news databases.
         </p>
 
+        <div className="mt-6 flex flex-wrap items-center gap-3 rounded-xl border border-border/60 bg-surface/40 p-3">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Map overlay</span>
+          <button
+            type="button"
+            onClick={() => setHeadroomOn((v) => !v)}
+            aria-pressed={headroomOn}
+            className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium transition cursor-pointer ${
+              headroomOn
+                ? "border-cyan-accent/60 bg-cyan-accent/10 text-cyan-accent"
+                : "border-border bg-background text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Activity className="h-3 w-3" /> Grid Connection Headroom & Capacity Availability
+          </button>
+          <span className="ml-auto text-[10px] font-mono-data text-muted-foreground">
+            Feeds: ENTSO-E Core Transparency · Bundesnetzagentur SMARD
+          </span>
+        </div>
+
+        {headroomOn && (
+          <section className="mt-4 rounded-xl border border-border/60 bg-surface/40 p-5">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <div>
+                <h2 className="font-display text-lg font-bold flex items-center gap-2">
+                  <Zap className="h-4 w-4 text-cyan-accent" />
+                  Substation Congestion Zones — European TSOs
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  Every tracked project is attributed to its governing Transmission System Operator. Nodes are flagged by 12-month redispatch exposure and HV connection headroom.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-1.5 text-[10px] font-mono-data">
+                <span className="inline-flex items-center gap-1 rounded border border-red-accent/50 bg-red-accent/10 px-1.5 py-0.5 text-red-accent">
+                  <span className="h-1.5 w-1.5 rounded-full bg-red-accent" /> Congested
+                </span>
+                <span className="inline-flex items-center gap-1 rounded border border-amber-accent/50 bg-amber-accent/10 px-1.5 py-0.5 text-amber-accent">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-accent" /> Balanced
+                </span>
+                <span className="inline-flex items-center gap-1 rounded border border-green-accent/50 bg-green-accent/10 px-1.5 py-0.5 text-green-accent">
+                  <span className="h-1.5 w-1.5 rounded-full bg-green-accent" /> Fast-Track
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
+              {tsoRollup.map(({ zone, assignedMw, assignedProjects, score }) => {
+                const styles = nodeClassStyles(zone.nodeClass);
+                return (
+                  <div key={zone.code} className="rounded-lg border border-border/60 bg-background/40 p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className={`h-2 w-2 rounded-full ${styles.dot}`} />
+                          <h3 className="font-display text-sm font-bold truncate">{zone.name}</h3>
+                          <span className="text-[10px] font-mono-data text-muted-foreground">{zone.country}</span>
+                        </div>
+                        <div className={`mt-1 inline-flex rounded border px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider ${styles.chip}`}>
+                          {nodeClassLabel(zone.nodeClass)}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-[9px] uppercase tracking-wider text-muted-foreground">Siting</div>
+                        <div className="font-display text-lg font-bold text-cyan-accent">{score}</div>
+                      </div>
+                    </div>
+                    <div className="mt-3 grid grid-cols-3 gap-2 text-[11px] font-mono-data">
+                      <MetricCell label="Headroom" value={`${zone.headroomMw.toLocaleString()} MW`} />
+                      <MetricCell label="Redispatch" value={`${zone.redispatchRiskPct}%`} />
+                      <MetricCell label="Time-to-Energize" value={`${zone.timeToEnergizeMonths} mo`} />
+                    </div>
+                    <div className="mt-3 border-t border-border/40 pt-2 text-[10px] text-muted-foreground">
+                      {assignedProjects} tracked project{assignedProjects === 1 ? "" : "s"} · {assignedMw.toLocaleString()} MW attributed
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+
         {pLoading ? (
           <div className="mt-10 py-10 text-center text-sm text-muted-foreground">Loading regional aggregates…</div>
         ) : regions.length === 0 ? (
