@@ -203,6 +203,16 @@ function RegionsPage() {
   );
 }
 
+function MetricCell({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded border border-border/40 bg-surface/40 px-2 py-1.5">
+      <div className="text-[9px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className="text-foreground">{value}</div>
+    </div>
+  );
+}
+
+
 export const Route = createFileRoute("/regions")({
   head: () => ({
     meta: [
