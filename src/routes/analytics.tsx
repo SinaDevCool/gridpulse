@@ -12,7 +12,9 @@ import { AuthWall } from "@/components/site/AuthWall";
 import { projectsQuery } from "@/lib/gridpulse-repo";
 import { supabase } from "@/integrations/supabase/client";
 import { isLiveProject, type Project } from "@/lib/gridpulse-data";
-import { TSO_ZONES, tsoZoneOf, nodeClassStyles, nodeClassLabel, sitingScore, activeFeedsForCountry } from "@/lib/tso-zones";
+import { TSO_ZONES, tsoZoneOf, nodeClassStyles, sitingScore, activeFeedsForCountry } from "@/lib/tso-zones";
+import { CoLocationCalculator } from "@/components/site/CoLocationCalculator";
+
 
 
 export const Route = createFileRoute("/analytics")({
@@ -547,7 +549,7 @@ function AnalyticsPage() {
           </div>
         </section>
 
-        <SitingScorecard filtered={filtered} country={country} />
+        <SitingScorecard filtered={filtered} country={country} region={region} />
 
         <p className="mt-8 text-xs text-muted-foreground">
           Source: live GridPulse project database. {!canExportAdvanced && (
@@ -627,10 +629,30 @@ function ErrorBox({ message, onRetry }: { message: string; onRetry: () => void }
   );
 }
 
-function SitingScorecard({ filtered, country }: { filtered: Project[]; country: string }) {
-  // Attribute filtered projects to their TSO zone. Memoized on the two
-  // stable inputs so heavy chart interactions never re-crunch the join.
+function riskLabel(pct: number): { label: "High" | "Medium" | "Low"; chip: string } {
+  if (pct >= 35) return { label: "High", chip: "border-red-accent/50 bg-red-accent/10 text-red-accent" };
+  if (pct >= 20) return { label: "Medium", chip: "border-amber-accent/50 bg-amber-accent/10 text-amber-accent" };
+  return { label: "Low", chip: "border-green-accent/50 bg-green-accent/10 text-green-accent" };
+}
+
+function timeToConnectEstimate(months: number): { text: string; tone: string } {
+  if (months <= 18) return { text: "6-12 Months (Fast-Track)", tone: "text-green-accent" };
+  if (months <= 36) return { text: "18-30 Months (Standard Queue)", tone: "text-cyan-accent" };
+  if (months <= 48) return { text: "3-4 Years (Constrained)", tone: "text-amber-accent" };
+  return { text: "5+ Years (Queue Blocked)", tone: "text-red-accent" };
+}
+
+function SitingScorecard({ filtered, country, region }: { filtered: Project[]; country: string; region: string }) {
+  const [calcOpen, setCalcOpen] = useState(false);
+
+  // Global tab visibility rule — the TSO / Redispatch matrix is only
+  // meaningful for regions with a TSO in TSO_ZONES (currently NA + EU/UK).
+  // When the user narrows to APAC / LATAM the module hides itself, matching
+  // the "UI State Integrity" requirement.
+  const regionApplicable = !region || region === "Europe & UK (EU/UK)" || region === "North America (US/CA)";
+
   const rows = useMemo(() => {
+    if (!regionApplicable) return [];
     const map = new Map<string, { mw: number; count: number }>();
     for (const p of filtered) {
       const z = tsoZoneOf(p);
@@ -640,69 +662,111 @@ function SitingScorecard({ filtered, country }: { filtered: Project[]; country: 
       cur.count += 1;
       map.set(z.code, cur);
     }
-    return TSO_ZONES.map((zone) => ({
-      zone,
-      score: sitingScore(zone),
-      assignedMw: map.get(zone.code)?.mw ?? 0,
-      assignedProjects: map.get(zone.code)?.count ?? 0,
-    })).sort((a, b) => b.score - a.score);
-  }, [filtered]);
+    // Total operational BESS MW per zone drives the Co-location Opportunity
+    // Index — more nearby operational capacity = stronger co-location signal.
+    const totalOperational = filtered
+      .filter((p) => p.status === "Operational")
+      .reduce((s, p) => s + (p.capacityMw ?? 0), 0) || 1;
+    return TSO_ZONES.map((zone) => {
+      const assignedMw = map.get(zone.code)?.mw ?? 0;
+      const assignedProjects = map.get(zone.code)?.count ?? 0;
+      const coLocationIndex = Math.min(
+        Math.round(((assignedMw / totalOperational) * 100) + (100 - zone.redispatchRiskPct) * 0.35),
+        100,
+      );
+      return {
+        zone,
+        score: sitingScore(zone),
+        assignedMw,
+        assignedProjects,
+        coLocationIndex,
+      };
+    }).sort((a, b) => b.score - a.score);
+  }, [filtered, regionApplicable]);
 
   const activeFeeds = useMemo(() => activeFeedsForCountry(country || null), [country]);
 
+  if (!regionApplicable) {
+    return (
+      <section className="mt-8 rounded-xl border border-border/60 bg-surface/30 p-5 text-sm text-muted-foreground">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">European Load Siting Optimization Matrix</div>
+        <p className="mt-2">TSO capacity, redispatch, and time-to-energize metrics are published for North America and Europe/UK. Switch the Region filter to <span className="text-foreground">Europe & UK (EU/UK)</span> or <span className="text-foreground">North America (US/CA)</span> to activate the matrix.</p>
+      </section>
+    );
+  }
+
   return (
     <section className="mt-8 rounded-xl border border-cyan-accent/30 bg-cyan-accent/[0.03] p-5">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <div>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
           <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-accent">Institutional Module</div>
-          <h2 className="mt-1 font-display text-xl font-bold">Institutional Siting Optimization Scorecard</h2>
+          <h2 className="mt-1 font-display text-xl font-bold">European Load Siting Optimization Matrix</h2>
           <p className="mt-1 max-w-3xl text-xs text-muted-foreground">
-            Ranks European TSO zones by a proprietary <span className="text-foreground">Time-to-Connect Optimization Index</span> — a composite of HV connection headroom (40%), 12-month redispatch risk (35%), and median energisation timeline (25%). Co-locating BESS alongside heavy industrial loads or hyperscale data centers in high-score zones bypasses multi-year structural grid-expansion queues.
+            Time-to-Connect ranking of every governing TSO zone — headroom, redispatch exposure, and co-location opportunity for hyperscale data centers and heavy industrial loads.
           </p>
         </div>
-        <span className="rounded border border-cyan-accent/40 bg-cyan-accent/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-cyan-accent">
-          GridCARE methodology
-        </span>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded border border-cyan-accent/40 bg-cyan-accent/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-cyan-accent">
+            GridCARE methodology
+          </span>
+          <button
+            onClick={() => setCalcOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-md border border-cyan-accent/50 bg-cyan-accent/10 px-2.5 py-1 text-[11px] font-semibold text-cyan-accent hover:bg-cyan-accent/20 cursor-pointer"
+          >
+            Evaluate Co-Location Potential
+          </button>
+        </div>
       </div>
 
       <div className="mt-4 overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full min-w-[820px] text-sm">
           <thead className="text-[10px] uppercase tracking-wider text-muted-foreground">
             <tr>
-              <th className="py-2 text-left">TSO Zone</th>
-              <th className="py-2 text-left">Node Class</th>
-              <th className="py-2 text-right">Headroom MW</th>
-              <th className="py-2 text-right">Redispatch Risk %</th>
-              <th className="py-2 text-right">Time-to-Energize</th>
+              <th className="py-2 text-left">Regional Node / Grid Zone</th>
+              <th className="py-2 text-left">Governing TSO</th>
+              <th className="py-2 text-right">Hidden Capacity Headroom</th>
+              <th className="py-2 text-left">Redispatch & Curtailment Risk</th>
+              <th className="py-2 text-right">Co-location Opportunity Index</th>
+              <th className="py-2 text-left">Time-to-Connect Estimate</th>
               <th className="py-2 text-right">Siting Score</th>
-              <th className="py-2 text-right">Attributed</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border/40">
-            {rows.map(({ zone, score, assignedMw, assignedProjects }) => {
+            {rows.map(({ zone, score, coLocationIndex }) => {
               const s = nodeClassStyles(zone.nodeClass);
+              const risk = riskLabel(zone.redispatchRiskPct);
+              const ttc = timeToConnectEstimate(zone.timeToEnergizeMonths);
               return (
                 <tr key={zone.code}>
                   <td className="py-2">
                     <div className="flex items-center gap-2">
-                      <span className={`h-2 w-2 rounded-full ${s.dot}`} />
-                      <span className="font-medium">{zone.name}</span>
-                      <span className="text-[10px] font-mono-data text-muted-foreground">{zone.country}</span>
+                      <span className={`h-2 w-2 shrink-0 rounded-full ${s.dot}`} />
+                      <div className="min-w-0">
+                        <div className="font-medium truncate">{zone.name} — {zone.country}</div>
+                        <div className="text-[10px] font-mono-data text-muted-foreground truncate">
+                          {zone.regions.slice(0, 2).join(", ")}{zone.regions.length > 2 ? "…" : ""}
+                        </div>
+                      </div>
                     </div>
                   </td>
+                  <td className="py-2 font-mono-data text-muted-foreground">{zone.name}</td>
+                  <td className="py-2 text-right font-mono-data">{zone.headroomMw.toLocaleString()} MW</td>
                   <td className="py-2">
-                    <span className={`inline-flex rounded border px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider ${s.chip}`}>
-                      {nodeClassLabel(zone.nodeClass).replace(/ \(.*\)$/, "")}
+                    <span className={`inline-flex rounded border px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider ${risk.chip}`}>
+                      {risk.label} · {zone.redispatchRiskPct}%
                     </span>
                   </td>
-                  <td className="py-2 text-right font-mono-data">{zone.headroomMw.toLocaleString()}</td>
-                  <td className="py-2 text-right font-mono-data">{zone.redispatchRiskPct}%</td>
-                  <td className="py-2 text-right font-mono-data">{zone.timeToEnergizeMonths} mo</td>
+                  <td className="py-2">
+                    <div className="flex items-center justify-end gap-2">
+                      <div className="hidden h-1.5 w-16 overflow-hidden rounded-full bg-surface-elevated sm:block">
+                        <div className="h-full rounded-full bg-gradient-to-r from-cyan-accent to-green-accent" style={{ width: `${coLocationIndex}%` }} />
+                      </div>
+                      <span className="font-mono-data">{coLocationIndex}%</span>
+                    </div>
+                  </td>
+                  <td className={`py-2 text-xs font-medium ${ttc.tone}`}>{ttc.text}</td>
                   <td className="py-2 text-right">
                     <span className="font-display text-base font-bold text-cyan-accent">{score}</span>
-                  </td>
-                  <td className="py-2 text-right font-mono-data text-muted-foreground">
-                    {assignedProjects} · {assignedMw.toLocaleString()} MW
                   </td>
                 </tr>
               );
@@ -714,7 +778,11 @@ function SitingScorecard({ filtered, country }: { filtered: Project[]; country: 
       <div className="mt-4 border-t border-border/40 pt-3 text-[10px] font-mono-data text-muted-foreground">
         Active validation feeds{country ? ` for ${country}` : ""}: {activeFeeds.join(" · ")}
       </div>
+
+      {calcOpen && <CoLocationCalculator onClose={() => setCalcOpen(false)} />}
     </section>
   );
 }
+
+
 
