@@ -12,6 +12,8 @@ import { AuthWall } from "@/components/site/AuthWall";
 import { projectsQuery } from "@/lib/gridpulse-repo";
 import { supabase } from "@/integrations/supabase/client";
 import { isLiveProject, type Project } from "@/lib/gridpulse-data";
+import { TSO_ZONES, tsoZoneOf, nodeClassStyles, nodeClassLabel, sitingScore, activeFeedsForCountry } from "@/lib/tso-zones";
+
 
 export const Route = createFileRoute("/analytics")({
   ssr: false,
