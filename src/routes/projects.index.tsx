@@ -128,27 +128,65 @@ function ProjectsPage() {
           <Stat label="Total Energy" value={`${totalMwh.toLocaleString()} MWh`} />
         </div>
 
-        <div className="mt-6 relative h-64 overflow-hidden rounded-xl border border-border bg-surface/60">
+        <div className="mt-6 relative h-72 sm:h-80 overflow-hidden rounded-xl border border-border bg-surface/60">
           <div className="absolute inset-0 bg-grid opacity-40" />
           <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at center, color-mix(in oklab, var(--cyan-accent) 15%, transparent), transparent 70%)" }} />
-          {list.map((p) => {
+          {showAssets && list.map((p) => {
             const x = ((p.lng + 180) / 360) * 100;
             const y = ((90 - p.lat) / 180) * 100;
+            const zone = tsoZoneOf(p);
+            const cls = zone?.nodeClass;
+            const isCongested = showCongestion && cls === "congested";
+            const isFastTrack = showFastTrack && cls === "fast-track";
+            let dotClass = "bg-cyan-accent shadow-[0_0_12px_var(--cyan-accent)]";
+            let sizeClass = "h-2 w-2";
+            if (isCongested) {
+              dotClass = "bg-red-accent shadow-[0_0_16px_color-mix(in_oklab,var(--red-accent)_60%,transparent)] ring-2 ring-red-accent/40";
+              sizeClass = "h-2.5 w-2.5";
+            } else if (isFastTrack) {
+              dotClass = "bg-green-accent shadow-[0_0_16px_color-mix(in_oklab,var(--green-accent)_60%,transparent)] ring-2 ring-green-accent/40 animate-pulse";
+              sizeClass = "h-2.5 w-2.5";
+            } else if ((showCongestion || showFastTrack) && cls) {
+              dotClass = "bg-muted-foreground/40";
+            }
+            const zoneTitle = zone ? ` · ${zone.name} (${zone.nodeClass})` : "";
             return (
               <Link
                 key={p.id}
                 to="/projects/$slug"
                 params={{ slug: p.slug ?? p.id }}
-                title={`${p.name} — ${p.capacityMw} MW`}
+                title={`${p.name} — ${p.capacityMw} MW${zoneTitle}`}
                 style={{ left: `${x}%`, top: `${y}%` }}
-                className="absolute -translate-x-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-cyan-accent shadow-[0_0_12px_var(--cyan-accent)] hover:h-3 hover:w-3 transition-all cursor-pointer"
+                className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-full transition-all cursor-pointer hover:h-3 hover:w-3 ${sizeClass} ${dotClass}`}
               />
             );
           })}
+
+          <div className="absolute right-3 top-3 w-56 rounded-lg border border-border/70 bg-background/85 p-3 shadow-lg backdrop-blur">
+            <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-cyan-accent">
+              <Layers className="h-3 w-3" /> Layer Controller
+            </div>
+            <div className="mt-2 space-y-1.5">
+              <LayerToggle label="Asset Locations (Standard BESS)" checked={showAssets} onChange={setShowAssets} dot="bg-cyan-accent" />
+              <LayerToggle label="Substation Congestion (Redispatch Risk)" checked={showCongestion} onChange={setShowCongestion} dot="bg-red-accent" />
+              <LayerToggle label="Fast-Track Interconnection Nodes" checked={showFastTrack} onChange={setShowFastTrack} dot="bg-green-accent" />
+            </div>
+          </div>
+
+          <button
+            onClick={() => setCalcOpen(true)}
+            className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-md border border-cyan-accent/50 bg-cyan-accent/10 px-2.5 py-1.5 text-[11px] font-semibold text-cyan-accent shadow-lg backdrop-blur hover:bg-cyan-accent/20 cursor-pointer"
+          >
+            <Sparkles className="h-3 w-3" /> Evaluate Co-Location Potential
+          </button>
+
           <div className="absolute bottom-3 left-3 text-[10px] uppercase tracking-wider text-muted-foreground font-mono-data">
             Interactive world map · {list.length} projects plotted
           </div>
         </div>
+
+        {calcOpen && <CoLocationCalculator onClose={() => setCalcOpen(false)} />}
+
 
         <div className="mt-6 grid gap-3 md:grid-cols-[1fr_auto]">
           <div className="flex items-center gap-2 rounded-md border border-border bg-surface/60 px-3 py-2">
