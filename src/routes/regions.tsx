@@ -17,6 +17,28 @@ function RegionsPage() {
     [allProjects],
   );
   const { data: articles = [] } = useQuery(articlesQuery());
+  const [headroomOn, setHeadroomOn] = useState(false);
+
+  // TSO zone rollup — memoized on projects only so toggling the overlay
+  // never re-crunches the dataset.
+  const tsoRollup = useMemo(() => {
+    const map = new Map<string, { mw: number; count: number }>();
+    for (const p of projects) {
+      const z = tsoZoneOf(p);
+      if (!z) continue;
+      const cur = map.get(z.code) ?? { mw: 0, count: 0 };
+      cur.mw += p.capacityMw ?? 0;
+      cur.count += 1;
+      map.set(z.code, cur);
+    }
+    return TSO_ZONES.map((z) => ({
+      zone: z,
+      assignedMw: map.get(z.code)?.mw ?? 0,
+      assignedProjects: map.get(z.code)?.count ?? 0,
+      score: sitingScore(z),
+    })).sort((a, b) => b.score - a.score);
+  }, [projects]);
+
 
   const regions = useMemo(() => {
     const zero = () => ({ mw: 0, mwh: 0, projects: 0, stories: 0, operational: 0, pipeline: 0 });
