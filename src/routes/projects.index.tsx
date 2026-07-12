@@ -321,3 +321,19 @@ function RangeInput({ label, value, onChange, placeholder }: { label: string; va
     </label>
   );
 }
+
+function LayerToggle({ label, checked, onChange, dot }: { label: string; checked: boolean; onChange: (v: boolean) => void; dot: string }) {
+  return (
+    <label className="flex cursor-pointer items-start gap-2 text-[11px] leading-tight text-foreground hover:text-cyan-accent">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="mt-0.5 h-3 w-3 shrink-0 accent-cyan-accent cursor-pointer"
+      />
+      <span className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full ${dot}`} />
+      <span className="min-w-0">{label}</span>
+    </label>
+  );
+}
+
