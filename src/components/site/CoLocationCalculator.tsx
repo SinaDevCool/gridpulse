@@ -1,5 +1,6 @@
 import { useMemo } from "react";
-import { X, Zap, TrendingDown, Clock, ShieldCheck } from "lucide-react";
+import { X, Zap, TrendingDown, Clock, ShieldCheck, Download } from "lucide-react";
+
 import { TSO_ZONES, sitingScore, nodeClassStyles, type TsoCode } from "@/lib/tso-zones";
 import { useSimulation } from "@/context/SimulationContext";
 
@@ -163,6 +164,51 @@ export function CoLocationCalculator({ onClose }: { onClose: () => void }) {
             </div>
           </div>
 
+          <button
+            onClick={() => {
+              // Assemble a single-row prospectus row capturing the current
+              // simulation so an analyst can drop it straight into an IC memo.
+              const row = {
+                generated_at: new Date().toISOString(),
+                tso_zone: zone.name,
+                country: zone.country,
+                node_class: zone.nodeClass,
+                requested_load_mw: loadMw,
+                bess_mw: bessMw,
+                bess_mwh: bessMwh,
+                battery_duration_h: Number(model.durationH.toFixed(2)),
+                peak_shaved_mw: Number(model.shavedMw.toFixed(1)),
+                net_grid_draw_mw: Number(model.netGridDrawMw.toFixed(1)),
+                congestion_relief_pct: Number(model.congestionRelief.toFixed(1)),
+                baseline_time_to_connect_months: model.baselineMonths,
+                simulated_time_to_connect_months: model.fastTrackMonths,
+                months_saved: Math.max(model.monthsSaved, 0),
+                zone_headroom_mw: zone.headroomMw,
+                zone_redispatch_risk_pct: zone.redispatchRiskPct,
+                siting_score: sitingScore(zone),
+                fast_track_viable: model.canBypass ? "yes" : "no",
+              };
+              const headers = Object.keys(row);
+              const esc = (v: unknown) => {
+                const s = v == null ? "" : String(v);
+                return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+              };
+              const csv = [headers.join(","), headers.map((h) => esc((row as Record<string, unknown>)[h])).join(",")].join("\n");
+              const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `gridpulse-siting-prospectus-${zone.code.toLowerCase()}-${new Date().toISOString().slice(0,10)}.csv`;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              URL.revokeObjectURL(url);
+            }}
+            className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-border/60 bg-surface/60 px-3 py-2 text-xs font-semibold text-foreground hover:bg-surface"
+          >
+            <Download className="h-3.5 w-3.5" /> Export Siting Prospectus (CSV)
+          </button>
+
           <p className="text-[10px] text-muted-foreground">
             Model inputs are indicative — validated against ENTSO-E Core Transparency Platform and Bundesnetzagentur SMARD 12-month redispatch data. Contact GridPulse Enterprise for a full siting study.
           </p>
@@ -171,6 +217,7 @@ export function CoLocationCalculator({ onClose }: { onClose: () => void }) {
     </div>
   );
 }
+
 
 function SliderInput({
   label, value, onChange, min, max, step, unit,

@@ -40,10 +40,26 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
   const [selectedTsoZone, setSelectedTsoZone] = useState<TsoCode>(DEFAULTS.selectedTsoZone);
 
   const value = useMemo<SimulationContextValue>(() => {
+    // -------------------------------------------------------------------
+    // Deterministic scaling physics for the Projects map pulse rings.
+    //
+    // `bessRelief` (0..1): fraction of the requested industrial load that
+    //   the on-site BESS can shave off the grid draw. We cap the useful
+    //   shave at 60% of load — beyond that the battery is oversized for
+    //   the peak profile and yields diminishing returns.
+    //
+    // `fastTrackBoost` (0..1): drives the *green* fast-track pulse. Scales
+    //   linearly with BESS MW up to a 200 MW reference asset — matching
+    //   the typical hyperscale co-location tier at which TSOs waive
+    //   reinforcement studies. Above 200 MW the visual is saturated.
+    //
+    // `congestionRelief` (0..1): dampens the *red* congestion glow on
+    //   congested nodes. Uses a slightly larger 250 MW denominator so a
+    //   battery that fully saturates fast-track visuals still shows some
+    //   residual red — congestion never fully disappears, only eases.
+    // -------------------------------------------------------------------
     const shaved = Math.min(bessMw, requestedLoadMw * 0.6);
     const bessRelief = requestedLoadMw > 0 ? shaved / requestedLoadMw : 0;
-    // Non-linear scaling — a bigger battery visibly boosts fast-track pulse
-    // and dampens congestion glow on the map.
     const fastTrackBoost = Math.min(1, bessMw / 200);
     const congestionRelief = Math.min(1, bessMw / 250);
     return {
