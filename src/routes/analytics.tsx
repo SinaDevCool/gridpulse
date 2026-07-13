@@ -677,19 +677,34 @@ function SitingScorecard({ filtered, country, region }: { filtered: Project[]; c
     return TSO_ZONES.map((zone) => {
       const assignedMw = map.get(zone.code)?.mw ?? 0;
       const assignedProjects = map.get(zone.code)?.count ?? 0;
+      // Simulation lift — user-selected zone gets full modelled relief,
+      // other zones scale down (secondary spillover benefit).
+      const zoneWeight = zone.code === sim.selectedTsoZone ? 1 : 0.4;
       const coLocationIndex = Math.min(
-        Math.round(((assignedMw / totalOperational) * 100) + (100 - zone.redispatchRiskPct) * 0.35),
+        Math.round(
+          ((assignedMw / totalOperational) * 100)
+            + (100 - zone.redispatchRiskPct) * 0.35
+            + sim.bessRelief * 20 * zoneWeight,
+        ),
         100,
       );
+      const adjustedMonths = Math.max(
+        6,
+        zone.timeToEnergizeMonths - Math.round(monthsReduction * zoneWeight),
+      );
+      const baseScore = sitingScore(zone);
+      const adjustedScore = Math.min(100, baseScore + Math.round(scoreLift * zoneWeight));
       return {
         zone,
-        score: sitingScore(zone),
+        score: adjustedScore,
+        baseScore,
+        adjustedMonths,
         assignedMw,
         assignedProjects,
         coLocationIndex,
       };
     }).sort((a, b) => b.score - a.score);
-  }, [filtered, regionApplicable]);
+  }, [filtered, regionApplicable, sim.selectedTsoZone, sim.bessRelief, monthsReduction, scoreLift]);
 
   const activeFeeds = useMemo(() => activeFeedsForCountry(country || null), [country]);
 
