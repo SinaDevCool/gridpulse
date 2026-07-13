@@ -732,6 +732,32 @@ function SitingScorecard({ filtered, country, region }: { filtered: Project[]; c
             GridCARE methodology
           </span>
           <button
+            onClick={() => {
+              const exportRows = rows.map(({ zone, score, baseScore, adjustedMonths, coLocationIndex, assignedMw, assignedProjects }) => ({
+                tso_zone: zone.name,
+                country: zone.country,
+                node_class: zone.nodeClass,
+                headroom_mw: zone.headroomMw,
+                redispatch_risk_pct: zone.redispatchRiskPct,
+                baseline_time_to_connect_months: zone.timeToEnergizeMonths,
+                simulated_time_to_connect_months: adjustedMonths,
+                co_location_index: coLocationIndex,
+                baseline_siting_score: baseScore,
+                simulated_siting_score: score,
+                assigned_bess_mw: assignedMw,
+                assigned_projects: assignedProjects,
+                requested_load_mw: sim.requestedLoadMw,
+                bess_mw: sim.bessMw,
+                bess_mwh: sim.bessMwh,
+                selected_zone: sim.selectedTsoZone,
+              }));
+              downloadCsv(`gridpulse-siting-prospectus-${new Date().toISOString().slice(0,10)}.csv`, toCsv(exportRows));
+            }}
+            className="inline-flex items-center gap-1.5 rounded-md border border-border/60 bg-surface/60 px-2.5 py-1 text-[11px] font-semibold text-foreground hover:bg-surface cursor-pointer"
+          >
+            <Download className="h-3 w-3" /> Export Siting Prospectus (CSV)
+          </button>
+          <button
             onClick={() => setCalcOpen(true)}
             className="inline-flex items-center gap-1.5 rounded-md border border-cyan-accent/50 bg-cyan-accent/10 px-2.5 py-1 text-[11px] font-semibold text-cyan-accent hover:bg-cyan-accent/20 cursor-pointer"
           >
