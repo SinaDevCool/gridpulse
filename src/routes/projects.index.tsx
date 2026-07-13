@@ -147,8 +147,6 @@ function ProjectsPage() {
             const isFastTrack = showFastTrack && cls === "fast-track";
             let dotClass = "bg-cyan-accent shadow-[0_0_12px_var(--cyan-accent)]";
             let sizeClass = "h-2 w-2";
-            let dotClass = "bg-cyan-accent shadow-[0_0_12px_var(--cyan-accent)]";
-            let sizeClass = "h-2 w-2";
             let ringStyle: React.CSSProperties = {};
             if (isCongested) {
               dotClass = "bg-red-accent ring-red-accent/40";
