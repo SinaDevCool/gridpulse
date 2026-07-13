@@ -754,17 +754,22 @@ function SitingScorecard({ filtered, country, region }: { filtered: Project[]; c
             </tr>
           </thead>
           <tbody className="divide-y divide-border/40">
-            {rows.map(({ zone, score, coLocationIndex }) => {
+            {rows.map(({ zone, score, baseScore, adjustedMonths, coLocationIndex }) => {
               const s = nodeClassStyles(zone.nodeClass);
               const risk = riskLabel(zone.redispatchRiskPct);
-              const ttc = timeToConnectEstimate(zone.timeToEnergizeMonths);
+              const ttc = timeToConnectEstimate(adjustedMonths);
+              const isSelected = zone.code === sim.selectedTsoZone;
+              const scoreDelta = score - baseScore;
               return (
-                <tr key={zone.code}>
+                <tr key={zone.code} className={isSelected ? "bg-cyan-accent/[0.04]" : ""}>
                   <td className="py-2">
                     <div className="flex items-center gap-2">
                       <span className={`h-2 w-2 shrink-0 rounded-full ${s.dot}`} />
                       <div className="min-w-0">
-                        <div className="font-medium truncate">{zone.name} — {zone.country}</div>
+                        <div className="font-medium truncate">
+                          {zone.name} — {zone.country}
+                          {isSelected && <span className="ml-2 rounded border border-cyan-accent/40 bg-cyan-accent/10 px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-cyan-accent">Simulated</span>}
+                        </div>
                         <div className="text-[10px] font-mono-data text-muted-foreground truncate">
                           {zone.regions.slice(0, 2).join(", ")}{zone.regions.length > 2 ? "…" : ""}
                         </div>
@@ -786,9 +791,17 @@ function SitingScorecard({ filtered, country, region }: { filtered: Project[]; c
                       <span className="font-mono-data">{coLocationIndex}%</span>
                     </div>
                   </td>
-                  <td className={`py-2 text-xs font-medium ${ttc.tone}`}>{ttc.text}</td>
+                  <td className={`py-2 text-xs font-medium ${ttc.tone}`}>
+                    {ttc.text}
+                    {adjustedMonths < zone.timeToEnergizeMonths && (
+                      <span className="ml-1 text-[10px] font-mono-data text-green-accent">−{zone.timeToEnergizeMonths - adjustedMonths}mo</span>
+                    )}
+                  </td>
                   <td className="py-2 text-right">
                     <span className="font-display text-base font-bold text-cyan-accent">{score}</span>
+                    {scoreDelta > 0 && (
+                      <span className="ml-1 text-[10px] font-mono-data text-green-accent">+{scoreDelta}</span>
+                    )}
                   </td>
                 </tr>
               );
