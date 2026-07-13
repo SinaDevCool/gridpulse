@@ -645,6 +645,12 @@ function timeToConnectEstimate(months: number): { text: string; tone: string } {
 
 function SitingScorecard({ filtered, country, region }: { filtered: Project[]; country: string; region: string }) {
   const [calcOpen, setCalcOpen] = useState(false);
+  const sim = useSimulation();
+  // The BESS slider in the calculator drawer collapses time-to-energize and
+  // lifts siting score for every zone — mirrors the "peak shaved → bypass
+  // TSO queue" thesis from the Co-location calculator.
+  const monthsReduction = Math.round(sim.bessRelief * 18);
+  const scoreLift = Math.round(sim.bessRelief * 12);
 
   // Global tab visibility rule — the TSO / Redispatch matrix is only
   // meaningful for regions with a TSO in TSO_ZONES (currently NA + EU/UK).
