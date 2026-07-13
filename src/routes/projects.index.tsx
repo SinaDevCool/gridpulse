@@ -9,6 +9,7 @@ import { isLiveProject, type Project } from "@/lib/gridpulse-data";
 import { projectsQuery } from "@/lib/gridpulse-repo";
 import { tsoZoneOf } from "@/lib/tso-zones";
 import { CoLocationCalculator } from "@/components/site/CoLocationCalculator";
+import { useSimulation } from "@/context/SimulationContext";
 
 
 const searchSchema = z.object({
