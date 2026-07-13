@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { X, Zap, TrendingDown, Clock, ShieldCheck, Download } from "lucide-react";
-import { sitingScore as computeSitingScore } from "@/lib/tso-zones";
+
 import { TSO_ZONES, sitingScore, nodeClassStyles, type TsoCode } from "@/lib/tso-zones";
 import { useSimulation } from "@/context/SimulationContext";
 
