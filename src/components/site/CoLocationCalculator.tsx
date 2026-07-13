@@ -85,7 +85,7 @@ export function CoLocationCalculator({ onClose }: { onClose: () => void }) {
             </label>
             <select
               value={zoneCode}
-              onChange={(e) => setZoneCode(e.target.value as typeof zoneCode)}
+              onChange={(e) => setZoneCode(e.target.value as TsoCode)}
               className="mt-1 w-full rounded-md border border-border/60 bg-background px-3 py-2 text-sm"
             >
               {TSO_ZONES.map((z) => (
