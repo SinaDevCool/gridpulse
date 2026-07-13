@@ -147,12 +147,24 @@ function ProjectsPage() {
             const isFastTrack = showFastTrack && cls === "fast-track";
             let dotClass = "bg-cyan-accent shadow-[0_0_12px_var(--cyan-accent)]";
             let sizeClass = "h-2 w-2";
+            let dotClass = "bg-cyan-accent shadow-[0_0_12px_var(--cyan-accent)]";
+            let sizeClass = "h-2 w-2";
+            let ringStyle: React.CSSProperties = {};
             if (isCongested) {
-              dotClass = "bg-red-accent shadow-[0_0_16px_color-mix(in_oklab,var(--red-accent)_60%,transparent)] ring-2 ring-red-accent/40";
+              dotClass = "bg-red-accent ring-red-accent/40";
               sizeClass = "h-2.5 w-2.5";
+              ringStyle = {
+                boxShadow: `0 0 ${Math.round(16 * congestionOpacity)}px color-mix(in oklab, var(--red-accent) ${Math.round(60 * congestionOpacity)}%, transparent)`,
+                opacity: 0.4 + congestionOpacity * 0.6,
+                outline: `2px solid color-mix(in oklab, var(--red-accent) ${Math.round(40 * congestionOpacity)}%, transparent)`,
+              };
             } else if (isFastTrack) {
-              dotClass = "bg-green-accent shadow-[0_0_16px_color-mix(in_oklab,var(--green-accent)_60%,transparent)] ring-2 ring-green-accent/40 animate-pulse";
+              dotClass = "bg-green-accent animate-pulse";
               sizeClass = "h-2.5 w-2.5";
+              ringStyle = {
+                boxShadow: `0 0 ${Math.round(16 + fastTrackOpacity * 12)}px color-mix(in oklab, var(--green-accent) ${Math.round(60 * fastTrackOpacity)}%, transparent)`,
+                outline: `${fastTrackRingPx}px solid color-mix(in oklab, var(--green-accent) ${Math.round(50 * fastTrackOpacity)}%, transparent)`,
+              };
             } else if ((showCongestion || showFastTrack) && cls) {
               dotClass = "bg-muted-foreground/40";
             }
@@ -163,7 +175,7 @@ function ProjectsPage() {
                 to="/projects/$slug"
                 params={{ slug: p.slug ?? p.id }}
                 title={`${p.name} — ${p.capacityMw} MW${zoneTitle}`}
-                style={{ left: `${x}%`, top: `${y}%` }}
+                style={{ left: `${x}%`, top: `${y}%`, ...ringStyle }}
                 className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-full transition-all cursor-pointer hover:h-3 hover:w-3 ${sizeClass} ${dotClass}`}
               />
             );
