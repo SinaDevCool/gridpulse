@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { isLiveProject, type Project } from "@/lib/gridpulse-data";
 import { TSO_ZONES, tsoZoneOf, nodeClassStyles, sitingScore, activeFeedsForCountry } from "@/lib/tso-zones";
 import { CoLocationCalculator } from "@/components/site/CoLocationCalculator";
+import { useSimulation } from "@/context/SimulationContext";
 
 
 
