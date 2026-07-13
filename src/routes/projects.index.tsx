@@ -68,6 +68,12 @@ function ProjectsPage() {
   const [showCongestion, setShowCongestion] = useState(false);
   const [showFastTrack, setShowFastTrack] = useState(false);
   const [calcOpen, setCalcOpen] = useState(false);
+  const sim = useSimulation();
+  // Congestion glow shrinks and fast-track pulse widens as the BESS slider
+  // in the calculator grows — a live visual proxy for on-site relief.
+  const congestionOpacity = Math.max(0.25, 1 - sim.congestionRelief);
+  const fastTrackOpacity = Math.min(1, 0.5 + sim.fastTrackBoost * 0.6);
+  const fastTrackRingPx = 2 + Math.round(sim.fastTrackBoost * 4);
 
 
 
