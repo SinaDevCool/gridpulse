@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { isLiveProject, type Project } from "@/lib/gridpulse-data";
 import { TSO_ZONES, tsoZoneOf, nodeClassStyles, sitingScore, activeFeedsForCountry } from "@/lib/tso-zones";
 import { CoLocationCalculator } from "@/components/site/CoLocationCalculator";
+import { useSimulation } from "@/context/SimulationContext";
 
 
 
@@ -644,6 +645,12 @@ function timeToConnectEstimate(months: number): { text: string; tone: string } {
 
 function SitingScorecard({ filtered, country, region }: { filtered: Project[]; country: string; region: string }) {
   const [calcOpen, setCalcOpen] = useState(false);
+  const sim = useSimulation();
+  // The BESS slider in the calculator drawer collapses time-to-energize and
+  // lifts siting score for every zone — mirrors the "peak shaved → bypass
+  // TSO queue" thesis from the Co-location calculator.
+  const monthsReduction = Math.round(sim.bessRelief * 18);
+  const scoreLift = Math.round(sim.bessRelief * 12);
 
   // Global tab visibility rule — the TSO / Redispatch matrix is only
   // meaningful for regions with a TSO in TSO_ZONES (currently NA + EU/UK).
@@ -670,19 +677,34 @@ function SitingScorecard({ filtered, country, region }: { filtered: Project[]; c
     return TSO_ZONES.map((zone) => {
       const assignedMw = map.get(zone.code)?.mw ?? 0;
       const assignedProjects = map.get(zone.code)?.count ?? 0;
+      // Simulation lift — user-selected zone gets full modelled relief,
+      // other zones scale down (secondary spillover benefit).
+      const zoneWeight = zone.code === sim.selectedTsoZone ? 1 : 0.4;
       const coLocationIndex = Math.min(
-        Math.round(((assignedMw / totalOperational) * 100) + (100 - zone.redispatchRiskPct) * 0.35),
+        Math.round(
+          ((assignedMw / totalOperational) * 100)
+            + (100 - zone.redispatchRiskPct) * 0.35
+            + sim.bessRelief * 20 * zoneWeight,
+        ),
         100,
       );
+      const adjustedMonths = Math.max(
+        6,
+        zone.timeToEnergizeMonths - Math.round(monthsReduction * zoneWeight),
+      );
+      const baseScore = sitingScore(zone);
+      const adjustedScore = Math.min(100, baseScore + Math.round(scoreLift * zoneWeight));
       return {
         zone,
-        score: sitingScore(zone),
+        score: adjustedScore,
+        baseScore,
+        adjustedMonths,
         assignedMw,
         assignedProjects,
         coLocationIndex,
       };
     }).sort((a, b) => b.score - a.score);
-  }, [filtered, regionApplicable]);
+  }, [filtered, regionApplicable, sim.selectedTsoZone, sim.bessRelief, monthsReduction, scoreLift]);
 
   const activeFeeds = useMemo(() => activeFeedsForCountry(country || null), [country]);
 
@@ -732,17 +754,22 @@ function SitingScorecard({ filtered, country, region }: { filtered: Project[]; c
             </tr>
           </thead>
           <tbody className="divide-y divide-border/40">
-            {rows.map(({ zone, score, coLocationIndex }) => {
+            {rows.map(({ zone, score, baseScore, adjustedMonths, coLocationIndex }) => {
               const s = nodeClassStyles(zone.nodeClass);
               const risk = riskLabel(zone.redispatchRiskPct);
-              const ttc = timeToConnectEstimate(zone.timeToEnergizeMonths);
+              const ttc = timeToConnectEstimate(adjustedMonths);
+              const isSelected = zone.code === sim.selectedTsoZone;
+              const scoreDelta = score - baseScore;
               return (
-                <tr key={zone.code}>
+                <tr key={zone.code} className={isSelected ? "bg-cyan-accent/[0.04]" : ""}>
                   <td className="py-2">
                     <div className="flex items-center gap-2">
                       <span className={`h-2 w-2 shrink-0 rounded-full ${s.dot}`} />
                       <div className="min-w-0">
-                        <div className="font-medium truncate">{zone.name} — {zone.country}</div>
+                        <div className="font-medium truncate">
+                          {zone.name} — {zone.country}
+                          {isSelected && <span className="ml-2 rounded border border-cyan-accent/40 bg-cyan-accent/10 px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-cyan-accent">Simulated</span>}
+                        </div>
                         <div className="text-[10px] font-mono-data text-muted-foreground truncate">
                           {zone.regions.slice(0, 2).join(", ")}{zone.regions.length > 2 ? "…" : ""}
                         </div>
@@ -764,9 +791,17 @@ function SitingScorecard({ filtered, country, region }: { filtered: Project[]; c
                       <span className="font-mono-data">{coLocationIndex}%</span>
                     </div>
                   </td>
-                  <td className={`py-2 text-xs font-medium ${ttc.tone}`}>{ttc.text}</td>
+                  <td className={`py-2 text-xs font-medium ${ttc.tone}`}>
+                    {ttc.text}
+                    {adjustedMonths < zone.timeToEnergizeMonths && (
+                      <span className="ml-1 text-[10px] font-mono-data text-green-accent">−{zone.timeToEnergizeMonths - adjustedMonths}mo</span>
+                    )}
+                  </td>
                   <td className="py-2 text-right">
                     <span className="font-display text-base font-bold text-cyan-accent">{score}</span>
+                    {scoreDelta > 0 && (
+                      <span className="ml-1 text-[10px] font-mono-data text-green-accent">+{scoreDelta}</span>
+                    )}
                   </td>
                 </tr>
               );

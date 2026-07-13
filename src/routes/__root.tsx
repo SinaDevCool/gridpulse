@@ -12,6 +12,7 @@ import { Toaster } from "sonner";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { SimulationProvider } from "@/context/SimulationContext";
 
 function NotFoundComponent() {
   return (
@@ -147,10 +148,12 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="w-full max-w-full overflow-x-hidden">
-        <Outlet />
-      </div>
-      <Toaster theme="dark" position="bottom-right" richColors closeButton />
+      <SimulationProvider>
+        <div className="w-full max-w-full overflow-x-hidden">
+          <Outlet />
+        </div>
+        <Toaster theme="dark" position="bottom-right" richColors closeButton />
+      </SimulationProvider>
     </QueryClientProvider>
   );
 }

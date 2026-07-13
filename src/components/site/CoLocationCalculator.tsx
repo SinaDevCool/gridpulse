@@ -1,15 +1,23 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { X, Zap, TrendingDown, Clock, ShieldCheck } from "lucide-react";
-import { TSO_ZONES, sitingScore, nodeClassStyles } from "@/lib/tso-zones";
+import { TSO_ZONES, sitingScore, nodeClassStyles, type TsoCode } from "@/lib/tso-zones";
+import { useSimulation } from "@/context/SimulationContext";
 
 // Co-location Benefit Calculator — models how pairing a heavy industrial /
 // hyperscale load with an on-site BESS collapses peak grid draw, letting a
-// developer bypass multi-year TSO substation upgrades.
+// developer bypass multi-year TSO substation upgrades. Inputs are bound to
+// the global SimulationContext so the analytics matrix + map markers stay in
+// sync while the user drags sliders.
 export function CoLocationCalculator({ onClose }: { onClose: () => void }) {
-  const [loadMw, setLoadMw] = useState(120);
-  const [bessMw, setBessMw] = useState(80);
-  const [bessMwh, setBessMwh] = useState(320);
-  const [zoneCode, setZoneCode] = useState(TSO_ZONES[0].code);
+  const sim = useSimulation();
+  const loadMw = sim.requestedLoadMw;
+  const bessMw = sim.bessMw;
+  const bessMwh = sim.bessMwh;
+  const zoneCode = sim.selectedTsoZone;
+  const setLoadMw = sim.setRequestedLoadMw;
+  const setBessMw = sim.setBessMw;
+  const setBessMwh = sim.setBessMwh;
+  const setZoneCode = sim.setSelectedTsoZone;
 
   const zone = useMemo(
     () => TSO_ZONES.find((z) => z.code === zoneCode) ?? TSO_ZONES[0],
@@ -77,7 +85,7 @@ export function CoLocationCalculator({ onClose }: { onClose: () => void }) {
             </label>
             <select
               value={zoneCode}
-              onChange={(e) => setZoneCode(e.target.value as typeof zoneCode)}
+              onChange={(e) => setZoneCode(e.target.value as TsoCode)}
               className="mt-1 w-full rounded-md border border-border/60 bg-background px-3 py-2 text-sm"
             >
               {TSO_ZONES.map((z) => (
