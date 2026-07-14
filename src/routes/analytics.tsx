@@ -799,12 +799,16 @@ function SitingScorecard({ filtered, country, region }: { filtered: Project[]; c
             </tr>
           </thead>
           <tbody className="divide-y divide-border/40">
-            {rows.map(({ zone, score, baseScore, adjustedMonths, coLocationIndex }) => {
+            {rows.map(({ zone, score, baseScore, adjustedMonths, coLocationIndex, capexSavingsEur, timeToMarketRoiEur }) => {
               const s = nodeClassStyles(zone.nodeClass);
               const risk = riskLabel(zone.redispatchRiskPct);
               const ttc = timeToConnectEstimate(adjustedMonths);
               const isSelected = zone.code === sim.selectedTsoZone;
               const scoreDelta = score - baseScore;
+              const fmtEur = (n: number) =>
+                n >= 1_000_000 ? `€${(n / 1_000_000).toFixed(1)}M`
+                : n >= 1_000 ? `€${(n / 1_000).toFixed(0)}k`
+                : `€${n.toLocaleString()}`;
               return (
                 <tr key={zone.code} className={isSelected ? "bg-cyan-accent/[0.04]" : ""}>
                   <td className="py-2">
@@ -842,6 +846,8 @@ function SitingScorecard({ filtered, country, region }: { filtered: Project[]; c
                       <span className="ml-1 text-[10px] font-mono-data text-green-accent">−{zone.timeToEnergizeMonths - adjustedMonths}mo</span>
                     )}
                   </td>
+                  <td className="py-2 text-right font-mono-data text-green-accent">{fmtEur(capexSavingsEur)}</td>
+                  <td className="py-2 text-right font-mono-data text-cyan-accent">{fmtEur(timeToMarketRoiEur)}</td>
                   <td className="py-2 text-right">
                     <span className="font-display text-base font-bold text-cyan-accent">{score}</span>
                     {scoreDelta > 0 && (
