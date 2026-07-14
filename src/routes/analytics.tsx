@@ -784,7 +784,7 @@ function SitingScorecard({ filtered, country, region }: { filtered: Project[]; c
       </div>
 
       <div className="mt-4 overflow-x-auto">
-        <table className="w-full min-w-[820px] text-sm">
+        <table className="w-full min-w-[980px] text-sm">
           <thead className="text-[10px] uppercase tracking-wider text-muted-foreground">
             <tr>
               <th className="py-2 text-left">Regional Node / Grid Zone</th>
@@ -793,6 +793,8 @@ function SitingScorecard({ filtered, country, region }: { filtered: Project[]; c
               <th className="py-2 text-left">Redispatch & Curtailment Risk</th>
               <th className="py-2 text-right">Co-location Opportunity Index</th>
               <th className="py-2 text-left">Time-to-Connect Estimate</th>
+              <th className="py-2 text-right">CapEx Savings</th>
+              <th className="py-2 text-right">Time-to-Market ROI</th>
               <th className="py-2 text-right">Siting Score</th>
             </tr>
           </thead>
