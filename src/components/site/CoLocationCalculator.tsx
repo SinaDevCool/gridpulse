@@ -178,21 +178,24 @@ export function CoLocationCalculator({ onClose }: { onClose: () => void }) {
             </div>
           </div>
 
-          {/* Avoided TSO Congestion Penalties — translates peak-shaving into € */}
-          <div className="rounded-xl border border-green-accent/30 bg-green-accent/[0.04] p-4">
-            <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-green-accent">
-              <Euro className="h-3 w-3" /> Avoided TSO Congestion Penalties
-            </div>
-            <div className="mt-2 flex items-baseline gap-2">
-              <span className="font-display text-2xl font-bold text-foreground">
-                €{avoidedPenaltyEurAnnual(zone, loadMw, model.congestionRelief / 100).toLocaleString()}
-              </span>
-              <span className="text-[10px] font-mono-data text-muted-foreground">/ year (est.)</span>
-            </div>
-            <p className="mt-2 text-[10px] text-muted-foreground">
-              Deterministic model: {loadMw} MW × {zone.redispatchRiskPct}% redispatch exposure × 8,760 h × €85 /MWh curtailment factor × {model.congestionRelief.toFixed(0)}% BESS relief. Redispatch cost benchmarks reflect Bundesnetzagentur & ENTSO-E published averages.
-            </p>
-          </div>
+          {/* Financial Siting Prospectus — dual-sided (Developer / TSO) model */}
+          <FinancialProspectus
+            open={financialOpen}
+            onToggle={() => setFinancialOpen((v) => !v)}
+            tsoView={tsoView}
+            onTsoViewChange={setTsoView}
+            loadMw={loadMw}
+            netGridDrawMw={model.netGridDrawMw}
+            monthsSaved={Math.max(model.monthsSaved, 0)}
+            congestionReliefPct={model.congestionRelief}
+            avoidedPenaltyEur={avoidedPenaltyEurAnnual(zone, loadMw, model.congestionRelief / 100)}
+            avoidedCapexEur={avoidedGridUpgradeCapex(loadMw, model.netGridDrawMw)}
+            revenueEur={acceleratedRevenue(loadMw, Math.max(model.monthsSaved, 0))}
+            baselineMonths={model.baselineMonths}
+            fastTrackMonths={model.fastTrackMonths}
+            zoneName={zone.name}
+            redispatchRiskPct={zone.redispatchRiskPct}
+          />
 
           {/* Save Scenario to Prospectus — appends to bench for side-by-side benchmarking */}
           <div className="rounded-xl border border-border/60 bg-surface/40 p-4">
