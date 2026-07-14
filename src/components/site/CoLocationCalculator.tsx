@@ -20,6 +20,7 @@ export function CoLocationCalculator({ onClose }: { onClose: () => void }) {
   const setBessMw = sim.setBessMw;
   const setBessMwh = sim.setBessMwh;
   const setZoneCode = sim.setSelectedTsoZone;
+  const [scenarioLabel, setScenarioLabel] = useState("");
 
   const zone = useMemo(
     () => TSO_ZONES.find((z) => z.code === zoneCode) ?? TSO_ZONES[0],
