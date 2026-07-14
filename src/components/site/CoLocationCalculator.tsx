@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
-import { X, Zap, TrendingDown, Clock, ShieldCheck, Download, Euro, Plus } from "lucide-react";
-import { avoidedPenaltyEurAnnual } from "@/context/SimulationContext";
+import { X, Zap, TrendingDown, Clock, ShieldCheck, Download, Euro, Plus, ChevronDown, ChevronUp, Printer, Building2, Landmark } from "lucide-react";
+import { avoidedPenaltyEurAnnual, avoidedGridUpgradeCapex, acceleratedRevenue } from "@/context/SimulationContext";
 
 import { TSO_ZONES, sitingScore, nodeClassStyles, type TsoCode } from "@/lib/tso-zones";
 import { useSimulation } from "@/context/SimulationContext";
