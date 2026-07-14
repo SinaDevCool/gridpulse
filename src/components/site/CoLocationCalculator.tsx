@@ -317,3 +317,120 @@ function OutcomeStat({ icon, label, value, sub }: { icon: React.ReactNode; label
     </div>
   );
 }
+
+// Dual-sided Financial Siting Prospectus panel.
+// Developer view: Avoided Grid Upgrade CapEx (€200k / avoided MW of peak draw)
+// + Accelerated Revenue Realization (months saved × load MW × €50k / MW / mo).
+// TSO view: Peak Substation Relief % + Avoided TSO Redispatch Costs (annual).
+function FinancialProspectus({
+  open, onToggle, tsoView, onTsoViewChange,
+  loadMw, netGridDrawMw, monthsSaved, congestionReliefPct,
+  avoidedPenaltyEur, avoidedCapexEur, revenueEur,
+  baselineMonths, fastTrackMonths, zoneName, redispatchRiskPct,
+}: {
+  open: boolean;
+  onToggle: () => void;
+  tsoView: boolean;
+  onTsoViewChange: (v: boolean) => void;
+  loadMw: number;
+  netGridDrawMw: number;
+  monthsSaved: number;
+  congestionReliefPct: number;
+  avoidedPenaltyEur: number;
+  avoidedCapexEur: number;
+  revenueEur: number;
+  baselineMonths: number;
+  fastTrackMonths: number;
+  zoneName: string;
+  redispatchRiskPct: number;
+}) {
+  const fmtEur = (n: number) => {
+    if (n >= 1_000_000) return `€${(n / 1_000_000).toFixed(1)}M`;
+    if (n >= 1_000) return `€${(n / 1_000).toFixed(0)}k`;
+    return `€${n.toLocaleString()}`;
+  };
+  return (
+    <div className="rounded-xl border border-cyan-accent/30 bg-cyan-accent/[0.04] p-4">
+      <button
+        onClick={onToggle}
+        className="flex w-full items-center justify-between gap-2 text-left"
+      >
+        <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-cyan-accent">
+          <Euro className="h-3 w-3" /> Financial Siting Prospectus
+        </div>
+        {open ? <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
+      </button>
+
+      {open && (
+        <div className="mt-3 space-y-3">
+          {/* Perspective toggle */}
+          <div className="inline-flex rounded-md border border-border/60 bg-background/60 p-0.5 text-[10px] font-semibold uppercase tracking-wider print:hidden">
+            <button
+              onClick={() => onTsoViewChange(false)}
+              className={`inline-flex items-center gap-1 rounded px-2 py-1 ${!tsoView ? "bg-cyan-accent/15 text-cyan-accent" : "text-muted-foreground"}`}
+            >
+              <Building2 className="h-3 w-3" /> Developer
+            </button>
+            <button
+              onClick={() => onTsoViewChange(true)}
+              className={`inline-flex items-center gap-1 rounded px-2 py-1 ${tsoView ? "bg-cyan-accent/15 text-cyan-accent" : "text-muted-foreground"}`}
+            >
+              <Landmark className="h-3 w-3" /> View TSO / Grid Operator Impact
+            </button>
+          </div>
+
+          {!tsoView ? (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <FinancialCard
+                label="Avoided Grid Upgrade CapEx"
+                value={fmtEur(avoidedCapexEur)}
+                sub={`${(loadMw - netGridDrawMw).toFixed(0)} MW avoided × €200k / MW`}
+                tone="green"
+              />
+              <FinancialCard
+                label="Accelerated Revenue Realization"
+                value={fmtEur(revenueEur)}
+                sub={`${monthsSaved} mo earlier × ${loadMw} MW × €50k / MW·mo`}
+                tone="cyan"
+              />
+              <p className="col-span-full text-[10px] text-muted-foreground">
+                Bypassing HV substation reinforcement (from a {baselineMonths}-month baseline to {fastTrackMonths} months) unlocks contracted colo revenue years sooner. Rates benchmarked to European hyperscale wholesale colocation.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <FinancialCard
+                label="Peak Substation Relief"
+                value={`${congestionReliefPct.toFixed(0)}%`}
+                sub={`stress on ${zoneName} local node`}
+                tone="cyan"
+              />
+              <FinancialCard
+                label="Avoided TSO Redispatch Costs"
+                value={`${fmtEur(avoidedPenaltyEur)} / yr`}
+                sub={`${redispatchRiskPct}% redispatch exposure × €85 /MWh`}
+                tone="green"
+              />
+              <p className="col-span-full text-[10px] text-muted-foreground">
+                Co-location prevents the TSO from dispatching more expensive out-of-merit generation to relieve local congestion. Benchmarks: Bundesnetzagentur & ENTSO-E redispatch-cost reporting.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FinancialCard({ label, value, sub, tone }: { label: string; value: string; sub: string; tone: "green" | "cyan" }) {
+  const toneCls = tone === "green"
+    ? "border-green-accent/30 bg-green-accent/[0.06] text-green-accent"
+    : "border-cyan-accent/30 bg-cyan-accent/[0.06] text-cyan-accent";
+  return (
+    <div className={`rounded-lg border p-3 ${toneCls}`}>
+      <div className="text-[10px] font-semibold uppercase tracking-wider">{label}</div>
+      <div className="mt-1 font-display text-2xl font-bold text-foreground">{value}</div>
+      <div className="mt-0.5 text-[10px] font-mono-data text-muted-foreground">{sub}</div>
+    </div>
+  );
+}
