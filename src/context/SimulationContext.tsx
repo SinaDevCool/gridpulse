@@ -150,6 +150,8 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
         monthsSaved,
         sitingScore: score,
         avoidedPenaltyEurAnnual: avoidedPenaltyEurAnnual(zone, requestedLoadMw, bessRelief),
+        avoidedGridUpgradeCapexEur: avoidedGridUpgradeCapex(requestedLoadMw, netGridDrawMw),
+        acceleratedRevenueEur: acceleratedRevenue(requestedLoadMw, monthsSaved),
         zoneName: zone.name,
         country: zone.country,
       };
