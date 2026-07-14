@@ -895,6 +895,8 @@ function ComparisonBench() {
       months_saved: s.monthsSaved,
       siting_score: s.sitingScore,
       avoided_tso_penalty_eur_annual: s.avoidedPenaltyEurAnnual,
+      avoided_grid_upgrade_capex_eur: s.avoidedGridUpgradeCapexEur,
+      time_to_market_roi_eur: s.acceleratedRevenueEur,
     }));
     downloadCsv(
       `gridpulse-comparison-bench-${new Date().toISOString().slice(0, 10)}.csv`,
