@@ -246,6 +246,9 @@ export function CoLocationCalculator({ onClose }: { onClose: () => void }) {
                 zone_headroom_mw: zone.headroomMw,
                 zone_redispatch_risk_pct: zone.redispatchRiskPct,
                 siting_score: sitingScore(zone),
+                avoided_grid_upgrade_capex_eur: avoidedGridUpgradeCapex(loadMw, model.netGridDrawMw),
+                accelerated_revenue_eur: acceleratedRevenue(loadMw, Math.max(model.monthsSaved, 0)),
+                avoided_tso_congestion_eur_annual: avoidedPenaltyEurAnnual(zone, loadMw, model.congestionRelief / 100),
                 fast_track_viable: model.canBypass ? "yes" : "no",
               };
               const headers = Object.keys(row);
