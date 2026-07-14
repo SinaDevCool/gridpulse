@@ -849,4 +849,136 @@ function SitingScorecard({ filtered, country, region }: { filtered: Project[]; c
 }
 
 
+function ComparisonBench() {
+  const sim = useSimulation();
+  const scenarios = sim.savedScenarios;
+
+  const exportAll = () => {
+    if (scenarios.length === 0) return;
+    const rows = scenarios.map((s) => ({
+      scenario_id: s.id,
+      scenario_label: s.label,
+      saved_at: s.savedAt,
+      tso_zone: s.zoneName,
+      country: s.country,
+      tso_code: s.selectedTsoZone,
+      requested_load_mw: s.requestedLoadMw,
+      bess_mw: s.bessMw,
+      bess_mwh: s.bessMwh,
+      peak_shaved_mw: Number(s.peakShavedMw.toFixed(1)),
+      net_grid_draw_mw: Number(s.netGridDrawMw.toFixed(1)),
+      congestion_relief_pct: Number(s.congestionReliefPct.toFixed(1)),
+      baseline_time_to_connect_months: s.baselineMonths,
+      simulated_time_to_connect_months: s.adjustedMonths,
+      months_saved: s.monthsSaved,
+      siting_score: s.sitingScore,
+      avoided_tso_penalty_eur_annual: s.avoidedPenaltyEurAnnual,
+    }));
+    downloadCsv(
+      `gridpulse-comparison-bench-${new Date().toISOString().slice(0, 10)}.csv`,
+      toCsv(rows),
+    );
+  };
+
+  return (
+    <section className="mt-8 rounded-xl border border-border/60 bg-surface/30 p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-accent">Active Siting Comparison Bench</div>
+          <h2 className="mt-1 font-display text-xl font-bold">Benchmark saved co-location scenarios</h2>
+          <p className="mt-1 max-w-3xl text-xs text-muted-foreground">
+            Side-by-side view of every scenario saved from the Co-Location Benefit Calculator. Compare Siting Score, Time-to-Connect and avoided TSO congestion penalties across TSO zones.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={exportAll}
+            disabled={scenarios.length === 0}
+            className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] font-semibold ${
+              scenarios.length === 0
+                ? "cursor-not-allowed border-border/40 bg-surface/40 text-muted-foreground"
+                : "border-border/60 bg-surface/60 text-foreground hover:bg-surface"
+            }`}
+          >
+            <Download className="h-3 w-3" /> Export Siting Prospectus (CSV)
+          </button>
+          <button
+            onClick={sim.clearScenarios}
+            disabled={scenarios.length === 0}
+            className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] font-semibold ${
+              scenarios.length === 0
+                ? "cursor-not-allowed border-border/40 bg-surface/40 text-muted-foreground"
+                : "border-red-accent/40 bg-red-accent/10 text-red-accent hover:bg-red-accent/20"
+            }`}
+          >
+            <X className="h-3 w-3" /> Clear Bench
+          </button>
+        </div>
+      </div>
+
+      {scenarios.length === 0 ? (
+        <div className="mt-4 rounded-md border border-dashed border-border/60 bg-background/40 p-6 text-center text-xs text-muted-foreground">
+          No scenarios saved yet. Open the Co-Location Benefit Calculator, tune the sliders, and click <span className="text-foreground">"+ Save Scenario to Prospectus"</span> to bench a configuration for comparison.
+        </div>
+      ) : (
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {scenarios.map((s) => {
+            const ttc = timeToConnectEstimate(s.adjustedMonths);
+            return (
+              <article key={s.id} className="rounded-lg border border-border/60 bg-background/40 p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="text-[10px] font-mono-data text-muted-foreground">{new Date(s.savedAt).toLocaleString()}</div>
+                    <h3 className="mt-0.5 font-display text-sm font-bold truncate">{s.label}</h3>
+                    <div className="text-[10px] font-mono-data text-muted-foreground truncate">{s.zoneName} — {s.country}</div>
+                  </div>
+                  <button
+                    onClick={() => sim.removeScenario(s.id)}
+                    aria-label="Remove scenario"
+                    className="shrink-0 rounded border border-border/60 bg-surface/60 p-1 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+
+                <div className="mt-3 grid grid-cols-3 gap-2">
+                  <BenchMetric label="Siting Score" value={String(s.sitingScore)} tone="text-cyan-accent" />
+                  <BenchMetric label="Time-to-Connect" value={`${s.adjustedMonths} mo`} tone={ttc.tone} sub={s.monthsSaved > 0 ? `−${s.monthsSaved}mo` : "baseline"} />
+                  <BenchMetric label="Congestion Relief" value={`${s.congestionReliefPct.toFixed(0)}%`} tone="text-green-accent" />
+                </div>
+
+                <div className="mt-3 grid grid-cols-3 gap-2 text-[10px] font-mono-data text-muted-foreground">
+                  <div><span className="block uppercase tracking-wider">Load</span><span className="text-foreground">{s.requestedLoadMw} MW</span></div>
+                  <div><span className="block uppercase tracking-wider">BESS</span><span className="text-foreground">{s.bessMw} MW</span></div>
+                  <div><span className="block uppercase tracking-wider">Energy</span><span className="text-foreground">{s.bessMwh} MWh</span></div>
+                </div>
+
+                <div className="mt-3 rounded-md border border-green-accent/30 bg-green-accent/[0.06] p-2.5">
+                  <div className="text-[10px] font-semibold uppercase tracking-wider text-green-accent">Avoided TSO Congestion Penalties</div>
+                  <div className="mt-0.5 font-display text-lg font-bold text-foreground">
+                    €{s.avoidedPenaltyEurAnnual.toLocaleString()}
+                    <span className="ml-1 text-[10px] font-mono-data text-muted-foreground">/ yr</span>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function BenchMetric({ label, value, tone, sub }: { label: string; value: string; tone: string; sub?: string }) {
+  return (
+    <div className="rounded-md border border-border/40 bg-surface/40 p-2">
+      <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className={`mt-0.5 font-display text-base font-bold ${tone}`}>{value}</div>
+      {sub && <div className="text-[9px] font-mono-data text-muted-foreground">{sub}</div>}
+    </div>
+  );
+}
+
+
+
 
