@@ -75,12 +75,23 @@ export function CoLocationCalculator({ onClose }: { onClose: () => void }) {
             <h2 className="mt-1 font-display text-lg font-bold truncate">Bypass the TSO queue with an on-site BESS</h2>
           </div>
           <button
-            onClick={onClose}
-            aria-label="Close calculator"
-            className="shrink-0 rounded-md border border-border/60 bg-surface/60 p-1.5 text-muted-foreground hover:text-foreground"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <button
+              onClick={() => window.print()}
+              aria-label="Print prospectus"
+              title="Print prospectus"
+              className="rounded-md border border-border/60 bg-surface/60 p-1.5 text-muted-foreground hover:text-foreground print:hidden"
+            >
+              <Printer className="h-4 w-4" />
+            </button>
+            <button
+              onClick={onClose}
+              aria-label="Close calculator"
+              className="rounded-md border border-border/60 bg-surface/60 p-1.5 text-muted-foreground hover:text-foreground print:hidden"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
         <div className="space-y-5 p-5">
