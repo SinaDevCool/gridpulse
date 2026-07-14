@@ -697,17 +697,28 @@ function SitingScorecard({ filtered, country, region }: { filtered: Project[]; c
       );
       const baseScore = sitingScore(zone);
       const adjustedScore = Math.min(100, baseScore + Math.round(scoreLift * zoneWeight));
+      // Financial modelling — see SimulationContext for constants.
+      const zoneShavedMw = sim.requestedLoadMw * sim.bessRelief * zoneWeight;
+      const zoneNetGridDrawMw = Math.max(sim.requestedLoadMw - zoneShavedMw, 0);
+      const monthsSaved = Math.max(zone.timeToEnergizeMonths - adjustedMonths, 0);
+      const capexSavingsEur = avoidedGridUpgradeCapex(sim.requestedLoadMw, zoneNetGridDrawMw);
+      const timeToMarketRoiEur = acceleratedRevenue(sim.requestedLoadMw, monthsSaved);
+      const tsoCongestionEur = avoidedPenaltyEurAnnual(zone, sim.requestedLoadMw, sim.bessRelief * zoneWeight);
       return {
         zone,
         score: adjustedScore,
         baseScore,
         adjustedMonths,
+        monthsSaved,
         assignedMw,
         assignedProjects,
         coLocationIndex,
+        capexSavingsEur,
+        timeToMarketRoiEur,
+        tsoCongestionEur,
       };
     }).sort((a, b) => b.score - a.score);
-  }, [filtered, regionApplicable, sim.selectedTsoZone, sim.bessRelief, monthsReduction, scoreLift]);
+  }, [filtered, regionApplicable, sim.selectedTsoZone, sim.bessRelief, sim.requestedLoadMw, monthsReduction, scoreLift]);
 
   const activeFeeds = useMemo(() => activeFeedsForCountry(country || null), [country]);
 
