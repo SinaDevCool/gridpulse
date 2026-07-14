@@ -74,7 +74,6 @@ export function CoLocationCalculator({ onClose }: { onClose: () => void }) {
             <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-accent">Co-Location Benefit Calculator</div>
             <h2 className="mt-1 font-display text-lg font-bold truncate">Bypass the TSO queue with an on-site BESS</h2>
           </div>
-          <button
           <div className="flex shrink-0 items-center gap-1.5">
             <button
               onClick={() => window.print()}
