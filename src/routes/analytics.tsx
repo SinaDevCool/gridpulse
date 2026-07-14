@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { isLiveProject, type Project } from "@/lib/gridpulse-data";
 import { TSO_ZONES, tsoZoneOf, nodeClassStyles, sitingScore, activeFeedsForCountry } from "@/lib/tso-zones";
 import { CoLocationCalculator } from "@/components/site/CoLocationCalculator";
-import { useSimulation } from "@/context/SimulationContext";
+import { useSimulation, avoidedGridUpgradeCapex, acceleratedRevenue, avoidedPenaltyEurAnnual } from "@/context/SimulationContext";
 
 
 
@@ -697,17 +697,28 @@ function SitingScorecard({ filtered, country, region }: { filtered: Project[]; c
       );
       const baseScore = sitingScore(zone);
       const adjustedScore = Math.min(100, baseScore + Math.round(scoreLift * zoneWeight));
+      // Financial modelling — see SimulationContext for constants.
+      const zoneShavedMw = sim.requestedLoadMw * sim.bessRelief * zoneWeight;
+      const zoneNetGridDrawMw = Math.max(sim.requestedLoadMw - zoneShavedMw, 0);
+      const monthsSaved = Math.max(zone.timeToEnergizeMonths - adjustedMonths, 0);
+      const capexSavingsEur = avoidedGridUpgradeCapex(sim.requestedLoadMw, zoneNetGridDrawMw);
+      const timeToMarketRoiEur = acceleratedRevenue(sim.requestedLoadMw, monthsSaved);
+      const tsoCongestionEur = avoidedPenaltyEurAnnual(zone, sim.requestedLoadMw, sim.bessRelief * zoneWeight);
       return {
         zone,
         score: adjustedScore,
         baseScore,
         adjustedMonths,
+        monthsSaved,
         assignedMw,
         assignedProjects,
         coLocationIndex,
+        capexSavingsEur,
+        timeToMarketRoiEur,
+        tsoCongestionEur,
       };
     }).sort((a, b) => b.score - a.score);
-  }, [filtered, regionApplicable, sim.selectedTsoZone, sim.bessRelief, monthsReduction, scoreLift]);
+  }, [filtered, regionApplicable, sim.selectedTsoZone, sim.bessRelief, sim.requestedLoadMw, monthsReduction, scoreLift]);
 
   const activeFeeds = useMemo(() => activeFeedsForCountry(country || null), [country]);
 
@@ -736,7 +747,7 @@ function SitingScorecard({ filtered, country, region }: { filtered: Project[]; c
           </span>
           <button
             onClick={() => {
-              const exportRows = rows.map(({ zone, score, baseScore, adjustedMonths, coLocationIndex, assignedMw, assignedProjects }) => ({
+              const exportRows = rows.map(({ zone, score, baseScore, adjustedMonths, coLocationIndex, assignedMw, assignedProjects, capexSavingsEur, timeToMarketRoiEur, tsoCongestionEur }) => ({
                 tso_zone: zone.name,
                 country: zone.country,
                 node_class: zone.nodeClass,
@@ -753,6 +764,9 @@ function SitingScorecard({ filtered, country, region }: { filtered: Project[]; c
                 bess_mw: sim.bessMw,
                 bess_mwh: sim.bessMwh,
                 selected_zone: sim.selectedTsoZone,
+                avoided_grid_upgrade_capex_eur: capexSavingsEur,
+                time_to_market_roi_eur: timeToMarketRoiEur,
+                tso_congestion_savings_eur_annual: tsoCongestionEur,
               }));
               downloadCsv(`gridpulse-siting-prospectus-${new Date().toISOString().slice(0,10)}.csv`, toCsv(exportRows));
             }}
@@ -770,7 +784,7 @@ function SitingScorecard({ filtered, country, region }: { filtered: Project[]; c
       </div>
 
       <div className="mt-4 overflow-x-auto">
-        <table className="w-full min-w-[820px] text-sm">
+        <table className="w-full min-w-[980px] text-sm">
           <thead className="text-[10px] uppercase tracking-wider text-muted-foreground">
             <tr>
               <th className="py-2 text-left">Regional Node / Grid Zone</th>
@@ -779,16 +793,22 @@ function SitingScorecard({ filtered, country, region }: { filtered: Project[]; c
               <th className="py-2 text-left">Redispatch & Curtailment Risk</th>
               <th className="py-2 text-right">Co-location Opportunity Index</th>
               <th className="py-2 text-left">Time-to-Connect Estimate</th>
+              <th className="py-2 text-right">CapEx Savings</th>
+              <th className="py-2 text-right">Time-to-Market ROI</th>
               <th className="py-2 text-right">Siting Score</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border/40">
-            {rows.map(({ zone, score, baseScore, adjustedMonths, coLocationIndex }) => {
+            {rows.map(({ zone, score, baseScore, adjustedMonths, coLocationIndex, capexSavingsEur, timeToMarketRoiEur }) => {
               const s = nodeClassStyles(zone.nodeClass);
               const risk = riskLabel(zone.redispatchRiskPct);
               const ttc = timeToConnectEstimate(adjustedMonths);
               const isSelected = zone.code === sim.selectedTsoZone;
               const scoreDelta = score - baseScore;
+              const fmtEur = (n: number) =>
+                n >= 1_000_000 ? `€${(n / 1_000_000).toFixed(1)}M`
+                : n >= 1_000 ? `€${(n / 1_000).toFixed(0)}k`
+                : `€${n.toLocaleString()}`;
               return (
                 <tr key={zone.code} className={isSelected ? "bg-cyan-accent/[0.04]" : ""}>
                   <td className="py-2">
@@ -826,6 +846,8 @@ function SitingScorecard({ filtered, country, region }: { filtered: Project[]; c
                       <span className="ml-1 text-[10px] font-mono-data text-green-accent">−{zone.timeToEnergizeMonths - adjustedMonths}mo</span>
                     )}
                   </td>
+                  <td className="py-2 text-right font-mono-data text-green-accent">{fmtEur(capexSavingsEur)}</td>
+                  <td className="py-2 text-right font-mono-data text-cyan-accent">{fmtEur(timeToMarketRoiEur)}</td>
                   <td className="py-2 text-right">
                     <span className="font-display text-base font-bold text-cyan-accent">{score}</span>
                     {scoreDelta > 0 && (
@@ -873,6 +895,8 @@ function ComparisonBench() {
       months_saved: s.monthsSaved,
       siting_score: s.sitingScore,
       avoided_tso_penalty_eur_annual: s.avoidedPenaltyEurAnnual,
+      avoided_grid_upgrade_capex_eur: s.avoidedGridUpgradeCapexEur,
+      time_to_market_roi_eur: s.acceleratedRevenueEur,
     }));
     downloadCsv(
       `gridpulse-comparison-bench-${new Date().toISOString().slice(0, 10)}.csv`,
