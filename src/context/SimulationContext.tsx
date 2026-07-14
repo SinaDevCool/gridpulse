@@ -29,8 +29,26 @@ export interface SavedScenario extends SimulationState {
   monthsSaved: number;
   sitingScore: number;
   avoidedPenaltyEurAnnual: number;
+  avoidedGridUpgradeCapexEur: number;
+  acceleratedRevenueEur: number;
   zoneName: string;
   country: string;
+}
+
+// --- Financial modelling constants -------------------------------------
+// Bypassing an HV substation reinforcement is worth an industry-standard
+// €200k per avoided MW of peak grid draw (transformer + protection + civils).
+export const CAPEX_EUR_PER_AVOIDED_MW = 200_000;
+// Every month clipped off the interconnection queue lets the hyperscaler
+// bill contracted capacity earlier — €50k / MW / month at wholesale colo rates.
+export const REVENUE_EUR_PER_MW_PER_MONTH = 50_000;
+
+export function avoidedGridUpgradeCapex(loadMw: number, netGridDrawMw: number): number {
+  return Math.max(0, Math.round((loadMw - netGridDrawMw) * CAPEX_EUR_PER_AVOIDED_MW));
+}
+
+export function acceleratedRevenue(loadMw: number, monthsSaved: number): number {
+  return Math.max(0, Math.round(loadMw * monthsSaved * REVENUE_EUR_PER_MW_PER_MONTH));
 }
 
 export interface SimulationContextValue extends SimulationState {
