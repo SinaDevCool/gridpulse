@@ -747,7 +747,7 @@ function SitingScorecard({ filtered, country, region }: { filtered: Project[]; c
           </span>
           <button
             onClick={() => {
-              const exportRows = rows.map(({ zone, score, baseScore, adjustedMonths, coLocationIndex, assignedMw, assignedProjects }) => ({
+              const exportRows = rows.map(({ zone, score, baseScore, adjustedMonths, coLocationIndex, assignedMw, assignedProjects, capexSavingsEur, timeToMarketRoiEur, tsoCongestionEur }) => ({
                 tso_zone: zone.name,
                 country: zone.country,
                 node_class: zone.nodeClass,
@@ -764,6 +764,9 @@ function SitingScorecard({ filtered, country, region }: { filtered: Project[]; c
                 bess_mw: sim.bessMw,
                 bess_mwh: sim.bessMwh,
                 selected_zone: sim.selectedTsoZone,
+                avoided_grid_upgrade_capex_eur: capexSavingsEur,
+                time_to_market_roi_eur: timeToMarketRoiEur,
+                tso_congestion_savings_eur_annual: tsoCongestionEur,
               }));
               downloadCsv(`gridpulse-siting-prospectus-${new Date().toISOString().slice(0,10)}.csv`, toCsv(exportRows));
             }}
