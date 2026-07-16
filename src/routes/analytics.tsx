@@ -656,6 +656,8 @@ function timeToConnectEstimate(months: number): { text: string; tone: string } {
 
 function SitingScorecard({ filtered, country, region }: { filtered: Project[]; country: string; region: string }) {
   const [calcOpen, setCalcOpen] = useState(false);
+  const [autofindOpen, setAutofindOpen] = useState(false);
+  const [methodologyOpen, setMethodologyOpen] = useState(false);
   const sim = useSimulation();
   // The BESS slider in the calculator drawer collapses time-to-energize and
   // lifts siting score for every zone — mirrors the "peak shaved → bypass
