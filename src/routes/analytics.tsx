@@ -295,6 +295,12 @@ function AnalyticsPage() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button
+              onClick={() => setAutofindOpen(true)}
+              className="inline-flex items-center gap-2 rounded-md border border-cyan-accent/60 bg-cyan-accent/15 px-3 py-1.5 text-xs font-semibold text-cyan-accent hover:bg-cyan-accent/25"
+            >
+              <Sparkles className="h-3.5 w-3.5" /> Autofind Optimal Siting Nodes
+            </button>
+            <button
               onClick={() => exportAggregate("region-summary", byRegion)}
               className="inline-flex items-center gap-2 rounded-md border border-border/60 bg-surface/60 px-3 py-1.5 text-xs font-medium hover:bg-surface"
             >
