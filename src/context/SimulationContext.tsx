@@ -112,6 +112,7 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
   const [bessMwh, setBessMwh] = useState<number>(DEFAULTS.bessMwh);
   const [selectedTsoZone, setSelectedTsoZone] = useState<TsoCode>(DEFAULTS.selectedTsoZone);
   const [savedScenarios, setSavedScenarios] = useState<SavedScenario[]>([]);
+  const [recommendedZones, setRecommendedZones] = useState<TsoCode[]>([]);
 
   const derived = useMemo(() => {
     // Deterministic scaling physics — see docstring on `SimulationContextValue`.
@@ -123,7 +124,7 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
   }, [requestedLoadMw, bessMw]);
 
   const saveScenario = useCallback(
-    (customLabel?: string) => {
+    (customLabel?: string, recommended?: boolean) => {
       const zone =
         TSO_ZONES.find((z) => z.code === selectedTsoZone) ?? TSO_ZONES[0];
       const shaved = Math.min(bessMw, requestedLoadMw * 0.6);
@@ -142,8 +143,9 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
       const now = new Date();
       const seq = savedScenarios.length + 1;
       const letter = String.fromCharCode(65 + ((seq - 1) % 26));
+      const isRecommended = recommended ?? recommendedZones.includes(selectedTsoZone);
       const label = (customLabel && customLabel.trim())
-        || `Scenario ${letter}: ${zone.name} Cluster`;
+        || `${isRecommended ? "★ " : ""}Scenario ${letter}: ${zone.name} Cluster`;
       const scenario: SavedScenario = {
         id: `scn_${now.getTime()}_${Math.random().toString(36).slice(2, 8)}`,
         label,
@@ -165,10 +167,11 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
         acceleratedRevenueEur: acceleratedRevenue(requestedLoadMw, monthsSaved),
         zoneName: zone.name,
         country: zone.country,
+        recommended: isRecommended,
       };
       setSavedScenarios((prev) => [...prev, scenario]);
     },
-    [requestedLoadMw, bessMw, bessMwh, selectedTsoZone, savedScenarios.length],
+    [requestedLoadMw, bessMw, bessMwh, selectedTsoZone, savedScenarios.length, recommendedZones],
   );
 
   const removeScenario = useCallback((id: string) => {
@@ -176,6 +179,35 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const clearScenarios = useCallback(() => setSavedScenarios([]), []);
+
+  // Autofind Optimal Siting Nodes — deterministic ranking of TSO zones for a
+  // target load and region profile. Returns the top-3 zone codes and stores
+  // them so the Siting Matrix + map can flag them with a "Recommended Fit"
+  // badge. Scoring weights are chosen so that:
+  //   • high-congestion  → rewards zones whose redispatch pain the BESS can relieve
+  //   • low-capex        → rewards fast-track / low-timeline / high-headroom zones
+  //   • balanced         → equal blend
+  const runAutofind = useCallback((loadMw: number, profile: RegionProfile): TsoCode[] => {
+    const weights = profile === "high-congestion"
+      ? { headroom: 0.2, risk: 0.55, speed: 0.25 }
+      : profile === "low-capex"
+      ? { headroom: 0.35, risk: 0.15, speed: 0.5 }
+      : { headroom: 0.35, risk: 0.35, speed: 0.3 };
+    const ranked = TSO_ZONES.map((z) => {
+      const headroomFit = Math.min(1, z.headroomMw / Math.max(loadMw * 20, 1));
+      const riskRelief = profile === "high-congestion"
+        ? Math.min(1, z.redispatchRiskPct / 50) // reward high-risk zones (BESS relieves them)
+        : 1 - Math.min(1, z.redispatchRiskPct / 60);
+      const speed = 1 - Math.min(1, (z.timeToEnergizeMonths - 24) / 40);
+      const score = headroomFit * weights.headroom + riskRelief * weights.risk + speed * weights.speed;
+      return { code: z.code, score };
+    }).sort((a, b) => b.score - a.score);
+    const top = ranked.slice(0, 3).map((r) => r.code);
+    setRecommendedZones(top);
+    return top;
+  }, []);
+
+  const clearRecommendations = useCallback(() => setRecommendedZones([]), []);
 
   const value = useMemo<SimulationContextValue>(
     () => ({
@@ -194,8 +226,11 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
       saveScenario,
       removeScenario,
       clearScenarios,
+      recommendedZones,
+      runAutofind,
+      clearRecommendations,
     }),
-    [requestedLoadMw, bessMw, bessMwh, selectedTsoZone, derived, savedScenarios, saveScenario, removeScenario, clearScenarios],
+    [requestedLoadMw, bessMw, bessMwh, selectedTsoZone, derived, savedScenarios, saveScenario, removeScenario, clearScenarios, recommendedZones, runAutofind, clearRecommendations],
   );
 
   return <SimulationContext.Provider value={value}>{children}</SimulationContext.Provider>;
