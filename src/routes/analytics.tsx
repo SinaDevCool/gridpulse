@@ -824,20 +824,22 @@ function SitingScorecard({ filtered, country, region }: { filtered: Project[]; c
               const risk = riskLabel(zone.redispatchRiskPct);
               const ttc = timeToConnectEstimate(adjustedMonths);
               const isSelected = zone.code === sim.selectedTsoZone;
+              const isRecommended = sim.recommendedZones.includes(zone.code);
               const scoreDelta = score - baseScore;
               const fmtEur = (n: number) =>
                 n >= 1_000_000 ? `€${(n / 1_000_000).toFixed(1)}M`
                 : n >= 1_000 ? `€${(n / 1_000).toFixed(0)}k`
                 : `€${n.toLocaleString()}`;
               return (
-                <tr key={zone.code} className={isSelected ? "bg-cyan-accent/[0.04]" : ""}>
+                <tr key={zone.code} className={isRecommended ? "bg-green-accent/[0.05]" : isSelected ? "bg-cyan-accent/[0.04]" : ""}>
                   <td className="py-2">
                     <div className="flex items-center gap-2">
                       <span className={`h-2 w-2 shrink-0 rounded-full ${s.dot}`} />
                       <div className="min-w-0">
-                        <div className="font-medium truncate">
-                          {zone.name} — {zone.country}
-                          {isSelected && <span className="ml-2 rounded border border-cyan-accent/40 bg-cyan-accent/10 px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-cyan-accent">Simulated</span>}
+                        <div className="flex flex-wrap items-center gap-1.5 font-medium">
+                          <span className="truncate">{zone.name} — {zone.country}</span>
+                          {isRecommended && <span className="rounded border border-green-accent/50 bg-green-accent/15 px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-green-accent">Recommended Fit</span>}
+                          {isSelected && <span className="rounded border border-cyan-accent/40 bg-cyan-accent/10 px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-cyan-accent">Simulated</span>}
                         </div>
                         <div className="text-[10px] font-mono-data text-muted-foreground truncate">
                           {zone.regions.slice(0, 2).join(", ")}{zone.regions.length > 2 ? "…" : ""}
