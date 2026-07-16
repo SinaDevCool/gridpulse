@@ -750,9 +750,18 @@ function SitingScorecard({ filtered, country, region }: { filtered: Project[]; c
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <span className="rounded border border-cyan-accent/40 bg-cyan-accent/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-cyan-accent">
-            GridCARE methodology
-          </span>
+          <button
+            onClick={() => setMethodologyOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded border border-cyan-accent/40 bg-cyan-accent/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-cyan-accent hover:bg-cyan-accent/20 cursor-pointer"
+          >
+            <BookOpen className="h-3 w-3" /> GridCARE methodology
+          </button>
+          <button
+            onClick={() => setAutofindOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-md border border-cyan-accent/60 bg-cyan-accent/15 px-2.5 py-1 text-[11px] font-semibold text-cyan-accent hover:bg-cyan-accent/25 cursor-pointer"
+          >
+            <Sparkles className="h-3 w-3" /> Autofind Optimal Siting Nodes
+          </button>
           <button
             onClick={() => {
               const exportRows = rows.map(({ zone, score, baseScore, adjustedMonths, coLocationIndex, assignedMw, assignedProjects, capexSavingsEur, timeToMarketRoiEur, tsoCongestionEur }) => ({
@@ -775,6 +784,7 @@ function SitingScorecard({ filtered, country, region }: { filtered: Project[]; c
                 avoided_grid_upgrade_capex_eur: capexSavingsEur,
                 time_to_market_roi_eur: timeToMarketRoiEur,
                 tso_congestion_savings_eur_annual: tsoCongestionEur,
+                recommended_fit: sim.recommendedZones.includes(zone.code) ? "yes" : "no",
               }));
               downloadCsv(`gridpulse-siting-prospectus-${new Date().toISOString().slice(0,10)}.csv`, toCsv(exportRows));
             }}
