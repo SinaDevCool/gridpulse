@@ -571,6 +571,7 @@ function AnalyticsPage() {
 
       </main>
       <SiteFooter />
+      {autofindOpen && <AutofindModal onClose={() => setAutofindOpen(false)} />}
     </div>
   );
 }
