@@ -69,9 +69,13 @@ export interface SimulationContextValue extends SimulationState {
   congestionRelief: number; // 0..1 — visual dampening factor for congested markers
   // Multi-scenario bench state.
   savedScenarios: SavedScenario[];
-  saveScenario: (customLabel?: string) => void;
+  saveScenario: (customLabel?: string, recommended?: boolean) => void;
   removeScenario: (id: string) => void;
   clearScenarios: () => void;
+  // Autofind Optimal Siting Nodes engine outputs.
+  recommendedZones: TsoCode[];
+  runAutofind: (loadMw: number, profile: RegionProfile) => TsoCode[];
+  clearRecommendations: () => void;
 }
 
 const DEFAULTS: SimulationState = {
