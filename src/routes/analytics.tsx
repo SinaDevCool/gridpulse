@@ -5,7 +5,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, CartesianGrid, LineChart, Line,
 } from "recharts";
-import { Download, Lock, Filter, X } from "lucide-react";
+import { Download, Lock, Filter, X, Sparkles, BookOpen } from "lucide-react";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { AuthWall } from "@/components/site/AuthWall";
@@ -178,6 +178,7 @@ function AnalyticsPage() {
   const [developer, setDeveloper] = useState("");
   const [codYear, setCodYear] = useState("");
   const [compare, setCompare] = useState<string[]>([]);
+  const [autofindOpen, setAutofindOpen] = useState(false);
 
   // Canonical European regional taxonomy — enterprise UI never shows
   // "north-america" / "asia-pacific" / "latin-america" here.
@@ -294,6 +295,12 @@ function AnalyticsPage() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setAutofindOpen(true)}
+              className="inline-flex items-center gap-2 rounded-md border border-cyan-accent/60 bg-cyan-accent/15 px-3 py-1.5 text-xs font-semibold text-cyan-accent hover:bg-cyan-accent/25"
+            >
+              <Sparkles className="h-3.5 w-3.5" /> Autofind Optimal Siting Nodes
+            </button>
             <button
               onClick={() => exportAggregate("region-summary", byRegion)}
               className="inline-flex items-center gap-2 rounded-md border border-border/60 bg-surface/60 px-3 py-1.5 text-xs font-medium hover:bg-surface"
@@ -563,6 +570,7 @@ function AnalyticsPage() {
 
       </main>
       <SiteFooter />
+      {autofindOpen && <AutofindModal onClose={() => setAutofindOpen(false)} />}
     </div>
   );
 }
@@ -648,6 +656,8 @@ function timeToConnectEstimate(months: number): { text: string; tone: string } {
 
 function SitingScorecard({ filtered, country, region }: { filtered: Project[]; country: string; region: string }) {
   const [calcOpen, setCalcOpen] = useState(false);
+  const [autofindOpen, setAutofindOpen] = useState(false);
+  const [methodologyOpen, setMethodologyOpen] = useState(false);
   const sim = useSimulation();
   // The BESS slider in the calculator drawer collapses time-to-energize and
   // lifts siting score for every zone — mirrors the "peak shaved → bypass
@@ -742,9 +752,18 @@ function SitingScorecard({ filtered, country, region }: { filtered: Project[]; c
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <span className="rounded border border-cyan-accent/40 bg-cyan-accent/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-cyan-accent">
-            GridCARE methodology
-          </span>
+          <button
+            onClick={() => setMethodologyOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded border border-cyan-accent/40 bg-cyan-accent/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-cyan-accent hover:bg-cyan-accent/20 cursor-pointer"
+          >
+            <BookOpen className="h-3 w-3" /> GridCARE methodology
+          </button>
+          <button
+            onClick={() => setAutofindOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-md border border-cyan-accent/60 bg-cyan-accent/15 px-2.5 py-1 text-[11px] font-semibold text-cyan-accent hover:bg-cyan-accent/25 cursor-pointer"
+          >
+            <Sparkles className="h-3 w-3" /> Autofind Optimal Siting Nodes
+          </button>
           <button
             onClick={() => {
               const exportRows = rows.map(({ zone, score, baseScore, adjustedMonths, coLocationIndex, assignedMw, assignedProjects, capexSavingsEur, timeToMarketRoiEur, tsoCongestionEur }) => ({
@@ -767,6 +786,7 @@ function SitingScorecard({ filtered, country, region }: { filtered: Project[]; c
                 avoided_grid_upgrade_capex_eur: capexSavingsEur,
                 time_to_market_roi_eur: timeToMarketRoiEur,
                 tso_congestion_savings_eur_annual: tsoCongestionEur,
+                recommended_fit: sim.recommendedZones.includes(zone.code) ? "yes" : "no",
               }));
               downloadCsv(`gridpulse-siting-prospectus-${new Date().toISOString().slice(0,10)}.csv`, toCsv(exportRows));
             }}
@@ -804,20 +824,22 @@ function SitingScorecard({ filtered, country, region }: { filtered: Project[]; c
               const risk = riskLabel(zone.redispatchRiskPct);
               const ttc = timeToConnectEstimate(adjustedMonths);
               const isSelected = zone.code === sim.selectedTsoZone;
+              const isRecommended = sim.recommendedZones.includes(zone.code);
               const scoreDelta = score - baseScore;
               const fmtEur = (n: number) =>
                 n >= 1_000_000 ? `€${(n / 1_000_000).toFixed(1)}M`
                 : n >= 1_000 ? `€${(n / 1_000).toFixed(0)}k`
                 : `€${n.toLocaleString()}`;
               return (
-                <tr key={zone.code} className={isSelected ? "bg-cyan-accent/[0.04]" : ""}>
+                <tr key={zone.code} className={isRecommended ? "bg-green-accent/[0.05]" : isSelected ? "bg-cyan-accent/[0.04]" : ""}>
                   <td className="py-2">
                     <div className="flex items-center gap-2">
                       <span className={`h-2 w-2 shrink-0 rounded-full ${s.dot}`} />
                       <div className="min-w-0">
-                        <div className="font-medium truncate">
-                          {zone.name} — {zone.country}
-                          {isSelected && <span className="ml-2 rounded border border-cyan-accent/40 bg-cyan-accent/10 px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-cyan-accent">Simulated</span>}
+                        <div className="flex flex-wrap items-center gap-1.5 font-medium">
+                          <span className="truncate">{zone.name} — {zone.country}</span>
+                          {isRecommended && <span className="rounded border border-green-accent/50 bg-green-accent/15 px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-green-accent">Recommended Fit</span>}
+                          {isSelected && <span className="rounded border border-cyan-accent/40 bg-cyan-accent/10 px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-cyan-accent">Simulated</span>}
                         </div>
                         <div className="text-[10px] font-mono-data text-muted-foreground truncate">
                           {zone.regions.slice(0, 2).join(", ")}{zone.regions.length > 2 ? "…" : ""}
@@ -866,6 +888,8 @@ function SitingScorecard({ filtered, country, region }: { filtered: Project[]; c
       </div>
 
       {calcOpen && <CoLocationCalculator onClose={() => setCalcOpen(false)} />}
+      {autofindOpen && <AutofindModal onClose={() => setAutofindOpen(false)} />}
+      {methodologyOpen && <MethodologyModal onClose={() => setMethodologyOpen(false)} />}
     </section>
   );
 }
@@ -897,6 +921,7 @@ function ComparisonBench() {
       avoided_tso_penalty_eur_annual: s.avoidedPenaltyEurAnnual,
       avoided_grid_upgrade_capex_eur: s.avoidedGridUpgradeCapexEur,
       time_to_market_roi_eur: s.acceleratedRevenueEur,
+      recommended_fit: s.recommended ? "yes" : "no",
     }));
     downloadCsv(
       `gridpulse-comparison-bench-${new Date().toISOString().slice(0, 10)}.csv`,
@@ -945,6 +970,38 @@ function ComparisonBench() {
           No scenarios saved yet. Open the Co-Location Benefit Calculator, tune the sliders, and click <span className="text-foreground">"+ Save Scenario to Prospectus"</span> to bench a configuration for comparison.
         </div>
       ) : (
+        <>
+        {scenarios.length >= 2 && (
+          <div className="mt-4 rounded-lg border border-border/60 bg-background/40 p-4">
+            <div className="mb-2 flex items-center justify-between">
+              <div>
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-cyan-accent">Portfolio Comparison</div>
+                <div className="font-display text-sm font-bold">Accelerated Revenue vs Substation CapEx Saved (€M)</div>
+              </div>
+              <div className="flex items-center gap-3 text-[10px] font-mono-data">
+                <span className="flex items-center gap-1"><span className="inline-block h-2 w-3 rounded-sm bg-green-accent" /> Accelerated Revenue</span>
+                <span className="flex items-center gap-1"><span className="inline-block h-2 w-3 rounded-sm bg-cyan-accent" /> CapEx Saved</span>
+              </div>
+            </div>
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart
+                data={scenarios.map((s) => ({
+                  name: s.label.length > 22 ? s.label.slice(0, 21) + "…" : s.label,
+                  revenue: Number((s.acceleratedRevenueEur / 1_000_000).toFixed(2)),
+                  capex: Number((s.avoidedGridUpgradeCapexEur / 1_000_000).toFixed(2)),
+                }))}
+                margin={{ top: 8, right: 12, left: 0, bottom: 30 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.5)" />
+                <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={10} angle={-15} textAnchor="end" interval={0} />
+                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickFormatter={(v) => `€${v}M`} />
+                <Tooltip {...tooltipStyle} formatter={(v: number, n) => [`€${v.toFixed(2)}M`, n === "revenue" ? "Accelerated Revenue" : "CapEx Saved"]} />
+                <Bar dataKey="revenue" name="Accelerated Revenue" fill="#34d399" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="capex" name="CapEx Saved" fill="#22d3ee" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
         <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {scenarios.map((s) => {
             const ttc = timeToConnectEstimate(s.adjustedMonths);
@@ -988,6 +1045,7 @@ function ComparisonBench() {
             );
           })}
         </div>
+        </>
       )}
     </section>
   );
@@ -1002,6 +1060,178 @@ function BenchMetric({ label, value, tone, sub }: { label: string; value: string
     </div>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Autofind Optimal Siting Nodes — user picks target load + region profile,
+// engine ranks the TSO_ZONES and highlights the top-3 with "Recommended Fit"
+// badges across the Siting Matrix and the map.
+// ---------------------------------------------------------------------------
+function AutofindModal({ onClose }: { onClose: () => void }) {
+  const sim = useSimulation();
+  const [loadMw, setLoadMw] = useState<number>(sim.requestedLoadMw || 150);
+  const [profile, setProfile] = useState<import("@/context/SimulationContext").RegionProfile>("balanced");
+  const [results, setResults] = useState<{ code: string; name: string; country: string; nodeClass: string }[]>([]);
+
+  const run = () => {
+    const top = sim.runAutofind(loadMw, profile);
+    setResults(
+      top.map((code) => {
+        const z = TSO_ZONES.find((zz) => zz.code === code)!;
+        return { code, name: z.name, country: z.country, nodeClass: z.nodeClass };
+      }),
+    );
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 p-4 backdrop-blur-sm" onClick={onClose}>
+      <div
+        className="relative w-full max-w-lg rounded-xl border border-cyan-accent/40 bg-surface p-6 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-accent">Siting Recommendation Engine</div>
+            <h2 className="mt-1 font-display text-xl font-bold">Autofind Optimal Siting Nodes</h2>
+            <p className="mt-1 text-xs text-muted-foreground">Rank European TSO zones for your target load and objective. Top 3 nodes are flagged as <span className="text-cyan-accent">Recommended Fit</span> across the dashboard.</p>
+          </div>
+          <button onClick={onClose} className="rounded border border-border/60 bg-surface-elevated p-1 text-muted-foreground hover:text-foreground" aria-label="Close">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="mt-5 grid gap-4">
+          <label className="flex flex-col gap-1.5">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Target Load Size (MW)</span>
+            <input
+              type="number"
+              min={10}
+              max={2000}
+              value={loadMw}
+              onChange={(e) => setLoadMw(Math.max(10, Number(e.target.value) || 0))}
+              className="rounded-md border border-border/60 bg-background px-3 py-2 font-mono-data text-sm"
+            />
+          </label>
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Region Profile</span>
+            <div className="grid gap-2 sm:grid-cols-3">
+              {([
+                { v: "high-congestion", label: "High Grid Congestion", sub: "BESS relieves redispatch" },
+                { v: "low-capex", label: "Low Grid CapEx", sub: "Fast-track, headroom rich" },
+                { v: "balanced", label: "Balanced", sub: "Equal weighting" },
+              ] as const).map((opt) => {
+                const active = profile === opt.v;
+                return (
+                  <button
+                    key={opt.v}
+                    onClick={() => setProfile(opt.v)}
+                    className={`rounded-md border px-2.5 py-2 text-left text-[11px] ${active ? "border-cyan-accent/60 bg-cyan-accent/10 text-cyan-accent" : "border-border/60 bg-background text-foreground hover:bg-surface-elevated"}`}
+                  >
+                    <div className="font-semibold">{opt.label}</div>
+                    <div className="text-[10px] font-mono-data text-muted-foreground">{opt.sub}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <button
+            onClick={run}
+            className="inline-flex items-center justify-center gap-2 rounded-md border border-cyan-accent/60 bg-cyan-accent/15 px-4 py-2 text-sm font-semibold text-cyan-accent hover:bg-cyan-accent/25"
+          >
+            <Sparkles className="h-4 w-4" /> Run Autofind
+          </button>
+
+          {results.length > 0 && (
+            <div className="mt-1 rounded-md border border-border/60 bg-background/60 p-3">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-green-accent">Top 3 Recommended Fits</div>
+              <ol className="mt-2 space-y-1.5">
+                {results.map((r, i) => (
+                  <li key={r.code} className="flex items-center justify-between gap-2 text-sm">
+                    <span className="flex items-center gap-2">
+                      <span className="font-mono-data text-cyan-accent">#{i + 1}</span>
+                      <span className="font-medium">{r.name}</span>
+                      <span className="text-[10px] font-mono-data text-muted-foreground">— {r.country}</span>
+                    </span>
+                    <span className="rounded border border-green-accent/40 bg-green-accent/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-green-accent">Recommended Fit</span>
+                  </li>
+                ))}
+              </ol>
+              <div className="mt-3 text-[10px] font-mono-data text-muted-foreground">Recommendations are now highlighted across the Siting Matrix and can be saved to the Comparison Bench.</div>
+            </div>
+          )}
+
+          {sim.recommendedZones.length > 0 && (
+            <button
+              onClick={() => { sim.clearRecommendations(); setResults([]); }}
+              className="self-start text-[11px] text-muted-foreground underline underline-offset-2 hover:text-foreground"
+            >
+              Clear active recommendations
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// GridCARE Methodology modal — documents the "Three-Pillar Power Acceleration
+// Framework" behind every metric in the Siting Matrix and Calculator.
+// ---------------------------------------------------------------------------
+function MethodologyModal({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 p-4 backdrop-blur-sm" onClick={onClose}>
+      <div
+        className="relative max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-cyan-accent/40 bg-surface p-6 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-accent">GridCARE Methodology</div>
+            <h2 className="mt-1 font-display text-xl font-bold">Three-Pillar Power Acceleration Framework</h2>
+            <p className="mt-1 text-xs text-muted-foreground">How GridPulse translates raw TSO telemetry into an institutional-grade siting score.</p>
+          </div>
+          <button onClick={onClose} className="rounded border border-border/60 bg-surface-elevated p-1 text-muted-foreground hover:text-foreground" aria-label="Close">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="mt-5 space-y-4 font-mono-data text-[12px] text-foreground">
+          {[
+            {
+              n: "01",
+              title: "Active Peak-Shaving Calculations",
+              body: "Bess relief ratio = min(BESS MW, 60% × Load MW) / Load MW. Governs adjusted grid draw, adjusted time-to-connect, and every downstream financial metric.",
+            },
+            {
+              n: "02",
+              title: "Dynamic Substation Capacity Headroom",
+              body: "Zone headroom (MW) vs required load determines fit. Avoided HV substation reinforcement is priced at €200k / avoided-MW of peak grid draw.",
+            },
+            {
+              n: "03",
+              title: "Avoided TSO Redispatch Curtailment",
+              body: "Redispatch risk % × 8,760 h × Load MW × €85/MWh × relief fraction. Sourced from ENTSO-E Transparency Platform and Bundesnetzagentur reporting.",
+            },
+          ].map((p) => (
+            <div key={p.n} className="rounded-md border border-border/60 bg-background/50 p-3">
+              <div className="flex items-baseline gap-3">
+                <span className="text-cyan-accent">[{p.n}]</span>
+                <span className="font-display text-sm font-bold not-italic">{p.title}</span>
+              </div>
+              <div className="mt-1 pl-8 text-muted-foreground">{p.body}</div>
+            </div>
+          ))}
+          <div className="rounded-md border border-cyan-accent/30 bg-cyan-accent/[0.06] p-3 text-cyan-accent">
+            <span className="text-[10px] font-semibold uppercase tracking-wider">Siting Score = </span>
+            <span>0.40 × Headroom + 0.35 × (100 − Risk) + 0.25 × Time-to-Connect · Normalised 0–100</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 
 
