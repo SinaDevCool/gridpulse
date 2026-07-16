@@ -5,7 +5,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, CartesianGrid, LineChart, Line,
 } from "recharts";
-import { Download, Lock, Filter, X } from "lucide-react";
+import { Download, Lock, Filter, X, Sparkles, BookOpen } from "lucide-react";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { AuthWall } from "@/components/site/AuthWall";
