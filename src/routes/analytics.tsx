@@ -888,6 +888,8 @@ function SitingScorecard({ filtered, country, region }: { filtered: Project[]; c
       </div>
 
       {calcOpen && <CoLocationCalculator onClose={() => setCalcOpen(false)} />}
+      {autofindOpen && <AutofindModal onClose={() => setAutofindOpen(false)} />}
+      {methodologyOpen && <MethodologyModal onClose={() => setMethodologyOpen(false)} />}
     </section>
   );
 }
