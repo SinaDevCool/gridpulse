@@ -921,6 +921,7 @@ function ComparisonBench() {
       avoided_tso_penalty_eur_annual: s.avoidedPenaltyEurAnnual,
       avoided_grid_upgrade_capex_eur: s.avoidedGridUpgradeCapexEur,
       time_to_market_roi_eur: s.acceleratedRevenueEur,
+      recommended_fit: s.recommended ? "yes" : "no",
     }));
     downloadCsv(
       `gridpulse-comparison-bench-${new Date().toISOString().slice(0, 10)}.csv`,
