@@ -33,7 +33,14 @@ export interface SavedScenario extends SimulationState {
   acceleratedRevenueEur: number;
   zoneName: string;
   country: string;
+  // True when the scenario originated from the Autofind Optimal Siting engine.
+  recommended: boolean;
 }
+
+// Region profile used by the Autofind Optimal Siting Nodes engine to weight
+// TSO zones — "high-congestion" prioritises redispatch relief, "low-capex"
+// prioritises fast-track / low-CapEx nodes, "balanced" is the default blend.
+export type RegionProfile = "high-congestion" | "low-capex" | "balanced";
 
 // --- Financial modelling constants -------------------------------------
 // Bypassing an HV substation reinforcement is worth an industry-standard
