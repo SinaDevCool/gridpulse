@@ -178,6 +178,8 @@ function AnalyticsPage() {
   const [developer, setDeveloper] = useState("");
   const [codYear, setCodYear] = useState("");
   const [compare, setCompare] = useState<string[]>([]);
+  const [autofindOpen, setAutofindOpen] = useState(false);
+  const sim = useSimulation();
 
   // Canonical European regional taxonomy — enterprise UI never shows
   // "north-america" / "asia-pacific" / "latin-america" here.
