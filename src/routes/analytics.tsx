@@ -970,6 +970,38 @@ function ComparisonBench() {
           No scenarios saved yet. Open the Co-Location Benefit Calculator, tune the sliders, and click <span className="text-foreground">"+ Save Scenario to Prospectus"</span> to bench a configuration for comparison.
         </div>
       ) : (
+        <>
+        {scenarios.length >= 2 && (
+          <div className="mt-4 rounded-lg border border-border/60 bg-background/40 p-4">
+            <div className="mb-2 flex items-center justify-between">
+              <div>
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-cyan-accent">Portfolio Comparison</div>
+                <div className="font-display text-sm font-bold">Accelerated Revenue vs Substation CapEx Saved (€M)</div>
+              </div>
+              <div className="flex items-center gap-3 text-[10px] font-mono-data">
+                <span className="flex items-center gap-1"><span className="inline-block h-2 w-3 rounded-sm bg-green-accent" /> Accelerated Revenue</span>
+                <span className="flex items-center gap-1"><span className="inline-block h-2 w-3 rounded-sm bg-cyan-accent" /> CapEx Saved</span>
+              </div>
+            </div>
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart
+                data={scenarios.map((s) => ({
+                  name: s.label.length > 22 ? s.label.slice(0, 21) + "…" : s.label,
+                  revenue: Number((s.acceleratedRevenueEur / 1_000_000).toFixed(2)),
+                  capex: Number((s.avoidedGridUpgradeCapexEur / 1_000_000).toFixed(2)),
+                }))}
+                margin={{ top: 8, right: 12, left: 0, bottom: 30 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.5)" />
+                <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={10} angle={-15} textAnchor="end" interval={0} />
+                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} tickFormatter={(v) => `€${v}M`} />
+                <Tooltip {...tooltipStyle} formatter={(v: number, n) => [`€${v.toFixed(2)}M`, n === "revenue" ? "Accelerated Revenue" : "CapEx Saved"]} />
+                <Bar dataKey="revenue" name="Accelerated Revenue" fill="#34d399" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="capex" name="CapEx Saved" fill="#22d3ee" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
         <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {scenarios.map((s) => {
             const ttc = timeToConnectEstimate(s.adjustedMonths);
