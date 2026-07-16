@@ -1045,6 +1045,7 @@ function ComparisonBench() {
             );
           })}
         </div>
+        </>
       )}
     </section>
   );
