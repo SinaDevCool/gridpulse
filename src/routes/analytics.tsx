@@ -656,10 +656,10 @@ function riskLabel(pct: number): { label: "High" | "Medium" | "Low"; chip: strin
 }
 
 function timeToConnectEstimate(months: number): { text: string; tone: string } {
-  if (months <= 18) return { text: "6-12 Months (Fast-Track)", tone: "text-green-accent" };
-  if (months <= 36) return { text: "18-30 Months (Standard Queue)", tone: "text-cyan-accent" };
-  if (months <= 48) return { text: "3-4 Years (Constrained)", tone: "text-amber-accent" };
-  return { text: "5+ Years (Queue Blocked)", tone: "text-red-accent" };
+  if (months <= 18) return { text: "6-12 Mo (Fast)", tone: "text-green-accent" };
+  if (months <= 36) return { text: "18-30 Mo (Std)", tone: "text-cyan-accent" };
+  if (months <= 48) return { text: "3-4 Yr (Tight)", tone: "text-amber-accent" };
+  return { text: "5+ Yr (Blocked)", tone: "text-red-accent" };
 }
 
 function SitingScorecard({ filtered, country, region }: { filtered: Project[]; country: string; region: string }) {
