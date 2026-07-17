@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { TSO_ZONES, sitingScore, type TsoCode, type TsoZone } from "@/lib/tso-zones";
 
 // Global Simulation Context — binds the Co-Location Benefit Calculator drawer
