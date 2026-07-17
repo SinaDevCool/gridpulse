@@ -1244,7 +1244,101 @@ function MethodologyModal({ onClose }: { onClose: () => void }) {
   );
 }
 
+// ------------------------------------------------------------------
+// Interactive Walkthrough — 4-step executive tour that highlights the
+// core GridCARE workflow (open drawer → tune sliders → save scenario
+// → review bench). Renders as a lightweight modal so it works even on
+// the Analytics tab where the co-location drawer lives one route away.
+// ------------------------------------------------------------------
+const WALKTHROUGH_STEPS: Array<{ title: string; body: string; hint: string }> = [
+  {
+    title: "1 · Open the Co-Location Benefit Calculator",
+    body: "From the Projects map, click the glowing 'Evaluate Co-Location Potential' button. The side drawer opens with sliders for load size, BESS power and BESS energy — pre-bound to the selected TSO zone.",
+    hint: "Tip — the button glows red for congested nodes (50Hertz, TenneT NL) and green for fast-track nodes (RTE, REE).",
+  },
+  {
+    title: "2 · Tune load and BESS sliders",
+    body: "Adjust the Requested Load (MW) and on-site BESS (MW / MWh) to simulate localised peak-shaving. Every map marker, Siting Score and Time-to-Connect estimate updates in real time.",
+    hint: "Rule of thumb — a BESS ≥ 40% of the requested load unlocks the largest queue-bypass benefit.",
+  },
+  {
+    title: "3 · Save the scenario to the Prospectus",
+    body: "Click '+ Save Scenario to Prospectus' inside the drawer to commit the current configuration to the Active Siting Comparison Bench. Repeat for as many TSO zones or portfolio variants as you need.",
+    hint: "Saved scenarios persist in local storage — refresh, switch tabs and they stay.",
+  },
+  {
+    title: "4 · Review the Comparison Bench",
+    body: "Scroll to the bottom of the Analytics tab. The Active Siting Comparison Bench shows every saved scenario side-by-side plus a portfolio bar chart of Accelerated Revenue vs Substation CapEx Saved (€M).",
+    hint: "Export the whole bench as an institutional CSV prospectus with a single click.",
+  },
+];
 
+function WalkthroughModal({ onClose }: { onClose: () => void }) {
+  const [step, setStep] = useState(0);
+  const total = WALKTHROUGH_STEPS.length;
+  const s = WALKTHROUGH_STEPS[step];
+  const isLast = step === total - 1;
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
+      <div className="w-full max-w-lg rounded-xl border border-amber-accent/40 bg-surface p-5 shadow-2xl">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-accent">Interactive Walkthrough</div>
+            <h2 className="mt-1 font-display text-lg font-bold">{s.title}</h2>
+          </div>
+          <button onClick={onClose} className="rounded-md border border-border/60 bg-background/60 p-1 text-muted-foreground hover:text-foreground" aria-label="Close walkthrough">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <p className="mt-3 text-sm text-foreground/90">{s.body}</p>
+        <p className="mt-2 rounded-md border border-border/50 bg-background/40 p-2 text-[11px] text-muted-foreground">{s.hint}</p>
 
+        {/* Progress dots */}
+        <div className="mt-4 flex items-center gap-1.5">
+          {WALKTHROUGH_STEPS.map((_, i) => (
+            <span
+              key={i}
+              className={`h-1.5 w-6 rounded-full ${i <= step ? "bg-amber-accent" : "bg-border/60"}`}
+            />
+          ))}
+          <span className="ml-auto text-[10px] font-mono-data text-muted-foreground">{step + 1} / {total}</span>
+        </div>
 
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+          <button
+            onClick={onClose}
+            className="rounded-md border border-border/60 bg-background/40 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+          >
+            Skip tour
+          </button>
+          <div className="flex items-center gap-2">
+            <button
+              disabled={step === 0}
+              onClick={() => setStep((v) => Math.max(0, v - 1))}
+              className={`rounded-md border px-3 py-1.5 text-xs font-semibold ${step === 0 ? "cursor-not-allowed border-border/40 bg-surface/40 text-muted-foreground" : "border-border/60 bg-surface/60 text-foreground hover:bg-surface"}`}
+            >
+              Back
+            </button>
+            {isLast ? (
+              <Link
+                to="/projects"
+                onClick={onClose}
+                className="inline-flex items-center gap-1.5 rounded-md border border-amber-accent/60 bg-amber-accent/15 px-3 py-1.5 text-xs font-semibold text-amber-accent hover:bg-amber-accent/25"
+              >
+                Open Projects Map
+              </Link>
+            ) : (
+              <button
+                onClick={() => setStep((v) => Math.min(total - 1, v + 1))}
+                className="inline-flex items-center gap-1.5 rounded-md border border-amber-accent/60 bg-amber-accent/15 px-3 py-1.5 text-xs font-semibold text-amber-accent hover:bg-amber-accent/25"
+              >
+                Next
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
