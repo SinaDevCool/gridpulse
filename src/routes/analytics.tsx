@@ -811,9 +811,9 @@ function SitingScorecard({ filtered, country, region }: { filtered: Project[]; c
         </div>
       </div>
 
-      <div className="mt-4 overflow-x-auto">
-        <table className="w-full min-w-[980px] text-sm">
-          <thead className="text-[10px] uppercase tracking-wider text-muted-foreground">
+      <div className="mt-4 -mx-4 overflow-x-auto lg:mx-0">
+        <table className="w-full min-w-[1100px] text-sm px-4 lg:px-0">
+          <thead className="text-[10px] uppercase tracking-wider text-slate-300">
             <tr>
               <th className="py-2 text-left">Regional Node / Grid Zone</th>
               <th className="py-2 text-left">Governing TSO</th>
