@@ -578,6 +578,7 @@ function AnalyticsPage() {
       </main>
       <SiteFooter />
       {autofindOpen && <AutofindModal onClose={() => setAutofindOpen(false)} />}
+      {walkthroughOpen && <WalkthroughModal onClose={() => setWalkthroughOpen(false)} />}
     </div>
   );
 }
