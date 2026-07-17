@@ -78,6 +78,19 @@
   * { border-color: var(--color-border); }
   html, body { background-color: var(--color-background); color: var(--color-foreground); }
   body { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+
+  /* Chart contrast elevation — override low-contrast axis/legend defaults */
+  .recharts-cartesian-axis-tick text,
+  .recharts-polar-angle-axis-tick text,
+  .recharts-legend-item-text,
+  .recharts-label {
+    fill: oklch(0.92 0.01 250) !important;
+    color: oklch(0.92 0.01 250) !important;
+  }
+  .recharts-cartesian-axis-line,
+  .recharts-cartesian-axis-tick-line {
+    stroke: oklch(0.55 0.02 255) !important;
+  }
 }
 
 @utility font-display { font-family: var(--font-display); letter-spacing: -0.02em; }

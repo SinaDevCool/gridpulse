@@ -97,18 +97,26 @@ export function SiteHeader() {
           ))}
         </nav>
 
-        <div className="ml-auto flex items-center gap-1.5 sm:gap-3 shrink-0">
+        <div className="ml-auto flex items-center gap-2 sm:gap-4 shrink-0">
           <button
             type="button"
             onClick={() => setSearchOpen(true)}
             aria-label="Search"
-            className="hidden md:flex items-center gap-2 rounded-md border border-border bg-surface/60 px-3 py-1.5 text-xs text-muted-foreground hover:border-cyan-accent/40 hover:text-foreground transition-colors cursor-pointer min-w-0"
+            className="hidden md:flex items-center gap-2 rounded-md border border-border bg-surface/60 px-3 py-1.5 text-xs text-muted-foreground hover:border-cyan-accent/40 hover:text-foreground transition-colors cursor-pointer max-w-[280px] w-auto"
           >
             <Search className="h-3.5 w-3.5 shrink-0" />
             <span className="hidden xl:inline truncate">Search articles, projects, companies…</span>
             <kbd className="hidden xl:inline-flex ml-4 items-center gap-0.5 rounded border border-border/80 bg-background/60 px-1.5 py-0.5 font-mono-data text-[10px]">
               <Command className="h-2.5 w-2.5" /> K
             </kbd>
+          </button>
+          <button
+            type="button"
+            onClick={() => setSearchOpen(true)}
+            aria-label="Open search"
+            className="md:hidden inline-flex h-9 w-9 items-center justify-center rounded-md border border-border text-slate-200 hover:text-cyan-accent shrink-0"
+          >
+            <Search className="h-4 w-4" />
           </button>
           <NotificationBell />
           <UserMenu />
@@ -122,7 +130,7 @@ export function SiteHeader() {
             type="button"
             aria-label="Open menu"
             onClick={() => setMobileOpen(true)}
-            className="lg:hidden inline-flex h-9 w-9 items-center justify-center rounded-md border border-border text-muted-foreground hover:text-foreground shrink-0"
+            className="lg:hidden inline-flex h-9 w-9 items-center justify-center rounded-md border border-border text-slate-200 hover:text-cyan-accent shrink-0"
           >
             <Menu className="h-4 w-4" />
           </button>

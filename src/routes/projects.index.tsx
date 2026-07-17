@@ -136,8 +136,22 @@ function ProjectsPage() {
         </div>
 
         <div className="mt-6 relative h-72 sm:h-80 overflow-hidden rounded-xl border border-border bg-surface/60">
-          <div className="absolute inset-0 bg-grid opacity-40" />
-          <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at center, color-mix(in oklab, var(--cyan-accent) 15%, transparent), transparent 70%)" }} />
+          <div className="absolute inset-0 bg-grid opacity-20" />
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0"
+            style={{
+              backgroundColor: "color-mix(in oklab, var(--cyan-accent) 35%, transparent)",
+              WebkitMaskImage: "url(/world-map.svg)",
+              maskImage: "url(/world-map.svg)",
+              WebkitMaskSize: "100% 100%",
+              maskSize: "100% 100%",
+              WebkitMaskRepeat: "no-repeat",
+              maskRepeat: "no-repeat",
+              filter: "drop-shadow(0 0 4px color-mix(in oklab, var(--cyan-accent) 40%, transparent))",
+            }}
+          />
+          <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at center, color-mix(in oklab, var(--cyan-accent) 10%, transparent), transparent 70%)" }} />
           {showAssets && list.map((p) => {
             const x = ((p.lng + 180) / 360) * 100;
             const y = ((90 - p.lat) / 180) * 100;
