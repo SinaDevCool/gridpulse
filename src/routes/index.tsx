@@ -17,8 +17,8 @@ export const Route = createFileRoute("/")({
     meta: [
       { title: "GridPulse — Grid-Scale Battery Storage News, Data & Markets" },
       { name: "description", content: "Real-time news, project tracking, and market data for grid-scale battery energy storage. Built for BESS developers, investors, utilities, EPCs, OEMs, and policymakers." },
-      { property: "og:title", content: "GridPulse — Grid-Scale Battery Storage Intelligence" },
-      { property: "og:description", content: "TechCrunch-style news and data for the global grid-scale battery storage industry." },
+      { property: "og:title", content: "GridPulse — Grid-Scale Battery Storage News, Data & Markets" },
+      { property: "og:description", content: "Real-time news, project tracking, and market data for grid-scale battery energy storage. Built for BESS developers, investors, utilities, EPCs, OEMs, and policymakers." },
     ],
     links: [{ rel: "canonical", href: "/" }],
   }),
