@@ -971,7 +971,7 @@ function ComparisonBench() {
         </div>
       ) : (
         <>
-        {scenarios.length >= 2 && (
+        {scenarios.length >= 2 ? (
           <div className="mt-4 rounded-lg border border-border/60 bg-background/40 p-4">
             <div className="mb-2 flex items-center justify-between">
               <div>
@@ -1000,6 +1000,10 @@ function ComparisonBench() {
                 <Bar dataKey="capex" name="CapEx Saved" fill="#22d3ee" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
+          </div>
+        ) : (
+          <div className="mt-4 flex h-[180px] items-center justify-center rounded-lg border border-dashed border-border/60 bg-background/40 p-6 text-center text-xs text-muted-foreground">
+            Save at least two scenarios to generate side-by-side financial comparison bars.
           </div>
         )}
         <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
