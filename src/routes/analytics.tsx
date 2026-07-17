@@ -297,6 +297,12 @@ function AnalyticsPage() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button
+              onClick={() => setWalkthroughOpen(true)}
+              className="inline-flex items-center gap-2 rounded-md border border-amber-accent/60 bg-amber-accent/10 px-3 py-1.5 text-xs font-semibold text-amber-accent hover:bg-amber-accent/20"
+            >
+              <BookOpen className="h-3.5 w-3.5" /> Interactive Walkthrough
+            </button>
+            <button
               onClick={() => setAutofindOpen(true)}
               className="inline-flex items-center gap-2 rounded-md border border-cyan-accent/60 bg-cyan-accent/15 px-3 py-1.5 text-xs font-semibold text-cyan-accent hover:bg-cyan-accent/25"
             >
