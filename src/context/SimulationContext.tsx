@@ -243,6 +243,23 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
 
   const clearRecommendations = useCallback(() => setRecommendedZones([]), []);
 
+  // Wipes every persisted simulation surface — scenarios (memory + localStorage),
+  // Autofind recommendations, and returns slider inputs to their DEFAULTS so
+  // the drawer starts clean for the next client presentation.
+  const resetAll = useCallback(() => {
+    setSavedScenarios([]);
+    setRecommendedZones([]);
+    setRequestedLoadMw(DEFAULTS.requestedLoadMw);
+    setBessMw(DEFAULTS.bessMw);
+    setBessMwh(DEFAULTS.bessMwh);
+    setSelectedTsoZone(DEFAULTS.selectedTsoZone);
+    try {
+      if (typeof window !== "undefined") window.localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // Non-fatal.
+    }
+  }, []);
+
   const value = useMemo<SimulationContextValue>(
     () => ({
       requestedLoadMw,
