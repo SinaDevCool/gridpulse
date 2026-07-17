@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { TSO_ZONES, sitingScore, type TsoCode, type TsoZone } from "@/lib/tso-zones";
 
 // Global Simulation Context — binds the Co-Location Benefit Calculator drawer
@@ -76,6 +76,9 @@ export interface SimulationContextValue extends SimulationState {
   recommendedZones: TsoCode[];
   runAutofind: (loadMw: number, profile: RegionProfile) => TsoCode[];
   clearRecommendations: () => void;
+  // Wipe every persisted bit of simulation state (localStorage + memory) so
+  // enterprise reviewers get a fresh canvas before a client presentation.
+  resetAll: () => void;
 }
 
 const DEFAULTS: SimulationState = {
@@ -84,6 +87,8 @@ const DEFAULTS: SimulationState = {
   bessMwh: 40,
   selectedTsoZone: TSO_ZONES[0].code,
 };
+
+const STORAGE_KEY = "gridpulse:simulation:savedScenarios:v1";
 
 const SimulationContext = createContext<SimulationContextValue | null>(null);
 
@@ -113,6 +118,35 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
   const [selectedTsoZone, setSelectedTsoZone] = useState<TsoCode>(DEFAULTS.selectedTsoZone);
   const [savedScenarios, setSavedScenarios] = useState<SavedScenario[]>([]);
   const [recommendedZones, setRecommendedZones] = useState<TsoCode[]>([]);
+  // Hydration guard — prevents the persistence effect from clobbering stored
+  // scenarios with the empty initial state before localStorage is read.
+  const hydratedRef = useRef(false);
+
+  // Load persisted scenarios once on mount (client-only to avoid SSR/hydration
+  // mismatch — initial render must match the server-rendered empty array).
+  useEffect(() => {
+    try {
+      const raw = typeof window !== "undefined" ? window.localStorage.getItem(STORAGE_KEY) : null;
+      if (raw) {
+        const parsed = JSON.parse(raw) as SavedScenario[];
+        if (Array.isArray(parsed)) setSavedScenarios(parsed);
+      }
+    } catch {
+      // Ignore corrupt payloads.
+    }
+    hydratedRef.current = true;
+  }, []);
+
+  useEffect(() => {
+    if (!hydratedRef.current) return;
+    try {
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(savedScenarios));
+      }
+    } catch {
+      // Quota / private-mode errors are non-fatal.
+    }
+  }, [savedScenarios]);
 
   const derived = useMemo(() => {
     // Deterministic scaling physics — see docstring on `SimulationContextValue`.
@@ -209,6 +243,23 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
 
   const clearRecommendations = useCallback(() => setRecommendedZones([]), []);
 
+  // Wipes every persisted simulation surface — scenarios (memory + localStorage),
+  // Autofind recommendations, and returns slider inputs to their DEFAULTS so
+  // the drawer starts clean for the next client presentation.
+  const resetAll = useCallback(() => {
+    setSavedScenarios([]);
+    setRecommendedZones([]);
+    setRequestedLoadMw(DEFAULTS.requestedLoadMw);
+    setBessMw(DEFAULTS.bessMw);
+    setBessMwh(DEFAULTS.bessMwh);
+    setSelectedTsoZone(DEFAULTS.selectedTsoZone);
+    try {
+      if (typeof window !== "undefined") window.localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // Non-fatal.
+    }
+  }, []);
+
   const value = useMemo<SimulationContextValue>(
     () => ({
       requestedLoadMw,
@@ -229,8 +280,9 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
       recommendedZones,
       runAutofind,
       clearRecommendations,
+      resetAll,
     }),
-    [requestedLoadMw, bessMw, bessMwh, selectedTsoZone, derived, savedScenarios, saveScenario, removeScenario, clearScenarios, recommendedZones, runAutofind, clearRecommendations],
+    [requestedLoadMw, bessMw, bessMwh, selectedTsoZone, derived, savedScenarios, saveScenario, removeScenario, clearScenarios, recommendedZones, runAutofind, clearRecommendations, resetAll],
   );
 
   return <SimulationContext.Provider value={value}>{children}</SimulationContext.Provider>;

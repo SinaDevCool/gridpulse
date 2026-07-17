@@ -272,6 +272,19 @@ export function CoLocationCalculator({ onClose }: { onClose: () => void }) {
             <Download className="h-3.5 w-3.5" /> Export Siting Prospectus (CSV)
           </button>
 
+          {/* Reset All Data — wipes localStorage + memory-side simulation state
+              so a client demo starts from a clean canvas. */}
+          <button
+            type="button"
+            onClick={() => {
+              if (typeof window !== "undefined" && !window.confirm("Reset all saved scenarios and simulation inputs? This clears local storage.")) return;
+              sim.resetAll();
+            }}
+            className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-red-accent/40 bg-red-accent/10 px-3 py-2 text-[11px] font-semibold text-red-accent hover:bg-red-accent/20"
+          >
+            Reset All Data
+          </button>
+
           <p className="text-[10px] text-muted-foreground">
             Model inputs are indicative — validated against ENTSO-E Core Transparency Platform and Bundesnetzagentur SMARD 12-month redispatch data. Contact GridPulse Enterprise for a full siting study.
           </p>
