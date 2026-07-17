@@ -76,6 +76,9 @@ export interface SimulationContextValue extends SimulationState {
   recommendedZones: TsoCode[];
   runAutofind: (loadMw: number, profile: RegionProfile) => TsoCode[];
   clearRecommendations: () => void;
+  // Wipe every persisted bit of simulation state (localStorage + memory) so
+  // enterprise reviewers get a fresh canvas before a client presentation.
+  resetAll: () => void;
 }
 
 const DEFAULTS: SimulationState = {
