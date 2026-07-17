@@ -116,6 +116,35 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
   const [selectedTsoZone, setSelectedTsoZone] = useState<TsoCode>(DEFAULTS.selectedTsoZone);
   const [savedScenarios, setSavedScenarios] = useState<SavedScenario[]>([]);
   const [recommendedZones, setRecommendedZones] = useState<TsoCode[]>([]);
+  // Hydration guard — prevents the persistence effect from clobbering stored
+  // scenarios with the empty initial state before localStorage is read.
+  const hydratedRef = useRef(false);
+
+  // Load persisted scenarios once on mount (client-only to avoid SSR/hydration
+  // mismatch — initial render must match the server-rendered empty array).
+  useEffect(() => {
+    try {
+      const raw = typeof window !== "undefined" ? window.localStorage.getItem(STORAGE_KEY) : null;
+      if (raw) {
+        const parsed = JSON.parse(raw) as SavedScenario[];
+        if (Array.isArray(parsed)) setSavedScenarios(parsed);
+      }
+    } catch {
+      // Ignore corrupt payloads.
+    }
+    hydratedRef.current = true;
+  }, []);
+
+  useEffect(() => {
+    if (!hydratedRef.current) return;
+    try {
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(savedScenarios));
+      }
+    } catch {
+      // Quota / private-mode errors are non-fatal.
+    }
+  }, [savedScenarios]);
 
   const derived = useMemo(() => {
     // Deterministic scaling physics — see docstring on `SimulationContextValue`.
