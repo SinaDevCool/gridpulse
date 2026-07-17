@@ -88,6 +88,8 @@ const DEFAULTS: SimulationState = {
   selectedTsoZone: TSO_ZONES[0].code,
 };
 
+const STORAGE_KEY = "gridpulse:simulation:savedScenarios:v1";
+
 const SimulationContext = createContext<SimulationContextValue | null>(null);
 
 // -------------------------------------------------------------------
