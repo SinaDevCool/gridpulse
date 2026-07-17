@@ -280,8 +280,9 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
       recommendedZones,
       runAutofind,
       clearRecommendations,
+      resetAll,
     }),
-    [requestedLoadMw, bessMw, bessMwh, selectedTsoZone, derived, savedScenarios, saveScenario, removeScenario, clearScenarios, recommendedZones, runAutofind, clearRecommendations],
+    [requestedLoadMw, bessMw, bessMwh, selectedTsoZone, derived, savedScenarios, saveScenario, removeScenario, clearScenarios, recommendedZones, runAutofind, clearRecommendations, resetAll],
   );
 
   return <SimulationContext.Provider value={value}>{children}</SimulationContext.Provider>;
