@@ -136,8 +136,15 @@ function ProjectsPage() {
         </div>
 
         <div className="mt-6 relative h-72 sm:h-80 overflow-hidden rounded-xl border border-border bg-surface/60">
-          <div className="absolute inset-0 bg-grid opacity-40" />
-          <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at center, color-mix(in oklab, var(--cyan-accent) 15%, transparent), transparent 70%)" }} />
+          <div className="absolute inset-0 bg-grid opacity-20" />
+          <img
+            src="/world-map.svg"
+            alt=""
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 h-full w-full text-cyan-accent/25"
+            style={{ filter: "drop-shadow(0 0 6px color-mix(in oklab, var(--cyan-accent) 40%, transparent))" }}
+          />
+          <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at center, color-mix(in oklab, var(--cyan-accent) 10%, transparent), transparent 70%)" }} />
           {showAssets && list.map((p) => {
             const x = ((p.lng + 180) / 360) * 100;
             const y = ((90 - p.lat) / 180) * 100;
