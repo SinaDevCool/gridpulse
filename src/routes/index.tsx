@@ -31,9 +31,6 @@ export const Route = createFileRoute("/")({
   component: LandingPage,
 });
 
-const pilotHref =
-  "mailto:sina.khedmati@outlook.de?subject=GridPulse%20design-partner%20pilot&body=Hello%20Sina%2C%0A%0AI%20would%20like%20to%20discuss%20a%20GridPulse%20pilot.%0A%0ACompany%3A%0AProject%20type%3A%0ALocation%3A%0ARequested%20capacity%3A%0A";
-
 function Brand() {
   return (
     <Link to="/" className="landing-brand" aria-label="GridPulse home">
@@ -58,9 +55,9 @@ function LandingPage() {
         </nav>
         <div className="landing-header-actions">
           <Link to={workspacePath}>{user ? "Open workspace" : "Sign in"}</Link>
-          <a href={pilotHref} className="landing-button primary">
+          <Link to="/pilot" className="landing-button primary">
             Request a pilot
-          </a>
+          </Link>
         </div>
       </header>
       <main>
@@ -72,9 +69,9 @@ function LandingPage() {
               and quantifies operational impact—without presenting assumptions as grid capacity.
             </p>
             <div className="landing-actions">
-              <a href={pilotHref} className="landing-button primary">
+              <Link to="/pilot" className="landing-button primary">
                 Request a pilot
-              </a>
+              </Link>
               <Link to="/demo" className="landing-button secondary">
                 Explore the demo
               </Link>
@@ -177,9 +174,9 @@ function LandingPage() {
               large-load developers.
             </p>
           </div>
-          <a href={pilotHref} className="landing-button primary">
+          <Link to="/pilot" className="landing-button primary">
             Request a pilot
-          </a>
+          </Link>
           <Link to={workspacePath} className="landing-button secondary">
             {user ? "Open workspace" : "Sign in to GridPulse"}
           </Link>

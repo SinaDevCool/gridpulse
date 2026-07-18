@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "deploy": "npm run build && wrangler deploy",
     "cf-typegen": "wrangler types",
-    "lint:product": "eslint src/components/product src/context/AuthContext.tsx src/context/auth-context-core.ts src/context/useAuth.ts src/integrations/supabase/client.ts src/lib/assessment-model.ts src/routes/__root.tsx src/routes/index.tsx src/routes/auth.tsx src/routes/portfolio.tsx src/routes/assessments.new.tsx src/routes/assessments.$id.tsx src/routes/evidence.tsx src/routes/reports.tsx src/routes/data-sources.tsx vite.config.ts",
+    "lint:product": "eslint src/components/product src/context/AuthContext.tsx src/context/auth-context-core.ts src/context/useAuth.ts src/integrations/supabase/client.ts src/lib/assessment-model.ts src/routes/__root.tsx src/routes/index.tsx src/routes/pilot.tsx src/routes/pilot-requests.tsx src/routes/auth.tsx src/routes/portfolio.tsx src/routes/assessments.new.tsx src/routes/assessments.$id.tsx src/routes/evidence.tsx src/routes/reports.tsx src/routes/data-sources.tsx vite.config.ts",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
