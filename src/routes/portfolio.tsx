@@ -52,9 +52,9 @@ function Portfolio() {
     <AppShell requireAuth>
       <main className="section-page">
         <PageHeading
-          eyebrow="Project portfolio"
-          title="Connection assessments"
-          description="Compare candidate sites, evidence readiness, and operator-validation status."
+          eyebrow="Power acceleration portfolio"
+          title="Activation projects"
+          description="Move candidate sites from power discovery through connection activation to flexible-operation readiness."
           action={
             <Link to="/assessments/new" className="primary-button">
               <Plus size={15} /> New assessment
@@ -63,19 +63,19 @@ function Portfolio() {
         />
         <div className="summary-grid">
           <div>
-            <span>Active assessments</span>
+            <span>Active projects</span>
             <b>{projects.length}</b>
-            <small>Private workspace</small>
+            <small>Power discovery and activation</small>
           </div>
           <div>
-            <span>Awaiting evidence</span>
+            <span>Activation in progress</span>
             <b>{awaitingEvidence}</b>
             <small>No capacity conclusions yet</small>
           </div>
           <div>
-            <span>Report ready</span>
+            <span>Decision ready</span>
             <b>{reportReady}</b>
-            <small>Evidence gate is active</small>
+            <small>Operator-ready evidence pack</small>
           </div>
         </div>
         <div className="section-toolbar">
@@ -85,7 +85,7 @@ function Portfolio() {
             <button>In review</button>
             <button>Report ready</button>
           </div>
-          <span>{projects.length} assessments</span>
+          <span>{projects.length} projects</span>
         </div>
         {isLoading ? (
           <div className="portfolio-state">
@@ -99,8 +99,8 @@ function Portfolio() {
         ) : projects.length === 0 ? (
           <div className="portfolio-state">
             <BatteryCharging />
-            <h2>No assessments yet</h2>
-            <p>Create your first candidate site to begin collecting evidence.</p>
+            <h2>No activation projects yet</h2>
+            <p>Add a candidate site to begin power discovery and connection planning.</p>
             <Link to="/assessments/new" className="primary-button">
               <Plus size={15} /> Create assessment
             </Link>

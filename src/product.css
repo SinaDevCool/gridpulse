@@ -1938,6 +1938,22 @@ tbody tr:last-child td {
   gap: 1rem;
   margin-top: 2.2rem;
 }
+
+.landing-kicker,
+.section-kicker {
+  display: block;
+  margin-bottom: 14px;
+  color: #37c8ef;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.workflow-section > .section-kicker {
+  text-align: center;
+}
 .hero-product-frame,
 .evidence-frame,
 .report-frame {
