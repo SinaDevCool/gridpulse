@@ -5191,6 +5191,36 @@ tbody tr:last-child td {
   line-height: 1.65;
 }
 
+.pilot-request-card > .primary-button,
+.pilot-request-card > .status {
+  margin-top: 1.1rem;
+  width: fit-content;
+}
+
+.report-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.report-actions > span {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.activity-layout {
+  align-items: start;
+}
+
+.activity-row time,
+.activation-row time {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+
 @media (max-width: 1050px) {
   .pilot-layout {
     grid-template-columns: 1fr;

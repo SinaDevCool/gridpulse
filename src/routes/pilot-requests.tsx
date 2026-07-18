@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
-import { CalendarDays, Mail, MapPin } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { ArrowRight, CalendarDays, Mail, MapPin } from "lucide-react";
 import { AppShell, PageHeading } from "@/components/product/AppShell";
 import { useAuth } from "@/context/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -140,6 +140,35 @@ function PilotRequests() {
                 </div>
               </dl>
               <p>{request.connection_challenge}</p>
+              {request.status !== "converted" ? (
+                <Link
+                  to="/assessments/new"
+                  search={{
+                    pilotRequestId: request.id,
+                    name: request.project_name,
+                    projectType:
+                      request.project_type === "data_centre"
+                        ? "large_load"
+                        : request.project_type === "other"
+                          ? "large_load"
+                          : request.project_type,
+                    postcode: request.postcode,
+                    municipality: request.municipality,
+                    federalState: request.federal_state,
+                    importMw: request.requested_import_mw,
+                    exportMw: request.requested_export_mw,
+                    batteryPowerMw: request.battery_power_mw ?? undefined,
+                    batteryEnergyMwh: request.battery_energy_mwh ?? undefined,
+                    targetDate: request.target_connection_date ?? undefined,
+                    challenge: request.connection_challenge,
+                  }}
+                  className="primary-button"
+                >
+                  Create pilot workspace <ArrowRight />
+                </Link>
+              ) : (
+                <span className="status">Workspace created</span>
+              )}
             </article>
           ))}
         </div>
