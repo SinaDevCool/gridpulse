@@ -3,113 +3,38 @@ import {
   Outlet,
   Link,
   createRootRouteWithContext,
-  useRouter,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Toaster } from "sonner";
-
 import appCss from "../styles.css?url";
-import { reportLovableError } from "../lib/lovable-error-reporting";
-import { SimulationProvider } from "@/context/SimulationContext";
-
-function NotFoundComponent() {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          The page you're looking for doesn't exist or has been moved.
-        </p>
-        <div className="mt-6">
-          <Link
-            to="/"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            Go home
-          </Link>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
-  console.error(error);
-  const router = useRouter();
-  useEffect(() => {
-    reportLovableError(error, { boundary: "tanstack_root_error_component" });
-  }, [error]);
-
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          This page didn't load
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong on our end. You can try refreshing or head back home.
-        </p>
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
-          <button
-            onClick={() => {
-              router.invalidate();
-              reset();
-            }}
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            Try again
-          </button>
-          <a
-            href="/"
-            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
-          >
-            Go home
-          </a>
-        </div>
-      </div>
-    </div>
-  );
-}
+import { AuthProvider } from "@/context/AuthContext";
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "GridPulse — Grid-Scale Battery Storage News, Data & Markets" },
-      { name: "description", content: "Real-time news, project tracking, and market data for grid-scale battery energy storage. Built for BESS developers, investors, utilities, EPCs, OEMs, and policymakers." },
-      { name: "author", content: "GridPulse" },
-      { property: "og:title", content: "GridPulse — Grid-Scale Battery Storage News, Data & Markets" },
-      { property: "og:description", content: "Real-time news, project tracking, and market data for grid-scale battery energy storage. Built for BESS developers, investors, utilities, EPCs, OEMs, and policymakers." },
-      { property: "og:type", content: "website" },
-      { property: "og:site_name", content: "GridPulse" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@GridPulse" },
-      { name: "theme-color", content: "#0F172A" },
-      { name: "twitter:title", content: "GridPulse — Grid-Scale Battery Storage News, Data & Markets" },
-      { name: "twitter:description", content: "Real-time news, project tracking, and market data for grid-scale battery energy storage. Built for BESS developers, investors, utilities, EPCs, OEMs, and policymakers." },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/d1395d34-748f-45f0-884a-20a70b077078" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/d1395d34-748f-45f0-884a-20a70b077078" },
+      { title: "GridPulse — Grid connection intelligence" },
+      {
+        name: "description",
+        content:
+          "Evidence-led grid connection screening for BESS and large electrical loads in Germany.",
+      },
+      { name: "theme-color", content: "#07131f" },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap",
+      },
       { rel: "stylesheet", href: appCss },
     ],
   }),
-
-  shellComponent: RootShell,
-  component: RootComponent,
-  notFoundComponent: NotFoundComponent,
-  errorComponent: ErrorComponent,
-});
-
-function RootShell({ children }: { children: ReactNode }) {
-  return (
+  shellComponent: ({ children }: { children: ReactNode }) => (
     <html lang="en">
       <head>
         <HeadContent />
@@ -119,41 +44,25 @@ function RootShell({ children }: { children: ReactNode }) {
         <Scripts />
       </body>
     </html>
-  );
-}
+  ),
+  component: RootComponent,
+  notFoundComponent: () => (
+    <main className="empty-page">
+      <h1>Page not found</h1>
+      <p>The requested GridPulse workspace does not exist.</p>
+      <Link to="/">Return to assessment</Link>
+    </main>
+  ),
+});
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  const router = useRouter();
-
-  useEffect(() => {
-    let mounted = false;
-    import("@/integrations/supabase/client").then(({ supabase }) => {
-      const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-        if (!mounted) {
-          mounted = true;
-          return;
-        }
-        if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
-        router.invalidate();
-        if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
-      });
-      (window as unknown as { __gp_auth_sub?: { unsubscribe: () => void } }).__gp_auth_sub = sub.subscription;
-    });
-    return () => {
-      const w = window as unknown as { __gp_auth_sub?: { unsubscribe: () => void } };
-      w.__gp_auth_sub?.unsubscribe();
-    };
-  }, [queryClient, router]);
-
   return (
     <QueryClientProvider client={queryClient}>
-      <SimulationProvider>
-        <div className="w-full max-w-full overflow-x-hidden">
-          <Outlet />
-        </div>
-        <Toaster theme="dark" position="bottom-right" richColors closeButton />
-      </SimulationProvider>
+      <AuthProvider>
+        <Outlet />
+        <Toaster theme="dark" position="bottom-right" />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

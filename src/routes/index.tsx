@@ -1,454 +1,363 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowUpRight, TrendingUp, TrendingDown, Activity, MapPin, Cpu } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { SiteHeader } from "@/components/site/SiteHeader";
-import { SiteFooter } from "@/components/site/SiteFooter";
-import { CountUp } from "@/components/site/CountUp";
-import { ArticleRow, FeaturedCard } from "@/components/site/ArticleCard";
-import { NewsletterForm } from "@/components/site/NewsletterForm";
-import { useMemo, useState } from "react";
-import { type ArticleCategory, type Project } from "@/lib/gridpulse-data";
-import { articlesQuery, projectsQuery, trendingTopicsQuery, type TrendingTopic } from "@/lib/gridpulse-repo";
-
-import { marketDataQuery, type MarketDataPoint } from "@/lib/market-data";
+import { createFileRoute } from "@tanstack/react-router";
+import {
+  AlertTriangle,
+  ArrowRight,
+  Check,
+  CircleDot,
+  ExternalLink,
+  FileText,
+  MapPin,
+  ShieldCheck,
+  Zap,
+} from "lucide-react";
+import { AppShell } from "@/components/product/AppShell";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "GridPulse — Grid-Scale Battery Storage News, Data & Markets" },
-      { name: "description", content: "Real-time news, project tracking, and market data for grid-scale battery energy storage. Built for BESS developers, investors, utilities, EPCs, OEMs, and policymakers." },
-      { property: "og:title", content: "GridPulse — Grid-Scale Battery Storage News, Data & Markets" },
-      { property: "og:description", content: "Real-time news, project tracking, and market data for grid-scale battery energy storage. Built for BESS developers, investors, utilities, EPCs, OEMs, and policymakers." },
+      { title: "GridPulse — Grid connection intelligence" },
+      {
+        name: "description",
+        content: "Evidence-led grid connection screening for BESS and large loads in Germany.",
+      },
     ],
-    links: [{ rel: "canonical", href: "/" }],
   }),
-  component: HomePage,
+  component: AssessmentWorkspace,
 });
 
-const filterTabs: { label: string; value: ArticleCategory | "all" }[] = [
-  { label: "All", value: "all" },
-  { label: "Breaking", value: "breaking" },
-  { label: "Analysis", value: "analysis" },
-  { label: "Deals", value: "deals" },
-  { label: "Policy", value: "policy" },
-  { label: "Technology", value: "technology" },
-  { label: "Safety", value: "safety" },
-  { label: "Markets", value: "markets" },
+type EvidenceKind =
+  | "Official source"
+  | "Customer input"
+  | "Assumption"
+  | "Calculation"
+  | "Validation required";
+const kindClass: Record<EvidenceKind, string> = {
+  "Official source": "evidence evidence-official",
+  "Customer input": "evidence evidence-input",
+  Assumption: "evidence evidence-assumption",
+  Calculation: "evidence evidence-calculation",
+  "Validation required": "evidence evidence-required",
+};
+
+const evidence: {
+  item: string;
+  source: string;
+  kind: EvidenceKind;
+  status: "Collected" | "Missing";
+}[] = [
+  {
+    item: "Substation proximity",
+    source: "OpenGridMap / verify",
+    kind: "Official source",
+    status: "Collected",
+  },
+  {
+    item: "Administrative grid area",
+    source: "BNetzA map portal",
+    kind: "Official source",
+    status: "Collected",
+  },
+  {
+    item: "Requested import and export",
+    source: "Project brief",
+    kind: "Customer input",
+    status: "Collected",
+  },
+  {
+    item: "BESS technical configuration",
+    source: "Technical datasheet",
+    kind: "Customer input",
+    status: "Collected",
+  },
+  {
+    item: "Responsible network operator",
+    source: "Boundary screening",
+    kind: "Assumption",
+    status: "Collected",
+  },
+  {
+    item: "Available network capacity",
+    source: "Network operator",
+    kind: "Validation required",
+    status: "Missing",
+  },
+  {
+    item: "FCA operating schedule",
+    source: "Connection offer",
+    kind: "Validation required",
+    status: "Missing",
+  },
 ];
 
-// Live aggregation from the project database.
-function useProjectAggregates() {
-  const { data: projects = [] } = useQuery(projectsQuery());
-  return useMemo(() => {
-    let opMw = 0;
-    let opMwh = 0;
-    let pipelineMw = 0;
-    let pipelineMwh = 0;
-    let verifiedOpMw = 0;
-    let verifiedPipelineMw = 0;
-    const byRegion: Record<string, number> = {};
-    for (const p of projects) {
-      const isOp = p.status === "Operational";
-      const isDemo = p.verificationStatus === "demo";
-      if (isOp) {
-        opMw += p.capacityMw ?? 0;
-        opMwh += p.capacityMwh ?? 0;
-        if (!isDemo) verifiedOpMw += p.capacityMw ?? 0;
-      } else {
-        pipelineMw += p.capacityMw ?? 0;
-        pipelineMwh += p.capacityMwh ?? 0;
-        if (!isDemo) verifiedPipelineMw += p.capacityMw ?? 0;
-      }
-      const region = p.region ?? "Other";
-      byRegion[region] = (byRegion[region] ?? 0) + (p.capacityMw ?? 0);
-    }
-    const totalRegionMw = Object.values(byRegion).reduce((a, b) => a + b, 0) || 1;
-    const regions = Object.entries(byRegion)
-      .map(([name, mw]) => ({ name, mw, pct: (mw / totalRegionMw) * 100 }))
-      .sort((a, b) => b.mw - a.mw);
-    const verifiedTotalGw = (verifiedOpMw + verifiedPipelineMw) / 1000;
-    const allTotalGw = (opMw + pipelineMw) / 1000;
-    return {
-      projects,
-      opMw,
-      opMwh,
-      pipelineMw,
-      pipelineMwh,
-      totalProjects: projects.length,
-      regions,
-      verifiedTotalGw,
-      allTotalGw,
-    };
-  }, [projects]);
-}
-
-
-function findMetric(data: MarketDataPoint[] | undefined, symbol: string) {
-  return data?.find((p) => p.symbol === symbol);
-}
-
-function HomePage() {
-  const { data: articles = [] } = useQuery(articlesQuery());
-  const agg = useProjectAggregates();
-  const { data: market } = useQuery(marketDataQuery());
-  const featured = articles.slice(0, 3);
-  const [filter, setFilter] = useState<ArticleCategory | "all">("all");
-  const [count, setCount] = useState(5);
-
-  const feed = useMemo(() => {
-    const rest = articles.slice(3);
-    return filter === "all" ? rest : rest.filter((a) => a.category === filter);
-  }, [filter, articles]);
-  const shown = feed.slice(0, count);
-
-  // Memoize per-symbol lookups so hero tiles don't re-scan the array on
-  // every unrelated re-render (filter toggle, count paging, etc).
-  const lfp = useMemo(() => findMetric(market, "LFP_CELL_USD_KWH"), [market]);
-  const systemCost = useMemo(() => findMetric(market, "BESS_SYSTEM_USD_KWH_DC"), [market]);
-
-  // Live hero tiles, derived from the project database + market_data.
-  const heroTiles = [
-    {
-      label: "Operational capacity tracked",
-      value: agg.opMwh,
-      decimals: 0,
-      unit: "MWh",
-      footnote: `${agg.totalProjects} projects in database`,
-    },
-    {
-      label: "Pipeline capacity",
-      value: agg.pipelineMw / 1000,
-      decimals: 2,
-      unit: "GW",
-      footnote: `${agg.pipelineMw.toLocaleString()} MW announced`,
-    },
-    {
-      label: systemCost?.label ?? "Avg system cost",
-      value: systemCost?.value ?? 0,
-      decimals: 0,
-      unit: systemCost?.unit ?? "USD/kWh DC",
-      footnote: systemCost ? `Source: ${systemCost.sourceName}` : "Awaiting market feed",
-      prefix: "$",
-    },
-  ];
-
+function AssessmentWorkspace() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <SiteHeader />
-
-      <section className="relative overflow-hidden border-b border-border/60">
-        <div className="absolute inset-0 bg-grid opacity-30 pointer-events-none" />
-        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at top, color-mix(in oklab, var(--cyan-accent) 18%, transparent), transparent 60%)" }} />
-        <div className="relative mx-auto max-w-[1400px] px-4 py-14 lg:px-8 lg:py-20">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex h-2 w-2 rounded-full bg-green-accent animate-pulse" />
-            <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
-              Live · {articles.length} stories tracked
+    <AppShell>
+      <main className="workspace">
+        <div className="workspace-heading">
+          <div>
+            <p className="context-label">Connection assessment / GP-DE-001</p>
+            <h1>Berlin-Brandenburg BESS + AI Load</h1>
+          </div>
+          <span className="demo-badge">Illustrative workspace</span>
+        </div>
+        <div className="workflow" aria-label="Assessment progress">
+          <div className="workflow-step done">
+            <Check />
+            <span>
+              <b>Site inputs</b>
+              <small>Completed</small>
             </span>
           </div>
-          <h1 className="mt-5 max-w-5xl font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold leading-[1.05] tracking-tight">
-            <span className="text-cyan-accent">
-              <CountUp value={agg.verifiedTotalGw > 0 ? agg.verifiedTotalGw : agg.allTotalGw} decimals={agg.verifiedTotalGw < 10 ? 2 : 1} duration={1800} /> GW
-            </span>{" "}
-            of grid-scale storage tracked across our verified project database.{" "}
-            <span className="text-muted-foreground">We track every megawatt.</span>
-          </h1>
-
-          <p className="mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground md:text-lg">
-            GridPulse is the intelligence layer for grid-scale battery energy storage — real-time
-            news, a verified project database, and market data sourced from EIA, IEA, FERC, BNEF,
-            and the ISO interconnection queues.
-          </p>
-          <div className="mt-10 grid gap-4 md:grid-cols-3">
-            {heroTiles.map((s) => (
-              <div key={s.label} className="glass-card rounded-xl p-5 hover-lift relative">
-                <span
-                  className="absolute right-3 top-3 rounded border border-green-accent/40 bg-green-accent/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-green-accent"
-                  title="Live aggregate computed from the project and market databases"
-                >
-                  Live
-                </span>
-                <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">{s.label}</div>
-                <div className="mt-3 flex items-baseline gap-1.5">
-                  <span className="font-display text-3xl sm:text-4xl font-bold text-foreground leading-none tracking-tight">
-                    {s.prefix}
-                    <CountUp value={s.value} decimals={s.decimals} />
-                  </span>
-                  <span className="text-sm text-muted-foreground font-mono-data">{s.unit}</span>
+          <div className="workflow-step current">
+            <CircleDot />
+            <span>
+              <b>Operator screening</b>
+              <small>In review</small>
+            </span>
+          </div>
+          <div className="workflow-step">
+            <span className="step-number">3</span>
+            <span>
+              <b>Connection envelope</b>
+              <small>Draft</small>
+            </span>
+          </div>
+          <div className="workflow-step">
+            <span className="step-number">4</span>
+            <span>
+              <b>Evidence</b>
+              <small>5 of 7 collected</small>
+            </span>
+          </div>
+          <div className="workflow-step warning">
+            <AlertTriangle />
+            <span>
+              <b>Operator validation</b>
+              <small>Required</small>
+            </span>
+          </div>
+        </div>
+        <div className="dashboard-grid">
+          <section className="dashboard-main">
+            <div className="panel map-panel">
+              <div className="panel-heading">
+                <div>
+                  <h2>Site and network context</h2>
+                  <p>Public context only — not evidence of available capacity.</p>
                 </div>
-                <div className="mt-2 text-xs text-muted-foreground font-mono-data">{s.footnote}</div>
+                <button className="quiet-button">Layers</button>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-[1400px] px-4 py-12 lg:px-8">
-        <div className="flex items-end justify-between gap-4 border-b border-border/60 pb-3">
-          <div>
-            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-accent">Front Page</div>
-            <h2 className="mt-1 font-display text-2xl font-bold tracking-tight md:text-3xl">What matters this morning</h2>
-          </div>
-          <Link to="/news" className="hidden md:inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-cyan-accent">
-            View all <ArrowUpRight className="h-3.5 w-3.5" />
-          </Link>
-        </div>
-        <div className="mt-6 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-          {featured.map((a) => <FeaturedCard key={a.id} article={a} />)}
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-[1400px] px-4 pb-16 lg:px-8">
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_340px]">
-          <div>
-            <div className="flex items-center justify-between gap-4 border-b border-border/60 pb-3">
-              <h2 className="font-display text-2xl font-bold tracking-tight">Latest</h2>
-              <Link to="/news" className="text-xs text-muted-foreground hover:text-cyan-accent">Browse all →</Link>
-            </div>
-            <div className="mt-4 flex flex-wrap gap-1.5">
-              {filterTabs.map((t) => (
-                <button
-                  key={t.value}
-                  onClick={() => { setFilter(t.value); setCount(5); }}
-                  className={`rounded-md border px-3 py-1.5 text-xs font-medium transition cursor-pointer ${
-                    filter === t.value
-                      ? "border-cyan-accent/50 bg-cyan-accent/10 text-cyan-accent"
-                      : "border-border bg-surface/40 text-muted-foreground hover:text-foreground hover:border-border/80"
-                  }`}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-            <div className="mt-6 divide-y divide-border/50">
-              {shown.length === 0 ? (
-                <div className="py-10 text-center text-sm text-muted-foreground">No articles in this category yet.</div>
-              ) : shown.map((a) => <ArticleRow key={a.id} article={a} />)}
-            </div>
-            {shown.length < feed.length && (
-              <div className="mt-8 flex justify-center">
-                <button
-                  onClick={() => setCount((c) => c + 5)}
-                  className="rounded-md border border-border bg-surface/40 px-5 py-2 text-sm text-muted-foreground hover:border-cyan-accent/40 hover:text-foreground transition cursor-pointer"
-                >
-                  Load more stories
-                </button>
+              <div className="map-canvas">
+                <div className="map-legend">
+                  <span>
+                    <i className="dot cyan" />
+                    Site · customer input
+                  </span>
+                  <span>
+                    <i className="dot green" />
+                    Substation · public source
+                  </span>
+                  <span>
+                    <i className="dot amber" />
+                    Substation · unverified
+                  </span>
+                </div>
+                <div className="zone-label z1">
+                  50Hertz
+                  <br />
+                  Nord
+                </div>
+                <div className="zone-label z2">
+                  50Hertz
+                  <br />
+                  Berlin
+                </div>
+                <div className="zone-label z3">E.DIS Netz</div>
+                <div className="map-site">
+                  <MapPin />
+                  <b>Proposed site</b>
+                  <small>110 kV target</small>
+                </div>
+                <div className="substation s1">
+                  <i />
+                  Neuenhagen <small>110/20 kV</small>
+                </div>
+                <div className="substation s2">
+                  <i />
+                  Ludwigsfelde <small>110/20 kV</small>
+                </div>
+                <div className="substation s3 unverified">
+                  <i />
+                  Fürstenwalde <small>unverified</small>
+                </div>
               </div>
-            )}
-          </div>
-
-          <aside className="space-y-6 lg:sticky lg:top-32 lg:self-start">
-            <MarketPulseWidget agg={agg} lfp={lfp} systemCost={systemCost} />
-            <RegionMixWidget regions={agg.regions} />
-            <TrendingWidget />
-            <UpcomingProjectsWidget projects={agg.projects} />
-            <NewsletterForm />
+              <div className="panel-note">
+                <ShieldCheck size={15} /> Map layers support early screening. Confirm ownership,
+                voltage and capacity with the network operator.
+              </div>
+            </div>
+            <div id="scenarios" className="panel">
+              <div className="panel-heading">
+                <div>
+                  <h2>Connection scenarios</h2>
+                  <p>Limits are inputs or unknowns; GridPulse does not infer grid headroom.</p>
+                </div>
+                <span className="evidence evidence-calculation">Indicative</span>
+              </div>
+              <div className="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Scenario</th>
+                      <th>Import limit</th>
+                      <th>Export limit</th>
+                      <th>Dispatch impact</th>
+                      <th>Commercial model</th>
+                      <th>Evidence</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>
+                        <b>Unrestricted</b>
+                      </td>
+                      <td>
+                        60 MW <Tag kind="Customer input" />
+                      </td>
+                      <td>
+                        40 MW <Tag kind="Customer input" />
+                      </td>
+                      <td>Baseline only</td>
+                      <td>Needs market data</td>
+                      <td>
+                        <span className="status warning-text">Insufficient</span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <b>Static FCA</b>
+                      </td>
+                      <td>Enter operator limit</td>
+                      <td>Enter operator limit</td>
+                      <td>Not calculated</td>
+                      <td>Needs restriction data</td>
+                      <td>
+                        <span className="status warning-text">Validation required</span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <b>Dynamic FCA</b>
+                      </td>
+                      <td>Requires schedule</td>
+                      <td>Requires schedule</td>
+                      <td>Not calculated</td>
+                      <td>Needs interval data</td>
+                      <td>
+                        <span className="status warning-text">Validation required</span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+          <aside className="dashboard-side">
+            <div className="panel">
+              <div className="panel-heading">
+                <div>
+                  <h2>Connection envelope</h2>
+                  <p>Declared project requirements</p>
+                </div>
+                <Zap size={18} />
+              </div>
+              <dl className="metric-list">
+                <Metric label="Requested import" value="60 MW" />
+                <Metric label="Requested export" value="40 MW" />
+                <Metric label="BESS" value="40 MW / 80 MWh" />
+                <Metric label="Target voltage" value="110 kV" />
+                <Metric label="Likely operator" value="Confirm with DSO" kind="Assumption" />
+              </dl>
+              <div className="panel-note">
+                <AlertTriangle size={15} /> This is not a connection offer or capacity confirmation.
+              </div>
+            </div>
+            <div id="evidence" className="panel">
+              <div className="panel-heading">
+                <div>
+                  <h2>Evidence ledger</h2>
+                  <p>5 of 7 items collected</p>
+                </div>
+                <span className="missing-count">2 missing</span>
+              </div>
+              <div className="evidence-list">
+                {evidence.map((row) => (
+                  <div className="evidence-row" key={row.item}>
+                    <div>
+                      <b>{row.item}</b>
+                      <small>
+                        {row.source} {row.kind === "Official source" && <ExternalLink size={10} />}
+                      </small>
+                    </div>
+                    <Tag kind={row.kind} />
+                    <span className={row.status === "Missing" ? "missing" : "collected"}>
+                      {row.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="panel readiness">
+              <div className="panel-heading">
+                <div>
+                  <h2>Assessment readiness</h2>
+                  <p>Required evidence is incomplete</p>
+                </div>
+                <span className="status warning-text">Not ready</span>
+              </div>
+              <ul>
+                <li className="ok">
+                  <Check />
+                  Site and technical inputs recorded
+                </li>
+                <li className="ok">
+                  <Check />
+                  Initial public context collected
+                </li>
+                <li>
+                  <AlertTriangle />
+                  Operator validation items missing (2)
+                </li>
+              </ul>
+              <button disabled className="report-button">
+                <FileText size={16} /> Generate pre-feasibility report
+              </button>
+              <small>Enabled only when required evidence is supplied.</small>
+            </div>
           </aside>
         </div>
-      </section>
-
-      <SiteFooter />
-    </div>
+      </main>
+    </AppShell>
   );
 }
 
-function MarketPulseWidget({
-  agg,
-  lfp,
-  systemCost,
+function Tag({ kind }: { kind: EvidenceKind }) {
+  return <span className={kindClass[kind]}>{kind}</span>;
+}
+function Metric({
+  label,
+  value,
+  kind = "Customer input",
 }: {
-  agg: ReturnType<typeof useProjectAggregates>;
-  lfp?: MarketDataPoint;
-  systemCost?: MarketDataPoint;
+  label: string;
+  value: string;
+  kind?: EvidenceKind;
 }) {
-  const lfpDelta = lfp?.changePct != null ? `${lfp.changePct >= 0 ? "+" : ""}${lfp.changePct.toFixed(1)}% QoQ` : undefined;
-  const sysDelta = systemCost?.changePct != null ? `${systemCost.changePct >= 0 ? "+" : ""}${systemCost.changePct.toFixed(1)}% YoY` : undefined;
   return (
-    <div className="glass-card rounded-xl p-5">
-      <div className="flex items-center justify-between">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-accent flex items-center gap-1.5">
-          <Activity className="h-3.5 w-3.5" /> Market Pulse
-        </div>
-        <span
-          className="rounded border border-green-accent/40 bg-green-accent/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-green-accent"
-          title="Live aggregates from the project database and market_data"
-        >
-          Live
-        </span>
-      </div>
-      <div className="mt-4 space-y-4">
-        <Metric
-          label="Operational tracked"
-          value={<><CountUp value={agg.opMwh} /> MWh</>}
-          delta={`${agg.totalProjects} projects`}
-        />
-        <Metric
-          label="Pipeline capacity"
-          value={<><CountUp value={agg.pipelineMw / 1000} decimals={2} /> GW</>}
-          delta={`${agg.pipelineMw.toLocaleString()} MW announced`}
-          up
-        />
-        {lfp && (
-          <Metric
-            label={`${lfp.label} cost`}
-            value={<>$<CountUp value={lfp.value} />/kWh</>}
-            delta={lfpDelta}
-            up={lfp.changePct != null ? lfp.changePct <= 0 : undefined}
-          />
-        )}
-        {systemCost && (
-          <Metric
-            label={systemCost.label}
-            value={<>$<CountUp value={systemCost.value} /> {systemCost.unit.replace(/^USD\/?/, "")}</>}
-            delta={sysDelta}
-            up={systemCost.changePct != null ? systemCost.changePct <= 0 : undefined}
-          />
-        )}
-      </div>
-      {(lfp || systemCost) && (
-        <div className="mt-3 border-t border-border/40 pt-2 text-[10px] text-muted-foreground">
-          Cell &amp; system prices: {lfp?.sourceName ?? systemCost?.sourceName}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function Metric({ label, value, delta, up }: { label: string; value: React.ReactNode; delta?: string; up?: boolean }) {
-  return (
-    <div className="flex items-end justify-between border-b border-border/40 pb-3 last:border-0 last:pb-0">
-      <div>
-        <div className="text-[11px] uppercase tracking-[0.1em] text-muted-foreground">{label}</div>
-        <div className="mt-1 font-display text-xl font-semibold">{value}</div>
-      </div>
-      {delta && (
-        <span className={`flex items-center gap-1 text-xs font-mono-data ${up === undefined ? "text-muted-foreground" : up ? "text-green-accent" : "text-red-accent"}`}>
-          {up === true && <TrendingUp className="h-3 w-3" />}
-          {up === false && <TrendingDown className="h-3 w-3" />}
-          {delta}
-        </span>
-      )}
-    </div>
-  );
-}
-
-function RegionMixWidget({ regions }: { regions: { name: string; mw: number; pct: number }[] }) {
-  const top = regions.slice(0, 6);
-  const maxPct = top[0]?.pct ?? 1;
-  return (
-    <Link to="/regions" className="block glass-card rounded-xl p-5 hover-lift cursor-pointer">
-      <div className="flex items-center justify-between">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-accent">Regional Capacity Mix</div>
-        <span className="rounded border border-green-accent/40 bg-green-accent/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-green-accent">
-          Live
-        </span>
-      </div>
-      {top.length === 0 ? (
-        <div className="mt-4 text-xs text-muted-foreground">No region data yet.</div>
-      ) : (
-        <div className="mt-4 space-y-2.5">
-          {top.map((r) => (
-            <div key={r.name}>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-foreground">{r.name}</span>
-                <span className="font-mono-data text-muted-foreground">
-                  {(r.mw / 1000).toFixed(2)} GW · {r.pct.toFixed(1)}%
-                </span>
-              </div>
-              <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-elevated">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-cyan-accent to-green-accent"
-                  style={{ width: `${(r.pct / maxPct) * 100}%` }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-      <div className="mt-3 border-t border-border/40 pt-2 text-[10px] text-muted-foreground">
-        Aggregated from {regions.reduce((a, b) => a + (b.mw > 0 ? 1 : 0), 0)} regions in the project database
-      </div>
-    </Link>
-  );
-}
-
-function TrendingWidget() {
-  const { data: topics = [], isLoading } = useQuery(trendingTopicsQuery());
-  return (
-    <div className="glass-card rounded-xl p-5">
-      <div className="flex items-center justify-between">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-accent">Trending Topics</div>
-        <span
-          className="rounded border border-green-accent/40 bg-green-accent/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-green-accent"
-          title="Aggregated from article tags in the last 30 days"
-        >
-          Live
-        </span>
-      </div>
-      <div className="mt-4 flex flex-wrap gap-1.5">
-        {isLoading ? (
-          <span className="text-xs text-muted-foreground">Loading…</span>
-        ) : topics.length === 0 ? (
-          <span className="text-xs text-muted-foreground">No tagged stories yet.</span>
-        ) : (
-          topics.map((t: TrendingTopic) => (
-            <Link
-              key={t.tag}
-              to="/news"
-              search={{ q: t.tag }}
-              className="tag-chip hover:border-cyan-accent/50 hover:text-cyan-accent transition-colors cursor-pointer"
-              style={{ fontSize: `${10 + t.weight}px` }}
-              title={`${t.count} article${t.count === 1 ? "" : "s"} in last 30 days`}
-            >
-              #{t.tag}
-            </Link>
-          ))
-        )}
-      </div>
-    </div>
-  );
-}
-
-
-function UpcomingProjectsWidget({ projects }: { projects: Project[] }) {
-  const upcoming = projects.filter((p) => p.status !== "Operational").slice(0, 5);
-  const statusColor: Record<string, string> = {
-    Permitting: "bg-amber-accent/15 text-amber-accent border-amber-accent/40",
-    Construction: "bg-cyan-accent/15 text-cyan-accent border-cyan-accent/40",
-    Commissioning: "bg-green-accent/15 text-green-accent border-green-accent/40",
-    Operational: "bg-green-accent/15 text-green-accent border-green-accent/40",
-  };
-  return (
-    <div className="glass-card rounded-xl p-5">
-      <div className="flex items-center justify-between">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-cyan-accent flex items-center gap-1.5">
-          <Cpu className="h-3.5 w-3.5" /> Upcoming Projects
-        </div>
-        <Link to="/projects" className="text-[11px] text-muted-foreground hover:text-cyan-accent">All →</Link>
-      </div>
-      <ul className="mt-4 space-y-3.5">
-        {upcoming.map((p) => (
-          <li key={p.id} className="border-b border-border/40 pb-3 last:border-0 last:pb-0">
-            <div className="flex items-start justify-between gap-2">
-              <Link to="/projects/$slug" params={{ slug: p.slug ?? p.id }} className="text-sm font-medium text-foreground hover:text-cyan-accent">
-                {p.name}
-              </Link>
-              <span className={`shrink-0 rounded border px-1.5 py-0.5 text-[9px] font-semibold tracking-wider ${statusColor[p.status]}`}>
-                {p.status.toUpperCase()}
-              </span>
-            </div>
-            <div className="mt-1 flex items-center gap-2 text-[11px] text-muted-foreground font-mono-data">
-              <span>{p.capacityMw} MW / {p.capacityMwh} MWh</span>
-              <span>·</span>
-              <span>{p.technology}</span>
-            </div>
-            <div className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
-              <MapPin className="h-3 w-3" />
-              {p.location} · COD {p.cod}
-            </div>
-          </li>
-        ))}
-      </ul>
+    <div>
+      <dt>{label}</dt>
+      <dd>{value}</dd>
+      <Tag kind={kind} />
     </div>
   );
 }

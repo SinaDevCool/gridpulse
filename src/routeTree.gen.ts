@@ -9,88 +9,33 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TechnologyRouteImport } from './routes/technology'
-import { Route as SubscribeRouteImport } from './routes/subscribe'
-import { Route as SearchRouteImport } from './routes/search'
-import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as RegionsRouteImport } from './routes/regions'
-import { Route as PolicyRouteImport } from './routes/policy'
-import { Route as NewsletterRouteImport } from './routes/newsletter'
-import { Route as NewsRouteImport } from './routes/news'
-import { Route as MarketsRouteImport } from './routes/markets'
-import { Route as CompaniesRouteImport } from './routes/companies'
+import { Route as ReportsRouteImport } from './routes/reports'
+import { Route as PortfolioRouteImport } from './routes/portfolio'
+import { Route as EvidenceRouteImport } from './routes/evidence'
+import { Route as DataSourcesRouteImport } from './routes/data-sources'
 import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AnalyticsRouteImport } from './routes/analytics'
-import { Route as AboutRouteImport } from './routes/about'
-import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ProjectsIndexRouteImport } from './routes/projects.index'
-import { Route as CompaniesIndexRouteImport } from './routes/companies.index'
-import { Route as ProjectsSlugRouteImport } from './routes/projects.$slug'
-import { Route as NewsSlugRouteImport } from './routes/news.$slug'
-import { Route as CompaniesSlugRouteImport } from './routes/companies.$slug'
-import { Route as CheckoutReturnRouteImport } from './routes/checkout.return'
-import { Route as AuthenticatedWatchlistRouteImport } from './routes/_authenticated/watchlist'
-import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
-import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
-import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
-import { Route as AuthenticatedBillingRouteImport } from './routes/_authenticated/billing'
-import { Route as AuthenticatedAlertsRouteImport } from './routes/_authenticated/alerts'
-import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
-import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
-import { Route as ApiPublicNewsIngestRouteImport } from './routes/api/public/news/ingest'
-import { Route as ApiPublicCronFetchProjectsRouteImport } from './routes/api/public/cron/fetch-projects'
-import { Route as ApiPublicCronFetchMarketRatesRouteImport } from './routes/api/public/cron/fetch-market-rates'
-import { Route as ApiPublicAlertsRunRouteImport } from './routes/api/public/alerts/run'
+import { Route as AssessmentsNewRouteImport } from './routes/assessments.new'
+import { Route as AssessmentsIdRouteImport } from './routes/assessments.$id'
 
-const TechnologyRoute = TechnologyRouteImport.update({
-  id: '/technology',
-  path: '/technology',
+const ReportsRoute = ReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SubscribeRoute = SubscribeRouteImport.update({
-  id: '/subscribe',
-  path: '/subscribe',
+const PortfolioRoute = PortfolioRouteImport.update({
+  id: '/portfolio',
+  path: '/portfolio',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SearchRoute = SearchRouteImport.update({
-  id: '/search',
-  path: '/search',
+const EvidenceRoute = EvidenceRouteImport.update({
+  id: '/evidence',
+  path: '/evidence',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ResetPasswordRoute = ResetPasswordRouteImport.update({
-  id: '/reset-password',
-  path: '/reset-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RegionsRoute = RegionsRouteImport.update({
-  id: '/regions',
-  path: '/regions',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PolicyRoute = PolicyRouteImport.update({
-  id: '/policy',
-  path: '/policy',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const NewsletterRoute = NewsletterRouteImport.update({
-  id: '/newsletter',
-  path: '/newsletter',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const NewsRoute = NewsRouteImport.update({
-  id: '/news',
-  path: '/news',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MarketsRoute = MarketsRouteImport.update({
-  id: '/markets',
-  path: '/markets',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CompaniesRoute = CompaniesRouteImport.update({
-  id: '/companies',
-  path: '/companies',
+const DataSourcesRoute = DataSourcesRouteImport.update({
+  id: '/data-sources',
+  path: '/data-sources',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -98,424 +43,125 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AnalyticsRoute = AnalyticsRouteImport.update({
-  id: '/analytics',
-  path: '/analytics',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AboutRoute = AboutRouteImport.update({
-  id: '/about',
-  path: '/about',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
-  id: '/_authenticated',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
-  id: '/projects/',
-  path: '/projects/',
+const AssessmentsNewRoute = AssessmentsNewRouteImport.update({
+  id: '/assessments/new',
+  path: '/assessments/new',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CompaniesIndexRoute = CompaniesIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => CompaniesRoute,
-} as any)
-const ProjectsSlugRoute = ProjectsSlugRouteImport.update({
-  id: '/projects/$slug',
-  path: '/projects/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const NewsSlugRoute = NewsSlugRouteImport.update({
-  id: '/$slug',
-  path: '/$slug',
-  getParentRoute: () => NewsRoute,
-} as any)
-const CompaniesSlugRoute = CompaniesSlugRouteImport.update({
-  id: '/$slug',
-  path: '/$slug',
-  getParentRoute: () => CompaniesRoute,
-} as any)
-const CheckoutReturnRoute = CheckoutReturnRouteImport.update({
-  id: '/checkout/return',
-  path: '/checkout/return',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedWatchlistRoute = AuthenticatedWatchlistRouteImport.update({
-  id: '/watchlist',
-  path: '/watchlist',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedNotificationsRoute =
-  AuthenticatedNotificationsRouteImport.update({
-    id: '/notifications',
-    path: '/notifications',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedBillingRoute = AuthenticatedBillingRouteImport.update({
-  id: '/billing',
-  path: '/billing',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedAlertsRoute = AuthenticatedAlertsRouteImport.update({
-  id: '/alerts',
-  path: '/alerts',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const ApiPublicPaymentsWebhookRoute =
-  ApiPublicPaymentsWebhookRouteImport.update({
-    id: '/api/public/payments/webhook',
-    path: '/api/public/payments/webhook',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiPublicNewsIngestRoute = ApiPublicNewsIngestRouteImport.update({
-  id: '/api/public/news/ingest',
-  path: '/api/public/news/ingest',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiPublicCronFetchProjectsRoute =
-  ApiPublicCronFetchProjectsRouteImport.update({
-    id: '/api/public/cron/fetch-projects',
-    path: '/api/public/cron/fetch-projects',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiPublicCronFetchMarketRatesRoute =
-  ApiPublicCronFetchMarketRatesRouteImport.update({
-    id: '/api/public/cron/fetch-market-rates',
-    path: '/api/public/cron/fetch-market-rates',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiPublicAlertsRunRoute = ApiPublicAlertsRunRouteImport.update({
-  id: '/api/public/alerts/run',
-  path: '/api/public/alerts/run',
+const AssessmentsIdRoute = AssessmentsIdRouteImport.update({
+  id: '/assessments/$id',
+  path: '/assessments/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
-  '/analytics': typeof AnalyticsRoute
   '/auth': typeof AuthRoute
-  '/companies': typeof CompaniesRouteWithChildren
-  '/markets': typeof MarketsRoute
-  '/news': typeof NewsRouteWithChildren
-  '/newsletter': typeof NewsletterRoute
-  '/policy': typeof PolicyRoute
-  '/regions': typeof RegionsRoute
-  '/reset-password': typeof ResetPasswordRoute
-  '/search': typeof SearchRoute
-  '/subscribe': typeof SubscribeRoute
-  '/technology': typeof TechnologyRoute
-  '/admin': typeof AuthenticatedAdminRoute
-  '/alerts': typeof AuthenticatedAlertsRoute
-  '/billing': typeof AuthenticatedBillingRoute
-  '/dashboard': typeof AuthenticatedDashboardRoute
-  '/notifications': typeof AuthenticatedNotificationsRoute
-  '/settings': typeof AuthenticatedSettingsRoute
-  '/watchlist': typeof AuthenticatedWatchlistRoute
-  '/checkout/return': typeof CheckoutReturnRoute
-  '/companies/$slug': typeof CompaniesSlugRoute
-  '/news/$slug': typeof NewsSlugRoute
-  '/projects/$slug': typeof ProjectsSlugRoute
-  '/companies/': typeof CompaniesIndexRoute
-  '/projects/': typeof ProjectsIndexRoute
-  '/api/public/alerts/run': typeof ApiPublicAlertsRunRoute
-  '/api/public/cron/fetch-market-rates': typeof ApiPublicCronFetchMarketRatesRoute
-  '/api/public/cron/fetch-projects': typeof ApiPublicCronFetchProjectsRoute
-  '/api/public/news/ingest': typeof ApiPublicNewsIngestRoute
-  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
+  '/data-sources': typeof DataSourcesRoute
+  '/evidence': typeof EvidenceRoute
+  '/portfolio': typeof PortfolioRoute
+  '/reports': typeof ReportsRoute
+  '/assessments/$id': typeof AssessmentsIdRoute
+  '/assessments/new': typeof AssessmentsNewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
-  '/analytics': typeof AnalyticsRoute
   '/auth': typeof AuthRoute
-  '/markets': typeof MarketsRoute
-  '/news': typeof NewsRouteWithChildren
-  '/newsletter': typeof NewsletterRoute
-  '/policy': typeof PolicyRoute
-  '/regions': typeof RegionsRoute
-  '/reset-password': typeof ResetPasswordRoute
-  '/search': typeof SearchRoute
-  '/subscribe': typeof SubscribeRoute
-  '/technology': typeof TechnologyRoute
-  '/admin': typeof AuthenticatedAdminRoute
-  '/alerts': typeof AuthenticatedAlertsRoute
-  '/billing': typeof AuthenticatedBillingRoute
-  '/dashboard': typeof AuthenticatedDashboardRoute
-  '/notifications': typeof AuthenticatedNotificationsRoute
-  '/settings': typeof AuthenticatedSettingsRoute
-  '/watchlist': typeof AuthenticatedWatchlistRoute
-  '/checkout/return': typeof CheckoutReturnRoute
-  '/companies/$slug': typeof CompaniesSlugRoute
-  '/news/$slug': typeof NewsSlugRoute
-  '/projects/$slug': typeof ProjectsSlugRoute
-  '/companies': typeof CompaniesIndexRoute
-  '/projects': typeof ProjectsIndexRoute
-  '/api/public/alerts/run': typeof ApiPublicAlertsRunRoute
-  '/api/public/cron/fetch-market-rates': typeof ApiPublicCronFetchMarketRatesRoute
-  '/api/public/cron/fetch-projects': typeof ApiPublicCronFetchProjectsRoute
-  '/api/public/news/ingest': typeof ApiPublicNewsIngestRoute
-  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
+  '/data-sources': typeof DataSourcesRoute
+  '/evidence': typeof EvidenceRoute
+  '/portfolio': typeof PortfolioRoute
+  '/reports': typeof ReportsRoute
+  '/assessments/$id': typeof AssessmentsIdRoute
+  '/assessments/new': typeof AssessmentsNewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
-  '/about': typeof AboutRoute
-  '/analytics': typeof AnalyticsRoute
   '/auth': typeof AuthRoute
-  '/companies': typeof CompaniesRouteWithChildren
-  '/markets': typeof MarketsRoute
-  '/news': typeof NewsRouteWithChildren
-  '/newsletter': typeof NewsletterRoute
-  '/policy': typeof PolicyRoute
-  '/regions': typeof RegionsRoute
-  '/reset-password': typeof ResetPasswordRoute
-  '/search': typeof SearchRoute
-  '/subscribe': typeof SubscribeRoute
-  '/technology': typeof TechnologyRoute
-  '/_authenticated/admin': typeof AuthenticatedAdminRoute
-  '/_authenticated/alerts': typeof AuthenticatedAlertsRoute
-  '/_authenticated/billing': typeof AuthenticatedBillingRoute
-  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
-  '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
-  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
-  '/_authenticated/watchlist': typeof AuthenticatedWatchlistRoute
-  '/checkout/return': typeof CheckoutReturnRoute
-  '/companies/$slug': typeof CompaniesSlugRoute
-  '/news/$slug': typeof NewsSlugRoute
-  '/projects/$slug': typeof ProjectsSlugRoute
-  '/companies/': typeof CompaniesIndexRoute
-  '/projects/': typeof ProjectsIndexRoute
-  '/api/public/alerts/run': typeof ApiPublicAlertsRunRoute
-  '/api/public/cron/fetch-market-rates': typeof ApiPublicCronFetchMarketRatesRoute
-  '/api/public/cron/fetch-projects': typeof ApiPublicCronFetchProjectsRoute
-  '/api/public/news/ingest': typeof ApiPublicNewsIngestRoute
-  '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
+  '/data-sources': typeof DataSourcesRoute
+  '/evidence': typeof EvidenceRoute
+  '/portfolio': typeof PortfolioRoute
+  '/reports': typeof ReportsRoute
+  '/assessments/$id': typeof AssessmentsIdRoute
+  '/assessments/new': typeof AssessmentsNewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/about'
-    | '/analytics'
     | '/auth'
-    | '/companies'
-    | '/markets'
-    | '/news'
-    | '/newsletter'
-    | '/policy'
-    | '/regions'
-    | '/reset-password'
-    | '/search'
-    | '/subscribe'
-    | '/technology'
-    | '/admin'
-    | '/alerts'
-    | '/billing'
-    | '/dashboard'
-    | '/notifications'
-    | '/settings'
-    | '/watchlist'
-    | '/checkout/return'
-    | '/companies/$slug'
-    | '/news/$slug'
-    | '/projects/$slug'
-    | '/companies/'
-    | '/projects/'
-    | '/api/public/alerts/run'
-    | '/api/public/cron/fetch-market-rates'
-    | '/api/public/cron/fetch-projects'
-    | '/api/public/news/ingest'
-    | '/api/public/payments/webhook'
+    | '/data-sources'
+    | '/evidence'
+    | '/portfolio'
+    | '/reports'
+    | '/assessments/$id'
+    | '/assessments/new'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/about'
-    | '/analytics'
     | '/auth'
-    | '/markets'
-    | '/news'
-    | '/newsletter'
-    | '/policy'
-    | '/regions'
-    | '/reset-password'
-    | '/search'
-    | '/subscribe'
-    | '/technology'
-    | '/admin'
-    | '/alerts'
-    | '/billing'
-    | '/dashboard'
-    | '/notifications'
-    | '/settings'
-    | '/watchlist'
-    | '/checkout/return'
-    | '/companies/$slug'
-    | '/news/$slug'
-    | '/projects/$slug'
-    | '/companies'
-    | '/projects'
-    | '/api/public/alerts/run'
-    | '/api/public/cron/fetch-market-rates'
-    | '/api/public/cron/fetch-projects'
-    | '/api/public/news/ingest'
-    | '/api/public/payments/webhook'
+    | '/data-sources'
+    | '/evidence'
+    | '/portfolio'
+    | '/reports'
+    | '/assessments/$id'
+    | '/assessments/new'
   id:
     | '__root__'
     | '/'
-    | '/_authenticated'
-    | '/about'
-    | '/analytics'
     | '/auth'
-    | '/companies'
-    | '/markets'
-    | '/news'
-    | '/newsletter'
-    | '/policy'
-    | '/regions'
-    | '/reset-password'
-    | '/search'
-    | '/subscribe'
-    | '/technology'
-    | '/_authenticated/admin'
-    | '/_authenticated/alerts'
-    | '/_authenticated/billing'
-    | '/_authenticated/dashboard'
-    | '/_authenticated/notifications'
-    | '/_authenticated/settings'
-    | '/_authenticated/watchlist'
-    | '/checkout/return'
-    | '/companies/$slug'
-    | '/news/$slug'
-    | '/projects/$slug'
-    | '/companies/'
-    | '/projects/'
-    | '/api/public/alerts/run'
-    | '/api/public/cron/fetch-market-rates'
-    | '/api/public/cron/fetch-projects'
-    | '/api/public/news/ingest'
-    | '/api/public/payments/webhook'
+    | '/data-sources'
+    | '/evidence'
+    | '/portfolio'
+    | '/reports'
+    | '/assessments/$id'
+    | '/assessments/new'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
-  AboutRoute: typeof AboutRoute
-  AnalyticsRoute: typeof AnalyticsRoute
   AuthRoute: typeof AuthRoute
-  CompaniesRoute: typeof CompaniesRouteWithChildren
-  MarketsRoute: typeof MarketsRoute
-  NewsRoute: typeof NewsRouteWithChildren
-  NewsletterRoute: typeof NewsletterRoute
-  PolicyRoute: typeof PolicyRoute
-  RegionsRoute: typeof RegionsRoute
-  ResetPasswordRoute: typeof ResetPasswordRoute
-  SearchRoute: typeof SearchRoute
-  SubscribeRoute: typeof SubscribeRoute
-  TechnologyRoute: typeof TechnologyRoute
-  CheckoutReturnRoute: typeof CheckoutReturnRoute
-  ProjectsSlugRoute: typeof ProjectsSlugRoute
-  ProjectsIndexRoute: typeof ProjectsIndexRoute
-  ApiPublicAlertsRunRoute: typeof ApiPublicAlertsRunRoute
-  ApiPublicCronFetchMarketRatesRoute: typeof ApiPublicCronFetchMarketRatesRoute
-  ApiPublicCronFetchProjectsRoute: typeof ApiPublicCronFetchProjectsRoute
-  ApiPublicNewsIngestRoute: typeof ApiPublicNewsIngestRoute
-  ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
+  DataSourcesRoute: typeof DataSourcesRoute
+  EvidenceRoute: typeof EvidenceRoute
+  PortfolioRoute: typeof PortfolioRoute
+  ReportsRoute: typeof ReportsRoute
+  AssessmentsIdRoute: typeof AssessmentsIdRoute
+  AssessmentsNewRoute: typeof AssessmentsNewRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/technology': {
-      id: '/technology'
-      path: '/technology'
-      fullPath: '/technology'
-      preLoaderRoute: typeof TechnologyRouteImport
+    '/reports': {
+      id: '/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof ReportsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/subscribe': {
-      id: '/subscribe'
-      path: '/subscribe'
-      fullPath: '/subscribe'
-      preLoaderRoute: typeof SubscribeRouteImport
+    '/portfolio': {
+      id: '/portfolio'
+      path: '/portfolio'
+      fullPath: '/portfolio'
+      preLoaderRoute: typeof PortfolioRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/search': {
-      id: '/search'
-      path: '/search'
-      fullPath: '/search'
-      preLoaderRoute: typeof SearchRouteImport
+    '/evidence': {
+      id: '/evidence'
+      path: '/evidence'
+      fullPath: '/evidence'
+      preLoaderRoute: typeof EvidenceRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/reset-password': {
-      id: '/reset-password'
-      path: '/reset-password'
-      fullPath: '/reset-password'
-      preLoaderRoute: typeof ResetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/regions': {
-      id: '/regions'
-      path: '/regions'
-      fullPath: '/regions'
-      preLoaderRoute: typeof RegionsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/policy': {
-      id: '/policy'
-      path: '/policy'
-      fullPath: '/policy'
-      preLoaderRoute: typeof PolicyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/newsletter': {
-      id: '/newsletter'
-      path: '/newsletter'
-      fullPath: '/newsletter'
-      preLoaderRoute: typeof NewsletterRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/news': {
-      id: '/news'
-      path: '/news'
-      fullPath: '/news'
-      preLoaderRoute: typeof NewsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/markets': {
-      id: '/markets'
-      path: '/markets'
-      fullPath: '/markets'
-      preLoaderRoute: typeof MarketsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/companies': {
-      id: '/companies'
-      path: '/companies'
-      fullPath: '/companies'
-      preLoaderRoute: typeof CompaniesRouteImport
+    '/data-sources': {
+      id: '/data-sources'
+      path: '/data-sources'
+      fullPath: '/data-sources'
+      preLoaderRoute: typeof DataSourcesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -525,27 +171,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/analytics': {
-      id: '/analytics'
-      path: '/analytics'
-      fullPath: '/analytics'
-      preLoaderRoute: typeof AnalyticsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/about': {
-      id: '/about'
-      path: '/about'
-      fullPath: '/about'
-      preLoaderRoute: typeof AboutRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated': {
-      id: '/_authenticated'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AuthenticatedRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -553,207 +178,43 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/projects/': {
-      id: '/projects/'
-      path: '/projects'
-      fullPath: '/projects/'
-      preLoaderRoute: typeof ProjectsIndexRouteImport
+    '/assessments/new': {
+      id: '/assessments/new'
+      path: '/assessments/new'
+      fullPath: '/assessments/new'
+      preLoaderRoute: typeof AssessmentsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/companies/': {
-      id: '/companies/'
-      path: '/'
-      fullPath: '/companies/'
-      preLoaderRoute: typeof CompaniesIndexRouteImport
-      parentRoute: typeof CompaniesRoute
-    }
-    '/projects/$slug': {
-      id: '/projects/$slug'
-      path: '/projects/$slug'
-      fullPath: '/projects/$slug'
-      preLoaderRoute: typeof ProjectsSlugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/news/$slug': {
-      id: '/news/$slug'
-      path: '/$slug'
-      fullPath: '/news/$slug'
-      preLoaderRoute: typeof NewsSlugRouteImport
-      parentRoute: typeof NewsRoute
-    }
-    '/companies/$slug': {
-      id: '/companies/$slug'
-      path: '/$slug'
-      fullPath: '/companies/$slug'
-      preLoaderRoute: typeof CompaniesSlugRouteImport
-      parentRoute: typeof CompaniesRoute
-    }
-    '/checkout/return': {
-      id: '/checkout/return'
-      path: '/checkout/return'
-      fullPath: '/checkout/return'
-      preLoaderRoute: typeof CheckoutReturnRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/watchlist': {
-      id: '/_authenticated/watchlist'
-      path: '/watchlist'
-      fullPath: '/watchlist'
-      preLoaderRoute: typeof AuthenticatedWatchlistRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/settings': {
-      id: '/_authenticated/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/notifications': {
-      id: '/_authenticated/notifications'
-      path: '/notifications'
-      fullPath: '/notifications'
-      preLoaderRoute: typeof AuthenticatedNotificationsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/dashboard': {
-      id: '/_authenticated/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/billing': {
-      id: '/_authenticated/billing'
-      path: '/billing'
-      fullPath: '/billing'
-      preLoaderRoute: typeof AuthenticatedBillingRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/alerts': {
-      id: '/_authenticated/alerts'
-      path: '/alerts'
-      fullPath: '/alerts'
-      preLoaderRoute: typeof AuthenticatedAlertsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/admin': {
-      id: '/_authenticated/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AuthenticatedAdminRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/api/public/payments/webhook': {
-      id: '/api/public/payments/webhook'
-      path: '/api/public/payments/webhook'
-      fullPath: '/api/public/payments/webhook'
-      preLoaderRoute: typeof ApiPublicPaymentsWebhookRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/news/ingest': {
-      id: '/api/public/news/ingest'
-      path: '/api/public/news/ingest'
-      fullPath: '/api/public/news/ingest'
-      preLoaderRoute: typeof ApiPublicNewsIngestRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/cron/fetch-projects': {
-      id: '/api/public/cron/fetch-projects'
-      path: '/api/public/cron/fetch-projects'
-      fullPath: '/api/public/cron/fetch-projects'
-      preLoaderRoute: typeof ApiPublicCronFetchProjectsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/cron/fetch-market-rates': {
-      id: '/api/public/cron/fetch-market-rates'
-      path: '/api/public/cron/fetch-market-rates'
-      fullPath: '/api/public/cron/fetch-market-rates'
-      preLoaderRoute: typeof ApiPublicCronFetchMarketRatesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/alerts/run': {
-      id: '/api/public/alerts/run'
-      path: '/api/public/alerts/run'
-      fullPath: '/api/public/alerts/run'
-      preLoaderRoute: typeof ApiPublicAlertsRunRouteImport
+    '/assessments/$id': {
+      id: '/assessments/$id'
+      path: '/assessments/$id'
+      fullPath: '/assessments/$id'
+      preLoaderRoute: typeof AssessmentsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
 }
 
-interface AuthenticatedRouteRouteChildren {
-  AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
-  AuthenticatedAlertsRoute: typeof AuthenticatedAlertsRoute
-  AuthenticatedBillingRoute: typeof AuthenticatedBillingRoute
-  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
-  AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
-  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
-  AuthenticatedWatchlistRoute: typeof AuthenticatedWatchlistRoute
-}
-
-const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedAdminRoute: AuthenticatedAdminRoute,
-  AuthenticatedAlertsRoute: AuthenticatedAlertsRoute,
-  AuthenticatedBillingRoute: AuthenticatedBillingRoute,
-  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
-  AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
-  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
-  AuthenticatedWatchlistRoute: AuthenticatedWatchlistRoute,
-}
-
-const AuthenticatedRouteRouteWithChildren =
-  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
-
-interface CompaniesRouteChildren {
-  CompaniesSlugRoute: typeof CompaniesSlugRoute
-  CompaniesIndexRoute: typeof CompaniesIndexRoute
-}
-
-const CompaniesRouteChildren: CompaniesRouteChildren = {
-  CompaniesSlugRoute: CompaniesSlugRoute,
-  CompaniesIndexRoute: CompaniesIndexRoute,
-}
-
-const CompaniesRouteWithChildren = CompaniesRoute._addFileChildren(
-  CompaniesRouteChildren,
-)
-
-interface NewsRouteChildren {
-  NewsSlugRoute: typeof NewsSlugRoute
-}
-
-const NewsRouteChildren: NewsRouteChildren = {
-  NewsSlugRoute: NewsSlugRoute,
-}
-
-const NewsRouteWithChildren = NewsRoute._addFileChildren(NewsRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
-  AboutRoute: AboutRoute,
-  AnalyticsRoute: AnalyticsRoute,
   AuthRoute: AuthRoute,
-  CompaniesRoute: CompaniesRouteWithChildren,
-  MarketsRoute: MarketsRoute,
-  NewsRoute: NewsRouteWithChildren,
-  NewsletterRoute: NewsletterRoute,
-  PolicyRoute: PolicyRoute,
-  RegionsRoute: RegionsRoute,
-  ResetPasswordRoute: ResetPasswordRoute,
-  SearchRoute: SearchRoute,
-  SubscribeRoute: SubscribeRoute,
-  TechnologyRoute: TechnologyRoute,
-  CheckoutReturnRoute: CheckoutReturnRoute,
-  ProjectsSlugRoute: ProjectsSlugRoute,
-  ProjectsIndexRoute: ProjectsIndexRoute,
-  ApiPublicAlertsRunRoute: ApiPublicAlertsRunRoute,
-  ApiPublicCronFetchMarketRatesRoute: ApiPublicCronFetchMarketRatesRoute,
-  ApiPublicCronFetchProjectsRoute: ApiPublicCronFetchProjectsRoute,
-  ApiPublicNewsIngestRoute: ApiPublicNewsIngestRoute,
-  ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
+  DataSourcesRoute: DataSourcesRoute,
+  EvidenceRoute: EvidenceRoute,
+  PortfolioRoute: PortfolioRoute,
+  ReportsRoute: ReportsRoute,
+  AssessmentsIdRoute: AssessmentsIdRoute,
+  AssessmentsNewRoute: AssessmentsNewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
