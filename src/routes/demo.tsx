@@ -15,12 +15,16 @@ import { AppShell } from "@/components/product/AppShell";
 export const Route = createFileRoute("/demo")({
   head: () => ({
     meta: [
-      { title: "GridPulse — Grid connection intelligence" },
+      { title: "GridPulse Demo | German Grid Connection Assessment" },
       {
         name: "description",
-        content: "Evidence-led grid connection screening for BESS and large loads in Germany.",
+        content:
+          "Explore an illustrative GridPulse assessment for German BESS, data-centre and large-load grid connection decisions.",
       },
+      { property: "og:title", content: "GridPulse Demo | German Grid Connection Assessment" },
+      { property: "og:url", content: "https://gridpulseinsights.com/demo" },
     ],
+    links: [{ rel: "canonical", href: "https://gridpulseinsights.com/demo" }],
   }),
   component: AssessmentWorkspace,
 });

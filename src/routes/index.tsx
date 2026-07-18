@@ -20,13 +20,17 @@ import { useAuth } from "@/context/useAuth";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "GridPulse — German grid-connection decision support" },
+      { title: "GridPulse | Grid Connection Intelligence for Germany" },
       {
         name: "description",
         content:
-          "Structure German grid-connection evidence, compare flexible connection options, and quantify operational impact.",
+          "Evidence-led grid connection assessments for BESS, data centres and large electrical loads in Germany. Compare flexible connection options and quantify operational constraints.",
       },
+      { property: "og:title", content: "GridPulse | Grid Connection Intelligence for Germany" },
+      { property: "og:url", content: "https://gridpulseinsights.com/" },
+      { name: "twitter:title", content: "GridPulse | Grid Connection Intelligence for Germany" },
     ],
+    links: [{ rel: "canonical", href: "https://gridpulseinsights.com/" }],
   }),
   component: LandingPage,
 });

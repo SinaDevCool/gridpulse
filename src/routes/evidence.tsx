@@ -5,7 +5,10 @@ import { AppShell, PageHeading } from "@/components/product/AppShell";
 import { useAuth } from "@/context/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { label, type Evidence } from "@/lib/assessment-model";
-export const Route = createFileRoute("/evidence")({ component: EvidencePage });
+export const Route = createFileRoute("/evidence")({
+  head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
+  component: EvidencePage,
+});
 type EvidenceRow = Evidence & { candidate_sites: { name: string } | null };
 function EvidencePage() {
   const { user } = useAuth();

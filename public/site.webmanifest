@@ -1,0 +1,16 @@
+{
+  "name": "GridPulse",
+  "short_name": "GridPulse",
+  "description": "Grid connection intelligence for BESS, data centres and large electrical loads in Germany.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#07131f",
+  "theme_color": "#07131f",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "any",
+      "type": "image/x-icon"
+    }
+  ]
+}

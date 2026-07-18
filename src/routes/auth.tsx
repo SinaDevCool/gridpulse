@@ -4,7 +4,10 @@ import { ArrowLeft, CheckCircle2, LoaderCircle, LockKeyhole } from "lucide-react
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/useAuth";
 
-export const Route = createFileRoute("/auth")({ component: AuthPage });
+export const Route = createFileRoute("/auth")({
+  head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
+  component: AuthPage,
+});
 
 function AuthPage() {
   const navigate = useNavigate();
