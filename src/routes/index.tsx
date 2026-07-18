@@ -1,408 +1,466 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import {
-  ArrowRight,
-  BatteryCharging,
-  Building2,
-  ChartNoAxesCombined,
-  Check,
-  CircleSlash2,
-  Database,
-  FileCheck2,
-  FileText,
-  Server,
-  ShieldCheck,
-  SlidersHorizontal,
-  Tag,
-  UserRoundCheck,
-} from "lucide-react";
+import { useState } from "react";
+import { ArrowRight, Check, FileText, MapPin, Network, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/context/useAuth";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "GridPulse | Power Acceleration for German Infrastructure" },
+      { title: "GridPulse | German Grid Connection Intelligence" },
       {
         name: "description",
         content:
-          "Accelerate power delivery for data centres, BESS and large loads in Germany with evidence-led site screening, flexible connection design and operational readiness.",
+          "GridPulse helps data centres, battery projects and industrial loads screen, prepare and execute evidence-based grid-connection strategies in Germany.",
       },
-      { property: "og:title", content: "GridPulse | Power Acceleration for Germany" },
+      { property: "og:title", content: "GridPulse | Find a credible path to power" },
+      {
+        property: "og:description",
+        content:
+          "Evidence-led German grid-connection strategy for data centres, BESS and industrial loads.",
+      },
       { property: "og:url", content: "https://gridpulseinsights.com/" },
-      { name: "twitter:title", content: "GridPulse | Power Acceleration for Germany" },
+      { name: "twitter:title", content: "GridPulse | German Grid Connection Intelligence" },
     ],
-    links: [{ rel: "canonical", href: "https://gridpulseinsights.com/" }],
+    links: [
+      { rel: "canonical", href: "https://gridpulseinsights.com/" },
+      { rel: "preload", href: "/landing/german-grid-hero.webp", as: "image" },
+    ],
   }),
-  component: LandingPage,
+  component: CinematicLandingPage,
 });
+
+const productTabs = [
+  "Site context",
+  "Connection scenarios",
+  "Evidence ledger",
+  "Execution room",
+  "Decision memo",
+] as const;
 
 function Brand() {
   return (
-    <Link to="/" className="landing-brand" aria-label="GridPulse home">
-      <span>GRID</span>
-      <strong>PULSE</strong>
+    <Link to="/" className="cine-brand" aria-label="GridPulse home">
+      <span>GRID</span>PULSE
     </Link>
   );
 }
 
-function LandingPage() {
+function CinematicLandingPage() {
   const { user } = useAuth();
   const workspacePath = user ? "/portfolio" : "/auth";
+
   return (
-    <div className="landing-page">
-      <header className="landing-header">
+    <div className="cine-page">
+      <header className="cine-header">
         <Brand />
-        <nav aria-label="Landing page">
-          <a href="#product">Product</a>
+        <nav aria-label="Primary navigation">
           <a href="#platform">Platform</a>
-          <a href="#for-developers">For developers</a>
+          <a href="#method">How it works</a>
+          <a href="#developers">For developers</a>
           <a href="#methodology">Methodology</a>
         </nav>
-        <div className="landing-header-actions">
+        <div className="cine-header-actions">
           <Link to={workspacePath}>{user ? "Open workspace" : "Sign in"}</Link>
-          <Link to="/pilot" className="landing-button primary">
-            Request a pilot
+          <Link to="/pilot" className="cine-cta cine-cta-solid">
+            Bring us a project
           </Link>
         </div>
       </header>
+
       <main>
-        <section className="landing-hero" id="product">
-          <div className="landing-hero-copy">
-            <span className="landing-kicker">Power acceleration for Germany</span>
-            <h1>Bring power-intensive infrastructure online sooner.</h1>
+        <section className="cine-hero" id="platform">
+          <img
+            className="cine-hero-image"
+            src="/landing/german-grid-hero.webp"
+            width="1942"
+            height="809"
+            alt="German electrical substation and industrial infrastructure at blue hour"
+            fetchPriority="high"
+          />
+          <svg className="cine-power-route" viewBox="0 0 900 540" aria-hidden="true">
+            <path d="M470 468 C570 430 565 350 670 324 S735 214 862 174" />
+          </svg>
+          <div className="cine-hero-shade" />
+          <div className="cine-hero-copy">
+            <h1>Find the fastest credible path to power.</h1>
             <p>
-              GridPulse builds an operator-ready path from site screening to flexible connection and
-              operations for data centres, BESS and large loads—without presenting assumptions as
-              available grid capacity.
+              GridPulse turns grid evidence, operator requirements and project constraints into an
+              actionable connection strategy for German infrastructure.
             </p>
-            <div className="landing-actions">
-              <Link to="/pilot" className="landing-button primary">
-                Request a pilot
+            <div className="cine-actions">
+              <Link to="/demo" className="cine-cta cine-cta-solid">
+                Explore the platform <ArrowRight />
               </Link>
-              <Link to="/demo" className="landing-button secondary">
-                Explore the demo
+              <Link to="/pilot" className="cine-cta cine-cta-line">
+                Bring us a project <ArrowRight />
               </Link>
             </div>
           </div>
-          <ProductFrame />
+          <a
+            className="cine-scroll"
+            href="#constraint"
+            aria-label="Continue to the connection problem"
+          >
+            <span /> Scroll to trace the route
+          </a>
         </section>
-        <section className="landing-audience-band" id="for-developers">
-          <h2>Built for power-constrained infrastructure projects</h2>
-          <div>
-            <AudienceMini icon={Server} title="Data-centre developers">
-              De-risk site selection and define a credible route to energized capacity.
-            </AudienceMini>
-            <AudienceMini icon={BatteryCharging} title="BESS developers">
-              Design storage as a connection and flexibility asset.
-            </AudienceMini>
-            <AudienceMini icon={FileCheck2} title="Grid advisers">
-              Deliver consistent, traceable assessments.
-            </AudienceMini>
-          </div>
-        </section>
-        <section className="landing-section workflow-section" id="platform">
-          <span className="section-kicker">The GridPulse platform</span>
-          <h2>One path from power search to flexible operation.</h2>
-          <div className="landing-workflow">
-            <WorkflowStep number="1" icon={FileText} title="Power discovery">
-              Screen candidate locations, responsible operators and the evidence required to qualify
-              a site.
-            </WorkflowStep>
-            <WorkflowStep number="2" icon={SlidersHorizontal} title="Connection activation">
-              Build operator-ready unrestricted, static and dynamic FCA cases from traceable inputs.
-            </WorkflowStep>
-            <WorkflowStep number="3" icon={ChartNoAxesCombined} title="Flexible operations">
-              Translate connection limits into dispatch rules, restricted hours and commercial
-              impact.
-            </WorkflowStep>
-          </div>
-        </section>
-        <section className="landing-section decision-section">
-          <div className="decision-copy">
-            <span className="section-kicker">Business outcomes</span>
-            <h2>Make power a development strategy—not a late-stage constraint.</h2>
-            <Audience
-              icon={BatteryCharging}
-              title="BESS developers"
-              text="Use storage and co-location flexibility to support faster, more efficient connections."
-            />
-            <Audience
-              icon={Server}
-              title="Data-centre developers"
-              text="Compare sites and flexibility options before committing development capital."
-            />
-            <Audience
-              icon={UserRoundCheck}
-              title="Grid advisers"
-              text="Turn fragmented operator evidence into a defensible activation plan."
-            />
-          </div>
-          <EvidenceFrame />
-        </section>
-        <section className="landing-section methodology-section" id="methodology">
-          <h2>Decision support with the uncertainty left visible.</h2>
-          <p>Four principles keep evidence and assumptions explicit.</p>
-          <div className="principle-grid">
-            <Principle icon={CircleSlash2} title="No inferred grid capacity">
-              We model only what is provided and traceable.
-            </Principle>
-            <Principle icon={Tag} title="Every assumption is labelled">
-              Assumptions stay explicit and reviewable.
-            </Principle>
-            <Principle icon={UserRoundCheck} title="Operator evidence remains controlling">
-              Operator sources take precedence over public or third-party information.
-            </Principle>
-            <Principle icon={Database} title="Calculations retain their version and inputs">
-              Every calculation links to defined inputs and methodology.
-            </Principle>
-          </div>
-        </section>
-        <section className="landing-section report-section">
-          <div>
-            <h2>Power-readiness plan preview</h2>
+
+        <section className="cine-constraint" id="constraint">
+          <div className="cine-section-copy">
+            <h2>A site is not power-ready because it appears close to the grid.</h2>
             <p>
-              Every project receives an evidence-led route from connection request to operation.
-            </p>
-            {[
-              "Project requirement",
-              "Evidence ledger",
-              "Operating profile",
-              "Activation scenarios",
-              "Flexibility requirements",
-              "Limitations",
-            ].map((item) => (
-              <span key={item}>
-                <Check />
-                {item}
-              </span>
-            ))}
-          </div>
-          <ReportFrame />
-        </section>
-        <section className="pilot-band">
-          <ShieldCheck />
-          <div>
-            <h2>Bring one German power-constrained project. We’ll build the activation path.</h2>
-            <p>
-              We are opening design-partner pilots for data-centre, BESS and large-load developers
-              that need an evidence-led route to power.
+              Connection outcomes depend on fragmented evidence, operator requirements and competing
+              constraints. GridPulse brings them together without presenting assumptions as
+              capacity.
             </p>
           </div>
-          <Link to="/pilot" className="landing-button primary">
-            Request a pilot
-          </Link>
-          <Link to={workspacePath} className="landing-button secondary">
-            {user ? "Open workspace" : "Sign in to GridPulse"}
-          </Link>
+          <EvidenceRoute />
+        </section>
+
+        <section className="cine-transformation" id="developers">
+          <div className="cine-section-heading">
+            <span>Transformation story</span>
+            <h2>From fragmented evidence to a connection decision.</h2>
+            <p>
+              One illustrative German case moves from declared requirements to an evidence-backed
+              operator-engagement plan.
+            </p>
+          </div>
+          <TransformationRail />
+        </section>
+
+        <section className="cine-method" id="method">
+          <div className="cine-method-intro">
+            <span>The GridPulse method</span>
+            <h2>A practical route from first review to operator engagement.</h2>
+            <p>Clarity, structure and traceability at every step.</p>
+          </div>
+          <MethodStep number="01" title="Screen">
+            Map project context, likely operator responsibility and evidence gaps.
+          </MethodStep>
+          <MethodStep number="02" title="Prepare">
+            Organise technical inputs and assemble the operator engagement package.
+          </MethodStep>
+          <MethodStep number="03" title="Execute">
+            Coordinate decisions, documents and deadlines in one traceable workspace.
+          </MethodStep>
+        </section>
+
+        <section className="cine-product" aria-labelledby="product-title">
+          <div className="cine-product-copy">
+            <span>Working product</span>
+            <h2 id="product-title">See the connection case, not another presentation.</h2>
+            <p>
+              Explore the same assessment structure used for site context, scenarios, evidence,
+              execution and decision reporting.
+            </p>
+            <Link to="/demo" className="cine-text-link">
+              Open the complete demonstration <ArrowRight />
+            </Link>
+          </div>
+          <ProductExperience />
+        </section>
+
+        <section className="cine-germany" id="methodology">
+          <div className="cine-germany-copy">
+            <span>The German market</span>
+            <h2>Built around the way German connection projects actually move.</h2>
+            <p>
+              GridPulse aligns evidence and engagement with operator responsibility,
+              project-specific requirements and formal validation.
+            </p>
+          </div>
+          <GermanyMap />
+          <ol className="cine-germany-list">
+            <li>
+              <b>01</b>
+              <span>Distribution and transmission responsibility</span>
+            </li>
+            <li>
+              <b>02</b>
+              <span>Project-specific application evidence</span>
+            </li>
+            <li>
+              <b>03</b>
+              <span>BESS, data centres and industrial loads</span>
+            </li>
+            <li>
+              <b>04</b>
+              <span>Operator validation remains controlling</span>
+            </li>
+          </ol>
+        </section>
+
+        <section className="cine-outcomes">
+          <h2>Make uncertainty actionable.</h2>
+          <div>
+            <Outcome index="01" title="Expose evidence gaps">
+              See what is missing before operator engagement begins.
+            </Outcome>
+            <Outcome index="02" title="Preserve decision traceability">
+              Keep inputs, assumptions and sources connected to every conclusion.
+            </Outcome>
+            <Outcome index="03" title="Coordinate the execution path">
+              Give project teams one record for documents, milestones and decisions.
+            </Outcome>
+          </div>
+        </section>
+
+        <section className="cine-pilot">
+          <img
+            src="/landing/german-grid-hero.webp"
+            width="1942"
+            height="809"
+            alt=""
+            loading="lazy"
+          />
+          <div className="cine-pilot-shade" />
+          <div className="cine-pilot-copy">
+            <h2>Bring us one real connection case.</h2>
+            <p>
+              We’ll structure the evidence, identify the unresolved gates and prepare an
+              operator-engagement pathway with your team.
+            </p>
+            <div className="cine-actions">
+              <Link to="/pilot" className="cine-cta cine-cta-solid">
+                Request a German pilot <ArrowRight />
+              </Link>
+              <Link to="/demo" className="cine-cta cine-cta-line">
+                Explore the demonstration <ArrowRight />
+              </Link>
+            </div>
+          </div>
         </section>
       </main>
-      <footer className="landing-footer">
+
+      <footer className="cine-footer">
         <Brand />
         <nav>
-          <a href="#product">Product</a>
-          <Link to="/demo">Demo</Link>
-          <a href="#methodology">Methodology</a>
-          <Link to="/auth">Sign in</Link>
+          <a href="#platform">Platform</a>
+          <a href="#method">How it works</a>
+          <Link to="/demo">Demonstration</Link>
+          <Link to="/pilot">Pilot</Link>
         </nav>
         <p>
           Preliminary decision support only.
           <br />
-          Validate connection conclusions with the network operator.
+          Validate all connection conclusions with the responsible network operator.
         </p>
       </footer>
     </div>
   );
 }
 
-function ProductFrame() {
-  const rows = [
-    ["Power discovery", "Candidate site and operator screening", "In review"],
-    ["Connection activation", "Static and dynamic FCA design", "Evidence required"],
-    ["Flexible operations", "Dispatch and restriction readiness", "Planned"],
+function EvidenceRoute() {
+  const inputs = [
+    "Fragmented evidence",
+    "Operator requirements",
+    "Network constraints",
+    "Project constraints",
   ];
   return (
-    <div className="hero-product-frame">
-      <div className="frame-progress">
-        <span className="done">
-          <Check />
-          Site & network
-        </span>
-        <span className="active">2</span>
-        <span>Connection options</span>
-        <span>3</span>
-        <span>Evidence</span>
-      </div>
-      <h2>Power activation plan</h2>
-      <div className="comparison-table">
-        <header>
-          <span>Stage</span>
-          <span>Decision output</span>
-          <span>Status</span>
-        </header>
-        {rows.map(([name, option, status]) => (
-          <div key={name}>
-            <b>{name}</b>
-            <span>{option}</span>
-            <small>{status}</small>
+    <div
+      className="cine-evidence-route"
+      aria-label="Evidence is assembled into an engagement route"
+    >
+      <div className="cine-evidence-inputs">
+        {inputs.map((item, index) => (
+          <div key={item} style={{ "--route-delay": `${index * 120}ms` } as React.CSSProperties}>
+            <span>{item}</span>
+            <i>
+              <FileText />
+            </i>
+            <i />
+            <i />
           </div>
         ))}
+      </div>
+      <svg viewBox="0 0 300 320" aria-hidden="true">
+        <path d="M0 38 C112 38 142 158 288 158" />
+        <path d="M0 116 C112 116 142 158 288 158" />
+        <path d="M0 204 C112 204 142 158 288 158" />
+        <path d="M0 282 C112 282 142 158 288 158" />
+      </svg>
+      <div className="cine-route-output">
+        <MapPin />
+        <b>Credible route forward</b>
+        <span>
+          <Check /> Evidence gaps visible
+        </span>
+        <span>
+          <Check /> Responsibility screened
+        </span>
+        <span>
+          <Check /> Validation gates explicit
+        </span>
       </div>
     </div>
   );
 }
-function WorkflowStep({
+
+function TransformationRail() {
+  return (
+    <div className="cine-transform-rail">
+      <article>
+        <b>Declared</b>
+        <span>Site and load enter</span>
+        <MapPin />
+      </article>
+      <article>
+        <b>Assemble</b>
+        <span>Evidence and likely DSO responsibility take shape</span>
+        <FileText />
+      </article>
+      <article>
+        <b>Strategy</b>
+        <span>Connection approach and plan align</span>
+        <Network />
+      </article>
+      <article>
+        <b>Decision</b>
+        <span>Memo ready to act</span>
+        <ShieldCheck />
+      </article>
+    </div>
+  );
+}
+
+function MethodStep({
   number,
-  icon: Icon,
   title,
   children,
 }: {
   number: string;
-  icon: typeof FileText;
   title: string;
   children: string;
 }) {
   return (
-    <article>
-      <Icon />
-      <span>{number}</span>
-      <div>
-        <h3>{title}</h3>
-        <p>{children}</p>
-      </div>
+    <article className="cine-method-step">
+      <b>{number}</b>
+      <h3>{title}</h3>
+      <p>{children}</p>
+      <span className="cine-method-line">
+        <ArrowRight />
+      </span>
     </article>
   );
 }
-function AudienceMini({
-  icon: Icon,
-  title,
-  children,
-}: {
-  icon: typeof FileText;
-  title: string;
-  children: string;
-}) {
+
+function ProductExperience() {
+  const [activeTab, setActiveTab] = useState<(typeof productTabs)[number]>("Site context");
   return (
-    <span>
-      <Icon />
-      <b>{title}</b>
-      <small>{children}</small>
-    </span>
-  );
-}
-function Audience({
-  icon: Icon,
-  title,
-  text,
-}: {
-  icon: typeof FileText;
-  title: string;
-  text: string;
-}) {
-  return (
-    <article className="audience-row">
-      <Icon />
-      <div>
-        <h3>{title}</h3>
-        <p>{text}</p>
-      </div>
-      <ArrowRight />
-    </article>
-  );
-}
-function EvidenceFrame() {
-  const items = [
-    [Building2, "Official source", "Verified publications and regulatory sources."],
-    [UserRoundCheck, "Customer input", "Information provided by your project team."],
-    [ChartNoAxesCombined, "Calculation", "Derived using a defined methodology."],
-    [
-      ShieldCheck,
-      "Operator validation required",
-      "Subject to confirmation by the network operator.",
-    ],
-  ] as const;
-  return (
-    <div className="evidence-frame">
-      <h2>Evidence classifications</h2>
-      <p>Every input is labelled for source and confidence.</p>
-      {items.map(([Icon, title, text]) => (
-        <div key={title}>
-          <Icon />
-          <span>
-            <b>{title}</b>
-            <small>{text}</small>
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-}
-function Principle({
-  icon: Icon,
-  title,
-  children,
-}: {
-  icon: typeof FileText;
-  title: string;
-  children: string;
-}) {
-  return (
-    <article>
-      <Icon />
-      <div>
-        <h3>{title}</h3>
-        <p>{children}</p>
-      </div>
-    </article>
-  );
-}
-function ReportFrame() {
-  return (
-    <div className="report-frame">
-      <header>
+    <div className="cine-product-frame">
+      <div className="cine-product-brand">
         <Brand />
-        <span>Power-readiness plan</span>
-      </header>
-      <div className="report-frame-grid">
-        <section>
-          <b>Project requirement</b>
-          <span>
-            Project type <strong>BESS</strong>
-          </span>
-          <span>
-            Location <strong>Germany</strong>
-          </span>
-          <span>
-            Requested capacity <strong>Customer input</strong>
-          </span>
-        </section>
-        <section>
-          <b>Evidence ledger</b>
-          <span>
-            Official source <strong>Collected</strong>
-          </span>
-          <span>
-            Operating profile <strong>Collected</strong>
-          </span>
-          <span>
-            Operator response <strong>Required</strong>
-          </span>
-        </section>
-        <section>
-          <b>Activation scenarios</b>
-          <span>
-            Unrestricted <strong>Baseline</strong>
-          </span>
-          <span>
-            Static FCA <strong>Calculated</strong>
-          </span>
-          <span>
-            Dynamic FCA <strong>Calculated</strong>
-          </span>
-        </section>
-        <section>
-          <b>Limitations</b>
-          <p>Data gaps and operator validations remain visible.</p>
-        </section>
+        <span>Illustrative workspace</span>
+      </div>
+      <div className="cine-product-tabs" role="tablist" aria-label="Assessment views">
+        {productTabs.map((tab) => (
+          <button
+            key={tab}
+            role="tab"
+            aria-selected={activeTab === tab}
+            onClick={() => setActiveTab(tab)}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+      <div className="cine-product-screen">
+        <ProductScreen tab={activeTab} />
       </div>
     </div>
+  );
+}
+
+function ProductScreen({ tab }: { tab: (typeof productTabs)[number] }) {
+  const content = {
+    "Site context": [
+      "Proposed site",
+      "Likely distribution operator",
+      "Target voltage",
+      "Public context only",
+    ],
+    "Connection scenarios": [
+      "Unrestricted baseline",
+      "Static flexible connection",
+      "Dynamic flexible connection",
+      "Operator limits required",
+    ],
+    "Evidence ledger": [
+      "Site location",
+      "Technical configuration",
+      "Operator responsibility",
+      "Capacity evidence missing",
+    ],
+    "Execution room": [
+      "Confirm responsibility",
+      "Complete technical pack",
+      "Prepare operator request",
+      "Track response deadline",
+    ],
+    "Decision memo": [
+      "Executive summary",
+      "Connection approach",
+      "Evidence status",
+      "Next actions",
+    ],
+  }[tab];
+  return (
+    <>
+      <div className="cine-screen-map">
+        <svg viewBox="0 0 500 280" aria-label="Illustrative connection context">
+          <path d="M20 230 C110 170 158 214 232 136 S360 108 470 38" />
+          <circle cx="232" cy="136" r="8" />
+          <circle cx="470" cy="38" r="8" />
+        </svg>
+        <span>Berlin-Brandenburg BESS + AI Load</span>
+      </div>
+      <div className="cine-screen-ledger">
+        <h3>{tab}</h3>
+        {content.map((item, index) => (
+          <span key={item}>
+            <i className={index === 3 ? "warn" : ""} />
+            {item}
+            <small>{index === 3 ? "Validation required" : "Recorded"}</small>
+          </span>
+        ))}
+      </div>
+    </>
+  );
+}
+
+function GermanyMap() {
+  return (
+    <div className="cine-germany-map" aria-label="Illustrative German grid responsibility context">
+      <svg
+        viewBox="0 0 480 560"
+        role="img"
+        aria-label="Abstract outline of Germany with four transmission regions"
+      >
+        <path
+          className="country"
+          d="M245 18 L292 48 330 44 354 82 398 98 387 142 431 180 405 214 426 260 397 294 408 337 370 356 374 403 330 417 306 461 265 449 226 506 186 473 142 476 126 431 92 408 104 365 66 330 86 292 54 254 83 217 72 173 112 148 118 104 164 94 180 48 218 58Z"
+        />
+        <path d="M116 148 C200 178 214 262 226 506" />
+        <path d="M292 48 C258 158 292 260 374 403" />
+        <path d="M83 217 C176 264 270 260 426 260" />
+        <circle cx="286" cy="204" r="7" />
+      </svg>
+      <span className="zone zone-a">TenneT</span>
+      <span className="zone zone-b">50Hertz</span>
+      <span className="zone zone-c">Amprion</span>
+      <span className="zone zone-d">TransnetBW</span>
+    </div>
+  );
+}
+
+function Outcome({ index, title, children }: { index: string; title: string; children: string }) {
+  return (
+    <article>
+      <b>{index}</b>
+      <h3>{title}</h3>
+      <p>{children}</p>
+    </article>
   );
 }
