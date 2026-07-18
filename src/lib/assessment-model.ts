@@ -63,6 +63,59 @@ export type IntervalProfile = {
   points: import("@/lib/fca-engine").IntervalPoint[];
   created_at: string;
 };
+export type AssessmentDocument = {
+  id: string;
+  site_id: string;
+  user_id: string;
+  file_name: string;
+  storage_path: string;
+  mime_type: string;
+  size_bytes: number;
+  document_type: string;
+  source_classification: string;
+  review_status: string;
+  notes: string | null;
+  created_at: string;
+};
+export type OperatorRequirement = {
+  id: string;
+  site_id: string;
+  requirement_key: string;
+  label: string;
+  category: string;
+  status: string;
+  document_id: string | null;
+  notes: string | null;
+  sort_order: number;
+};
+export type OperatorCorrespondence = {
+  id: string;
+  site_id: string;
+  direction: string;
+  contact_name: string | null;
+  subject: string;
+  occurred_at: string;
+  summary: string;
+  document_id: string | null;
+  created_at: string;
+};
+export type FcaEnvelope = {
+  id: string;
+  site_id: string;
+  version: number;
+  name: string;
+  mode: string;
+  max_import_mw: number | null;
+  max_export_mw: number | null;
+  valid_from: string | null;
+  valid_to: string | null;
+  restriction_schedule: unknown;
+  status: string;
+  source_document_id: string | null;
+  supersedes_id: string | null;
+  notes: string | null;
+  created_at: string;
+};
 
 export function readiness(evidence: Evidence[]) {
   const collected = (classification: string) =>
