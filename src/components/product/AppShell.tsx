@@ -9,6 +9,7 @@ const navigation = [
   { label: "Evidence", to: "/evidence" },
   { label: "Reports", to: "/reports" },
   { label: "Data sources", to: "/data-sources" },
+  { label: "Pilot requests", to: "/pilot-requests" },
 ] as const;
 
 export function AppHeader() {

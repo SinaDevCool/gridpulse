@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as PortfolioRouteImport } from './routes/portfolio'
+import { Route as PilotRequestsRouteImport } from './routes/pilot-requests'
+import { Route as PilotRouteImport } from './routes/pilot'
 import { Route as EvidenceRouteImport } from './routes/evidence'
 import { Route as DemoRouteImport } from './routes/demo'
 import { Route as DataSourcesRouteImport } from './routes/data-sources'
@@ -27,6 +29,16 @@ const ReportsRoute = ReportsRouteImport.update({
 const PortfolioRoute = PortfolioRouteImport.update({
   id: '/portfolio',
   path: '/portfolio',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PilotRequestsRoute = PilotRequestsRouteImport.update({
+  id: '/pilot-requests',
+  path: '/pilot-requests',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PilotRoute = PilotRouteImport.update({
+  id: '/pilot',
+  path: '/pilot',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EvidenceRoute = EvidenceRouteImport.update({
@@ -71,6 +83,8 @@ export interface FileRoutesByFullPath {
   '/data-sources': typeof DataSourcesRoute
   '/demo': typeof DemoRoute
   '/evidence': typeof EvidenceRoute
+  '/pilot': typeof PilotRoute
+  '/pilot-requests': typeof PilotRequestsRoute
   '/portfolio': typeof PortfolioRoute
   '/reports': typeof ReportsRoute
   '/assessments/$id': typeof AssessmentsIdRoute
@@ -82,6 +96,8 @@ export interface FileRoutesByTo {
   '/data-sources': typeof DataSourcesRoute
   '/demo': typeof DemoRoute
   '/evidence': typeof EvidenceRoute
+  '/pilot': typeof PilotRoute
+  '/pilot-requests': typeof PilotRequestsRoute
   '/portfolio': typeof PortfolioRoute
   '/reports': typeof ReportsRoute
   '/assessments/$id': typeof AssessmentsIdRoute
@@ -94,6 +110,8 @@ export interface FileRoutesById {
   '/data-sources': typeof DataSourcesRoute
   '/demo': typeof DemoRoute
   '/evidence': typeof EvidenceRoute
+  '/pilot': typeof PilotRoute
+  '/pilot-requests': typeof PilotRequestsRoute
   '/portfolio': typeof PortfolioRoute
   '/reports': typeof ReportsRoute
   '/assessments/$id': typeof AssessmentsIdRoute
@@ -107,6 +125,8 @@ export interface FileRouteTypes {
     | '/data-sources'
     | '/demo'
     | '/evidence'
+    | '/pilot'
+    | '/pilot-requests'
     | '/portfolio'
     | '/reports'
     | '/assessments/$id'
@@ -118,6 +138,8 @@ export interface FileRouteTypes {
     | '/data-sources'
     | '/demo'
     | '/evidence'
+    | '/pilot'
+    | '/pilot-requests'
     | '/portfolio'
     | '/reports'
     | '/assessments/$id'
@@ -129,6 +151,8 @@ export interface FileRouteTypes {
     | '/data-sources'
     | '/demo'
     | '/evidence'
+    | '/pilot'
+    | '/pilot-requests'
     | '/portfolio'
     | '/reports'
     | '/assessments/$id'
@@ -141,6 +165,8 @@ export interface RootRouteChildren {
   DataSourcesRoute: typeof DataSourcesRoute
   DemoRoute: typeof DemoRoute
   EvidenceRoute: typeof EvidenceRoute
+  PilotRoute: typeof PilotRoute
+  PilotRequestsRoute: typeof PilotRequestsRoute
   PortfolioRoute: typeof PortfolioRoute
   ReportsRoute: typeof ReportsRoute
   AssessmentsIdRoute: typeof AssessmentsIdRoute
@@ -161,6 +187,20 @@ declare module '@tanstack/react-router' {
       path: '/portfolio'
       fullPath: '/portfolio'
       preLoaderRoute: typeof PortfolioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pilot-requests': {
+      id: '/pilot-requests'
+      path: '/pilot-requests'
+      fullPath: '/pilot-requests'
+      preLoaderRoute: typeof PilotRequestsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pilot': {
+      id: '/pilot'
+      path: '/pilot'
+      fullPath: '/pilot'
+      preLoaderRoute: typeof PilotRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/evidence': {
@@ -221,6 +261,8 @@ const rootRouteChildren: RootRouteChildren = {
   DataSourcesRoute: DataSourcesRoute,
   DemoRoute: DemoRoute,
   EvidenceRoute: EvidenceRoute,
+  PilotRoute: PilotRoute,
+  PilotRequestsRoute: PilotRequestsRoute,
   PortfolioRoute: PortfolioRoute,
   ReportsRoute: ReportsRoute,
   AssessmentsIdRoute: AssessmentsIdRoute,

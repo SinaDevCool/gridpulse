@@ -1,0 +1,146 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
+import { CalendarDays, Mail, MapPin } from "lucide-react";
+import { AppShell, PageHeading } from "@/components/product/AppShell";
+import { useAuth } from "@/context/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+
+export const Route = createFileRoute("/pilot-requests")({ component: PilotRequests });
+
+type RequestRow = {
+  id: string;
+  created_at: string;
+  status: string;
+  contact_name: string;
+  work_email: string;
+  company: string;
+  project_name: string;
+  project_type: string;
+  project_stage: string;
+  postcode: string;
+  municipality: string;
+  federal_state: string;
+  requested_import_mw: number;
+  requested_export_mw: number;
+  battery_power_mw: number | null;
+  battery_energy_mwh: number | null;
+  target_connection_date: string | null;
+  connection_challenge: string;
+};
+const statusLabels: Record<string, string> = {
+  new: "New",
+  contacted: "Contacted",
+  qualified: "Qualified",
+  declined: "Declined",
+  converted: "Converted",
+};
+
+function PilotRequests() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const query = useQuery({
+    queryKey: ["pilot-requests", user?.id],
+    enabled: Boolean(user),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("pilot_requests")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as RequestRow[];
+    },
+  });
+  const updateStatus = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const { error } = await supabase.from("pilot_requests").update({ status }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["pilot-requests", user?.id] }),
+  });
+
+  return (
+    <AppShell requireAuth>
+      <main className="section-page">
+        <PageHeading
+          eyebrow="Design-partner pipeline"
+          title="Pilot requests"
+          description="Review incoming German connection cases and qualify the next design-partner pilots."
+        />
+        {query.isLoading ? <div className="portfolio-state">Loading requests…</div> : null}
+        {query.error ? (
+          <div className="portfolio-state error-message">
+            You do not have administrator access to pilot requests.
+          </div>
+        ) : null}
+        {query.data?.length === 0 ? (
+          <div className="portfolio-state">No pilot requests have been submitted yet.</div>
+        ) : null}
+        <div className="pilot-request-list">
+          {query.data?.map((request) => (
+            <article className="pilot-request-card" key={request.id}>
+              <header>
+                <div>
+                  <span>{request.company}</span>
+                  <h2>{request.project_name}</h2>
+                </div>
+                <select
+                  value={request.status}
+                  aria-label={`Status for ${request.project_name}`}
+                  onChange={(event) =>
+                    updateStatus.mutate({ id: request.id, status: event.target.value })
+                  }
+                >
+                  {Object.entries(statusLabels).map(([value, label]) => (
+                    <option value={value} key={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </header>
+              <div className="pilot-request-meta">
+                <span>
+                  <MapPin /> {request.postcode} {request.municipality}, {request.federal_state}
+                </span>
+                <span>
+                  <CalendarDays /> {new Date(request.created_at).toLocaleDateString("en-GB")}
+                </span>
+                <a href={`mailto:${request.work_email}`}>
+                  <Mail /> {request.contact_name} · {request.work_email}
+                </a>
+              </div>
+              <dl>
+                <div>
+                  <dt>Type</dt>
+                  <dd>{request.project_type.replaceAll("_", " ")}</dd>
+                </div>
+                <div>
+                  <dt>Stage</dt>
+                  <dd>{request.project_stage.replaceAll("_", " ")}</dd>
+                </div>
+                <div>
+                  <dt>Import</dt>
+                  <dd>{request.requested_import_mw} MW</dd>
+                </div>
+                <div>
+                  <dt>Export</dt>
+                  <dd>{request.requested_export_mw} MW</dd>
+                </div>
+                <div>
+                  <dt>Battery</dt>
+                  <dd>
+                    {request.battery_power_mw ?? "—"} MW / {request.battery_energy_mwh ?? "—"} MWh
+                  </dd>
+                </div>
+                <div>
+                  <dt>Target date</dt>
+                  <dd>{request.target_connection_date ?? "Not specified"}</dd>
+                </div>
+              </dl>
+              <p>{request.connection_challenge}</p>
+            </article>
+          ))}
+        </div>
+      </main>
+    </AppShell>
+  );
+}
