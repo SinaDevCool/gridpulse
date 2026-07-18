@@ -23,8 +23,36 @@ export type CandidateSite = {
   responsible_operator_level: string | null;
   responsibility_source: string | null;
   responsibility_confirmed_at: string | null;
+  postcode: string | null;
+  municipality: string | null;
+  federal_state: string | null;
+  connection_challenge: string | null;
+  intake_source: string;
+  pilot_request_id: string | null;
   created_at: string;
   updated_at: string;
+};
+export type AssessmentActivity = {
+  id: string;
+  site_id: string;
+  actor_id: string | null;
+  event_type: string;
+  entity_type: string;
+  entity_id: string | null;
+  summary: string;
+  details: Record<string, unknown>;
+  created_at: string;
+};
+export type DecisionMemo = {
+  id: string;
+  site_id: string;
+  version: number;
+  readiness_score: number;
+  workflow_status: string;
+  recommended_next_action: string;
+  blockers: string[];
+  snapshot: Record<string, unknown>;
+  created_at: string;
 };
 export type Evidence = {
   id: string;

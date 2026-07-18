@@ -30,10 +30,12 @@ import {
   label,
   readiness,
   type AssessmentCollaborator,
+  type AssessmentActivity,
   type CandidateSite,
   type AssessmentDocument,
   type AssessmentMilestone,
   type DsoDirectoryEntry,
+  type DecisionMemo,
   type Evidence,
   type FcaEnvelope,
   type GridDataSource,
@@ -64,6 +66,7 @@ type Tab =
   | "envelopes"
   | "evidence"
   | "scenarios"
+  | "activity"
   | "report";
 
 function AssessmentPage() {
@@ -91,6 +94,8 @@ function AssessmentPage() {
         dsoResult,
         milestoneResult,
         collaboratorResult,
+        activityResult,
+        memoResult,
       ] = await Promise.all([
         supabase.from("candidate_sites").select("*").eq("id", id).single(),
         supabase
@@ -133,6 +138,17 @@ function AssessmentPage() {
         supabase.from("dso_directory").select("*").order("operator_name"),
         supabase.from("assessment_milestones").select("*").eq("site_id", id).order("due_at"),
         supabase.from("assessment_collaborators").select("*").eq("site_id", id).order("created_at"),
+        supabase
+          .from("assessment_activity")
+          .select("*")
+          .eq("site_id", id)
+          .order("created_at", { ascending: false })
+          .limit(100),
+        supabase
+          .from("decision_memos")
+          .select("*")
+          .eq("site_id", id)
+          .order("version", { ascending: false }),
       ]);
       if (siteResult.error) throw siteResult.error;
       if (evidenceResult.error) throw evidenceResult.error;
@@ -147,6 +163,8 @@ function AssessmentPage() {
       if (dsoResult.error) throw dsoResult.error;
       if (milestoneResult.error) throw milestoneResult.error;
       if (collaboratorResult.error) throw collaboratorResult.error;
+      if (activityResult.error) throw activityResult.error;
+      if (memoResult.error) throw memoResult.error;
       return {
         site: siteResult.data as CandidateSite,
         evidence: evidenceResult.data as Evidence[],
@@ -161,6 +179,8 @@ function AssessmentPage() {
         dsos: dsoResult.data as DsoDirectoryEntry[],
         milestones: milestoneResult.data as AssessmentMilestone[],
         collaborators: collaboratorResult.data as AssessmentCollaborator[],
+        activity: activityResult.data as AssessmentActivity[],
+        memos: memoResult.data as DecisionMemo[],
       };
     },
   });
@@ -208,6 +228,8 @@ function AssessmentPage() {
     dsos,
     milestones,
     collaborators,
+    activity,
+    memos,
   } = query.data;
   const ready = readiness(evidence);
   async function archive() {
@@ -290,6 +312,7 @@ function AssessmentPage() {
               "envelopes",
               "evidence",
               "scenarios",
+              "activity",
               "report",
             ] as Tab[]
           ).map((item) => (
@@ -345,6 +368,8 @@ function AssessmentPage() {
           <Scenarios site={site} scenarios={scenarios} profiles={profiles} refresh={refresh} />
         ) : tab === "envelopes" ? (
           <EnvelopeRoom site={site} documents={documents} envelopes={envelopes} refresh={refresh} />
+        ) : tab === "activity" ? (
+          <ActivityRoom activity={activity} memos={memos} />
         ) : (
           <Report
             site={site}
@@ -355,6 +380,8 @@ function AssessmentPage() {
             documents={documents}
             milestones={milestones}
             envelopes={envelopes}
+            memos={memos}
+            refresh={refresh}
           />
         )}
       </main>
@@ -2068,6 +2095,8 @@ function Report({
   documents,
   milestones,
   envelopes,
+  memos,
+  refresh,
 }: {
   site: CandidateSite;
   evidence: Evidence[];
@@ -2077,9 +2106,47 @@ function Report({
   documents: AssessmentDocument[];
   milestones: AssessmentMilestone[];
   envelopes: FcaEnvelope[];
+  memos: DecisionMemo[];
+  refresh: () => Promise<void>;
 }) {
   const state = readiness(evidence);
   const decision = activationDecision({ site, requirements, documents, profiles, envelopes });
+  const [saving, setSaving] = useState(false);
+  async function saveSnapshot() {
+    setSaving(true);
+    const { error } = await supabase.from("decision_memos").insert({
+      site_id: site.id,
+      user_id: site.user_id,
+      version: 0,
+      readiness_score: decision.score,
+      workflow_status: site.decision_status,
+      recommended_next_action: decision.nextAction,
+      blockers: decision.blockers,
+      snapshot: {
+        project: {
+          name: site.name,
+          projectType: site.project_type,
+          requestedImportMw: site.requested_import_mw,
+          requestedExportMw: site.requested_export_mw,
+          targetVoltageKv: site.target_voltage_kv,
+        },
+        counts: {
+          evidence: evidence.length,
+          requirements: requirements.length,
+          documents: documents.length,
+          scenarios: scenarios.length,
+          milestones: milestones.length,
+        },
+        generatedAt: new Date().toISOString(),
+        limitation:
+          "Not a grid connection offer, network study, capacity reservation, or revenue forecast.",
+      },
+    });
+    setSaving(false);
+    if (error) return toast.error(error.message);
+    toast.success("Decision memo snapshot saved");
+    await refresh();
+  }
   return (
     <article className="print-report">
       <header>
@@ -2088,10 +2155,17 @@ function Report({
           <h1>{site.name}</h1>
           <p>Generated {new Date().toLocaleDateString()} · Preliminary decision support</p>
         </div>
-        <button className="primary-button no-print" onClick={() => window.print()}>
-          <FileText />
-          Print / save PDF
-        </button>
+        <div className="report-actions no-print">
+          <span>
+            {memos.length ? `Latest saved version: ${memos[0].version}` : "No saved version"}
+          </span>
+          <button onClick={() => void saveSnapshot()} disabled={saving}>
+            {saving ? <LoaderCircle className="spin" /> : <Save />} Save snapshot
+          </button>
+          <button className="primary-button" onClick={() => window.print()}>
+            <FileText /> Print / save PDF
+          </button>
+        </div>
       </header>
       {!state.ready ? (
         <div className="report-blocker">
@@ -2232,5 +2306,65 @@ function Report({
         </p>
       </footer>
     </article>
+  );
+}
+
+function ActivityRoom({
+  activity,
+  memos,
+}: {
+  activity: AssessmentActivity[];
+  memos: DecisionMemo[];
+}) {
+  return (
+    <div className="activation-layout activity-layout">
+      <section className="workspace-card activation-list">
+        <div className="panel-heading">
+          <div>
+            <h2>Workspace activity</h2>
+            <p>An append-only record of project, evidence, document and execution changes.</p>
+          </div>
+          <ClipboardCheck />
+        </div>
+        {activity.length === 0 ? (
+          <div className="compact-empty">Activity will appear after the next workspace change.</div>
+        ) : (
+          activity.map((item) => (
+            <article className="activation-row activity-row" key={item.id}>
+              <div>
+                <b>{item.summary}</b>
+                <small>
+                  {label(item.entity_type)} · {label(item.event_type)}
+                </small>
+              </div>
+              <time>{new Date(item.created_at).toLocaleString("en-GB")}</time>
+            </article>
+          ))
+        )}
+      </section>
+      <section className="workspace-card activation-list">
+        <div className="panel-heading">
+          <div>
+            <h2>Saved decision memos</h2>
+            <p>Immutable snapshots preserve what the team knew at each decision point.</p>
+          </div>
+          <FileText />
+        </div>
+        {memos.length === 0 ? (
+          <div className="compact-empty">Save the first snapshot from the report tab.</div>
+        ) : (
+          memos.map((memo) => (
+            <article className="activation-row" key={memo.id}>
+              <div>
+                <b>Decision memo v{memo.version}</b>
+                <small>{memo.recommended_next_action}</small>
+              </div>
+              <span className="status">{memo.readiness_score}/100</span>
+              <time>{new Date(memo.created_at).toLocaleDateString("en-GB")}</time>
+            </article>
+          ))
+        )}
+      </section>
+    </div>
   );
 }
