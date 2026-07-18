@@ -1,363 +1,398 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
-  AlertTriangle,
   ArrowRight,
+  BatteryCharging,
+  Building2,
+  ChartNoAxesCombined,
   Check,
-  CircleDot,
-  ExternalLink,
+  CircleSlash2,
+  Database,
+  FileCheck2,
   FileText,
-  MapPin,
+  Server,
   ShieldCheck,
-  Zap,
+  SlidersHorizontal,
+  Tag,
+  UserRoundCheck,
 } from "lucide-react";
-import { AppShell } from "@/components/product/AppShell";
+import { useAuth } from "@/context/useAuth";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "GridPulse — Grid connection intelligence" },
+      { title: "GridPulse — German grid-connection decision support" },
       {
         name: "description",
-        content: "Evidence-led grid connection screening for BESS and large loads in Germany.",
+        content:
+          "Structure German grid-connection evidence, compare flexible connection options, and quantify operational impact.",
       },
     ],
   }),
-  component: AssessmentWorkspace,
+  component: LandingPage,
 });
 
-type EvidenceKind =
-  | "Official source"
-  | "Customer input"
-  | "Assumption"
-  | "Calculation"
-  | "Validation required";
-const kindClass: Record<EvidenceKind, string> = {
-  "Official source": "evidence evidence-official",
-  "Customer input": "evidence evidence-input",
-  Assumption: "evidence evidence-assumption",
-  Calculation: "evidence evidence-calculation",
-  "Validation required": "evidence evidence-required",
-};
+const pilotHref =
+  "mailto:sina.khedmati@outlook.de?subject=GridPulse%20design-partner%20pilot&body=Hello%20Sina%2C%0A%0AI%20would%20like%20to%20discuss%20a%20GridPulse%20pilot.%0A%0ACompany%3A%0AProject%20type%3A%0ALocation%3A%0ARequested%20capacity%3A%0A";
 
-const evidence: {
-  item: string;
-  source: string;
-  kind: EvidenceKind;
-  status: "Collected" | "Missing";
-}[] = [
-  {
-    item: "Substation proximity",
-    source: "OpenGridMap / verify",
-    kind: "Official source",
-    status: "Collected",
-  },
-  {
-    item: "Administrative grid area",
-    source: "BNetzA map portal",
-    kind: "Official source",
-    status: "Collected",
-  },
-  {
-    item: "Requested import and export",
-    source: "Project brief",
-    kind: "Customer input",
-    status: "Collected",
-  },
-  {
-    item: "BESS technical configuration",
-    source: "Technical datasheet",
-    kind: "Customer input",
-    status: "Collected",
-  },
-  {
-    item: "Responsible network operator",
-    source: "Boundary screening",
-    kind: "Assumption",
-    status: "Collected",
-  },
-  {
-    item: "Available network capacity",
-    source: "Network operator",
-    kind: "Validation required",
-    status: "Missing",
-  },
-  {
-    item: "FCA operating schedule",
-    source: "Connection offer",
-    kind: "Validation required",
-    status: "Missing",
-  },
-];
-
-function AssessmentWorkspace() {
+function Brand() {
   return (
-    <AppShell>
-      <main className="workspace">
-        <div className="workspace-heading">
-          <div>
-            <p className="context-label">Connection assessment / GP-DE-001</p>
-            <h1>Berlin-Brandenburg BESS + AI Load</h1>
-          </div>
-          <span className="demo-badge">Illustrative workspace</span>
-        </div>
-        <div className="workflow" aria-label="Assessment progress">
-          <div className="workflow-step done">
-            <Check />
-            <span>
-              <b>Site inputs</b>
-              <small>Completed</small>
-            </span>
-          </div>
-          <div className="workflow-step current">
-            <CircleDot />
-            <span>
-              <b>Operator screening</b>
-              <small>In review</small>
-            </span>
-          </div>
-          <div className="workflow-step">
-            <span className="step-number">3</span>
-            <span>
-              <b>Connection envelope</b>
-              <small>Draft</small>
-            </span>
-          </div>
-          <div className="workflow-step">
-            <span className="step-number">4</span>
-            <span>
-              <b>Evidence</b>
-              <small>5 of 7 collected</small>
-            </span>
-          </div>
-          <div className="workflow-step warning">
-            <AlertTriangle />
-            <span>
-              <b>Operator validation</b>
-              <small>Required</small>
-            </span>
-          </div>
-        </div>
-        <div className="dashboard-grid">
-          <section className="dashboard-main">
-            <div className="panel map-panel">
-              <div className="panel-heading">
-                <div>
-                  <h2>Site and network context</h2>
-                  <p>Public context only — not evidence of available capacity.</p>
-                </div>
-                <button className="quiet-button">Layers</button>
-              </div>
-              <div className="map-canvas">
-                <div className="map-legend">
-                  <span>
-                    <i className="dot cyan" />
-                    Site · customer input
-                  </span>
-                  <span>
-                    <i className="dot green" />
-                    Substation · public source
-                  </span>
-                  <span>
-                    <i className="dot amber" />
-                    Substation · unverified
-                  </span>
-                </div>
-                <div className="zone-label z1">
-                  50Hertz
-                  <br />
-                  Nord
-                </div>
-                <div className="zone-label z2">
-                  50Hertz
-                  <br />
-                  Berlin
-                </div>
-                <div className="zone-label z3">E.DIS Netz</div>
-                <div className="map-site">
-                  <MapPin />
-                  <b>Proposed site</b>
-                  <small>110 kV target</small>
-                </div>
-                <div className="substation s1">
-                  <i />
-                  Neuenhagen <small>110/20 kV</small>
-                </div>
-                <div className="substation s2">
-                  <i />
-                  Ludwigsfelde <small>110/20 kV</small>
-                </div>
-                <div className="substation s3 unverified">
-                  <i />
-                  Fürstenwalde <small>unverified</small>
-                </div>
-              </div>
-              <div className="panel-note">
-                <ShieldCheck size={15} /> Map layers support early screening. Confirm ownership,
-                voltage and capacity with the network operator.
-              </div>
-            </div>
-            <div id="scenarios" className="panel">
-              <div className="panel-heading">
-                <div>
-                  <h2>Connection scenarios</h2>
-                  <p>Limits are inputs or unknowns; GridPulse does not infer grid headroom.</p>
-                </div>
-                <span className="evidence evidence-calculation">Indicative</span>
-              </div>
-              <div className="table-scroll">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Scenario</th>
-                      <th>Import limit</th>
-                      <th>Export limit</th>
-                      <th>Dispatch impact</th>
-                      <th>Commercial model</th>
-                      <th>Evidence</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td>
-                        <b>Unrestricted</b>
-                      </td>
-                      <td>
-                        60 MW <Tag kind="Customer input" />
-                      </td>
-                      <td>
-                        40 MW <Tag kind="Customer input" />
-                      </td>
-                      <td>Baseline only</td>
-                      <td>Needs market data</td>
-                      <td>
-                        <span className="status warning-text">Insufficient</span>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <b>Static FCA</b>
-                      </td>
-                      <td>Enter operator limit</td>
-                      <td>Enter operator limit</td>
-                      <td>Not calculated</td>
-                      <td>Needs restriction data</td>
-                      <td>
-                        <span className="status warning-text">Validation required</span>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <b>Dynamic FCA</b>
-                      </td>
-                      <td>Requires schedule</td>
-                      <td>Requires schedule</td>
-                      <td>Not calculated</td>
-                      <td>Needs interval data</td>
-                      <td>
-                        <span className="status warning-text">Validation required</span>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </section>
-          <aside className="dashboard-side">
-            <div className="panel">
-              <div className="panel-heading">
-                <div>
-                  <h2>Connection envelope</h2>
-                  <p>Declared project requirements</p>
-                </div>
-                <Zap size={18} />
-              </div>
-              <dl className="metric-list">
-                <Metric label="Requested import" value="60 MW" />
-                <Metric label="Requested export" value="40 MW" />
-                <Metric label="BESS" value="40 MW / 80 MWh" />
-                <Metric label="Target voltage" value="110 kV" />
-                <Metric label="Likely operator" value="Confirm with DSO" kind="Assumption" />
-              </dl>
-              <div className="panel-note">
-                <AlertTriangle size={15} /> This is not a connection offer or capacity confirmation.
-              </div>
-            </div>
-            <div id="evidence" className="panel">
-              <div className="panel-heading">
-                <div>
-                  <h2>Evidence ledger</h2>
-                  <p>5 of 7 items collected</p>
-                </div>
-                <span className="missing-count">2 missing</span>
-              </div>
-              <div className="evidence-list">
-                {evidence.map((row) => (
-                  <div className="evidence-row" key={row.item}>
-                    <div>
-                      <b>{row.item}</b>
-                      <small>
-                        {row.source} {row.kind === "Official source" && <ExternalLink size={10} />}
-                      </small>
-                    </div>
-                    <Tag kind={row.kind} />
-                    <span className={row.status === "Missing" ? "missing" : "collected"}>
-                      {row.status}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="panel readiness">
-              <div className="panel-heading">
-                <div>
-                  <h2>Assessment readiness</h2>
-                  <p>Required evidence is incomplete</p>
-                </div>
-                <span className="status warning-text">Not ready</span>
-              </div>
-              <ul>
-                <li className="ok">
-                  <Check />
-                  Site and technical inputs recorded
-                </li>
-                <li className="ok">
-                  <Check />
-                  Initial public context collected
-                </li>
-                <li>
-                  <AlertTriangle />
-                  Operator validation items missing (2)
-                </li>
-              </ul>
-              <button disabled className="report-button">
-                <FileText size={16} /> Generate pre-feasibility report
-              </button>
-              <small>Enabled only when required evidence is supplied.</small>
-            </div>
-          </aside>
-        </div>
-      </main>
-    </AppShell>
+    <Link to="/" className="landing-brand" aria-label="GridPulse home">
+      <span>GRID</span>
+      <strong>PULSE</strong>
+    </Link>
   );
 }
 
-function Tag({ kind }: { kind: EvidenceKind }) {
-  return <span className={kindClass[kind]}>{kind}</span>;
+function LandingPage() {
+  const { user } = useAuth();
+  const workspacePath = user ? "/portfolio" : "/auth";
+  return (
+    <div className="landing-page">
+      <header className="landing-header">
+        <Brand />
+        <nav aria-label="Landing page">
+          <a href="#product">Product</a>
+          <a href="#how-it-works">How it works</a>
+          <a href="#for-developers">For developers</a>
+          <a href="#methodology">Methodology</a>
+        </nav>
+        <div className="landing-header-actions">
+          <Link to={workspacePath}>{user ? "Open workspace" : "Sign in"}</Link>
+          <a href={pilotHref} className="landing-button primary">
+            Request a pilot
+          </a>
+        </div>
+      </header>
+      <main>
+        <section className="landing-hero" id="product">
+          <div className="landing-hero-copy">
+            <h1>Reach a bankable grid-connection decision sooner.</h1>
+            <p>
+              GridPulse structures German connection evidence, compares flexible connection options,
+              and quantifies operational impact—without presenting assumptions as grid capacity.
+            </p>
+            <div className="landing-actions">
+              <a href={pilotHref} className="landing-button primary">
+                Request a pilot
+              </a>
+              <Link to="/demo" className="landing-button secondary">
+                Explore the demo
+              </Link>
+            </div>
+          </div>
+          <ProductFrame />
+        </section>
+        <section className="landing-audience-band" id="for-developers">
+          <h2>Built for developers of BESS, data centres and large loads</h2>
+          <div>
+            <AudienceMini icon={BatteryCharging} title="BESS developers">
+              Compare connection constraints before investment decisions.
+            </AudienceMini>
+            <AudienceMini icon={Server} title="Data-centre developers">
+              Structure power requirements and flexible-load options.
+            </AudienceMini>
+            <AudienceMini icon={FileCheck2} title="Grid advisers">
+              Deliver consistent, traceable assessments.
+            </AudienceMini>
+          </div>
+        </section>
+        <section className="landing-section workflow-section" id="how-it-works">
+          <h2>From project brief to decision-ready assessment.</h2>
+          <div className="landing-workflow">
+            <WorkflowStep number="1" icon={FileText} title="Structure the case">
+              Capture project requirements, location and operator evidence.
+            </WorkflowStep>
+            <WorkflowStep number="2" icon={SlidersHorizontal} title="Compare connection options">
+              Model unrestricted, static and dynamic FCA scenarios from traceable inputs.
+            </WorkflowStep>
+            <WorkflowStep number="3" icon={ChartNoAxesCombined} title="Quantify the impact">
+              Calculate constrained energy, restricted hours and indicative commercial exposure.
+            </WorkflowStep>
+          </div>
+        </section>
+        <section className="landing-section decision-section">
+          <div className="decision-copy">
+            <h2>Built for decisions before capital is committed.</h2>
+            <Audience
+              icon={BatteryCharging}
+              title="BESS developers"
+              text="De-risk connection strategy and strengthen investment cases."
+            />
+            <Audience
+              icon={Server}
+              title="Data-centre developers"
+              text="Understand connection restrictions and commercial implications."
+            />
+            <Audience
+              icon={UserRoundCheck}
+              title="Grid advisers"
+              text="Deliver independent, defensible advice with visible assumptions."
+            />
+          </div>
+          <EvidenceFrame />
+        </section>
+        <section className="landing-section methodology-section" id="methodology">
+          <h2>Decision support with the uncertainty left visible.</h2>
+          <p>Four principles keep evidence and assumptions explicit.</p>
+          <div className="principle-grid">
+            <Principle icon={CircleSlash2} title="No inferred grid capacity">
+              We model only what is provided and traceable.
+            </Principle>
+            <Principle icon={Tag} title="Every assumption is labelled">
+              Assumptions stay explicit and reviewable.
+            </Principle>
+            <Principle icon={UserRoundCheck} title="Operator evidence remains controlling">
+              Operator sources take precedence over public or third-party information.
+            </Principle>
+            <Principle icon={Database} title="Calculations retain their version and inputs">
+              Every calculation links to defined inputs and methodology.
+            </Principle>
+          </div>
+        </section>
+        <section className="landing-section report-section">
+          <div>
+            <h2>Pre-feasibility report preview</h2>
+            <p>Every assessment is delivered as an open, evidence-led report—not a verdict.</p>
+            {[
+              "Project requirement",
+              "Evidence ledger",
+              "Operating profile",
+              "Connection scenarios",
+              "Limitations",
+            ].map((item) => (
+              <span key={item}>
+                <Check />
+                {item}
+              </span>
+            ))}
+          </div>
+          <ReportFrame />
+        </section>
+        <section className="pilot-band">
+          <ShieldCheck />
+          <div>
+            <h2>Bring one German connection case. We’ll structure the decision.</h2>
+            <p>
+              We are opening a small number of design-partner pilots for BESS, data-centre and
+              large-load developers.
+            </p>
+          </div>
+          <a href={pilotHref} className="landing-button primary">
+            Request a pilot
+          </a>
+          <Link to={workspacePath} className="landing-button secondary">
+            {user ? "Open workspace" : "Sign in to GridPulse"}
+          </Link>
+        </section>
+      </main>
+      <footer className="landing-footer">
+        <Brand />
+        <nav>
+          <a href="#product">Product</a>
+          <Link to="/demo">Demo</Link>
+          <a href="#methodology">Methodology</a>
+          <Link to="/auth">Sign in</Link>
+        </nav>
+        <p>
+          Preliminary decision support only.
+          <br />
+          Validate connection conclusions with the network operator.
+        </p>
+      </footer>
+    </div>
+  );
 }
-function Metric({
-  label,
-  value,
-  kind = "Customer input",
+
+function ProductFrame() {
+  const rows = [
+    ["Unrestricted", "Direct connection at requested import and export", "Insufficient"],
+    ["Static FCA", "Fixed import and export limits", "Validation required"],
+    ["Dynamic FCA", "Time-varying flexible limits", "Validation required"],
+  ];
+  return (
+    <div className="hero-product-frame">
+      <div className="frame-progress">
+        <span className="done">
+          <Check />
+          Site & network
+        </span>
+        <span className="active">2</span>
+        <span>Connection options</span>
+        <span>3</span>
+        <span>Evidence</span>
+      </div>
+      <h2>Connection options comparison</h2>
+      <div className="comparison-table">
+        <header>
+          <span>Scenario</span>
+          <span>Connection option</span>
+          <span>Evidence status</span>
+        </header>
+        {rows.map(([name, option, status]) => (
+          <div key={name}>
+            <b>{name}</b>
+            <span>{option}</span>
+            <small>{status}</small>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+function WorkflowStep({
+  number,
+  icon: Icon,
+  title,
+  children,
 }: {
-  label: string;
-  value: string;
-  kind?: EvidenceKind;
+  number: string;
+  icon: typeof FileText;
+  title: string;
+  children: string;
 }) {
   return (
-    <div>
-      <dt>{label}</dt>
-      <dd>{value}</dd>
-      <Tag kind={kind} />
+    <article>
+      <Icon />
+      <span>{number}</span>
+      <div>
+        <h3>{title}</h3>
+        <p>{children}</p>
+      </div>
+    </article>
+  );
+}
+function AudienceMini({
+  icon: Icon,
+  title,
+  children,
+}: {
+  icon: typeof FileText;
+  title: string;
+  children: string;
+}) {
+  return (
+    <span>
+      <Icon />
+      <b>{title}</b>
+      <small>{children}</small>
+    </span>
+  );
+}
+function Audience({
+  icon: Icon,
+  title,
+  text,
+}: {
+  icon: typeof FileText;
+  title: string;
+  text: string;
+}) {
+  return (
+    <article className="audience-row">
+      <Icon />
+      <div>
+        <h3>{title}</h3>
+        <p>{text}</p>
+      </div>
+      <ArrowRight />
+    </article>
+  );
+}
+function EvidenceFrame() {
+  const items = [
+    [Building2, "Official source", "Verified publications and regulatory sources."],
+    [UserRoundCheck, "Customer input", "Information provided by your project team."],
+    [ChartNoAxesCombined, "Calculation", "Derived using a defined methodology."],
+    [
+      ShieldCheck,
+      "Operator validation required",
+      "Subject to confirmation by the network operator.",
+    ],
+  ] as const;
+  return (
+    <div className="evidence-frame">
+      <h2>Evidence classifications</h2>
+      <p>Every input is labelled for source and confidence.</p>
+      {items.map(([Icon, title, text]) => (
+        <div key={title}>
+          <Icon />
+          <span>
+            <b>{title}</b>
+            <small>{text}</small>
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+function Principle({
+  icon: Icon,
+  title,
+  children,
+}: {
+  icon: typeof FileText;
+  title: string;
+  children: string;
+}) {
+  return (
+    <article>
+      <Icon />
+      <div>
+        <h3>{title}</h3>
+        <p>{children}</p>
+      </div>
+    </article>
+  );
+}
+function ReportFrame() {
+  return (
+    <div className="report-frame">
+      <header>
+        <Brand />
+        <span>Pre-feasibility report</span>
+      </header>
+      <div className="report-frame-grid">
+        <section>
+          <b>Project requirement</b>
+          <span>
+            Project type <strong>BESS</strong>
+          </span>
+          <span>
+            Location <strong>Germany</strong>
+          </span>
+          <span>
+            Requested capacity <strong>Customer input</strong>
+          </span>
+        </section>
+        <section>
+          <b>Evidence ledger</b>
+          <span>
+            Official source <strong>Collected</strong>
+          </span>
+          <span>
+            Operating profile <strong>Collected</strong>
+          </span>
+          <span>
+            Operator response <strong>Required</strong>
+          </span>
+        </section>
+        <section>
+          <b>Connection scenarios</b>
+          <span>
+            Unrestricted <strong>Baseline</strong>
+          </span>
+          <span>
+            Static FCA <strong>Calculated</strong>
+          </span>
+          <span>
+            Dynamic FCA <strong>Calculated</strong>
+          </span>
+        </section>
+        <section>
+          <b>Limitations</b>
+          <p>Data gaps and operator validations remain visible.</p>
+        </section>
+      </div>
     </div>
   );
 }
