@@ -12,9 +12,9 @@ import appCss from "../styles.css?url";
 import { AuthProvider } from "@/context/AuthContext";
 
 const siteUrl = "https://gridpulseinsights.com";
-const siteTitle = "GridPulse | Power Acceleration for German Infrastructure";
+const siteTitle = "GridPulse | German Grid Connection Intelligence";
 const siteDescription =
-  "Accelerate power delivery for data centres, BESS and large loads in Germany with evidence-led site screening, flexible connection design and operational readiness.";
+  "GridPulse helps data centres, battery projects and industrial loads screen, prepare and execute evidence-based grid-connection strategies in Germany.";
 const socialImage = `${siteUrl}/gridpulse-og.png`;
 
 const structuredData = {
