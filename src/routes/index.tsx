@@ -20,15 +20,15 @@ import { useAuth } from "@/context/useAuth";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "GridPulse | Grid Connection Intelligence for Germany" },
+      { title: "GridPulse | Power Acceleration for German Infrastructure" },
       {
         name: "description",
         content:
-          "Evidence-led grid connection assessments for BESS, data centres and large electrical loads in Germany. Compare flexible connection options and quantify operational constraints.",
+          "Accelerate power delivery for data centres, BESS and large loads in Germany with evidence-led site screening, flexible connection design and operational readiness.",
       },
-      { property: "og:title", content: "GridPulse | Grid Connection Intelligence for Germany" },
+      { property: "og:title", content: "GridPulse | Power Acceleration for Germany" },
       { property: "og:url", content: "https://gridpulseinsights.com/" },
-      { name: "twitter:title", content: "GridPulse | Grid Connection Intelligence for Germany" },
+      { name: "twitter:title", content: "GridPulse | Power Acceleration for Germany" },
     ],
     links: [{ rel: "canonical", href: "https://gridpulseinsights.com/" }],
   }),
@@ -53,7 +53,7 @@ function LandingPage() {
         <Brand />
         <nav aria-label="Landing page">
           <a href="#product">Product</a>
-          <a href="#how-it-works">How it works</a>
+          <a href="#platform">Platform</a>
           <a href="#for-developers">For developers</a>
           <a href="#methodology">Methodology</a>
         </nav>
@@ -67,10 +67,12 @@ function LandingPage() {
       <main>
         <section className="landing-hero" id="product">
           <div className="landing-hero-copy">
-            <h1>Reach a bankable grid-connection decision sooner.</h1>
+            <span className="landing-kicker">Power acceleration for Germany</span>
+            <h1>Bring power-intensive infrastructure online sooner.</h1>
             <p>
-              GridPulse structures German connection evidence, compares flexible connection options,
-              and quantifies operational impact—without presenting assumptions as grid capacity.
+              GridPulse builds an operator-ready path from site screening to flexible connection and
+              operations for data centres, BESS and large loads—without presenting assumptions as
+              available grid capacity.
             </p>
             <div className="landing-actions">
               <Link to="/pilot" className="landing-button primary">
@@ -84,50 +86,54 @@ function LandingPage() {
           <ProductFrame />
         </section>
         <section className="landing-audience-band" id="for-developers">
-          <h2>Built for developers of BESS, data centres and large loads</h2>
+          <h2>Built for power-constrained infrastructure projects</h2>
           <div>
-            <AudienceMini icon={BatteryCharging} title="BESS developers">
-              Compare connection constraints before investment decisions.
-            </AudienceMini>
             <AudienceMini icon={Server} title="Data-centre developers">
-              Structure power requirements and flexible-load options.
+              De-risk site selection and define a credible route to energized capacity.
+            </AudienceMini>
+            <AudienceMini icon={BatteryCharging} title="BESS developers">
+              Design storage as a connection and flexibility asset.
             </AudienceMini>
             <AudienceMini icon={FileCheck2} title="Grid advisers">
               Deliver consistent, traceable assessments.
             </AudienceMini>
           </div>
         </section>
-        <section className="landing-section workflow-section" id="how-it-works">
-          <h2>From project brief to decision-ready assessment.</h2>
+        <section className="landing-section workflow-section" id="platform">
+          <span className="section-kicker">The GridPulse platform</span>
+          <h2>One path from power search to flexible operation.</h2>
           <div className="landing-workflow">
-            <WorkflowStep number="1" icon={FileText} title="Structure the case">
-              Capture project requirements, location and operator evidence.
+            <WorkflowStep number="1" icon={FileText} title="Power discovery">
+              Screen candidate locations, responsible operators and the evidence required to qualify
+              a site.
             </WorkflowStep>
-            <WorkflowStep number="2" icon={SlidersHorizontal} title="Compare connection options">
-              Model unrestricted, static and dynamic FCA scenarios from traceable inputs.
+            <WorkflowStep number="2" icon={SlidersHorizontal} title="Connection activation">
+              Build operator-ready unrestricted, static and dynamic FCA cases from traceable inputs.
             </WorkflowStep>
-            <WorkflowStep number="3" icon={ChartNoAxesCombined} title="Quantify the impact">
-              Calculate constrained energy, restricted hours and indicative commercial exposure.
+            <WorkflowStep number="3" icon={ChartNoAxesCombined} title="Flexible operations">
+              Translate connection limits into dispatch rules, restricted hours and commercial
+              impact.
             </WorkflowStep>
           </div>
         </section>
         <section className="landing-section decision-section">
           <div className="decision-copy">
-            <h2>Built for decisions before capital is committed.</h2>
+            <span className="section-kicker">Business outcomes</span>
+            <h2>Make power a development strategy—not a late-stage constraint.</h2>
             <Audience
               icon={BatteryCharging}
               title="BESS developers"
-              text="De-risk connection strategy and strengthen investment cases."
+              text="Use storage and co-location flexibility to support faster, more efficient connections."
             />
             <Audience
               icon={Server}
               title="Data-centre developers"
-              text="Understand connection restrictions and commercial implications."
+              text="Compare sites and flexibility options before committing development capital."
             />
             <Audience
               icon={UserRoundCheck}
               title="Grid advisers"
-              text="Deliver independent, defensible advice with visible assumptions."
+              text="Turn fragmented operator evidence into a defensible activation plan."
             />
           </div>
           <EvidenceFrame />
@@ -152,13 +158,16 @@ function LandingPage() {
         </section>
         <section className="landing-section report-section">
           <div>
-            <h2>Pre-feasibility report preview</h2>
-            <p>Every assessment is delivered as an open, evidence-led report—not a verdict.</p>
+            <h2>Power-readiness plan preview</h2>
+            <p>
+              Every project receives an evidence-led route from connection request to operation.
+            </p>
             {[
               "Project requirement",
               "Evidence ledger",
               "Operating profile",
-              "Connection scenarios",
+              "Activation scenarios",
+              "Flexibility requirements",
               "Limitations",
             ].map((item) => (
               <span key={item}>
@@ -172,10 +181,10 @@ function LandingPage() {
         <section className="pilot-band">
           <ShieldCheck />
           <div>
-            <h2>Bring one German connection case. We’ll structure the decision.</h2>
+            <h2>Bring one German power-constrained project. We’ll build the activation path.</h2>
             <p>
-              We are opening a small number of design-partner pilots for BESS, data-centre and
-              large-load developers.
+              We are opening design-partner pilots for data-centre, BESS and large-load developers
+              that need an evidence-led route to power.
             </p>
           </div>
           <Link to="/pilot" className="landing-button primary">
@@ -206,9 +215,9 @@ function LandingPage() {
 
 function ProductFrame() {
   const rows = [
-    ["Unrestricted", "Direct connection at requested import and export", "Insufficient"],
-    ["Static FCA", "Fixed import and export limits", "Validation required"],
-    ["Dynamic FCA", "Time-varying flexible limits", "Validation required"],
+    ["Power discovery", "Candidate site and operator screening", "In review"],
+    ["Connection activation", "Static and dynamic FCA design", "Evidence required"],
+    ["Flexible operations", "Dispatch and restriction readiness", "Planned"],
   ];
   return (
     <div className="hero-product-frame">
@@ -222,12 +231,12 @@ function ProductFrame() {
         <span>3</span>
         <span>Evidence</span>
       </div>
-      <h2>Connection options comparison</h2>
+      <h2>Power activation plan</h2>
       <div className="comparison-table">
         <header>
-          <span>Scenario</span>
-          <span>Connection option</span>
-          <span>Evidence status</span>
+          <span>Stage</span>
+          <span>Decision output</span>
+          <span>Status</span>
         </header>
         {rows.map(([name, option, status]) => (
           <div key={name}>
@@ -350,7 +359,7 @@ function ReportFrame() {
     <div className="report-frame">
       <header>
         <Brand />
-        <span>Pre-feasibility report</span>
+        <span>Power-readiness plan</span>
       </header>
       <div className="report-frame-grid">
         <section>
@@ -378,7 +387,7 @@ function ReportFrame() {
           </span>
         </section>
         <section>
-          <b>Connection scenarios</b>
+          <b>Activation scenarios</b>
           <span>
             Unrestricted <strong>Baseline</strong>
           </span>
