@@ -12,6 +12,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useAuth } from "@/context/useAuth";
+import { ConnectionCaseExperience } from "@/components/product/ConnectionCaseExperience";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -38,14 +39,6 @@ export const Route = createFileRoute("/")({
   }),
   component: CinematicLandingPage,
 });
-
-const productTabs = [
-  "Site context",
-  "Connection scenarios",
-  "Evidence ledger",
-  "Execution room",
-  "Decision memo",
-] as const;
 
 function Brand() {
   return (
@@ -472,87 +465,7 @@ function MethodStep({
 }
 
 function ProductExperience() {
-  const [activeTab, setActiveTab] = useState<(typeof productTabs)[number]>("Site context");
-  return (
-    <div className="cine-product-frame">
-      <div className="cine-product-brand">
-        <Brand />
-        <span>Illustrative workspace</span>
-      </div>
-      <div className="cine-product-tabs" role="tablist" aria-label="Assessment views">
-        {productTabs.map((tab) => (
-          <button
-            key={tab}
-            role="tab"
-            aria-selected={activeTab === tab}
-            onClick={() => setActiveTab(tab)}
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
-      <div className="cine-product-screen">
-        <ProductScreen tab={activeTab} />
-      </div>
-    </div>
-  );
-}
-
-function ProductScreen({ tab }: { tab: (typeof productTabs)[number] }) {
-  const content = {
-    "Site context": [
-      "Proposed site",
-      "Likely distribution operator",
-      "Target voltage",
-      "Public context only",
-    ],
-    "Connection scenarios": [
-      "Unrestricted baseline",
-      "Static flexible connection",
-      "Dynamic flexible connection",
-      "Operator limits required",
-    ],
-    "Evidence ledger": [
-      "Site location",
-      "Technical configuration",
-      "Operator responsibility",
-      "Capacity evidence missing",
-    ],
-    "Execution room": [
-      "Confirm responsibility",
-      "Complete technical pack",
-      "Prepare operator request",
-      "Track response deadline",
-    ],
-    "Decision memo": [
-      "Executive summary",
-      "Connection approach",
-      "Evidence status",
-      "Next actions",
-    ],
-  }[tab];
-  return (
-    <>
-      <div className="cine-screen-map">
-        <svg viewBox="0 0 500 280" aria-label="Illustrative connection context">
-          <path d="M20 230 C110 170 158 214 232 136 S360 108 470 38" />
-          <circle cx="232" cy="136" r="8" />
-          <circle cx="470" cy="38" r="8" />
-        </svg>
-        <span>Berlin-Brandenburg BESS + AI Load</span>
-      </div>
-      <div className="cine-screen-ledger">
-        <h3>{tab}</h3>
-        {content.map((item, index) => (
-          <span key={item}>
-            <i className={index === 3 ? "warn" : ""} />
-            {item}
-            <small>{index === 3 ? "Validation required" : "Recorded"}</small>
-          </span>
-        ))}
-      </div>
-    </>
-  );
+  return <ConnectionCaseExperience mode="preview" initialStage="site" />;
 }
 
 function GermanyMap() {
