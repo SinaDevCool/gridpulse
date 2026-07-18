@@ -74,7 +74,7 @@
 .cine-header-actions > a:first-child,
 .cine-footer nav a {
   color: #d8e1e6;
-  font-size: 13px;
+  font-size: 14px;
   text-decoration: none;
   transition: color 180ms ease;
 }
@@ -142,7 +142,7 @@
   height: 100%;
   inset: 0;
   object-fit: cover;
-  object-position: center;
+  object-position: 54% center;
   position: absolute;
   width: 100%;
 }
@@ -168,7 +168,7 @@
   z-index: 2;
 }
 .cine-power-route path {
-  animation: route-draw 3.2s 0.7s cubic-bezier(0.55, 0.08, 0.22, 0.98) both;
+  animation: route-draw 3.65s 1.05s cubic-bezier(0.55, 0.08, 0.22, 0.98) both;
   fill: none;
   filter: drop-shadow(0 0 5px rgba(34, 211, 238, 0.85));
   stroke: var(--cine-cyan);
@@ -188,16 +188,18 @@
 }
 .cine-hero h1 {
   font-size: clamp(64px, 5vw, 80px);
-  line-height: 0.93;
+  line-height: 0.91;
   max-width: 740px;
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.34);
   text-wrap: balance;
 }
 .cine-hero-copy > p {
-  color: #c5d0d6;
+  color: #d4dde2;
   font-size: 18px;
-  line-height: 1.7;
+  line-height: 1.65;
   margin-top: 32px;
   max-width: 590px;
+  text-shadow: 0 1px 16px rgba(0, 0, 0, 0.55);
 }
 .cine-actions {
   gap: 16px;
@@ -216,6 +218,16 @@
   text-decoration: none;
   text-transform: uppercase;
   z-index: 3;
+}
+.cine-scroll::after {
+  background: linear-gradient(180deg, var(--cine-cyan), rgba(34, 211, 238, 0));
+  content: "";
+  height: 42px;
+  left: 4px;
+  opacity: 0.72;
+  position: absolute;
+  top: 24px;
+  width: 1px;
 }
 .cine-scroll span {
   border: 1px solid var(--cine-cyan);
@@ -819,6 +831,19 @@
     transform: scale(0.86);
   }
 }
+@media (min-width: 1700px) {
+  .cine-header nav a,
+  .cine-header-actions > a:first-child {
+    font-size: 15px;
+  }
+  .cine-header nav {
+    gap: clamp(42px, 3.2vw, 64px);
+  }
+  .cine-hero-copy > p {
+    font-size: 19px;
+    max-width: 620px;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .cine-page *,
   .cine-page *::before,
@@ -830,6 +855,9 @@
   }
   .cine-power-route path {
     stroke-dashoffset: 0;
+  }
+  .cine-scroll::after {
+    opacity: 0.35;
   }
 }
 @media print {

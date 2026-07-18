@@ -76,6 +76,7 @@ function CinematicLandingPage() {
             height="809"
             alt="German electrical substation and industrial infrastructure at blue hour"
             fetchPriority="high"
+            decoding="async"
           />
           <svg className="cine-power-route" viewBox="0 0 900 540" aria-hidden="true">
             <path d="M470 468 C570 430 565 350 670 324 S735 214 862 174" />
@@ -88,11 +89,11 @@ function CinematicLandingPage() {
               actionable connection strategy for German infrastructure.
             </p>
             <div className="cine-actions">
-              <Link to="/demo" className="cine-cta cine-cta-solid">
-                Explore the platform <ArrowRight />
-              </Link>
-              <Link to="/pilot" className="cine-cta cine-cta-line">
+              <Link to="/pilot" className="cine-cta cine-cta-solid">
                 Bring us a project <ArrowRight />
+              </Link>
+              <Link to="/demo" className="cine-cta cine-cta-line">
+                Explore the platform <ArrowRight />
               </Link>
             </div>
           </div>
