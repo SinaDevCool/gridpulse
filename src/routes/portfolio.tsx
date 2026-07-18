@@ -38,6 +38,7 @@ type CandidateSite = {
   envelope_status: string;
   readiness_score: number;
   next_action: string;
+  next_deadline: string | null;
 };
 
 function Portfolio() {
@@ -50,27 +51,40 @@ function Portfolio() {
     queryKey: ["candidate-sites", user?.id],
     enabled: Boolean(user),
     queryFn: async () => {
-      const [siteResult, documentResult, requirementResult, envelopeResult, profileResult] =
-        await Promise.all([
-          supabase
-            .from("candidate_sites")
-            .select(
-              "id,name,project_type,latitude,longitude,requested_import_mw,requested_export_mw,assessment_status,operator_status,likely_network_operator,operator_confirmation_status,operator_profile_key,decision_status,created_at",
-            )
-            .order("created_at", { ascending: false }),
-          supabase.from("assessment_documents").select("site_id"),
-          supabase.from("operator_requirements").select("site_id,status"),
-          supabase
-            .from("fca_envelopes")
-            .select("site_id,status,version")
-            .order("version", { ascending: false }),
-          supabase.from("interval_profiles").select("site_id"),
-        ]);
+      await supabase.rpc("accept_assessment_invitations");
+      const [
+        siteResult,
+        documentResult,
+        requirementResult,
+        envelopeResult,
+        profileResult,
+        milestoneResult,
+      ] = await Promise.all([
+        supabase
+          .from("candidate_sites")
+          .select(
+            "id,name,project_type,latitude,longitude,requested_import_mw,requested_export_mw,assessment_status,operator_status,likely_network_operator,operator_confirmation_status,operator_profile_key,decision_status,created_at",
+          )
+          .order("created_at", { ascending: false }),
+        supabase.from("assessment_documents").select("site_id"),
+        supabase.from("operator_requirements").select("site_id,status"),
+        supabase
+          .from("fca_envelopes")
+          .select("site_id,status,version")
+          .order("version", { ascending: false }),
+        supabase.from("interval_profiles").select("site_id"),
+        supabase
+          .from("assessment_milestones")
+          .select("site_id,due_at,status")
+          .eq("status", "open")
+          .order("due_at"),
+      ]);
       if (siteResult.error) throw siteResult.error;
       if (documentResult.error) throw documentResult.error;
       if (requirementResult.error) throw requirementResult.error;
       if (envelopeResult.error) throw envelopeResult.error;
       if (profileResult.error) throw profileResult.error;
+      if (milestoneResult.error) throw milestoneResult.error;
       const readyStatuses = new Set(["ready", "submitted", "accepted", "not_applicable"]);
       return siteResult.data.map((site) => {
         const requirements = requirementResult.data.filter((item) => item.site_id === site.id);
@@ -109,6 +123,8 @@ function Portfolio() {
           envelope_status: envelope?.status ?? "not_started",
           readiness_score: readinessScore,
           next_action: nextAction,
+          next_deadline:
+            milestoneResult.data.find((item) => item.site_id === site.id)?.due_at ?? null,
         } as CandidateSite;
       });
     },
@@ -181,6 +197,7 @@ function Portfolio() {
                     <th>FCA envelope</th>
                     <th>Readiness</th>
                     <th>Next action</th>
+                    <th>Deadline</th>
                     <th />
                   </tr>
                 </thead>
@@ -195,6 +212,11 @@ function Portfolio() {
                         <b>{project.readiness_score}/100</b>
                       </td>
                       <td>{project.next_action}</td>
+                      <td>
+                        {project.next_deadline
+                          ? new Date(project.next_deadline).toLocaleDateString()
+                          : "—"}
+                      </td>
                       <td>{project.requested_import_mw} MW import</td>
                       <td>
                         <FileText /> {project.document_count}
@@ -273,6 +295,14 @@ function Portfolio() {
                   <div>
                     <dt>Next action</dt>
                     <dd>{project.next_action}</dd>
+                  </div>
+                  <div>
+                    <dt>Next deadline</dt>
+                    <dd>
+                      {project.next_deadline
+                        ? new Date(project.next_deadline).toLocaleDateString()
+                        : "Not scheduled"}
+                    </dd>
                   </div>
                 </dl>
                 <Link to="/assessments/$id" params={{ id: project.id }}>

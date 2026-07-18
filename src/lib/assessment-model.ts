@@ -19,6 +19,10 @@ export type CandidateSite = {
   target_energization_date: string | null;
   decision_status: string;
   decision_notes: string | null;
+  responsible_operator_name: string | null;
+  responsible_operator_level: string | null;
+  responsibility_source: string | null;
+  responsibility_confirmed_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -115,6 +119,37 @@ export type GridDataSource = {
   use_in_gridpulse: string;
   limitation: string;
   verified_on: string;
+};
+export type DsoDirectoryEntry = {
+  key: string;
+  operator_name: string;
+  coverage_summary: string;
+  website_url: string;
+  connection_url: string;
+  voltage_context: string;
+  limitation: string;
+  verified_on: string;
+};
+export type AssessmentMilestone = {
+  id: string;
+  site_id: string;
+  title: string;
+  due_at: string;
+  status: string;
+  milestone_type: string;
+  reminder_days: number;
+  notes: string | null;
+  completed_at: string | null;
+  created_at: string;
+};
+export type AssessmentCollaborator = {
+  id: string;
+  site_id: string;
+  invited_email: string;
+  role: string;
+  accepted_by: string | null;
+  accepted_at: string | null;
+  created_at: string;
 };
 export type OperatorCorrespondence = {
   id: string;
