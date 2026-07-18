@@ -1,6 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
-import { ArrowRight, Check, FileText, MapPin, Network, ShieldCheck } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import {
+  ArrowRight,
+  Check,
+  CircleAlert,
+  FileCheck2,
+  FileText,
+  MapPin,
+  Network,
+  ShieldCheck,
+  Zap,
+} from "lucide-react";
 import { useAuth } from "@/context/useAuth";
 
 export const Route = createFileRoute("/")({
@@ -252,48 +262,162 @@ function CinematicLandingPage() {
   );
 }
 
+const evidencePackages = [
+  {
+    eyebrow: "Project declaration",
+    title: "Site and power requirement",
+    source: "Customer input",
+    status: "Recorded",
+    tone: "complete",
+    next: "Use as the declared basis for screening.",
+    artifacts: ["Site coordinates", "60 MW import", "40 MW export"],
+  },
+  {
+    eyebrow: "Technical configuration",
+    title: "BESS, load and target voltage",
+    source: "Technical schedule",
+    status: "Recorded",
+    tone: "complete",
+    next: "Reconcile equipment data with the application package.",
+    artifacts: ["40 MW / 80 MWh", "110 kV target", "Single-line draft"],
+  },
+  {
+    eyebrow: "Operator responsibility",
+    title: "Likely boundary and responsible DSO",
+    source: "Public context",
+    status: "Screened",
+    tone: "screened",
+    next: "Confirm responsibility directly with the network operator.",
+    artifacts: ["Grid area", "Nearby assets", "Boundary screen"],
+  },
+  {
+    eyebrow: "Connection evidence",
+    title: "Capacity and operating conditions",
+    source: "Operator evidence",
+    status: "Required",
+    tone: "required",
+    next: "Request a capacity statement and any FCA operating schedule.",
+    artifacts: ["Capacity statement", "FCA schedule", "Connection terms"],
+  },
+] as const;
+
 function EvidenceRoute() {
-  const inputs = [
-    "Fragmented evidence",
-    "Operator requirements",
-    "Network constraints",
-    "Project constraints",
-  ];
+  const routeRef = useRef<HTMLDivElement>(null);
+  const [selectedIndex, setSelectedIndex] = useState(3);
+  const selected = evidencePackages[selectedIndex];
+
+  useEffect(() => {
+    const route = routeRef.current;
+    if (!route) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          route.classList.add("is-visible");
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.28 },
+    );
+    observer.observe(route);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div
+      ref={routeRef}
       className="cine-evidence-route"
       aria-label="Evidence is assembled into an engagement route"
     >
-      <div className="cine-evidence-inputs">
-        {inputs.map((item, index) => (
-          <div key={item} style={{ "--route-delay": `${index * 120}ms` } as React.CSSProperties}>
-            <span>{item}</span>
-            <i>
-              <FileText />
-            </i>
-            <i />
-            <i />
-          </div>
+      <div className="cine-evidence-inputs" aria-label="Evidence packages">
+        {evidencePackages.map((item, index) => (
+          <button
+            aria-pressed={selectedIndex === index}
+            className={selectedIndex === index ? "is-selected" : ""}
+            key={item.eyebrow}
+            onClick={() => setSelectedIndex(index)}
+            style={{ "--route-delay": `${index * 110}ms` } as React.CSSProperties}
+            type="button"
+          >
+            <span className="cine-evidence-index">0{index + 1}</span>
+            <span className="cine-evidence-copy">
+              <small>{item.eyebrow}</small>
+              <b>{item.title}</b>
+              <em>{item.source}</em>
+            </span>
+            <span className={`cine-evidence-status is-${item.tone}`}>{item.status}</span>
+            <span className="cine-artifact-stack" aria-hidden="true">
+              {item.artifacts.map((artifact, artifactIndex) => (
+                <i
+                  key={artifact}
+                  title={artifact}
+                  style={{ "--artifact": artifactIndex } as React.CSSProperties}
+                >
+                  {artifactIndex === 0 ? (
+                    <FileText />
+                  ) : artifactIndex === 1 ? (
+                    <FileCheck2 />
+                  ) : (
+                    <Zap />
+                  )}
+                </i>
+              ))}
+            </span>
+          </button>
         ))}
       </div>
-      <svg viewBox="0 0 300 320" aria-hidden="true">
-        <path d="M0 38 C112 38 142 158 288 158" />
-        <path d="M0 116 C112 116 142 158 288 158" />
-        <path d="M0 204 C112 204 142 158 288 158" />
-        <path d="M0 282 C112 282 142 158 288 158" />
-      </svg>
+      <div className="cine-validation-path" aria-hidden="true">
+        <svg viewBox="0 0 240 390" preserveAspectRatio="none">
+          <path d="M0 49 C86 49 82 195 224 195" />
+          <path d="M0 146 C92 146 96 195 224 195" />
+          <path d="M0 244 C92 244 96 195 224 195" />
+          <path d="M0 341 C86 341 82 195 224 195" />
+        </svg>
+        <span className="cine-gate cine-gate-one">Screen</span>
+        <span className="cine-gate cine-gate-two">Validate</span>
+        <i className="cine-route-node" />
+      </div>
       <div className="cine-route-output">
-        <MapPin />
-        <b>Credible route forward</b>
-        <span>
-          <Check /> Evidence gaps visible
-        </span>
-        <span>
-          <Check /> Responsibility screened
-        </span>
-        <span>
-          <Check /> Validation gates explicit
-        </span>
+        <div className="cine-output-heading">
+          <MapPin />
+          <span>
+            <small>Decision workspace</small>
+            <b>Credible route forward</b>
+          </span>
+          <em>No capacity claim</em>
+        </div>
+        <div className="cine-route-mini" aria-hidden="true">
+          <span />
+          <i />
+          <i />
+          <i />
+        </div>
+        <div className="cine-output-checks">
+          <span>
+            <Check /> Evidence gaps visible
+          </span>
+          <span>
+            <Check /> Responsibility screened
+          </span>
+          <span>
+            <Check /> Validation gates explicit
+          </span>
+        </div>
+        <div className="cine-evidence-inspector" aria-live="polite">
+          <span className={`cine-evidence-status is-${selected.tone}`}>{selected.status}</span>
+          <div>
+            <small>Selected evidence · {selected.source}</small>
+            <b>{selected.title}</b>
+            <p>{selected.next}</p>
+          </div>
+        </div>
+        <div className="cine-output-action">
+          <CircleAlert />
+          <span>
+            <small>Controlling next action</small>
+            <b>Confirm operator and request missing connection evidence.</b>
+          </span>
+        </div>
       </div>
     </div>
   );
