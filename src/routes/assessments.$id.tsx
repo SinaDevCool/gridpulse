@@ -23,6 +23,7 @@ import { AppShell } from "@/components/product/AppShell";
 import { useAuth } from "@/context/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import {
+  activationDecision,
   constrainedReduction,
   label,
   readiness,
@@ -30,8 +31,10 @@ import {
   type AssessmentDocument,
   type Evidence,
   type FcaEnvelope,
+  type GridDataSource,
   type IntervalProfile,
   type OperatorCorrespondence,
+  type OperatorProfile,
   type OperatorRequirement,
   type Scenario,
 } from "@/lib/assessment-model";
@@ -77,6 +80,8 @@ function AssessmentPage() {
         requirementResult,
         correspondenceResult,
         envelopeResult,
+        operatorProfileResult,
+        dataSourceResult,
       ] = await Promise.all([
         supabase.from("candidate_sites").select("*").eq("id", id).single(),
         supabase
@@ -114,6 +119,8 @@ function AssessmentPage() {
           .select("*")
           .eq("site_id", id)
           .order("version", { ascending: false }),
+        supabase.from("operator_profiles").select("*").order("operator_name"),
+        supabase.from("grid_data_sources").select("*").order("authority"),
       ]);
       if (siteResult.error) throw siteResult.error;
       if (evidenceResult.error) throw evidenceResult.error;
@@ -123,6 +130,8 @@ function AssessmentPage() {
       if (requirementResult.error) throw requirementResult.error;
       if (correspondenceResult.error) throw correspondenceResult.error;
       if (envelopeResult.error) throw envelopeResult.error;
+      if (operatorProfileResult.error) throw operatorProfileResult.error;
+      if (dataSourceResult.error) throw dataSourceResult.error;
       return {
         site: siteResult.data as CandidateSite,
         evidence: evidenceResult.data as Evidence[],
@@ -132,6 +141,8 @@ function AssessmentPage() {
         requirements: requirementResult.data as OperatorRequirement[],
         correspondence: correspondenceResult.data as OperatorCorrespondence[],
         envelopes: envelopeResult.data as FcaEnvelope[],
+        operatorProfiles: operatorProfileResult.data as OperatorProfile[],
+        dataSources: dataSourceResult.data as GridDataSource[],
       };
     },
   });
@@ -174,6 +185,8 @@ function AssessmentPage() {
     requirements,
     correspondence,
     envelopes,
+    operatorProfiles,
+    dataSources,
   } = query.data;
   const ready = readiness(evidence);
   async function archive() {
@@ -268,7 +281,16 @@ function AssessmentPage() {
           ))}
         </nav>
         {tab === "overview" ? (
-          <Overview site={site} busy={busy} setBusy={setBusy} refresh={refresh} />
+          <Overview
+            site={site}
+            requirements={requirements}
+            documents={documents}
+            profiles={profiles}
+            envelopes={envelopes}
+            busy={busy}
+            setBusy={setBusy}
+            refresh={refresh}
+          />
         ) : tab === "documents" ? (
           <DocumentRoom site={site} documents={documents} refresh={refresh} />
         ) : tab === "operator" ? (
@@ -277,6 +299,8 @@ function AssessmentPage() {
             documents={documents}
             requirements={requirements}
             correspondence={correspondence}
+            operatorProfiles={operatorProfiles}
+            dataSources={dataSources}
             refresh={refresh}
           />
         ) : tab === "evidence" ? (
@@ -472,14 +496,33 @@ function OperatorRoom({
   documents,
   requirements,
   correspondence,
+  operatorProfiles,
+  dataSources,
   refresh,
 }: {
   site: CandidateSite;
   documents: AssessmentDocument[];
   requirements: OperatorRequirement[];
   correspondence: OperatorCorrespondence[];
+  operatorProfiles: OperatorProfile[];
+  dataSources: GridDataSource[];
   refresh: () => Promise<void>;
 }) {
+  const [profileBusy, setProfileBusy] = useState(false);
+  async function applyProfile(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setProfileBusy(true);
+    const values = new FormData(event.currentTarget);
+    const profileKey = String(values.get("profileKey"));
+    const { error } = await supabase.rpc("apply_operator_profile", {
+      p_site_id: site.id,
+      p_profile_key: profileKey,
+    });
+    setProfileBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success("Operator procedure applied");
+    await refresh();
+  }
   async function updateRequirement(requirement: OperatorRequirement, values: FormData) {
     const { error } = await supabase
       .from("operator_requirements")
@@ -518,6 +561,44 @@ function OperatorRoom({
   ).length;
   return (
     <div className="activation-stack">
+      <section className="workspace-card operator-routing-card">
+        <div className="panel-heading">
+          <div>
+            <h2>German operator routing</h2>
+            <p>
+              Apply the 2026 four-TSO maturity procedure, then confirm whether the case belongs at
+              transmission or distribution level.
+            </p>
+          </div>
+          <Zap />
+        </div>
+        <form className="operator-routing-form" onSubmit={applyProfile}>
+          <label>
+            Transmission-area profile
+            <select name="profileKey" defaultValue={site.operator_profile_key ?? ""} required>
+              <option value="" disabled>
+                Select likely TSO area
+              </option>
+              {operatorProfiles.map((profile) => (
+                <option key={profile.key} value={profile.key}>
+                  {profile.operator_name} — {profile.region_label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button className="primary-button" disabled={profileBusy}>
+            {profileBusy ? <LoaderCircle className="spin" /> : <ClipboardCheck />}
+            Apply procedure
+          </button>
+        </form>
+        <div className="source-warning">
+          <AlertTriangle />
+          <span>
+            This routes the evidence workflow only. It does not confirm the responsible DSO,
+            connection point, or available capacity.
+          </span>
+        </div>
+      </section>
       <section className="workspace-card">
         <div className="panel-heading">
           <div>
@@ -542,6 +623,11 @@ function OperatorRoom({
               <div>
                 <span>{label(requirement.category)}</span>
                 <h3>{requirement.label}</h3>
+                {requirement.source_url ? (
+                  <a href={requirement.source_url} target="_blank" rel="noreferrer">
+                    Operator source <ExternalLink />
+                  </a>
+                ) : null}
               </div>
               <select
                 name="status"
@@ -657,6 +743,28 @@ function OperatorRoom({
           )}
         </section>
       </div>
+      <section className="workspace-card data-source-register">
+        <div className="panel-heading">
+          <div>
+            <h2>Official-data register</h2>
+            <p>Sources support context and evidence collection; limitations stay visible.</p>
+          </div>
+          <FileText />
+        </div>
+        <div className="data-source-grid">
+          {dataSources.map((source) => (
+            <article key={source.key}>
+              <span>{source.authority}</span>
+              <h3>{source.title}</h3>
+              <p>{source.use_in_gridpulse}</p>
+              <small>{source.limitation}</small>
+              <a href={source.source_url} target="_blank" rel="noreferrer">
+                Open source <ExternalLink />
+              </a>
+            </article>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
@@ -829,16 +937,25 @@ function EnvelopeRoom({
 
 function Overview({
   site,
+  requirements,
+  documents,
+  profiles,
+  envelopes,
   busy,
   setBusy,
   refresh,
 }: {
   site: CandidateSite;
+  requirements: OperatorRequirement[];
+  documents: AssessmentDocument[];
+  profiles: IntervalProfile[];
+  envelopes: FcaEnvelope[];
   busy: boolean;
   setBusy: (v: boolean) => void;
   refresh: () => Promise<void>;
 }) {
   const screening = screenGermanOperator(site.latitude, site.longitude);
+  const decision = activationDecision({ site, requirements, documents, profiles, envelopes });
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
@@ -852,6 +969,10 @@ function Overview({
         target_voltage_kv: Number(f.get("voltageKv")) || null,
         likely_network_operator: String(f.get("operator") || "") || null,
         operator_status: String(f.get("operatorStatus")),
+        operator_confirmation_status: String(f.get("operatorConfirmationStatus")),
+        target_energization_date: String(f.get("targetEnergizationDate") || "") || null,
+        decision_status: String(f.get("decisionStatus")),
+        decision_notes: String(f.get("decisionNotes") || "") || null,
       })
       .eq("id", site.id);
     setBusy(false);
@@ -862,98 +983,163 @@ function Overview({
     }
   }
   return (
-    <div className="workspace-columns">
-      <form className="product-form" onSubmit={save}>
-        <div className="form-section">
-          <h2>Project and connection requirement</h2>
-          <p>Customer inputs remain distinct from operator-confirmed information.</p>
-          <label>
-            Project name
-            <input name="name" defaultValue={site.name} required />
-          </label>
-          <div className="form-grid">
+    <div className="activation-stack">
+      <section className="workspace-card decision-summary">
+        <div className="decision-score">
+          <span>Activation readiness</span>
+          <b>{decision.score}</b>
+          <small>/ 100 evidence-weighted</small>
+        </div>
+        <div>
+          <span className="context-label">Recommended next action</span>
+          <h2>{decision.nextAction}</h2>
+          <p>
+            This score measures decision readiness, not grid headroom. Capacity remains unknown
+            until the responsible operator provides evidence.
+          </p>
+        </div>
+        <div className="decision-blockers">
+          <span>{decision.blockers.length} open gates</span>
+          {decision.blockers.slice(0, 3).map((blocker) => (
+            <small key={blocker}>
+              <AlertTriangle /> {blocker}
+            </small>
+          ))}
+        </div>
+      </section>
+      <div className="workspace-columns">
+        <form className="product-form" onSubmit={save}>
+          <div className="form-section">
+            <h2>Project and connection requirement</h2>
+            <p>Customer inputs remain distinct from operator-confirmed information.</p>
             <label>
-              Requested import (MW)
-              <input
-                name="importMw"
-                type="number"
-                min="0"
-                step="0.001"
-                defaultValue={site.requested_import_mw}
-              />
+              Project name
+              <input name="name" defaultValue={site.name} required />
             </label>
+            <div className="form-grid">
+              <label>
+                Requested import (MW)
+                <input
+                  name="importMw"
+                  type="number"
+                  min="0"
+                  step="0.001"
+                  defaultValue={site.requested_import_mw}
+                />
+              </label>
+              <label>
+                Requested export (MW)
+                <input
+                  name="exportMw"
+                  type="number"
+                  min="0"
+                  step="0.001"
+                  defaultValue={site.requested_export_mw}
+                />
+              </label>
+            </div>
             <label>
-              Requested export (MW)
+              Target voltage (kV)
               <input
-                name="exportMw"
+                name="voltageKv"
                 type="number"
                 min="0"
                 step="0.001"
-                defaultValue={site.requested_export_mw}
+                defaultValue={site.target_voltage_kv ?? ""}
               />
             </label>
           </div>
-          <label>
-            Target voltage (kV)
-            <input
-              name="voltageKv"
-              type="number"
-              min="0"
-              step="0.001"
-              defaultValue={site.target_voltage_kv ?? ""}
-            />
-          </label>
-        </div>
-        <div className="form-section">
-          <h2>Network operator screening</h2>
-          <label>
-            Likely network operator
-            <input
-              name="operator"
-              defaultValue={site.likely_network_operator ?? screening.transmissionOperator}
-              placeholder="Enter screening result"
-            />
-            <small className="field-help">
-              Suggested transmission-area context: {screening.transmissionOperator}. Screening only;
-              confirm the responsible DSO and connection point.
-            </small>
-          </label>
-          <label>
-            Confirmation status
-            <select name="operatorStatus" defaultValue={site.operator_status}>
-              <option value="screening">Screening only</option>
-              <option value="customer_confirmed">Customer confirmed</option>
-              <option value="operator_confirmed">Operator confirmed</option>
-            </select>
-          </label>
-        </div>
-        <div className="form-actions">
-          <span>Updated {new Date(site.updated_at).toLocaleDateString()}</span>
-          <button className="primary-button" disabled={busy}>
-            {busy ? <LoaderCircle className="spin" /> : <Save />}Save changes
-          </button>
-        </div>
-      </form>
-      <aside className="guidance-card">
-        <h2>Declared project envelope</h2>
-        <dl className="detail-list">
-          <dt>Country</dt>
-          <dd>{site.country_code}</dd>
-          <dt>Coordinates</dt>
-          <dd>
-            {site.latitude}, {site.longitude}
-          </dd>
-          <dt>Project type</dt>
-          <dd>{label(site.project_type)}</dd>
-          <dt>Operator status</dt>
-          <dd>{label(site.operator_status)}</dd>
-          <dt>Regional context</dt>
-          <dd>{screening.regionalContext}</dd>
-        </dl>
-        <a href={screening.sourceUrl} target="_blank" rel="noreferrer">
-          Review German transmission planning source <ExternalLink />
-        </a>
-      </aside>
+          <div className="form-section">
+            <h2>Network operator screening</h2>
+            <label>
+              Likely network operator
+              <input
+                name="operator"
+                defaultValue={site.likely_network_operator ?? screening.transmissionOperator}
+                placeholder="Enter screening result"
+              />
+              <small className="field-help">
+                Suggested transmission-area context: {screening.transmissionOperator}. Screening
+                only; confirm the responsible DSO and connection point.
+              </small>
+            </label>
+            <label>
+              Confirmation status
+              <select
+                name="operatorConfirmationStatus"
+                defaultValue={site.operator_confirmation_status}
+              >
+                <option value="screening_only">Screening only</option>
+                <option value="customer_confirmed">Customer confirmed</option>
+                <option value="operator_confirmed">Operator confirmed</option>
+              </select>
+            </label>
+            <input name="operatorStatus" type="hidden" value={site.operator_status} />
+          </div>
+          <div className="form-section">
+            <h2>Activation decision</h2>
+            <div className="form-grid two-columns">
+              <label>
+                Workflow decision
+                <select name="decisionStatus" defaultValue={site.decision_status}>
+                  <option value="collect_evidence">Collect evidence</option>
+                  <option value="prepare_application">Prepare application</option>
+                  <option value="submit_application">Submit application</option>
+                  <option value="operator_review">Operator review</option>
+                  <option value="envelope_agreed">Envelope agreed</option>
+                  <option value="hold">Hold</option>
+                </select>
+              </label>
+              <label>
+                Target energization
+                <input
+                  name="targetEnergizationDate"
+                  type="date"
+                  defaultValue={site.target_energization_date ?? ""}
+                />
+              </label>
+            </div>
+            <label>
+              Decision notes
+              <textarea name="decisionNotes" rows={3} defaultValue={site.decision_notes ?? ""} />
+            </label>
+            <label>
+              Legacy operator stage
+              <select name="operatorStatusDisplay" defaultValue={site.operator_status} disabled>
+                <option value="screening">Screening only</option>
+                <option value="customer_confirmed">Customer confirmed</option>
+                <option value="operator_confirmed">Operator confirmed</option>
+              </select>
+            </label>
+          </div>
+          <div className="form-actions">
+            <span>Updated {new Date(site.updated_at).toLocaleDateString()}</span>
+            <button className="primary-button" disabled={busy}>
+              {busy ? <LoaderCircle className="spin" /> : <Save />}Save changes
+            </button>
+          </div>
+        </form>
+        <aside className="guidance-card">
+          <h2>Declared project envelope</h2>
+          <dl className="detail-list">
+            <dt>Country</dt>
+            <dd>{site.country_code}</dd>
+            <dt>Coordinates</dt>
+            <dd>
+              {site.latitude}, {site.longitude}
+            </dd>
+            <dt>Project type</dt>
+            <dd>{label(site.project_type)}</dd>
+            <dt>Operator status</dt>
+            <dd>{label(site.operator_status)}</dd>
+            <dt>Regional context</dt>
+            <dd>{screening.regionalContext}</dd>
+          </dl>
+          <a href={screening.sourceUrl} target="_blank" rel="noreferrer">
+            Review German transmission planning source <ExternalLink />
+          </a>
+        </aside>
+      </div>
     </div>
   );
 }

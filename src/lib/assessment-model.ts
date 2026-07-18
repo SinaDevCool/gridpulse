@@ -12,8 +12,13 @@ export type CandidateSite = {
   bess_energy_mwh: number | null;
   target_voltage_kv: number | null;
   likely_network_operator: string | null;
+  operator_profile_key: string | null;
+  operator_confirmation_status: string;
   operator_status: string;
   assessment_status: string;
+  target_energization_date: string | null;
+  decision_status: string;
+  decision_notes: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -87,6 +92,29 @@ export type OperatorRequirement = {
   document_id: string | null;
   notes: string | null;
   sort_order: number;
+  profile_key: string | null;
+  source_url: string | null;
+};
+export type OperatorProfile = {
+  key: string;
+  operator_name: string;
+  grid_level: string;
+  region_label: string;
+  application_url: string;
+  procedure_name: string;
+  procedure_version: string;
+  limitation: string;
+};
+export type GridDataSource = {
+  key: string;
+  authority: string;
+  title: string;
+  source_url: string;
+  coverage: string;
+  data_type: string;
+  use_in_gridpulse: string;
+  limitation: string;
+  verified_on: string;
 };
 export type OperatorCorrespondence = {
   id: string;
@@ -144,4 +172,59 @@ export function label(value: string) {
 }
 export function constrainedReduction(requested: number, limit: number | null) {
   return limit == null ? null : Math.max(0, Number(requested) - Number(limit));
+}
+
+const READY_REQUIREMENT_STATUSES = new Set(["ready", "submitted", "accepted", "not_applicable"]);
+
+export function activationDecision({
+  site,
+  requirements,
+  documents,
+  profiles,
+  envelopes,
+}: {
+  site: CandidateSite;
+  requirements: OperatorRequirement[];
+  documents: AssessmentDocument[];
+  profiles: IntervalProfile[];
+  envelopes: FcaEnvelope[];
+}) {
+  const readyRequirements = requirements.filter((item) =>
+    READY_REQUIREMENT_STATUSES.has(item.status),
+  ).length;
+  const requirementRatio = requirements.length ? readyRequirements / requirements.length : 0;
+  const operatorConfirmed = site.operator_confirmation_status !== "screening_only";
+  const operatorEvidence = documents.some(
+    (item) => item.source_classification === "operator_source",
+  );
+  const agreedEnvelope = envelopes.some((item) => item.status === "agreed");
+  const hasProfile = profiles.length > 0;
+  const score = Math.round(
+    requirementRatio * 45 +
+      Math.min(documents.length, 5) * 4 +
+      (hasProfile ? 10 : 0) +
+      (operatorConfirmed ? 10 : 0) +
+      (operatorEvidence ? 5 : 0) +
+      (agreedEnvelope ? 10 : 0),
+  );
+  const blockers = [
+    !site.operator_profile_key ? "Route the case to a likely network operator" : null,
+    !operatorConfirmed ? "Confirm the responsible operator and connection level" : null,
+    requirementRatio < 1 ? "Complete the operator evidence checklist" : null,
+    !hasProfile ? "Add a representative interval load or dispatch profile" : null,
+    !operatorEvidence ? "Obtain written operator evidence" : null,
+    !agreedEnvelope ? "Agree an operating envelope with the operator" : null,
+  ].filter((item): item is string => Boolean(item));
+  const nextAction = !site.operator_profile_key
+    ? "Select the operator profile"
+    : !operatorConfirmed
+      ? "Confirm operator responsibility"
+      : requirementRatio < 1
+        ? "Complete the qualified application pack"
+        : !operatorEvidence
+          ? "Submit and log the operator response"
+          : !agreedEnvelope
+            ? "Negotiate the flexible connection envelope"
+            : "Prepare activation and operating controls";
+  return { score: Math.min(score, 100), blockers, nextAction, agreedEnvelope };
 }
