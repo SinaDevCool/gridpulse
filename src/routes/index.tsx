@@ -153,44 +153,71 @@ function CinematicLandingPage() {
         <section className="cine-product" aria-labelledby="product-title">
           <div className="cine-product-copy">
             <span>Working product</span>
-            <h2 id="product-title">See the connection case, not another presentation.</h2>
+            <h2 id="product-title">One connection case. Five working views.</h2>
             <p>
-              Explore the same assessment structure used for site context, scenarios, evidence,
-              execution and decision reporting.
+              Move from declared project requirements to an evidence-backed decision record. Every
+              stage stays connected to the same case.
             </p>
+            <ul className="cine-product-proof" aria-label="Product capabilities">
+              <li>
+                <Check /> Real project inputs
+              </li>
+              <li>
+                <Check /> Source-aware evidence
+              </li>
+              <li>
+                <Check /> Traceable decisions
+              </li>
+            </ul>
             <Link to="/demo" className="cine-text-link">
-              Open the complete demonstration <ArrowRight />
+              Explore the complete assessment <ArrowRight />
             </Link>
           </div>
-          <ProductExperience />
+          <div className="cine-product-demo">
+            <header>
+              <span>Live product walkthrough</span>
+              <b>Berlin–Brandenburg BESS + AI load</b>
+              <em>Illustrative case</em>
+            </header>
+            <ProductExperience />
+          </div>
         </section>
 
         <section className="cine-germany" id="methodology">
           <div className="cine-germany-copy">
             <span>The German market</span>
-            <h2>Built around the way German connection projects actually move.</h2>
+            <h2>Start with the site. Confirm who is responsible.</h2>
             <p>
-              GridPulse aligns evidence and engagement with operator responsibility,
-              project-specific requirements and formal validation.
+              GridPulse structures each case around the likely German network operator and the
+              evidence required for that specific project.
+            </p>
+            <p className="cine-germany-caveat">
+              Screening supports preparation. Available capacity and operator responsibility still
+              require formal confirmation.
             </p>
           </div>
           <GermanyMap />
           <ol className="cine-germany-list">
             <li>
               <b>01</b>
-              <span>Distribution and transmission responsibility</span>
+              <span>
+                <strong>Locate the project</strong>
+                <small>Capture the site, voltage level and requested power.</small>
+              </span>
             </li>
             <li>
               <b>02</b>
-              <span>Project-specific application evidence</span>
+              <span>
+                <strong>Screen responsibility</strong>
+                <small>Identify the likely DSO or transmission context.</small>
+              </span>
             </li>
             <li>
               <b>03</b>
-              <span>BESS, data centres and industrial loads</span>
-            </li>
-            <li>
-              <b>04</b>
-              <span>Operator validation remains controlling</span>
+              <span>
+                <strong>Prepare the evidence</strong>
+                <small>Build a project-specific package for operator engagement.</small>
+              </span>
             </li>
           </ol>
         </section>
@@ -470,25 +497,19 @@ function ProductExperience() {
 
 function GermanyMap() {
   return (
-    <div className="cine-germany-map" aria-label="Illustrative German grid responsibility context">
-      <svg
-        viewBox="0 0 480 560"
-        role="img"
-        aria-label="Abstract outline of Germany with four transmission regions"
-      >
-        <path
-          className="country"
-          d="M245 18 L292 48 330 44 354 82 398 98 387 142 431 180 405 214 426 260 397 294 408 337 370 356 374 403 330 417 306 461 265 449 226 506 186 473 142 476 126 431 92 408 104 365 66 330 86 292 54 254 83 217 72 173 112 148 118 104 164 94 180 48 218 58Z"
-        />
-        <path d="M116 148 C200 178 214 262 226 506" />
-        <path d="M292 48 C258 158 292 260 374 403" />
-        <path d="M83 217 C176 264 270 260 426 260" />
-        <circle cx="286" cy="204" r="7" />
-      </svg>
-      <span className="zone zone-a">TenneT</span>
-      <span className="zone zone-b">50Hertz</span>
-      <span className="zone zone-c">Amprion</span>
-      <span className="zone zone-d">TransnetBW</span>
+    <div className="cine-germany-map" aria-label="Project responsibility screening in Germany">
+      <div className="cine-germany-outline" aria-hidden="true" />
+      <span className="cine-project-pulse" aria-hidden="true">
+        <i />
+      </span>
+      <div className="cine-map-callout">
+        <small>Illustrative project</small>
+        <strong>Brandenburg · 110 kV</strong>
+        <span>Likely operator area</span>
+      </div>
+      <div className="cine-map-status">
+        <i /> Operator confirmation required
+      </div>
     </div>
   );
 }
