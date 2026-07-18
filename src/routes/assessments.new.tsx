@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { AppShell, PageHeading } from "@/components/product/AppShell";
 import { useAuth } from "@/context/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { screenGermanOperator } from "@/lib/german-grid-screening";
 
 export const Route = createFileRoute("/assessments/new")({
   head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
@@ -40,6 +41,7 @@ function NewAssessment() {
       requested_export_mw: Number(form.get("exportMw") || 0),
       target_voltage_kv: Number(form.get("voltageKv")) || null,
     };
+    const screening = screenGermanOperator(payload.latitude, payload.longitude);
     const { data: created, error: insertError } = await supabase
       .from("candidate_sites")
       .insert(payload)
@@ -49,6 +51,13 @@ function NewAssessment() {
     if (insertError) {
       setError(insertError.message);
       return;
+    }
+    const { error: profileError } = await supabase.rpc("apply_operator_profile", {
+      p_site_id: created.id,
+      p_profile_key: screening.profileKey,
+    });
+    if (profileError) {
+      toast.warning("Assessment created, but operator routing needs review");
     }
     toast.success("Assessment draft created");
     await navigate({ to: "/assessments/$id", params: { id: created.id } });

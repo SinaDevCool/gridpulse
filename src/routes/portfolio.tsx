@@ -27,11 +27,17 @@ type CandidateSite = {
   requested_export_mw: number;
   assessment_status: string;
   operator_status: string;
+  likely_network_operator: string | null;
+  operator_confirmation_status: string;
+  operator_profile_key: string | null;
+  decision_status: string;
   created_at: string;
   document_count: number;
   requirement_ready: number;
   requirement_total: number;
   envelope_status: string;
+  readiness_score: number;
+  next_action: string;
 };
 
 function Portfolio() {
@@ -44,34 +50,65 @@ function Portfolio() {
     queryKey: ["candidate-sites", user?.id],
     enabled: Boolean(user),
     queryFn: async () => {
-      const [siteResult, documentResult, requirementResult, envelopeResult] = await Promise.all([
-        supabase
-          .from("candidate_sites")
-          .select(
-            "id,name,project_type,latitude,longitude,requested_import_mw,requested_export_mw,assessment_status,operator_status,created_at",
-          )
-          .order("created_at", { ascending: false }),
-        supabase.from("assessment_documents").select("site_id"),
-        supabase.from("operator_requirements").select("site_id,status"),
-        supabase
-          .from("fca_envelopes")
-          .select("site_id,status,version")
-          .order("version", { ascending: false }),
-      ]);
+      const [siteResult, documentResult, requirementResult, envelopeResult, profileResult] =
+        await Promise.all([
+          supabase
+            .from("candidate_sites")
+            .select(
+              "id,name,project_type,latitude,longitude,requested_import_mw,requested_export_mw,assessment_status,operator_status,likely_network_operator,operator_confirmation_status,operator_profile_key,decision_status,created_at",
+            )
+            .order("created_at", { ascending: false }),
+          supabase.from("assessment_documents").select("site_id"),
+          supabase.from("operator_requirements").select("site_id,status"),
+          supabase
+            .from("fca_envelopes")
+            .select("site_id,status,version")
+            .order("version", { ascending: false }),
+          supabase.from("interval_profiles").select("site_id"),
+        ]);
       if (siteResult.error) throw siteResult.error;
       if (documentResult.error) throw documentResult.error;
       if (requirementResult.error) throw requirementResult.error;
       if (envelopeResult.error) throw envelopeResult.error;
+      if (profileResult.error) throw profileResult.error;
       const readyStatuses = new Set(["ready", "submitted", "accepted", "not_applicable"]);
       return siteResult.data.map((site) => {
         const requirements = requirementResult.data.filter((item) => item.site_id === site.id);
+        const ready = requirements.filter((item) => readyStatuses.has(item.status)).length;
+        const ratio = requirements.length ? ready / requirements.length : 0;
+        const documents = documentResult.data.filter((item) => item.site_id === site.id).length;
+        const hasProfile = profileResult.data.some((item) => item.site_id === site.id);
+        const envelope = envelopeResult.data.find((item) => item.site_id === site.id);
+        const operatorConfirmed = site.operator_confirmation_status !== "screening_only";
+        const readinessScore = Math.min(
+          100,
+          Math.round(
+            ratio * 55 +
+              Math.min(documents, 5) * 4 +
+              (hasProfile ? 10 : 0) +
+              (operatorConfirmed ? 10 : 0) +
+              (envelope?.status === "agreed" ? 5 : 0),
+          ),
+        );
+        const nextAction = !site.operator_profile_key
+          ? "Route operator"
+          : !operatorConfirmed
+            ? "Confirm operator"
+            : ratio < 1
+              ? "Complete application pack"
+              : !envelope
+                ? "Obtain operator response"
+                : envelope.status !== "agreed"
+                  ? "Negotiate envelope"
+                  : "Prepare activation";
         return {
           ...site,
-          document_count: documentResult.data.filter((item) => item.site_id === site.id).length,
-          requirement_ready: requirements.filter((item) => readyStatuses.has(item.status)).length,
+          document_count: documents,
+          requirement_ready: ready,
           requirement_total: requirements.length,
-          envelope_status:
-            envelopeResult.data.find((item) => item.site_id === site.id)?.status ?? "not_started",
+          envelope_status: envelope?.status ?? "not_started",
+          readiness_score: readinessScore,
+          next_action: nextAction,
         } as CandidateSite;
       });
     },
@@ -142,6 +179,8 @@ function Portfolio() {
                     <th>Documents</th>
                     <th>Operator pack</th>
                     <th>FCA envelope</th>
+                    <th>Readiness</th>
+                    <th>Next action</th>
                     <th />
                   </tr>
                 </thead>
@@ -152,6 +191,10 @@ function Portfolio() {
                         <b>{project.name}</b>
                         <small>{label(project.project_type)}</small>
                       </td>
+                      <td>
+                        <b>{project.readiness_score}/100</b>
+                      </td>
+                      <td>{project.next_action}</td>
                       <td>{project.requested_import_mw} MW import</td>
                       <td>
                         <FileText /> {project.document_count}
@@ -225,7 +268,11 @@ function Portfolio() {
                   </div>
                   <div>
                     <dt>Operator</dt>
-                    <dd>{label(project.operator_status)}</dd>
+                    <dd>{project.likely_network_operator ?? label(project.operator_status)}</dd>
+                  </div>
+                  <div>
+                    <dt>Next action</dt>
+                    <dd>{project.next_action}</dd>
                   </div>
                 </dl>
                 <Link to="/assessments/$id" params={{ id: project.id }}>

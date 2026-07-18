@@ -653,6 +653,117 @@
   border-collapse: collapse;
 }
 
+.decision-summary {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr) minmax(260px, 0.8fr);
+  gap: 28px;
+  align-items: center;
+  border-color: rgba(44, 201, 238, 0.38);
+  background: linear-gradient(110deg, rgba(16, 51, 70, 0.82), rgba(10, 25, 39, 0.96));
+}
+
+.decision-score {
+  display: grid;
+  justify-items: center;
+  padding: 18px;
+  border: 1px solid rgba(44, 201, 238, 0.3);
+  border-radius: 12px;
+  background: rgba(4, 18, 29, 0.55);
+}
+
+.decision-score b {
+  color: var(--cyan-accent);
+  font-size: 3rem;
+  line-height: 1;
+}
+
+.decision-blockers {
+  display: grid;
+  gap: 8px;
+}
+
+.decision-blockers small {
+  display: flex;
+  gap: 7px;
+  align-items: flex-start;
+  color: var(--text-muted);
+}
+
+.decision-blockers svg,
+.source-warning svg {
+  width: 15px;
+  flex: 0 0 auto;
+  color: var(--warning);
+}
+
+.operator-routing-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: end;
+}
+
+.operator-routing-form label {
+  display: grid;
+  gap: 7px;
+}
+
+.source-warning {
+  display: flex;
+  gap: 9px;
+  margin-top: 14px;
+  padding: 11px 13px;
+  border: 1px solid rgba(245, 181, 49, 0.25);
+  border-radius: 8px;
+  color: var(--text-muted);
+  background: rgba(245, 181, 49, 0.06);
+}
+
+.requirement-card a,
+.data-source-register a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--cyan-accent);
+  font-size: 0.78rem;
+}
+
+.requirement-card a svg,
+.data-source-register a svg {
+  width: 12px;
+}
+
+.data-source-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.data-source-grid article {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: rgba(8, 25, 39, 0.72);
+}
+
+.data-source-grid article > span {
+  color: var(--cyan-accent);
+  font: 700 0.68rem/1.2 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.data-source-grid h3,
+.data-source-grid p {
+  margin: 0;
+}
+
+.data-source-grid small {
+  color: var(--text-muted);
+}
+
 .site-comparison th,
 .site-comparison td {
   padding: 10px 14px;
