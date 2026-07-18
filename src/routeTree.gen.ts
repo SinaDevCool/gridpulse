@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as PortfolioRouteImport } from './routes/portfolio'
 import { Route as EvidenceRouteImport } from './routes/evidence'
+import { Route as DemoRouteImport } from './routes/demo'
 import { Route as DataSourcesRouteImport } from './routes/data-sources'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
@@ -31,6 +32,11 @@ const PortfolioRoute = PortfolioRouteImport.update({
 const EvidenceRoute = EvidenceRouteImport.update({
   id: '/evidence',
   path: '/evidence',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoRoute = DemoRouteImport.update({
+  id: '/demo',
+  path: '/demo',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DataSourcesRoute = DataSourcesRouteImport.update({
@@ -63,6 +69,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/data-sources': typeof DataSourcesRoute
+  '/demo': typeof DemoRoute
   '/evidence': typeof EvidenceRoute
   '/portfolio': typeof PortfolioRoute
   '/reports': typeof ReportsRoute
@@ -73,6 +80,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/data-sources': typeof DataSourcesRoute
+  '/demo': typeof DemoRoute
   '/evidence': typeof EvidenceRoute
   '/portfolio': typeof PortfolioRoute
   '/reports': typeof ReportsRoute
@@ -84,6 +92,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/data-sources': typeof DataSourcesRoute
+  '/demo': typeof DemoRoute
   '/evidence': typeof EvidenceRoute
   '/portfolio': typeof PortfolioRoute
   '/reports': typeof ReportsRoute
@@ -96,6 +105,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/data-sources'
+    | '/demo'
     | '/evidence'
     | '/portfolio'
     | '/reports'
@@ -106,6 +116,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/data-sources'
+    | '/demo'
     | '/evidence'
     | '/portfolio'
     | '/reports'
@@ -116,6 +127,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/data-sources'
+    | '/demo'
     | '/evidence'
     | '/portfolio'
     | '/reports'
@@ -127,6 +139,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
   DataSourcesRoute: typeof DataSourcesRoute
+  DemoRoute: typeof DemoRoute
   EvidenceRoute: typeof EvidenceRoute
   PortfolioRoute: typeof PortfolioRoute
   ReportsRoute: typeof ReportsRoute
@@ -155,6 +168,13 @@ declare module '@tanstack/react-router' {
       path: '/evidence'
       fullPath: '/evidence'
       preLoaderRoute: typeof EvidenceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo': {
+      id: '/demo'
+      path: '/demo'
+      fullPath: '/demo'
+      preLoaderRoute: typeof DemoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/data-sources': {
@@ -199,6 +219,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
   DataSourcesRoute: DataSourcesRoute,
+  DemoRoute: DemoRoute,
   EvidenceRoute: EvidenceRoute,
   PortfolioRoute: PortfolioRoute,
   ReportsRoute: ReportsRoute,
