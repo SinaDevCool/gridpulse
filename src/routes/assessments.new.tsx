@@ -6,7 +6,10 @@ import { AppShell, PageHeading } from "@/components/product/AppShell";
 import { useAuth } from "@/context/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 
-export const Route = createFileRoute("/assessments/new")({ component: NewAssessment });
+export const Route = createFileRoute("/assessments/new")({
+  head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
+  component: NewAssessment,
+});
 const steps = ["Project", "Location", "Connection", "Evidence"];
 const projectTypes = {
   BESS: "bess",

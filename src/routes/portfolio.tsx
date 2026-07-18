@@ -5,7 +5,10 @@ import { AppShell, PageHeading } from "@/components/product/AppShell";
 import { useAuth } from "@/context/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 
-export const Route = createFileRoute("/portfolio")({ component: Portfolio });
+export const Route = createFileRoute("/portfolio")({
+  head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
+  component: Portfolio,
+});
 type CandidateSite = {
   id: string;
   name: string;

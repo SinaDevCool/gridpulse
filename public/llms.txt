@@ -1,0 +1,11 @@
+# GridPulse
+
+GridPulse is an evidence-led grid connection decision-support platform for BESS, data-centre and large-load projects in Germany.
+
+## Public pages
+
+- Home: https://gridpulseinsights.com/
+- Interactive demonstration: https://gridpulseinsights.com/demo
+- Design-partner pilot application: https://gridpulseinsights.com/pilot
+
+GridPulse structures project requirements and connection evidence, compares unrestricted and flexible connection options, and quantifies operational constraints. It does not infer available grid capacity, and network-operator evidence remains controlling.

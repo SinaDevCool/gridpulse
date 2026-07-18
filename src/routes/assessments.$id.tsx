@@ -36,7 +36,10 @@ import {
 } from "@/lib/fca-engine";
 import { screenGermanOperator } from "@/lib/german-grid-screening";
 
-export const Route = createFileRoute("/assessments/$id")({ component: AssessmentPage });
+export const Route = createFileRoute("/assessments/$id")({
+  head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
+  component: AssessmentPage,
+});
 type Tab = "overview" | "evidence" | "profile" | "scenarios" | "report";
 
 function AssessmentPage() {

@@ -9,12 +9,16 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/pilot")({
   head: () => ({
     meta: [
-      { title: "Request a GridPulse pilot" },
+      { title: "Request a GridPulse Pilot | German Grid Connection Assessment" },
       {
         name: "description",
-        content: "Apply for an evidence-led German grid-connection assessment pilot.",
+        content:
+          "Apply for a GridPulse design-partner pilot for a German BESS, data-centre or large-load grid connection case.",
       },
+      { property: "og:title", content: "Request a GridPulse Pilot" },
+      { property: "og:url", content: "https://gridpulseinsights.com/pilot" },
     ],
+    links: [{ rel: "canonical", href: "https://gridpulseinsights.com/pilot" }],
   }),
   component: PilotApplication,
 });

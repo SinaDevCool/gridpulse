@@ -5,7 +5,10 @@ import { AppShell, PageHeading } from "@/components/product/AppShell";
 import { useAuth } from "@/context/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { readiness, type CandidateSite, type Evidence } from "@/lib/assessment-model";
-export const Route = createFileRoute("/reports")({ component: ReportsPage });
+export const Route = createFileRoute("/reports")({
+  head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
+  component: ReportsPage,
+});
 function ReportsPage() {
   const { user } = useAuth();
   const query = useQuery({

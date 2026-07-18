@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /auth
+Disallow: /portfolio
+Disallow: /assessments
+Disallow: /evidence
+Disallow: /reports
+Disallow: /data-sources
+Disallow: /pilot-requests
+
+Sitemap: https://gridpulseinsights.com/sitemap.xml

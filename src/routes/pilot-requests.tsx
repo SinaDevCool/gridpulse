@@ -5,7 +5,10 @@ import { AppShell, PageHeading } from "@/components/product/AppShell";
 import { useAuth } from "@/context/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 
-export const Route = createFileRoute("/pilot-requests")({ component: PilotRequests });
+export const Route = createFileRoute("/pilot-requests")({
+  head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
+  component: PilotRequests,
+});
 
 type RequestRow = {
   id: string;

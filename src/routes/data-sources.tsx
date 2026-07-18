@@ -1,7 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Building2, Database, ExternalLink, Map, RadioTower } from "lucide-react";
 import { AppShell, PageHeading } from "@/components/product/AppShell";
-export const Route = createFileRoute("/data-sources")({ component: DataSourcesPage });
+export const Route = createFileRoute("/data-sources")({
+  head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
+  component: DataSourcesPage,
+});
 const sources = [
   {
     name: "Bundesnetzagentur",
