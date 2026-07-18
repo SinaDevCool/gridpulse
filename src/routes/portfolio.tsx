@@ -1,6 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, BatteryCharging, MapPin, Plus } from "lucide-react";
+import {
+  ArrowRight,
+  BatteryCharging,
+  ClipboardCheck,
+  FileText,
+  MapPin,
+  Plus,
+  Zap,
+} from "lucide-react";
 import { AppShell, PageHeading } from "@/components/product/AppShell";
 import { useAuth } from "@/context/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,6 +28,10 @@ type CandidateSite = {
   assessment_status: string;
   operator_status: string;
   created_at: string;
+  document_count: number;
+  requirement_ready: number;
+  requirement_total: number;
+  envelope_status: string;
 };
 
 function Portfolio() {
@@ -32,14 +44,36 @@ function Portfolio() {
     queryKey: ["candidate-sites", user?.id],
     enabled: Boolean(user),
     queryFn: async () => {
-      const { data, error: queryError } = await supabase
-        .from("candidate_sites")
-        .select(
-          "id,name,project_type,latitude,longitude,requested_import_mw,requested_export_mw,assessment_status,operator_status,created_at",
-        )
-        .order("created_at", { ascending: false });
-      if (queryError) throw queryError;
-      return data as CandidateSite[];
+      const [siteResult, documentResult, requirementResult, envelopeResult] = await Promise.all([
+        supabase
+          .from("candidate_sites")
+          .select(
+            "id,name,project_type,latitude,longitude,requested_import_mw,requested_export_mw,assessment_status,operator_status,created_at",
+          )
+          .order("created_at", { ascending: false }),
+        supabase.from("assessment_documents").select("site_id"),
+        supabase.from("operator_requirements").select("site_id,status"),
+        supabase
+          .from("fca_envelopes")
+          .select("site_id,status,version")
+          .order("version", { ascending: false }),
+      ]);
+      if (siteResult.error) throw siteResult.error;
+      if (documentResult.error) throw documentResult.error;
+      if (requirementResult.error) throw requirementResult.error;
+      if (envelopeResult.error) throw envelopeResult.error;
+      const readyStatuses = new Set(["ready", "submitted", "accepted", "not_applicable"]);
+      return siteResult.data.map((site) => {
+        const requirements = requirementResult.data.filter((item) => item.site_id === site.id);
+        return {
+          ...site,
+          document_count: documentResult.data.filter((item) => item.site_id === site.id).length,
+          requirement_ready: requirements.filter((item) => readyStatuses.has(item.status)).length,
+          requirement_total: requirements.length,
+          envelope_status:
+            envelopeResult.data.find((item) => item.site_id === site.id)?.status ?? "not_started",
+        } as CandidateSite;
+      });
     },
   });
   const awaitingEvidence = projects.filter(
@@ -87,6 +121,61 @@ function Portfolio() {
           </div>
           <span>{projects.length} projects</span>
         </div>
+        {projects.length > 0 ? (
+          <section className="site-comparison workspace-card">
+            <div className="panel-heading">
+              <div>
+                <h2>Candidate-site readiness comparison</h2>
+                <p>
+                  Comparison reflects collected evidence and workflow progress—not available
+                  capacity.
+                </p>
+              </div>
+              <ClipboardCheck />
+            </div>
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Site</th>
+                    <th>Requirement</th>
+                    <th>Documents</th>
+                    <th>Operator pack</th>
+                    <th>FCA envelope</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {projects.map((project) => (
+                    <tr key={project.id}>
+                      <td>
+                        <b>{project.name}</b>
+                        <small>{label(project.project_type)}</small>
+                      </td>
+                      <td>{project.requested_import_mw} MW import</td>
+                      <td>
+                        <FileText /> {project.document_count}
+                      </td>
+                      <td>
+                        {project.requirement_ready}/{project.requirement_total || 8} ready
+                      </td>
+                      <td>
+                        <span className="status">
+                          <Zap /> {label(project.envelope_status)}
+                        </span>
+                      </td>
+                      <td>
+                        <Link to="/assessments/$id" params={{ id: project.id }}>
+                          Open <ArrowRight />
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        ) : null}
         {isLoading ? (
           <div className="portfolio-state">
             <div className="loading-spinner" />
