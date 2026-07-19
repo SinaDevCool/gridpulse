@@ -16,10 +16,20 @@ dist-ssr
 .nitro
 *.local
 
+# Environment files are local/deployment configuration. Only the documented
+# placeholder template may be committed.
+.env
+.env.*
+!.env.example
+
 # Wrangler / Cloudflare
 .wrangler/
 .dev.vars
 supabase/.temp/
+
+# Browser-test artifacts
+test-results/
+playwright-report/
 
 # Editor directories and files
 .vscode/*

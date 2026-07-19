@@ -31,7 +31,7 @@ function EvidencePage() {
   const missing = rows.filter((r) => r.validation_status === "missing").length;
   return (
     <AppShell requireAuth>
-      <main className="section-page">
+      <main id="main-content" className="section-page">
         <PageHeading
           eyebrow="Evidence room"
           title="Evidence ledger"
@@ -66,7 +66,7 @@ function EvidencePage() {
               <thead>
                 <tr>
                   <th>Evidence item</th>
-                  <th>Assessment</th>
+                  <th>Project</th>
                   <th>Source</th>
                   <th>Classification</th>
                   <th>Status</th>
@@ -87,7 +87,7 @@ function EvidencePage() {
                   </tr>
                 ) : rows.length === 0 ? (
                   <tr>
-                    <td colSpan={5}>No evidence yet. Open an assessment to add the first item.</td>
+                    <td colSpan={5}>No evidence yet. Open a project to add the first item.</td>
                   </tr>
                 ) : (
                   rows.map((row) => (
@@ -95,7 +95,7 @@ function EvidencePage() {
                       <td>
                         <b>{row.title}</b>
                       </td>
-                      <td>{row.candidate_sites?.name ?? "Assessment"}</td>
+                      <td>{row.candidate_sites?.name ?? "Project"}</td>
                       <td>
                         {row.source_url ? (
                           <a href={row.source_url} target="_blank" rel="noreferrer">
@@ -136,8 +136,7 @@ function EvidencePage() {
           </div>
         </div>
         <p className="index-hint">
-          Add or edit evidence inside an individual{" "}
-          <Link to="/portfolio">assessment workspace</Link>.
+          Add or edit evidence inside an individual <Link to="/portfolio">project workspace</Link>.
         </p>
       </main>
     </AppShell>

@@ -34,11 +34,11 @@ function ReportsPage() {
   const items = query.data ?? [];
   return (
     <AppShell requireAuth>
-      <main className="section-page">
+      <main id="main-content" className="section-page">
         <PageHeading
           eyebrow="Decision outputs"
-          title="Pre-feasibility reports"
-          description="Generate auditable reports only when required evidence and assumptions are visible."
+          title="Connection options assessment deliverables"
+          description="Open the versioned operator package, evidence register, scenario comparison and management decision memo for each project."
         />
         {query.isLoading ? (
           <div className="portfolio-state">
@@ -48,9 +48,9 @@ function ReportsPage() {
         ) : items.length === 0 ? (
           <div className="portfolio-state">
             <FileText />
-            <h2>No assessments available</h2>
+            <h2>No projects available</h2>
             <Link to="/assessments/new" className="primary-button">
-              Create assessment
+              Create project
             </Link>
           </div>
         ) : (
@@ -69,11 +69,12 @@ function ReportsPage() {
                 {!state.ready ? (
                   <small>
                     <AlertTriangle />
-                    Official source, customer input and validated operator evidence are required.
+                    The current package is incomplete. Missing evidence and operator-validation
+                    gates remain visible in the workspace.
                   </small>
                 ) : null}
                 <Link to="/assessments/$id" params={{ id: site.id }}>
-                  Open report workspace <ArrowRight />
+                  Open assessment deliverables <ArrowRight />
                 </Link>
               </article>
             ))}

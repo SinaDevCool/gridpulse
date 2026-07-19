@@ -61,6 +61,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content: siteDescription,
       },
       { name: "author", content: "GridPulse" },
+      { name: "gridpulse-build", content: __GRIDPULSE_BUILD_SHA__ },
+      { name: "gridpulse-environment", content: __GRIDPULSE_BUILD_ENV__ },
       { name: "robots", content: "index, follow, max-image-preview:large" },
       { property: "og:site_name", content: "GridPulse" },
       { property: "og:type", content: "website" },
@@ -75,14 +77,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:title", content: siteTitle },
       { name: "twitter:description", content: siteDescription },
       { name: "twitter:image", content: socialImage },
-      { name: "theme-color", content: "#07131f" },
+      { name: "theme-color", content: "#05080f" },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Geist:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap",
       },
       { rel: "stylesheet", href: appCss },
       { rel: "manifest", href: "/site.webmanifest" },
@@ -99,6 +101,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         />
       </head>
       <body>
+        <a className="skip-link" href="#main-content">
+          Skip to main content
+        </a>
         {children}
         <Scripts />
       </body>
@@ -106,10 +111,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   ),
   component: RootComponent,
   notFoundComponent: () => (
-    <main className="empty-page">
+    <main id="main-content" className="empty-page">
       <h1>Page not found</h1>
       <p>The requested GridPulse workspace does not exist.</p>
-      <Link to="/">Return to assessment</Link>
+      <Link to="/">Return home</Link>
     </main>
   ),
 });

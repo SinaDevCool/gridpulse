@@ -47,7 +47,7 @@ function AuthPage() {
 
   if (!sessionLoading && user)
     return (
-      <main className="auth-page">
+      <main id="main-content" className="auth-page">
         <div className="auth-card">
           <CheckCircle2 className="auth-success" />
           <h1>You are signed in</h1>
@@ -60,7 +60,7 @@ function AuthPage() {
     );
 
   return (
-    <main className="auth-page">
+    <main id="main-content" className="auth-page">
       <div className="auth-card">
         <Link to="/" className="back-link">
           <ArrowLeft /> Back to GridPulse
@@ -72,8 +72,8 @@ function AuthPage() {
         <h1>{mode === "signin" ? "Welcome back" : "Create your workspace"}</h1>
         <p>
           {mode === "signin"
-            ? "Sign in to access private assessments and evidence."
-            : "Start a private evidence-led connection assessment workspace."}
+            ? "Sign in to access private connection projects and evidence."
+            : "Start a private, evidence-led connection project workspace."}
         </p>
         <div className="auth-tabs">
           <button className={mode === "signin" ? "active" : ""} onClick={() => setMode("signin")}>
