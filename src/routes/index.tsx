@@ -12,7 +12,6 @@ import {
   Zap,
 } from "lucide-react";
 import { useAuth } from "@/context/useAuth";
-import { ConnectionCaseExperience } from "@/components/product/ConnectionCaseExperience";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -148,39 +147,6 @@ function CinematicLandingPage() {
           <MethodStep number="03" title="Execute">
             Coordinate decisions, documents and deadlines in one traceable workspace.
           </MethodStep>
-        </section>
-
-        <section className="cine-product" aria-labelledby="product-title">
-          <div className="cine-product-copy">
-            <span>Working product</span>
-            <h2 id="product-title">One connection case. Five working views.</h2>
-            <p>
-              Move from declared project requirements to an evidence-backed decision record. Every
-              stage stays connected to the same case.
-            </p>
-            <ul className="cine-product-proof" aria-label="Product capabilities">
-              <li>
-                <Check /> Real project inputs
-              </li>
-              <li>
-                <Check /> Source-aware evidence
-              </li>
-              <li>
-                <Check /> Traceable decisions
-              </li>
-            </ul>
-            <Link to="/demo" className="cine-text-link">
-              Explore the complete assessment <ArrowRight />
-            </Link>
-          </div>
-          <div className="cine-product-demo">
-            <header>
-              <span>Live product walkthrough</span>
-              <b>Berlin–Brandenburg BESS + AI load</b>
-              <em>Illustrative case</em>
-            </header>
-            <ProductExperience />
-          </div>
         </section>
 
         <section className="cine-germany" id="methodology">
@@ -489,10 +455,6 @@ function MethodStep({
       </span>
     </article>
   );
-}
-
-function ProductExperience() {
-  return <ConnectionCaseExperience mode="preview" initialStage="site" />;
 }
 
 function GermanyMap() {
