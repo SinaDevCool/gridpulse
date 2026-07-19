@@ -1,357 +1,466 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import {
+  AlertTriangle,
   ArrowRight,
   BatteryCharging,
-  ClipboardCheck,
-  FileText,
-  MapPin,
+  ChevronDown,
   Plus,
-  Zap,
+  Search,
 } from "lucide-react";
 import { AppShell, PageHeading } from "@/components/product/AppShell";
 import { useAuth } from "@/context/useAuth";
+import {
+  derivePortfolioProject,
+  filterPortfolioProjects,
+  type PortfolioProject,
+  type PortfolioSort,
+  type PortfolioStage,
+} from "@/features/grid-connection/portfolio-model";
 import { supabase } from "@/integrations/supabase/client";
 
+const stages: Array<{ value: PortfolioStage; label: string }> = [
+  { value: "all", label: "All" },
+  { value: "action_required", label: "Action required" },
+  { value: "screening", label: "Screening" },
+  { value: "preparing", label: "Preparing" },
+  { value: "awaiting_operator", label: "Awaiting operator" },
+  { value: "decision_ready", label: "Decision ready" },
+];
 export const Route = createFileRoute("/portfolio")({
   head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
   component: Portfolio,
 });
-type CandidateSite = {
-  id: string;
-  name: string;
-  project_type: string;
-  latitude: number;
-  longitude: number;
-  requested_import_mw: number;
-  requested_export_mw: number;
-  assessment_status: string;
-  operator_status: string;
-  likely_network_operator: string | null;
-  operator_confirmation_status: string;
-  operator_profile_key: string | null;
-  decision_status: string;
-  created_at: string;
-  document_count: number;
-  requirement_ready: number;
-  requirement_total: number;
-  envelope_status: string;
-  readiness_score: number;
-  next_action: string;
-  next_deadline: string | null;
-  open_reviews: number;
-  evidence_completion: number | null;
-};
+
+function groupCount<T extends { site_id: string }>(items: T[]) {
+  return items.reduce<Record<string, number>>((groups, item) => {
+    groups[item.site_id] = (groups[item.site_id] ?? 0) + 1;
+    return groups;
+  }, {});
+}
+
+function groupItems<T extends { site_id: string }>(items: T[]) {
+  return items.reduce<Map<string, T[]>>((groups, item) => {
+    groups.set(item.site_id, [...(groups.get(item.site_id) ?? []), item]);
+    return groups;
+  }, new Map());
+}
 
 function Portfolio() {
   const { user } = useAuth();
+  const [query, setQuery] = useState("");
+  const [stage, setStage] = useState<PortfolioStage>("all");
+  const [sort, setSort] = useState<PortfolioSort>("priority");
+  const [expanded, setExpanded] = useState("");
   const {
     data: projects = [],
     isLoading,
     error,
+    refetch,
   } = useQuery({
     queryKey: ["candidate-sites", user?.id],
     enabled: Boolean(user),
     queryFn: async () => {
       await supabase.rpc("accept_assessment_invitations");
-      const [
-        siteResult,
-        documentResult,
-        requirementResult,
-        envelopeResult,
-        profileResult,
-        milestoneResult,
-        metricsResult,
-        reviewsResult,
-      ] = await Promise.all([
-        supabase
-          .from("candidate_sites")
-          .select(
-            "id,name,project_type,latitude,longitude,requested_import_mw,requested_export_mw,assessment_status,operator_status,likely_network_operator,operator_confirmation_status,operator_profile_key,decision_status,created_at",
-          )
-          .order("created_at", { ascending: false }),
-        supabase.from("assessment_documents").select("site_id"),
-        supabase.from("operator_requirements").select("site_id,status"),
-        supabase
-          .from("fca_envelopes")
-          .select("site_id,status,version")
-          .order("version", { ascending: false }),
-        supabase.from("interval_profiles").select("site_id"),
-        supabase
-          .from("assessment_milestones")
-          .select("site_id,due_at,status")
-          .eq("status", "open")
-          .order("due_at"),
-        supabase
-          .from("pilot_metrics")
-          .select("site_id,metric_key,metric_value,observed_at")
-          .order("observed_at", { ascending: false }),
-        supabase.from("assessment_reviews").select("site_id,status,due_at"),
-      ]);
-      if (siteResult.error) throw siteResult.error;
-      if (documentResult.error) throw documentResult.error;
-      if (requirementResult.error) throw requirementResult.error;
-      if (envelopeResult.error) throw envelopeResult.error;
-      if (profileResult.error) throw profileResult.error;
-      if (milestoneResult.error) throw milestoneResult.error;
-      if (metricsResult.error) throw metricsResult.error;
-      if (reviewsResult.error) throw reviewsResult.error;
+      const [sites, documents, requirements, envelopes, profiles, milestones, reviews] =
+        await Promise.all([
+          supabase
+            .from("candidate_sites")
+            .select(
+              "id,name,project_type,latitude,longitude,requested_import_mw,requested_export_mw,assessment_status,operator_status,likely_network_operator,operator_confirmation_status,operator_profile_key,decision_status,created_at",
+            )
+            .neq("assessment_status", "archived")
+            .order("created_at", { ascending: false }),
+          supabase.from("assessment_documents").select("site_id"),
+          supabase.from("operator_requirements").select("site_id,status"),
+          supabase
+            .from("fca_envelopes")
+            .select("site_id,status,version")
+            .order("version", { ascending: false }),
+          supabase.from("interval_profiles").select("site_id"),
+          supabase
+            .from("assessment_milestones")
+            .select("site_id,due_at,status")
+            .eq("status", "open"),
+          supabase.from("assessment_reviews").select("site_id,status,due_at,assigned_to_email"),
+        ]);
+      for (const result of [
+        sites,
+        documents,
+        requirements,
+        envelopes,
+        profiles,
+        milestones,
+        reviews,
+      ]) {
+        if (result.error) throw result.error;
+      }
+      const siteRows = sites.data ?? [];
+      const documentRows = documents.data ?? [];
+      const requirementRows = requirements.data ?? [];
+      const envelopeRows = envelopes.data ?? [];
+      const profileRows = profiles.data ?? [];
+      const milestoneRows = milestones.data ?? [];
+      const reviewRows = reviews.data ?? [];
+      const documentCounts = groupCount(documentRows);
+      const profileCounts = groupCount(profileRows);
       const readyStatuses = new Set(["ready", "submitted", "accepted", "not_applicable"]);
-      return siteResult.data.map((site) => {
-        const requirements = requirementResult.data.filter((item) => item.site_id === site.id);
-        const ready = requirements.filter((item) => readyStatuses.has(item.status)).length;
-        const ratio = requirements.length ? ready / requirements.length : 0;
-        const documents = documentResult.data.filter((item) => item.site_id === site.id).length;
-        const hasProfile = profileResult.data.some((item) => item.site_id === site.id);
-        const envelope = envelopeResult.data.find((item) => item.site_id === site.id);
-        const operatorConfirmed = site.operator_confirmation_status !== "screening_only";
-        const evidenceMetric = metricsResult.data.find(
-          (item) => item.site_id === site.id && item.metric_key === "evidence_completion",
-        );
-        const readinessScore = Math.min(
-          100,
-          Math.round(
-            ratio * 55 +
-              Math.min(documents, 5) * 4 +
-              (hasProfile ? 10 : 0) +
-              (operatorConfirmed ? 10 : 0) +
-              (envelope?.status === "agreed" ? 5 : 0),
-          ),
-        );
-        const nextAction = !site.operator_profile_key
-          ? "Route operator"
-          : !operatorConfirmed
-            ? "Confirm operator"
-            : ratio < 1
-              ? "Complete application pack"
-              : !envelope
-                ? "Obtain operator response"
-                : envelope.status !== "agreed"
-                  ? "Negotiate envelope"
-                  : "Prepare agreed operating plan";
-        return {
+      const requirementsBySite = groupItems(requirementRows);
+      const reviewsBySite = groupItems(reviewRows);
+      const milestonesBySite = groupItems(milestoneRows);
+      const envelopeBySite = new Map<string, (typeof envelopeRows)[number]>();
+      envelopeRows.forEach((envelope) => {
+        if (!envelopeBySite.has(envelope.site_id)) envelopeBySite.set(envelope.site_id, envelope);
+      });
+      return siteRows.map((site) => {
+        const siteRequirements = requirementsBySite.get(site.id) ?? [];
+        const siteMilestones = milestonesBySite.get(site.id) ?? [];
+        const firstMilestone = [...siteMilestones].sort(
+          (a, b) => Date.parse(a.due_at) - Date.parse(b.due_at),
+        )[0];
+        return derivePortfolioProject({
           ...site,
-          document_count: documents,
-          requirement_ready: ready,
-          requirement_total: requirements.length,
-          envelope_status: envelope?.status ?? "not_started",
-          readiness_score: readinessScore,
-          next_action: nextAction,
-          next_deadline:
-            milestoneResult.data.find((item) => item.site_id === site.id)?.due_at ?? null,
-          open_reviews: reviewsResult.data.filter(
-            (item) => item.site_id === site.id && item.status !== "accepted",
-          ).length,
-          evidence_completion: evidenceMetric ? Number(evidenceMetric.metric_value) : null,
-        } as CandidateSite;
+          documents: documentCounts[site.id] ?? 0,
+          requirementsReady: siteRequirements.filter((item) => readyStatuses.has(item.status))
+            .length,
+          requirementsTotal: siteRequirements.length,
+          hasIntervalProfile: Boolean(profileCounts[site.id]),
+          envelopeStatus: envelopeBySite.get(site.id)?.status ?? "not_started",
+          milestoneDueAt: firstMilestone?.due_at ?? null,
+          reviews: reviewsBySite.get(site.id) ?? [],
+        });
       });
     },
   });
-  const awaitingEvidence = projects.filter(
-    (project) => project.assessment_status !== "report_ready",
-  ).length;
-  const reportReady = projects.filter(
-    (project) => project.assessment_status === "report_ready",
-  ).length;
-  const overdueReviews = projects.reduce((total, project) => total + project.open_reviews, 0);
-  const measuredEvidence = projects.filter((project) => project.evidence_completion !== null);
-  const averageEvidence = measuredEvidence.length
-    ? Math.round(
-        measuredEvidence.reduce((total, project) => total + project.evidence_completion!, 0) /
-          measuredEvidence.length,
-      )
-    : null;
+
+  const visibleProjects = filterPortfolioProjects(projects, query, stage, sort);
+  const summary = {
+    needsAction: projects.filter((project) => project.needsAction).length,
+    evidenceBlocked: projects.filter((project) => project.evidenceBlocked).length,
+    packageReady: projects.filter((project) => project.packageReady).length,
+    overdue: projects.reduce((total, project) => total + project.overdueActions, 0),
+  };
   return (
     <AppShell requireAuth>
-      <main id="main-content" className="section-page">
+      <main id="main-content" className="section-page portfolio-page">
         <PageHeading
-          eyebrow="Connection strategy portfolio"
+          eyebrow="Connection decision workspace"
           title="Connection projects"
-          description="Move candidate sites from public-context screening to an evidence-backed operator engagement strategy."
+          description="Prioritise evidence gaps, operator engagement and decisions across the German connection portfolio. Public context and customer inputs are not statements of available grid capacity."
           action={
             <Link to="/assessments/new" className="primary-button">
-              <Plus size={15} /> New project
+              <Plus size={15} aria-hidden="true" /> New project
             </Link>
           }
         />
-        <div className="summary-grid">
-          <div>
-            <span>Active projects</span>
-            <b>{projects.length}</b>
-            <small>Screening and operator engagement</small>
-          </div>
-          <div>
-            <span>Assessment in progress</span>
-            <b>{awaitingEvidence}</b>
-            <small>No capacity conclusions yet</small>
-          </div>
-          <div>
-            <span>Package ready</span>
-            <b>{reportReady}</b>
-            <small>Ready for operator review</small>
-          </div>
-          <div>
-            <span>Open review gates</span>
-            <b>{overdueReviews}</b>
-            <small>Technical, commercial and grid-expert decisions</small>
-          </div>
-          <div>
-            <span>Average evidence completion</span>
-            <b>{averageEvidence === null ? "—" : `${averageEvidence}%`}</b>
-            <small>Latest recorded pilot KPI per project</small>
-          </div>
-        </div>
-        <div className="section-toolbar">
-          <strong>Connection project pipeline</strong>
-          <span>{projects.length} projects</span>
-        </div>
-        {projects.length > 0 ? (
-          <section className="site-comparison workspace-card">
-            <div className="panel-heading">
-              <div>
-                <h2>Candidate-site readiness comparison</h2>
-                <p>
-                  Comparison reflects collected evidence and workflow progress—not available
-                  capacity.
-                </p>
-              </div>
-              <ClipboardCheck />
-            </div>
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Site</th>
-                    <th>Requested capacity</th>
-                    <th>Documents</th>
-                    <th>Operator pack</th>
-                    <th>FCA envelope</th>
-                    <th>Readiness</th>
-                    <th>Next action</th>
-                    <th>Review gates</th>
-                    <th>Deadline</th>
-                    <th />
-                  </tr>
-                </thead>
-                <tbody>
-                  {projects.map((project) => (
-                    <tr key={project.id}>
-                      <td>
-                        <b>{project.name}</b>
-                        <small>{label(project.project_type)}</small>
-                      </td>
-                      <td>
-                        {project.requested_import_mw} MW import
-                        <small>{project.requested_export_mw} MW export</small>
-                      </td>
-                      <td>
-                        <FileText /> {project.document_count}
-                      </td>
-                      <td>
-                        {project.requirement_ready}/{project.requirement_total || 8} ready
-                      </td>
-                      <td>
-                        <span className="status">
-                          <Zap /> {label(project.envelope_status)}
-                        </span>
-                      </td>
-                      <td>
-                        <b>{project.readiness_score}/100</b>
-                      </td>
-                      <td>{project.next_action}</td>
-                      <td>{project.open_reviews}</td>
-                      <td>
-                        {project.next_deadline
-                          ? new Intl.DateTimeFormat("en-GB").format(new Date(project.next_deadline))
-                          : "—"}
-                      </td>
-                      <td>
-                        <Link to="/assessments/$id" params={{ id: project.id }}>
-                          Open <ArrowRight />
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        ) : null}
+
         {isLoading ? (
-          <div className="portfolio-state">
+          <div className="portfolio-state" role="status" aria-live="polite">
             <div className="loading-spinner" />
             <p>Loading private projects…</p>
           </div>
         ) : error ? (
-          <div className="portfolio-state error-message">
-            <p>{error instanceof Error ? error.message : "Could not load projects."}</p>
+          <div className="portfolio-state error-message" role="alert">
+            <AlertTriangle aria-hidden="true" />
+            <h2>Projects could not be loaded</h2>
+            <p>Refresh the data or try again shortly.</p>
+            <button className="secondary-button" type="button" onClick={() => refetch()}>
+              Try again
+            </button>
           </div>
         ) : projects.length === 0 ? (
           <div className="portfolio-state">
-            <BatteryCharging />
+            <BatteryCharging aria-hidden="true" />
             <h2>No connection projects yet</h2>
-            <p>Add a candidate site to begin public-context screening and connection planning.</p>
+            <p>Add a candidate site to begin evidence-led screening and connection planning.</p>
             <Link to="/assessments/new" className="primary-button">
-              <Plus size={15} /> Create project
+              <Plus size={15} aria-hidden="true" /> Create project
             </Link>
           </div>
         ) : (
-          <div className="portfolio-grid">
-            {projects.map((project) => (
-              <article className="project-card" key={project.id}>
-                <div className="project-card-top">
-                  <span className="project-icon">
-                    <BatteryCharging />
-                  </span>
-                  <span className="status warning-text">{label(project.assessment_status)}</span>
+          <>
+            <section className="portfolio-summary" aria-label="Portfolio priorities">
+              <Metric
+                label="Needs action"
+                value={summary.needsAction}
+                detail="Open blocker or review gate"
+                tone="warning"
+              />
+              <Metric
+                label="Blocked by evidence"
+                value={summary.evidenceBlocked}
+                detail="Customer-side package incomplete"
+              />
+              <Metric
+                label="Package ready"
+                value={summary.packageReady}
+                detail="Ready for operator engagement"
+                tone="positive"
+              />
+              <Metric
+                label="Overdue actions"
+                value={summary.overdue}
+                detail="Open review or milestone due"
+                tone="danger"
+              />
+            </section>
+
+            <section className="portfolio-work-queue" aria-labelledby="work-queue-title">
+              <div className="portfolio-controls">
+                <div>
+                  <h2 id="work-queue-title">Decision work queue</h2>
+                  <p>
+                    {visibleProjects.length} of {projects.length} projects shown
+                  </p>
                 </div>
-                <h2>{project.name}</h2>
-                <p>{label(project.project_type)}</p>
-                <dl>
-                  <div>
-                    <dt>
-                      <MapPin />
-                      Coordinates
-                    </dt>
-                    <dd>
-                      {Number(project.latitude).toFixed(4)}, {Number(project.longitude).toFixed(4)}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>Requirement</dt>
-                    <dd>
-                      {project.requested_import_mw} MW import / {project.requested_export_mw} MW
-                      export
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>Operator</dt>
-                    <dd>{project.likely_network_operator ?? label(project.operator_status)}</dd>
-                  </div>
-                  <div>
-                    <dt>Next action</dt>
-                    <dd>{project.next_action}</dd>
-                  </div>
-                  <div>
-                    <dt>Next deadline</dt>
-                    <dd>
-                      {project.next_deadline
-                        ? new Intl.DateTimeFormat("en-GB").format(new Date(project.next_deadline))
-                        : "Not scheduled"}
-                    </dd>
-                  </div>
-                </dl>
-                <Link to="/assessments/$id" params={{ id: project.id }}>
-                  Open project <ArrowRight size={14} />
-                </Link>
-              </article>
-            ))}
-          </div>
+                <label className="portfolio-search">
+                  <span className="sr-only">Search projects</span>
+                  <Search aria-hidden="true" />
+                  <input
+                    type="search"
+                    name="project-search"
+                    autoComplete="off"
+                    placeholder="Search project or operator…"
+                    value={query}
+                    onChange={(event) => {
+                      setQuery(event.target.value);
+                      setExpanded("");
+                    }}
+                  />
+                </label>
+                <label className="portfolio-sort">
+                  <span>Sort</span>
+                  <select
+                    value={sort}
+                    onChange={(event) => setSort(event.target.value as PortfolioSort)}
+                  >
+                    <option value="priority">Priority</option>
+                    <option value="deadline">Next deadline</option>
+                    <option value="newest">Newest</option>
+                    <option value="name">Project name</option>
+                  </select>
+                </label>
+              </div>
+              <nav className="portfolio-filters" aria-label="Filter projects by workflow stage">
+                {stages.map((stageOption) => {
+                  const count =
+                    stageOption.value === "all"
+                      ? projects.length
+                      : stageOption.value === "action_required"
+                        ? summary.needsAction
+                        : projects.filter((project) => project.stage === stageOption.value).length;
+                  return (
+                    <button
+                      type="button"
+                      key={stageOption.value}
+                      className={stage === stageOption.value ? "filter-active" : ""}
+                      aria-pressed={stage === stageOption.value}
+                      onClick={() => {
+                        setStage(stageOption.value);
+                        setExpanded("");
+                      }}
+                    >
+                      {stageOption.label} <span>{count}</span>
+                    </button>
+                  );
+                })}
+              </nav>
+
+              {visibleProjects.length === 0 ? (
+                <div className="portfolio-no-results" role="status">
+                  <h3>No projects match this view</h3>
+                  <p>Clear the search or choose another workflow stage.</p>
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={() => {
+                      setQuery("");
+                      setStage("all");
+                    }}
+                  >
+                    Clear filters
+                  </button>
+                </div>
+              ) : (
+                <div className="table-wrap portfolio-table-wrap">
+                  <table className="portfolio-table">
+                    <caption className="sr-only">
+                      Connection projects ordered by the selected portfolio priority.
+                    </caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">Project</th>
+                        <th scope="col">Current gate</th>
+                        <th scope="col">Customer-side evidence</th>
+                        <th scope="col">Operator status</th>
+                        <th scope="col">Next action</th>
+                        <th scope="col">Owner &amp; due</th>
+                        <th scope="col">Decision</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {visibleProjects.map((project) => (
+                        <ProjectRows
+                          key={project.id}
+                          project={project}
+                          expanded={expanded === project.id}
+                          onToggle={() => setExpanded(expanded === project.id ? "" : project.id)}
+                        />
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
+          </>
         )}
       </main>
     </AppShell>
   );
 }
+
+function Metric({
+  label,
+  value,
+  detail,
+  tone = "default",
+}: {
+  label: string;
+  value: number;
+  detail: string;
+  tone?: string;
+}) {
+  return (
+    <div className={`portfolio-metric ${tone}`}>
+      <span>{label}</span>
+      <b>{value}</b>
+      <small>{detail}</small>
+    </div>
+  );
+}
+
+function ProjectRows({
+  project,
+  expanded,
+  onToggle,
+}: {
+  project: PortfolioProject;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  const due = project.nextDeadline
+    ? new Intl.DateTimeFormat("de-DE", { dateStyle: "medium" }).format(
+        new Date(project.nextDeadline),
+      )
+    : "Not scheduled";
+  return (
+    <>
+      <tr className={project.needsAction ? "needs-action" : ""}>
+        <td>
+          <b>{project.name}</b>
+          <small>
+            {label(project.project_type)} · {project.requested_import_mw} MW import
+          </small>
+        </td>
+        <td>
+          <span className={`portfolio-chip stage-${project.stage}`}>{project.stageLabel}</span>
+          <small>
+            {project.openReviews
+              ? `${project.openReviews} open review gate${project.openReviews === 1 ? "" : "s"}`
+              : "No open review gates"}
+          </small>
+        </td>
+        <td>
+          <b>{project.evidenceLabel}</b>
+          <small>
+            {project.documents} documents ·{" "}
+            {project.hasIntervalProfile ? "Load profile recorded" : "Load profile missing"}
+          </small>
+        </td>
+        <td>
+          <span className={`portfolio-chip operator-${project.operator_confirmation_status}`}>
+            {project.operatorStatusLabel}
+          </span>
+          <small>{project.likely_network_operator ?? "Responsible operator not routed"}</small>
+        </td>
+        <td>
+          <b>{project.nextAction}</b>
+          <small>
+            {project.blockers.length
+              ? `${project.blockers.length} blocker${project.blockers.length === 1 ? "" : "s"} visible`
+              : "No customer-side blocker"}
+          </small>
+        </td>
+        <td>
+          <b>{project.owner}</b>
+          <small className={project.overdueActions ? "overdue-text" : ""}>
+            {project.overdueActions ? "Overdue · " : ""}
+            {due}
+          </small>
+        </td>
+        <td className="portfolio-row-actions">
+          <Link to="/assessments/$id" params={{ id: project.id }}>
+            Open <ArrowRight aria-hidden="true" />
+          </Link>
+          <button
+            type="button"
+            onClick={onToggle}
+            aria-expanded={expanded}
+            aria-controls={`project-details-${project.id}`}
+          >
+            Details <ChevronDown aria-hidden="true" />
+          </button>
+        </td>
+      </tr>
+      {expanded ? (
+        <tr className="portfolio-detail-row" id={`project-details-${project.id}`}>
+          <td colSpan={7}>
+            <div className="portfolio-details">
+              <div>
+                <span>Requested capacity</span>
+                <b>
+                  {project.requested_import_mw} MW import · {project.requested_export_mw} MW export
+                </b>
+              </div>
+              <div>
+                <span>Coordinates</span>
+                <b>
+                  {Number(project.latitude).toFixed(4)}, {Number(project.longitude).toFixed(4)}
+                </b>
+              </div>
+              <div>
+                <span>FCA / connection envelope</span>
+                <b>{label(project.envelopeStatus)}</b>
+              </div>
+              <div>
+                <span>Customer-side readiness</span>
+                <b>{project.readinessScore}/100</b>
+                <small>Planning indicator, not operator-approved capacity</small>
+              </div>
+              <div className="portfolio-blocker-list">
+                <span>Unresolved gates</span>
+                {project.blockers.length ? (
+                  <ul>
+                    {project.blockers.map((blocker) => (
+                      <li key={blocker}>{blocker}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <b>No customer-side blockers recorded</b>
+                )}
+              </div>
+              <Link to="/assessments/$id" params={{ id: project.id }} className="secondary-button">
+                Open complete project <ArrowRight aria-hidden="true" />
+              </Link>
+            </div>
+          </td>
+        </tr>
+      ) : null}
+    </>
+  );
+}
+
 function label(value: string) {
   return value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }

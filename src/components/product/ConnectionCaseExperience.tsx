@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { type KeyboardEvent, useRef, useState } from "react";
 import {
   AlertTriangle,
   ArrowRight,
@@ -41,6 +41,22 @@ export function ConnectionCaseExperience({
 }) {
   const [activeStage, setActiveStage] = useState<CaseStageId>(initialStage);
   const activeIndex = caseStages.findIndex((stage) => stage.id === activeStage);
+  const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+
+  const handleTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
+    const lastIndex = caseStages.length - 1;
+    let nextIndex: number | null = null;
+
+    if (event.key === "ArrowRight") nextIndex = index === lastIndex ? 0 : index + 1;
+    if (event.key === "ArrowLeft") nextIndex = index === 0 ? lastIndex : index - 1;
+    if (event.key === "Home") nextIndex = 0;
+    if (event.key === "End") nextIndex = lastIndex;
+    if (nextIndex === null) return;
+
+    event.preventDefault();
+    setActiveStage(caseStages[nextIndex].id);
+    tabRefs.current[nextIndex]?.focus();
+  };
 
   return (
     <section
@@ -65,12 +81,18 @@ export function ConnectionCaseExperience({
               aria-controls={`case-panel-${stage.id}`}
               aria-selected={activeStage === stage.id}
               className={index < activeIndex ? "is-complete" : ""}
+              id={`case-tab-${stage.id}`}
               key={stage.id}
               onClick={() => setActiveStage(stage.id)}
+              onKeyDown={(event) => handleTabKeyDown(event, index)}
+              ref={(element) => {
+                tabRefs.current[index] = element;
+              }}
               role="tab"
+              tabIndex={activeStage === stage.id ? 0 : -1}
               type="button"
             >
-              <Icon />
+              <Icon aria-hidden="true" />
               <span>
                 <b>{stage.label}</b>
                 <small>{stage.status}</small>
@@ -84,7 +106,13 @@ export function ConnectionCaseExperience({
         <i style={{ width: `${(activeIndex / (caseStages.length - 1)) * 100}%` }} />
       </div>
 
-      <div className="case-stage-panel" id={`case-panel-${activeStage}`} role="tabpanel">
+      <div
+        aria-labelledby={`case-tab-${activeStage}`}
+        className="case-stage-panel"
+        id={`case-panel-${activeStage}`}
+        role="tabpanel"
+        tabIndex={0}
+      >
         <StageView stage={activeStage} mode={mode} />
       </div>
 
@@ -125,17 +153,33 @@ function SiteContext({ mode }: { mode: ExperienceMode }) {
     <div className="case-site-layout">
       <div className="case-map">
         <div className="case-map-grid" />
+        <div className="case-map-zones" aria-hidden="true">
+          <span>Declared site</span>
+          <span>Responsibility screening</span>
+          <span>Likely operator</span>
+        </div>
         <svg
           viewBox="0 0 700 390"
-          aria-label="Illustrative route between proposed site and network context"
+          role="img"
+          aria-label="Illustrative screening corridor from the proposed site to the likely distribution operator"
         >
-          <path d="M52 334 C176 254 228 298 328 194 S506 148 645 48" />
-          <circle cx="328" cy="194" r="9" />
-          <circle cx="645" cy="48" r="9" />
+          <path className="case-map-corridor" d="M58 314 L244 246 L402 170 L642 74" />
+          <path className="case-map-route" d="M58 314 L244 246 L402 170 L642 74" />
+          <path className="case-map-option" d="M244 246 L392 278 L642 246" />
+          <g className="case-map-node is-site-node" transform="translate(58 314)">
+            <rect x="-9" y="-9" width="18" height="18" />
+          </g>
+          <g className="case-map-node is-screening-node" transform="translate(402 170)">
+            <rect x="-8" y="-8" width="16" height="16" />
+          </g>
+          <g className="case-map-node is-operator-node" transform="translate(642 74)">
+            <rect x="-10" y="-10" width="20" height="20" />
+          </g>
         </svg>
         <span className="case-map-label is-site">
           <MapPin /> Proposed site
         </span>
+        <span className="case-map-label is-screening">110 kV responsibility screen</span>
         <span className="case-map-label is-operator">
           <Network /> Likely DSO area
         </span>
