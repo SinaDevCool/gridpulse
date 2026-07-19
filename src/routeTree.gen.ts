@@ -9,18 +9,34 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ValidationCaseRouteImport } from './routes/validation-case'
+import { Route as ServiceRouteImport } from './routes/service'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as PortfolioRouteImport } from './routes/portfolio'
 import { Route as PilotRequestsRouteImport } from './routes/pilot-requests'
+import { Route as PilotReadyRouteImport } from './routes/pilot-ready'
 import { Route as PilotRouteImport } from './routes/pilot'
 import { Route as EvidenceRouteImport } from './routes/evidence'
 import { Route as DemoRouteImport } from './routes/demo'
 import { Route as DataSourcesRouteImport } from './routes/data-sources'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SubmissionPackageIdRouteImport } from './routes/submission-package.$id'
+import { Route as PilotCaseIdRouteImport } from './routes/pilot-case.$id'
+import { Route as OperatorReviewIdRouteImport } from './routes/operator-review.$id'
 import { Route as AssessmentsNewRouteImport } from './routes/assessments.new'
 import { Route as AssessmentsIdRouteImport } from './routes/assessments.$id'
 
+const ValidationCaseRoute = ValidationCaseRouteImport.update({
+  id: '/validation-case',
+  path: '/validation-case',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServiceRoute = ServiceRouteImport.update({
+  id: '/service',
+  path: '/service',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ReportsRoute = ReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
@@ -34,6 +50,11 @@ const PortfolioRoute = PortfolioRouteImport.update({
 const PilotRequestsRoute = PilotRequestsRouteImport.update({
   id: '/pilot-requests',
   path: '/pilot-requests',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PilotReadyRoute = PilotReadyRouteImport.update({
+  id: '/pilot-ready',
+  path: '/pilot-ready',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PilotRoute = PilotRouteImport.update({
@@ -66,6 +87,21 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SubmissionPackageIdRoute = SubmissionPackageIdRouteImport.update({
+  id: '/submission-package/$id',
+  path: '/submission-package/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PilotCaseIdRoute = PilotCaseIdRouteImport.update({
+  id: '/pilot-case/$id',
+  path: '/pilot-case/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OperatorReviewIdRoute = OperatorReviewIdRouteImport.update({
+  id: '/operator-review/$id',
+  path: '/operator-review/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AssessmentsNewRoute = AssessmentsNewRouteImport.update({
   id: '/assessments/new',
   path: '/assessments/new',
@@ -84,11 +120,17 @@ export interface FileRoutesByFullPath {
   '/demo': typeof DemoRoute
   '/evidence': typeof EvidenceRoute
   '/pilot': typeof PilotRoute
+  '/pilot-ready': typeof PilotReadyRoute
   '/pilot-requests': typeof PilotRequestsRoute
   '/portfolio': typeof PortfolioRoute
   '/reports': typeof ReportsRoute
+  '/service': typeof ServiceRoute
+  '/validation-case': typeof ValidationCaseRoute
   '/assessments/$id': typeof AssessmentsIdRoute
   '/assessments/new': typeof AssessmentsNewRoute
+  '/operator-review/$id': typeof OperatorReviewIdRoute
+  '/pilot-case/$id': typeof PilotCaseIdRoute
+  '/submission-package/$id': typeof SubmissionPackageIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -97,11 +139,17 @@ export interface FileRoutesByTo {
   '/demo': typeof DemoRoute
   '/evidence': typeof EvidenceRoute
   '/pilot': typeof PilotRoute
+  '/pilot-ready': typeof PilotReadyRoute
   '/pilot-requests': typeof PilotRequestsRoute
   '/portfolio': typeof PortfolioRoute
   '/reports': typeof ReportsRoute
+  '/service': typeof ServiceRoute
+  '/validation-case': typeof ValidationCaseRoute
   '/assessments/$id': typeof AssessmentsIdRoute
   '/assessments/new': typeof AssessmentsNewRoute
+  '/operator-review/$id': typeof OperatorReviewIdRoute
+  '/pilot-case/$id': typeof PilotCaseIdRoute
+  '/submission-package/$id': typeof SubmissionPackageIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -111,11 +159,17 @@ export interface FileRoutesById {
   '/demo': typeof DemoRoute
   '/evidence': typeof EvidenceRoute
   '/pilot': typeof PilotRoute
+  '/pilot-ready': typeof PilotReadyRoute
   '/pilot-requests': typeof PilotRequestsRoute
   '/portfolio': typeof PortfolioRoute
   '/reports': typeof ReportsRoute
+  '/service': typeof ServiceRoute
+  '/validation-case': typeof ValidationCaseRoute
   '/assessments/$id': typeof AssessmentsIdRoute
   '/assessments/new': typeof AssessmentsNewRoute
+  '/operator-review/$id': typeof OperatorReviewIdRoute
+  '/pilot-case/$id': typeof PilotCaseIdRoute
+  '/submission-package/$id': typeof SubmissionPackageIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -126,11 +180,17 @@ export interface FileRouteTypes {
     | '/demo'
     | '/evidence'
     | '/pilot'
+    | '/pilot-ready'
     | '/pilot-requests'
     | '/portfolio'
     | '/reports'
+    | '/service'
+    | '/validation-case'
     | '/assessments/$id'
     | '/assessments/new'
+    | '/operator-review/$id'
+    | '/pilot-case/$id'
+    | '/submission-package/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -139,11 +199,17 @@ export interface FileRouteTypes {
     | '/demo'
     | '/evidence'
     | '/pilot'
+    | '/pilot-ready'
     | '/pilot-requests'
     | '/portfolio'
     | '/reports'
+    | '/service'
+    | '/validation-case'
     | '/assessments/$id'
     | '/assessments/new'
+    | '/operator-review/$id'
+    | '/pilot-case/$id'
+    | '/submission-package/$id'
   id:
     | '__root__'
     | '/'
@@ -152,11 +218,17 @@ export interface FileRouteTypes {
     | '/demo'
     | '/evidence'
     | '/pilot'
+    | '/pilot-ready'
     | '/pilot-requests'
     | '/portfolio'
     | '/reports'
+    | '/service'
+    | '/validation-case'
     | '/assessments/$id'
     | '/assessments/new'
+    | '/operator-review/$id'
+    | '/pilot-case/$id'
+    | '/submission-package/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -166,15 +238,35 @@ export interface RootRouteChildren {
   DemoRoute: typeof DemoRoute
   EvidenceRoute: typeof EvidenceRoute
   PilotRoute: typeof PilotRoute
+  PilotReadyRoute: typeof PilotReadyRoute
   PilotRequestsRoute: typeof PilotRequestsRoute
   PortfolioRoute: typeof PortfolioRoute
   ReportsRoute: typeof ReportsRoute
+  ServiceRoute: typeof ServiceRoute
+  ValidationCaseRoute: typeof ValidationCaseRoute
   AssessmentsIdRoute: typeof AssessmentsIdRoute
   AssessmentsNewRoute: typeof AssessmentsNewRoute
+  OperatorReviewIdRoute: typeof OperatorReviewIdRoute
+  PilotCaseIdRoute: typeof PilotCaseIdRoute
+  SubmissionPackageIdRoute: typeof SubmissionPackageIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/validation-case': {
+      id: '/validation-case'
+      path: '/validation-case'
+      fullPath: '/validation-case'
+      preLoaderRoute: typeof ValidationCaseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/service': {
+      id: '/service'
+      path: '/service'
+      fullPath: '/service'
+      preLoaderRoute: typeof ServiceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reports': {
       id: '/reports'
       path: '/reports'
@@ -194,6 +286,13 @@ declare module '@tanstack/react-router' {
       path: '/pilot-requests'
       fullPath: '/pilot-requests'
       preLoaderRoute: typeof PilotRequestsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pilot-ready': {
+      id: '/pilot-ready'
+      path: '/pilot-ready'
+      fullPath: '/pilot-ready'
+      preLoaderRoute: typeof PilotReadyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pilot': {
@@ -238,6 +337,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/submission-package/$id': {
+      id: '/submission-package/$id'
+      path: '/submission-package/$id'
+      fullPath: '/submission-package/$id'
+      preLoaderRoute: typeof SubmissionPackageIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pilot-case/$id': {
+      id: '/pilot-case/$id'
+      path: '/pilot-case/$id'
+      fullPath: '/pilot-case/$id'
+      preLoaderRoute: typeof PilotCaseIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/operator-review/$id': {
+      id: '/operator-review/$id'
+      path: '/operator-review/$id'
+      fullPath: '/operator-review/$id'
+      preLoaderRoute: typeof OperatorReviewIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/assessments/new': {
       id: '/assessments/new'
       path: '/assessments/new'
@@ -262,11 +382,17 @@ const rootRouteChildren: RootRouteChildren = {
   DemoRoute: DemoRoute,
   EvidenceRoute: EvidenceRoute,
   PilotRoute: PilotRoute,
+  PilotReadyRoute: PilotReadyRoute,
   PilotRequestsRoute: PilotRequestsRoute,
   PortfolioRoute: PortfolioRoute,
   ReportsRoute: ReportsRoute,
+  ServiceRoute: ServiceRoute,
+  ValidationCaseRoute: ValidationCaseRoute,
   AssessmentsIdRoute: AssessmentsIdRoute,
   AssessmentsNewRoute: AssessmentsNewRoute,
+  OperatorReviewIdRoute: OperatorReviewIdRoute,
+  PilotCaseIdRoute: PilotCaseIdRoute,
+  SubmissionPackageIdRoute: SubmissionPackageIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

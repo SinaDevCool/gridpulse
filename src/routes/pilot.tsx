@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/pilot")({
   head: () => ({
     meta: [
-      { title: "Request a GridPulse Pilot | German Grid Connection Assessment" },
+      { title: "Request a GridPulse Pilot | German Grid Connection Project" },
       {
         name: "description",
         content:
@@ -48,10 +48,34 @@ const schema = z
     municipality: z.string().trim().min(2).max(160),
     federalState: z.string().trim().min(2).max(80),
     importMw: z.coerce.number().min(0).max(100_000),
+    minimumViableImportMw: optionalNumber,
     exportMw: z.coerce.number().min(0).max(100_000),
+    candidateSiteCount: z.coerce.number().int().min(1).max(20),
+    operatorEngagementStatus: z.enum([
+      "not_started",
+      "identified",
+      "contacted",
+      "pre_application",
+      "application_submitted",
+      "study_in_progress",
+      "response_received",
+    ]),
+    landStatus: z.enum(["unknown", "identified", "optioned", "controlled"]),
+    planningStatus: z.enum(["unknown", "not_started", "pre_application", "submitted", "approved"]),
+    loadProfileAvailable: z.boolean(),
+    flexibilityStatus: z.enum([
+      "unknown",
+      "none",
+      "static_limit",
+      "dynamic_limit",
+      "workload_shift",
+      "battery_supported",
+      "combined",
+    ]),
     batteryPowerMw: optionalNumber,
     batteryEnergyMwh: optionalNumber,
     targetConnectionDate: z.string(),
+    commercialDeadline: z.string(),
     connectionChallenge: z.string().trim().min(20).max(3000),
     consent: z.literal(true, { errorMap: () => ({ message: "Consent is required" }) }),
     website: z.string().max(0),
@@ -59,9 +83,18 @@ const schema = z
   .refine((values) => values.importMw > 0 || values.exportMw > 0, {
     message: "Enter an import or export requirement",
     path: ["importMw"],
-  });
+  })
+  .refine(
+    (values) =>
+      values.minimumViableImportMw == null || values.minimumViableImportMw <= values.importMw,
+    {
+      message: "Minimum viable import cannot exceed requested import",
+      path: ["minimumViableImportMw"],
+    },
+  );
 
-type PilotForm = z.infer<typeof schema>;
+type PilotFormInput = z.input<typeof schema>;
+type PilotForm = z.output<typeof schema>;
 
 const states = [
   "Baden-Württemberg",
@@ -90,16 +123,24 @@ function PilotApplication() {
     handleSubmit,
     watch,
     formState: { errors, isSubmitting },
-  } = useForm<PilotForm>({
+  } = useForm<PilotFormInput, unknown, PilotForm>({
     resolver: zodResolver(schema),
     defaultValues: {
       projectType: "bess",
       projectStage: "site_screening",
       importMw: 0,
       exportMw: 0,
+      minimumViableImportMw: null,
+      candidateSiteCount: 1,
+      operatorEngagementStatus: "not_started",
+      landStatus: "unknown",
+      planningStatus: "unknown",
+      loadProfileAvailable: false,
+      flexibilityStatus: "unknown",
       roleTitle: "",
       phone: "",
       targetConnectionDate: "",
+      commercialDeadline: "",
       website: "",
     },
   });
@@ -121,10 +162,18 @@ function PilotApplication() {
       municipality: values.municipality,
       federal_state: values.federalState,
       requested_import_mw: values.importMw,
+      minimum_viable_import_mw: values.minimumViableImportMw,
       requested_export_mw: values.exportMw,
+      candidate_site_count: values.candidateSiteCount,
+      operator_engagement_status: values.operatorEngagementStatus,
+      land_status: values.landStatus,
+      planning_status: values.planningStatus,
+      load_profile_available: values.loadProfileAvailable,
+      flexibility_status: values.flexibilityStatus,
       battery_power_mw: includesBattery ? values.batteryPowerMw : null,
       battery_energy_mwh: includesBattery ? values.batteryEnergyMwh : null,
       target_connection_date: values.targetConnectionDate || null,
+      commercial_deadline: values.commercialDeadline || null,
       connection_challenge: values.connectionChallenge,
       consent_to_contact: values.consent,
       website: values.website,
@@ -139,7 +188,7 @@ function PilotApplication() {
 
   if (submitted) {
     return (
-      <main className="pilot-page pilot-confirmation">
+      <main id="main-content" className="pilot-page pilot-confirmation">
         <section>
           <div className="pilot-success-icon">
             <Check />
@@ -174,7 +223,7 @@ function PilotApplication() {
   }
 
   return (
-    <main className="pilot-page">
+    <main id="main-content" className="pilot-page">
       <header className="pilot-topbar">
         <Link to="/" className="landing-brand">
           <span>GRID</span>
@@ -209,6 +258,9 @@ function PilotApplication() {
               <Check /> No claim of available network capacity
             </li>
           </ul>
+          <Link to="/service" className="pilot-text-link">
+            Review scope, deliverables and pricing hypothesis <ArrowRight />
+          </Link>
         </aside>
         <form className="pilot-form" onSubmit={handleSubmit(submit)} noValidate>
           <FormSection number="01" title="Your details">
@@ -280,6 +332,12 @@ function PilotApplication() {
               <Field label="Requested import (MW)" error={errors.importMw?.message}>
                 <input type="number" min="0" step="0.001" {...register("importMw")} />
               </Field>
+              <Field
+                label="Minimum viable import (MW)"
+                error={errors.minimumViableImportMw?.message}
+              >
+                <input type="number" min="0" step="0.001" {...register("minimumViableImportMw")} />
+              </Field>
               <Field label="Requested export (MW)" error={errors.exportMw?.message}>
                 <input type="number" min="0" step="0.001" {...register("exportMw")} />
               </Field>
@@ -300,6 +358,57 @@ function PilotApplication() {
                 </>
               ) : null}
             </div>
+            <div className="pilot-form-grid">
+              <Field label="Candidate locations" error={errors.candidateSiteCount?.message}>
+                <input type="number" min="1" max="20" {...register("candidateSiteCount")} />
+              </Field>
+              <Field label="Operator engagement" error={errors.operatorEngagementStatus?.message}>
+                <select {...register("operatorEngagementStatus")}>
+                  <option value="not_started">Not started</option>
+                  <option value="identified">Operator identified</option>
+                  <option value="contacted">Operator contacted</option>
+                  <option value="pre_application">Pre-application dialogue</option>
+                  <option value="application_submitted">Application submitted</option>
+                  <option value="study_in_progress">Study in progress</option>
+                  <option value="response_received">Response received</option>
+                </select>
+              </Field>
+              <Field label="Land status" error={errors.landStatus?.message}>
+                <select {...register("landStatus")}>
+                  <option value="unknown">Unknown</option>
+                  <option value="identified">Identified</option>
+                  <option value="optioned">Optioned</option>
+                  <option value="controlled">Controlled</option>
+                </select>
+              </Field>
+              <Field label="Planning status" error={errors.planningStatus?.message}>
+                <select {...register("planningStatus")}>
+                  <option value="unknown">Unknown</option>
+                  <option value="not_started">Not started</option>
+                  <option value="pre_application">Pre-application</option>
+                  <option value="submitted">Submitted</option>
+                  <option value="approved">Approved</option>
+                </select>
+              </Field>
+              <Field label="Operating flexibility" error={errors.flexibilityStatus?.message}>
+                <select {...register("flexibilityStatus")}>
+                  <option value="unknown">Unknown</option>
+                  <option value="none">No declared flexibility</option>
+                  <option value="static_limit">Static import limit</option>
+                  <option value="dynamic_limit">Dynamic import limit</option>
+                  <option value="workload_shift">Workload shifting</option>
+                  <option value="battery_supported">Battery supported</option>
+                  <option value="combined">Combined resources</option>
+                </select>
+              </Field>
+              <Field label="Commercial deadline" error={errors.commercialDeadline?.message}>
+                <input type="date" {...register("commercialDeadline")} />
+              </Field>
+            </div>
+            <label className="pilot-consent compact-consent">
+              <input type="checkbox" {...register("loadProfileAvailable")} />
+              <span>A representative interval load profile is available.</span>
+            </label>
             <Field
               label="What is blocking or delaying the connection decision?"
               error={errors.connectionChallenge?.message}

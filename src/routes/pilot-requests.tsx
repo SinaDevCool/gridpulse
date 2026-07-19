@@ -24,7 +24,15 @@ type RequestRow = {
   municipality: string;
   federal_state: string;
   requested_import_mw: number;
+  minimum_viable_import_mw: number | null;
   requested_export_mw: number;
+  candidate_site_count: number;
+  operator_engagement_status: string;
+  land_status: string;
+  planning_status: string;
+  load_profile_available: boolean;
+  flexibility_status: string;
+  commercial_deadline: string | null;
   battery_power_mw: number | null;
   battery_energy_mwh: number | null;
   target_connection_date: string | null;
@@ -37,6 +45,32 @@ const statusLabels: Record<string, string> = {
   declined: "Declined",
   converted: "Converted",
 };
+
+function assessmentProjectType(value: string): "bess" | "large_load" | "co_location" {
+  if (value === "bess" || value === "co_location") return value;
+  return "large_load";
+}
+
+function assessmentLandStatus(
+  value: string,
+): "unknown" | "identified" | "optioned" | "controlled" {
+  if (value === "identified" || value === "optioned" || value === "controlled") return value;
+  return "unknown";
+}
+
+function assessmentPlanningStatus(
+  value: string,
+): "unknown" | "not_started" | "pre_application" | "submitted" | "approved" {
+  if (
+    value === "not_started" ||
+    value === "pre_application" ||
+    value === "submitted" ||
+    value === "approved"
+  ) {
+    return value;
+  }
+  return "unknown";
+}
 
 function PilotRequests() {
   const { user } = useAuth();
@@ -63,7 +97,7 @@ function PilotRequests() {
 
   return (
     <AppShell requireAuth>
-      <main className="section-page">
+      <main id="main-content" className="section-page">
         <PageHeading
           eyebrow="Design-partner pipeline"
           title="Pilot requests"
@@ -122,7 +156,10 @@ function PilotRequests() {
                 </div>
                 <div>
                   <dt>Import</dt>
-                  <dd>{request.requested_import_mw} MW</dd>
+                  <dd>
+                    {request.requested_import_mw} MW requested /{" "}
+                    {request.minimum_viable_import_mw ?? "—"} MW minimum
+                  </dd>
                 </div>
                 <div>
                   <dt>Export</dt>
@@ -138,6 +175,33 @@ function PilotRequests() {
                   <dt>Target date</dt>
                   <dd>{request.target_connection_date ?? "Not specified"}</dd>
                 </div>
+                <div>
+                  <dt>Candidate sites</dt>
+                  <dd>{request.candidate_site_count}</dd>
+                </div>
+                <div>
+                  <dt>Operator engagement</dt>
+                  <dd>{request.operator_engagement_status.replaceAll("_", " ")}</dd>
+                </div>
+                <div>
+                  <dt>Project maturity</dt>
+                  <dd>
+                    {request.land_status.replaceAll("_", " ")} land ·{" "}
+                    {request.planning_status.replaceAll("_", " ")} planning
+                  </dd>
+                </div>
+                <div>
+                  <dt>Flexibility</dt>
+                  <dd>{request.flexibility_status.replaceAll("_", " ")}</dd>
+                </div>
+                <div>
+                  <dt>Load profile</dt>
+                  <dd>{request.load_profile_available ? "Available" : "Not available"}</dd>
+                </div>
+                <div>
+                  <dt>Commercial deadline</dt>
+                  <dd>{request.commercial_deadline ?? "Not specified"}</dd>
+                </div>
               </dl>
               <p>{request.connection_challenge}</p>
               {request.status !== "converted" ? (
@@ -146,20 +210,18 @@ function PilotRequests() {
                   search={{
                     pilotRequestId: request.id,
                     name: request.project_name,
-                    projectType:
-                      request.project_type === "data_centre"
-                        ? "large_load"
-                        : request.project_type === "other"
-                          ? "large_load"
-                          : request.project_type,
+                    projectType: assessmentProjectType(request.project_type),
                     postcode: request.postcode,
                     municipality: request.municipality,
                     federalState: request.federal_state,
                     importMw: request.requested_import_mw,
+                    minimumViableImportMw: request.minimum_viable_import_mw ?? undefined,
                     exportMw: request.requested_export_mw,
                     batteryPowerMw: request.battery_power_mw ?? undefined,
                     batteryEnergyMwh: request.battery_energy_mwh ?? undefined,
                     targetDate: request.target_connection_date ?? undefined,
+                    landStatus: assessmentLandStatus(request.land_status),
+                    planningStatus: assessmentPlanningStatus(request.planning_status),
                     challenge: request.connection_challenge,
                   }}
                   className="primary-button"

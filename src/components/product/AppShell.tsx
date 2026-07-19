@@ -2,14 +2,12 @@ import { Link } from "@tanstack/react-router";
 import { LockKeyhole, LogOut, Plus } from "lucide-react";
 import type { ReactNode } from "react";
 import { useAuth } from "@/context/useAuth";
+import { ProductTruthNotice } from "./ProductTruthNotice";
 
 const navigation = [
   { label: "Portfolio", to: "/portfolio" },
-  { label: "New assessment", to: "/assessments/new" },
-  { label: "Evidence", to: "/evidence" },
-  { label: "Reports", to: "/reports" },
-  { label: "Data sources", to: "/data-sources" },
-  { label: "Pilot requests", to: "/pilot-requests" },
+  { label: "New project", to: "/assessments/new" },
+  { label: "Methodology", to: "/data-sources" },
 ] as const;
 
 export function AppHeader() {
@@ -41,7 +39,7 @@ export function AppHeader() {
           </Link>
         )}
         <Link to="/assessments/new" className="primary-button">
-          <Plus size={15} /> New assessment
+          <Plus size={15} /> New project
         </Link>
       </div>
     </header>
@@ -58,6 +56,7 @@ export function AppShell({
   return (
     <div className="product-shell">
       <AppHeader />
+      <ProductTruthNotice />
       {requireAuth ? <ProtectedContent>{children}</ProtectedContent> : children}
       <footer className="product-footer">
         <span>
@@ -74,18 +73,18 @@ function ProtectedContent({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
   if (loading)
     return (
-      <main className="auth-gate">
+      <main id="main-content" className="auth-gate">
         <div className="loading-spinner" />
         <p>Checking your session…</p>
       </main>
     );
   if (!user)
     return (
-      <main className="auth-gate">
+      <main id="main-content" className="auth-gate">
         <LockKeyhole />
         <p className="context-label">Private workspace</p>
         <h1>Sign in to continue</h1>
-        <p>Your assessments and evidence are protected per account.</p>
+        <p>Your projects and evidence are protected per account.</p>
         <Link to="/auth" className="primary-button">
           Sign in or create account
         </Link>

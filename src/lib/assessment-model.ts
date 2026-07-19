@@ -17,6 +17,16 @@ export type CandidateSite = {
   operator_status: string;
   assessment_status: string;
   target_energization_date: string | null;
+  project_kind: string | null;
+  minimum_viable_import_mw: number | null;
+  land_status: string;
+  planning_status: string;
+  single_line_diagram_ready: boolean;
+  cable_route_status: string;
+  finance_status: string;
+  load_factor: number | null;
+  ramp_rate_mw_min: number | null;
+  redundancy_requirement: string | null;
   decision_status: string;
   decision_notes: string | null;
   responsible_operator_name: string | null;
@@ -31,6 +41,35 @@ export type CandidateSite = {
   pilot_request_id: string | null;
   created_at: string;
   updated_at: string;
+};
+export type ProjectSiteCandidate = {
+  id: string;
+  site_id: string;
+  user_id: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  municipality: string | null;
+  federal_state: string | null;
+  target_voltage_kv: number | null;
+  likely_tso: string | null;
+  likely_dso: string | null;
+  maturity_score: number;
+  screening_status: string;
+  infrastructure_context: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+};
+export type OperatorPackage = {
+  id: string;
+  site_id: string;
+  user_id: string;
+  version: number;
+  status: string;
+  snapshot: Record<string, unknown>;
+  manifest: Record<string, unknown>;
+  issued_at: string | null;
+  created_at: string;
 };
 export type AssessmentActivity = {
   id: string;
@@ -84,6 +123,21 @@ export type Scenario = {
   analysis: import("@/lib/fca-engine").FcaAnalysis | null;
   profile_id: string | null;
   created_at: string;
+  scenario_type: string | null;
+  eventual_import_mw: number | null;
+  conditional_import_mw: number;
+  minimum_critical_load_mw: number | null;
+  firmness: string | null;
+  outcome: string | null;
+  enabling_assets: unknown;
+  dependencies: unknown;
+  unresolved_evidence: unknown;
+  provenance: unknown;
+  commercial_exposure_eur: number | null;
+  evidence_readiness: number;
+  selection_status: string;
+  selection_rationale: string | null;
+  supersedes_id: string | null;
 };
 export type IntervalProfile = {
   id: string;
@@ -99,6 +153,15 @@ export type IntervalProfile = {
   peak_export_mw: number;
   points: import("@/lib/fca-engine").IntervalPoint[];
   created_at: string;
+  timezone: string;
+  quality_status: string;
+  quality_report: Record<string, unknown>;
+  calculation_version: string | null;
+  version: number;
+  source_hash: string | null;
+  source_classification: string;
+  column_mapping: Record<string, unknown>;
+  supersedes_id: string | null;
 };
 export type AssessmentDocument = {
   id: string;
@@ -207,6 +270,100 @@ export type FcaEnvelope = {
   notes: string | null;
   created_at: string;
 };
+export type NetworkNode = {
+  id: string;
+  site_id: string;
+  node_name: string;
+  node_code: string | null;
+  operator_name: string;
+  node_type: string;
+  voltage_kv: number;
+  latitude: number | null;
+  longitude: number | null;
+  source_classification: string;
+  confidence: string;
+  confidentiality: string;
+  source_url: string | null;
+  source_document_id: string | null;
+  created_at: string;
+};
+export type NetworkAsset = {
+  id: string;
+  site_id: string;
+  asset_name: string;
+  asset_type: string;
+  from_node_id: string | null;
+  to_node_id: string | null;
+  voltage_kv: number | null;
+  normal_rating_mva: number | null;
+  emergency_rating_mva: number | null;
+  operational_status: string;
+  source_classification: string;
+  confidence: string;
+  confidentiality: string;
+  created_at: string;
+};
+export type CapacitySnapshot = {
+  id: string;
+  site_id: string;
+  node_id: string;
+  study_run_id: string | null;
+  version: number;
+  capacity_kind: string;
+  firm_import_mw: number | null;
+  firm_export_mw: number | null;
+  conditional_import_mw: number | null;
+  conditional_export_mw: number | null;
+  network_state: string;
+  methodology_version: string | null;
+  observed_at: string;
+  status: string;
+  source_classification: string;
+  confidence: string;
+  confidentiality: string;
+  notes: string | null;
+  created_at: string;
+};
+export type StudyRun = {
+  id: string;
+  site_id: string;
+  node_id: string | null;
+  study_name: string;
+  study_type: string;
+  model_name: string;
+  model_version: string;
+  input_manifest: Record<string, unknown>;
+  assumptions: unknown[];
+  results: Record<string, unknown>;
+  violations: unknown[];
+  result_hash: string | null;
+  status: string;
+  source_classification: string;
+  confidence: string;
+  confidentiality: string;
+  created_at: string;
+};
+export type OperatorDecision = {
+  id: string;
+  site_id: string;
+  node_id: string;
+  candidate_snapshot_id: string | null;
+  confirmed_snapshot_id: string | null;
+  source_document_id: string | null;
+  decision: string;
+  statement_scope: string;
+  note: string;
+  requested_changes: string[];
+  node_corrections: Record<string, unknown>;
+  valid_from: string | null;
+  valid_to: string | null;
+  signer_name: string;
+  signer_email: string;
+  signer_organization: string;
+  signed_at: string;
+  content_hash: string;
+  created_at: string;
+};
 
 export function readiness(evidence: Evidence[]) {
   const collected = (classification: string) =>
@@ -288,6 +445,6 @@ export function activationDecision({
           ? "Submit and log the operator response"
           : !agreedEnvelope
             ? "Negotiate the flexible connection envelope"
-            : "Prepare activation and operating controls";
+            : "Prepare the agreed operating plan and controls";
   return { score: Math.min(score, 100), blockers, nextAction, agreedEnvelope };
 }

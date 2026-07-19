@@ -1,7 +1,6 @@
 @import "tailwindcss" source(none);
 @import "./product.css";
 @source "../src";
-@import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -46,7 +45,7 @@
 :root {
   --radius: 0.75rem;
   /* Dark-first; we apply tokens at :root so no toggle is needed. */
-  --background: oklch(0.18 0.02 260);          /* slate-950-ish */
+  --background: oklch(0.18 0.02 260); /* slate-950-ish */
   --foreground: oklch(0.985 0.005 250);
   --surface: oklch(0.22 0.025 260);
   --surface-elevated: oklch(0.255 0.028 260);
@@ -54,7 +53,7 @@
   --card-foreground: oklch(0.985 0.005 250);
   --popover: oklch(0.22 0.025 260);
   --popover-foreground: oklch(0.985 0.005 250);
-  --primary: oklch(0.85 0.18 220);             /* electric cyan */
+  --primary: oklch(0.85 0.18 220); /* electric cyan */
   --primary-foreground: oklch(0.18 0.02 260);
   --secondary: oklch(0.28 0.03 260);
   --secondary-foreground: oklch(0.985 0.005 250);
@@ -68,17 +67,26 @@
   --input: oklch(0.32 0.025 260);
   --ring: oklch(0.85 0.18 220);
 
-  --cyan-accent: oklch(0.85 0.18 220);         /* #00D4FF-ish */
-  --green-accent: oklch(0.82 0.2 150);         /* signal green */
+  --cyan-accent: oklch(0.85 0.18 220); /* #00D4FF-ish */
+  --green-accent: oklch(0.82 0.2 150); /* signal green */
   --amber-accent: oklch(0.82 0.16 75);
   --red-accent: oklch(0.7 0.22 25);
   --grid-line: oklch(0.3 0.02 260 / 0.6);
 }
 
 @layer base {
-  * { border-color: var(--color-border); }
-  html, body { background-color: var(--color-background); color: var(--color-foreground); }
-  body { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+  * {
+    border-color: var(--color-border);
+  }
+  html,
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+  }
+  body {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
 
   /* Chart contrast elevation — override low-contrast axis/legend defaults */
   .recharts-cartesian-axis-tick text,
@@ -94,8 +102,14 @@
   }
 }
 
-@utility font-display { font-family: var(--font-display); letter-spacing: -0.02em; }
-@utility font-mono-data { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+@utility font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+@utility font-mono-data {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
 
 @utility glass-card {
   background: color-mix(in oklab, var(--surface) 75%, transparent);
@@ -104,12 +118,16 @@
 }
 
 @utility neon-cyan-glow {
-  box-shadow: 0 0 0 1px color-mix(in oklab, var(--cyan-accent) 30%, transparent),
-              0 8px 40px -8px color-mix(in oklab, var(--cyan-accent) 35%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--cyan-accent) 30%, transparent),
+    0 8px 40px -8px color-mix(in oklab, var(--cyan-accent) 35%, transparent);
 }
 
 @utility hover-lift {
-  transition: transform 250ms ease, box-shadow 250ms ease, border-color 250ms ease;
+  transition:
+    transform 250ms ease,
+    box-shadow 250ms ease,
+    border-color 250ms ease;
   &:hover {
     transform: translateY(-4px);
     border-color: color-mix(in oklab, var(--cyan-accent) 50%, var(--border));
@@ -118,7 +136,9 @@
 }
 
 @utility tag-chip {
-  display: inline-flex; align-items: center; gap: 0.25rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
   font-family: var(--font-sans);
   font-weight: 500;
   font-size: 11px;
@@ -132,21 +152,39 @@
 }
 
 @keyframes ticker-scroll {
-  0%   { transform: translateX(0%); }
-  100% { transform: translateX(-50%); }
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
 }
-@utility animate-ticker { animation: ticker-scroll 50s linear infinite; }
+@utility animate-ticker {
+  animation: ticker-scroll 50s linear infinite;
+}
 
 @keyframes pulse-ring {
-  0%   { box-shadow: 0 0 0 0 color-mix(in oklab, var(--cyan-accent) 60%, transparent); }
-  70%  { box-shadow: 0 0 0 10px color-mix(in oklab, var(--cyan-accent) 0%, transparent); }
-  100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--cyan-accent) 0%, transparent); }
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--cyan-accent) 60%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 10px color-mix(in oklab, var(--cyan-accent) 0%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--cyan-accent) 0%, transparent);
+  }
 }
-@utility animate-pulse-ring { animation: pulse-ring 2.2s ease-out infinite; }
+@utility animate-pulse-ring {
+  animation: pulse-ring 2.2s ease-out infinite;
+}
 
 @keyframes grid-drift {
-  0%   { background-position: 0 0; }
-  100% { background-position: 60px 60px; }
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 60px 60px;
+  }
 }
 @utility bg-grid {
   background-image:

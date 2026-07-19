@@ -7,13 +7,13 @@ import { connectionCase } from "@/lib/demo-case";
 export const Route = createFileRoute("/demo")({
   head: () => ({
     meta: [
-      { title: "GridPulse Demo | German Grid Connection Assessment" },
+      { title: "GridPulse Demo | German Grid Connection Project" },
       {
         name: "description",
         content:
-          "Explore an illustrative GridPulse assessment for German BESS, data-centre and large-load grid connection decisions.",
+          "Explore an illustrative GridPulse project for German BESS, data-centre and large-load grid connection decisions.",
       },
-      { property: "og:title", content: "GridPulse Demo | German Grid Connection Assessment" },
+      { property: "og:title", content: "GridPulse Demo | German Grid Connection Project" },
       { property: "og:url", content: "https://gridpulseinsights.com/demo" },
     ],
     links: [{ rel: "canonical", href: "https://gridpulseinsights.com/demo" }],
@@ -24,16 +24,16 @@ export const Route = createFileRoute("/demo")({
 function AssessmentWorkspace() {
   return (
     <AppShell>
-      <main className="case-demo-page">
+      <main id="main-content" className="case-demo-page">
         <div className="case-demo-breadcrumb">
           <Link to="/">
             <ArrowLeft /> Back to platform
           </Link>
-          <span>Illustrative assessment · no capacity claim</span>
+          <span>Illustrative project · no capacity claim</span>
         </div>
         <header className="case-demo-heading">
           <div>
-            <p>Connection assessment / {connectionCase.id}</p>
+            <p>Connection project / {connectionCase.id}</p>
             <h1>{connectionCase.name}</h1>
             <span>
               {connectionCase.requirement} · {connectionCase.voltage}

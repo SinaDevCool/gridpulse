@@ -11,7 +11,6 @@ import {
   ShieldCheck,
   Zap,
 } from "lucide-react";
-import { useAuth } from "@/context/useAuth";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -48,28 +47,26 @@ function Brand() {
 }
 
 function CinematicLandingPage() {
-  const { user } = useAuth();
-  const workspacePath = user ? "/portfolio" : "/auth";
-
   return (
     <div className="cine-page">
       <header className="cine-header">
         <Brand />
         <nav aria-label="Primary navigation">
           <a href="#platform">Platform</a>
+          <Link to="/service">Assessment</Link>
           <a href="#method">How it works</a>
           <a href="#developers">For developers</a>
           <a href="#methodology">Methodology</a>
         </nav>
         <div className="cine-header-actions">
-          <Link to={workspacePath}>{user ? "Open workspace" : "Sign in"}</Link>
+          <Link to="/portfolio">Open workspace</Link>
           <Link to="/pilot" className="cine-cta cine-cta-solid">
             Bring us a project
           </Link>
         </div>
       </header>
 
-      <main>
+      <main id="main-content">
         <section className="cine-hero" id="platform">
           <img
             className="cine-hero-image"
@@ -234,6 +231,7 @@ function CinematicLandingPage() {
         <Brand />
         <nav>
           <a href="#platform">Platform</a>
+          <Link to="/service">Assessment</Link>
           <a href="#method">How it works</a>
           <Link to="/demo">Demonstration</Link>
           <Link to="/pilot">Pilot</Link>

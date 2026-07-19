@@ -61,6 +61,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content: siteDescription,
       },
       { name: "author", content: "GridPulse" },
+      { name: "gridpulse-build", content: __GRIDPULSE_BUILD_SHA__ },
+      { name: "gridpulse-environment", content: __GRIDPULSE_BUILD_ENV__ },
       { name: "robots", content: "index, follow, max-image-preview:large" },
       { property: "og:site_name", content: "GridPulse" },
       { property: "og:type", content: "website" },
@@ -99,6 +101,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         />
       </head>
       <body>
+        <a className="skip-link" href="#main-content">
+          Skip to main content
+        </a>
         {children}
         <Scripts />
       </body>
@@ -106,10 +111,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   ),
   component: RootComponent,
   notFoundComponent: () => (
-    <main className="empty-page">
+    <main id="main-content" className="empty-page">
       <h1>Page not found</h1>
       <p>The requested GridPulse workspace does not exist.</p>
-      <Link to="/">Return to assessment</Link>
+      <Link to="/">Return home</Link>
     </main>
   ),
 });

@@ -2,6 +2,69 @@ export type IntervalPoint = {
   timestamp: string;
   importMw: number;
   exportMw: number;
+  flexibleLoadMw?: number;
+  onsiteGenerationMw?: number;
+};
+
+export type ProfileQuality = {
+  valid: boolean;
+  intervalMinutes: number;
+  duplicateTimestamps: string[];
+  missingIntervals: number;
+  warnings: string[];
+};
+
+export type DispatchSettings = {
+  firmImportMw: number;
+  conditionalImportMw: number;
+  minimumCriticalLoadMw: number;
+  shiftableLoadMw: number;
+  batteryPowerMw: number;
+  batteryEnergyMwh: number;
+  batteryRoundTripEfficiency: number;
+  batteryMinimumSoc: number;
+  initialBatterySoc: number;
+  energyValueEurMwh: number;
+  batteryDegradationEurMwh: number;
+  minimumViableImportMw?: number;
+};
+
+export type DispatchInterval = {
+  timestamp: string;
+  baselineImportMw: number;
+  connectionLimitMw: number;
+  workloadResponseMw: number;
+  batteryResponseMw: number;
+  batteryChargeMw: number;
+  residualShortfallMw: number;
+  batterySocMwh: number;
+};
+
+export type DispatchAnalysis = {
+  calculationVersion: "de-fca-interval-v3";
+  intervalMinutes: number;
+  intervalCount: number;
+  peakBaselineImportMw: number;
+  restrictedIntervals: number;
+  restrictedHours: number;
+  restrictionEvents: number;
+  longestRestrictionHours: number;
+  minimumViableBreaches: number;
+  maximumShortfallMw: number;
+  residualUnservedMwh: number;
+  constrainedEnergyMwh: number;
+  shiftedWorkloadMwh: number;
+  batteryDischargeMwh: number;
+  equivalentBatteryCycles: number;
+  demandServedPercent: number;
+  estimatedAnnualExposureEur: number;
+  classification:
+    | "operationally_feasible"
+    | "feasible_with_constraints"
+    | "fails_minimum_viable_capacity"
+    | "operator_validation_required";
+  timeline: DispatchInterval[];
+  warnings: string[];
 };
 
 export type RestrictionWindow = {
@@ -90,6 +153,16 @@ export function parseIntervalCsv(csv: string): IntervalPoint[] {
     "einspeisung_mw",
     "einspeisung mw",
   ]);
+  const flexibleIndex = findColumn(headers, [
+    "flexible_load_mw",
+    "flexible load mw",
+    "shiftable_mw",
+  ]);
+  const generationIndex = findColumn(headers, [
+    "onsite_generation_mw",
+    "onsite generation mw",
+    "generation_mw",
+  ]);
   if (timestampIndex < 0 || (importIndex < 0 && exportIndex < 0)) {
     throw new Error("Use columns timestamp and at least one of import_mw or export_mw.");
   }
@@ -104,10 +177,180 @@ export function parseIntervalCsv(csv: string): IntervalPoint[] {
       timestamp: date.toISOString(),
       importMw: importIndex >= 0 ? parseNumber(cells[importIndex]) : 0,
       exportMw: exportIndex >= 0 ? parseNumber(cells[exportIndex]) : 0,
+      flexibleLoadMw: flexibleIndex >= 0 ? parseNumber(cells[flexibleIndex]) : undefined,
+      onsiteGenerationMw: generationIndex >= 0 ? parseNumber(cells[generationIndex]) : undefined,
     };
   });
   if (points.length > 40_000) throw new Error("Upload at most 40,000 intervals per profile.");
-  return points.toSorted((a, b) => a.timestamp.localeCompare(b.timestamp));
+  return [...points].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+}
+
+export function validateIntervalProfile(points: IntervalPoint[]): ProfileQuality {
+  if (!points.length) throw new Error("The profile contains no intervals.");
+  const sorted = [...points].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+  const duplicates: string[] = [];
+  const deltas: number[] = [];
+  for (let index = 1; index < sorted.length; index += 1) {
+    const delta =
+      (Date.parse(sorted[index].timestamp) - Date.parse(sorted[index - 1].timestamp)) / 60_000;
+    if (delta === 0) duplicates.push(sorted[index].timestamp);
+    else if (delta > 0) deltas.push(delta);
+  }
+  const intervalMinutes = deltas.length ? Math.min(...deltas) : 15;
+  if (![15, 30, 60].includes(intervalMinutes)) {
+    throw new Error("Profiles must use 15, 30, or 60-minute intervals.");
+  }
+  const missingIntervals = deltas.reduce(
+    (total, delta) =>
+      total + (delta > intervalMinutes ? Math.round(delta / intervalMinutes) - 1 : 0),
+    0,
+  );
+  const warnings = [
+    intervalMinutes !== 15
+      ? `${intervalMinutes}-minute data is accepted, but 15-minute data is preferred.`
+      : null,
+    missingIntervals ? `${missingIntervals} expected intervals are missing.` : null,
+    duplicates.length ? `${duplicates.length} duplicate timestamps were found.` : null,
+  ].filter((item): item is string => Boolean(item));
+  return {
+    valid: !duplicates.length && !missingIntervals,
+    intervalMinutes,
+    duplicateTimestamps: duplicates,
+    missingIntervals,
+    warnings,
+  };
+}
+
+export function simulateFlexibleConnection(
+  points: IntervalPoint[],
+  settings: DispatchSettings,
+): DispatchAnalysis {
+  const quality = validateIntervalProfile(points);
+  if (!quality.valid) throw new Error(quality.warnings.join(" "));
+  const duration = quality.intervalMinutes / 60;
+  const efficiency = Math.min(1, Math.max(0.01, settings.batteryRoundTripEfficiency));
+  const usableBatteryMwh = Math.max(
+    0,
+    settings.batteryEnergyMwh * (1 - settings.batteryMinimumSoc),
+  );
+  let batterySocMwh = Math.min(usableBatteryMwh, usableBatteryMwh * settings.initialBatterySoc);
+  let restrictedIntervals = 0;
+  let maximumShortfallMw = 0;
+  let residualUnservedMwh = 0;
+  let constrainedEnergyMwh = 0;
+  let shiftedWorkloadMwh = 0;
+  let batteryDischargeMwh = 0;
+  let totalDemandMwh = 0;
+  let restrictionEvents = 0;
+  let currentRestrictionIntervals = 0;
+  let longestRestrictionIntervals = 0;
+  let minimumViableBreaches = 0;
+  const timeline = points.map((point) => {
+    const baselineImportMw = Math.max(0, point.importMw - (point.onsiteGenerationMw ?? 0));
+    const connectionLimitMw = Math.max(0, settings.firmImportMw + settings.conditionalImportMw);
+    const grossShortfallMw = Math.max(0, baselineImportMw - connectionLimitMw);
+    const declaredShiftableMw = Math.min(
+      point.flexibleLoadMw ?? settings.shiftableLoadMw,
+      settings.shiftableLoadMw,
+    );
+    const criticalFloorMw = Math.max(0, baselineImportMw - settings.minimumCriticalLoadMw);
+    const workloadResponseMw = Math.min(grossShortfallMw, declaredShiftableMw, criticalFloorMw);
+    const afterWorkloadMw = grossShortfallMw - workloadResponseMw;
+    const availableBatteryMw = duration ? (batterySocMwh * efficiency) / duration : 0;
+    const batteryResponseMw = Math.min(
+      afterWorkloadMw,
+      settings.batteryPowerMw,
+      availableBatteryMw,
+    );
+    const batteryEnergyUsedMwh = batteryResponseMw * duration;
+    batterySocMwh = Math.max(0, batterySocMwh - batteryEnergyUsedMwh / efficiency);
+    const connectionHeadroomMw = Math.max(0, connectionLimitMw - baselineImportMw);
+    const batteryStorageHeadroomMwh = Math.max(0, usableBatteryMwh - batterySocMwh);
+    const batteryChargeMw = Math.min(
+      grossShortfallMw > 0 ? 0 : connectionHeadroomMw,
+      settings.batteryPowerMw,
+      duration ? batteryStorageHeadroomMwh / (duration * efficiency) : 0,
+    );
+    batterySocMwh = Math.min(
+      usableBatteryMwh,
+      batterySocMwh + batteryChargeMw * duration * efficiency,
+    );
+    const residualShortfallMw = Math.max(0, afterWorkloadMw - batteryResponseMw);
+    if (grossShortfallMw > 0) {
+      restrictedIntervals += 1;
+      currentRestrictionIntervals += 1;
+      if (currentRestrictionIntervals === 1) restrictionEvents += 1;
+      longestRestrictionIntervals = Math.max(
+        longestRestrictionIntervals,
+        currentRestrictionIntervals,
+      );
+    } else currentRestrictionIntervals = 0;
+    if (
+      settings.minimumViableImportMw != null &&
+      connectionLimitMw < settings.minimumViableImportMw
+    )
+      minimumViableBreaches += 1;
+    maximumShortfallMw = Math.max(maximumShortfallMw, grossShortfallMw);
+    constrainedEnergyMwh += grossShortfallMw * duration;
+    shiftedWorkloadMwh += workloadResponseMw * duration;
+    batteryDischargeMwh += batteryEnergyUsedMwh;
+    residualUnservedMwh += residualShortfallMw * duration;
+    totalDemandMwh += baselineImportMw * duration;
+    return {
+      timestamp: point.timestamp,
+      baselineImportMw: round(baselineImportMw),
+      connectionLimitMw: round(connectionLimitMw),
+      workloadResponseMw: round(workloadResponseMw),
+      batteryResponseMw: round(batteryResponseMw),
+      batteryChargeMw: round(batteryChargeMw),
+      residualShortfallMw: round(residualShortfallMw),
+      batterySocMwh: round(batterySocMwh),
+    };
+  });
+  const equivalentBatteryCycles = settings.batteryEnergyMwh
+    ? batteryDischargeMwh / settings.batteryEnergyMwh
+    : 0;
+  const demandServedPercent = totalDemandMwh
+    ? ((totalDemandMwh - residualUnservedMwh) / totalDemandMwh) * 100
+    : 100;
+  const classification =
+    minimumViableBreaches > 0
+      ? "fails_minimum_viable_capacity"
+      : residualUnservedMwh > 0
+        ? "feasible_with_constraints"
+        : restrictedIntervals > 0
+          ? "operator_validation_required"
+          : "operationally_feasible";
+  return {
+    calculationVersion: "de-fca-interval-v3",
+    intervalMinutes: quality.intervalMinutes,
+    intervalCount: points.length,
+    peakBaselineImportMw: round(Math.max(...timeline.map((item) => item.baselineImportMw))),
+    restrictedIntervals,
+    restrictedHours: round(restrictedIntervals * duration),
+    restrictionEvents,
+    longestRestrictionHours: round(longestRestrictionIntervals * duration),
+    minimumViableBreaches,
+    maximumShortfallMw: round(maximumShortfallMw),
+    residualUnservedMwh: round(residualUnservedMwh),
+    constrainedEnergyMwh: round(constrainedEnergyMwh),
+    shiftedWorkloadMwh: round(shiftedWorkloadMwh),
+    batteryDischargeMwh: round(batteryDischargeMwh),
+    equivalentBatteryCycles: round(equivalentBatteryCycles),
+    demandServedPercent: round(demandServedPercent),
+    estimatedAnnualExposureEur: round(
+      residualUnservedMwh * settings.energyValueEurMwh +
+        batteryDischargeMwh * settings.batteryDegradationEurMwh,
+    ),
+    classification,
+    timeline,
+    warnings: [
+      "Connection limits are declared or operator-supplied inputs; GridPulse does not infer available capacity.",
+      settings.conditionalImportMw > 0
+        ? "Conditional capacity must be confirmed in a written operator agreement."
+        : "No conditional capacity is assumed.",
+    ],
+  };
 }
 
 export function inferIntervalMinutes(points: IntervalPoint[]) {

@@ -39,6 +39,8 @@ type CandidateSite = {
   readiness_score: number;
   next_action: string;
   next_deadline: string | null;
+  open_reviews: number;
+  evidence_completion: number | null;
 };
 
 function Portfolio() {
@@ -59,6 +61,8 @@ function Portfolio() {
         envelopeResult,
         profileResult,
         milestoneResult,
+        metricsResult,
+        reviewsResult,
       ] = await Promise.all([
         supabase
           .from("candidate_sites")
@@ -78,6 +82,11 @@ function Portfolio() {
           .select("site_id,due_at,status")
           .eq("status", "open")
           .order("due_at"),
+        supabase
+          .from("pilot_metrics")
+          .select("site_id,metric_key,metric_value,observed_at")
+          .order("observed_at", { ascending: false }),
+        supabase.from("assessment_reviews").select("site_id,status,due_at"),
       ]);
       if (siteResult.error) throw siteResult.error;
       if (documentResult.error) throw documentResult.error;
@@ -85,6 +94,8 @@ function Portfolio() {
       if (envelopeResult.error) throw envelopeResult.error;
       if (profileResult.error) throw profileResult.error;
       if (milestoneResult.error) throw milestoneResult.error;
+      if (metricsResult.error) throw metricsResult.error;
+      if (reviewsResult.error) throw reviewsResult.error;
       const readyStatuses = new Set(["ready", "submitted", "accepted", "not_applicable"]);
       return siteResult.data.map((site) => {
         const requirements = requirementResult.data.filter((item) => item.site_id === site.id);
@@ -94,6 +105,9 @@ function Portfolio() {
         const hasProfile = profileResult.data.some((item) => item.site_id === site.id);
         const envelope = envelopeResult.data.find((item) => item.site_id === site.id);
         const operatorConfirmed = site.operator_confirmation_status !== "screening_only";
+        const evidenceMetric = metricsResult.data.find(
+          (item) => item.site_id === site.id && item.metric_key === "evidence_completion",
+        );
         const readinessScore = Math.min(
           100,
           Math.round(
@@ -114,7 +128,7 @@ function Portfolio() {
                 ? "Obtain operator response"
                 : envelope.status !== "agreed"
                   ? "Negotiate envelope"
-                  : "Prepare activation";
+                  : "Prepare agreed operating plan";
         return {
           ...site,
           document_count: documents,
@@ -125,6 +139,10 @@ function Portfolio() {
           next_action: nextAction,
           next_deadline:
             milestoneResult.data.find((item) => item.site_id === site.id)?.due_at ?? null,
+          open_reviews: reviewsResult.data.filter(
+            (item) => item.site_id === site.id && item.status !== "accepted",
+          ).length,
+          evidence_completion: evidenceMetric ? Number(evidenceMetric.metric_value) : null,
         } as CandidateSite;
       });
     },
@@ -135,16 +153,24 @@ function Portfolio() {
   const reportReady = projects.filter(
     (project) => project.assessment_status === "report_ready",
   ).length;
+  const overdueReviews = projects.reduce((total, project) => total + project.open_reviews, 0);
+  const measuredEvidence = projects.filter((project) => project.evidence_completion !== null);
+  const averageEvidence = measuredEvidence.length
+    ? Math.round(
+        measuredEvidence.reduce((total, project) => total + project.evidence_completion!, 0) /
+          measuredEvidence.length,
+      )
+    : null;
   return (
     <AppShell requireAuth>
-      <main className="section-page">
+      <main id="main-content" className="section-page">
         <PageHeading
-          eyebrow="Power acceleration portfolio"
-          title="Activation projects"
-          description="Move candidate sites from power discovery through connection activation to flexible-operation readiness."
+          eyebrow="Connection strategy portfolio"
+          title="Connection projects"
+          description="Move candidate sites from public-context screening to an evidence-backed operator engagement strategy."
           action={
             <Link to="/assessments/new" className="primary-button">
-              <Plus size={15} /> New assessment
+              <Plus size={15} /> New project
             </Link>
           }
         />
@@ -152,26 +178,31 @@ function Portfolio() {
           <div>
             <span>Active projects</span>
             <b>{projects.length}</b>
-            <small>Power discovery and activation</small>
+            <small>Screening and operator engagement</small>
           </div>
           <div>
-            <span>Activation in progress</span>
+            <span>Assessment in progress</span>
             <b>{awaitingEvidence}</b>
             <small>No capacity conclusions yet</small>
           </div>
           <div>
-            <span>Decision ready</span>
+            <span>Package ready</span>
             <b>{reportReady}</b>
-            <small>Operator-ready evidence pack</small>
+            <small>Ready for operator review</small>
+          </div>
+          <div>
+            <span>Open review gates</span>
+            <b>{overdueReviews}</b>
+            <small>Technical, commercial and grid-expert decisions</small>
+          </div>
+          <div>
+            <span>Average evidence completion</span>
+            <b>{averageEvidence === null ? "—" : `${averageEvidence}%`}</b>
+            <small>Latest recorded pilot KPI per project</small>
           </div>
         </div>
         <div className="section-toolbar">
-          <div>
-            <button className="filter-active">All projects</button>
-            <button>Draft</button>
-            <button>In review</button>
-            <button>Report ready</button>
-          </div>
+          <strong>Connection project pipeline</strong>
           <span>{projects.length} projects</span>
         </div>
         {projects.length > 0 ? (
@@ -191,12 +222,13 @@ function Portfolio() {
                 <thead>
                   <tr>
                     <th>Site</th>
-                    <th>Requirement</th>
+                    <th>Requested capacity</th>
                     <th>Documents</th>
                     <th>Operator pack</th>
                     <th>FCA envelope</th>
                     <th>Readiness</th>
                     <th>Next action</th>
+                    <th>Review gates</th>
                     <th>Deadline</th>
                     <th />
                   </tr>
@@ -209,15 +241,9 @@ function Portfolio() {
                         <small>{label(project.project_type)}</small>
                       </td>
                       <td>
-                        <b>{project.readiness_score}/100</b>
+                        {project.requested_import_mw} MW import
+                        <small>{project.requested_export_mw} MW export</small>
                       </td>
-                      <td>{project.next_action}</td>
-                      <td>
-                        {project.next_deadline
-                          ? new Date(project.next_deadline).toLocaleDateString()
-                          : "—"}
-                      </td>
-                      <td>{project.requested_import_mw} MW import</td>
                       <td>
                         <FileText /> {project.document_count}
                       </td>
@@ -228,6 +254,16 @@ function Portfolio() {
                         <span className="status">
                           <Zap /> {label(project.envelope_status)}
                         </span>
+                      </td>
+                      <td>
+                        <b>{project.readiness_score}/100</b>
+                      </td>
+                      <td>{project.next_action}</td>
+                      <td>{project.open_reviews}</td>
+                      <td>
+                        {project.next_deadline
+                          ? new Intl.DateTimeFormat("en-GB").format(new Date(project.next_deadline))
+                          : "—"}
                       </td>
                       <td>
                         <Link to="/assessments/$id" params={{ id: project.id }}>
@@ -244,19 +280,19 @@ function Portfolio() {
         {isLoading ? (
           <div className="portfolio-state">
             <div className="loading-spinner" />
-            <p>Loading private assessments…</p>
+            <p>Loading private projects…</p>
           </div>
         ) : error ? (
           <div className="portfolio-state error-message">
-            <p>{error instanceof Error ? error.message : "Could not load assessments."}</p>
+            <p>{error instanceof Error ? error.message : "Could not load projects."}</p>
           </div>
         ) : projects.length === 0 ? (
           <div className="portfolio-state">
             <BatteryCharging />
-            <h2>No activation projects yet</h2>
-            <p>Add a candidate site to begin power discovery and connection planning.</p>
+            <h2>No connection projects yet</h2>
+            <p>Add a candidate site to begin public-context screening and connection planning.</p>
             <Link to="/assessments/new" className="primary-button">
-              <Plus size={15} /> Create assessment
+              <Plus size={15} /> Create project
             </Link>
           </div>
         ) : (
@@ -300,13 +336,13 @@ function Portfolio() {
                     <dt>Next deadline</dt>
                     <dd>
                       {project.next_deadline
-                        ? new Date(project.next_deadline).toLocaleDateString()
+                        ? new Intl.DateTimeFormat("en-GB").format(new Date(project.next_deadline))
                         : "Not scheduled"}
                     </dd>
                   </div>
                 </dl>
                 <Link to="/assessments/$id" params={{ id: project.id }}>
-                  Open assessment <ArrowRight size={14} />
+                  Open project <ArrowRight size={14} />
                 </Link>
               </article>
             ))}
