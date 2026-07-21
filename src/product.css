@@ -167,6 +167,17 @@
 
   /* Motion */
   --cine-transition-fast: 180ms ease;
+
+  /* Typography hierarchy (non-hero headings/body; hero scale is preserved separately above) */
+  --cine-text-h2: 32px;
+  --cine-text-h2-line: 1.25;
+  --cine-text-h3: 20px;
+  --cine-text-h3-line: 1.4;
+  --cine-text-body: 16px;
+  --cine-text-body-line: 1.5;
+  --cine-heading-weight: 600;
+  --cine-heading-tracking-lg: -0.01em;
+  --cine-heading-tracking-md: normal;
   background: var(--cine-bg);
   color: var(--cine-text);
   min-width: 1040px;
@@ -490,8 +501,10 @@
   text-transform: uppercase;
 }
 .cine-capabilities-heading h2 {
-  font-size: clamp(46px, 4vw, 68px);
-  line-height: 1;
+  font-size: var(--cine-text-h2);
+  font-weight: var(--cine-heading-weight);
+  letter-spacing: var(--cine-heading-tracking-lg);
+  line-height: var(--cine-text-h2-line);
   margin-top: var(--cine-space-4);
   max-width: 940px;
   text-wrap: balance;
@@ -904,8 +917,10 @@
 .cine-germany-copy h2,
 .cine-outcomes > h2,
 .cine-pilot h2 {
-  font-size: clamp(42px, 3.35vw, 58px);
-  line-height: 1.04;
+  font-size: var(--cine-text-h2);
+  font-weight: var(--cine-heading-weight);
+  letter-spacing: var(--cine-heading-tracking-lg);
+  line-height: var(--cine-text-h2-line);
   text-wrap: balance;
 }
 .cine-section-copy p,
@@ -915,8 +930,8 @@
 .cine-germany-copy p,
 .cine-pilot p {
   color: var(--cine-muted);
-  font-size: 17px;
-  line-height: 1.68;
+  font-size: var(--cine-text-body);
+  line-height: var(--cine-text-body-line);
   margin-top: var(--cine-space-6);
 }
 .cine-section-copy h2::after {
@@ -1449,7 +1464,10 @@
   box-shadow: 0 0 0 8px rgba(0, 242, 255, 0.11);
 }
 .cine-method-step h3 {
-  font-size: clamp(28px, 2vw, 36px);
+  font-size: var(--cine-text-h3);
+  font-weight: var(--cine-heading-weight);
+  letter-spacing: var(--cine-heading-tracking-md);
+  line-height: var(--cine-text-h3-line);
   margin: 0;
 }
 .cine-method-action {
@@ -1543,8 +1561,10 @@
 }
 .cine-matrix-heading h2,
 .cine-methodology-intro h2 {
-  font-size: clamp(42px, 3.6vw, 62px);
-  line-height: 1.04;
+  font-size: var(--cine-text-h2);
+  font-weight: var(--cine-heading-weight);
+  letter-spacing: var(--cine-heading-tracking-lg);
+  line-height: var(--cine-text-h2-line);
   max-width: 880px;
   text-wrap: balance;
 }
@@ -3113,8 +3133,10 @@
   text-transform: uppercase;
 }
 .cine-outcomes-heading h2 {
-  font-size: clamp(43px, 4vw, 68px);
-  line-height: 0.98;
+  font-size: var(--cine-text-h2);
+  font-weight: var(--cine-heading-weight);
+  letter-spacing: var(--cine-heading-tracking-lg);
+  line-height: var(--cine-text-h2-line);
   margin-top: var(--cine-space-5);
   max-width: 800px;
   text-wrap: balance;
@@ -3183,8 +3205,10 @@
   font-variant-numeric: tabular-nums;
 }
 .cine-outcomes-grid h3 {
-  font-size: clamp(28px, 2.35vw, 40px);
-  line-height: 1.05;
+  font-size: var(--cine-text-h3);
+  font-weight: var(--cine-heading-weight);
+  letter-spacing: var(--cine-heading-tracking-md);
+  line-height: var(--cine-text-h3-line);
   margin-top: 44px;
   text-wrap: balance;
 }
@@ -3287,8 +3311,10 @@
   text-transform: uppercase;
 }
 .cine-pilot-copy h2 {
-  font-size: clamp(46px, 4vw, 70px);
-  line-height: 1.02;
+  font-size: var(--cine-text-h2);
+  font-weight: var(--cine-heading-weight);
+  letter-spacing: var(--cine-heading-tracking-lg);
+  line-height: var(--cine-text-h2-line);
   text-wrap: balance;
 }
 .cine-pilot p {
@@ -3392,8 +3418,10 @@
   padding: 96px var(--cine-edge);
 }
 .cine-roadmap-heading h2 {
-  font-size: clamp(38px, 3.2vw, 54px);
-  line-height: 1.05;
+  font-size: var(--cine-text-h2);
+  font-weight: var(--cine-heading-weight);
+  letter-spacing: var(--cine-heading-tracking-lg);
+  line-height: var(--cine-text-h2-line);
   max-width: 620px;
   text-wrap: balance;
 }
