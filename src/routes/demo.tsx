@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useState } from "react";
-import { AppShell } from "@/components/product/AppShell";
+import { PublicCTA, PublicLayout, PublicPageHero } from "@/components/public/PublicLayout";
 import { ConnectionCaseExperience } from "@/components/product/ConnectionCaseExperience";
 import {
   ProductBoundaryNotice,
@@ -9,22 +9,23 @@ import {
   type PublicJourneyId,
 } from "@/components/product/PublicJourney";
 import { connectionCase, type CaseStageId } from "@/lib/demo-case";
+import { trackEvent } from "@/lib/analytics";
 
 export const Route = createFileRoute("/demo")({
   head: () => ({
     meta: [
-      { title: "GridPulse Demo | From Site Screening to Operator-Ready Strategy" },
+      { title: "GridPulse Product Tour | German Connection Strategy" },
       {
         name: "description",
         content:
-          "See an illustrative German connection case move from site screening through connection-strategy design to operator preparation.",
+          "Explore a read-only German connection case from site screening through strategy design to operator preparation.",
       },
-      { property: "og:title", content: "GridPulse Demo | German Connection Strategy" },
+      { property: "og:title", content: "GridPulse Product Tour | German Connection Strategy" },
       { property: "og:url", content: "https://gridpulseinsights.com/demo" },
     ],
     links: [{ rel: "canonical", href: "https://gridpulseinsights.com/demo" }],
   }),
-  component: AssessmentWorkspace,
+  component: ProductTour,
 });
 
 function journeyForStage(stage: CaseStageId): PublicJourneyId {
@@ -33,57 +34,49 @@ function journeyForStage(stage: CaseStageId): PublicJourneyId {
   return "prepare";
 }
 
-function AssessmentWorkspace() {
+function ProductTour() {
   const [journeyStage, setJourneyStage] = useState<PublicJourneyId>("discover");
-
   return (
-    <AppShell>
+    <PublicLayout>
       <main id="main-content" className="case-demo-page case-demo-v2">
-        <div className="case-demo-breadcrumb">
-          <Link to="/">
-            <ArrowLeft aria-hidden="true" /> Back to GridPulse
+        <PublicPageHero
+          eyebrow="Interactive Product Tour · Illustrative Case"
+          title="Follow one German project from site screening to operator preparation."
+          description="This read-only case shows how GridPulse connects project requirements, site context, connection approaches, evidence status, and operator questions in one decision record. Values are illustrative and do not claim available capacity."
+        >
+          <Link to="/pilot" className="public-button public-button-primary">
+            Start With Your Project <ArrowRight aria-hidden="true" />
           </Link>
-          <span>Illustrative assessment · no available-capacity claim</span>
-        </div>
+          <Link to="/service" className="public-button public-button-secondary">
+            Review the Assessment
+          </Link>
+        </PublicPageHero>
 
-        <header className="case-demo-heading">
-          <div>
-            <p>Illustrative German Connection Case</p>
-            <h1>See one project move from site screening to an operator-ready strategy.</h1>
+        <div className="public-page-content case-demo-content">
+          <PublicJourney active={journeyStage} />
+          <section className="case-demo-project-summary" aria-label="Illustrative project summary">
+            <small>{connectionCase.id}</small>
+            <strong>{connectionCase.name}</strong>
             <span>
-              This example connects the project requirement, candidate location, connection
-              hypotheses, evidence status, and next operator action.
+              {connectionCase.requirement} requested · {connectionCase.voltage}
             </span>
-          </div>
-          <Link to="/pilot">
-            Start a Pilot With Your Project <ArrowRight aria-hidden="true" />
-          </Link>
-        </header>
-
-        <PublicJourney active={journeyStage} />
-
-        <section className="case-demo-project-summary" aria-label="Illustrative project summary">
-          <small>{connectionCase.id}</small>
-          <strong>{connectionCase.name}</strong>
-          <span>
-            {connectionCase.requirement} requested · {connectionCase.voltage}
-          </span>
-        </section>
-
-        <ConnectionCaseExperience
-          initialStage="site"
-          onStageChange={(stage) => setJourneyStage(journeyForStage(stage))}
-        />
-
-        <ProductBoundaryNotice compact />
-
-        <div className="case-demo-actions">
-          <Link to="/pilot">
-            Start a Pilot With Your Project <ArrowRight aria-hidden="true" />
-          </Link>
-          <Link to="/service">Review the Assessment Scope</Link>
+          </section>
+          <ConnectionCaseExperience
+            initialStage="site"
+            mode="preview"
+            onStageChange={(stage) => {
+              setJourneyStage(journeyForStage(stage));
+              trackEvent("demo_stage_selected", { stage });
+            }}
+          />
+          <ProductBoundaryNotice compact />
         </div>
+        <PublicCTA
+          eyebrow="Apply the Workflow"
+          title="Use the same decision structure for your project."
+          description="Bring your site, power requirement, operating constraints, and available evidence into a focused pilot review."
+        />
       </main>
-    </AppShell>
+    </PublicLayout>
   );
 }

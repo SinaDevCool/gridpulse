@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { LockKeyhole, LogOut, Plus } from "lucide-react";
 import type { ReactNode } from "react";
 import { useAuth } from "@/context/useAuth";
@@ -34,7 +34,7 @@ export function AppHeader() {
             </button>
           </>
         ) : (
-          <Link to="/auth" className="header-sign-in">
+          <Link to="/auth" search={{ redirect: undefined }} className="header-sign-in">
             Sign in
           </Link>
         )}
@@ -71,6 +71,7 @@ export function AppShell({
 
 function ProtectedContent({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
+  const redirect = useRouterState({ select: (state) => state.location.href });
   if (loading)
     return (
       <main id="main-content" className="auth-gate">
@@ -85,8 +86,8 @@ function ProtectedContent({ children }: { children: ReactNode }) {
         <p className="context-label">Private workspace</p>
         <h1>Sign in to continue</h1>
         <p>Your projects and evidence are protected per account.</p>
-        <Link to="/auth" className="primary-button">
-          Sign in or create account
+        <Link to="/auth" search={{ redirect }} className="primary-button">
+          Sign In to Continue
         </Link>
       </main>
     );

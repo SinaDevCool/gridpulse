@@ -125,8 +125,8 @@ export function ConnectionCaseExperience({
       {mode === "preview" ? (
         <footer className="case-preview-footer">
           <span>Select each stage to inspect the same case.</span>
-          <Link to="/demo">
-            Open full demonstration <ArrowRight />
+          <Link to="/pilot">
+            Apply This Workflow to Your Project <ArrowRight aria-hidden="true" />
           </Link>
         </footer>
       ) : null}

@@ -208,7 +208,7 @@ function PilotReadyPage() {
   }
 
   return (
-    <AppShell>
+    <AppShell requireAuth>
       <main id="main-content" className="pilot-ready-page">
         <header className="pilot-ready-hero">
           <div>

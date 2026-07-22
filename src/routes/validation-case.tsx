@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Download, ExternalLink, ShieldAlert } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { AppShell } from "@/components/product/AppShell";
+import { PublicLayout } from "@/components/public/PublicLayout";
 import { downloadJson } from "@/features/grid-connection/deliverables";
 import { buildValidationCase } from "@/lib/validation-case";
 
@@ -25,7 +25,7 @@ function ValidationCasePage() {
   const validation = useMemo(() => buildValidationCase(), []);
   useEffect(() => setCanExport(true), []);
   return (
-    <AppShell>
+    <PublicLayout>
       <main id="main-content" className="validation-case-page">
         <header className="validation-case-hero">
           <p>Reproducible validation / {validation.truth.methodologyVersion}</p>
@@ -155,6 +155,6 @@ function ValidationCasePage() {
           </p>
         </section>
       </main>
-    </AppShell>
+    </PublicLayout>
   );
 }
