@@ -59,6 +59,10 @@
 .public-footer nav a:hover {
   color: #f5fbff;
 }
+.public-header nav a.is-active {
+  color: #f5fbff;
+  box-shadow: inset 0 -2px #35dff1;
+}
 .public-header .public-header-cta {
   padding: 11px 17px;
   background: #35dff1;
@@ -264,6 +268,421 @@
   }
   .public-footer-boundary p {
     text-align: left;
+  }
+}
+
+/* Methodology trust-centre revision */
+.public-methodology-page .public-page-hero {
+  padding-block: clamp(58px, 7vw, 92px);
+}
+.methodology-outcomes,
+.evidence-class-section,
+.operator-proof,
+.authority-section,
+.official-source-register,
+.methodology-governance {
+  margin-bottom: 88px;
+}
+.methodology-outcomes > h2,
+.authority-section > h2,
+.operator-proof h2,
+.methodology-governance h2 {
+  max-width: 780px;
+  margin: 10px 0 32px;
+  font:
+    600 clamp(30px, 4vw, 48px)/1.08 "Geist",
+    sans-serif;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+.methodology-outcomes > div {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border: 1px solid #263b48;
+}
+.methodology-outcomes article {
+  padding: 30px;
+  border-right: 1px solid #263b48;
+}
+.methodology-outcomes article:last-child {
+  border-right: 0;
+}
+.methodology-outcomes svg {
+  width: 22px;
+  color: #35dff1;
+}
+.methodology-outcomes h3 {
+  margin: 22px 0 10px;
+}
+.methodology-outcomes p {
+  margin: 0;
+  color: #8499a5;
+  line-height: 1.6;
+}
+.evidence-ladder {
+  margin: 34px 0 0;
+  padding: 0;
+  border-top: 1px solid #263b48;
+  list-style: none;
+}
+.evidence-ladder li {
+  display: grid;
+  grid-template-columns: 52px minmax(220px, 0.8fr) minmax(0, 1.2fr);
+  gap: 24px;
+  padding: 24px 0;
+  border-bottom: 1px solid #263b48;
+}
+.evidence-ladder > li > span {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 1px solid #35dff1;
+  color: #35dff1;
+  font:
+    600 11px "JetBrains Mono",
+    monospace;
+}
+.evidence-ladder h3 {
+  margin: 0 0 8px;
+}
+.evidence-ladder p,
+.evidence-ladder dd {
+  margin: 0;
+  color: #8499a5;
+  line-height: 1.55;
+}
+.evidence-ladder dl {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 8px 14px;
+  margin: 0;
+}
+.evidence-ladder dt {
+  color: #33d9ec;
+  font:
+    600 10px "JetBrains Mono",
+    monospace;
+  text-transform: uppercase;
+}
+.operator-proof {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: 70px;
+  padding: 64px;
+  border: 1px solid #2a4554;
+  background: #07131c;
+}
+.operator-proof h2 {
+  margin-bottom: 20px;
+}
+.operator-proof > div > p:last-child {
+  color: #91a6b1;
+  line-height: 1.65;
+}
+.operator-proof ul {
+  display: grid;
+  align-content: center;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.operator-proof li {
+  display: flex;
+  gap: 12px;
+  color: #b7c8d1;
+}
+.operator-proof li svg {
+  width: 17px;
+  color: #35dff1;
+  flex: none;
+}
+.authority-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  border: 1px solid #263b48;
+}
+.authority-grid article {
+  padding: 32px;
+  border-right: 1px solid #263b48;
+  border-bottom: 1px solid #263b48;
+}
+.authority-grid article:nth-child(2n) {
+  border-right: 0;
+}
+.authority-grid article:nth-last-child(-n + 2) {
+  border-bottom: 0;
+}
+.authority-grid svg {
+  width: 21px;
+  color: #35dff1;
+}
+.authority-grid h3 {
+  margin: 18px 0 6px;
+}
+.authority-grid strong {
+  color: #dce8ed;
+  font-size: 13px;
+}
+.authority-grid p {
+  color: #91a6b1;
+  line-height: 1.6;
+}
+.authority-grid small {
+  display: block;
+  padding-top: 14px;
+  border-top: 1px solid #20303c;
+  color: #d4a936;
+  line-height: 1.5;
+}
+.source-register-table {
+  border: 1px solid #263b48;
+}
+.source-register-head,
+.source-register-item summary {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr 0.65fr;
+  gap: 24px;
+}
+.source-register-head {
+  padding: 14px 22px;
+  background: #08141e;
+  color: #78909d;
+  font:
+    600 10px "JetBrains Mono",
+    monospace;
+  text-transform: uppercase;
+}
+.source-register-item {
+  border-top: 1px solid #263b48;
+}
+.source-register-item summary {
+  align-items: center;
+  padding: 20px 22px;
+  cursor: pointer;
+}
+.source-register-item summary span {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+.source-register-item summary small {
+  color: #78909d;
+  line-height: 1.45;
+}
+.source-register-item[open] summary {
+  background: #091823;
+}
+.source-register-item > div {
+  padding: 24px 22px;
+  border-top: 1px solid #20303c;
+  background: #060e15;
+}
+.source-register-item dl {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 14px;
+  margin: 0;
+}
+.source-register-item dt {
+  color: #35dff1;
+}
+.source-register-item dd {
+  margin: 0;
+  color: #91a6b1;
+  line-height: 1.6;
+}
+.source-register-item > div p {
+  color: #718894;
+  font-size: 12px;
+}
+.source-register-item a {
+  color: #35dff1;
+  text-decoration: none;
+}
+.methodology-governance {
+  display: grid;
+  grid-template-columns: 0.85fr 1.15fr;
+  gap: 64px;
+  padding: 48px;
+  border: 1px solid #263b48;
+}
+.methodology-governance svg {
+  color: #35dff1;
+}
+.methodology-governance h2 {
+  margin-bottom: 0;
+}
+.methodology-governance dl {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  margin: 0;
+  background: #263b48;
+}
+.methodology-governance dl > div {
+  padding: 20px;
+  background: #071019;
+}
+.methodology-governance dt {
+  color: #78909d;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+.methodology-governance dd {
+  margin: 8px 0 0;
+  color: #e5eef2;
+}
+
+/* Pilot application composition */
+.pilot-application-heading {
+  width: min(1320px, 92vw);
+  margin: 0 auto;
+  padding: 84px 0 0;
+}
+.pilot-application-heading h2 {
+  margin: 8px 0 14px;
+  font:
+    600 clamp(34px, 4vw, 52px)/1.05 "Geist",
+    sans-serif;
+  letter-spacing: -0.04em;
+}
+.pilot-application-heading > p:last-child {
+  max-width: 700px;
+  color: #91a6b1;
+  line-height: 1.6;
+}
+.public-shell .pilot-intro {
+  top: 96px;
+}
+.public-shell .pilot-intro h2 {
+  max-width: 540px;
+  margin: 0 0 1.5rem;
+  font:
+    600 clamp(2.8rem, 4vw, 3.6rem)/1.04 "Geist",
+    sans-serif;
+  letter-spacing: -0.04em;
+  text-wrap: balance;
+}
+.public-shell .pilot-assurance {
+  padding: 18px;
+  border: 1px solid rgba(66, 223, 242, 0.24);
+  background: rgba(36, 161, 181, 0.07);
+}
+.public-shell .pilot-form {
+  overflow: hidden;
+  border-color: rgba(111, 178, 216, 0.28);
+  background: #081c2a;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.2);
+}
+.public-shell .pilot-step-progress {
+  margin: 0;
+}
+.public-shell .pilot-step-guidance {
+  display: flex;
+  gap: 10px;
+  margin: 0 0 1.25rem;
+  padding: 12px 14px;
+  border: 0;
+  background: rgba(66, 223, 242, 0.07);
+  color: #a6bac4;
+}
+.public-shell .pilot-step-guidance svg {
+  width: 16px;
+  flex: none;
+  color: #42dff2;
+}
+.public-shell .pilot-step-guidance p {
+  margin: 0;
+}
+.public-shell .pilot-field {
+  color: #bdd0d9;
+}
+.public-shell .pilot-field input:focus,
+.public-shell .pilot-field select:focus,
+.public-shell .pilot-field textarea:focus {
+  box-shadow: none;
+}
+.public-shell .pilot-field input:focus-visible,
+.public-shell .pilot-field select:focus-visible,
+.public-shell .pilot-field textarea:focus-visible {
+  border-color: #2dd4ff;
+  outline: 2px solid rgba(45, 212, 255, 0.35);
+  outline-offset: 2px;
+}
+.pilot-form-footer {
+  padding: 20px 28px 22px;
+  border-top: 1px solid rgba(111, 178, 216, 0.22);
+  background: #061722;
+}
+.public-shell .pilot-step-actions {
+  margin: 0;
+}
+.public-shell .pilot-submit-boundary {
+  margin: 14px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid rgba(111, 178, 216, 0.13);
+}
+
+@media (max-width: 780px) {
+  .methodology-outcomes > div,
+  .authority-grid,
+  .operator-proof,
+  .methodology-governance {
+    grid-template-columns: 1fr;
+  }
+  .methodology-outcomes article {
+    border-right: 0;
+    border-bottom: 1px solid #263b48;
+  }
+  .methodology-outcomes article:last-child {
+    border-bottom: 0;
+  }
+  .evidence-ladder li {
+    grid-template-columns: 44px 1fr;
+  }
+  .evidence-ladder dl {
+    grid-column: 2;
+    grid-template-columns: 1fr;
+  }
+  .operator-proof,
+  .methodology-governance {
+    gap: 32px;
+    padding: 28px;
+  }
+  .authority-grid article,
+  .authority-grid article:nth-child(2n) {
+    border-right: 0;
+    border-bottom: 1px solid #263b48;
+  }
+  .authority-grid article:last-child {
+    border-bottom: 0;
+  }
+  .source-register-head {
+    display: none;
+  }
+  .source-register-item summary {
+    grid-template-columns: 1fr;
+  }
+  .methodology-governance dl {
+    grid-template-columns: 1fr;
+  }
+  .pilot-application-heading {
+    width: min(100% - 32px, 1320px);
+    padding-top: 58px;
+  }
+  .public-shell .pilot-intro {
+    position: static;
+  }
+  .pilot-form-footer {
+    padding: 18px;
+  }
+  .public-shell .pilot-step-progress button {
+    font-size: 0;
+  }
+  .public-shell .pilot-step-progress button > span {
+    font-size: 0.65rem;
   }
 }
 
@@ -532,6 +951,244 @@
 }
 .auth-pilot-route a {
   color: #37dced;
+}
+
+/* Public conversion-path additions */
+.service-at-glance,
+.service-example,
+.service-scope {
+  width: min(1180px, calc(100% - 48px));
+  margin-inline: auto;
+}
+.service-at-glance {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-bottom: 1px solid #20303c;
+}
+.service-at-glance > div {
+  display: grid;
+  gap: 5px;
+  padding: 28px 24px;
+  border-right: 1px solid #20303c;
+}
+.service-at-glance > div:last-child {
+  border-right: 0;
+}
+.service-at-glance strong {
+  color: #35dff1;
+  font-size: 28px;
+}
+.service-at-glance span {
+  color: #8297a3;
+  font-size: 13px;
+}
+.service-example {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: 72px;
+  padding: 88px 0;
+  border-bottom: 1px solid #20303c;
+}
+.service-example h2,
+.service-scope > header h2 {
+  margin: 10px 0 20px;
+  font:
+    600 clamp(30px, 4vw, 48px)/1.08 "Geist",
+    sans-serif;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+.service-example p {
+  color: #91a5b1;
+  line-height: 1.65;
+}
+.service-example-card {
+  padding: 30px;
+  border: 1px solid #29404e;
+  background: #08131c;
+}
+.service-example-card > span {
+  color: #e5b315;
+  font:
+    600 10px/1.2 "JetBrains Mono",
+    monospace;
+  text-transform: uppercase;
+}
+.service-example-card h3 {
+  margin: 14px 0 24px;
+  font-size: 24px;
+}
+.service-example-card dl {
+  margin: 0;
+}
+.service-example-card dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 14px 0;
+  border-top: 1px solid #20303c;
+}
+.service-example-card dt {
+  color: #8297a3;
+}
+.service-example-card dd {
+  margin: 0;
+  color: #eff8fb;
+  text-align: right;
+}
+.service-scope > header {
+  padding: 76px 0 0;
+}
+.pilot-scope {
+  width: min(1180px, calc(100% - 48px));
+  margin-inline: auto;
+  padding: 88px 0;
+  border-bottom: 1px solid #20303c;
+}
+.pilot-scope-heading {
+  max-width: 820px;
+}
+.pilot-scope-heading h1 {
+  margin: 8px 0 18px;
+  font:
+    600 clamp(38px, 5vw, 62px)/1 "Geist",
+    sans-serif;
+  letter-spacing: -0.045em;
+  text-wrap: balance;
+}
+.pilot-scope-heading > p:last-child {
+  color: #9bb0bb;
+  font-size: 18px;
+  line-height: 1.65;
+}
+.pilot-scope-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1px;
+  margin: 48px 0;
+  padding: 0;
+  background: #20303c;
+  list-style: none;
+}
+.pilot-scope-grid li {
+  padding: 26px 22px;
+  background: #071019;
+}
+.pilot-scope-grid li > span {
+  color: #35dff1;
+  font:
+    600 11px/1 "JetBrains Mono",
+    monospace;
+}
+.pilot-scope-grid h2 {
+  margin: 18px 0 10px;
+  font-size: 18px;
+}
+.pilot-scope-grid p {
+  margin: 0;
+  color: #8499a5;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.pilot-scope-exchange {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid #20303c;
+}
+.pilot-scope-exchange article {
+  padding: 36px;
+}
+.pilot-scope-exchange article + article {
+  border-left: 1px solid #20303c;
+}
+.pilot-scope-exchange h2 {
+  margin: 8px 0 24px;
+  font-size: 28px;
+}
+.pilot-scope-exchange ul {
+  display: grid;
+  gap: 13px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pilot-scope-exchange li {
+  display: flex;
+  gap: 10px;
+  color: #9bb0bb;
+}
+.pilot-scope-exchange li svg {
+  width: 16px;
+  color: #35dff1;
+  flex: 0 0 auto;
+}
+.pilot-scope-boundary {
+  display: flex;
+  gap: 14px;
+  margin: 28px 0;
+  padding: 18px;
+  border-left: 2px solid #e5b315;
+  background: #0a1118;
+}
+.pilot-scope-boundary svg {
+  width: 20px;
+  color: #e5b315;
+  flex: 0 0 auto;
+}
+.pilot-scope-boundary p {
+  margin: 0;
+  color: #91a5b1;
+  line-height: 1.55;
+}
+.pilot-design-note {
+  display: grid;
+  gap: 7px;
+  margin-top: 24px;
+  padding: 18px;
+  border: 1px solid #36515e;
+}
+.pilot-design-note span {
+  color: #8fa4af;
+  line-height: 1.55;
+}
+#how-it-works,
+#product,
+#direction,
+#pilot,
+#deliverables,
+#assessment-deliverables,
+#what-is-included,
+#pilot-form {
+  scroll-margin-top: 88px;
+}
+@media (max-width: 780px) {
+  .service-at-glance,
+  .service-example,
+  .service-scope,
+  .pilot-scope {
+    width: min(100% - 32px, 1180px);
+  }
+  .service-at-glance {
+    grid-template-columns: 1fr 1fr;
+  }
+  .service-at-glance > div:nth-child(2) {
+    border-right: 0;
+  }
+  .service-example {
+    grid-template-columns: 1fr;
+    gap: 36px;
+  }
+  .pilot-scope {
+    padding: 64px 0;
+  }
+  .pilot-scope-grid,
+  .pilot-scope-exchange {
+    grid-template-columns: 1fr;
+  }
+  .pilot-scope-exchange article + article {
+    border-top: 1px solid #20303c;
+    border-left: 0;
+  }
 }
 .auth-tabs button:focus-visible,
 .auth-card input:focus-visible {

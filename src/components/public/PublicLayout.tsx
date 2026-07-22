@@ -1,12 +1,13 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useLocation } from "@tanstack/react-router";
 import { ArrowRight, Menu, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { trackEvent } from "@/lib/analytics";
 
 const publicNavigation = [
-  { label: "How It Works", to: "/service" },
+  { label: "How It Works", to: "/", hash: "how-it-works" },
+  { label: "Assessment", to: "/service" },
   { label: "Product Tour", to: "/demo" },
-  { label: "Methodology", to: "/data-sources" },
+  { label: "Methodology & Sources", to: "/data-sources" },
 ] as const;
 
 export function PublicBrand() {
@@ -19,13 +20,22 @@ export function PublicBrand() {
 
 export function PublicLayout({ children }: { children: ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const location = useLocation();
+  const onPilotPage = location.pathname === "/pilot";
   return (
     <div className="public-shell">
       <header className="public-header">
         <PublicBrand />
         <nav className={menuOpen ? "is-open" : undefined} aria-label="Public navigation">
           {publicNavigation.map((item) => (
-            <Link key={item.to} to={item.to} onClick={() => setMenuOpen(false)}>
+            <Link
+              key={`${item.to}-${"hash" in item ? item.hash : ""}`}
+              to={item.to}
+              hash={"hash" in item ? item.hash : undefined}
+              activeOptions={{ exact: item.to === "/" }}
+              activeProps={{ className: "is-active", "aria-current": "page" }}
+              onClick={() => setMenuOpen(false)}
+            >
               {item.label}
             </Link>
           ))}
@@ -39,13 +49,14 @@ export function PublicLayout({ children }: { children: ReactNode }) {
           </Link>
           <Link
             to="/pilot"
+            hash={onPilotPage ? "pilot-form" : undefined}
             className="public-header-cta"
             onClick={() => {
               setMenuOpen(false);
               trackEvent("public_start_pilot_clicked", { placement: "header" });
             }}
           >
-            Start a Pilot
+            {onPilotPage ? "Continue Application" : "Start a Pilot"}
           </Link>
         </nav>
         <button
@@ -118,10 +129,22 @@ export function PublicCTA({
   eyebrow,
   title,
   description,
+  primaryLabel = "Start a Pilot",
+  primaryTo = "/pilot",
+  primaryHash,
+  secondaryLabel = "View the Product Tour",
+  secondaryTo = "/demo",
+  secondaryHash,
 }: {
   eyebrow: string;
   title: string;
   description: string;
+  primaryLabel?: string;
+  primaryTo?: "/pilot" | "/service" | "/demo" | "/data-sources";
+  primaryHash?: string;
+  secondaryLabel?: string;
+  secondaryTo?: "/pilot" | "/service" | "/demo" | "/data-sources";
+  secondaryHash?: string;
 }) {
   return (
     <section className="public-final-cta">
@@ -130,14 +153,15 @@ export function PublicCTA({
       <p>{description}</p>
       <div className="public-actions">
         <Link
-          to="/pilot"
+          to={primaryTo}
+          hash={primaryHash}
           className="public-button public-button-primary"
           onClick={() => trackEvent("public_start_pilot_clicked", { placement: "final_cta" })}
         >
-          Start a Pilot <ArrowRight aria-hidden="true" />
+          {primaryLabel} <ArrowRight aria-hidden="true" />
         </Link>
-        <Link to="/demo" className="public-text-link">
-          View the Product Tour <ArrowRight aria-hidden="true" />
+        <Link to={secondaryTo} hash={secondaryHash} className="public-text-link">
+          {secondaryLabel} <ArrowRight aria-hidden="true" />
         </Link>
       </div>
     </section>

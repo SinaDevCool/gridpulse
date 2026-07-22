@@ -207,7 +207,11 @@ function LandingPage() {
                     capacity, a connection point, or the responsible distribution operator for a
                     specific project.
                   </p>
-                  <Link to="/service" className="landing-text-link">
+                  <Link
+                    to="/service"
+                    className="landing-text-link"
+                    onClick={() => trackEvent("homepage_assessment_clicked")}
+                  >
                     Explore the Assessment <ArrowRight aria-hidden="true" />
                   </Link>
                 </aside>
@@ -252,7 +256,13 @@ function LandingPage() {
                 })}
               </ol>
               <div className="landing-centered-action">
-                <Link to="/demo" className="landing-text-link">
+                <Link
+                  to="/demo"
+                  className="landing-text-link"
+                  onClick={() =>
+                    trackEvent("homepage_product_tour_clicked", { placement: "process" })
+                  }
+                >
                   Explore the Interactive Product Tour <ArrowRight aria-hidden="true" />
                 </Link>
               </div>
@@ -285,7 +295,13 @@ function LandingPage() {
                     <Check aria-hidden="true" /> Track operator evidence and activation dependencies
                   </li>
                 </ul>
-                <Link to="/demo" className="landing-button landing-button-secondary">
+                <Link
+                  to="/demo"
+                  className="landing-button landing-button-secondary"
+                  onClick={() =>
+                    trackEvent("homepage_product_tour_clicked", { placement: "product" })
+                  }
+                >
                   View the Working Product <ArrowRight aria-hidden="true" />
                 </Link>
               </div>
@@ -426,7 +442,12 @@ function LandingPage() {
               </div>
 
               <div className="landing-direction-action">
-                <Link to="/pilot" className="landing-text-link">
+                <Link
+                  to="/pilot"
+                  search={{ interest: "design-partnership" }}
+                  className="landing-text-link"
+                  onClick={() => trackEvent("design_partnership_selected")}
+                >
                   Discuss a Design Partnership <ArrowRight aria-hidden="true" />
                 </Link>
               </div>
@@ -451,7 +472,12 @@ function LandingPage() {
                   <Link to="/pilot" className="landing-button landing-button-primary">
                     Start a Pilot <ArrowRight aria-hidden="true" />
                   </Link>
-                  <Link to="/service" hash="deliverables" className="landing-text-link">
+                  <Link
+                    to="/pilot"
+                    hash="what-is-included"
+                    className="landing-text-link"
+                    onClick={() => trackEvent("homepage_pilot_scope_clicked")}
+                  >
                     Review What the Pilot Includes
                   </Link>
                 </div>

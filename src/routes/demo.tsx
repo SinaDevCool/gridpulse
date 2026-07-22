@@ -75,6 +75,9 @@ function ProductTour() {
           eyebrow="Apply the Workflow"
           title="Use the same decision structure for your project."
           description="Bring your site, power requirement, operating constraints, and available evidence into a focused pilot review."
+          primaryLabel="Apply This Workflow to Your Project"
+          secondaryLabel="Review the Assessment"
+          secondaryTo="/service"
         />
       </main>
     </PublicLayout>

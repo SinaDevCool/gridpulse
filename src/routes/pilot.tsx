@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, ArrowRight, Check, LoaderCircle, ShieldCheck } from "lucide-react";
-import { useState, type ReactElement, type ReactNode } from "react";
+import { createFileRoute, Link, useLocation } from "@tanstack/react-router";
+import { ArrowLeft, ArrowRight, Check, Info, LoaderCircle, ShieldCheck } from "lucide-react";
+import { useEffect, useState, type ReactElement, type ReactNode } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
@@ -118,6 +118,9 @@ const states = [
 ];
 
 function PilotApplication() {
+  const location = useLocation();
+  const isDesignPartnership =
+    new URLSearchParams(location.searchStr).get("interest") === "design-partnership";
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [pilotStep, setPilotStep] = useState(0);
@@ -127,7 +130,7 @@ function PilotApplication() {
     handleSubmit,
     trigger,
     watch,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isDirty },
   } = useForm<PilotFormInput, unknown, PilotForm>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -152,6 +155,13 @@ function PilotApplication() {
   const projectType = watch("projectType");
   const includesBattery = projectType === "bess" || projectType === "co_location";
 
+  useEffect(() => {
+    if (!isDirty || submitted) return;
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [isDirty, submitted]);
+
   const stepFields: Array<Array<keyof PilotFormInput>> = [
     ["contactName", "workEmail", "company", "projectName", "projectType", "projectStage"],
     [
@@ -167,7 +177,7 @@ function PilotApplication() {
   ];
 
   async function continuePilot() {
-    const valid = await trigger(stepFields[pilotStep]);
+    const valid = await trigger(stepFields[pilotStep], { shouldFocus: true });
     if (valid) {
       trackEvent("pilot_step_completed", { step: pilotStep + 1 });
       setPilotStep((current) => Math.min(current + 1, 3));
@@ -255,17 +265,126 @@ function PilotApplication() {
   return (
     <PublicLayout>
       <main id="main-content" className="pilot-page">
+        <section
+          className="pilot-scope"
+          id="what-is-included"
+          aria-labelledby="pilot-scope-title"
+          onMouseEnter={() => trackEvent("pilot_scope_viewed")}
+        >
+          <div className="pilot-scope-heading">
+            <p className="context-label">What the Pilot Includes</p>
+            <h1 id="pilot-scope-title">What the Pilot Includes for One Real Connection Decision</h1>
+            <p>
+              Structure one German project from candidate-site screening through connection-option
+              comparison and network-operator preparation.
+            </p>
+          </div>
+          <ol className="pilot-scope-grid">
+            {[
+              [
+                "01",
+                "Frame the project",
+                "Confirm locations, requested power, minimum viable power, milestones, and operating constraints.",
+              ],
+              [
+                "02",
+                "Screen candidate sites",
+                "Compare project maturity, likely network responsibility, public context, and evidence gaps.",
+              ],
+              [
+                "03",
+                "Design the strategy",
+                "Compare firm, reduced, staged, and flexible connection approaches with explicit limitations.",
+              ],
+              [
+                "04",
+                "Prepare the evidence",
+                "Structure technical inputs, assumptions, operator questions, and validation requirements.",
+              ],
+              [
+                "05",
+                "Deliver the decision package",
+                "Record the recommended route, credible alternatives, owners, next actions, and validation gates.",
+              ],
+            ].map(([number, title, copy]) => (
+              <li key={number}>
+                <span>{number}</span>
+                <h2>{title}</h2>
+                <p>{copy}</p>
+              </li>
+            ))}
+          </ol>
+          <div className="pilot-scope-exchange">
+            <article>
+              <p className="context-label">You Provide</p>
+              <h2>A real project basis</h2>
+              <ul>
+                <li>
+                  <Check aria-hidden="true" /> 1 real German connection project
+                </li>
+                <li>
+                  <Check aria-hidden="true" /> 1–3 candidate locations
+                </li>
+                <li>
+                  <Check aria-hidden="true" /> Requested and minimum viable MW
+                </li>
+                <li>
+                  <Check aria-hidden="true" /> Available technical and operator evidence
+                </li>
+              </ul>
+            </article>
+            <article>
+              <p className="context-label">You Receive</p>
+              <h2>A decision-ready package</h2>
+              <ul>
+                <li>
+                  <Check aria-hidden="true" /> Candidate-site screening brief
+                </li>
+                <li>
+                  <Check aria-hidden="true" /> Connection-strategy comparison
+                </li>
+                <li>
+                  <Check aria-hidden="true" /> Evidence-gap register and operator questions
+                </li>
+                <li>
+                  <Check aria-hidden="true" /> Engagement package and decision memo
+                </li>
+              </ul>
+            </article>
+          </div>
+          <aside className="pilot-scope-boundary">
+            <ShieldCheck aria-hidden="true" />
+            <p>
+              <strong>Decision support—not a connection offer.</strong> Capacity, connection points,
+              restrictions, works, timing, and final terms require confirmation by the responsible
+              network operator.
+            </p>
+          </aside>
+          <a href="#pilot-form" className="landing-button primary">
+            Apply With Your Project <ArrowRight aria-hidden="true" />
+          </a>
+        </section>
+        <header className="pilot-application-heading">
+          <p className="context-label">Application</p>
+          <h2>Apply With Your Project</h2>
+          <p>
+            Share enough information for GridPulse to assess fit. Missing technical documents can be
+            provided during the review.
+          </p>
+        </header>
         <div className="pilot-layout">
           <aside className="pilot-intro">
-            <p className="context-label">Design-Partner Pilot</p>
-            <h1>Test a credible route to power for one real project.</h1>
+            <p className="context-label">
+              {isDesignPartnership ? "Design Partnership" : "Project Pilot"}
+            </p>
+            <h2>Bring one real connection decision into focus.</h2>
             <p>
               GridPulse pilots help German data centres, battery projects, and large industrial
               loads qualify candidate sites, compare connection approaches, and prepare an
               operator-ready strategy.
             </p>
-            <div className="pilot-assurance">
-              <ShieldCheck />
+            <div className="pilot-assurance" role="note">
+              <ShieldCheck aria-hidden="true" />
               <div>
                 <b>What happens with your information</b>
                 <span>We use it only to assess pilot fit and contact you about this project.</span>
@@ -282,11 +401,22 @@ function PilotApplication() {
                 <Check /> Declared requested and minimum viable MW
               </li>
             </ul>
+            {isDesignPartnership ? (
+              <div className="pilot-design-note">
+                <b>Explore the future product direction</b>
+                <span>
+                  Discuss operator-evidenced operating envelopes, constraint monitoring, and
+                  flexible-operation compliance. These are development goals, not available
+                  capabilities.
+                </span>
+              </div>
+            ) : null}
             <Link to="/service" className="pilot-text-link">
               Review the assessment scope <ArrowRight />
             </Link>
           </aside>
           <form
+            id="pilot-form"
             className="pilot-form pilot-form-stepped"
             onSubmit={handleSubmit(submit)}
             onFocus={() => {
@@ -324,15 +454,21 @@ function PilotApplication() {
 
             <div hidden={pilotStep !== 0}>
               <FormSection number="01" title="Project and contact">
-                <p className="pilot-step-guidance">
-                  Establish who is requesting the pilot and the project’s current maturity.
-                </p>
+                <div className="pilot-step-guidance">
+                  <Info aria-hidden="true" />
+                  <p>Establish who is requesting the pilot and the project’s current maturity.</p>
+                </div>
                 <div className="pilot-form-grid">
                   <Field label="Full name" error={errors.contactName?.message}>
                     <input autoComplete="name" {...register("contactName")} />
                   </Field>
                   <Field label="Work email" error={errors.workEmail?.message}>
-                    <input type="email" autoComplete="email" {...register("workEmail")} />
+                    <input
+                      type="email"
+                      autoComplete="email"
+                      spellCheck={false}
+                      {...register("workEmail")}
+                    />
                   </Field>
                   <Field label="Company" error={errors.company?.message}>
                     <input autoComplete="organization" {...register("company")} />
@@ -344,7 +480,7 @@ function PilotApplication() {
                     <input type="tel" autoComplete="tel" {...register("phone")} />
                   </Field>
                   <Field label="Project name" error={errors.projectName?.message}>
-                    <input {...register("projectName")} />
+                    <input autoComplete="off" {...register("projectName")} />
                   </Field>
                   <Field label="Project type" error={errors.projectType?.message}>
                     <select {...register("projectType")}>
@@ -370,13 +506,21 @@ function PilotApplication() {
 
             <div hidden={pilotStep !== 1}>
               <FormSection number="02" title="Candidate location">
-                <p className="pilot-step-guidance">
-                  Public information can guide responsibility screening. Exact responsibility still
-                  requires site-level confirmation.
-                </p>
+                <div className="pilot-step-guidance">
+                  <Info aria-hidden="true" />
+                  <p>
+                    Public information can guide responsibility screening. Exact responsibility
+                    still requires site-level confirmation.
+                  </p>
+                </div>
                 <div className="pilot-form-grid">
                   <Field label="Postcode" error={errors.postcode?.message}>
-                    <input inputMode="numeric" maxLength={5} {...register("postcode")} />
+                    <input
+                      inputMode="numeric"
+                      autoComplete="postal-code"
+                      maxLength={5}
+                      {...register("postcode")}
+                    />
                   </Field>
                   <Field label="Municipality" error={errors.municipality?.message}>
                     <input {...register("municipality")} />
@@ -421,10 +565,13 @@ function PilotApplication() {
 
             <div hidden={pilotStep !== 2}>
               <FormSection number="03" title="Power requirement">
-                <p className="pilot-step-guidance">
-                  Requested MW describes the project requirement—not capacity available from the
-                  network.
-                </p>
+                <div className="pilot-step-guidance">
+                  <Info aria-hidden="true" />
+                  <p>
+                    Requested MW describes the project requirement—not capacity available from the
+                    network.
+                  </p>
+                </div>
                 <div className="pilot-form-grid">
                   <Field label="Requested import (MW)" error={errors.importMw?.message}>
                     <input type="number" min="0" step="0.001" {...register("importMw")} />
@@ -479,19 +626,25 @@ function PilotApplication() {
                     <input type="date" {...register("commercialDeadline")} />
                   </Field>
                 </div>
-                <p className="pilot-step-guidance">
-                  Flexible connection agreements are options to test with the operator—not
-                  guaranteed outcomes.
-                </p>
+                <div className="pilot-step-guidance">
+                  <Info aria-hidden="true" />
+                  <p>
+                    Flexible connection agreements are options to test with the operator—not
+                    guaranteed outcomes.
+                  </p>
+                </div>
               </FormSection>
             </div>
 
             <div hidden={pilotStep !== 3}>
               <FormSection number="04" title="Evidence and decision challenge">
-                <p className="pilot-step-guidance">
-                  Current, written, project-specific operator evidence controls any capacity or
-                  timing conclusion.
-                </p>
+                <div className="pilot-step-guidance">
+                  <Info aria-hidden="true" />
+                  <p>
+                    Current, written, project-specific operator evidence controls any capacity or
+                    timing conclusion.
+                  </p>
+                </div>
                 <Field label="Operator engagement" error={errors.operatorEngagementStatus?.message}>
                   <select {...register("operatorEngagementStatus")}>
                     <option value="not_started">Not started</option>
@@ -538,41 +691,52 @@ function PilotApplication() {
                 {submitError}
               </p>
             ) : null}
-            <div className="pilot-step-actions">
-              <button
-                className="pilot-text-link"
-                disabled={pilotStep === 0 || isSubmitting}
-                onClick={() => setPilotStep((current) => Math.max(current - 1, 0))}
-                type="button"
-              >
-                <ArrowLeft aria-hidden="true" /> Back
-              </button>
-              {pilotStep < 3 ? (
-                <button className="landing-button primary" onClick={continuePilot} type="button">
-                  {pilotStep === 0
-                    ? "Continue to Location"
-                    : pilotStep === 1
-                      ? "Continue to Power Requirement"
-                      : "Continue to Evidence"}{" "}
-                  <ArrowRight aria-hidden="true" />
-                </button>
-              ) : (
-                <button type="submit" className="landing-button primary" disabled={isSubmitting}>
-                  {isSubmitting ? (
-                    <>
-                      <LoaderCircle className="spin" /> Submitting…
-                    </>
-                  ) : (
-                    <>
-                      Submit Project for Fit Review <ArrowRight aria-hidden="true" />
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
-            <small className="pilot-submit-boundary">
-              Submitting a project does not create a connection offer or advisory engagement.
-            </small>
+            <footer className="pilot-form-footer">
+              <div className="pilot-step-actions">
+                {pilotStep > 0 ? (
+                  <button
+                    className="pilot-text-link"
+                    disabled={isSubmitting}
+                    onClick={() => setPilotStep((current) => Math.max(current - 1, 0))}
+                    type="button"
+                  >
+                    <ArrowLeft aria-hidden="true" />{" "}
+                    {pilotStep === 1
+                      ? "Back to Project"
+                      : pilotStep === 2
+                        ? "Back to Location"
+                        : "Back to Power"}
+                  </button>
+                ) : (
+                  <span aria-hidden="true" />
+                )}
+                {pilotStep < 3 ? (
+                  <button className="landing-button primary" onClick={continuePilot} type="button">
+                    {pilotStep === 0
+                      ? "Continue to Location"
+                      : pilotStep === 1
+                        ? "Continue to Power Requirement"
+                        : "Continue to Evidence"}{" "}
+                    <ArrowRight aria-hidden="true" />
+                  </button>
+                ) : (
+                  <button type="submit" className="landing-button primary" disabled={isSubmitting}>
+                    {isSubmitting ? (
+                      <>
+                        <LoaderCircle className="spin" /> Submitting…
+                      </>
+                    ) : (
+                      <>
+                        Submit Project for Fit Review <ArrowRight aria-hidden="true" />
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+              <small className="pilot-submit-boundary">
+                Submitting a project does not create a connection offer or advisory engagement.
+              </small>
+            </footer>
           </form>
         </div>
       </main>

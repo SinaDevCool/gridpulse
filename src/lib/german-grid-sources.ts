@@ -4,6 +4,10 @@ export type GermanGridSource = {
   title: string;
   url: string;
   publishedOrUpdated: string;
+  lastVerified: string;
+  nextReview: string;
+  geographicScope: string;
+  integrationStatus: "Referenced manually" | "Public dataset" | "Live integration";
   evidenceClass: "official_regulatory" | "official_operator" | "official_technical";
   establishes: string[];
   doesNotEstablish: string[];
@@ -16,6 +20,10 @@ export const germanGridSources: GermanGridSource[] = [
     title: "Flexible connection agreements for storage and consumer installations",
     url: "https://www.bundesnetzagentur.de/DE/Fachthemen/ElektrizitaetundGas/Netzanschluss/artikel.html",
     publishedOrUpdated: "2026-06-19",
+    lastVerified: "2026-07-22",
+    nextReview: "2026-10-22",
+    geographicScope: "Germany · regulatory framework",
+    integrationStatus: "Referenced manually",
     evidenceClass: "official_regulatory",
     establishes: [
       "Section 17(2b) EnWG permits static or dynamic connection limits.",
@@ -33,6 +41,10 @@ export const germanGridSources: GermanGridSource[] = [
     title: "Maturity procedure for transmission-grid connection requests, version 1.1",
     url: "https://www.netztransparenz.de/Portals/1/Dokumente/Reifegradverfahren/Vier%20U%CC%88NB%20-%20Reifegradverfahren%20-%20Verfahrensdokumentation%20V1.1.pdf",
     publishedOrUpdated: "2026-05-01",
+    lastVerified: "2026-07-22",
+    nextReview: "2026-08-31",
+    geographicScope: "German transmission-grid applications",
+    integrationStatus: "Referenced manually",
     evidenceClass: "official_operator",
     establishes: [
       "Large-load applications are prioritised using project-maturity evidence.",
@@ -50,6 +62,10 @@ export const germanGridSources: GermanGridSource[] = [
     title: "Plant-specific compliance process for customer installations",
     url: "https://www.netztransparenz.de/de-de/%C3%9Cber-uns/Studien-und-Positionspapiere/Anlagenspezifisches-Nachweisverfahren-fu%CC%88r-Kundenanlagen-16042026",
     publishedOrUpdated: "2026-04-16",
+    lastVerified: "2026-07-22",
+    nextReview: "2026-10-22",
+    geographicScope: "German transmission-grid customer installations",
+    integrationStatus: "Referenced manually",
     evidenceClass: "official_technical",
     establishes: [
       "Large customer installations may require simulation and a detailed interaction study.",
@@ -63,6 +79,10 @@ export const germanGridSources: GermanGridSource[] = [
     title: "Pro-rata allocation procedure for electricity connection capacity",
     url: "https://www.nrm-netzdienste.de/de/netzanschluss/pro-rata-verfahren-strom",
     publishedOrUpdated: "2026-07-01",
+    lastVerified: "2026-07-22",
+    nextReview: "2026-09-30",
+    geographicScope: "NRM network area · Frankfurt/Rhine-Main",
+    integrationStatus: "Referenced manually",
     evidenceClass: "official_operator",
     establishes: [
       "Frankfurt-area requests from 3.5 MW are generally considered in an annual node-level allocation.",
@@ -76,6 +96,10 @@ export const germanGridSources: GermanGridSource[] = [
     title: "Repartition procedure for large connection requests",
     url: "https://www.stromnetz.berlin/anschliessen/anschluss-mittel-hochspannung/repartierung/",
     publishedOrUpdated: "2026-07-01",
+    lastVerified: "2026-07-22",
+    nextReview: "2026-10-15",
+    geographicScope: "Stromnetz Berlin distribution network",
+    integrationStatus: "Referenced manually",
     evidenceClass: "official_operator",
     establishes: [
       "Requests above 3.5 MVA participate in proportional allocation when capacity is limited.",
