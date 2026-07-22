@@ -1,19 +1,25 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight } from "lucide-react";
+import { useState } from "react";
 import { AppShell } from "@/components/product/AppShell";
 import { ConnectionCaseExperience } from "@/components/product/ConnectionCaseExperience";
-import { connectionCase } from "@/lib/demo-case";
+import {
+  ProductBoundaryNotice,
+  PublicJourney,
+  type PublicJourneyId,
+} from "@/components/product/PublicJourney";
+import { connectionCase, type CaseStageId } from "@/lib/demo-case";
 
 export const Route = createFileRoute("/demo")({
   head: () => ({
     meta: [
-      { title: "GridPulse Demo | German Grid Connection Project" },
+      { title: "GridPulse Demo | From Site Screening to Operator-Ready Strategy" },
       {
         name: "description",
         content:
-          "Explore an illustrative GridPulse project for German BESS, data-centre and large-load grid connection decisions.",
+          "See an illustrative German connection case move from site screening through connection-strategy design to operator preparation.",
       },
-      { property: "og:title", content: "GridPulse Demo | German Grid Connection Project" },
+      { property: "og:title", content: "GridPulse Demo | German Connection Strategy" },
       { property: "og:url", content: "https://gridpulseinsights.com/demo" },
     ],
     links: [{ rel: "canonical", href: "https://gridpulseinsights.com/demo" }],
@@ -21,32 +27,61 @@ export const Route = createFileRoute("/demo")({
   component: AssessmentWorkspace,
 });
 
+function journeyForStage(stage: CaseStageId): PublicJourneyId {
+  if (stage === "site") return "discover";
+  if (stage === "scenarios") return "design";
+  return "prepare";
+}
+
 function AssessmentWorkspace() {
+  const [journeyStage, setJourneyStage] = useState<PublicJourneyId>("discover");
+
   return (
     <AppShell>
-      <main id="main-content" className="case-demo-page">
+      <main id="main-content" className="case-demo-page case-demo-v2">
         <div className="case-demo-breadcrumb">
           <Link to="/">
-            <ArrowLeft /> Back to platform
+            <ArrowLeft aria-hidden="true" /> Back to GridPulse
           </Link>
-          <span>Illustrative project · no capacity claim</span>
+          <span>Illustrative assessment · no available-capacity claim</span>
         </div>
+
         <header className="case-demo-heading">
           <div>
-            <p>Connection project / {connectionCase.id}</p>
-            <h1>{connectionCase.name}</h1>
+            <p>Illustrative German Connection Case</p>
+            <h1>See one project move from site screening to an operator-ready strategy.</h1>
             <span>
-              {connectionCase.requirement} · {connectionCase.voltage}
+              This example connects the project requirement, candidate location, connection
+              hypotheses, evidence status, and next operator action.
             </span>
           </div>
           <Link to="/pilot">
-            Bring us a real case <ArrowRight />
+            Start a Pilot With Your Project <ArrowRight aria-hidden="true" />
           </Link>
         </header>
-        <ConnectionCaseExperience initialStage="site" />
-        <div className="case-demo-footnote">
-          Preliminary decision support only. Validate operator responsibility, voltage, capacity,
-          connection conditions and all conclusions with the responsible network operator.
+
+        <PublicJourney active={journeyStage} />
+
+        <section className="case-demo-project-summary" aria-label="Illustrative project summary">
+          <small>{connectionCase.id}</small>
+          <strong>{connectionCase.name}</strong>
+          <span>
+            {connectionCase.requirement} requested · {connectionCase.voltage}
+          </span>
+        </section>
+
+        <ConnectionCaseExperience
+          initialStage="site"
+          onStageChange={(stage) => setJourneyStage(journeyForStage(stage))}
+        />
+
+        <ProductBoundaryNotice compact />
+
+        <div className="case-demo-actions">
+          <Link to="/pilot">
+            Start a Pilot With Your Project <ArrowRight aria-hidden="true" />
+          </Link>
+          <Link to="/service">Review the Assessment Scope</Link>
         </div>
       </main>
     </AppShell>

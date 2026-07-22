@@ -35,9 +35,11 @@ const stageIcons = {
 export function ConnectionCaseExperience({
   mode = "workspace",
   initialStage = "site",
+  onStageChange,
 }: {
   mode?: ExperienceMode;
   initialStage?: CaseStageId;
+  onStageChange?: (stage: CaseStageId) => void;
 }) {
   const [activeStage, setActiveStage] = useState<CaseStageId>(initialStage);
   const activeIndex = caseStages.findIndex((stage) => stage.id === activeStage);
@@ -55,6 +57,7 @@ export function ConnectionCaseExperience({
 
     event.preventDefault();
     setActiveStage(caseStages[nextIndex].id);
+    onStageChange?.(caseStages[nextIndex].id);
     tabRefs.current[nextIndex]?.focus();
   };
 
@@ -83,7 +86,10 @@ export function ConnectionCaseExperience({
               className={index < activeIndex ? "is-complete" : ""}
               id={`case-tab-${stage.id}`}
               key={stage.id}
-              onClick={() => setActiveStage(stage.id)}
+              onClick={() => {
+                setActiveStage(stage.id);
+                onStageChange?.(stage.id);
+              }}
               onKeyDown={(event) => handleTabKeyDown(event, index)}
               ref={(element) => {
                 tabRefs.current[index] = element;

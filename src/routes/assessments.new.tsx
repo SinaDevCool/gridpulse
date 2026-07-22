@@ -44,10 +44,10 @@ export const Route = createFileRoute("/assessments/new")({
 });
 
 const steps = [
-  { label: "Project", hint: "Asset and objective", icon: Building2 },
-  { label: "Location", hint: "Site and maturity", icon: MapPin },
-  { label: "Power", hint: "Connection envelope", icon: Zap },
-  { label: "Review", hint: "Confirm declarations", icon: FileCheck2 },
+  { label: "Define the project", hint: "Asset and objective", icon: Building2 },
+  { label: "Confirm the site", hint: "Location and maturity", icon: MapPin },
+  { label: "Declare the requirement", hint: "Requested power and flexibility", icon: Zap },
+  { label: "Review the evidence", hint: "Confirm declarations", icon: FileCheck2 },
 ];
 
 const projectTypes = {
@@ -157,7 +157,7 @@ function NewAssessment() {
         .eq("id", search.pilotRequestId);
       if (requestError) toast.warning("Project created; update the pilot request manually");
     }
-    toast.success("Private connection assessment created");
+    toast.success("Private connection case created");
     await navigate({ to: "/assessments/$id", params: { id: created.id } });
   }
 
@@ -166,9 +166,9 @@ function NewAssessment() {
     <AppShell requireAuth>
       <main id="main-content" className="section-page intake-page">
         <PageHeading
-          eyebrow="New Netzanschluss assessment"
-          title="Start with the project facts"
-          description="A guided first screening for large loads and storage in Germany. Grid capacity is never inferred from public proximity data."
+          eyebrow="Private Connection Assessment"
+          title="Start a private connection case"
+          description="Create the project record used to discover the route, design connection hypotheses, and prepare the operator-engagement strategy."
         />
         <div className="intake-progress" aria-label={`Step ${step + 1} of ${steps.length}`}>
           {steps.map((item, index) => {
@@ -509,11 +509,11 @@ function NewAssessment() {
                   {busy ? (
                     <>
                       <LoaderCircle className="spin" />
-                      Creating assessment…
+                      Creating connection case…
                     </>
                   ) : (
                     <>
-                      Create private assessment <ArrowRight />
+                      Create Connection Case <ArrowRight />
                     </>
                   )}
                 </button>
@@ -525,10 +525,10 @@ function NewAssessment() {
             <h2>
               {
                 [
-                  "Start with the investment decision",
-                  "Location is context—not capacity",
-                  "Separate need from flexibility",
-                  "Know what remains unconfirmed",
+                  "Define the investment decision",
+                  "Confirm the candidate-site context",
+                  "Separate the requirement from flexibility",
+                  "Review what remains unconfirmed",
                 ][step]
               }
             </h2>

@@ -1,15 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, ArrowRight, Check, CircleAlert } from "lucide-react";
-import { CAPACITY_NOTICE, PRODUCT_SCOPE_NOTICE } from "@/features/grid-connection/product-truth";
+import { ArrowLeft, ArrowRight, Check } from "lucide-react";
+import { ProductBoundaryNotice, PublicJourney } from "@/components/product/PublicJourney";
 
 export const Route = createFileRoute("/service")({
   head: () => ({
     meta: [
-      { title: "German Grid Connection Options Assessment | GridPulse" },
+      { title: "German Grid Connection Strategy Assessment | GridPulse" },
       {
         name: "description",
         content:
-          "Compare German connection locations and firm, flexible and staged strategies with a traceable evidence and operator-engagement package.",
+          "Compare German candidate sites and firm, staged, and flexible grid-connection strategies with a traceable operator-engagement package.",
       },
     ],
     links: [{ rel: "canonical", href: "https://gridpulseinsights.com/service" }],
@@ -17,117 +17,131 @@ export const Route = createFileRoute("/service")({
   component: ServicePage,
 });
 
+const decisions = [
+  "Which candidate location is sufficiently mature?",
+  "Which connection approaches fit the project constraints?",
+  "What must be confirmed by the responsible network operator?",
+] as const;
+
+const customerInputs = [
+  "1–3 candidate locations",
+  "Requested and minimum viable capacity",
+  "Technical configuration",
+  "Target milestones",
+  "Available project and operator evidence",
+] as const;
+
 const deliverables = [
-  "Comparison of up to three customer-selected candidate sites",
-  "Likely network-operator and application-process screening",
-  "Project and application-maturity assessment",
-  "Firm, reduced-firm, flexible and staged connection hypotheses",
-  "Evidence-gap and operator-question register",
-  "Versioned operator-engagement package",
-  "Management decision memo and next-action plan",
-];
+  [
+    "Candidate-site readiness comparison",
+    "An evidence-led view of maturity, responsibility, and gaps.",
+  ],
+  [
+    "Connection-strategy comparison",
+    "Firm, reduced, staged, and flexible hypotheses with limitations.",
+  ],
+  [
+    "Evidence and operator-question register",
+    "The unresolved information controlling the next decision.",
+  ],
+  [
+    "Engagement package and decision memo",
+    "A traceable recommendation, alternatives, actions, and validation gates.",
+  ],
+] as const;
 
 function ServicePage() {
   return (
-    <main id="main-content" className="service-page">
+    <main id="main-content" className="service-page service-page-v2">
       <header className="pilot-topbar">
         <Link to="/" className="landing-brand">
           <span>GRID</span>
           <strong>PULSE</strong>
         </Link>
         <Link to="/" className="pilot-text-link">
-          <ArrowLeft /> Back to GridPulse
+          <ArrowLeft aria-hidden="true" /> Back to GridPulse
         </Link>
       </header>
+
       <section className="service-hero">
-        <p className="context-label">German Grid Connection Options Assessment</p>
-        <h1>Choose a credible route before committing capital to a connection case.</h1>
+        <p className="context-label">German Grid Connection Strategy Assessment</p>
+        <h1>Build an evidence-led route into operator engagement.</h1>
         <p>
-          A bounded assessment for German data centres, BESS and large electrical loads. GridPulse
-          structures the evidence, compares candidate locations and prepares the questions and
-          scenarios that require network-operator review.
+          For German data centres, battery projects, and large industrial loads evaluating 1–3
+          candidate locations, requested capacity, and firm or flexible connection approaches.
         </p>
         <div className="cine-actions">
           <Link to="/pilot" className="cine-cta cine-cta-solid">
-            Qualify a project <ArrowRight />
+            Start a Pilot <ArrowRight aria-hidden="true" />
           </Link>
           <Link to="/demo" className="cine-cta cine-cta-line">
-            Explore the workflow <ArrowRight />
-          </Link>
-          <Link to="/validation-case" className="cine-cta cine-cta-line">
-            Review validation case <ArrowRight />
-          </Link>
-          <Link to="/pilot-ready" className="cine-cta cine-cta-line">
-            Open pilot-ready workspace <ArrowRight />
+            View an Example Case <ArrowRight aria-hidden="true" />
           </Link>
         </div>
       </section>
-      <section className="service-grid">
+
+      <section className="service-decision" aria-labelledby="service-decision-title">
+        <div>
+          <p className="context-label">The Customer Decision</p>
+          <h2 id="service-decision-title">
+            Which site and connection strategy has the most credible route forward?
+          </h2>
+        </div>
+        <ul>
+          {decisions.map((decision) => (
+            <li key={decision}>
+              <Check aria-hidden="true" /> {decision}
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="service-journey" aria-labelledby="service-journey-title">
+        <p className="context-label">Assessment Journey</p>
+        <h2 id="service-journey-title">One decision, developed through three connected stages.</h2>
+        <PublicJourney />
+      </section>
+
+      <section className="service-scope-grid">
         <article>
-          <p className="context-label">Included</p>
-          <h2>One decision package</h2>
+          <p className="context-label">You Provide</p>
+          <h2>A real project basis</h2>
           <ul>
-            {deliverables.map((deliverable) => (
-              <li key={deliverable}>
-                <Check /> {deliverable}
+            {customerInputs.map((item) => (
+              <li key={item}>
+                <Check aria-hidden="true" /> {item}
               </li>
             ))}
           </ul>
         </article>
         <article>
-          <p className="context-label">Required from the customer</p>
-          <h2>A real project basis</h2>
-          <ul>
-            <li>
-              <Check /> Requested and minimum viable power
-            </li>
-            <li>
-              <Check /> Candidate locations and land status
-            </li>
-            <li>
-              <Check /> Target date and commercial deadline
-            </li>
-            <li>
-              <Check /> Technical configuration and single-line information
-            </li>
-            <li>
-              <Check /> Representative interval profile where available
-            </li>
-            <li>
-              <Check /> Existing operator correspondence and application evidence
-            </li>
-          </ul>
-        </article>
-        <article>
-          <p className="context-label">Indicative commercial hypothesis</p>
-          <h2>Scope before subscription</h2>
-          <dl className="service-pricing">
-            <div>
-              <dt>Single site</dt>
-              <dd>€5,000–€10,000</dd>
-            </div>
-            <div>
-              <dt>Up to three sites</dt>
-              <dd>€12,000–€25,000</dd>
-            </div>
-            <div>
-              <dt>Operator support</dt>
-              <dd>Scoped monthly retainer</dd>
-            </div>
+          <p className="context-label">You Receive</p>
+          <h2>A decision-ready package</h2>
+          <dl>
+            {deliverables.map(([title, copy]) => (
+              <div key={title}>
+                <dt>{title}</dt>
+                <dd>{copy}</dd>
+              </div>
+            ))}
           </dl>
-          <small>
-            Pricing is an initial hypothesis and is confirmed only in a written proposal.
-          </small>
         </article>
       </section>
-      <aside className="service-boundary">
-        <CircleAlert />
-        <div>
-          <strong>Product boundary</strong>
-          <p>{PRODUCT_SCOPE_NOTICE}</p>
-          <p>{CAPACITY_NOTICE}</p>
+
+      <ProductBoundaryNotice />
+
+      <section className="service-final-cta">
+        <p className="context-label">Start With One Real Decision</p>
+        <h2>Bring a German connection project into focus.</h2>
+        <div className="cine-actions">
+          <Link to="/pilot" className="cine-cta cine-cta-solid">
+            Start a Pilot <ArrowRight aria-hidden="true" />
+          </Link>
+          <Link to="/demo" className="pilot-text-link">
+            Explore the Working Product <ArrowRight aria-hidden="true" />
+          </Link>
         </div>
-      </aside>
+      </section>
     </main>
   );
 }

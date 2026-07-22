@@ -118,9 +118,11 @@ const states = [
 function PilotApplication() {
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [pilotStep, setPilotStep] = useState(0);
   const {
     register,
     handleSubmit,
+    trigger,
     watch,
     formState: { errors, isSubmitting },
   } = useForm<PilotFormInput, unknown, PilotForm>({
@@ -146,6 +148,25 @@ function PilotApplication() {
   });
   const projectType = watch("projectType");
   const includesBattery = projectType === "bess" || projectType === "co_location";
+
+  const stepFields: Array<Array<keyof PilotFormInput>> = [
+    ["contactName", "workEmail", "company", "projectName", "projectType", "projectStage"],
+    [
+      "postcode",
+      "municipality",
+      "federalState",
+      "candidateSiteCount",
+      "landStatus",
+      "planningStatus",
+    ],
+    ["importMw", "minimumViableImportMw", "exportMw", "flexibilityStatus"],
+    ["operatorEngagementStatus", "connectionChallenge", "consent"],
+  ];
+
+  async function continuePilot() {
+    const valid = await trigger(stepFields[pilotStep]);
+    if (valid) setPilotStep((current) => Math.min(current + 1, 3));
+  }
 
   async function submit(values: PilotForm) {
     setSubmitError("");
@@ -193,25 +214,25 @@ function PilotApplication() {
           <div className="pilot-success-icon">
             <Check />
           </div>
-          <h1>Your project is in the review queue.</h1>
+          <h1>Your project is ready for fit review.</h1>
           <p>
-            Thank you. We will review the connection case and contact you about fit, required
-            evidence and a practical pilot scope.
+            GridPulse will review the project requirement, candidate location, evidence position,
+            and connection challenge before proposing a practical pilot scope.
           </p>
           <div className="pilot-next-steps">
             <span>
               <b>1</b> Fit and scope review
             </span>
             <span>
-              <b>2</b> Evidence request
+              <b>2</b> Evidence and information request
             </span>
             <span>
-              <b>3</b> Pilot kickoff
+              <b>3</b> Pilot proposal and acceptance criteria
             </span>
           </div>
           <div className="pilot-confirmation-actions">
             <Link to="/demo" className="landing-button primary">
-              Explore the product demo
+              Explore the Example Case
             </Link>
             <Link to="/" className="pilot-text-link">
               Return to GridPulse
@@ -235,10 +256,12 @@ function PilotApplication() {
       </header>
       <div className="pilot-layout">
         <aside className="pilot-intro">
-          <h1>Bring us one real connection case.</h1>
+          <p className="context-label">Design-Partner Pilot</p>
+          <h1>Test a credible route to power for one real project.</h1>
           <p>
-            GridPulse design-partner pilots turn fragmented project and operator evidence into a
-            traceable pre-feasibility assessment.
+            GridPulse pilots help German data centres, battery projects, and large industrial loads
+            qualify candidate sites, compare connection approaches, and prepare an operator-ready
+            strategy.
           </p>
           <div className="pilot-assurance">
             <ShieldCheck />
@@ -249,119 +272,207 @@ function PilotApplication() {
           </div>
           <ul>
             <li>
-              <Check /> BESS, data-centre and large-load projects in Germany
+              <Check /> A real German connection project
             </li>
             <li>
-              <Check /> Evidence and uncertainty remain visible
+              <Check /> At least 1 sufficiently identified candidate location
             </li>
             <li>
-              <Check /> No claim of available network capacity
+              <Check /> Declared requested and minimum viable MW
             </li>
           </ul>
           <Link to="/service" className="pilot-text-link">
-            Review scope, deliverables and pricing hypothesis <ArrowRight />
+            Review the assessment scope <ArrowRight />
           </Link>
         </aside>
-        <form className="pilot-form" onSubmit={handleSubmit(submit)} noValidate>
-          <FormSection number="01" title="Your details">
-            <div className="pilot-form-grid">
-              <Field label="Full name" error={errors.contactName?.message}>
-                <input autoComplete="name" {...register("contactName")} />
-              </Field>
-              <Field label="Work email" error={errors.workEmail?.message}>
-                <input type="email" autoComplete="email" {...register("workEmail")} />
-              </Field>
-              <Field label="Company" error={errors.company?.message}>
-                <input autoComplete="organization" {...register("company")} />
-              </Field>
-              <Field label="Role (optional)" error={errors.roleTitle?.message}>
-                <input autoComplete="organization-title" {...register("roleTitle")} />
-              </Field>
-              <Field label="Phone (optional)" error={errors.phone?.message}>
-                <input type="tel" autoComplete="tel" {...register("phone")} />
-              </Field>
-            </div>
-          </FormSection>
-          <FormSection number="02" title="Project and location">
-            <Field label="Project name" error={errors.projectName?.message}>
-              <input {...register("projectName")} />
-            </Field>
-            <div className="pilot-form-grid">
-              <Field label="Project type" error={errors.projectType?.message}>
-                <select {...register("projectType")}>
-                  <option value="bess">Battery energy storage</option>
-                  <option value="data_centre">Data centre</option>
-                  <option value="large_load">Large electrical load</option>
-                  <option value="co_location">Co-located BESS + load</option>
-                  <option value="other">Other</option>
-                </select>
-              </Field>
-              <Field label="Development stage" error={errors.projectStage?.message}>
-                <select {...register("projectStage")}>
-                  <option value="site_screening">Site screening</option>
-                  <option value="pre_application">Preparing application</option>
-                  <option value="application_submitted">Application submitted</option>
-                  <option value="operator_dialogue">In operator dialogue</option>
-                  <option value="other">Other</option>
-                </select>
-              </Field>
-              <Field label="Postcode" error={errors.postcode?.message}>
-                <input inputMode="numeric" maxLength={5} {...register("postcode")} />
-              </Field>
-              <Field label="Municipality" error={errors.municipality?.message}>
-                <input {...register("municipality")} />
-              </Field>
-              <Field label="Federal state" error={errors.federalState?.message}>
-                <select {...register("federalState")}>
-                  <option value="">Select state</option>
-                  {states.map((state) => (
-                    <option key={state}>{state}</option>
-                  ))}
-                </select>
-              </Field>
-              <Field
-                label="Target connection date (optional)"
-                error={errors.targetConnectionDate?.message}
+        <form className="pilot-form pilot-form-stepped" onSubmit={handleSubmit(submit)} noValidate>
+          <div className="pilot-step-progress" aria-label={`Step ${pilotStep + 1} of 4`}>
+            {[
+              "Project and contact",
+              "Candidate location",
+              "Power requirement",
+              "Evidence and challenge",
+            ].map((label, index) => (
+              <button
+                className={
+                  index === pilotStep ? "is-active" : index < pilotStep ? "is-complete" : undefined
+                }
+                disabled={index > pilotStep}
+                key={label}
+                onClick={() => index < pilotStep && setPilotStep(index)}
+                type="button"
               >
-                <input type="date" {...register("targetConnectionDate")} />
-              </Field>
-            </div>
-          </FormSection>
-          <FormSection number="03" title="Connection requirement">
-            <div className="pilot-form-grid">
-              <Field label="Requested import (MW)" error={errors.importMw?.message}>
-                <input type="number" min="0" step="0.001" {...register("importMw")} />
-              </Field>
-              <Field
-                label="Minimum viable import (MW)"
-                error={errors.minimumViableImportMw?.message}
-              >
-                <input type="number" min="0" step="0.001" {...register("minimumViableImportMw")} />
-              </Field>
-              <Field label="Requested export (MW)" error={errors.exportMw?.message}>
-                <input type="number" min="0" step="0.001" {...register("exportMw")} />
-              </Field>
-              {includesBattery ? (
-                <>
-                  <Field
-                    label="Battery power (MW, optional)"
-                    error={errors.batteryPowerMw?.message}
-                  >
-                    <input type="number" min="0" step="0.001" {...register("batteryPowerMw")} />
-                  </Field>
-                  <Field
-                    label="Battery energy (MWh, optional)"
-                    error={errors.batteryEnergyMwh?.message}
-                  >
-                    <input type="number" min="0" step="0.001" {...register("batteryEnergyMwh")} />
-                  </Field>
-                </>
-              ) : null}
-            </div>
-            <div className="pilot-form-grid">
-              <Field label="Candidate locations" error={errors.candidateSiteCount?.message}>
-                <input type="number" min="1" max="20" {...register("candidateSiteCount")} />
-              </Field>
+                <span>{index < pilotStep ? <Check aria-hidden="true" /> : index + 1}</span>
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <div hidden={pilotStep !== 0}>
+            <FormSection number="01" title="Project and contact">
+              <p className="pilot-step-guidance">
+                Establish who is requesting the pilot and the project’s current maturity.
+              </p>
+              <div className="pilot-form-grid">
+                <Field label="Full name" error={errors.contactName?.message}>
+                  <input autoComplete="name" {...register("contactName")} />
+                </Field>
+                <Field label="Work email" error={errors.workEmail?.message}>
+                  <input type="email" autoComplete="email" {...register("workEmail")} />
+                </Field>
+                <Field label="Company" error={errors.company?.message}>
+                  <input autoComplete="organization" {...register("company")} />
+                </Field>
+                <Field label="Role (optional)" error={errors.roleTitle?.message}>
+                  <input autoComplete="organization-title" {...register("roleTitle")} />
+                </Field>
+                <Field label="Phone (optional)" error={errors.phone?.message}>
+                  <input type="tel" autoComplete="tel" {...register("phone")} />
+                </Field>
+                <Field label="Project name" error={errors.projectName?.message}>
+                  <input {...register("projectName")} />
+                </Field>
+                <Field label="Project type" error={errors.projectType?.message}>
+                  <select {...register("projectType")}>
+                    <option value="bess">Battery energy storage</option>
+                    <option value="data_centre">Data centre</option>
+                    <option value="large_load">Large industrial load</option>
+                    <option value="co_location">Co-located BESS + load</option>
+                    <option value="other">Other</option>
+                  </select>
+                </Field>
+                <Field label="Development stage" error={errors.projectStage?.message}>
+                  <select {...register("projectStage")}>
+                    <option value="site_screening">Site screening</option>
+                    <option value="pre_application">Preparing application</option>
+                    <option value="application_submitted">Application submitted</option>
+                    <option value="operator_dialogue">In operator dialogue</option>
+                    <option value="other">Other</option>
+                  </select>
+                </Field>
+              </div>
+            </FormSection>
+          </div>
+
+          <div hidden={pilotStep !== 1}>
+            <FormSection number="02" title="Candidate location">
+              <p className="pilot-step-guidance">
+                Public information can guide responsibility screening. Exact responsibility still
+                requires site-level confirmation.
+              </p>
+              <div className="pilot-form-grid">
+                <Field label="Postcode" error={errors.postcode?.message}>
+                  <input inputMode="numeric" maxLength={5} {...register("postcode")} />
+                </Field>
+                <Field label="Municipality" error={errors.municipality?.message}>
+                  <input {...register("municipality")} />
+                </Field>
+                <Field label="Federal state" error={errors.federalState?.message}>
+                  <select {...register("federalState")}>
+                    <option value="">Select state</option>
+                    {states.map((state) => (
+                      <option key={state}>{state}</option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Candidate locations" error={errors.candidateSiteCount?.message}>
+                  <input type="number" min="1" max="20" {...register("candidateSiteCount")} />
+                </Field>
+                <Field label="Land status" error={errors.landStatus?.message}>
+                  <select {...register("landStatus")}>
+                    <option value="unknown">Unknown</option>
+                    <option value="identified">Identified</option>
+                    <option value="optioned">Optioned</option>
+                    <option value="controlled">Controlled</option>
+                  </select>
+                </Field>
+                <Field label="Planning status" error={errors.planningStatus?.message}>
+                  <select {...register("planningStatus")}>
+                    <option value="unknown">Unknown</option>
+                    <option value="not_started">Not started</option>
+                    <option value="pre_application">Pre-application</option>
+                    <option value="submitted">Submitted</option>
+                    <option value="approved">Approved</option>
+                  </select>
+                </Field>
+                <Field
+                  label="Target connection date (optional)"
+                  error={errors.targetConnectionDate?.message}
+                >
+                  <input type="date" {...register("targetConnectionDate")} />
+                </Field>
+              </div>
+            </FormSection>
+          </div>
+
+          <div hidden={pilotStep !== 2}>
+            <FormSection number="03" title="Power requirement">
+              <p className="pilot-step-guidance">
+                Requested MW describes the project requirement—not capacity available from the
+                network.
+              </p>
+              <div className="pilot-form-grid">
+                <Field label="Requested import (MW)" error={errors.importMw?.message}>
+                  <input type="number" min="0" step="0.001" {...register("importMw")} />
+                </Field>
+                <Field
+                  label="Minimum viable import (MW)"
+                  error={errors.minimumViableImportMw?.message}
+                >
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.001"
+                    {...register("minimumViableImportMw")}
+                  />
+                </Field>
+                <Field label="Requested export (MW)" error={errors.exportMw?.message}>
+                  <input type="number" min="0" step="0.001" {...register("exportMw")} />
+                </Field>
+                {includesBattery ? (
+                  <>
+                    <Field
+                      label="Battery power (MW, optional)"
+                      error={errors.batteryPowerMw?.message}
+                    >
+                      <input type="number" min="0" step="0.001" {...register("batteryPowerMw")} />
+                    </Field>
+                    <Field
+                      label="Battery energy (MWh, optional)"
+                      error={errors.batteryEnergyMwh?.message}
+                    >
+                      <input type="number" min="0" step="0.001" {...register("batteryEnergyMwh")} />
+                    </Field>
+                  </>
+                ) : null}
+                <Field label="Operating flexibility" error={errors.flexibilityStatus?.message}>
+                  <select {...register("flexibilityStatus")}>
+                    <option value="unknown">Unknown</option>
+                    <option value="none">No declared flexibility</option>
+                    <option value="static_limit">Static import limit</option>
+                    <option value="dynamic_limit">Dynamic import limit</option>
+                    <option value="workload_shift">Workload shifting</option>
+                    <option value="battery_supported">Battery supported</option>
+                    <option value="combined">Combined resources</option>
+                  </select>
+                </Field>
+                <Field label="Commercial deadline" error={errors.commercialDeadline?.message}>
+                  <input type="date" {...register("commercialDeadline")} />
+                </Field>
+              </div>
+              <p className="pilot-step-guidance">
+                Flexible connection agreements are options to test with the operator—not guaranteed
+                outcomes.
+              </p>
+            </FormSection>
+          </div>
+
+          <div hidden={pilotStep !== 3}>
+            <FormSection number="04" title="Evidence and decision challenge">
+              <p className="pilot-step-guidance">
+                Current, written, project-specific operator evidence controls any capacity or timing
+                conclusion.
+              </p>
               <Field label="Operator engagement" error={errors.operatorEngagementStatus?.message}>
                 <select {...register("operatorEngagementStatus")}>
                   <option value="not_started">Not started</option>
@@ -373,83 +484,67 @@ function PilotApplication() {
                   <option value="response_received">Response received</option>
                 </select>
               </Field>
-              <Field label="Land status" error={errors.landStatus?.message}>
-                <select {...register("landStatus")}>
-                  <option value="unknown">Unknown</option>
-                  <option value="identified">Identified</option>
-                  <option value="optioned">Optioned</option>
-                  <option value="controlled">Controlled</option>
-                </select>
-              </Field>
-              <Field label="Planning status" error={errors.planningStatus?.message}>
-                <select {...register("planningStatus")}>
-                  <option value="unknown">Unknown</option>
-                  <option value="not_started">Not started</option>
-                  <option value="pre_application">Pre-application</option>
-                  <option value="submitted">Submitted</option>
-                  <option value="approved">Approved</option>
-                </select>
-              </Field>
-              <Field label="Operating flexibility" error={errors.flexibilityStatus?.message}>
-                <select {...register("flexibilityStatus")}>
-                  <option value="unknown">Unknown</option>
-                  <option value="none">No declared flexibility</option>
-                  <option value="static_limit">Static import limit</option>
-                  <option value="dynamic_limit">Dynamic import limit</option>
-                  <option value="workload_shift">Workload shifting</option>
-                  <option value="battery_supported">Battery supported</option>
-                  <option value="combined">Combined resources</option>
-                </select>
-              </Field>
-              <Field label="Commercial deadline" error={errors.commercialDeadline?.message}>
-                <input type="date" {...register("commercialDeadline")} />
-              </Field>
-            </div>
-            <label className="pilot-consent compact-consent">
-              <input type="checkbox" {...register("loadProfileAvailable")} />
-              <span>A representative interval load profile is available.</span>
-            </label>
-            <Field
-              label="What is blocking or delaying the connection decision?"
-              error={errors.connectionChallenge?.message}
-            >
-              <textarea
-                rows={5}
-                placeholder="Describe the operator feedback, evidence gaps, connection options or commercial question you need to resolve."
-                {...register("connectionChallenge")}
-              />
-            </Field>
-          </FormSection>
-          <div className="pilot-form-submit">
-            <label className={errors.consent ? "pilot-consent has-error" : "pilot-consent"}>
-              <input type="checkbox" {...register("consent")} />
-              <span>
-                I agree that GridPulse may use this information to assess the pilot and contact me
-                about this project.
-              </span>
-            </label>
-            <div className="pilot-honeypot" aria-hidden="true">
-              <label>
-                Website
-                <input tabIndex={-1} autoComplete="off" {...register("website")} />
+              <label className="pilot-consent compact-consent">
+                <input type="checkbox" {...register("loadProfileAvailable")} />
+                <span>A representative interval load profile is available.</span>
               </label>
-            </div>
-            {submitError ? <p className="form-message error-message">{submitError}</p> : null}
-            <button type="submit" className="landing-button primary" disabled={isSubmitting}>
-              {isSubmitting ? (
-                <>
-                  <LoaderCircle className="spin" /> Submitting…
-                </>
-              ) : (
-                <>
-                  Submit pilot request <ArrowRight />
-                </>
-              )}
-            </button>
-            <small>
-              Submitting a request does not create a connection offer or advisory engagement.
-            </small>
+              <Field
+                label="What is blocking or delaying the connection decision?"
+                error={errors.connectionChallenge?.message}
+              >
+                <textarea
+                  rows={5}
+                  placeholder="Describe the operator feedback, evidence gaps, connection options, or commercial question you need to resolve…"
+                  {...register("connectionChallenge")}
+                />
+              </Field>
+              <label className={errors.consent ? "pilot-consent has-error" : "pilot-consent"}>
+                <input type="checkbox" {...register("consent")} />
+                <span>
+                  I agree that GridPulse may use this information to assess pilot fit and contact me
+                  about this project.
+                </span>
+              </label>
+              <div className="pilot-honeypot" aria-hidden="true">
+                <label>
+                  Website
+                  <input tabIndex={-1} autoComplete="off" {...register("website")} />
+                </label>
+              </div>
+            </FormSection>
           </div>
+
+          {submitError ? <p className="form-message error-message">{submitError}</p> : null}
+          <div className="pilot-step-actions">
+            <button
+              className="pilot-text-link"
+              disabled={pilotStep === 0 || isSubmitting}
+              onClick={() => setPilotStep((current) => Math.max(current - 1, 0))}
+              type="button"
+            >
+              <ArrowLeft aria-hidden="true" /> Back
+            </button>
+            {pilotStep < 3 ? (
+              <button className="landing-button primary" onClick={continuePilot} type="button">
+                Continue <ArrowRight aria-hidden="true" />
+              </button>
+            ) : (
+              <button type="submit" className="landing-button primary" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <LoaderCircle className="spin" /> Submitting…
+                  </>
+                ) : (
+                  <>
+                    Submit Project for Fit Review <ArrowRight aria-hidden="true" />
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+          <small className="pilot-submit-boundary">
+            Submitting a project does not create a connection offer or advisory engagement.
+          </small>
         </form>
       </div>
     </main>
