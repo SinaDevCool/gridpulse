@@ -27,6 +27,11 @@ import {
   loadPowerFinderViewport,
   type PowerFinderBounds,
 } from "@/features/power-finder/data-source";
+import {
+  fallbackCoverage,
+  loadPowerFinderCoverage,
+  type PowerFinderCoverage,
+} from "@/features/power-finder/coverage";
 import { scoreFeature } from "@/features/power-finder/screening-score";
 import { savePowerFinderCandidate } from "@/features/power-finder/shortlist";
 import {
@@ -54,6 +59,8 @@ export const Route = createFileRoute("/power-finder")({
     distance: z.coerce.number().min(1).max(100).optional(),
     candidate: z.string().max(200).optional(),
     compare: z.string().max(700).optional(),
+    region: z.enum(["DE", "DE-BB"]).optional(),
+    mapMode: z.enum(["voltage", "evidence", "capacity"]).optional(),
   }),
   head: () => ({
     meta: [{ title: "Power Finder | GridPulse" }, { name: "robots", content: "noindex, nofollow" }],
@@ -108,11 +115,32 @@ function PowerFinderPage() {
   >("idle");
   const [ranking, setRanking] = useState<RankedCandidateResult | null>(null);
   const [rankingState, setRankingState] = useState<"loading" | "ready" | "error">("loading");
+  const [coverage, setCoverage] = useState<PowerFinderCoverage[]>(fallbackCoverage);
+  const regionCode = search.region ?? "DE-BB";
+  const mapMode = search.mapMode ?? "voltage";
+  const activeCoverage =
+    coverage.find((item) => item.regionCode === regionCode) ?? fallbackCoverage[1];
+  const viewportTarget = useMemo(
+    () => ({ center: activeCoverage.center, zoom: activeCoverage.zoom }),
+    [activeCoverage.center, activeCoverage.zoom],
+  );
+
+  useEffect(() => {
+    let active = true;
+    void loadPowerFinderCoverage().then((result) => {
+      if (active) setCoverage(result);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
     const timeout = window.setTimeout(() => {
-      void loadPowerFinderViewport(bounds, controller.signal)
+      void loadPowerFinderViewport(bounds, controller.signal, {
+        fallbackAllowed: regionCode === "DE-BB",
+      })
         .then(({ collection: nextCollection, mode }) => {
           setCollection(nextCollection);
           setDataMode(mode);
@@ -130,7 +158,7 @@ function PowerFinderPage() {
       window.clearTimeout(timeout);
       controller.abort();
     };
-  }, [bounds]);
+  }, [bounds, regionCode]);
 
   const visibleCollection = useMemo<PowerFinderCollection | null>(() => {
     if (!collection) return null;
@@ -262,7 +290,7 @@ function PowerFinderPage() {
         <section className="power-finder-sidebar" aria-label="Power Finder controls">
           <header>
             <p className="context-label">Power Finder · Public-source screen</p>
-            <h1>Brandenburg connection context</h1>
+            <h1>{activeCoverage.regionName} connection context</h1>
             <p>
               Explore grid proximity and industrial land, then move a candidate into the
               evidence-led connection workflow.
@@ -291,6 +319,39 @@ function PowerFinderPage() {
               />
             </label>
             <div className="power-finder-filter-grid">
+              <label>
+                <span>Region</span>
+                <select
+                  value={regionCode}
+                  onChange={(event) =>
+                    void updateSearch({
+                      region: event.target.value as "DE" | "DE-BB",
+                      candidate: undefined,
+                    })
+                  }
+                >
+                  {coverage.map((item) => (
+                    <option key={item.regionCode} value={item.regionCode}>
+                      {item.regionName} · {item.status}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>Map colour</span>
+                <select
+                  value={mapMode}
+                  onChange={(event) =>
+                    void updateSearch({
+                      mapMode: event.target.value as "voltage" | "evidence" | "capacity",
+                    })
+                  }
+                >
+                  <option value="voltage">Voltage</option>
+                  <option value="evidence">Evidence authority</option>
+                  <option value="capacity">Published capacity</option>
+                </select>
+              </label>
               <label>
                 <span>Required import</span>
                 <input
@@ -355,6 +416,11 @@ function PowerFinderPage() {
                 </select>
               </label>
             </div>
+            <p className="candidate-boundary" role="status">
+              {activeCoverage.evidenceBoundary}
+              {activeCoverage.status !== "accepted" &&
+                " This view may be empty until an accepted release is promoted."}
+            </p>
           </section>
 
           <section>
@@ -465,6 +531,8 @@ function PowerFinderPage() {
             <PowerFinderMap
               collection={visibleCollection}
               selectedId={selected?.id ?? null}
+              mapMode={mapMode}
+              viewportTarget={viewportTarget}
               onSelect={(feature) => {
                 setSelected(feature);
                 void updateSearch({ candidate: undefined });
@@ -474,9 +542,18 @@ function PowerFinderPage() {
           )}
 
           <div className="power-finder-legend" aria-label="Map legend">
-            <strong>Screening context</strong>
+            <strong>
+              {mapMode === "voltage"
+                ? "Voltage context"
+                : mapMode === "evidence"
+                  ? "Evidence authority"
+                  : "Published demand capacity"}
+            </strong>
             <span>
-              <i className="legend-node" /> Candidate grid node
+              <i className="legend-node" />{" "}
+              {mapMode === "capacity"
+                ? "Green only where a classified value is published"
+                : "Candidate grid node"}
             </span>
             <span>
               <i className="legend-line" /> Mapped corridor
@@ -490,6 +567,7 @@ function PowerFinderPage() {
             <span>
               <i className="legend-storage" /> Registered storage
             </span>
+            {mapMode === "capacity" && <small>Grey means not established—not zero MW.</small>}
           </div>
 
           {comparedCandidates.length > 0 && (

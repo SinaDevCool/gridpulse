@@ -26,6 +26,12 @@ jobs:
         run: >-
           python -m grid_data.cli check-mastr
           --output grid-source-health/mastr.json
+      - name: Check national OpenStreetMap extract
+        env:
+          PYTHONPATH: services/grid-data/src
+        run: >-
+          python -m grid_data.cli check-geofabrik
+          --output grid-source-health/geofabrik-germany.json
       - name: Snapshot official operator endpoints
         env:
           PYTHONPATH: services/grid-data/src

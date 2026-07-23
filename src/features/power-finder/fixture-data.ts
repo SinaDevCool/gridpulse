@@ -18,6 +18,7 @@ export type PowerFinderProperties = {
   name: string;
   operator?: string;
   voltage_kv?: number[];
+  max_voltage_kv?: number;
   status?: string;
   evidence_class: PowerFinderEvidenceClass;
   capacity_state?:
@@ -97,7 +98,16 @@ export function parsePowerFinderCollection(value: unknown): PowerFinderCollectio
       throw new Error("Power Finder artifact contains an invalid or unclassified feature.");
     }
   }
-  return candidate as PowerFinderCollection;
+  return {
+    ...(candidate as PowerFinderCollection),
+    features: candidate.features.map((feature) => ({
+      ...feature,
+      properties: {
+        ...feature.properties,
+        max_voltage_kv: Math.max(0, ...(feature.properties.voltage_kv ?? [])),
+      },
+    })),
+  };
 }
 
 export function pointCoordinates(feature: PowerFinderFeature): [number, number] | null {

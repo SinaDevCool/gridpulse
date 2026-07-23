@@ -5,6 +5,7 @@ from pathlib import Path
 
 from .download import download_artifact
 from .fixture import build_fixture
+from .geofabrik import discover_germany_pbf
 from .health import check_source, discover_mastr_export
 from .mastr import parse_mastr_export, stream_mastr_export
 from .osm import build_osm_artifact
@@ -62,6 +63,8 @@ def parser() -> argparse.ArgumentParser:
     source_health.add_argument("--output", type=Path, required=True)
     mastr_health = subcommands.add_parser("check-mastr")
     mastr_health.add_argument("--output", type=Path, required=True)
+    geofabrik_health = subcommands.add_parser("check-geofabrik")
+    geofabrik_health.add_argument("--output", type=Path, required=True)
     operator_sources = subcommands.add_parser("fetch-operator-evidence")
     operator_sources.add_argument("--output", type=Path, required=True)
     operator_matches = subcommands.add_parser("propose-operator-matches")
@@ -141,6 +144,12 @@ def main() -> None:
         print(
             f"Current MaStR export is {report['url']} "
             f"({report['content_length']} bytes)."
+        )
+    elif args.command == "check-geofabrik":
+        report = discover_germany_pbf(args.output)
+        print(
+            f"Current Germany PBF advertises {report['content_length']} bytes; "
+            "manifest remains unaccepted until batch validation."
         )
     elif args.command == "fetch-operator-evidence":
         report = fetch_operator_sources(args.output)
