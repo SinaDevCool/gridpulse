@@ -19,6 +19,7 @@ import {
   type PortfolioStage,
 } from "@/features/grid-connection/portfolio-model";
 import { supabase } from "@/integrations/supabase/client";
+import { ConnectionDecisionBoard } from "@/features/grid-connection/ConnectionDecisionBoard";
 
 const stages: Array<{ value: PortfolioStage; label: string }> = [
   { value: "all", label: "All" },
@@ -180,6 +181,7 @@ function Portfolio() {
           </div>
         ) : (
           <>
+            <ConnectionDecisionBoard />
             <section className="portfolio-summary" aria-label="Portfolio priorities">
               <Metric
                 label="Needs action"

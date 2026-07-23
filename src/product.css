@@ -10003,6 +10003,86 @@ tbody tr:last-child td {
     display: flex;
     gap: 0.8rem;
   }
+  .decision-alerts,
+  .decision-board {
+    margin-bottom: 1rem;
+  }
+  .decision-alert-list {
+    display: grid;
+    gap: 0.5rem;
+  }
+  .decision-alert {
+    align-items: center;
+    border: 1px solid rgba(100, 116, 139, 0.2);
+    border-left-width: 4px;
+    border-radius: 0.55rem;
+    display: grid;
+    gap: 0.65rem;
+    grid-template-columns: auto 1fr auto;
+    padding: 0.75rem;
+  }
+  .decision-alert.critical {
+    border-left-color: #dc2626;
+  }
+  .decision-alert.warning {
+    border-left-color: #f59e0b;
+  }
+  .decision-alert.info {
+    border-left-color: #0ea5e9;
+  }
+  .decision-alert span {
+    display: grid;
+    gap: 0.15rem;
+  }
+  .decision-alert small {
+    color: #64748b;
+  }
+  .decision-alert a,
+  .decision-table a {
+    align-items: center;
+    display: inline-flex;
+    gap: 0.25rem;
+    white-space: nowrap;
+  }
+  .decision-alert svg,
+  .decision-table svg {
+    height: 15px;
+    width: 15px;
+  }
+  .decision-table {
+    min-width: 1180px;
+    width: 100%;
+  }
+  .decision-table th,
+  .decision-table td {
+    font-size: 0.72rem;
+    vertical-align: top;
+  }
+  .decision-table td {
+    max-width: 180px;
+  }
+  .decision-table td b,
+  .decision-table td small {
+    display: block;
+  }
+  .decision-table td small {
+    color: #64748b;
+    margin-top: 0.2rem;
+  }
+  .evidence-meter {
+    background: #dbe4ec;
+    border-radius: 99px;
+    display: block;
+    height: 5px;
+    margin-bottom: 0.35rem;
+    overflow: hidden;
+    width: 90px;
+  }
+  .evidence-meter i {
+    background: linear-gradient(90deg, #f59e0b, #0ea5e9);
+    display: block;
+    height: 100%;
+  }
   .evidence-review-card header span {
     flex: 1;
   }
