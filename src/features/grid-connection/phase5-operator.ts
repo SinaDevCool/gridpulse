@@ -12,6 +12,54 @@ export type ExtractedOperatorFacts = {
   warnings: string[];
 };
 
+export type OperatorDiscrepancy = {
+  field: "import_limit_mw" | "export_limit_mw" | "notification_lead_minutes";
+  declaredValue: number | null;
+  operatorValue: number | null;
+  status: "confirmed" | "conflict" | "missing_operator_evidence";
+  action: string;
+};
+
+export function compareOperatorFacts(
+  facts: ExtractedOperatorFacts,
+  declared: {
+    requestedImportMw: number;
+    requestedExportMw: number;
+    notificationLeadMinutes?: number | null;
+  },
+): OperatorDiscrepancy[] {
+  const compare = (
+    field: OperatorDiscrepancy["field"],
+    declaredValue: number | null,
+    operatorValue: number | null,
+  ): OperatorDiscrepancy => ({
+    field,
+    declaredValue,
+    operatorValue,
+    status:
+      operatorValue === null
+        ? "missing_operator_evidence"
+        : declaredValue === operatorValue
+          ? "confirmed"
+          : "conflict",
+    action:
+      operatorValue === null
+        ? "Ask the operator to state this value explicitly."
+        : declaredValue === operatorValue
+          ? "Retain both the declaration and reviewed source reference."
+          : "Resolve the difference with a reviewer; do not overwrite either value.",
+  });
+  return [
+    compare("import_limit_mw", declared.requestedImportMw, facts.importLimitMw),
+    compare("export_limit_mw", declared.requestedExportMw, facts.exportLimitMw),
+    compare(
+      "notification_lead_minutes",
+      declared.notificationLeadMinutes ?? null,
+      facts.noticeMinutes,
+    ),
+  ];
+}
+
 const firstNumber = (text: string, patterns: RegExp[]) => {
   for (const pattern of patterns) {
     const match = text.match(pattern);
