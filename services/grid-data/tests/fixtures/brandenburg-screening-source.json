@@ -1,0 +1,119 @@
+{
+  "type": "FeatureCollection",
+  "metadata": {
+    "title": "Brandenburg Power Finder development fixture",
+    "source_id": "gridpulse-synthetic-brandenburg-v1",
+    "publisher": "GridPulse",
+    "licence": "Development fixture only",
+    "attribution": "Synthetic GridPulse development data",
+    "published_at": "2026-07-23T00:00:00Z",
+    "geographic_scope": "Brandenburg, Germany",
+    "freshness": "fixed fixture"
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "id": "fixture-node-ludwigsfelde",
+      "properties": {
+        "kind": "node",
+        "name": "Ludwigsfelde screening node",
+        "operator": "Operator confirmation required",
+        "voltage_kv": [110],
+        "status": "mapped",
+        "evidence_class": "test_fixture",
+        "capacity_state": "not_established"
+      },
+      "geometry": {"type": "Point", "coordinates": [13.263, 52.299]}
+    },
+    {
+      "type": "Feature",
+      "id": "fixture-node-grossbeeren",
+      "properties": {
+        "kind": "node",
+        "name": "Großbeeren screening node",
+        "operator": "Operator confirmation required",
+        "voltage_kv": [110],
+        "status": "mapped",
+        "evidence_class": "test_fixture",
+        "capacity_state": "not_established"
+      },
+      "geometry": {"type": "Point", "coordinates": [13.333, 52.354]}
+    },
+    {
+      "type": "Feature",
+      "id": "fixture-node-mittenwalde",
+      "properties": {
+        "kind": "node",
+        "name": "Mittenwalde screening node",
+        "operator": "Operator confirmation required",
+        "voltage_kv": [110, 380],
+        "status": "mapped",
+        "evidence_class": "test_fixture",
+        "capacity_state": "not_established"
+      },
+      "geometry": {"type": "Point", "coordinates": [13.533, 52.267]}
+    },
+    {
+      "type": "Feature",
+      "id": "fixture-line-west",
+      "properties": {
+        "kind": "line",
+        "name": "Western screening corridor",
+        "voltage_kv": [110],
+        "status": "mapped",
+        "evidence_class": "test_fixture"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [[13.17, 52.25], [13.263, 52.299], [13.333, 52.354], [13.46, 52.39]]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "fixture-line-east",
+      "properties": {
+        "kind": "line",
+        "name": "Eastern screening corridor",
+        "voltage_kv": [380],
+        "status": "mapped",
+        "evidence_class": "test_fixture"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [[13.39, 52.16], [13.533, 52.267], [13.63, 52.34]]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "fixture-site-ludwigsfelde",
+      "properties": {
+        "kind": "industrial_site",
+        "name": "Ludwigsfelde industrial screening area",
+        "site_kind": "industrial_land",
+        "area_ha": 86.4,
+        "planning_status": "screening_only",
+        "evidence_class": "test_fixture"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[13.235, 52.29], [13.275, 52.29], [13.275, 52.312], [13.235, 52.312], [13.235, 52.29]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "fixture-site-grossbeeren",
+      "properties": {
+        "kind": "industrial_site",
+        "name": "Großbeeren logistics screening area",
+        "site_kind": "warehouse",
+        "area_ha": 54.7,
+        "planning_status": "screening_only",
+        "evidence_class": "test_fixture"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[13.315, 52.342], [13.354, 52.342], [13.354, 52.364], [13.315, 52.364], [13.315, 52.342]]]
+      }
+    }
+  ]
+}

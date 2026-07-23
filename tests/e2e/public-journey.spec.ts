@@ -4,8 +4,11 @@ const publicRoutes = [
   ["/", "Build a credible route to power in Germany."],
   ["/service", "Turn an uncertain site into an operator-ready connection strategy."],
   ["/demo", "Follow one German project from site screening to operator preparation."],
-  ["/data-sources", "Know what the evidence establishes—and what it cannot."],
-  ["/pilot", "Test a credible route to power for one real project."],
+  [
+    "/data-sources",
+    "Know what supports the decision—and what still requires operator confirmation.",
+  ],
+  ["/pilot", "What the Pilot Includes for One Real Connection Decision"],
 ] as const;
 
 for (const [route, heading] of publicRoutes) {

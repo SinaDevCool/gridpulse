@@ -8,12 +8,36 @@ export type GermanGridSource = {
   nextReview: string;
   geographicScope: string;
   integrationStatus: "Referenced manually" | "Public dataset" | "Live integration";
-  evidenceClass: "official_regulatory" | "official_operator" | "official_technical";
+  evidenceClass:
+    | "official_regulatory"
+    | "official_operator"
+    | "official_technical"
+    | "open_mapping";
   establishes: string[];
   doesNotEstablish: string[];
 };
 
 export const germanGridSources: GermanGridSource[] = [
+  {
+    id: "openstreetmap-power-finder-v1",
+    authority: "OpenStreetMap contributors",
+    title: "Bounded power-infrastructure and industrial-land screening release",
+    url: "https://www.openstreetmap.org/copyright",
+    publishedOrUpdated: "2026-07-23",
+    lastVerified: "2026-07-23",
+    nextReview: "2026-08-23",
+    geographicScope: "Southern Berlin and Brandenburg pilot bounding box",
+    integrationStatus: "Live integration",
+    evidenceClass: "open_mapping",
+    establishes: [
+      "Mapped locations and geometries for tagged substations, lines, cables, and industrial land.",
+      "Mapped voltage and operator tags where contributors supplied them.",
+    ],
+    doesNotEstablish: [
+      "Completeness, current operational state, or authoritative operator responsibility.",
+      "Available demand capacity, connection feasibility, cost, reservation, or delivery date.",
+    ],
+  },
   {
     id: "bnetza-fca-17-2b",
     authority: "Bundesnetzagentur",

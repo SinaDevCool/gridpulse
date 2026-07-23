@@ -27,6 +27,8 @@ export const Route = createFileRoute("/assessments/new")({
     postcode: z.coerce.string().max(5).optional(),
     municipality: z.string().max(160).optional(),
     federalState: z.string().max(80).optional(),
+    latitude: z.coerce.number().min(47).max(56).optional(),
+    longitude: z.coerce.number().min(5).max(16).optional(),
     importMw: z.coerce.number().min(0).optional(),
     minimumViableImportMw: z.coerce.number().min(0).optional(),
     exportMw: z.coerce.number().min(0).optional(),
@@ -276,6 +278,7 @@ function NewAssessment() {
                     max="56"
                     step="0.000001"
                     placeholder="52.520000"
+                    defaultValue={search.latitude}
                     required
                   />
                 </label>
@@ -288,6 +291,7 @@ function NewAssessment() {
                     max="16"
                     step="0.000001"
                     placeholder="13.405000"
+                    defaultValue={search.longitude}
                     required
                   />
                 </label>
