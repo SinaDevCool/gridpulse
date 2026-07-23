@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { extractOperatorFacts, simulateRestrictionEvent } from "./phase5-operator";
+import {
+  compareOperatorFacts,
+  extractOperatorFacts,
+  simulateRestrictionEvent,
+} from "./phase5-operator";
 
 describe("Phase 5 operator engagement", () => {
   it("highlights German operator terms without confirming them", () => {
@@ -27,5 +31,16 @@ describe("Phase 5 operator engagement", () => {
       residualMw: 5,
       compliant: false,
     });
+  });
+
+  it("preserves discrepancies instead of replacing declared values", () => {
+    const facts = extractOperatorFacts("Maximum import 60 MW. Export 0 MW. Notice 30 minutes.");
+    const comparison = compareOperatorFacts(facts, {
+      requestedImportMw: 100,
+      requestedExportMw: 0,
+      notificationLeadMinutes: 30,
+    });
+    expect(comparison.map((item) => item.status)).toEqual(["conflict", "confirmed", "confirmed"]);
+    expect(comparison[0].action).toContain("do not overwrite");
   });
 });

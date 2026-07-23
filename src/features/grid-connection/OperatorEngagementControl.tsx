@@ -8,7 +8,12 @@ import type {
   CandidateSite,
   OperatorCorrespondence,
 } from "@/lib/assessment-model";
-import { extractOperatorFacts, PHASE5_VERSION, simulateRestrictionEvent } from "./phase5-operator";
+import {
+  compareOperatorFacts,
+  extractOperatorFacts,
+  PHASE5_VERSION,
+  simulateRestrictionEvent,
+} from "./phase5-operator";
 import { maySignAs, roleLabel } from "./project-roles";
 
 type Props = {
@@ -23,6 +28,14 @@ export function OperatorEngagementControl({ site, documents, correspondence, ref
   const [selectedDocumentId, setSelectedDocumentId] = useState("");
   const [busy, setBusy] = useState(false);
   const facts = useMemo(() => extractOperatorFacts(draftText), [draftText]);
+  const discrepancies = useMemo(
+    () =>
+      compareOperatorFacts(facts, {
+        requestedImportMw: site.requested_import_mw,
+        requestedExportMw: site.requested_export_mw,
+      }),
+    [facts, site.requested_export_mw, site.requested_import_mw],
+  );
   const { data, refetch } = useQuery({
     queryKey: ["phase5-control", site.id],
     queryFn: async () => {
@@ -328,6 +341,16 @@ export function OperatorEngagementControl({ site, documents, correspondence, ref
             <span>
               Studies <b>{facts.studyRequirements.length}</b>
             </span>
+          </div>
+          <div className="phase5-history" aria-label="Operator discrepancy register">
+            {discrepancies.map((item) => (
+              <span key={item.field}>
+                <b>{item.status.replaceAll("_", " ")}</b> {item.field.replaceAll("_", " ")}
+                <small>
+                  Declared {item.declaredValue ?? "open"} · operator {item.operatorValue ?? "open"}
+                </small>
+              </span>
+            ))}
           </div>
           {facts.warnings.map((warning) => (
             <p className="model-warning" key={warning}>
