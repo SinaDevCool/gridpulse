@@ -10,6 +10,7 @@ from .mastr import parse_mastr_export, stream_mastr_export
 from .osm import build_osm_artifact
 from .operator_evidence import fetch_operator_sources
 from .operator_import import validate_operator_import_file
+from .operator_health_publish import publish_operator_health
 from .operator_matching import write_match_proposals
 from .publish import publish_mastr_ndjson
 from .sql_export import write_ingestion_sql, write_mastr_sql
@@ -69,6 +70,8 @@ def parser() -> argparse.ArgumentParser:
     operator_import = subcommands.add_parser("validate-operator-import")
     operator_import.add_argument("--input", type=Path, required=True)
     operator_import.add_argument("--output", type=Path, required=True)
+    publish_health = subcommands.add_parser("publish-operator-health")
+    publish_health.add_argument("--input", type=Path, required=True)
     return command
 
 
@@ -152,6 +155,12 @@ def main() -> None:
         report = validate_operator_import_file(args.input, args.output)
         print(
             f"Validated {report['record_count']} operator records; valid={report['valid']}."
+        )
+    elif args.command == "publish-operator-health":
+        report = publish_operator_health(args.input)
+        print(
+            f"Published {report['published']} source checks; "
+            f"{report['failed']} endpoint failures recorded."
         )
 
 
