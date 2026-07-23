@@ -15,6 +15,7 @@ import {
   simulateRestrictionEvent,
 } from "./phase5-operator";
 import { maySignAs, roleLabel } from "./project-roles";
+import { evaluateOperationalSnapshot, type OperationalAssessment } from "./operations-readiness";
 
 type Props = {
   site: CandidateSite;
@@ -27,6 +28,9 @@ export function OperatorEngagementControl({ site, documents, correspondence, ref
   const [draftText, setDraftText] = useState("");
   const [selectedDocumentId, setSelectedDocumentId] = useState("");
   const [busy, setBusy] = useState(false);
+  const [operationalAssessment, setOperationalAssessment] = useState<OperationalAssessment | null>(
+    null,
+  );
   const facts = useMemo(() => extractOperatorFacts(draftText), [draftText]);
   const discrepancies = useMemo(
     () =>
@@ -228,13 +232,25 @@ export function OperatorEngagementControl({ site, documents, correspondence, ref
       batteryResponseMw: Number(values.get("batteryResponseMw")),
       workloadResponseMw: Number(values.get("workloadResponseMw")),
     });
+    const recordedAt = new Date().toISOString();
+    const readiness = evaluateOperationalSnapshot({
+      observedAt: recordedAt,
+      receivedAt: recordedAt,
+      telemetryQuality: "good",
+      limitEvidence: "fixture",
+      baselineMw: simulation.baselineMw,
+      networkLimitMw: simulation.networkLimitMw,
+      deliveredResponseMw: simulation.deliveredReductionMw,
+      failSafeAvailable: true,
+    });
+    setOperationalAssessment(readiness);
     setBusy(true);
     const { error } = await supabase.from("operations_simulations").insert({
       site_id: site.id,
       status: "simulation",
       event_source: "human_reviewed_fixture",
-      events: [{ startsAt: new Date().toISOString(), ...simulation }],
-      results: [simulation],
+      events: [{ startsAt: recordedAt, ...simulation }],
+      results: [{ ...simulation, operationalAssessment: readiness }],
       disclaimer: simulation.disclaimer,
       calculation_version: PHASE5_VERSION,
     });
@@ -461,6 +477,13 @@ export function OperatorEngagementControl({ site, documents, correspondence, ref
             <Gauge />
             Save simulation
           </button>
+          {operationalAssessment ? (
+            <p className="model-warning">
+              <ShieldAlert />
+              {operationalAssessment.status.replaceAll("_", " ")} ·{" "}
+              {operationalAssessment.recommendedHumanAction} No automatic dispatch is authorized.
+            </p>
+          ) : null}
           <div className="phase5-history">
             <span>
               <b>{data?.events.length ?? 0}</b> evidence events
