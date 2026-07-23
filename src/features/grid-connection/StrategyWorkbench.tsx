@@ -1108,6 +1108,12 @@ export function StrategyWorkbench({ site, evidence, scenarios, profiles, refresh
                   {row.annualExposureEur === null
                     ? "Profile required"
                     : `€${row.annualExposureEur.toLocaleString("en-GB")}/yr`}
+                  {row.exposureSensitivity.status === "modelled" ? (
+                    <small>
+                      Range €{row.exposureSensitivity.lowExposureEur?.toLocaleString("en-GB")}–€
+                      {row.exposureSensitivity.highExposureEur?.toLocaleString("en-GB")}
+                    </small>
+                  ) : null}
                 </span>
                 <span>{row.nextAction}</span>
               </div>

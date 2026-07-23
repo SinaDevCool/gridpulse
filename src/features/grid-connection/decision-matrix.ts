@@ -1,9 +1,11 @@
 import type { ConnectionOptionResult } from "./connection-options";
+import { buildOptionSensitivity, type OptionSensitivity } from "./option-sensitivity";
 
 export type DecisionMatrixRow = ConnectionOptionResult & {
   evidenceReadiness: number;
   unresolvedGates: number;
   annualExposureEur: number | null;
+  exposureSensitivity: OptionSensitivity;
   recommendation: "test_with_operator" | "develop_evidence" | "not_viable_on_inputs";
   nextAction: string;
 };
@@ -24,6 +26,7 @@ export function buildDecisionMatrix(options: ConnectionOptionResult[]): Decision
       evidenceReadiness: Math.min(100, (hasProfile ? 55 : 20) + (operatorConfirmed ? 35 : 0)),
       unresolvedGates,
       annualExposureEur: option.analysis?.estimatedAnnualExposureEur ?? null,
+      exposureSensitivity: buildOptionSensitivity(option),
       recommendation,
       nextAction: fails
         ? "Revise the minimum viable load or connection envelope."
