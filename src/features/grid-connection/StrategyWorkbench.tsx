@@ -20,7 +20,12 @@ import { buildConnectionOptions, rankConnectionOptions } from "./connection-opti
 import { buildDecisionMatrix } from "./decision-matrix";
 import { assessCandidateDimensions } from "./site-comparison";
 import { CommercialDecisionGate } from "./CommercialDecisionGate";
-import type { FlexibilityInput, ProjectKind, SiteScreeningInput } from "./domain";
+import type { ProjectKind, SiteScreeningInput } from "./domain";
+import {
+  FLEXIBLE_LOAD_SPECIFICATION_VERSION,
+  validateFlexibleLoadSpecification,
+  type FlexibleLoadSpecification,
+} from "./flexible-load";
 
 type Props = {
   site: CandidateSite;
@@ -61,7 +66,7 @@ export function StrategyWorkbench({ site, evidence, scenarios, profiles, refresh
   const [busy, setBusy] = useState(false);
   const [candidateBusy, setCandidateBusy] = useState(false);
   const [intervalResult, setIntervalResult] = useState<DispatchAnalysis | null>(null);
-  const [input, setInput] = useState<FlexibilityInput>({
+  const [input, setInput] = useState<FlexibleLoadSpecification>({
     requestedImportMw: site.requested_import_mw,
     firmImportMw: Math.max(0, site.requested_import_mw * 0.65),
     conditionalImportMw: Math.max(0, site.requested_import_mw * 0.15),
@@ -73,6 +78,19 @@ export function StrategyWorkbench({ site, evidence, scenarios, profiles, refresh
     restrictionEventsPerYear: 20,
     energyValueEurMwh: 200,
     batteryDegradationEurMwh: 20,
+    maximumEventsPerDay: 2,
+    recoveryHours: 4,
+    geographicTransferMw: 0,
+    notificationLeadMinutes: 30,
+    rampDownMwPerMinute: 0,
+    rampUpMwPerMinute: 0,
+    upsPowerMw: 0,
+    upsEnergyMwh: 0,
+    generatorPowerMw: 0,
+    generatorMaxHoursYear: 0,
+    batteryRoundTripEfficiency: 0.9,
+    batteryMinimumSoc: 0.1,
+    initialBatterySoc: 1,
   });
   const screeningInput: SiteScreeningInput = {
     projectKind: ((site.project_kind as ProjectKind | null) ??
@@ -139,6 +157,7 @@ export function StrategyWorkbench({ site, evidence, scenarios, profiles, refresh
   const maturity = calculateMaturity(screeningInput);
   const operator = screenGermanOperator(site.latitude, site.longitude);
   const result = useMemo(() => calculateFlexibility(input), [input]);
+  const specificationValidation = useMemo(() => validateFlexibleLoadSpecification(input), [input]);
   const liveOptions = useMemo(
     () =>
       rankConnectionOptions(
@@ -156,9 +175,9 @@ export function StrategyWorkbench({ site, evidence, scenarios, profiles, refresh
             shiftableLoadMw: input.shiftableLoadMw,
             batteryPowerMw: input.batteryPowerMw,
             batteryEnergyMwh: input.batteryEnergyMwh,
-            batteryRoundTripEfficiency: 0.9,
-            batteryMinimumSoc: 0.1,
-            initialBatterySoc: 1,
+            batteryRoundTripEfficiency: input.batteryRoundTripEfficiency,
+            batteryMinimumSoc: input.batteryMinimumSoc,
+            initialBatterySoc: input.initialBatterySoc,
             energyValueEurMwh: input.energyValueEurMwh,
             batteryDegradationEurMwh: input.batteryDegradationEurMwh,
           },
@@ -200,6 +219,19 @@ export function StrategyWorkbench({ site, evidence, scenarios, profiles, refresh
       restrictionEventsPerYear: number(form, "restrictionEventsPerYear"),
       energyValueEurMwh: number(form, "energyValueEurMwh"),
       batteryDegradationEurMwh: number(form, "batteryDegradationEurMwh"),
+      maximumEventsPerDay: number(form, "maximumEventsPerDay"),
+      recoveryHours: number(form, "recoveryHours"),
+      geographicTransferMw: number(form, "geographicTransferMw"),
+      notificationLeadMinutes: number(form, "notificationLeadMinutes"),
+      rampDownMwPerMinute: number(form, "rampDownMwPerMinute"),
+      rampUpMwPerMinute: number(form, "rampUpMwPerMinute"),
+      upsPowerMw: number(form, "upsPowerMw"),
+      upsEnergyMwh: number(form, "upsEnergyMwh"),
+      generatorPowerMw: number(form, "generatorPowerMw"),
+      generatorMaxHoursYear: number(form, "generatorMaxHoursYear"),
+      batteryRoundTripEfficiency: Math.min(1, number(form, "batteryRoundTripEfficiency")),
+      batteryMinimumSoc: Math.min(1, number(form, "batteryMinimumSoc")),
+      initialBatterySoc: Math.min(1, number(form, "initialBatterySoc")),
     });
   }
 
@@ -233,8 +265,24 @@ export function StrategyWorkbench({ site, evidence, scenarios, profiles, refresh
       battery_energy_mwh: input.batteryEnergyMwh,
       restriction_duration_hours: input.restrictionDurationHours,
       restriction_events_per_year: input.restrictionEventsPerYear,
-      maximum_curtailment_mw: Math.max(0, input.requestedImportMw - input.firmImportMw),
+      maximum_curtailment_mw: specificationValidation.derived.maximumCurtailmentMw,
       maximum_event_duration_hours: input.restrictionDurationHours,
+      maximum_events_per_day: input.maximumEventsPerDay,
+      recovery_hours: input.recoveryHours,
+      geographic_transfer_mw: input.geographicTransferMw,
+      notification_lead_minutes: input.notificationLeadMinutes,
+      ramp_down_mw_per_min: input.rampDownMwPerMinute,
+      ramp_up_mw_per_min: input.rampUpMwPerMinute,
+      ups_power_mw: input.upsPowerMw,
+      ups_energy_mwh: input.upsEnergyMwh,
+      generator_power_mw: input.generatorPowerMw,
+      generator_max_hours_year: input.generatorMaxHoursYear,
+      battery_round_trip_efficiency: input.batteryRoundTripEfficiency,
+      battery_minimum_soc: input.batteryMinimumSoc,
+      initial_battery_soc: input.initialBatterySoc,
+      profile_id: profiles[0]?.id ?? null,
+      validation_report: specificationValidation,
+      specification_version: FLEXIBLE_LOAD_SPECIFICATION_VERSION,
       commercial_assumptions: {
         energyValueEurMwh: input.energyValueEurMwh,
         batteryDegradationEurMwh: input.batteryDegradationEurMwh,
@@ -670,9 +718,9 @@ export function StrategyWorkbench({ site, evidence, scenarios, profiles, refresh
         shiftableLoadMw: input.shiftableLoadMw,
         batteryPowerMw: input.batteryPowerMw,
         batteryEnergyMwh: input.batteryEnergyMwh,
-        batteryRoundTripEfficiency: 0.9,
-        batteryMinimumSoc: 0.1,
-        initialBatterySoc: 1,
+        batteryRoundTripEfficiency: input.batteryRoundTripEfficiency,
+        batteryMinimumSoc: input.batteryMinimumSoc,
+        initialBatterySoc: input.initialBatterySoc,
         energyValueEurMwh: input.energyValueEurMwh,
         batteryDegradationEurMwh: input.batteryDegradationEurMwh,
         minimumViableImportMw: site.minimum_viable_import_mw ?? input.minimumCriticalLoadMw,
@@ -1089,6 +1137,31 @@ export function StrategyWorkbench({ site, evidence, scenarios, profiles, refresh
                 input.restrictionDurationHours,
               ],
               ["restrictionEventsPerYear", "Events per year", input.restrictionEventsPerYear],
+              ["maximumEventsPerDay", "Maximum events per day", input.maximumEventsPerDay],
+              ["recoveryHours", "Recovery between events (hours)", input.recoveryHours],
+              ["geographicTransferMw", "Transferable workload", input.geographicTransferMw],
+              [
+                "notificationLeadMinutes",
+                "Notification lead (minutes)",
+                input.notificationLeadMinutes,
+              ],
+              ["rampDownMwPerMinute", "Ramp-down rate (MW/min)", input.rampDownMwPerMinute],
+              ["rampUpMwPerMinute", "Ramp-up rate (MW/min)", input.rampUpMwPerMinute],
+              ["upsPowerMw", "UPS power", input.upsPowerMw],
+              ["upsEnergyMwh", "UPS energy (MWh)", input.upsEnergyMwh],
+              ["generatorPowerMw", "Generator power", input.generatorPowerMw],
+              [
+                "generatorMaxHoursYear",
+                "Generator maximum hours/year",
+                input.generatorMaxHoursYear,
+              ],
+              [
+                "batteryRoundTripEfficiency",
+                "Battery efficiency (0–1)",
+                input.batteryRoundTripEfficiency,
+              ],
+              ["batteryMinimumSoc", "Battery minimum SOC (0–1)", input.batteryMinimumSoc],
+              ["initialBatterySoc", "Initial battery SOC (0–1)", input.initialBatterySoc],
               ["energyValueEurMwh", "Unserved-energy value (EUR/MWh)", input.energyValueEurMwh],
               [
                 "batteryDegradationEurMwh",
@@ -1141,14 +1214,37 @@ export function StrategyWorkbench({ site, evidence, scenarios, profiles, refresh
                 <dt>Modelled annual exposure</dt>
                 <dd>€{result.estimatedAnnualExposureEur.toLocaleString("en-GB")}</dd>
               </div>
+              <div>
+                <dt>Dispatchable resources</dt>
+                <dd>{specificationValidation.derived.dispatchablePowerMw} MW</dd>
+              </div>
+              <div>
+                <dt>Usable battery duration</dt>
+                <dd>{specificationValidation.derived.batteryDurationHours} h</dd>
+              </div>
             </dl>
+            {specificationValidation.blockers.map((blocker) => (
+              <p className="model-warning" key={blocker}>
+                <ShieldAlert />
+                Blocking inconsistency: {blocker}
+              </p>
+            ))}
+            {specificationValidation.warnings.map((warning) => (
+              <p className="model-warning" key={warning}>
+                <Info />
+                {warning}
+              </p>
+            ))}
             {result.warnings.map((warning) => (
               <p className="model-warning" key={warning}>
                 <Info />
                 {warning}
               </p>
             ))}
-            <button onClick={saveFlexibility} disabled={busy}>
+            <button
+              onClick={saveFlexibility}
+              disabled={busy || specificationValidation.blockers.length > 0}
+            >
               Save analysis
             </button>
             <button onClick={runIntervalSimulation} disabled={busy || !profiles.length}>

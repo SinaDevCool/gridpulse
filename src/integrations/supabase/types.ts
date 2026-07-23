@@ -919,7 +919,9 @@ export type Database = {
       flexibility_profiles: {
         Row: {
           battery_energy_mwh: number;
+          battery_minimum_soc: number;
           battery_power_mw: number;
+          battery_round_trip_efficiency: number;
           calculation_version: string;
           commercial_assumptions: Json;
           conditional_import_mw: number;
@@ -927,12 +929,17 @@ export type Database = {
           firm_import_mw: number;
           id: string;
           geographic_transfer_mw: number;
+          generator_max_hours_year: number;
+          generator_power_mw: number;
           maximum_curtailment_mw: number | null;
           maximum_event_duration_hours: number | null;
           maximum_events_per_day: number | null;
           minimum_critical_load_mw: number;
           name: string;
           notification_lead_minutes: number | null;
+          profile_id: string | null;
+          ramp_down_mw_per_min: number;
+          ramp_up_mw_per_min: number;
           requested_import_mw: number;
           restriction_duration_hours: number;
           restriction_events_per_year: number;
@@ -942,15 +949,22 @@ export type Database = {
           shiftable_load_mw: number;
           site_id: string;
           status: string;
+          specification_version: string;
           updated_at: string;
+          ups_energy_mwh: number;
+          ups_power_mw: number;
           user_id: string;
+          validation_report: Json;
           version: number;
+          initial_battery_soc: number;
           supersedes_id: string | null;
           workload_transfer_notes: string | null;
         };
         Insert: {
           battery_energy_mwh?: number;
+          battery_minimum_soc?: number;
           battery_power_mw?: number;
+          battery_round_trip_efficiency?: number;
           calculation_version?: string;
           commercial_assumptions?: Json;
           conditional_import_mw?: number;
@@ -958,12 +972,17 @@ export type Database = {
           firm_import_mw: number;
           id?: string;
           geographic_transfer_mw?: number;
+          generator_max_hours_year?: number;
+          generator_power_mw?: number;
           maximum_curtailment_mw?: number | null;
           maximum_event_duration_hours?: number | null;
           maximum_events_per_day?: number | null;
           minimum_critical_load_mw: number;
           name: string;
           notification_lead_minutes?: number | null;
+          profile_id?: string | null;
+          ramp_down_mw_per_min?: number;
+          ramp_up_mw_per_min?: number;
           requested_import_mw: number;
           restriction_duration_hours?: number;
           restriction_events_per_year?: number;
@@ -973,15 +992,22 @@ export type Database = {
           shiftable_load_mw?: number;
           site_id: string;
           status?: string;
+          specification_version?: string;
           updated_at?: string;
+          ups_energy_mwh?: number;
+          ups_power_mw?: number;
           user_id?: string;
+          validation_report?: Json;
           version?: number;
+          initial_battery_soc?: number;
           supersedes_id?: string | null;
           workload_transfer_notes?: string | null;
         };
         Update: {
           battery_energy_mwh?: number;
+          battery_minimum_soc?: number;
           battery_power_mw?: number;
+          battery_round_trip_efficiency?: number;
           calculation_version?: string;
           commercial_assumptions?: Json;
           conditional_import_mw?: number;
@@ -989,12 +1015,17 @@ export type Database = {
           firm_import_mw?: number;
           id?: string;
           geographic_transfer_mw?: number;
+          generator_max_hours_year?: number;
+          generator_power_mw?: number;
           maximum_curtailment_mw?: number | null;
           maximum_event_duration_hours?: number | null;
           maximum_events_per_day?: number | null;
           minimum_critical_load_mw?: number;
           name?: string;
           notification_lead_minutes?: number | null;
+          profile_id?: string | null;
+          ramp_down_mw_per_min?: number;
+          ramp_up_mw_per_min?: number;
           requested_import_mw?: number;
           restriction_duration_hours?: number;
           restriction_events_per_year?: number;
@@ -1004,13 +1035,25 @@ export type Database = {
           shiftable_load_mw?: number;
           site_id?: string;
           status?: string;
+          specification_version?: string;
           updated_at?: string;
+          ups_energy_mwh?: number;
+          ups_power_mw?: number;
           user_id?: string;
+          validation_report?: Json;
           version?: number;
+          initial_battery_soc?: number;
           supersedes_id?: string | null;
           workload_transfer_notes?: string | null;
         };
         Relationships: [
+          {
+            foreignKeyName: "flexibility_profiles_profile_id_fkey";
+            columns: ["profile_id"];
+            isOneToOne: false;
+            referencedRelation: "interval_profiles";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "flexibility_profiles_site_id_fkey";
             columns: ["site_id"];
