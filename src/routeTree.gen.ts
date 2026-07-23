@@ -17,6 +17,7 @@ import { Route as PortfolioRouteImport } from './routes/portfolio'
 import { Route as PilotRequestsRouteImport } from './routes/pilot-requests'
 import { Route as PilotReadyRouteImport } from './routes/pilot-ready'
 import { Route as PilotRouteImport } from './routes/pilot'
+import { Route as EvidenceReviewRouteImport } from './routes/evidence-review'
 import { Route as EvidenceRouteImport } from './routes/evidence'
 import { Route as DemoRouteImport } from './routes/demo'
 import { Route as DataSourcesRouteImport } from './routes/data-sources'
@@ -66,6 +67,11 @@ const PilotReadyRoute = PilotReadyRouteImport.update({
 const PilotRoute = PilotRouteImport.update({
   id: '/pilot',
   path: '/pilot',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EvidenceReviewRoute = EvidenceReviewRouteImport.update({
+  id: '/evidence-review',
+  path: '/evidence-review',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EvidenceRoute = EvidenceRouteImport.update({
@@ -125,6 +131,7 @@ export interface FileRoutesByFullPath {
   '/data-sources': typeof DataSourcesRoute
   '/demo': typeof DemoRoute
   '/evidence': typeof EvidenceRoute
+  '/evidence-review': typeof EvidenceReviewRoute
   '/pilot': typeof PilotRoute
   '/pilot-ready': typeof PilotReadyRoute
   '/pilot-requests': typeof PilotRequestsRoute
@@ -145,6 +152,7 @@ export interface FileRoutesByTo {
   '/data-sources': typeof DataSourcesRoute
   '/demo': typeof DemoRoute
   '/evidence': typeof EvidenceRoute
+  '/evidence-review': typeof EvidenceReviewRoute
   '/pilot': typeof PilotRoute
   '/pilot-ready': typeof PilotReadyRoute
   '/pilot-requests': typeof PilotRequestsRoute
@@ -166,6 +174,7 @@ export interface FileRoutesById {
   '/data-sources': typeof DataSourcesRoute
   '/demo': typeof DemoRoute
   '/evidence': typeof EvidenceRoute
+  '/evidence-review': typeof EvidenceReviewRoute
   '/pilot': typeof PilotRoute
   '/pilot-ready': typeof PilotReadyRoute
   '/pilot-requests': typeof PilotRequestsRoute
@@ -188,6 +197,7 @@ export interface FileRouteTypes {
     | '/data-sources'
     | '/demo'
     | '/evidence'
+    | '/evidence-review'
     | '/pilot'
     | '/pilot-ready'
     | '/pilot-requests'
@@ -208,6 +218,7 @@ export interface FileRouteTypes {
     | '/data-sources'
     | '/demo'
     | '/evidence'
+    | '/evidence-review'
     | '/pilot'
     | '/pilot-ready'
     | '/pilot-requests'
@@ -228,6 +239,7 @@ export interface FileRouteTypes {
     | '/data-sources'
     | '/demo'
     | '/evidence'
+    | '/evidence-review'
     | '/pilot'
     | '/pilot-ready'
     | '/pilot-requests'
@@ -249,6 +261,7 @@ export interface RootRouteChildren {
   DataSourcesRoute: typeof DataSourcesRoute
   DemoRoute: typeof DemoRoute
   EvidenceRoute: typeof EvidenceRoute
+  EvidenceReviewRoute: typeof EvidenceReviewRoute
   PilotRoute: typeof PilotRoute
   PilotReadyRoute: typeof PilotReadyRoute
   PilotRequestsRoute: typeof PilotRequestsRoute
@@ -320,6 +333,13 @@ declare module '@tanstack/react-router' {
       path: '/pilot'
       fullPath: '/pilot'
       preLoaderRoute: typeof PilotRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/evidence-review': {
+      id: '/evidence-review'
+      path: '/evidence-review'
+      fullPath: '/evidence-review'
+      preLoaderRoute: typeof EvidenceReviewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/evidence': {
@@ -401,6 +421,7 @@ const rootRouteChildren: RootRouteChildren = {
   DataSourcesRoute: DataSourcesRoute,
   DemoRoute: DemoRoute,
   EvidenceRoute: EvidenceRoute,
+  EvidenceReviewRoute: EvidenceReviewRoute,
   PilotRoute: PilotRoute,
   PilotReadyRoute: PilotReadyRoute,
   PilotRequestsRoute: PilotRequestsRoute,
