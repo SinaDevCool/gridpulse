@@ -49,7 +49,12 @@ export function ConnectionCandidatePanel({ siteId }: { siteId: string }) {
       };
     },
   });
-  const refresh = () => client.invalidateQueries({ queryKey: ["project-map-candidates", siteId] });
+  const refresh = async () => {
+    await Promise.all([
+      client.invalidateQueries({ queryKey: ["project-map-candidates", siteId] }),
+      client.invalidateQueries({ queryKey: ["operator-qualification", siteId] }),
+    ]);
+  };
 
   async function attach(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

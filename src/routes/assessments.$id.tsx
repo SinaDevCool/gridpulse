@@ -34,6 +34,7 @@ import { OperatorEngagementControl } from "@/features/grid-connection/OperatorEn
 import { OperatorEngagementTracker } from "@/features/grid-connection/OperatorEngagementTracker";
 import { DecisionSnapshotPanel } from "@/features/grid-connection/DecisionSnapshotPanel";
 import { ConnectionCandidatePanel } from "@/features/grid-connection/ConnectionCandidatePanel";
+import { OperatorQualificationPanel } from "@/features/grid-connection/OperatorQualificationPanel";
 import { buildProfileQualityReport } from "@/features/grid-connection/phase45";
 import { buildCustomerPathways } from "@/features/grid-connection/customer-journey";
 import {
@@ -1129,6 +1130,12 @@ function OperatorRoom({
   ).length;
   return (
     <div className="activation-stack">
+      <OperatorQualificationPanel
+        site={site}
+        requirements={requirements}
+        documents={documents}
+        correspondence={correspondence}
+      />
       <section className="workspace-card operator-routing-card">
         <div className="panel-heading">
           <div>
