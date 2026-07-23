@@ -33,6 +33,7 @@ import { NodeIntelligencePanel } from "@/features/grid-connection/NodeIntelligen
 import { OperatorEngagementControl } from "@/features/grid-connection/OperatorEngagementControl";
 import { OperatorEngagementTracker } from "@/features/grid-connection/OperatorEngagementTracker";
 import { DecisionSnapshotPanel } from "@/features/grid-connection/DecisionSnapshotPanel";
+import { ConnectionCandidatePanel } from "@/features/grid-connection/ConnectionCandidatePanel";
 import { buildProfileQualityReport } from "@/features/grid-connection/phase45";
 import { buildCustomerPathways } from "@/features/grid-connection/customer-journey";
 import {
@@ -1312,6 +1313,7 @@ function OperatorRoom({
         refresh={refresh}
       />
       <OperatorEngagementTracker site={site} documents={documents} refresh={refresh} />
+      <ConnectionCandidatePanel siteId={site.id} />
       <DecisionSnapshotPanel siteId={site.id} />
       <section className="workspace-card data-source-register">
         <div className="panel-heading">

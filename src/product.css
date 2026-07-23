@@ -10223,3 +10223,75 @@ tbody tr:last-child td {
     grid-column: 1;
   }
 }
+.candidate-attach-form {
+  display: flex;
+  align-items: end;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+.candidate-attach-form label {
+  flex: 1;
+}
+.candidate-comparison-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 0.8rem;
+}
+.candidate-comparison-grid > article {
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  display: grid;
+  gap: 0.8rem;
+}
+.candidate-comparison-grid > article.preferred {
+  border-color: var(--cyan-accent);
+  box-shadow: inset 0 0 0 1px var(--cyan-accent);
+}
+.candidate-comparison-grid header {
+  display: flex;
+  align-items: start;
+  gap: 0.65rem;
+}
+.candidate-comparison-grid header > b {
+  margin-left: auto;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+.candidate-comparison-grid header span,
+.candidate-comparison-grid dt {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+.candidate-comparison-grid dl {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+  margin: 0;
+}
+.candidate-comparison-grid dl div {
+  display: grid;
+  gap: 0.15rem;
+}
+.candidate-comparison-grid dd {
+  margin: 0;
+}
+.candidate-comparison-grid form {
+  display: grid;
+  gap: 0.55rem;
+}
+.candidate-rationale {
+  display: flex;
+  gap: 0.45rem;
+}
+.candidate-boundary {
+  margin-top: 1rem;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+@media (max-width: 720px) {
+  .candidate-attach-form {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
