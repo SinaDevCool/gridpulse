@@ -6,7 +6,12 @@ import { useAuth } from "@/context/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { label, type Evidence } from "@/lib/assessment-model";
 export const Route = createFileRoute("/evidence")({
-  head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
+  head: () => ({
+    meta: [
+      { title: "Evidence Ledger | GridPulse" },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
   component: EvidencePage,
 });
 type EvidenceRow = Evidence & { candidate_sites: { name: string } | null };
@@ -57,7 +62,7 @@ function EvidencePage() {
         <div className="data-panel">
           <div className="section-toolbar">
             <div>
-              <button className="filter-active">All evidence</button>
+              <span className="filter-active">All evidence</span>
             </div>
             <span>{rows.length} items</span>
           </div>

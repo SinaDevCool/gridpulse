@@ -14,7 +14,12 @@ import { downloadSubmissionPdf } from "@/features/grid-connection/submission-pdf
 import { downloadJson } from "@/features/grid-connection/deliverables";
 
 export const Route = createFileRoute("/submission-package/$id")({
-  head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
+  head: () => ({
+    meta: [
+      { title: "Submission Package | GridPulse" },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
   component: SubmissionPackagePage,
 });
 

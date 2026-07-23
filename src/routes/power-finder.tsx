@@ -13,6 +13,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { z } from "zod";
 import { AppShell } from "@/components/product/AppShell";
 import { PowerFinderMap } from "@/components/product/PowerFinderMap";
 import {
@@ -34,6 +35,15 @@ import {
 } from "@/features/power-finder/operator-evidence";
 
 export const Route = createFileRoute("/power-finder")({
+  validateSearch: z.object({
+    q: z.string().max(160).optional(),
+    voltage: z.coerce
+      .number()
+      .refine((value) => [0, 20, 110, 220, 380].includes(value))
+      .optional(),
+    operator: z.string().max(160).optional(),
+    sort: z.enum(["context", "voltage", "name"]).optional(),
+  }),
   head: () => ({
     meta: [{ title: "Power Finder | GridPulse" }, { name: "robots", content: "noindex, nofollow" }],
   }),
@@ -57,6 +67,7 @@ type CandidateSort = "context" | "voltage" | "name";
 
 function PowerFinderPage() {
   const navigate = useNavigate();
+  const search = Route.useSearch();
   const [collection, setCollection] = useState<PowerFinderCollection | null>(null);
   const [selected, setSelected] = useState<PowerFinderFeature | null>(null);
   const [enabled, setEnabled] = useState<Record<PowerFinderKind, boolean>>({
@@ -69,10 +80,12 @@ function PowerFinderPage() {
   const [error, setError] = useState("");
   const [bounds, setBounds] = useState(initialBounds);
   const [dataMode, setDataMode] = useState<"database" | "published_artifact" | null>(null);
-  const [query, setQuery] = useState("");
-  const [minimumVoltage, setMinimumVoltage] = useState(0);
-  const [operator, setOperator] = useState("all");
-  const [candidateSort, setCandidateSort] = useState<CandidateSort>("context");
+  const query = search.q ?? "";
+  const minimumVoltage = search.voltage ?? 0;
+  const operator = search.operator ?? "all";
+  const candidateSort: CandidateSort = search.sort ?? "context";
+  const updateSearch = (patch: Partial<typeof search>) =>
+    navigate({ to: "/power-finder", search: { ...search, ...patch }, replace: true });
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [shortlistId, setShortlistId] = useState<string | null>(null);
   const [operatorEvidence, setOperatorEvidence] = useState<OperatorEvidenceResult | null>(null);
@@ -217,8 +230,10 @@ function PowerFinderPage() {
               <input
                 type="search"
                 value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search node, operator, or ID"
+                name="grid-search"
+                autoComplete="off"
+                onChange={(event) => void updateSearch({ q: event.target.value || undefined })}
+                placeholder="Search node, operator, or ID…"
               />
             </label>
             <div className="power-finder-filter-grid">
@@ -226,7 +241,9 @@ function PowerFinderPage() {
                 <span>Minimum voltage</span>
                 <select
                   value={minimumVoltage}
-                  onChange={(event) => setMinimumVoltage(Number(event.target.value))}
+                  onChange={(event) =>
+                    void updateSearch({ voltage: Number(event.target.value) || undefined })
+                  }
                 >
                   <option value={0}>Any / unknown</option>
                   <option value={20}>20+ kV</option>
@@ -237,7 +254,14 @@ function PowerFinderPage() {
               </label>
               <label>
                 <span>Operator</span>
-                <select value={operator} onChange={(event) => setOperator(event.target.value)}>
+                <select
+                  value={operator}
+                  onChange={(event) =>
+                    void updateSearch({
+                      operator: event.target.value === "all" ? undefined : event.target.value,
+                    })
+                  }
+                >
                   <option value="all">All operators</option>
                   {operators.map((item) => (
                     <option key={item} value={item}>
@@ -284,7 +308,9 @@ function PowerFinderPage() {
                 <span className="sr-only">Sort candidates</span>
                 <select
                   value={candidateSort}
-                  onChange={(event) => setCandidateSort(event.target.value as CandidateSort)}
+                  onChange={(event) =>
+                    void updateSearch({ sort: event.target.value as CandidateSort })
+                  }
                 >
                   <option value="context">Best context</option>
                   <option value="voltage">Highest voltage</option>

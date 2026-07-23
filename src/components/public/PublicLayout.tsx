@@ -2,6 +2,7 @@ import { Link, useLocation } from "@tanstack/react-router";
 import { ArrowRight, Menu, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { trackEvent } from "@/lib/analytics";
+import { useAuth } from "@/context/useAuth";
 
 const publicNavigation = [
   { label: "How It Works", to: "/", hash: "how-it-works" },
@@ -19,6 +20,7 @@ export function PublicBrand() {
 }
 
 export function PublicLayout({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
   const onPilotPage = location.pathname === "/pilot";
@@ -39,14 +41,20 @@ export function PublicLayout({ children }: { children: ReactNode }) {
               {item.label}
             </Link>
           ))}
-          <Link
-            to="/auth"
-            search={{ redirect: undefined }}
-            className="public-sign-in"
-            onClick={() => setMenuOpen(false)}
-          >
-            Sign In
-          </Link>
+          {user ? (
+            <Link to="/portfolio" className="public-sign-in" onClick={() => setMenuOpen(false)}>
+              Workspace
+            </Link>
+          ) : (
+            <Link
+              to="/auth"
+              search={{ redirect: undefined }}
+              className="public-sign-in"
+              onClick={() => setMenuOpen(false)}
+            >
+              Sign In
+            </Link>
+          )}
           <Link
             to="/pilot"
             hash={onPilotPage ? "pilot-form" : undefined}
@@ -76,6 +84,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
 }
 
 export function PublicFooter() {
+  const { user } = useAuth();
   return (
     <footer className="public-footer">
       <div className="public-container public-footer-grid">
@@ -88,9 +97,13 @@ export function PublicFooter() {
           <Link to="/demo">Product Tour</Link>
           <Link to="/data-sources">Methodology &amp; Sources</Link>
           <Link to="/pilot">Start a Pilot</Link>
-          <Link to="/auth" search={{ redirect: undefined }}>
-            Sign In
-          </Link>
+          {user ? (
+            <Link to="/portfolio">Workspace</Link>
+          ) : (
+            <Link to="/auth" search={{ redirect: undefined }}>
+              Sign In
+            </Link>
+          )}
         </nav>
       </div>
       <div className="public-container public-footer-boundary">

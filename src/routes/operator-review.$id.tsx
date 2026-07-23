@@ -26,7 +26,12 @@ import {
 } from "@/lib/assessment-model";
 
 export const Route = createFileRoute("/operator-review/$id")({
-  head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
+  head: () => ({
+    meta: [
+      { title: "Operator Evidence Review | GridPulse" },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
   component: OperatorReviewPage,
 });
 

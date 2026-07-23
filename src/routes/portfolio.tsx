@@ -1,6 +1,6 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { z } from "zod";
 import {
   AlertTriangle,
   ArrowRight,
@@ -30,7 +30,27 @@ const stages: Array<{ value: PortfolioStage; label: string }> = [
   { value: "decision_ready", label: "Decision ready" },
 ];
 export const Route = createFileRoute("/portfolio")({
-  head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
+  validateSearch: z.object({
+    q: z.string().max(160).optional(),
+    stage: z
+      .enum([
+        "all",
+        "action_required",
+        "screening",
+        "preparing",
+        "awaiting_operator",
+        "decision_ready",
+      ])
+      .optional(),
+    sort: z.enum(["priority", "deadline", "newest", "name"]).optional(),
+    expanded: z.string().uuid().optional(),
+  }),
+  head: () => ({
+    meta: [
+      { title: "Connection Portfolio | GridPulse" },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
   component: Portfolio,
 });
 
@@ -50,10 +70,14 @@ function groupItems<T extends { site_id: string }>(items: T[]) {
 
 function Portfolio() {
   const { user } = useAuth();
-  const [query, setQuery] = useState("");
-  const [stage, setStage] = useState<PortfolioStage>("all");
-  const [sort, setSort] = useState<PortfolioSort>("priority");
-  const [expanded, setExpanded] = useState("");
+  const navigate = useNavigate();
+  const search = Route.useSearch();
+  const query = search.q ?? "";
+  const stage = search.stage ?? "all";
+  const sort = search.sort ?? "priority";
+  const expanded = search.expanded ?? "";
+  const updateSearch = (patch: Partial<typeof search>) =>
+    navigate({ to: "/portfolio", search: { ...search, ...patch }, replace: true });
   const {
     data: projects = [],
     isLoading,
@@ -226,8 +250,10 @@ function Portfolio() {
                     placeholder="Search project or operator…"
                     value={query}
                     onChange={(event) => {
-                      setQuery(event.target.value);
-                      setExpanded("");
+                      void updateSearch({
+                        q: event.target.value || undefined,
+                        expanded: undefined,
+                      });
                     }}
                   />
                 </label>
@@ -235,7 +261,9 @@ function Portfolio() {
                   <span>Sort</span>
                   <select
                     value={sort}
-                    onChange={(event) => setSort(event.target.value as PortfolioSort)}
+                    onChange={(event) =>
+                      void updateSearch({ sort: event.target.value as PortfolioSort })
+                    }
                   >
                     <option value="priority">Priority</option>
                     <option value="deadline">Next deadline</option>
@@ -259,8 +287,7 @@ function Portfolio() {
                       className={stage === stageOption.value ? "filter-active" : ""}
                       aria-pressed={stage === stageOption.value}
                       onClick={() => {
-                        setStage(stageOption.value);
-                        setExpanded("");
+                        void updateSearch({ stage: stageOption.value, expanded: undefined });
                       }}
                     >
                       {stageOption.label} <span>{count}</span>
@@ -277,8 +304,7 @@ function Portfolio() {
                     type="button"
                     className="secondary-button"
                     onClick={() => {
-                      setQuery("");
-                      setStage("all");
+                      void updateSearch({ q: undefined, stage: "all", expanded: undefined });
                     }}
                   >
                     Clear filters
@@ -307,7 +333,11 @@ function Portfolio() {
                           key={project.id}
                           project={project}
                           expanded={expanded === project.id}
-                          onToggle={() => setExpanded(expanded === project.id ? "" : project.id)}
+                          onToggle={() =>
+                            void updateSearch({
+                              expanded: expanded === project.id ? undefined : project.id,
+                            })
+                          }
                         />
                       ))}
                     </tbody>

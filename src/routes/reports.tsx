@@ -7,7 +7,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { readiness, type CandidateSite, type Evidence } from "@/lib/assessment-model";
 
 export const Route = createFileRoute("/reports")({
-  head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
+  head: () => ({
+    meta: [
+      { title: "Management Reports | GridPulse" },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
   component: ReportsPage,
 });
 

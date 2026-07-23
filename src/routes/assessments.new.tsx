@@ -42,7 +42,12 @@ export const Route = createFileRoute("/assessments/new")({
       .optional(),
     challenge: z.string().max(3000).optional(),
   }),
-  head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
+  head: () => ({
+    meta: [
+      { title: "New Connection Project | GridPulse" },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
   component: NewAssessment,
 });
 
