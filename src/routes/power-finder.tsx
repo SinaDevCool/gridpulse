@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   AlertTriangle,
   BookmarkPlus,
@@ -56,6 +56,7 @@ const initialBounds: PowerFinderBounds = {
 type CandidateSort = "context" | "voltage" | "name";
 
 function PowerFinderPage() {
+  const navigate = useNavigate();
   const [collection, setCollection] = useState<PowerFinderCollection | null>(null);
   const [selected, setSelected] = useState<PowerFinderFeature | null>(null);
   const [enabled, setEnabled] = useState<Record<PowerFinderKind, boolean>>({
@@ -73,6 +74,7 @@ function PowerFinderPage() {
   const [operator, setOperator] = useState("all");
   const [candidateSort, setCandidateSort] = useState<CandidateSort>("context");
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [shortlistId, setShortlistId] = useState<string | null>(null);
   const [operatorEvidence, setOperatorEvidence] = useState<OperatorEvidenceResult | null>(null);
   const [operatorEvidenceState, setOperatorEvidenceState] = useState<
     "idle" | "loading" | "ready" | "unavailable"
@@ -160,7 +162,10 @@ function PowerFinderPage() {
   const coordinates = selected ? pointCoordinates(selected) : null;
   const score = selected ? scoreFeature(selected) : null;
 
-  useEffect(() => setSaveStatus("idle"), [selected?.id]);
+  useEffect(() => {
+    setSaveStatus("idle");
+    setShortlistId(null);
+  }, [selected?.id]);
 
   useEffect(() => {
     setOperatorEvidence(null);
@@ -476,31 +481,35 @@ function PowerFinderPage() {
                   </section>
                 )}
                 {coordinates && (
-                  <Link
-                    to="/assessments/new"
-                    search={{
-                      name: selected.properties.name,
-                      projectType: "large_load",
-                      latitude: coordinates[1],
-                      longitude: coordinates[0],
-                      federalState: "Brandenburg",
-                      municipality: undefined,
-                      postcode: undefined,
-                      importMw: undefined,
-                      minimumViableImportMw: undefined,
-                      exportMw: undefined,
-                      batteryPowerMw: undefined,
-                      batteryEnergyMwh: undefined,
-                      targetDate: undefined,
-                      landStatus: undefined,
-                      planningStatus: undefined,
-                      challenge: `Screening candidate ${selected.id}; capacity and operator responsibility require confirmation.`,
-                      pilotRequestId: undefined,
-                    }}
+                  <button
+                    type="button"
                     className="primary-button"
+                    disabled={saveStatus === "saving"}
+                    onClick={() => {
+                      setSaveStatus("saving");
+                      void savePowerFinderCandidate(selected)
+                        .then((id) => {
+                          setShortlistId(id);
+                          setSaveStatus("saved");
+                          return navigate({
+                            to: "/assessments/new",
+                            search: {
+                              shortlistId: id,
+                              name: selected.properties.name,
+                              projectType: "large_load",
+                              latitude: coordinates[1],
+                              longitude: coordinates[0],
+                              federalState: "Brandenburg",
+                              challenge: `Screening candidate ${selected.id}; capacity and operator responsibility require confirmation.`,
+                            },
+                          });
+                        })
+                        .catch(() => setSaveStatus("error"));
+                    }}
                   >
-                    <MapPin /> Start private assessment
-                  </Link>
+                    <MapPin />{" "}
+                    {saveStatus === "saving" ? "Saving map context…" : "Start private assessment"}
+                  </button>
                 )}
                 {["node", "industrial_site"].includes(selected.properties.kind) && (
                   <button
@@ -510,7 +519,10 @@ function PowerFinderPage() {
                     onClick={() => {
                       setSaveStatus("saving");
                       void savePowerFinderCandidate(selected)
-                        .then(() => setSaveStatus("saved"))
+                        .then((id) => {
+                          setShortlistId(id);
+                          setSaveStatus("saved");
+                        })
                         .catch(() => setSaveStatus("error"));
                     }}
                   >
@@ -521,7 +533,9 @@ function PowerFinderPage() {
                         ? "Saved to shortlist"
                         : saveStatus === "error"
                           ? "Try saving again"
-                          : "Save candidate"}
+                          : shortlistId
+                            ? "Saved to shortlist"
+                            : "Save candidate"}
                   </button>
                 )}
                 {!coordinates && (

@@ -22,6 +22,7 @@ import { screenGermanOperator } from "@/lib/german-grid-screening";
 export const Route = createFileRoute("/assessments/new")({
   validateSearch: z.object({
     pilotRequestId: z.string().uuid().optional(),
+    shortlistId: z.string().uuid().optional(),
     name: z.string().max(160).optional(),
     projectType: z.enum(["bess", "large_load", "co_location"]).optional(),
     postcode: z.coerce.string().max(5).optional(),
@@ -152,6 +153,15 @@ function NewAssessment() {
       p_profile_key: screening.profileKey,
     });
     if (profileError) toast.warning("Project created, but operator routing needs review");
+    if (search.shortlistId) {
+      const { error: shortlistError } = await supabase.rpc("attach_shortlist_candidate", {
+        p_site_id: created.id,
+        p_shortlist_id: search.shortlistId,
+      });
+      if (shortlistError) {
+        toast.warning("Project created, but its mapped candidate needs to be attached manually");
+      }
+    }
     if (search.pilotRequestId) {
       const { error: requestError } = await supabase
         .from("pilot_requests")
