@@ -7,6 +7,7 @@ import { ProductTruthNotice } from "./ProductTruthNotice";
 const navigation = [
   { label: "Portfolio", to: "/portfolio" },
   { label: "Power Finder", to: "/power-finder" },
+  { label: "Evidence review", to: "/evidence-review" },
   { label: "New project", to: "/assessments/new" },
   { label: "Methodology", to: "/data-sources" },
 ] as const;

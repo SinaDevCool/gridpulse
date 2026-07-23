@@ -43,6 +43,9 @@ python -m grid_data.cli publish-mastr `
   --input D:\grid-data\mastr-brandenburg.ndjson
 python -m grid_data.cli fetch-operator-evidence `
   --output D:\grid-data\operator-evidence-health.json
+python -m grid_data.cli propose-operator-matches `
+  --input D:\grid-data\50hertz-node-records.json `
+  --output D:\grid-data\50hertz-match-proposals.json
 ```
 
 Run these commands from `services/grid-data` with `PYTHONPATH=src`, or install the package:
@@ -73,6 +76,8 @@ python -m pip install -e .
   emits no numeric capacity observation until an explicit value, demand direction, reuse right,
   and reviewed node identity are all established.
 - The E.DIS public Netzanschlussmonitor is generation-oriented context, not demand headroom.
+- Operator node matching emits proposals only. Name, voltage, operator, and distance contribute to
+  confidence, but an authenticated reviewer must accept a match before it becomes user-visible.
 
 Cloudflare R2 is the preferred immutable artifact store, but the account must have R2 enabled
 before the archive can be uploaded. The database stores its checksum and release history

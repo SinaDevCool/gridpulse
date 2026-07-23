@@ -31,6 +31,7 @@ import { AppShell } from "@/components/product/AppShell";
 import { StrategyWorkbench } from "@/features/grid-connection/StrategyWorkbench";
 import { NodeIntelligencePanel } from "@/features/grid-connection/NodeIntelligencePanel";
 import { OperatorEngagementControl } from "@/features/grid-connection/OperatorEngagementControl";
+import { OperatorEngagementTracker } from "@/features/grid-connection/OperatorEngagementTracker";
 import { buildProfileQualityReport } from "@/features/grid-connection/phase45";
 import { buildCustomerPathways } from "@/features/grid-connection/customer-journey";
 import {
@@ -1309,6 +1310,7 @@ function OperatorRoom({
         correspondence={correspondence}
         refresh={refresh}
       />
+      <OperatorEngagementTracker site={site} documents={documents} refresh={refresh} />
       <section className="workspace-card data-source-register">
         <div className="panel-heading">
           <div>

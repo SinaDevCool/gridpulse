@@ -9950,6 +9950,86 @@ tbody tr:last-child td {
     line-height: 1.45;
     margin: 0;
   }
+  .engagement-tracker,
+  .engagement-list {
+    display: grid;
+    gap: 1rem;
+  }
+  .engagement-create {
+    border-bottom: 1px solid var(--line, #d9e0e7);
+    padding-bottom: 1rem;
+  }
+  .engagement-card {
+    background: rgba(9, 21, 32, 0.025);
+    border: 1px solid rgba(36, 63, 82, 0.14);
+    border-radius: 0.75rem;
+    padding: 1rem;
+  }
+  .engagement-card header,
+  .engagement-card header span {
+    align-items: center;
+    display: flex;
+    gap: 0.5rem;
+    justify-content: space-between;
+  }
+  .engagement-card header span {
+    justify-content: flex-start;
+  }
+  .engagement-card header svg {
+    color: #0ea5e9;
+    height: 16px;
+    width: 16px;
+  }
+  .engagement-card header em {
+    background: rgba(14, 165, 233, 0.1);
+    border-radius: 99px;
+    color: #0369a1;
+    font-size: 0.68rem;
+    font-style: normal;
+    padding: 0.25rem 0.55rem;
+    text-transform: capitalize;
+  }
+  .evidence-review-page {
+    display: grid;
+    gap: 1rem;
+  }
+  .evidence-review-list {
+    display: grid;
+    gap: 1rem;
+  }
+  .evidence-review-card header,
+  .evidence-review-card footer {
+    align-items: center;
+    display: flex;
+    gap: 0.8rem;
+  }
+  .evidence-review-card header span {
+    flex: 1;
+  }
+  .evidence-review-card header h2,
+  .evidence-review-card header p {
+    margin: 0;
+  }
+  .evidence-review-card header strong {
+    color: #0284c7;
+    font-size: 1.15rem;
+  }
+  .evidence-review-card dl {
+    display: grid;
+    gap: 0.45rem;
+    margin: 1rem 0;
+  }
+  .evidence-review-card dl div {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+  }
+  .evidence-review-card dt {
+    color: #64748b;
+  }
+  .evidence-review-card footer {
+    justify-content: flex-end;
+    margin-top: 1rem;
+  }
   .power-finder-operator-evidence ul {
     display: grid;
     gap: 0.65rem;
