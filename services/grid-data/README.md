@@ -46,6 +46,9 @@ python -m grid_data.cli fetch-operator-evidence `
 python -m grid_data.cli propose-operator-matches `
   --input D:\grid-data\50hertz-node-records.json `
   --output D:\grid-data\50hertz-match-proposals.json
+python -m grid_data.cli validate-operator-import `
+  --input D:\grid-data\operator-record-manifest.json `
+  --output D:\grid-data\operator-record-validation.json
 ```
 
 Run these commands from `services/grid-data` with `PYTHONPATH=src`, or install the package:
@@ -78,6 +81,8 @@ python -m pip install -e .
 - The E.DIS public Netzanschlussmonitor is generation-oriented context, not demand headroom.
 - Operator node matching emits proposals only. Name, voltage, operator, and distance contribute to
   confidence, but an authenticated reviewer must accept a match before it becomes user-visible.
+- Operator record imports require an explicit reuse basis, HTTPS evidence, and permission for
+  redistribution. A publicly viewable map is not treated as permission to republish its records.
 
 Cloudflare R2 is the preferred immutable artifact store, but the account must have R2 enabled
 before the archive can be uploaded. The database stores its checksum and release history

@@ -9,6 +9,7 @@ from .health import check_source, discover_mastr_export
 from .mastr import parse_mastr_export, stream_mastr_export
 from .osm import build_osm_artifact
 from .operator_evidence import fetch_operator_sources
+from .operator_import import validate_operator_import_file
 from .operator_matching import write_match_proposals
 from .publish import publish_mastr_ndjson
 from .sql_export import write_ingestion_sql, write_mastr_sql
@@ -65,6 +66,9 @@ def parser() -> argparse.ArgumentParser:
     operator_matches = subcommands.add_parser("propose-operator-matches")
     operator_matches.add_argument("--input", type=Path, required=True)
     operator_matches.add_argument("--output", type=Path, required=True)
+    operator_import = subcommands.add_parser("validate-operator-import")
+    operator_import.add_argument("--input", type=Path, required=True)
+    operator_import.add_argument("--output", type=Path, required=True)
     return command
 
 
@@ -144,6 +148,11 @@ def main() -> None:
     elif args.command == "propose-operator-matches":
         report = write_match_proposals(args.input, args.output)
         print(f"Wrote {report['proposal_count']} human-review match proposals.")
+    elif args.command == "validate-operator-import":
+        report = validate_operator_import_file(args.input, args.output)
+        print(
+            f"Validated {report['record_count']} operator records; valid={report['valid']}."
+        )
 
 
 if __name__ == "__main__":
