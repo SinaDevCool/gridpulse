@@ -22,6 +22,7 @@ async function loadFallback(signal?: AbortSignal): Promise<PowerFinderCollection
 export async function loadPowerFinderViewport(
   bounds: PowerFinderBounds,
   signal?: AbortSignal,
+  options: { fallbackAllowed?: boolean } = {},
 ): Promise<{ collection: PowerFinderCollection; mode: "database" | "published_artifact" }> {
   if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
   try {
@@ -37,6 +38,11 @@ export async function loadPowerFinderViewport(
     return { collection: parsePowerFinderCollection(data), mode: "database" };
   } catch (error) {
     if (signal?.aborted) throw error;
+    if (options.fallbackAllowed === false) {
+      throw new Error(
+        "No accepted national viewport is available. Select Brandenburg or try the live database again.",
+      );
+    }
     return { collection: await loadFallback(signal), mode: "published_artifact" };
   }
 }

@@ -40,6 +40,7 @@ describe("Power Finder fixture data", () => {
   it("accepts classified, metadata-matched GeoJSON", () => {
     const parsed = parsePowerFinderCollection(collection);
     expect(parsed.features).toHaveLength(1);
+    expect(parsed.features[0].properties.max_voltage_kv).toBe(110);
     expect(featureSummary(parsed.features[0])).toContain("capacity not established");
   });
 

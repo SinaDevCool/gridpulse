@@ -11,6 +11,8 @@ import type { PowerFinderBounds } from "@/features/power-finder/data-source";
 type PowerFinderMapProps = {
   collection: PowerFinderCollection;
   selectedId: string | null;
+  mapMode: "voltage" | "evidence" | "capacity";
+  viewportTarget?: { center: [number, number]; zoom: number };
   onSelect: (feature: PowerFinderFeature) => void;
   onViewportChange?: (bounds: PowerFinderBounds) => void;
 };
@@ -22,6 +24,8 @@ function isGeoJsonSource(source: Source | undefined): source is GeoJSONSource {
 export function PowerFinderMap({
   collection,
   selectedId,
+  mapMode,
+  viewportTarget,
   onSelect,
   onViewportChange,
 }: PowerFinderMapProps) {
@@ -90,12 +94,29 @@ export function PowerFinderMap({
           filter: ["==", ["get", "kind"], "line"],
           paint: {
             "line-color": [
-              "case",
-              [">=", ["at", 0, ["get", "voltage_kv"]], 220],
-              "#60a5fa",
+              "step",
+              ["number", ["get", "max_voltage_kv"], 0],
+              "#64748b",
+              20,
+              "#2dd4bf",
+              110,
               "#7dd3fc",
+              220,
+              "#60a5fa",
+              380,
+              "#c084fc",
             ],
-            "line-width": 2.2,
+            "line-width": [
+              "step",
+              ["number", ["get", "max_voltage_kv"], 0],
+              1.2,
+              110,
+              1.8,
+              220,
+              2.4,
+              380,
+              3,
+            ],
             "line-opacity": 0.85,
           },
         });
@@ -240,6 +261,68 @@ export function PowerFinderMap({
     const source = mapRef.current?.getSource("power-finder");
     if (isGeoJsonSource(source)) source.setData(collection);
   }, [collection]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map?.getLayer("grid-nodes")) return;
+    const voltageColour = [
+      "step",
+      ["number", ["get", "max_voltage_kv"], 0],
+      "#64748b",
+      20,
+      "#2dd4bf",
+      110,
+      "#f59e0b",
+      220,
+      "#f97316",
+      380,
+      "#ef4444",
+    ];
+    const evidenceColour = [
+      "match",
+      ["get", "evidence_class"],
+      "official_operator",
+      "#4ade80",
+      "official_regulatory",
+      "#38bdf8",
+      "official_public",
+      "#60a5fa",
+      "open_mapping",
+      "#f59e0b",
+      "#64748b",
+    ];
+    const capacityColour = [
+      "match",
+      ["get", "capacity_state"],
+      "published_exact",
+      "#22c55e",
+      "published_band",
+      "#84cc16",
+      "unavailable",
+      "#ef4444",
+      "feasible_no_mw",
+      "#f59e0b",
+      "#64748b",
+    ];
+    map.setPaintProperty(
+      "grid-nodes",
+      "circle-color",
+      mapMode === "capacity"
+        ? capacityColour
+        : mapMode === "evidence"
+          ? evidenceColour
+          : voltageColour,
+    );
+  }, [mapMode]);
+
+  useEffect(() => {
+    if (!viewportTarget || !mapRef.current) return;
+    mapRef.current.flyTo({
+      center: viewportTarget.center,
+      zoom: viewportTarget.zoom,
+      duration: 700,
+    });
+  }, [viewportTarget]);
 
   useEffect(() => {
     const map = mapRef.current;

@@ -22,7 +22,7 @@ test("Power Finder opportunity criteria are deep-linkable before authentication"
   page,
 }) => {
   await page.goto(
-    "/power-finder?q=substation&voltage=110&operator=E.DIS&sort=voltage&mw=250&distance=10&candidate=site-a%3Anode-a&compare=site-a%3Anode-a",
+    "/power-finder?q=substation&voltage=110&operator=E.DIS&sort=voltage&mw=250&distance=10&region=DE&mapMode=evidence&candidate=site-a%3Anode-a&compare=site-a%3Anode-a",
   );
   await expect(page).toHaveURL(/q=substation/);
   await expect(page).toHaveURL(/voltage=110/);
@@ -30,6 +30,8 @@ test("Power Finder opportunity criteria are deep-linkable before authentication"
   await expect(page).toHaveURL(/sort=voltage/);
   await expect(page).toHaveURL(/mw=250/);
   await expect(page).toHaveURL(/distance=10/);
+  await expect(page).toHaveURL(/region=DE/);
+  await expect(page).toHaveURL(/mapMode=evidence/);
   await expect(page).toHaveURL(/candidate=site-a/);
   await expect(page).toHaveURL(/compare=site-a/);
 });

@@ -32,11 +32,15 @@ jobs:
       - run: >-
           python -m ruff check
           services/grid-data/src/grid_data/api
+          services/grid-data/src/grid_data/geofabrik.py
           services/grid-data/tests/test_api.py
+          services/grid-data/tests/test_geofabrik.py
       - run: >-
           python -m ruff format --check
           services/grid-data/src/grid_data/api
+          services/grid-data/src/grid_data/geofabrik.py
           services/grid-data/tests/test_api.py
+          services/grid-data/tests/test_geofabrik.py
       - run: python -m unittest discover -s services/grid-data/tests
         env:
           PYTHONPATH: services/grid-data/src
