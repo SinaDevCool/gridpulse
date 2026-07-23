@@ -14,7 +14,13 @@ from fastapi.responses import JSONResponse
 
 from grid_data.api.auth import authenticated_user
 from grid_data.api.executor import JobExecutor, OperatorHealthExecutor
-from grid_data.api.models import AnalyticsJob, HealthReport, JobAccepted, UserIdentity
+from grid_data.api.models import (
+    AnalyticsJob,
+    HealthReport,
+    JobAccepted,
+    ReferenceTopologyRequest,
+    UserIdentity,
+)
 from grid_data.api.store import InMemoryJobStore, JobStore, SupabaseJobStore
 
 SERVICE_VERSION = "0.1.0"
@@ -62,6 +68,9 @@ def _production_dependencies() -> tuple[JobStore, JobExecutor]:
 
 class _UnavailableExecutor:
     def execute_operator_source_health(self, job_id: UUID) -> None:
+        raise RuntimeError(f"job executor is not configured for {job_id}")
+
+    def execute_reference_topology(self, job_id: UUID) -> None:
         raise RuntimeError(f"job executor is not configured for {job_id}")
 
 
@@ -160,6 +169,26 @@ def create_app(
             AnalyticsJob(owner_id=user.id, job_type="operator_source_health")
         )
         background_tasks.add_task(app.state.executor.execute_operator_source_health, job.id)
+        return JobAccepted(job_id=job.id, status=job.status)
+
+    @app.post(
+        "/v1/jobs/reference-topology",
+        response_model=JobAccepted,
+        status_code=status.HTTP_202_ACCEPTED,
+    )
+    def start_reference_topology_job(
+        request: ReferenceTopologyRequest,
+        background_tasks: BackgroundTasks,
+        user: UserIdentity = Depends(auth_dependency),
+    ) -> JobAccepted:
+        job = app.state.job_store.create(
+            AnalyticsJob(
+                owner_id=user.id,
+                job_type="reference_topology",
+                input_payload=request.model_dump(),
+            )
+        )
+        background_tasks.add_task(app.state.executor.execute_reference_topology, job.id)
         return JobAccepted(job_id=job.id, status=job.status)
 
     @app.get("/v1/jobs/{job_id}", response_model=AnalyticsJob)
