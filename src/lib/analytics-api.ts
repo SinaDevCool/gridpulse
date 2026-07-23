@@ -1,0 +1,56 @@
+import { supabase } from "@/integrations/supabase/client";
+
+export type AnalyticsJobStatus = "queued" | "running" | "succeeded" | "failed" | "cancelled";
+
+export interface AnalyticsJob {
+  id: string;
+  owner_id: string;
+  job_type: string;
+  status: AnalyticsJobStatus;
+  input_payload: Record<string, unknown>;
+  result_payload: Record<string, unknown> | null;
+  error: string | null;
+  created_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+}
+
+interface JobAccepted {
+  job_id: string;
+  status: AnalyticsJobStatus;
+}
+
+function analyticsBaseUrl(): string {
+  const configured = import.meta.env.VITE_ANALYTICS_API_URL;
+  if (!configured) throw new Error("VITE_ANALYTICS_API_URL is not configured");
+  return configured.replace(/\/$/, "");
+}
+
+async function authenticatedRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session) throw new Error("Sign in before using analytics jobs");
+
+  const response = await fetch(`${analyticsBaseUrl()}${path}`, {
+    ...init,
+    headers: {
+      authorization: `Bearer ${session.access_token}`,
+      "content-type": "application/json",
+      ...init?.headers,
+    },
+  });
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => null)) as { detail?: string } | null;
+    throw new Error(payload?.detail ?? `Analytics request failed with HTTP ${response.status}`);
+  }
+  return (await response.json()) as T;
+}
+
+export function startOperatorSourceHealthJob(): Promise<JobAccepted> {
+  return authenticatedRequest<JobAccepted>("/v1/jobs/operator-source-health", { method: "POST" });
+}
+
+export function loadAnalyticsJob(jobId: string): Promise<AnalyticsJob> {
+  return authenticatedRequest<AnalyticsJob>(`/v1/jobs/${encodeURIComponent(jobId)}`);
+}
