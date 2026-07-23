@@ -1,8 +1,13 @@
 import type { PowerFinderFeature } from "@/features/power-finder/fixture-data";
 import { supabase } from "@/integrations/supabase/client";
+import type { CandidateOpportunity } from "./candidate-intelligence";
 import { scoreFeature } from "./screening-score";
 
-export async function savePowerFinderCandidate(feature: PowerFinderFeature): Promise<string> {
+export async function savePowerFinderCandidate(
+  feature: PowerFinderFeature,
+  opportunity?: CandidateOpportunity | null,
+  requiredImportMw?: number,
+): Promise<string> {
   const {
     data: { user },
     error: userError,
@@ -23,9 +28,13 @@ export async function savePowerFinderCandidate(feature: PowerFinderFeature): Pro
         assumptions: {
           saved_from: "power_finder",
           capacity_not_inferred: true,
+          required_import_mw: requiredImportMw ?? null,
         },
         decision_snapshot: {
           feature,
+          opportunity: opportunity
+            ? { ...opportunity, requiredImportMw: requiredImportMw ?? null }
+            : null,
           score: score
             ? {
                 score: score.total,

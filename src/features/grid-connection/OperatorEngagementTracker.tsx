@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   CalendarClock,
   CheckCircle2,
@@ -61,6 +61,7 @@ const dateValue = (value: FormDataEntryValue | null) =>
   value ? new Date(String(value)).toISOString() : null;
 
 export function OperatorEngagementTracker({ site, documents, refresh }: Props) {
+  const client = useQueryClient();
   const [busy, setBusy] = useState(false);
   const query = useQuery({
     queryKey: ["operator-engagements", site.id],
@@ -116,7 +117,11 @@ export function OperatorEngagementTracker({ site, documents, refresh }: Props) {
     if (error) return toast.error(error.message);
     form.reset();
     toast.success("Operator engagement created");
-    await Promise.all([query.refetch(), refresh()]);
+    await Promise.all([
+      query.refetch(),
+      refresh(),
+      client.invalidateQueries({ queryKey: ["operator-qualification", site.id] }),
+    ]);
   }
 
   async function updateEngagement(engagement: Engagement, event: FormEvent<HTMLFormElement>) {
@@ -148,7 +153,11 @@ export function OperatorEngagementTracker({ site, documents, refresh }: Props) {
     setBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Engagement timeline updated");
-    await Promise.all([query.refetch(), refresh()]);
+    await Promise.all([
+      query.refetch(),
+      refresh(),
+      client.invalidateQueries({ queryKey: ["operator-qualification", site.id] }),
+    ]);
   }
 
   return (
