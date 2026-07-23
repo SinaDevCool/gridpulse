@@ -9,6 +9,7 @@ from uuid import UUID
 
 from grid_data.api.models import JobStatus
 from grid_data.api.store import JobStore
+from grid_data.flexibility_optimizer import rank_operating_envelopes
 from grid_data.network_model import screen_reference_topology
 from grid_data.operator_evidence import fetch_operator_sources
 from grid_data.operator_health_publish import publish_operator_health
@@ -19,6 +20,7 @@ LOGGER = logging.getLogger("grid_data.jobs")
 class JobExecutor(Protocol):
     def execute_operator_source_health(self, job_id: UUID) -> None: ...
     def execute_reference_topology(self, job_id: UUID) -> None: ...
+    def execute_flexibility_optimization(self, job_id: UUID) -> None: ...
 
 
 class OperatorHealthExecutor:
@@ -75,6 +77,25 @@ class OperatorHealthExecutor:
         self._store.update(job_id, status=JobStatus.RUNNING, started_at=datetime.now(timezone.utc))
         try:
             result = screen_reference_topology(job.input_payload)
+            self._store.update(
+                job_id,
+                status=JobStatus.SUCCEEDED,
+                result_payload=result,
+                completed_at=datetime.now(timezone.utc),
+            )
+        except Exception as error:  # noqa: BLE001 - job boundary records a safe failure
+            self._store.update(
+                job_id,
+                status=JobStatus.FAILED,
+                error=str(error)[:2000],
+                completed_at=datetime.now(timezone.utc),
+            )
+
+    def execute_flexibility_optimization(self, job_id: UUID) -> None:
+        job = self._store.get_internal(job_id)
+        self._store.update(job_id, status=JobStatus.RUNNING, started_at=datetime.now(timezone.utc))
+        try:
+            result = rank_operating_envelopes(job.input_payload)
             self._store.update(
                 job_id,
                 status=JobStatus.SUCCEEDED,

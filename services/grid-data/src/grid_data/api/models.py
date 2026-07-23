@@ -41,6 +41,17 @@ class ReferenceTopologyRequest(BaseModel):
     lineage: dict[str, Any] = Field(default_factory=dict)
 
 
+class FlexibilityOptimizationRequest(BaseModel):
+    demand_mw: list[float] = Field(min_length=1, max_length=35_040)
+    candidates: list[dict[str, Any]] = Field(min_length=1, max_length=100)
+    minimum_critical_load_mw: float = Field(ge=0)
+    shiftable_load_mw: float = Field(default=0, ge=0)
+    battery_power_mw: float = Field(default=0, ge=0)
+    battery_usable_energy_mwh: float = Field(default=0, ge=0)
+    interval_minutes: int = Field(default=15, ge=1, le=60)
+    energy_value_eur_mwh: float = Field(default=0, ge=0)
+
+
 class UserIdentity(BaseModel):
     id: UUID
     email: str | None = None
