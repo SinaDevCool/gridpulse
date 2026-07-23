@@ -49,6 +49,8 @@ python -m grid_data.cli propose-operator-matches `
 python -m grid_data.cli validate-operator-import `
   --input D:\grid-data\operator-record-manifest.json `
   --output D:\grid-data\operator-record-validation.json
+python -m grid_data.cli publish-operator-health `
+  --input D:\grid-data\operator-evidence-health.json
 ```
 
 Run these commands from `services/grid-data` with `PYTHONPATH=src`, or install the package:
@@ -83,6 +85,8 @@ python -m pip install -e .
   confidence, but an authenticated reviewer must accept a match before it becomes user-visible.
 - Operator record imports require an explicit reuse basis, HTTPS evidence, and permission for
   redistribution. A publicly viewable map is not treated as permission to republish its records.
+- Source checks can be persisted with server-side Supabase credentials. Checksum changes create
+  review alerts; they never alter node identity or capacity automatically.
 
 Cloudflare R2 is the preferred immutable artifact store, but the account must have R2 enabled
 before the archive can be uploaded. The database stores its checksum and release history

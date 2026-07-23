@@ -128,7 +128,15 @@ def fetch_operator_sources(output_path: Path) -> dict[str, Any]:
         try:
             with urllib.request.urlopen(request, timeout=60) as response:
                 body = response.read(5 * 1024 * 1024)
-            records.append(parse_operator_page(source, body, retrieved_at))
+                record = parse_operator_page(source, body, retrieved_at)
+                record["http"].update(
+                    {
+                        "status": getattr(response, "status", 200),
+                        "etag": response.headers.get("etag"),
+                        "last_modified": response.headers.get("last-modified"),
+                    }
+                )
+            records.append(record)
         except Exception as error:  # a failed source is evidence-health output, not silent success
             errors.append(
                 {"endpoint_key": source.endpoint_key, "url": source.url, "error": str(error)}
