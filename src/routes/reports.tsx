@@ -1,12 +1,24 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, ArrowRight, BarChart3, BellRing, FileText } from "lucide-react";
 import { AppShell, PageHeading } from "@/components/product/AppShell";
 import { useAuth } from "@/context/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { readiness, type CandidateSite, type Evidence } from "@/lib/assessment-model";
+import { z } from "zod";
+import { PortfolioIntelligencePanel } from "@/features/grid-connection/PortfolioIntelligencePanel";
+import type {
+  DecisionPortfolioRow,
+  PortfolioRiskFilter,
+  PortfolioSort,
+} from "@/features/grid-connection/portfolio-intelligence";
 
 export const Route = createFileRoute("/reports")({
+  validateSearch: z.object({
+    operator: z.string().max(160).optional(),
+    risk: z.enum(["all", "blocked", "deadline", "operator_confirmed"]).optional(),
+    sort: z.enum(["urgency", "evidence", "mw", "name"]).optional(),
+  }),
   head: () => ({
     meta: [
       { title: "Management Reports | GridPulse" },
@@ -66,35 +78,47 @@ const money = (value: number | null) =>
 
 function ReportsPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const search = Route.useSearch();
   const query = useQuery({
     queryKey: ["management-reports", user?.id],
     enabled: Boolean(user),
     queryFn: async () => {
       const refreshed = await supabase.rpc("refresh_my_notifications");
       if (refreshed.error) throw refreshed.error;
-      const [sites, evidence, summary, benchmarks, notifications, onboarding] = await Promise.all([
-        supabase
-          .from("candidate_sites")
-          .select("*")
-          .neq("assessment_status", "archived")
-          .order("created_at", { ascending: false }),
-        supabase.from("assessment_evidence").select("*"),
-        supabase.rpc("management_portfolio_summary"),
-        supabase.rpc("operator_pilot_benchmarks"),
-        supabase
-          .from("user_notifications")
-          .select("id,severity,title,detail,action_path")
-          .is("read_at", null)
-          .is("dismissed_at", null)
-          .order("created_at", { ascending: false })
-          .limit(8),
-        supabase
-          .from("operator_onboarding_register")
-          .select("*")
-          .order("priority")
-          .order("operator_name"),
-      ]);
-      for (const result of [sites, evidence, summary, benchmarks, notifications, onboarding])
+      const [sites, evidence, summary, benchmarks, notifications, onboarding, portfolio] =
+        await Promise.all([
+          supabase
+            .from("candidate_sites")
+            .select("*")
+            .neq("assessment_status", "archived")
+            .order("created_at", { ascending: false }),
+          supabase.from("assessment_evidence").select("*"),
+          supabase.rpc("management_portfolio_summary"),
+          supabase.rpc("operator_pilot_benchmarks"),
+          supabase
+            .from("user_notifications")
+            .select("id,severity,title,detail,action_path")
+            .is("read_at", null)
+            .is("dismissed_at", null)
+            .order("created_at", { ascending: false })
+            .limit(8),
+          supabase
+            .from("operator_onboarding_register")
+            .select("*")
+            .order("priority")
+            .order("operator_name"),
+          supabase.rpc("connection_decision_portfolio"),
+        ]);
+      for (const result of [
+        sites,
+        evidence,
+        summary,
+        benchmarks,
+        notifications,
+        onboarding,
+        portfolio,
+      ])
         if (result.error) throw result.error;
       return {
         projects: (sites.data as CandidateSite[]).map((site) => ({
@@ -107,6 +131,7 @@ function ReportsPage() {
         benchmarks: (benchmarks.data ?? []) as Benchmark[],
         notifications: (notifications.data ?? []) as Notification[],
         onboarding: (onboarding.data ?? []) as Onboarding[],
+        portfolio: (portfolio.data ?? []) as DecisionPortfolioRow[],
       };
     },
   });
@@ -160,6 +185,25 @@ function ReportsPage() {
                 <strong>{money(data.summary.estimated_capital_eur)}</strong>
               </article>
             </section>
+            <PortfolioIntelligencePanel
+              rows={data.portfolio}
+              operator={search.operator ?? "all"}
+              risk={(search.risk ?? "all") as PortfolioRiskFilter}
+              sort={(search.sort ?? "urgency") as PortfolioSort}
+              onChange={(patch) =>
+                void navigate({
+                  to: "/reports",
+                  search: {
+                    ...search,
+                    operator:
+                      patch.operator === "all" ? undefined : (patch.operator ?? search.operator),
+                    risk: patch.risk === "all" ? undefined : (patch.risk ?? search.risk),
+                    sort: patch.sort === "urgency" ? undefined : (patch.sort ?? search.sort),
+                  },
+                  replace: true,
+                })
+              }
+            />
             <section className="workspace-card">
               <div className="panel-heading">
                 <div>

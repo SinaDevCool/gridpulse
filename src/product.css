@@ -10854,3 +10854,125 @@ tbody tr:last-child td {
     grid-template-columns: 1fr;
   }
 }
+
+/* Phase 6 portfolio intelligence */
+.portfolio-intelligence-panel {
+  display: grid;
+  gap: 1rem;
+}
+.portfolio-intelligence-metrics {
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+.portfolio-intelligence-metrics article {
+  background: rgba(14, 165, 233, 0.045);
+  border: 1px solid rgba(14, 165, 233, 0.16);
+  border-radius: 0.65rem;
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.8rem;
+}
+.portfolio-intelligence-metrics span {
+  color: #64748b;
+  font-size: 0.67rem;
+}
+.portfolio-intelligence-metrics strong {
+  color: #0f172a;
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+}
+.portfolio-concentration {
+  display: grid;
+  gap: 0.6rem;
+}
+.portfolio-concentration h3 {
+  font-size: 0.82rem;
+  margin: 0;
+}
+.portfolio-concentration > div {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+.portfolio-concentration article {
+  border: 1px solid var(--border-color);
+  border-radius: 0.55rem;
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+  padding: 0.65rem;
+}
+.portfolio-concentration span {
+  font-size: 0.7rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.portfolio-concentration b {
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+.portfolio-concentration small {
+  color: #64748b;
+  font-size: 0.63rem;
+}
+.portfolio-intelligence-filters {
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: repeat(3, minmax(160px, 1fr));
+}
+.portfolio-intelligence-filters label {
+  display: grid;
+  font-size: 0.68rem;
+  gap: 0.3rem;
+}
+.portfolio-control-table {
+  min-width: 880px;
+}
+.portfolio-control-table tr[data-severity="critical"] td:first-child {
+  border-left: 3px solid #dc2626;
+}
+.portfolio-control-table tr[data-severity="warning"] td:first-child {
+  border-left: 3px solid #f59e0b;
+}
+.portfolio-control-table td,
+.portfolio-control-table th {
+  font-variant-numeric: tabular-nums;
+}
+.portfolio-control-table td small {
+  color: #64748b;
+  display: block;
+  margin-top: 0.2rem;
+}
+.portfolio-control-table a {
+  align-items: center;
+  color: #0369a1;
+  display: inline-flex;
+  gap: 0.3rem;
+  white-space: nowrap;
+}
+.portfolio-control-table a svg {
+  height: 13px;
+  width: 13px;
+}
+.portfolio-intelligence-boundary {
+  align-items: flex-start;
+  border-top: 1px solid var(--border-color);
+  color: #64748b;
+  display: flex;
+  font-size: 0.68rem;
+  gap: 0.5rem;
+  line-height: 1.45;
+  padding-top: 0.75rem;
+}
+.portfolio-intelligence-boundary svg {
+  flex: 0 0 auto;
+  height: 15px;
+  width: 15px;
+}
+@media (max-width: 720px) {
+  .portfolio-intelligence-filters {
+    grid-template-columns: 1fr;
+  }
+}
