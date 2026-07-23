@@ -2,12 +2,14 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   AlertTriangle,
   BookmarkPlus,
+  CheckCircle2,
   Database,
   ExternalLink,
   Factory,
   MapPin,
   Network,
   Search,
+  ShieldCheck,
   Zap,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -26,6 +28,10 @@ import {
 } from "@/features/power-finder/data-source";
 import { scoreFeature } from "@/features/power-finder/screening-score";
 import { savePowerFinderCandidate } from "@/features/power-finder/shortlist";
+import {
+  loadOperatorEvidence,
+  type OperatorEvidenceResult,
+} from "@/features/power-finder/operator-evidence";
 
 export const Route = createFileRoute("/power-finder")({
   head: () => ({
@@ -67,6 +73,10 @@ function PowerFinderPage() {
   const [operator, setOperator] = useState("all");
   const [candidateSort, setCandidateSort] = useState<CandidateSort>("context");
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [operatorEvidence, setOperatorEvidence] = useState<OperatorEvidenceResult | null>(null);
+  const [operatorEvidenceState, setOperatorEvidenceState] = useState<
+    "idle" | "loading" | "ready" | "unavailable"
+  >("idle");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -151,6 +161,28 @@ function PowerFinderPage() {
   const score = selected ? scoreFeature(selected) : null;
 
   useEffect(() => setSaveStatus("idle"), [selected?.id]);
+
+  useEffect(() => {
+    setOperatorEvidence(null);
+    if (!selected || selected.properties.kind !== "node" || dataMode !== "database") {
+      setOperatorEvidenceState("idle");
+      return;
+    }
+    const controller = new AbortController();
+    setOperatorEvidenceState("loading");
+    void loadOperatorEvidence(selected.id, controller.signal)
+      .then((result) => {
+        setOperatorEvidence(result);
+        setOperatorEvidenceState("ready");
+      })
+      .catch((reason: unknown) => {
+        if (!controller.signal.aborted) {
+          console.warn("Operator evidence could not be loaded.", reason);
+          setOperatorEvidenceState("unavailable");
+        }
+      });
+    return () => controller.abort();
+  }, [dataMode, selected]);
 
   return (
     <AppShell requireAuth>
@@ -385,6 +417,62 @@ function PowerFinderPage() {
                       ))}
                     </ul>
                     <p>{score.boundary}</p>
+                  </section>
+                )}
+                {selected.properties.kind === "node" && (
+                  <section
+                    className="power-finder-operator-evidence"
+                    aria-label="Official operator evidence"
+                  >
+                    <header>
+                      <ShieldCheck aria-hidden="true" />
+                      <span>
+                        <b>Operator evidence</b>
+                        <small>
+                          {operatorEvidence?.match_state === "accepted_node_evidence"
+                            ? "Reviewed node match"
+                            : operatorEvidence?.match_state === "operator_context_only"
+                              ? "Operator-level context"
+                              : "No reviewed node evidence"}
+                        </small>
+                      </span>
+                    </header>
+                    {operatorEvidenceState === "loading" && <p>Checking accepted evidence…</p>}
+                    {operatorEvidenceState === "unavailable" && (
+                      <p>Evidence service is temporarily unavailable.</p>
+                    )}
+                    {operatorEvidenceState === "idle" && dataMode === "published_artifact" && (
+                      <p>Sign in to the live evidence release to inspect operator sources.</p>
+                    )}
+                    {operatorEvidenceState === "ready" &&
+                      (operatorEvidence?.items.length ? (
+                        <ul>
+                          {operatorEvidence.items.map((item) => (
+                            <li key={`${item.scope}-${item.url}`}>
+                              <span>
+                                {item.scope === "node_match" && (
+                                  <CheckCircle2 aria-label="Reviewed node match" />
+                                )}
+                                <a href={item.url} target="_blank" rel="noreferrer">
+                                  {item.title} <ExternalLink aria-hidden="true" />
+                                </a>
+                              </span>
+                              <small>
+                                {item.scope === "node_match" ? item.rationale : item.legal_boundary}
+                              </small>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p>
+                          No official publication is linked to this mapped node. Capacity remains
+                          unknown until the responsible operator responds.
+                        </p>
+                      ))}
+                    <footer>
+                      Operator-level pages explain process or network context. They do not establish
+                      capacity at this node.
+                    </footer>
                   </section>
                 )}
                 {coordinates && (

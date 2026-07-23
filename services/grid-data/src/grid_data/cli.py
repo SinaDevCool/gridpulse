@@ -8,6 +8,7 @@ from .fixture import build_fixture
 from .health import check_source, discover_mastr_export
 from .mastr import parse_mastr_export, stream_mastr_export
 from .osm import build_osm_artifact
+from .operator_evidence import fetch_operator_sources
 from .publish import publish_mastr_ndjson
 from .sql_export import write_ingestion_sql, write_mastr_sql
 
@@ -58,6 +59,8 @@ def parser() -> argparse.ArgumentParser:
     source_health.add_argument("--output", type=Path, required=True)
     mastr_health = subcommands.add_parser("check-mastr")
     mastr_health.add_argument("--output", type=Path, required=True)
+    operator_sources = subcommands.add_parser("fetch-operator-evidence")
+    operator_sources.add_argument("--output", type=Path, required=True)
     return command
 
 
@@ -127,6 +130,12 @@ def main() -> None:
         print(
             f"Current MaStR export is {report['url']} "
             f"({report['content_length']} bytes)."
+        )
+    elif args.command == "fetch-operator-evidence":
+        report = fetch_operator_sources(args.output)
+        print(
+            f"Checked {report['record_count']}/{report['expected_count']} "
+            f"official operator endpoints; valid={report['valid']}."
         )
 
 

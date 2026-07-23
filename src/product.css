@@ -9912,6 +9912,73 @@ tbody tr:last-child td {
     height: auto;
     overflow: visible;
   }
+  .power-finder-operator-evidence {
+    background: rgba(56, 189, 248, 0.05);
+    border: 1px solid rgba(56, 189, 248, 0.24);
+    border-radius: 0.75rem;
+    display: grid;
+    gap: 0.7rem;
+    margin: 0.8rem 0;
+    padding: 0.9rem;
+  }
+  .power-finder-operator-evidence header,
+  .power-finder-operator-evidence header span,
+  .power-finder-operator-evidence li > span {
+    align-items: center;
+    display: flex;
+    gap: 0.55rem;
+  }
+  .power-finder-operator-evidence header > svg {
+    color: #38bdf8;
+    height: 18px;
+    width: 18px;
+  }
+  .power-finder-operator-evidence header span {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+  .power-finder-operator-evidence header b {
+    color: #dbeafe;
+    font-size: 0.78rem;
+  }
+  .power-finder-operator-evidence small,
+  .power-finder-operator-evidence p,
+  .power-finder-operator-evidence footer {
+    color: #8da3ba;
+    font-size: 0.67rem;
+    line-height: 1.45;
+    margin: 0;
+  }
+  .power-finder-operator-evidence ul {
+    display: grid;
+    gap: 0.65rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .power-finder-operator-evidence li {
+    border-top: 1px solid rgba(148, 163, 184, 0.12);
+    display: grid;
+    gap: 0.25rem;
+    padding-top: 0.6rem;
+  }
+  .power-finder-operator-evidence li svg {
+    flex: 0 0 auto;
+    height: 12px;
+    width: 12px;
+  }
+  .power-finder-operator-evidence a {
+    align-items: center;
+    color: #7dd3fc;
+    display: inline-flex;
+    font-size: 0.72rem;
+    gap: 0.25rem;
+  }
+  .power-finder-operator-evidence footer {
+    border-top: 1px solid rgba(148, 163, 184, 0.12);
+    padding-top: 0.55rem;
+  }
   .power-finder-sidebar {
     max-height: none;
   }
