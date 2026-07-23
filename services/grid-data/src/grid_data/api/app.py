@@ -16,6 +16,7 @@ from grid_data.api.auth import authenticated_user
 from grid_data.api.executor import JobExecutor, OperatorHealthExecutor
 from grid_data.api.models import (
     AnalyticsJob,
+    FlexibilityOptimizationRequest,
     HealthReport,
     JobAccepted,
     ReferenceTopologyRequest,
@@ -71,6 +72,9 @@ class _UnavailableExecutor:
         raise RuntimeError(f"job executor is not configured for {job_id}")
 
     def execute_reference_topology(self, job_id: UUID) -> None:
+        raise RuntimeError(f"job executor is not configured for {job_id}")
+
+    def execute_flexibility_optimization(self, job_id: UUID) -> None:
         raise RuntimeError(f"job executor is not configured for {job_id}")
 
 
@@ -189,6 +193,26 @@ def create_app(
             )
         )
         background_tasks.add_task(app.state.executor.execute_reference_topology, job.id)
+        return JobAccepted(job_id=job.id, status=job.status)
+
+    @app.post(
+        "/v1/jobs/flexibility-optimization",
+        response_model=JobAccepted,
+        status_code=status.HTTP_202_ACCEPTED,
+    )
+    def start_flexibility_optimization_job(
+        request: FlexibilityOptimizationRequest,
+        background_tasks: BackgroundTasks,
+        user: UserIdentity = Depends(auth_dependency),
+    ) -> JobAccepted:
+        job = app.state.job_store.create(
+            AnalyticsJob(
+                owner_id=user.id,
+                job_type="flexibility_optimization",
+                input_payload=request.model_dump(),
+            )
+        )
+        background_tasks.add_task(app.state.executor.execute_flexibility_optimization, job.id)
         return JobAccepted(job_id=job.id, status=job.status)
 
     @app.get("/v1/jobs/{job_id}", response_model=AnalyticsJob)
