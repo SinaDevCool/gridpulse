@@ -1,6 +1,11 @@
 import type { Feature, FeatureCollection, Geometry } from "geojson";
 
-export type PowerFinderKind = "node" | "line" | "industrial_site";
+export type PowerFinderKind =
+  | "node"
+  | "line"
+  | "industrial_site"
+  | "generation_asset"
+  | "storage_asset";
 export type PowerFinderEvidenceClass =
   | "official_operator"
   | "official_regulatory"
@@ -32,6 +37,12 @@ export type PowerFinderProperties = {
   site_kind?: string;
   area_ha?: number;
   planning_status?: string;
+  technology?: string;
+  net_capacity_mw?: number;
+  storage_energy_mwh?: number;
+  generation_mw_20km?: number;
+  storage_mw_20km?: number;
+  storage_mwh_20km?: number;
 };
 
 export type PowerFinderFeature = Feature<Geometry, PowerFinderProperties> & {
@@ -72,7 +83,9 @@ export function parsePowerFinderCollection(value: unknown): PowerFinderCollectio
       !feature.id ||
       !feature.geometry ||
       !feature.properties ||
-      !["node", "line", "industrial_site"].includes(feature.properties.kind) ||
+      !["node", "line", "industrial_site", "generation_asset", "storage_asset"].includes(
+        feature.properties.kind,
+      ) ||
       ![
         "official_operator",
         "official_regulatory",
@@ -106,6 +119,12 @@ export function featureSummary(feature: PowerFinderFeature) {
   }
   if (properties.kind === "industrial_site") {
     return `${properties.area_ha?.toFixed(1) ?? "Unknown"} ha · screening-only land context`;
+  }
+  if (properties.kind === "generation_asset") {
+    return `${properties.net_capacity_mw?.toFixed(2) ?? "Unknown"} MW registered generation · not grid capacity`;
+  }
+  if (properties.kind === "storage_asset") {
+    return `${properties.net_capacity_mw?.toFixed(2) ?? "Unknown"} MW / ${properties.storage_energy_mwh?.toFixed(2) ?? "Unknown"} MWh registered storage`;
   }
   return `${properties.voltage_kv?.join(" / ") ?? "Unknown"} kV screening corridor`;
 }

@@ -65,7 +65,13 @@ export function PowerFinderMap({
       mapRef.current = map;
       map.addControl(new NavigationControl({ showCompass: false }), "top-right");
       map.on("load", () => {
-        map.addSource("power-finder", { type: "geojson", data: collectionRef.current });
+        map.addSource("power-finder", {
+          type: "geojson",
+          data: collectionRef.current,
+          cluster: true,
+          clusterMaxZoom: 12,
+          clusterRadius: 38,
+        });
         map.addLayer({
           id: "industrial-sites",
           type: "fill",
@@ -94,15 +100,70 @@ export function PowerFinderMap({
           },
         });
         map.addLayer({
+          id: "node-clusters",
+          type: "circle",
+          source: "power-finder",
+          filter: ["has", "point_count"],
+          paint: {
+            "circle-radius": ["step", ["get", "point_count"], 15, 25, 19, 100, 24],
+            "circle-color": [
+              "step",
+              ["get", "point_count"],
+              "#f59e0b",
+              25,
+              "#f97316",
+              100,
+              "#ef4444",
+            ],
+            "circle-stroke-color": "#fff7d6",
+            "circle-stroke-width": 2,
+          },
+        });
+        map.addLayer({
+          id: "node-cluster-count",
+          type: "symbol",
+          source: "power-finder",
+          filter: ["has", "point_count"],
+          layout: {
+            "text-field": ["get", "point_count_abbreviated"],
+            "text-size": 11,
+          },
+          paint: { "text-color": "#07111f" },
+        });
+        map.addLayer({
           id: "grid-nodes",
           type: "circle",
           source: "power-finder",
-          filter: ["==", ["get", "kind"], "node"],
+          filter: ["all", ["!", ["has", "point_count"]], ["==", ["get", "kind"], "node"]],
           paint: {
             "circle-radius": 7,
             "circle-color": "#f59e0b",
             "circle-stroke-color": "#fff7d6",
             "circle-stroke-width": 2,
+          },
+        });
+        map.addLayer({
+          id: "generation-assets",
+          type: "circle",
+          source: "power-finder",
+          filter: ["==", ["get", "kind"], "generation_asset"],
+          paint: {
+            "circle-radius": 4,
+            "circle-color": "#22c55e",
+            "circle-stroke-color": "#dcfce7",
+            "circle-stroke-width": 1,
+          },
+        });
+        map.addLayer({
+          id: "storage-assets",
+          type: "circle",
+          source: "power-finder",
+          filter: ["==", ["get", "kind"], "storage_asset"],
+          paint: {
+            "circle-radius": 5,
+            "circle-color": "#a855f7",
+            "circle-stroke-color": "#f3e8ff",
+            "circle-stroke-width": 1,
           },
         });
         map.addLayer({
@@ -134,6 +195,28 @@ export function PowerFinderMap({
             map.getCanvas().style.cursor = "";
           });
         }
+        map.on("click", "node-clusters", (event) => {
+          const cluster = event.features?.[0];
+          const clusterId = cluster?.properties?.cluster_id;
+          if (!cluster || typeof clusterId !== "number" || cluster.geometry.type !== "Point")
+            return;
+          const coordinates = cluster.geometry.coordinates as [number, number];
+          const source = map.getSource("power-finder");
+          if (!isGeoJsonSource(source)) return;
+          void source.getClusterExpansionZoom(clusterId).then((zoom) => {
+            map.easeTo({
+              center: coordinates,
+              zoom,
+              duration: 450,
+            });
+          });
+        });
+        map.on("mouseenter", "node-clusters", () => {
+          map.getCanvas().style.cursor = "pointer";
+        });
+        map.on("mouseleave", "node-clusters", () => {
+          map.getCanvas().style.cursor = "";
+        });
         map.on("moveend", () => {
           const bounds = map.getBounds();
           onViewportChangeRef.current?.({

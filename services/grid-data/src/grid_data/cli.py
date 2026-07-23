@@ -4,8 +4,9 @@ import argparse
 from pathlib import Path
 
 from .fixture import build_fixture
+from .mastr import parse_mastr_export
 from .osm import build_osm_artifact
-from .sql_export import write_ingestion_sql
+from .sql_export import write_ingestion_sql, write_mastr_sql
 
 
 def _bbox(value: str) -> tuple[float, float, float, float]:
@@ -32,6 +33,13 @@ def parser() -> argparse.ArgumentParser:
     sql = subcommands.add_parser("write-sql")
     sql.add_argument("--input", type=Path, required=True)
     sql.add_argument("--output", type=Path, required=True)
+    mastr = subcommands.add_parser("parse-mastr")
+    mastr.add_argument("--input", type=Path, required=True)
+    mastr.add_argument("--output", type=Path, required=True)
+    mastr.add_argument("--federal-state")
+    mastr_sql = subcommands.add_parser("write-mastr-sql")
+    mastr_sql.add_argument("--input", type=Path, required=True)
+    mastr_sql.add_argument("--output", type=Path, required=True)
     return command
 
 
@@ -54,6 +62,20 @@ def main() -> None:
     elif args.command == "write-sql":
         count = write_ingestion_sql(args.input, args.output)
         print(f"Wrote a transactional ingestion script for {count} features.")
+    elif args.command == "parse-mastr":
+        report = parse_mastr_export(
+            args.input,
+            args.output,
+            federal_state=args.federal_state,
+        )
+        print(
+            f"Published {report.asset_count} MaStR assets; "
+            f"{report.skipped_count} lack exact coordinates and "
+            f"{len(report.warnings)} warnings were recorded."
+        )
+    elif args.command == "write-mastr-sql":
+        count = write_mastr_sql(args.input, args.output)
+        print(f"Wrote a transactional MaStR ingestion script for {count} assets.")
 
 
 if __name__ == "__main__":

@@ -1,5 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { AlertTriangle, Database, ExternalLink, Factory, MapPin, Network, Zap } from "lucide-react";
+import {
+  AlertTriangle,
+  BookmarkPlus,
+  Database,
+  ExternalLink,
+  Factory,
+  MapPin,
+  Network,
+  Search,
+  Zap,
+} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/product/AppShell";
 import { PowerFinderMap } from "@/components/product/PowerFinderMap";
@@ -15,6 +25,7 @@ import {
   type PowerFinderBounds,
 } from "@/features/power-finder/data-source";
 import { scoreFeature } from "@/features/power-finder/screening-score";
+import { savePowerFinderCandidate } from "@/features/power-finder/shortlist";
 
 export const Route = createFileRoute("/power-finder")({
   head: () => ({
@@ -27,6 +38,8 @@ const kindLabels: Record<PowerFinderKind, string> = {
   node: "Grid nodes",
   line: "Grid lines",
   industrial_site: "Industrial sites",
+  generation_asset: "Registered generation",
+  storage_asset: "Registered storage",
 };
 const initialBounds: PowerFinderBounds = {
   west: 12.9,
@@ -34,6 +47,7 @@ const initialBounds: PowerFinderBounds = {
   east: 13.8,
   north: 52.6,
 };
+type CandidateSort = "context" | "voltage" | "name";
 
 function PowerFinderPage() {
   const [collection, setCollection] = useState<PowerFinderCollection | null>(null);
@@ -42,10 +56,17 @@ function PowerFinderPage() {
     node: true,
     line: true,
     industrial_site: true,
+    generation_asset: false,
+    storage_asset: false,
   });
   const [error, setError] = useState("");
   const [bounds, setBounds] = useState(initialBounds);
   const [dataMode, setDataMode] = useState<"database" | "published_artifact" | null>(null);
+  const [query, setQuery] = useState("");
+  const [minimumVoltage, setMinimumVoltage] = useState(0);
+  const [operator, setOperator] = useState("all");
+  const [candidateSort, setCandidateSort] = useState<CandidateSort>("context");
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -72,24 +93,64 @@ function PowerFinderPage() {
 
   const visibleCollection = useMemo<PowerFinderCollection | null>(() => {
     if (!collection) return null;
-    const features = collection.features.filter((feature) => enabled[feature.properties.kind]);
+    const normalizedQuery = query.trim().toLocaleLowerCase();
+    const features = collection.features.filter((feature) => {
+      const properties = feature.properties;
+      const voltage = Math.max(0, ...(properties.voltage_kv ?? []));
+      const matchesQuery =
+        !normalizedQuery ||
+        properties.name.toLocaleLowerCase().includes(normalizedQuery) ||
+        properties.operator?.toLocaleLowerCase().includes(normalizedQuery) ||
+        feature.id.toLocaleLowerCase().includes(normalizedQuery);
+      const matchesVoltage =
+        properties.kind !== "node" || minimumVoltage === 0 || voltage >= minimumVoltage;
+      const matchesOperator = operator === "all" || properties.operator === operator;
+      return enabled[properties.kind] && matchesQuery && matchesVoltage && matchesOperator;
+    });
     return {
       ...collection,
       features,
       metadata: { ...collection.metadata, record_count: features.length },
     };
-  }, [collection, enabled]);
+  }, [collection, enabled, minimumVoltage, operator, query]);
 
-  const candidates = useMemo(
+  const operators = useMemo(
     () =>
-      collection?.features.filter(
-        (feature) =>
-          feature.properties.kind === "node" || feature.properties.kind === "industrial_site",
-      ) ?? [],
+      Array.from(
+        new Set(
+          collection?.features
+            .map((feature) => feature.properties.operator)
+            .filter((value): value is string => Boolean(value)) ?? [],
+        ),
+      ).sort((left, right) => left.localeCompare(right)),
     [collection],
   );
+
+  const candidates = useMemo(() => {
+    const items =
+      visibleCollection?.features.filter(
+        (feature) =>
+          feature.properties.kind === "node" || feature.properties.kind === "industrial_site",
+      ) ?? [];
+    return items
+      .sort((left, right) => {
+        if (candidateSort === "name") {
+          return left.properties.name.localeCompare(right.properties.name);
+        }
+        if (candidateSort === "voltage") {
+          return (
+            Math.max(0, ...(right.properties.voltage_kv ?? [])) -
+            Math.max(0, ...(left.properties.voltage_kv ?? []))
+          );
+        }
+        return (scoreFeature(right)?.total ?? -1) - (scoreFeature(left)?.total ?? -1);
+      })
+      .slice(0, 100);
+  }, [candidateSort, visibleCollection]);
   const coordinates = selected ? pointCoordinates(selected) : null;
   const score = selected ? scoreFeature(selected) : null;
+
+  useEffect(() => setSaveStatus("idle"), [selected?.id]);
 
   return (
     <AppShell requireAuth>
@@ -111,6 +172,45 @@ function PowerFinderPage() {
               <p>Unknown MW, responsibility, feasibility, cost, and dates remain unknown.</p>
             </div>
           </aside>
+
+          <section className="power-finder-filter-panel" aria-label="Search and filter map">
+            <label className="power-finder-search">
+              <Search aria-hidden="true" />
+              <span className="sr-only">Search nodes, operators, or identifiers</span>
+              <input
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search node, operator, or ID"
+              />
+            </label>
+            <div className="power-finder-filter-grid">
+              <label>
+                <span>Minimum voltage</span>
+                <select
+                  value={minimumVoltage}
+                  onChange={(event) => setMinimumVoltage(Number(event.target.value))}
+                >
+                  <option value={0}>Any / unknown</option>
+                  <option value={20}>20+ kV</option>
+                  <option value={110}>110+ kV</option>
+                  <option value={220}>220+ kV</option>
+                  <option value={380}>380+ kV</option>
+                </select>
+              </label>
+              <label>
+                <span>Operator</span>
+                <select value={operator} onChange={(event) => setOperator(event.target.value)}>
+                  <option value="all">All operators</option>
+                  {operators.map((item) => (
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          </section>
 
           <section>
             <h2>Layers</h2>
@@ -135,7 +235,29 @@ function PowerFinderPage() {
           </section>
 
           <section className="power-finder-candidates">
-            <h2>Candidate context</h2>
+            <header>
+              <span>
+                <h2>Candidate context</h2>
+                <small>
+                  Showing {candidates.length}
+                  {(visibleCollection?.features.length ?? 0) > 100 ? " of top 100" : ""}
+                </small>
+              </span>
+              <label>
+                <span className="sr-only">Sort candidates</span>
+                <select
+                  value={candidateSort}
+                  onChange={(event) => setCandidateSort(event.target.value as CandidateSort)}
+                >
+                  <option value="context">Best context</option>
+                  <option value="voltage">Highest voltage</option>
+                  <option value="name">Name</option>
+                </select>
+              </label>
+            </header>
+            {candidates.length === 0 && (
+              <p className="power-finder-no-results">No candidates match these filters.</p>
+            )}
             {candidates.map((feature) => (
               <button
                 key={feature.id}
@@ -190,6 +312,12 @@ function PowerFinderPage() {
             </span>
             <span>
               <i className="legend-site" /> Industrial land
+            </span>
+            <span>
+              <i className="legend-generation" /> Registered generation
+            </span>
+            <span>
+              <i className="legend-storage" /> Registered storage
             </span>
           </div>
 
@@ -285,6 +413,28 @@ function PowerFinderPage() {
                   >
                     <MapPin /> Start private assessment
                   </Link>
+                )}
+                {["node", "industrial_site"].includes(selected.properties.kind) && (
+                  <button
+                    type="button"
+                    className="secondary-button power-finder-save"
+                    disabled={saveStatus === "saving" || saveStatus === "saved"}
+                    onClick={() => {
+                      setSaveStatus("saving");
+                      void savePowerFinderCandidate(selected)
+                        .then(() => setSaveStatus("saved"))
+                        .catch(() => setSaveStatus("error"));
+                    }}
+                  >
+                    <BookmarkPlus aria-hidden="true" />
+                    {saveStatus === "saving"
+                      ? "Saving…"
+                      : saveStatus === "saved"
+                        ? "Saved to shortlist"
+                        : saveStatus === "error"
+                          ? "Try saving again"
+                          : "Save candidate"}
+                  </button>
                 )}
                 {!coordinates && (
                   <p className="detail-help">

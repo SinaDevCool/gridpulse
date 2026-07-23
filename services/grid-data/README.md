@@ -10,6 +10,10 @@ The OSM connector uses Overpass for bounded pilot releases. A national productio
 download the appropriate Geofabrik `.osm.pbf` extract once, retain it as an immutable raw artifact,
 and run equivalent parsing in batch infrastructure instead of issuing many Overpass queries.
 
+The MaStR connector streams the official XML full-export ZIP and emits canonical generation,
+storage, and consumption asset context. The official archive is roughly 3 GB compressed, so it is
+not downloaded during a web request, application build, or normal test run.
+
 ## Run
 
 ```powershell
@@ -24,6 +28,13 @@ python -m grid_data.cli fetch-osm `
 python -m grid_data.cli write-sql `
   --input ../../public/power-finder/brandenburg-osm.json `
   --output releases/brandenburg-osm-load.sql
+python -m grid_data.cli parse-mastr `
+  --input D:\grid-data\mastr-public-export.zip `
+  --output D:\grid-data\mastr-brandenburg.json `
+  --federal-state Brandenburg
+python -m grid_data.cli write-mastr-sql `
+  --input D:\grid-data\mastr-brandenburg.json `
+  --output D:\grid-data\mastr-brandenburg.sql
 ```
 
 Run these commands from `services/grid-data` with `PYTHONPATH=src`, or install the package:
@@ -40,3 +51,5 @@ python -m pip install -e .
 - A source is promoted only after validation.
 - Overpass and Geofabrik data are OpenStreetMap data under ODbL; attribution must remain visible.
 - OpenStreetMap establishes mapped context only. It never establishes available connection MW.
+- MaStR unit MW describes registered generation, storage, or consumption assets. It is not grid
+  headroom and must never be displayed as available connection capacity.

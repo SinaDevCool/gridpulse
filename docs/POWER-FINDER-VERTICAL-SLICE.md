@@ -89,12 +89,29 @@ as the target and received all three Power Finder migrations. The accepted relea
 - 233 canonical grid corridors;
 - 142 canonical industrial sites;
 - 668 total viewport features;
+- 1,172 node/radius context rows;
+- 41,606 industrial-site-to-node metrics;
 - one active, checksum-addressed source artifact.
 
 Anonymous calls to `power_finder_viewport` return HTTP 401. Authenticated calls return the bounded
 feature collection with its evidence boundary. Cloudflare Worker version
-`aa9c8e4b-1964-45f5-b755-cc885ba663d1` was deployed to both the workers.dev endpoint and the
+`675e258f-5d05-47c6-941e-0d7e1cd0e468` was deployed to both the workers.dev endpoint and the
 configured `gridpulseinsights.com` domain.
+
+## Intelligence expansion
+
+The next schema increment adds:
+
+- canonical MaStR energy assets;
+- node identity review and operator aliases;
+- node-level generation and storage context at 5, 10, 20 and 50 km;
+- industrial-site-to-node proximity metrics;
+- authenticated project-aware candidate ranking;
+- user-owned saved shortlists.
+
+The map supports search, voltage and operator filters, candidate sorting, point clustering,
+registered generation/storage layers, and a bounded top-100 candidate list. Registered asset MW is
+always labelled as asset context rather than grid capacity.
 
 ## Screening context score
 

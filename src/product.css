@@ -9504,6 +9504,72 @@ tbody tr:last-child td {
   line-height: 1.45;
   margin: 3px 0 0;
 }
+.power-finder-filter-panel {
+  display: grid;
+  gap: 9px;
+}
+.power-finder-search {
+  align-items: center;
+  background: #0d1624;
+  border: 1px solid #26364d;
+  border-radius: 7px;
+  display: flex;
+  gap: 8px;
+  padding: 0 9px;
+}
+.power-finder-search:focus-within {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.12);
+}
+.power-finder-search svg {
+  color: #64748b;
+  height: 15px;
+  width: 15px;
+}
+.power-finder-search input,
+.power-finder-filter-grid select,
+.power-finder-candidates select {
+  background: transparent;
+  border: 0;
+  color: #dbe7f5;
+  font: inherit;
+  outline: none;
+}
+.power-finder-search input {
+  min-width: 0;
+  padding: 9px 0;
+  width: 100%;
+}
+.power-finder-search input::placeholder {
+  color: #64748b;
+}
+.power-finder-filter-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 1fr 1fr;
+}
+.power-finder-filter-grid label {
+  background: #0d1624;
+  border: 1px solid #26364d;
+  border-radius: 7px;
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 7px 8px;
+}
+.power-finder-filter-grid label > span {
+  color: #64748b;
+  font-size: 0.62rem;
+}
+.power-finder-filter-grid select {
+  font-size: 0.7rem;
+  min-width: 0;
+  width: 100%;
+}
+.power-finder-filter-grid option,
+.power-finder-candidates option {
+  background: #111a28;
+}
 .power-finder-layer-list {
   display: grid;
   gap: 6px;
@@ -9532,8 +9598,31 @@ tbody tr:last-child td {
   display: grid;
   gap: 6px;
 }
+.power-finder-candidates > header {
+  align-items: end;
+  display: flex;
+  justify-content: space-between;
+}
+.power-finder-candidates > header h2 {
+  margin-bottom: 3px;
+}
+.power-finder-candidates > header small {
+  color: #64748b;
+  display: block;
+  font-size: 0.62rem;
+}
+.power-finder-candidates > header select {
+  border: 1px solid #26364d;
+  border-radius: 5px;
+  font-size: 0.65rem;
+  padding: 5px;
+}
 .power-finder-candidates h2 {
   grid-column: 1 / -1;
+}
+.power-finder-candidates .power-finder-no-results {
+  font-size: 0.7rem;
+  margin: 4px 0;
 }
 .power-finder-candidates button {
   align-items: center;
@@ -9660,6 +9749,19 @@ tbody tr:last-child td {
   background: rgba(23, 195, 178, 0.3);
   border: 1px solid #5eead4;
 }
+.legend-generation,
+.legend-storage {
+  border-radius: 50%;
+  width: 9px !important;
+}
+.legend-generation {
+  background: #22c55e;
+  border: 1px solid #dcfce7;
+}
+.legend-storage {
+  background: #a855f7;
+  border: 1px solid #f3e8ff;
+}
 .power-finder-detail {
   background: rgba(13, 20, 32, 0.97);
   border: 1px solid #26364d;
@@ -9765,6 +9867,15 @@ tbody tr:last-child td {
   justify-content: center;
   margin-top: 5px;
   width: 100%;
+}
+.power-finder-save {
+  justify-content: center;
+  margin-top: 8px;
+  width: 100%;
+}
+.power-finder-save svg {
+  height: 15px;
+  width: 15px;
 }
 .power-finder-method-link {
   align-items: center;

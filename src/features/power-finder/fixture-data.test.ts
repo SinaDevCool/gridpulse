@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { featureSummary, parsePowerFinderCollection } from "./fixture-data";
+import {
+  featureSummary,
+  parsePowerFinderCollection,
+  type PowerFinderFeature,
+} from "./fixture-data";
 
 const collection = {
   type: "FeatureCollection",
@@ -77,5 +81,19 @@ describe("Power Finder fixture data", () => {
     });
     expect(parsed.features[0].properties.evidence_class).toBe("open_mapping");
     expect(featureSummary(parsed.features[0])).toContain("capacity not established");
+  });
+
+  it("labels registered asset MW as asset context rather than grid capacity", () => {
+    const feature = {
+      ...collection.features[0],
+      properties: {
+        ...collection.features[0].properties,
+        kind: "generation_asset",
+        evidence_class: "official_regulatory",
+        net_capacity_mw: 12.5,
+      },
+    };
+    expect(featureSummary(feature as PowerFinderFeature)).toContain("registered generation");
+    expect(featureSummary(feature as PowerFinderFeature)).toContain("not grid capacity");
   });
 });

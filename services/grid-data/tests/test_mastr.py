@@ -1,0 +1,56 @@
+from __future__ import annotations
+
+import json
+import tempfile
+import unittest
+import zipfile
+from pathlib import Path
+
+from grid_data.mastr import parse_mastr_export
+from grid_data.sql_export import write_mastr_sql
+
+
+FIXTURE = Path(__file__).parent / "fixtures" / "mastr-sample.xml"
+
+
+class MastrConnectorTests(unittest.TestCase):
+    def test_streams_classified_assets_from_a_full_export_zip(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            archive_path = Path(directory) / "mastr.zip"
+            output_path = Path(directory) / "assets.json"
+            with zipfile.ZipFile(archive_path, "w") as archive:
+                archive.write(FIXTURE, "Einheiten.xml")
+
+            report = parse_mastr_export(
+                archive_path,
+                output_path,
+                federal_state="Brandenburg",
+            )
+            payload = json.loads(output_path.read_text(encoding="utf-8"))
+
+            self.assertEqual(report.asset_count, 2)
+            self.assertEqual(payload["metadata"]["record_count"], 2)
+            self.assertEqual(payload["assets"][0]["net_capacity_mw"], 12.5)
+            self.assertEqual(payload["assets"][0]["asset_type"], "generation")
+            self.assertEqual(payload["assets"][1]["asset_type"], "storage")
+            self.assertEqual(payload["assets"][1]["storage_energy_mwh"], 10)
+            self.assertIn("not available grid capacity", payload["metadata"]["evidence_boundary"])
+            sql_path = Path(directory) / "mastr.sql"
+            self.assertEqual(write_mastr_sql(output_path, sql_path), 2)
+            script = sql_path.read_text(encoding="utf-8")
+            self.assertIn("canonical_energy_assets", script)
+            self.assertTrue(script.startswith("begin;"))
+            self.assertTrue(script.rstrip().endswith("commit;"))
+
+    def test_state_filter_excludes_other_regions(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            archive_path = Path(directory) / "mastr.zip"
+            output_path = Path(directory) / "assets.json"
+            with zipfile.ZipFile(archive_path, "w") as archive:
+                archive.write(FIXTURE, "Einheiten.xml")
+            report = parse_mastr_export(archive_path, output_path, federal_state="Bayern")
+            self.assertEqual(report.asset_count, 0)
+
+
+if __name__ == "__main__":
+    unittest.main()
