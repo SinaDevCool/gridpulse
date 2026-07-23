@@ -19,6 +19,7 @@ import { downloadOperatorPackagePdf } from "./operator-pdf";
 import { buildConnectionOptions, rankConnectionOptions } from "./connection-options";
 import { buildDecisionMatrix } from "./decision-matrix";
 import { assessCandidateDimensions } from "./site-comparison";
+import { CommercialDecisionGate } from "./CommercialDecisionGate";
 import type { FlexibilityInput, ProjectKind, SiteScreeningInput } from "./domain";
 
 type Props = {
@@ -49,6 +50,10 @@ function strategyPathSummary(scenario: Scenario) {
   return scenario.scenario_type
     ? scenario.scenario_type.replaceAll("_", " ")
     : scenario.connection_mode;
+}
+
+function optionKindForScenario(scenario: Scenario) {
+  return scenario.scenario_type === "staged_energisation" ? "staged" : scenario.scenario_type;
 }
 
 export function StrategyWorkbench({ site, evidence, scenarios, profiles, refresh }: Props) {
@@ -89,30 +94,40 @@ export function StrategyWorkbench({ site, evidence, scenarios, profiles, refresh
   const { data: strategyRecords, refetch: refetchStrategyRecords } = useQuery({
     queryKey: ["connection-strategy-records", site.id],
     queryFn: async () => {
-      const [candidateResponse, packageResponse, metricResponse] = await Promise.all([
-        supabase
-          .from("project_site_candidates")
-          .select("*")
-          .eq("site_id", site.id)
-          .order("created_at", { ascending: true }),
-        supabase
-          .from("operator_packages")
-          .select("*")
-          .eq("site_id", site.id)
-          .order("version", { ascending: false }),
-        supabase
-          .from("pilot_metrics")
-          .select("*")
-          .eq("site_id", site.id)
-          .order("observed_at", { ascending: false }),
-      ]);
+      const [candidateResponse, packageResponse, metricResponse, engagementResponse] =
+        await Promise.all([
+          supabase
+            .from("project_site_candidates")
+            .select("*")
+            .eq("site_id", site.id)
+            .order("created_at", { ascending: true }),
+          supabase
+            .from("operator_packages")
+            .select("*")
+            .eq("site_id", site.id)
+            .order("version", { ascending: false }),
+          supabase
+            .from("pilot_metrics")
+            .select("*")
+            .eq("site_id", site.id)
+            .order("observed_at", { ascending: false }),
+          supabase
+            .from("operator_engagements")
+            .select("estimated_connection_cost_eur,indicated_connection_date")
+            .eq("site_id", site.id)
+            .order("updated_at", { ascending: false })
+            .limit(1)
+            .maybeSingle(),
+        ]);
       if (candidateResponse.error) throw candidateResponse.error;
       if (packageResponse.error) throw packageResponse.error;
       if (metricResponse.error) throw metricResponse.error;
+      if (engagementResponse.error) throw engagementResponse.error;
       return {
         candidates: candidateResponse.data as ProjectSiteCandidate[],
         packages: packageResponse.data as OperatorPackage[],
         metrics: metricResponse.data,
+        engagement: engagementResponse.data,
       };
     },
   });
@@ -157,6 +172,11 @@ export function StrategyWorkbench({ site, evidence, scenarios, profiles, refresh
     hasLoadProfile: profiles.length > 0,
   });
   const decisionMatrix = useMemo(() => buildDecisionMatrix(liveOptions), [liveOptions]);
+  const preferredOption =
+    decisionMatrix.find(
+      (option) =>
+        option.kind === (preferredScenario ? optionKindForScenario(preferredScenario) : ""),
+    ) ?? null;
   const snapshot = buildOperatorPackage({
     site,
     evidence,
@@ -1171,6 +1191,14 @@ export function StrategyWorkbench({ site, evidence, scenarios, profiles, refresh
         </div>
       ) : (
         <div className="strategy-grid deliverables-grid">
+          <CommercialDecisionGate
+            site={site}
+            preferredOption={preferredOption}
+            estimatedConnectionCostEur={
+              strategyRecords?.engagement?.estimated_connection_cost_eur ?? null
+            }
+            indicatedConnectionDate={strategyRecords?.engagement?.indicated_connection_date ?? null}
+          />
           <article className="strategy-card">
             <p className="context-label">Operator engagement package</p>
             <h3>{packageGate.ready ? "Ready to issue" : "Draft blocked"}</h3>
