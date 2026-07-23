@@ -83,15 +83,23 @@ Service-role and database credentials belong only in trusted server-side secret 
 ## Current deployment
 
 On 2026-07-23, the repository's linked `GridPulse Nexus` Supabase project was explicitly approved
-as the target and received all three Power Finder migrations. The accepted release contains:
+as the target and received the Power Finder migrations. The accepted releases contain:
 
 - 293 canonical grid nodes;
 - 233 canonical grid corridors;
 - 142 canonical industrial sites;
-- 668 total viewport features;
+- 668 canonical topology and industrial-site features;
+- 290,957 official MaStR electrical-asset records for Brandenburg;
+- 14,962 exactly mapped asset points: 14,694 generation, 208 storage and 60 consumption;
 - 1,172 node/radius context rows;
 - 41,606 industrial-site-to-node metrics;
-- one active, checksum-addressed source artifact.
+- two active, checksum-addressed sources.
+
+The active MaStR release is `7432f187-4bda-45f6-bad9-8b1069992b6a`. Its source archive contains
+3,099,107,513 bytes and has SHA-256
+`e7279576bd901eae26490e942687dc6361e171f43ec452a24cca048b94c249e3`. All 290,957 staged rows
+reconciled before activation. Assets without exact public coordinates remain registry context and
+are never converted into invented map points.
 
 Anonymous calls to `power_finder_viewport` return HTTP 401. Authenticated calls return the bounded
 feature collection with its evidence boundary. Cloudflare Worker version
@@ -100,7 +108,7 @@ configured `gridpulseinsights.com` domain.
 
 ## Intelligence expansion
 
-The next schema increment adds:
+The deployed schema increment adds:
 
 - canonical MaStR energy assets;
 - node identity review and operator aliases;
@@ -130,7 +138,7 @@ available-MW estimate, operator preference, cost estimate, or energisation forec
 
 1. OSM bounded pilot: complete.
 2. Geofabrik national PBF batch path: next scale step.
-3. Marktstammdatenregister generation and storage assets.
+3. Marktstammdatenregister generation and storage assets: complete for Brandenburg.
 4. BNetzA and TSO plans, projects, substations, and operator boundaries.
 5. DSO CSV, XLSX, WFS, ArcGIS, and PDF capacity publications.
 6. Fibre, roads, rail, water, land constraints, and protected areas.

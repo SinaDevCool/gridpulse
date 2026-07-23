@@ -6,7 +6,7 @@ import unittest
 import zipfile
 from pathlib import Path
 
-from grid_data.mastr import parse_mastr_export
+from grid_data.mastr import parse_mastr_export, stream_mastr_export
 from grid_data.sql_export import write_mastr_sql
 
 
@@ -50,6 +50,33 @@ class MastrConnectorTests(unittest.TestCase):
                 archive.write(FIXTURE, "Einheiten.xml")
             report = parse_mastr_export(archive_path, output_path, federal_state="Bayern")
             self.assertEqual(report.asset_count, 0)
+
+    def test_production_stream_is_ndjson_and_bounded(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            archive_path = Path(directory) / "mastr.zip"
+            output_path = Path(directory) / "assets.ndjson"
+            with zipfile.ZipFile(archive_path, "w") as archive:
+                archive.write(FIXTURE, "EinheitenSolar.xml")
+
+            report = stream_mastr_export(
+                archive_path,
+                output_path,
+                federal_state="Brandenburg",
+            )
+            records = [
+                json.loads(line)
+                for line in output_path.read_text(encoding="utf-8").splitlines()
+            ]
+            validation = json.loads(
+                output_path.with_suffix(".ndjson.report.json").read_text(encoding="utf-8")
+            )
+
+            self.assertEqual(report.asset_count, 2)
+            self.assertEqual(records[0]["record_type"], "manifest")
+            self.assertEqual(records[1]["record_type"], "asset")
+            self.assertEqual(records[2]["asset_type"], "storage")
+            self.assertTrue(validation["valid"])
+            self.assertEqual(validation["asset_count"], 2)
 
 
 if __name__ == "__main__":

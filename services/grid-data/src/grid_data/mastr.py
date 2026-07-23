@@ -23,6 +23,60 @@ class MastrReport:
     warnings: tuple[str, ...]
 
 
+def _asset(member_name: str, fields: dict[str, str]) -> tuple[dict[str, Any], list[str]]:
+    warnings: list[str] = []
+    record_id = fields["EinheitMastrNummer"]
+    latitude = _number(fields.get("Breitengrad"))
+    longitude = _number(fields.get("Laengengrad"))
+    if latitude is not None and not -90 <= latitude <= 90:
+        warnings.append(f"{record_id}: invalid latitude")
+        latitude = None
+    if longitude is not None and not -180 <= longitude <= 180:
+        warnings.append(f"{record_id}: invalid longitude")
+        longitude = None
+    asset_type = _asset_type(member_name, fields)
+    return {
+        "source_record_id": record_id,
+        "asset_type": asset_type,
+        "technology": fields.get("Energietraeger")
+        or fields.get("Technologie")
+        or fields.get("EinheitTyp"),
+        "canonical_name": fields.get("EinheitName")
+        or fields.get("NameStromerzeugungseinheit")
+        or fields.get("NameStromverbrauchseinheit"),
+        "operator_name": fields.get("AnlagenbetreiberName")
+        or fields.get("AnlagenbetreiberMastrNummer"),
+        "grid_operator_name": fields.get("NetzbetreiberName")
+        or fields.get("NetzbetreiberMastrNummer"),
+        "net_capacity_mw": _megawatts(
+            fields.get("Nettonennleistung")
+            or fields.get("Bruttoleistung")
+            or fields.get("Nennleistung")
+        ),
+        "storage_energy_mwh": _megawatts(
+            fields.get("NutzbareSpeicherkapazitaet")
+            or fields.get("SpeicherNutzbareSpeicherkapazitaet")
+        ),
+        "operational_status": _status(
+            fields.get("BetriebsStatus") or fields.get("EinheitBetriebsstatus")
+        ),
+        "commissioning_date": fields.get("Inbetriebnahmedatum"),
+        "municipality": fields.get("Gemeinde"),
+        "postcode": fields.get("Postleitzahl"),
+        "federal_state": fields.get("Bundesland") or fields.get("BundeslandName"),
+        "longitude": longitude,
+        "latitude": latitude,
+        "location_precision": (
+            "mapped"
+            if latitude is not None and longitude is not None
+            else "municipality"
+            if fields.get("Gemeinde")
+            else "withheld"
+        ),
+        "raw": fields,
+    }, warnings
+
+
 def _local_name(tag: str) -> str:
     return tag.rsplit("}", 1)[-1]
 
@@ -86,6 +140,66 @@ def _records(stream: Any) -> Iterator[dict[str, str]]:
         stack.pop()
 
 
+def _records_by_key(stream: Any, key: str) -> Iterator[dict[str, str]]:
+    stack: list[ElementTree.Element] = []
+    for event, element in ElementTree.iterparse(stream, events=("start", "end")):
+        if event == "start":
+            stack.append(element)
+            continue
+        children = list(element)
+        if children:
+            fields = {
+                _local_name(child.tag): (child.text or "").strip()
+                for child in children
+                if child.text
+            }
+            if key in fields:
+                yield fields
+                if len(stack) > 1:
+                    stack[-2].remove(element)
+                element.clear()
+        stack.pop()
+
+
+def _catalog_values(stream: Any) -> dict[str, str]:
+    return {
+        fields["Id"]: fields["Wert"]
+        for fields in _records_by_key(stream, "Id")
+        if fields.get("Wert")
+    }
+
+
+def _electrical_member(name: str) -> bool:
+    normalized = Path(name).name.casefold()
+    included = (
+        "einheitensolar",
+        "einheitenwind",
+        "einheitenwasser",
+        "einheitenbiomasse",
+        "einheitenkernkraft",
+        "einheitenverbrennung",
+        "einheitengeothermie",
+        "einheitenstromspeicher",
+        "einheitenstromverbraucher",
+    )
+    return normalized.endswith(".xml") and normalized.startswith(included)
+
+
+def _resolve_catalog_fields(fields: dict[str, str], catalog: dict[str, str]) -> dict[str, str]:
+    resolved = dict(fields)
+    for key in (
+        "Bundesland",
+        "EinheitBetriebsstatus",
+        "Energietraeger",
+        "Technologie",
+        "Netzebene",
+    ):
+        value = resolved.get(key)
+        if value in catalog:
+            resolved[key] = catalog[value]
+    return resolved
+
+
 def parse_mastr_export(
     input_path: Path,
     output_path: Path,
@@ -113,55 +227,11 @@ def parse_mastr_export(
                     state = fields.get("Bundesland") or fields.get("BundeslandName")
                     if federal_state and (state or "").casefold() != federal_state.casefold():
                         continue
-                    record_id = fields["EinheitMastrNummer"]
-                    latitude = _number(fields.get("Breitengrad"))
-                    longitude = _number(fields.get("Laengengrad"))
-                    if latitude is not None and not -90 <= latitude <= 90:
-                        warnings.append(f"{record_id}: invalid latitude")
-                        latitude = None
-                    if longitude is not None and not -180 <= longitude <= 180:
-                        warnings.append(f"{record_id}: invalid longitude")
-                        longitude = None
-                    if latitude is None or longitude is None:
+                    asset, asset_warnings = _asset(member.filename, fields)
+                    warnings.extend(asset_warnings)
+                    if asset["latitude"] is None or asset["longitude"] is None:
                         skipped += 1
-
-                    asset_type = _asset_type(member.filename, fields)
-                    assets.append(
-                        {
-                            "source_record_id": record_id,
-                            "asset_type": asset_type,
-                            "technology": fields.get("Energietraeger")
-                            or fields.get("Technologie")
-                            or fields.get("EinheitTyp"),
-                            "canonical_name": fields.get("EinheitName"),
-                            "operator_name": fields.get("AnlagenbetreiberName"),
-                            "grid_operator_name": fields.get("NetzbetreiberName"),
-                            "net_capacity_mw": _megawatts(
-                                fields.get("Nettonennleistung")
-                                or fields.get("Bruttoleistung")
-                                or fields.get("Nennleistung")
-                            ),
-                            "storage_energy_mwh": _megawatts(
-                                fields.get("NutzbareSpeicherkapazitaet")
-                                or fields.get("SpeicherNutzbareSpeicherkapazitaet")
-                            ),
-                            "operational_status": _status(fields.get("BetriebsStatus")),
-                            "commissioning_date": fields.get("Inbetriebnahmedatum"),
-                            "municipality": fields.get("Gemeinde"),
-                            "postcode": fields.get("Postleitzahl"),
-                            "federal_state": state,
-                            "longitude": longitude,
-                            "latitude": latitude,
-                            "location_precision": (
-                                "mapped"
-                                if latitude is not None and longitude is not None
-                                else "municipality"
-                                if fields.get("Gemeinde")
-                                else "withheld"
-                            ),
-                            "raw": fields,
-                        }
-                    )
+                    assets.append(asset)
 
     retrieved_at = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
     payload = {
@@ -188,3 +258,96 @@ def parse_mastr_export(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return MastrReport(len(assets), skipped, source_sha256, tuple(warnings))
+
+
+def stream_mastr_export(
+    input_path: Path,
+    output_path: Path,
+    *,
+    federal_state: str | None = None,
+) -> MastrReport:
+    """Write newline-delimited records without retaining the full export in memory."""
+    source_hash = hashlib.sha256()
+    with input_path.open("rb") as source:
+        for chunk in iter(lambda: source.read(4 * 1024 * 1024), b""):
+            source_hash.update(chunk)
+    source_sha256 = source_hash.hexdigest()
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    warnings: list[str] = []
+    asset_count = 0
+    skipped = 0
+
+    metadata = {
+        "record_type": "manifest",
+        "source_id": SOURCE_ID,
+        "publisher": "Bundesnetzagentur · Marktstammdatenregister",
+        "source_url": "https://www.marktstammdatenregister.de/MaStR/Datendownload",
+        "licence": "Datenlizenz Deutschland – Namensnennung – Version 2.0",
+        "geographic_scope": federal_state or "Germany",
+        "source_sha256": source_sha256,
+        "connector_version": CONNECTOR_VERSION,
+        "parser_version": PARSER_VERSION,
+        "evidence_boundary": (
+            "Registered energy-asset context; never available connection capacity."
+        ),
+    }
+    with output_path.open("w", encoding="utf-8", newline="\n") as output:
+        output.write(json.dumps(metadata, ensure_ascii=False, separators=(",", ":")) + "\n")
+        with zipfile.ZipFile(input_path) as archive:
+            catalog: dict[str, str] = {}
+            catalog_member = next(
+                (
+                    member
+                    for member in archive.infolist()
+                    if Path(member.filename).name.casefold().startswith("katalogwerte")
+                    and member.filename.casefold().endswith(".xml")
+                ),
+                None,
+            )
+            if catalog_member:
+                with archive.open(catalog_member) as stream:
+                    catalog = _catalog_values(stream)
+            members = [
+                member
+                for member in archive.infolist()
+                if _electrical_member(member.filename) and not member.is_dir()
+            ]
+            for member in members:
+                with archive.open(member) as stream:
+                    for fields in _records(stream):
+                        fields = _resolve_catalog_fields(fields, catalog)
+                        state = fields.get("Bundesland") or fields.get("BundeslandName")
+                        if federal_state and (state or "").casefold() != federal_state.casefold():
+                            continue
+                        asset, asset_warnings = _asset(member.filename, fields)
+                        warnings.extend(asset_warnings)
+                        if asset["latitude"] is None or asset["longitude"] is None:
+                            skipped += 1
+                        output.write(
+                            json.dumps(
+                                {"record_type": "asset", **asset},
+                                ensure_ascii=False,
+                                separators=(",", ":"),
+                            )
+                            + "\n"
+                        )
+                        asset_count += 1
+
+    report_path = output_path.with_suffix(output_path.suffix + ".report.json")
+    report_path.write_text(
+        json.dumps(
+            {
+                **metadata,
+                "asset_count": asset_count,
+                "skipped_coordinate_count": skipped,
+                "warning_count": len(warnings),
+                "warnings": warnings[:1000],
+                "valid": asset_count > 0,
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    return MastrReport(asset_count, skipped, source_sha256, tuple(warnings))

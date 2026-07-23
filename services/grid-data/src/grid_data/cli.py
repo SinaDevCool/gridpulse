@@ -3,9 +3,12 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from .download import download_artifact
 from .fixture import build_fixture
-from .mastr import parse_mastr_export
+from .health import check_source, discover_mastr_export
+from .mastr import parse_mastr_export, stream_mastr_export
 from .osm import build_osm_artifact
+from .publish import publish_mastr_ndjson
 from .sql_export import write_ingestion_sql, write_mastr_sql
 
 
@@ -40,6 +43,21 @@ def parser() -> argparse.ArgumentParser:
     mastr_sql = subcommands.add_parser("write-mastr-sql")
     mastr_sql.add_argument("--input", type=Path, required=True)
     mastr_sql.add_argument("--output", type=Path, required=True)
+    download = subcommands.add_parser("download")
+    download.add_argument("--url", required=True)
+    download.add_argument("--output", type=Path, required=True)
+    mastr_stream = subcommands.add_parser("stream-mastr")
+    mastr_stream.add_argument("--input", type=Path, required=True)
+    mastr_stream.add_argument("--output", type=Path, required=True)
+    mastr_stream.add_argument("--federal-state")
+    publish_mastr = subcommands.add_parser("publish-mastr")
+    publish_mastr.add_argument("--input", type=Path, required=True)
+    publish_mastr.add_argument("--batch-size", type=int, default=500)
+    source_health = subcommands.add_parser("check-source")
+    source_health.add_argument("--url", required=True)
+    source_health.add_argument("--output", type=Path, required=True)
+    mastr_health = subcommands.add_parser("check-mastr")
+    mastr_health.add_argument("--output", type=Path, required=True)
     return command
 
 
@@ -76,6 +94,40 @@ def main() -> None:
     elif args.command == "write-mastr-sql":
         count = write_mastr_sql(args.input, args.output)
         print(f"Wrote a transactional MaStR ingestion script for {count} assets.")
+    elif args.command == "download":
+        report = download_artifact(args.url, args.output)
+        print(
+            f"Downloaded {report.bytes_downloaded} bytes to {report.path}; "
+            f"sha256={report.sha256}."
+        )
+    elif args.command == "stream-mastr":
+        report = stream_mastr_export(
+            args.input,
+            args.output,
+            federal_state=args.federal_state,
+        )
+        print(
+            f"Streamed {report.asset_count} MaStR assets; "
+            f"{report.skipped_count} lack exact coordinates."
+        )
+    elif args.command == "publish-mastr":
+        report = publish_mastr_ndjson(args.input, batch_size=args.batch_size)
+        print(
+            f"Activated release {report.release_id} with "
+            f"{report.records_published} assets."
+        )
+    elif args.command == "check-source":
+        report = check_source(args.url, args.output)
+        print(
+            f"Source returned HTTP {report['status']} with "
+            f"{report['content_length']} bytes."
+        )
+    elif args.command == "check-mastr":
+        report = discover_mastr_export(args.output)
+        print(
+            f"Current MaStR export is {report['url']} "
+            f"({report['content_length']} bytes)."
+        )
 
 
 if __name__ == "__main__":
