@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as ValidationCaseRouteImport } from './routes/validation-case'
 import { Route as ServiceRouteImport } from './routes/service'
 import { Route as ReportsRouteImport } from './routes/reports'
+import { Route as PowerFinderRouteImport } from './routes/power-finder'
 import { Route as PortfolioRouteImport } from './routes/portfolio'
 import { Route as PilotRequestsRouteImport } from './routes/pilot-requests'
 import { Route as PilotReadyRouteImport } from './routes/pilot-ready'
@@ -40,6 +41,11 @@ const ServiceRoute = ServiceRouteImport.update({
 const ReportsRoute = ReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PowerFinderRoute = PowerFinderRouteImport.update({
+  id: '/power-finder',
+  path: '/power-finder',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PortfolioRoute = PortfolioRouteImport.update({
@@ -123,6 +129,7 @@ export interface FileRoutesByFullPath {
   '/pilot-ready': typeof PilotReadyRoute
   '/pilot-requests': typeof PilotRequestsRoute
   '/portfolio': typeof PortfolioRoute
+  '/power-finder': typeof PowerFinderRoute
   '/reports': typeof ReportsRoute
   '/service': typeof ServiceRoute
   '/validation-case': typeof ValidationCaseRoute
@@ -142,6 +149,7 @@ export interface FileRoutesByTo {
   '/pilot-ready': typeof PilotReadyRoute
   '/pilot-requests': typeof PilotRequestsRoute
   '/portfolio': typeof PortfolioRoute
+  '/power-finder': typeof PowerFinderRoute
   '/reports': typeof ReportsRoute
   '/service': typeof ServiceRoute
   '/validation-case': typeof ValidationCaseRoute
@@ -162,6 +170,7 @@ export interface FileRoutesById {
   '/pilot-ready': typeof PilotReadyRoute
   '/pilot-requests': typeof PilotRequestsRoute
   '/portfolio': typeof PortfolioRoute
+  '/power-finder': typeof PowerFinderRoute
   '/reports': typeof ReportsRoute
   '/service': typeof ServiceRoute
   '/validation-case': typeof ValidationCaseRoute
@@ -183,6 +192,7 @@ export interface FileRouteTypes {
     | '/pilot-ready'
     | '/pilot-requests'
     | '/portfolio'
+    | '/power-finder'
     | '/reports'
     | '/service'
     | '/validation-case'
@@ -202,6 +212,7 @@ export interface FileRouteTypes {
     | '/pilot-ready'
     | '/pilot-requests'
     | '/portfolio'
+    | '/power-finder'
     | '/reports'
     | '/service'
     | '/validation-case'
@@ -221,6 +232,7 @@ export interface FileRouteTypes {
     | '/pilot-ready'
     | '/pilot-requests'
     | '/portfolio'
+    | '/power-finder'
     | '/reports'
     | '/service'
     | '/validation-case'
@@ -241,6 +253,7 @@ export interface RootRouteChildren {
   PilotReadyRoute: typeof PilotReadyRoute
   PilotRequestsRoute: typeof PilotRequestsRoute
   PortfolioRoute: typeof PortfolioRoute
+  PowerFinderRoute: typeof PowerFinderRoute
   ReportsRoute: typeof ReportsRoute
   ServiceRoute: typeof ServiceRoute
   ValidationCaseRoute: typeof ValidationCaseRoute
@@ -272,6 +285,13 @@ declare module '@tanstack/react-router' {
       path: '/reports'
       fullPath: '/reports'
       preLoaderRoute: typeof ReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/power-finder': {
+      id: '/power-finder'
+      path: '/power-finder'
+      fullPath: '/power-finder'
+      preLoaderRoute: typeof PowerFinderRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/portfolio': {
@@ -385,6 +405,7 @@ const rootRouteChildren: RootRouteChildren = {
   PilotReadyRoute: PilotReadyRoute,
   PilotRequestsRoute: PilotRequestsRoute,
   PortfolioRoute: PortfolioRoute,
+  PowerFinderRoute: PowerFinderRoute,
   ReportsRoute: ReportsRoute,
   ServiceRoute: ServiceRoute,
   ValidationCaseRoute: ValidationCaseRoute,

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<MaStRExport>
+  <Einheit>
+    <EinheitMastrNummer>SEE900000000001</EinheitMastrNummer>
+    <EinheitName>Solarpark Testfeld</EinheitName>
+    <EinheitTyp>Solareinheit</EinheitTyp>
+    <Energietraeger>Solare Strahlungsenergie</Energietraeger>
+    <Nettonennleistung>12500</Nettonennleistung>
+    <BetriebsStatus>In Betrieb</BetriebsStatus>
+    <Inbetriebnahmedatum>2024-06-01</Inbetriebnahmedatum>
+    <Bundesland>Brandenburg</Bundesland>
+    <Gemeinde>Ludwigsfelde</Gemeinde>
+    <Postleitzahl>14974</Postleitzahl>
+    <Breitengrad>52.30</Breitengrad>
+    <Laengengrad>13.25</Laengengrad>
+    <NetzbetreiberName>E.DIS Netz GmbH</NetzbetreiberName>
+  </Einheit>
+  <Einheit>
+    <EinheitMastrNummer>SSE900000000002</EinheitMastrNummer>
+    <EinheitName>Batteriespeicher Testfeld</EinheitName>
+    <EinheitTyp>Stromspeicher</EinheitTyp>
+    <Nettonennleistung>5000</Nettonennleistung>
+    <NutzbareSpeicherkapazitaet>10000</NutzbareSpeicherkapazitaet>
+    <BetriebsStatus>In Planung</BetriebsStatus>
+    <Bundesland>Brandenburg</Bundesland>
+    <Gemeinde>Blankenfelde-Mahlow</Gemeinde>
+    <Postleitzahl>15827</Postleitzahl>
+    <Breitengrad>52.34</Breitengrad>
+    <Laengengrad>13.40</Laengengrad>
+  </Einheit>
+</MaStRExport>

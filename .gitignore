@@ -31,6 +31,12 @@ supabase/.temp/
 test-results/
 playwright-report/
 
+# Python geospatial service
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
 # Editor directories and files
 .claude/
 .vscode/*

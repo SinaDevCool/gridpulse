@@ -1,0 +1,44 @@
+{
+  "version": 0.6,
+  "elements": [
+    {
+      "type": "node",
+      "id": 101,
+      "lat": 52.3,
+      "lon": 13.2,
+      "tags": {
+        "power": "substation",
+        "name": "Example substation",
+        "operator": "Example operator",
+        "voltage": "110000;20000"
+      }
+    },
+    {
+      "type": "way",
+      "id": 202,
+      "tags": {
+        "power": "line",
+        "voltage": "380000"
+      },
+      "geometry": [
+        {"lat": 52.29, "lon": 13.18},
+        {"lat": 52.31, "lon": 13.24}
+      ]
+    },
+    {
+      "type": "way",
+      "id": 303,
+      "tags": {
+        "landuse": "industrial",
+        "name": "Example industrial area"
+      },
+      "geometry": [
+        {"lat": 52.28, "lon": 13.19},
+        {"lat": 52.28, "lon": 13.21},
+        {"lat": 52.3, "lon": 13.21},
+        {"lat": 52.3, "lon": 13.19},
+        {"lat": 52.28, "lon": 13.19}
+      ]
+    }
+  ]
+}
