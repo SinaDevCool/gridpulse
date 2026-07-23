@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 from grid_data.api.app import create_app
 from grid_data.api.models import AnalyticsJob, JobStatus, UserIdentity
 from grid_data.api.store import InMemoryJobStore
+from grid_data.network_model import screen_reference_topology
 
 
 class SuccessfulExecutor:
@@ -19,6 +20,14 @@ class SuccessfulExecutor:
             job_id,
             status=JobStatus.SUCCEEDED,
             result_payload={"published": 2, "failed": 1},
+        )
+
+    def execute_reference_topology(self, job_id: UUID) -> None:
+        job = self.store.get_internal(job_id)
+        self.store.update(
+            job_id,
+            status=JobStatus.SUCCEEDED,
+            result_payload=screen_reference_topology(job.input_payload),
         )
 
 
@@ -53,6 +62,24 @@ class AnalyticsApiTests(unittest.TestCase):
         )
         response = self.client.get(f"/v1/jobs/{other_job.id}")
         self.assertEqual(response.status_code, 404)
+
+    def test_reference_topology_uses_existing_job_boundary(self) -> None:
+        accepted = self.client.post(
+            "/v1/jobs/reference-topology",
+            json={
+                "source_node_id": "a",
+                "target_node_id": "b",
+                "nodes": [
+                    {"id": "a", "voltage_kv": 110},
+                    {"id": "b", "voltage_kv": 110},
+                ],
+                "edges": [{"from": "a", "to": "b", "length_km": 3}],
+                "lineage": {"source": "test"},
+            },
+        )
+        self.assertEqual(accepted.status_code, 202)
+        job = self.client.get(f"/v1/jobs/{accepted.json()['job_id']}")
+        self.assertEqual(job.json()["result_payload"]["classification"], "topology_screening_only")
 
 
 if __name__ == "__main__":

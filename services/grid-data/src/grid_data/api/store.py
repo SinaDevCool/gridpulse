@@ -14,6 +14,7 @@ class JobStore(Protocol):
     def create(self, job: AnalyticsJob) -> AnalyticsJob: ...
 
     def get(self, job_id: UUID, owner_id: UUID) -> AnalyticsJob | None: ...
+    def get_internal(self, job_id: UUID) -> AnalyticsJob: ...
 
     def update(
         self,
@@ -45,6 +46,10 @@ class InMemoryJobStore:
             if not job or job.owner_id != owner_id:
                 return None
             return job.model_copy(deep=True)
+
+    def get_internal(self, job_id: UUID) -> AnalyticsJob:
+        with self._lock:
+            return self._jobs[job_id].model_copy(deep=True)
 
     def update(
         self,
@@ -93,6 +98,15 @@ class SupabaseJobStore:
             ),
         )
         return AnalyticsJob.model_validate(rows[0]) if rows else None
+
+    def get_internal(self, job_id: UUID) -> AnalyticsJob:
+        rows = self._publisher.request(
+            "GET",
+            f"/analytics_jobs?select=*&id=eq.{urllib.parse.quote(str(job_id))}",
+        )
+        if not rows:
+            raise KeyError(f"analytics job {job_id} does not exist")
+        return AnalyticsJob.model_validate(rows[0])
 
     def update(
         self,

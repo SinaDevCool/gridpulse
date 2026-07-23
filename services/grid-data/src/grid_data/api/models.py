@@ -33,6 +33,14 @@ class JobAccepted(BaseModel):
     status: JobStatus
 
 
+class ReferenceTopologyRequest(BaseModel):
+    source_node_id: str
+    target_node_id: str
+    nodes: list[dict[str, Any]] = Field(min_length=2, max_length=100_000)
+    edges: list[dict[str, Any]] = Field(max_length=250_000)
+    lineage: dict[str, Any] = Field(default_factory=dict)
+
+
 class UserIdentity(BaseModel):
     id: UUID
     email: str | None = None
