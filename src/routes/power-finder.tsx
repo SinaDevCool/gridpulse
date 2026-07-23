@@ -3,9 +3,9 @@ import {
   AlertTriangle,
   BookmarkPlus,
   CheckCircle2,
+  GitCompareArrows,
   Database,
   ExternalLink,
-  Factory,
   MapPin,
   Network,
   Search,
@@ -33,6 +33,13 @@ import {
   loadOperatorEvidence,
   type OperatorEvidenceResult,
 } from "@/features/power-finder/operator-evidence";
+import {
+  candidateEvidenceBoundary,
+  opportunityNode,
+  type CandidateOpportunity,
+  type RankedCandidateResult,
+} from "@/features/power-finder/candidate-intelligence";
+import { loadRankedCandidates } from "@/features/power-finder/ranked-candidates";
 
 export const Route = createFileRoute("/power-finder")({
   validateSearch: z.object({
@@ -43,6 +50,10 @@ export const Route = createFileRoute("/power-finder")({
       .optional(),
     operator: z.string().max(160).optional(),
     sort: z.enum(["context", "voltage", "name"]).optional(),
+    mw: z.coerce.number().min(0.1).max(1000).optional(),
+    distance: z.coerce.number().min(1).max(100).optional(),
+    candidate: z.string().max(200).optional(),
+    compare: z.string().max(700).optional(),
   }),
   head: () => ({
     meta: [{ title: "Power Finder | GridPulse" }, { name: "robots", content: "noindex, nofollow" }],
@@ -64,6 +75,7 @@ const initialBounds: PowerFinderBounds = {
   north: 52.6,
 };
 type CandidateSort = "context" | "voltage" | "name";
+const distanceFormatter = new Intl.NumberFormat("en-GB", { maximumFractionDigits: 1 });
 
 function PowerFinderPage() {
   const navigate = useNavigate();
@@ -84,6 +96,8 @@ function PowerFinderPage() {
   const minimumVoltage = search.voltage ?? 0;
   const operator = search.operator ?? "all";
   const candidateSort: CandidateSort = search.sort ?? "context";
+  const requiredImportMw = search.mw ?? 100;
+  const maxDistanceKm = search.distance ?? 20;
   const updateSearch = (patch: Partial<typeof search>) =>
     navigate({ to: "/power-finder", search: { ...search, ...patch }, replace: true });
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
@@ -92,6 +106,8 @@ function PowerFinderPage() {
   const [operatorEvidenceState, setOperatorEvidenceState] = useState<
     "idle" | "loading" | "ready" | "unavailable"
   >("idle");
+  const [ranking, setRanking] = useState<RankedCandidateResult | null>(null);
+  const [rankingState, setRankingState] = useState<"loading" | "ready" | "error">("loading");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -152,28 +168,66 @@ function PowerFinderPage() {
   );
 
   const candidates = useMemo(() => {
-    const items =
-      visibleCollection?.features.filter(
-        (feature) =>
-          feature.properties.kind === "node" || feature.properties.kind === "industrial_site",
-      ) ?? [];
-    return items
-      .sort((left, right) => {
-        if (candidateSort === "name") {
-          return left.properties.name.localeCompare(right.properties.name);
-        }
-        if (candidateSort === "voltage") {
-          return (
-            Math.max(0, ...(right.properties.voltage_kv ?? [])) -
-            Math.max(0, ...(left.properties.voltage_kv ?? []))
-          );
-        }
-        return (scoreFeature(right)?.total ?? -1) - (scoreFeature(left)?.total ?? -1);
-      })
-      .slice(0, 100);
-  }, [candidateSort, visibleCollection]);
+    const normalizedQuery = query.trim().toLocaleLowerCase();
+    const items = (ranking?.candidates ?? []).filter((candidate) => {
+      const node = opportunityNode(candidate, collection);
+      const maximumVoltage = Math.max(0, ...candidate.voltageKv);
+      const matchesQuery =
+        !normalizedQuery ||
+        candidate.siteName.toLocaleLowerCase().includes(normalizedQuery) ||
+        candidate.nodeName.toLocaleLowerCase().includes(normalizedQuery) ||
+        candidate.operator?.toLocaleLowerCase().includes(normalizedQuery);
+      const matchesVoltage = minimumVoltage === 0 || maximumVoltage >= minimumVoltage;
+      const matchesOperator = operator === "all" || candidate.operator === operator;
+      return matchesQuery && matchesVoltage && matchesOperator && Boolean(node);
+    });
+    return items.sort((left, right) => {
+      if (candidateSort === "name") {
+        return left.siteName.localeCompare(right.siteName);
+      }
+      if (candidateSort === "voltage") {
+        return Math.max(0, ...right.voltageKv) - Math.max(0, ...left.voltageKv);
+      }
+      return right.screeningRank - left.screeningRank;
+    });
+  }, [candidateSort, collection, minimumVoltage, operator, query, ranking]);
+  const selectedOpportunity =
+    candidates.find((candidate) => candidate.id === search.candidate) ?? null;
+  const comparisonIds = useMemo(
+    () => (search.compare ?? "").split(",").filter(Boolean).slice(0, 3),
+    [search.compare],
+  );
+  const comparedCandidates = comparisonIds
+    .map((id) => candidates.find((candidate) => candidate.id === id))
+    .filter((candidate): candidate is CandidateOpportunity => Boolean(candidate));
   const coordinates = selected ? pointCoordinates(selected) : null;
   const score = selected ? scoreFeature(selected) : null;
+
+  useEffect(() => {
+    if (!collection || !dataMode) return;
+    let active = true;
+    setRankingState("loading");
+    void loadRankedCandidates(collection, requiredImportMw, maxDistanceKm, dataMode)
+      .then((result) => {
+        if (!active) return;
+        setRanking(result);
+        setRankingState("ready");
+      })
+      .catch(() => {
+        if (!active) return;
+        setRanking(null);
+        setRankingState("error");
+      });
+    return () => {
+      active = false;
+    };
+  }, [collection, dataMode, maxDistanceKm, requiredImportMw]);
+
+  useEffect(() => {
+    if (!selectedOpportunity || selected?.id === selectedOpportunity.nodeId) return;
+    const node = opportunityNode(selectedOpportunity, collection);
+    if (node) setSelected(node);
+  }, [collection, selected?.id, selectedOpportunity]);
 
   useEffect(() => {
     setSaveStatus("idle");
@@ -238,6 +292,36 @@ function PowerFinderPage() {
             </label>
             <div className="power-finder-filter-grid">
               <label>
+                <span>Required import</span>
+                <input
+                  type="number"
+                  name="required-import"
+                  min="0.1"
+                  max="1000"
+                  step="0.1"
+                  autoComplete="off"
+                  value={requiredImportMw}
+                  onChange={(event) =>
+                    void updateSearch({ mw: Number(event.target.value) || undefined })
+                  }
+                />
+              </label>
+              <label>
+                <span>Maximum distance</span>
+                <select
+                  name="maximum-distance"
+                  value={maxDistanceKm}
+                  onChange={(event) =>
+                    void updateSearch({ distance: Number(event.target.value) || undefined })
+                  }
+                >
+                  <option value={5}>5 km</option>
+                  <option value={10}>10 km</option>
+                  <option value={20}>20 km</option>
+                  <option value={50}>50 km</option>
+                </select>
+              </label>
+              <label>
                 <span>Minimum voltage</span>
                 <select
                   value={minimumVoltage}
@@ -298,10 +382,11 @@ function PowerFinderPage() {
           <section className="power-finder-candidates">
             <header>
               <span>
-                <h2>Candidate context</h2>
-                <small>
-                  Showing {candidates.length}
-                  {(visibleCollection?.features.length ?? 0) > 100 ? " of top 100" : ""}
+                <h2>Ranked opportunities</h2>
+                <small role="status" aria-live="polite">
+                  {rankingState === "loading"
+                    ? "Calculating…"
+                    : `${candidates.length} site-to-node pathways`}
                 </small>
               </span>
               <label>
@@ -318,22 +403,42 @@ function PowerFinderPage() {
                 </select>
               </label>
             </header>
-            {candidates.length === 0 && (
-              <p className="power-finder-no-results">No candidates match these filters.</p>
+            {rankingState === "error" && (
+              <p className="power-finder-no-results" role="status">
+                Candidate ranking is unavailable. Change the map view or try again.
+              </p>
             )}
-            {candidates.map((feature) => (
+            {rankingState === "ready" && candidates.length === 0 && (
+              <p className="power-finder-no-results">
+                No site-to-node pathways are within {maxDistanceKm} km in this view.
+              </p>
+            )}
+            {candidates.map((candidate, index) => (
               <button
-                key={feature.id}
-                className={selected?.id === feature.id ? "active" : ""}
-                onClick={() => setSelected(feature)}
+                type="button"
+                key={candidate.id}
+                className={selectedOpportunity?.id === candidate.id ? "active" : ""}
+                onClick={() => {
+                  const node = opportunityNode(candidate, collection);
+                  if (node) setSelected(node);
+                  void updateSearch({ candidate: candidate.id });
+                }}
               >
-                {feature.properties.kind === "node" ? <Zap /> : <Factory />}
+                <span className="candidate-rank">{index + 1}</span>
                 <span>
-                  <b>{feature.properties.name}</b>
-                  <small>{featureSummary(feature)}</small>
+                  <b>{candidate.siteName}</b>
+                  <small>
+                    {candidate.nodeName} · {distanceFormatter.format(candidate.distanceKm)} km
+                  </small>
+                  <span className="candidate-badges">
+                    <i data-fit={candidate.voltageFit}>{candidate.voltageFit} voltage</i>
+                    <i data-confidence={candidate.confidence}>{candidate.confidence} confidence</i>
+                    <strong>{candidate.screeningRank}/100</strong>
+                  </span>
                 </span>
               </button>
             ))}
+            {ranking && <p className="candidate-boundary">{ranking.evidenceBoundary}</p>}
           </section>
 
           {collection && (
@@ -360,7 +465,10 @@ function PowerFinderPage() {
             <PowerFinderMap
               collection={visibleCollection}
               selectedId={selected?.id ?? null}
-              onSelect={setSelected}
+              onSelect={(feature) => {
+                setSelected(feature);
+                void updateSearch({ candidate: undefined });
+              }}
               onViewportChange={setBounds}
             />
           )}
@@ -384,12 +492,59 @@ function PowerFinderPage() {
             </span>
           </div>
 
+          {comparedCandidates.length > 0 && (
+            <section className="candidate-comparison" aria-label="Candidate comparison">
+              <header>
+                <span>
+                  <GitCompareArrows aria-hidden="true" />
+                  <b>Compare {comparedCandidates.length} Candidates</b>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => void updateSearch({ compare: undefined })}
+                  aria-label="Clear candidate comparison"
+                >
+                  Clear
+                </button>
+              </header>
+              <div>
+                {comparedCandidates.map((candidate) => (
+                  <article key={candidate.id}>
+                    <strong>{candidate.siteName}</strong>
+                    <span>{candidate.nodeName}</span>
+                    <dl>
+                      <div>
+                        <dt>Rank</dt>
+                        <dd>{candidate.screeningRank}/100</dd>
+                      </div>
+                      <div>
+                        <dt>Distance</dt>
+                        <dd>{candidate.distanceKm} km</dd>
+                      </div>
+                      <div>
+                        <dt>Voltage fit</dt>
+                        <dd>{candidate.voltageFit}</dd>
+                      </div>
+                      <div>
+                        <dt>Confidence</dt>
+                        <dd>{candidate.confidence}</dd>
+                      </div>
+                    </dl>
+                  </article>
+                ))}
+              </div>
+            </section>
+          )}
+
           <aside className={`power-finder-detail ${selected ? "open" : ""}`}>
             {selected ? (
               <>
                 <button
                   className="detail-close"
-                  onClick={() => setSelected(null)}
+                  onClick={() => {
+                    setSelected(null);
+                    void updateSearch({ candidate: undefined });
+                  }}
                   aria-label="Close detail"
                 >
                   ×
@@ -448,6 +603,65 @@ function PowerFinderPage() {
                       ))}
                     </ul>
                     <p>{score.boundary}</p>
+                  </section>
+                )}
+                {selectedOpportunity && (
+                  <section className="candidate-intelligence" aria-label="Candidate intelligence">
+                    <header>
+                      <span>
+                        <strong>{selectedOpportunity.screeningRank}/100</strong>
+                        <small>screening rank</small>
+                      </span>
+                      <b>{selectedOpportunity.siteName}</b>
+                    </header>
+                    <dl>
+                      <div>
+                        <dt>Distance</dt>
+                        <dd>{selectedOpportunity.distanceKm} km straight-line</dd>
+                      </div>
+                      <div>
+                        <dt>Voltage fit</dt>
+                        <dd>{selectedOpportunity.voltageFit}</dd>
+                      </div>
+                      <div>
+                        <dt>Evidence confidence</dt>
+                        <dd>{selectedOpportunity.confidence}</dd>
+                      </div>
+                    </dl>
+                    <h3>Open constraints</h3>
+                    <ul>
+                      {selectedOpportunity.constraints.map((constraint) => (
+                        <li key={constraint}>{constraint}</li>
+                      ))}
+                    </ul>
+                    <h3>Evidence Still Required</h3>
+                    <ul className="candidate-evidence-gaps">
+                      {selectedOpportunity.missingEvidence.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                    <small className="candidate-calculation-version">
+                      {selectedOpportunity.source === "database"
+                        ? "Live spatial metric"
+                        : "Accepted-release fallback"}{" "}
+                      · {selectedOpportunity.calculationVersion}
+                    </small>
+                    <p>{candidateEvidenceBoundary}</p>
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={() => {
+                        const next = comparisonIds.includes(selectedOpportunity.id)
+                          ? comparisonIds.filter((id) => id !== selectedOpportunity.id)
+                          : [...comparisonIds, selectedOpportunity.id].slice(-3);
+                        void updateSearch({ compare: next.length ? next.join(",") : undefined });
+                      }}
+                    >
+                      <GitCompareArrows aria-hidden="true" />
+                      {comparisonIds.includes(selectedOpportunity.id)
+                        ? "Remove From Comparison"
+                        : "Add to Comparison"}
+                    </button>
                   </section>
                 )}
                 {selected.properties.kind === "node" && (
@@ -513,7 +727,7 @@ function PowerFinderPage() {
                     disabled={saveStatus === "saving"}
                     onClick={() => {
                       setSaveStatus("saving");
-                      void savePowerFinderCandidate(selected)
+                      void savePowerFinderCandidate(selected, selectedOpportunity, requiredImportMw)
                         .then((id) => {
                           setShortlistId(id);
                           setSaveStatus("saved");
@@ -521,12 +735,15 @@ function PowerFinderPage() {
                             to: "/assessments/new",
                             search: {
                               shortlistId: id,
-                              name: selected.properties.name,
+                              name: selectedOpportunity?.siteName ?? selected.properties.name,
                               projectType: "large_load",
+                              importMw: requiredImportMw,
                               latitude: coordinates[1],
                               longitude: coordinates[0],
                               federalState: "Brandenburg",
-                              challenge: `Screening candidate ${selected.id}; capacity and operator responsibility require confirmation.`,
+                              challenge: selectedOpportunity
+                                ? `${selectedOpportunity.siteName} screened against ${selectedOpportunity.nodeName} at ${selectedOpportunity.distanceKm} km. Rank ${selectedOpportunity.screeningRank}/100 reflects context only; capacity, feasibility, cost, and timing require operator confirmation.`
+                                : `Screening candidate ${selected.id}; capacity and operator responsibility require confirmation.`,
                             },
                           });
                         })
@@ -544,7 +761,7 @@ function PowerFinderPage() {
                     disabled={saveStatus === "saving" || saveStatus === "saved"}
                     onClick={() => {
                       setSaveStatus("saving");
-                      void savePowerFinderCandidate(selected)
+                      void savePowerFinderCandidate(selected, selectedOpportunity, requiredImportMw)
                         .then((id) => {
                           setShortlistId(id);
                           setSaveStatus("saved");
