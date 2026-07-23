@@ -17,6 +17,7 @@
     "verify:power-finder": "npm run grid:test && npm run typecheck && npm run test && npm run build && npm run test:e2e",
     "typecheck": "tsc --noEmit",
     "check:encoding": "node scripts/check-text-encoding.mjs",
+    "health:production": "node scripts/check-production-health.mjs",
     "verify:phase0": "npm run check:encoding && npm run typecheck && npm run test && npm run build",
     "deploy": "npm run build && wrangler deploy",
     "cf-typegen": "wrangler types",
