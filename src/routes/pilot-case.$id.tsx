@@ -21,7 +21,12 @@ import {
 } from "@/features/grid-connection/pilot-measurement";
 
 export const Route = createFileRoute("/pilot-case/$id")({
-  head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
+  head: () => ({
+    meta: [
+      { title: "Pilot Outcome | GridPulse" },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
   component: PilotCasePage,
 });
 

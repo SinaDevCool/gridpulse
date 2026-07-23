@@ -82,7 +82,12 @@ export const Route = createFileRoute("/assessments/$id")({
   validateSearch: z.object({
     view: z.enum(assessmentViews).optional().catch("overview"),
   }),
-  head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
+  head: () => ({
+    meta: [
+      { title: "Connection Project | GridPulse" },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
   component: AssessmentPage,
 });
 type Tab = AssessmentView;

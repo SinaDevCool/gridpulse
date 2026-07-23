@@ -6,7 +6,12 @@ import { useAuth } from "@/context/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/pilot-requests")({
-  head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
+  head: () => ({
+    meta: [
+      { title: "Pilot Requests | GridPulse" },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
   component: PilotRequests,
 });
 
@@ -51,9 +56,7 @@ function assessmentProjectType(value: string): "bess" | "large_load" | "co_locat
   return "large_load";
 }
 
-function assessmentLandStatus(
-  value: string,
-): "unknown" | "identified" | "optioned" | "controlled" {
+function assessmentLandStatus(value: string): "unknown" | "identified" | "optioned" | "controlled" {
   if (value === "identified" || value === "optioned" || value === "controlled") return value;
   return "unknown";
 }

@@ -28,7 +28,7 @@ export const workflowStages: Array<{
   {
     key: "screen",
     number: "01",
-    label: "Screen",
+    label: "Qualify",
     title: "Establish the credible connection routes",
     description:
       "Confirm the declared requirement, likely operator responsibility, and pathways worth testing.",
