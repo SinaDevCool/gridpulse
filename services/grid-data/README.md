@@ -41,6 +41,8 @@ $env:SUPABASE_URL = "https://PROJECT.supabase.co"
 $env:SUPABASE_SERVICE_ROLE_KEY = "<server-side secret>"
 python -m grid_data.cli publish-mastr `
   --input D:\grid-data\mastr-brandenburg.ndjson
+python -m grid_data.cli fetch-operator-evidence `
+  --output D:\grid-data\operator-evidence-health.json
 ```
 
 Run these commands from `services/grid-data` with `PYTHONPATH=src`, or install the package:
@@ -67,6 +69,10 @@ python -m pip install -e .
 - OpenStreetMap establishes mapped context only. It never establishes available connection MW.
 - MaStR unit MW describes registered generation, storage, or consumption assets. It is not grid
   headroom and must never be displayed as available connection capacity.
+- Operator pages are snapshotted for provenance and change detection. The connector deliberately
+  emits no numeric capacity observation until an explicit value, demand direction, reuse right,
+  and reviewed node identity are all established.
+- The E.DIS public Netzanschlussmonitor is generation-oriented context, not demand headroom.
 
 Cloudflare R2 is the preferred immutable artifact store, but the account must have R2 enabled
 before the archive can be uploaded. The database stores its checksum and release history
