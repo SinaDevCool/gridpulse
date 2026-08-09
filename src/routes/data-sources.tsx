@@ -367,6 +367,156 @@ function DataSourcesPage() {
 function FinderDataSourcesPage() {
   return (
     <PublicLayout>
+      <main id="main-content" className="section-page public-methodology-page finder-methodology">
+        <PublicPageHero
+          eyebrow="Data & Methodology"
+          title="Evidence you can screen with. Boundaries you can trust."
+          description="GridPulse combines mapped infrastructure, registered assets and transparent comparison rules to help teams shortlist connection candidates without presenting public data as confirmed grid capacity."
+        >
+          <Link to="/power-finder" className="public-button public-button-primary">
+            Open Power Finder <ArrowRight aria-hidden="true" />
+          </Link>
+        </PublicPageHero>
+
+        <div className="public-page-content finder-methodology-content">
+          <section className="finder-methodology-value" aria-labelledby="finder-method-title">
+            <div>
+              <p className="context-label">What Powers the Shortlist</p>
+              <h2 id="finder-method-title">
+                A practical screening layer over fragmented evidence.
+              </h2>
+              <p>
+                Power Finder narrows a broad search area into comparable candidate connection
+                points. It uses evidence that can be inspected and keeps unknown capacity unknown.
+              </p>
+            </div>
+            <div className="finder-methodology-cards">
+              <article>
+                <Map aria-hidden="true" />
+                <h3>Geographic context</h3>
+                <p>Mapped nodes, corridors, industrial land and registered assets.</p>
+              </article>
+              <article>
+                <Calculator aria-hidden="true" />
+                <h3>Candidate comparison</h3>
+                <p>Proximity, voltage alignment, operator context and evidence quality.</p>
+              </article>
+              <article>
+                <ShieldCheck aria-hidden="true" />
+                <h3>Governed capacity</h3>
+                <p>Node-specific MW only when an accepted model and completed study support it.</p>
+              </article>
+            </div>
+          </section>
+
+          <section className="finder-methodology-flow" aria-labelledby="finder-flow-title">
+            <p className="context-label">How a Result Is Built</p>
+            <h2 id="finder-flow-title">From project requirement to an evidence-ready shortlist.</h2>
+            <ol>
+              <li>
+                <span>01</span>
+                <div>
+                  <h3>Define the project</h3>
+                  <p>Set location, required power, distance and voltage preference.</p>
+                </div>
+              </li>
+              <li>
+                <span>02</span>
+                <div>
+                  <h3>Screen the map</h3>
+                  <p>Find nearby infrastructure and rank candidate connection points.</p>
+                </div>
+              </li>
+              <li>
+                <span>03</span>
+                <div>
+                  <h3>Compare candidates</h3>
+                  <p>Review fit, evidence and any governed capacity results available.</p>
+                </div>
+              </li>
+              <li>
+                <span>04</span>
+                <div>
+                  <h3>Prepare technical review</h3>
+                  <p>
+                    Take the strongest candidates and unresolved questions to the responsible
+                    operator.
+                  </p>
+                </div>
+              </li>
+            </ol>
+          </section>
+
+          <section className="finder-methodology-boundary" aria-labelledby="finder-boundary-title">
+            <div>
+              <p className="context-label">Decision Boundary</p>
+              <h2 id="finder-boundary-title">
+                Useful for prioritisation. Honest about confirmation.
+              </h2>
+            </div>
+            <div>
+              <article>
+                <Check aria-hidden="true" />
+                <h3>GridPulse supports</h3>
+                <ul>
+                  <li>Location and infrastructure discovery</li>
+                  <li>Consistent candidate comparison</li>
+                  <li>Source-aware shortlisting</li>
+                  <li>Reviewed capacity display when governed results exist</li>
+                </ul>
+              </article>
+              <article>
+                <AlertTriangle aria-hidden="true" />
+                <h3>Operator confirmation controls</h3>
+                <ul>
+                  <li>Connection feasibility and final connection point</li>
+                  <li>Available or reserved capacity</li>
+                  <li>Reinforcement, cost and contractual terms</li>
+                  <li>Approval and energisation timing</li>
+                </ul>
+              </article>
+            </div>
+          </section>
+
+          <section className="finder-methodology-sources" aria-labelledby="finder-sources-title">
+            <div>
+              <p className="context-label">Primary Source Families</p>
+              <h2 id="finder-sources-title">Public context with visible provenance.</h2>
+            </div>
+            <div>
+              <article>
+                <strong>OpenStreetMap</strong>
+                <span>Mapped grid and land context</span>
+              </article>
+              <article>
+                <strong>MaStR</strong>
+                <span>Registered generation and storage</span>
+              </article>
+              <article>
+                <strong>Bundesnetzagentur</strong>
+                <span>Regulatory and market context</span>
+              </article>
+              <article>
+                <strong>Network operators</strong>
+                <span>Technical requirements and confirmation</span>
+              </article>
+            </div>
+          </section>
+        </div>
+
+        <PublicCTA
+          eyebrow="Start With the Map"
+          title="Build a focused connection shortlist."
+          description="Explore the current Brandenburg screening release and compare candidate connection points."
+        />
+      </main>
+    </PublicLayout>
+  );
+}
+
+function LegacyFinderDataSourcesPage() {
+  return (
+    <PublicLayout>
       <main id="main-content" className="section-page public-methodology-page">
         <PublicPageHero
           eyebrow="Power Finder Data & Methodology"

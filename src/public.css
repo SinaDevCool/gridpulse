@@ -1196,6 +1196,182 @@
   outline-offset: 2px;
 }
 
+/* Power Finder methodology: concise public trust page. */
+.finder-methodology .public-page-hero {
+  min-height: 420px;
+  padding-block: 92px 76px;
+  background: radial-gradient(circle at 78% 24%, rgb(53 223 241 / 9%), transparent 32%), #06101a;
+}
+.finder-methodology .public-page-hero > p {
+  max-width: 690px;
+}
+.finder-methodology-content {
+  display: grid;
+  gap: 0;
+}
+.finder-methodology-content h2 {
+  max-width: 760px;
+  margin: 8px 0 18px;
+  font-size: clamp(30px, 4vw, 46px);
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+.finder-methodology-value,
+.finder-methodology-flow,
+.finder-methodology-boundary,
+.finder-methodology-sources {
+  padding-block: 76px;
+  border-bottom: 1px solid #20303c;
+}
+.finder-methodology-value > div:first-child > p:last-child {
+  max-width: 660px;
+  color: #91a6b3;
+  line-height: 1.65;
+}
+.finder-methodology-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  margin-top: 42px;
+  background: #263b48;
+  border: 1px solid #263b48;
+}
+.finder-methodology-cards article {
+  min-width: 0;
+  padding: 28px;
+  background: #08141e;
+}
+.finder-methodology-cards svg,
+.finder-methodology-boundary svg {
+  width: 21px;
+  height: 21px;
+  color: #35dff1;
+}
+.finder-methodology-cards h3 {
+  margin: 28px 0 9px;
+  font-size: 17px;
+}
+.finder-methodology-cards p {
+  margin: 0;
+  color: #879ca9;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.finder-methodology-flow ol {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 38px 0 0;
+  padding: 0;
+  border-block: 1px solid #263b48;
+  list-style: none;
+}
+.finder-methodology-flow li {
+  display: grid;
+  gap: 24px;
+  min-width: 0;
+  padding: 28px 24px;
+  border-right: 1px solid #263b48;
+}
+.finder-methodology-flow li:last-child {
+  border-right: 0;
+}
+.finder-methodology-flow li > span {
+  color: #35dff1;
+  font:
+    600 11px/1 "JetBrains Mono",
+    monospace;
+  letter-spacing: 0.08em;
+}
+.finder-methodology-flow h3 {
+  margin: 0 0 9px;
+  font-size: 16px;
+}
+.finder-methodology-flow p {
+  margin: 0;
+  color: #879ca9;
+  font-size: 12px;
+  line-height: 1.55;
+}
+.finder-methodology-boundary {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.75fr) minmax(0, 1.25fr);
+  gap: 64px;
+}
+.finder-methodology-boundary > div:last-child {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid #263b48;
+}
+.finder-methodology-boundary article {
+  padding: 28px;
+}
+.finder-methodology-boundary article + article {
+  border-left: 1px solid #263b48;
+}
+.finder-methodology-boundary article + article svg {
+  color: #e5b315;
+}
+.finder-methodology-boundary h3 {
+  margin: 18px 0;
+  font-size: 16px;
+}
+.finder-methodology-boundary ul {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding-left: 18px;
+  color: #91a6b3;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.finder-methodology-sources {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.75fr) minmax(0, 1.25fr);
+  gap: 64px;
+}
+.finder-methodology-sources > div:last-child {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: #263b48;
+  border: 1px solid #263b48;
+}
+.finder-methodology-sources article {
+  display: grid;
+  gap: 7px;
+  padding: 22px;
+  background: #08141e;
+}
+.finder-methodology-sources strong {
+  color: #e7f3f7;
+  font-size: 13px;
+}
+.finder-methodology-sources span {
+  color: #8095a2;
+  font-size: 11px;
+}
+
+@media (max-width: 800px) {
+  .finder-methodology-cards,
+  .finder-methodology-flow ol,
+  .finder-methodology-boundary,
+  .finder-methodology-sources {
+    grid-template-columns: 1fr;
+  }
+  .finder-methodology-flow li {
+    grid-template-columns: 36px 1fr;
+    border-right: 0;
+    border-bottom: 1px solid #263b48;
+  }
+  .finder-methodology-flow li:last-child {
+    border-bottom: 0;
+  }
+  .finder-methodology-boundary {
+    gap: 28px;
+  }
+}
+
 @media (max-width: 800px) {
   .service-decision,
   .service-scope-grid,

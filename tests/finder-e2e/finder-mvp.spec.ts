@@ -9,7 +9,7 @@ test("Finder MVP is public and contains no account entry points", async ({ page 
   await expect(page.getByRole("navigation", { name: "Finder navigation" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Contact" })).toHaveAttribute(
     "href",
-    "mailto:sina.khedmati@outlook.de",
+    "mailto:kshitijjindal1@gmail.com",
   );
   await expect(page.getByRole("link", { name: "Discuss a site" })).toHaveCount(0);
   await expect(page.getByText(/Sign in|Sign up|Create account/i)).toHaveCount(0);
@@ -25,12 +25,20 @@ test("Finder MVP is public and contains no account entry points", async ({ page 
 
 test("Finder landing and methodology are the only public product pages", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: /Find better starting points/i })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: /Find stronger grid connection candidates/i }),
+  ).toBeVisible();
   await expect(page.getByRole("link", { name: /Open Power Finder/i })).toBeVisible();
   await expect(page.getByRole("link", { name: "Discuss a site" })).toHaveCount(0);
 
   await page.goto("/data-sources");
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("what the map supports");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText(
+    "Evidence you can screen with",
+  );
+  await expect(page.getByRole("heading", { name: "What Powers the Shortlist" })).toHaveCount(0);
+  await expect(page.getByText("What Powers the Shortlist", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Activation Benchmark" })).toHaveCount(0);
+  await expect(page.getByText("Private Topology Intelligence", { exact: true })).toHaveCount(0);
   await expect(page.getByText(/product tour|start a pilot|review the assessment/i)).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Discuss a site" })).toHaveCount(0);
 
@@ -150,7 +158,7 @@ test("public MVP excludes experimental capacity and network-study outputs", asyn
   expect(scenarioRequests).toHaveLength(0);
 });
 
-test("calculated capacity separates solved reference buses from private mapped capacity", async ({
+test("capacity screening reacts to project demand without exposing the reference lab", async ({
   page,
 }) => {
   await page.goto("/power-finder?lat=52.31&lng=13.36&mw=20&distance=20&mapMode=capacity");
@@ -168,39 +176,8 @@ test("calculated capacity separates solved reference buses from private mapped c
   const initialSummary = await fitSummary.innerText();
   await page.getByLabel("Exact MW").fill("100");
   await expect(fitSummary).not.toHaveText(initialSummary);
-  await page.getByRole("button", { name: /Open Reference Capacity Lab/i }).click();
-  await expect(page.getByText("Reference Capacity Lab", { exact: true })).toBeVisible();
-  await expect(page.locator('select[name="reference-capacity-metric"]')).toHaveValue(
-    "n0_import_mw",
-  );
-  await expect(page.getByText(/not capacity at a mapped public node/i)).toBeVisible();
-  await expect(page.getByRole("button", { name: /Reference bus 01.*megawatts/i })).toBeVisible();
-  await page.getByRole("button", { name: /Reference bus 01.*megawatts/i }).click();
-  await expect(page.getByText("N-0 calculated")).toBeVisible();
-  await expect(page.getByText("Additional unlocked")).toBeVisible();
-  await page.getByRole("button", { name: "Explore Activation Options" }).click();
-  await expect(page.getByText("Calculated reference network")).toBeVisible();
-  await expect(page.getByText(/activatable in the representative annual envelope/i)).toBeVisible();
-  await expect(page.getByText("Operating scenario range (P10 / P50 / P90)")).toBeVisible();
-  await page.getByRole("tab", { name: "Evidence" }).click();
-  await expect(page.getByText("Next Evidence Gate")).toBeVisible();
-  await page.getByText("Technical Audit & Model Governance").click();
-  await expect(page.getByText("Release 2 AI role")).toBeVisible();
-  await expect(page.getByText(/6\/10 prioritised cases verified by physics/)).toBeVisible();
-  await expect(page.getByText("Release 3 shadow validation")).toBeVisible();
-  await expect(page.getByText(/36\/36 physics verified/)).toBeVisible();
-  await expect(page.getByText("Release 4 operator-pilot readiness")).toBeVisible();
-  await expect(page.getByText(/16\/16 repository gates passed/)).toBeVisible();
-  await expect(page.getByText("Neo4j and physics boundary")).toBeVisible();
-  await expect(page.getByText(/4\/8 graph-prioritised cases replayed/)).toBeVisible();
-  await expect(page.getByText("Promotion state")).toBeVisible();
-  await expect(page.getByText("Release 5 operator evidence control")).toBeVisible();
-  await expect(page.getByText(/6\/6 gates passed/)).toBeVisible();
-  await expect(page.getByText("Restriction rehearsal")).toBeVisible();
-  await expect(page.getByText(/14\.0 MW of 17\.5 MW/)).toBeVisible();
-  await expect(page.getByText("Control authority")).toBeVisible();
-  await page.getByRole("button", { name: /Back to map/i }).click();
-  await expect(page.getByText(/0 MW firm result means.*not N-1 secure/i)).toBeVisible();
+  await expect(page.getByRole("button", { name: /Open Reference Capacity Lab/i })).toHaveCount(0);
+  await expect(page.getByText("Reference Capacity Lab", { exact: true })).toHaveCount(0);
   await expect(
     page.getByText(/Illustrative demo.*synthetic values, not grid capacity/i),
   ).toBeVisible();

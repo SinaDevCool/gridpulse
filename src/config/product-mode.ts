@@ -28,7 +28,7 @@ export const integratedActivationStudyEnabled =
 export const graphStudySubmissionEnabled =
   productCapabilities.workspace && import.meta.env.VITE_GRAPH_STUDY_SUBMISSION === "true";
 
-export const finderContactEmail = "sina.khedmati@outlook.de";
+export const finderContactEmail = "kshitijjindal1@gmail.com";
 
 const finderRoutes = new Set(["/", "/power-finder", "/synthetic-network-study", "/data-sources"]);
 

@@ -17,7 +17,6 @@ import { lazy, Suspense, useEffect, useMemo, useState, type ChangeEvent } from "
 import { z } from "zod";
 import { AppShell } from "@/components/product/AppShell";
 import { PowerFinderMap } from "@/components/product/PowerFinderMap";
-import { ReferenceCapacityInset } from "@/components/product/ReferenceCapacityInset";
 import type { ActivationStudyTab } from "@/components/product/ActivationStudyPanel";
 import type { VisibleLayerCounts } from "@/components/product/power-finder-map-data";
 import { integratedActivationStudyEnabled, productCapabilities } from "@/config/product-mode";
@@ -81,11 +80,8 @@ import {
 import {
   capacityMetricLabels,
   loadCalculatedCapacityViewport,
-  loadReferenceCapacityMap,
   type CalculatedCapacityViewport,
   type CapacityMetric,
-  type ReferenceCapacityArtifact,
-  type ReferenceCapacityResult,
 } from "@/features/power-finder/calculated-capacity";
 import {
   classifyCapacityOpportunity,
@@ -118,20 +114,8 @@ export const Route = createFileRoute("/power-finder")({
     compare: z.string().max(700).optional().catch(undefined),
     region: z.enum(["DE", "DE-BB"]).optional().catch(undefined),
     mapMode: z.enum(["voltage", "evidence", "capacity"]).optional().catch(undefined),
-    referenceLab: z.enum(["true"]).optional().catch(undefined),
     capacitySource: z.enum(["reference", "private", "demo"]).optional().catch(undefined),
     capacityMetric: z
-      .enum([
-        "n0_import_mw",
-        "firm_import_mw",
-        "flexible_import_mw",
-        "bess_assisted_import_mw",
-        "staged_initial_import_mw",
-        "eventual_import_mw",
-      ])
-      .optional()
-      .catch(undefined),
-    referenceMetric: z
       .enum([
         "n0_import_mw",
         "firm_import_mw",
@@ -339,25 +323,13 @@ function PowerFinderPage() {
   const [capacityMetric, setCapacityMetric] = useState<CapacityMetric>(
     search.capacityMetric ?? "firm_import_mw",
   );
-  const [referenceMetric, setReferenceMetric] = useState<CapacityMetric>(
-    search.referenceMetric ?? "n0_import_mw",
-  );
   const [requiredCapacityMw, setRequiredCapacityMw] = useState(
     search.requiredMw ?? project.importMw,
   );
   const [capacitySource, setCapacitySource] = useState<"reference" | "private" | "demo">(
     search.capacitySource === "private" && search.workspaceId ? "private" : "demo",
   );
-  const [referenceLabOpen, setReferenceLabOpen] = useState(
-    search.referenceLab === "true" ||
-      (search.mapMode === "capacity" && search.capacitySource === "reference"),
-  );
   const [capacityViewport, setCapacityViewport] = useState<CalculatedCapacityViewport | null>(null);
-  const [referenceCapacity, setReferenceCapacity] = useState<ReferenceCapacityArtifact | null>(
-    null,
-  );
-  const [selectedReferenceCapacity, setSelectedReferenceCapacity] =
-    useState<ReferenceCapacityResult | null>(null);
   const [capacityState, setCapacityState] = useState<"idle" | "loading" | "ready" | "error">(
     "idle",
   );
@@ -374,18 +346,11 @@ function PowerFinderPage() {
       search.capacitySource === "private" && search.workspaceId ? "private" : "demo",
     );
     setCapacityMetric(search.capacityMetric ?? "firm_import_mw");
-    setReferenceMetric(search.referenceMetric ?? "n0_import_mw");
     setRequiredCapacityMw(search.requiredMw ?? project.importMw);
-    setReferenceLabOpen(
-      search.referenceLab === "true" ||
-        (search.mapMode === "capacity" && search.capacitySource === "reference"),
-    );
   }, [
     search.capacityMetric,
     search.capacitySource,
     search.mapMode,
-    search.referenceLab,
-    search.referenceMetric,
     search.requiredMw,
     search.workspaceId,
     project.importMw,
@@ -412,17 +377,6 @@ function PowerFinderPage() {
         setCapacityState("error");
       });
   }, [capacityMetric, capacitySource, collection, mapMode, search.workspaceId]);
-
-  useEffect(() => {
-    if (!referenceLabOpen || referenceCapacity) return;
-    setCapacityState("loading");
-    void loadReferenceCapacityMap()
-      .then((artifact) => {
-        setReferenceCapacity(artifact);
-        setCapacityState("ready");
-      })
-      .catch(() => setCapacityState("error"));
-  }, [referenceLabOpen, referenceCapacity]);
 
   useEffect(() => {
     const saved = loadFinderProject();
@@ -734,48 +688,10 @@ function PowerFinderPage() {
     [comparedCandidates, project],
   );
   const coordinates = selected ? pointCoordinates(selected) : null;
-  const referenceCandidate = useMemo<CandidateOpportunity | null>(() => {
-    if (!selectedReferenceCapacity) return null;
-    return {
-      id: selectedReferenceCapacity.result_id,
-      siteId: "simbench-reference-project",
-      nodeId: selectedReferenceCapacity.reference_bus_id,
-      siteName: "Representative activation project",
-      nodeName: selectedReferenceCapacity.label,
-      operator: null,
-      voltageKv: [20],
-      distanceKm: 0,
-      contextScore: 0,
-      evidenceScore: 100,
-      screeningRank: 100,
-      voltageFit: "compatible",
-      confidence: "high",
-      missingEvidence: ["Accepted operator model", "Operator-approved contingency set"],
-      constraints: [selectedReferenceCapacity.binding_constraint ?? "Reference-network constraint"],
-      calculationVersion: selectedReferenceCapacity.activation.result_sha256,
-      source: "published_artifact",
-    };
-  }, [selectedReferenceCapacity]);
-  const activationProject = useMemo(
-    () =>
-      selectedReferenceCapacity
-        ? {
-            ...project,
-            name: "Representative activation project",
-            importMw: selectedReferenceCapacity.activation.requested_capacity_mw,
-            ultimateImportMw: selectedReferenceCapacity.activation.staged.eventual_capacity_mw,
-            minimumFirmMw: selectedReferenceCapacity.activation.immediately_energisable_mw,
-            flexibleLoadMw: selectedReferenceCapacity.activation.flexible.maximum_reduction_mw,
-            batteryPowerMw: selectedReferenceCapacity.activation.bess_assisted.battery_power_mw,
-            batteryEnergyMwh: selectedReferenceCapacity.activation.bess_assisted.battery_energy_mwh,
-          }
-        : project,
-    [project, selectedReferenceCapacity],
-  );
   const activationOpen =
     integratedActivationStudyEnabled &&
     search.study === "activation" &&
-    Boolean(referenceCandidate ?? selectedOpportunity);
+    Boolean(selectedOpportunity);
   const activationTab: ActivationStudyTab =
     search.studyTab === "geographic" ? "overview" : (search.studyTab ?? "overview");
   const startPrivateAssessment = async (studyInput?: {
@@ -1595,7 +1511,6 @@ function PowerFinderPage() {
                   setMapMode(isEnabled ? "capacity" : "voltage");
                   const nextSource = search.workspaceId ? "private" : "demo";
                   setCapacitySource(nextSource);
-                  setSelectedReferenceCapacity(null);
                   setInteractionNotice(
                     `Capacity opportunities ${isEnabled ? "enabled" : "disabled"}.`,
                   );
@@ -1716,17 +1631,6 @@ function PowerFinderPage() {
                   )}
               </div>
             )}
-            <button
-              type="button"
-              className="reference-lab-link"
-              onClick={() => {
-                setReferenceLabOpen(true);
-                void updateSearch({ referenceLab: "true", referenceMetric });
-              }}
-            >
-              Open Reference Capacity Lab
-              <small>Explore the method on an abstract SimBench network</small>
-            </button>
           </section>
 
           <details className="finder-layers-menu" suppressHydrationWarning>
@@ -2036,33 +1940,6 @@ function PowerFinderPage() {
               onVisibleLayerCounts={setVisibleLayerCounts}
             />
           )}
-          {referenceLabOpen && referenceCapacity && (
-            <ReferenceCapacityInset
-              artifact={referenceCapacity}
-              metric={referenceMetric}
-              onMetricChange={(metric) => {
-                setReferenceMetric(metric);
-                void updateSearch({ referenceMetric: metric });
-              }}
-              selected={selectedReferenceCapacity}
-              onSelect={setSelectedReferenceCapacity}
-              onClose={() => {
-                const returnSource = search.workspaceId ? "private" : "demo";
-                setReferenceLabOpen(false);
-                setSelectedReferenceCapacity(null);
-                setCapacitySource(returnSource);
-                void updateSearch({
-                  referenceLab: undefined,
-                  capacitySource: returnSource,
-                });
-              }}
-              onExplore={(result) => {
-                setSelectedReferenceCapacity(result);
-                void updateSearch({ study: "activation", studyTab: "overview" });
-              }}
-            />
-          )}
-
           <div className="power-finder-legend" aria-label="Map legend">
             <strong>
               {mapMode === "capacity"
@@ -2114,15 +1991,15 @@ function PowerFinderPage() {
             )}
           </div>
 
-          {activationOpen && (referenceCandidate || selectedOpportunity) && (
+          {activationOpen && selectedOpportunity && (
             <Suspense
               fallback={<div className="activation-study-loading">Loading Activation Study…</div>}
             >
               <ActivationStudyPanel
-                project={activationProject}
-                candidate={referenceCandidate ?? selectedOpportunity!}
-                registeredStudy={referenceCandidate ? null : c1Study}
-                referenceCapacity={referenceCandidate ? selectedReferenceCapacity : null}
+                project={project}
+                candidate={selectedOpportunity}
+                registeredStudy={c1Study}
+                referenceCapacity={null}
                 tab={activationTab}
                 onTabChange={(studyTab) => void updateSearch({ studyTab })}
                 onClose={() => void updateSearch({ study: undefined, studyTab: undefined })}

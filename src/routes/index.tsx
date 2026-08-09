@@ -31,21 +31,21 @@ export const Route = createFileRoute("/")({
 const finderCapabilities = [
   {
     icon: MapPinned,
-    title: "Explore mapped grid context",
+    title: "Discover viable search areas",
     description:
-      "Inspect grid nodes, corridors, industrial sites and registered energy assets in accepted regional releases.",
+      "Explore grid infrastructure, industrial land, voltage context and registered assets around a proposed site.",
   },
   {
     icon: Network,
-    title: "Compare site-to-node pathways",
+    title: "Shortlist connection candidates",
     description:
-      "Rank candidates using straight-line distance, mapped voltage, operator context and evidence completeness.",
+      "Compare mapped nodes using proximity, voltage alignment, operator context and evidence quality.",
   },
   {
     icon: Database,
-    title: "Trace every source",
+    title: "Know what needs confirmation",
     description:
-      "See publisher, licence, freshness, evidence class and the limits of every screening conclusion.",
+      "Separate public evidence, illustrative analysis and reviewed private results before engaging an operator.",
   },
 ] as const;
 
@@ -67,10 +67,11 @@ function FinderLandingPage() {
             <div className="landing-hero-overlay" />
             <div className="landing-container landing-hero-content">
               <p className="landing-eyebrow">GridPulse Power Finder</p>
-              <h1 id="hero-title">Find better starting points for power in Germany.</h1>
+              <h1 id="hero-title">Find stronger grid connection candidates, sooner.</h1>
               <p className="landing-hero-lead">
-                Screen mapped grid infrastructure, industrial sites, voltage context and source
-                evidence before committing development effort. No account required.
+                Turn fragmented public grid evidence into a focused shortlist for large-load and
+                energy projects in Germany. Start with the map, compare candidates, then take the
+                strongest options into technical review.
               </p>
               <div className="landing-actions">
                 <Link to="/power-finder" className="landing-button landing-button-primary">
@@ -81,8 +82,8 @@ function FinderLandingPage() {
                 </Link>
               </div>
               <p className="landing-audience">
-                Built for data centres, BESS, charging hubs, electrolysers and large industrial
-                loads evaluating German locations.
+                For data centres, storage, charging, hydrogen and industrial projects evaluating
+                where to investigate a grid connection.
               </p>
             </div>
           </section>
@@ -90,11 +91,12 @@ function FinderLandingPage() {
           <section className="landing-section landing-process" aria-labelledby="finder-value">
             <div className="landing-container">
               <div className="landing-section-heading landing-section-heading-centered">
-                <p className="landing-eyebrow">Evidence-aware discovery</p>
-                <h2 id="finder-value">Prioritise where to investigate next.</h2>
+                <p className="landing-eyebrow">From search area to shortlist</p>
+                <h2 id="finder-value">Reduce the search space before costly grid studies.</h2>
                 <p>
-                  Power Finder turns public and registered infrastructure data into a transparent
-                  screening view. It does not invent missing grid capacity.
+                  GridPulse brings location, network context and source quality into one screening
+                  workflow. Where reviewed capacity results exist, they can be compared with the
+                  project requirement; everywhere else, capacity remains explicitly unknown.
                 </p>
               </div>
               <div className="landing-outcomes-grid">
