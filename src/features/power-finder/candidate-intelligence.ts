@@ -9,9 +9,13 @@ import type { CapacityScenarioResult } from "./capacity-scenario";
 import type { ReleaseBNetworkResult } from "./release-b-network";
 import { publicScreeningProvenance, type CalculationProvenance } from "./calculation-provenance";
 import {
+  baseRankingWeights,
+  projectRankingProfiles,
   RANKING_MODEL_VERSION,
   weightedInvestigationPriority,
+  type RankingWeights,
 } from "./ranking-config";
+import type { FinderProjectType } from "./finder-project";
 
 export type VoltageFit = "compatible" | "conditional" | "unknown";
 export type CandidateConfidence = "high" | "medium" | "low";
@@ -115,7 +119,11 @@ export const requiredVoltageFit = (_requiredImportMw: number, voltageKv: number[
 export function applyPreferredVoltageContext(
   candidates: CandidateOpportunity[],
   preferredVoltageKv: number | null,
+  projectType?: FinderProjectType,
 ) {
+  const weights: RankingWeights = projectType
+    ? projectRankingProfiles[projectType]
+    : baseRankingWeights;
   return candidates
     .map((candidate) => {
       const voltageFit = mappedVoltageRelevance(preferredVoltageKv, candidate.voltageKv);
@@ -127,7 +135,7 @@ export function applyPreferredVoltageContext(
         ...components,
         mappedVoltageRelevance: mappedVoltageRelevanceScore,
       };
-      const screeningRank = round1(weightedInvestigationPriority(rankComponents));
+      const screeningRank = round1(weightedInvestigationPriority(rankComponents, weights));
       return { ...candidate, voltageFit, rankComponents, screeningRank };
     })
     .sort(

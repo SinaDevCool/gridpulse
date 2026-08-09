@@ -59,7 +59,6 @@ import {
   defaultFinderProject,
   finderProjectTypes,
   isStorageProject,
-  projectOperatorQuestions,
   type FinderProject,
   type FinderProjectType,
 } from "@/features/power-finder/finder-project";
@@ -911,7 +910,11 @@ function PowerFinderPage() {
     void resultPromise
       .then((result) => ({
         ...result,
-        candidates: applyPreferredVoltageContext(result.candidates, project.preferredVoltageKv),
+        candidates: applyPreferredVoltageContext(
+          result.candidates,
+          project.preferredVoltageKv,
+          project.type,
+        ),
       }))
       .then((result) => {
         if (!active) return;
@@ -1131,8 +1134,10 @@ function PowerFinderPage() {
                             ? value
                             : Math.min(value, project.minimumFirmMw),
                       });
+                      if (mapMode === "capacity") setRequiredCapacityMw(value);
                       void updateSearch({
                         mw: value,
+                        requiredMw: mapMode === "capacity" ? value : search.requiredMw,
                         candidate: undefined,
                         compare: undefined,
                       });
@@ -1145,37 +1150,39 @@ function PowerFinderPage() {
                   </small>
                 )}
               </label>
-              <label>
-                <span>Export MW</span>
-                <input
-                  name="export-mw"
-                  type="number"
-                  min="0"
-                  max="1000"
-                  step="0.1"
-                  value={numericDrafts.exportMw}
-                  inputMode="decimal"
-                  autoComplete="off"
-                  aria-invalid={Boolean(fieldErrors.exportMw)}
-                  aria-describedby={fieldErrors.exportMw ? "export-mw-error" : undefined}
-                  onChange={(event) => {
-                    commitNumber("exportMw", event.target.value, (value) => {
-                      if (value == null) return;
-                      updateProject({ exportMw: value });
-                      void updateSearch({
-                        exportMw: value || undefined,
-                        candidate: undefined,
-                        compare: undefined,
+              {isStorageProject(project.type) && (
+                <label>
+                  <span>Export MW</span>
+                  <input
+                    name="export-mw"
+                    type="number"
+                    min="0"
+                    max="1000"
+                    step="0.1"
+                    value={numericDrafts.exportMw}
+                    inputMode="decimal"
+                    autoComplete="off"
+                    aria-invalid={Boolean(fieldErrors.exportMw)}
+                    aria-describedby={fieldErrors.exportMw ? "export-mw-error" : undefined}
+                    onChange={(event) => {
+                      commitNumber("exportMw", event.target.value, (value) => {
+                        if (value == null) return;
+                        updateProject({ exportMw: value });
+                        void updateSearch({
+                          exportMw: value || undefined,
+                          candidate: undefined,
+                          compare: undefined,
+                        });
                       });
-                    });
-                  }}
-                />
-                {fieldErrors.exportMw && (
-                  <small id="export-mw-error" className="finder-field-error">
-                    {fieldErrors.exportMw}
-                  </small>
-                )}
-              </label>
+                    }}
+                  />
+                  {fieldErrors.exportMw && (
+                    <small id="export-mw-error" className="finder-field-error">
+                      {fieldErrors.exportMw}
+                    </small>
+                  )}
+                </label>
+              )}
             </div>
             <label>
               <span>Preferred search voltage</span>
@@ -1330,7 +1337,7 @@ function PowerFinderPage() {
                 </div>
               </details>
             )}
-            {isStorageProject(project.type) && (
+            {isStorageProject(project.type) && search.study === "activation" && (
               <div className="finder-project-grid">
                 <label>
                   <span>Battery MW</span>
@@ -1430,20 +1437,6 @@ function PowerFinderPage() {
                 Clear declared site
               </button>
             )}
-            <div className="finder-input-boundary" aria-label="How project inputs are used">
-              <p>
-                <strong>Used in ranking:</strong> site, distance, mapped voltage, operator and
-                evidence quality.
-              </p>
-              <p>
-                <strong>Recorded for operator discussion:</strong> requested import/export and
-                battery configuration.
-              </p>
-              <p>
-                <strong>Not established here:</strong> available capacity, feasibility, connection
-                cost or delivery date.
-              </p>
-            </div>
           </section>
 
           <section className="power-finder-filter-panel" aria-label="Search and filter map">
@@ -1569,11 +1562,9 @@ function PowerFinderPage() {
 
           <details className="finder-question-panel">
             <summary id="finder-question-title">Operator questions &amp; report</summary>
-            <ol>
-              {projectOperatorQuestions(project).map((question) => (
-                <li key={question}>{question}</li>
-              ))}
-            </ol>
+            <p className="finder-question-summary">
+              Confirm the operator, connection point, delivery milestones and available flexibility.
+            </p>
             <button
               type="button"
               className="secondary-button"
@@ -1596,7 +1587,7 @@ function PowerFinderPage() {
               }}
             >
               <Download aria-hidden="true" />
-              {reportPreparing ? "Preparing report…" : "Download screening report"}
+              <span>{reportPreparing ? "Preparing report…" : "Download screening report"}</span>
             </button>
           </details>
 
@@ -1636,36 +1627,9 @@ function PowerFinderPage() {
             </label>
             {mapMode === "capacity" && (
               <div className="capacity-opportunity-controls">
-                <div className="capacity-source-tabs" aria-label="Capacity data source">
-                  <button
-                    type="button"
-                    className={capacitySource === "demo" ? "is-active" : ""}
-                    aria-pressed={capacitySource === "demo"}
-                    onClick={() => {
-                      setCapacitySource("demo");
-                      void updateSearch({ capacitySource: "demo" });
-                    }}
-                  >
-                    Illustrative
-                  </button>
-                  <button
-                    type="button"
-                    className={capacitySource === "private" ? "is-active" : ""}
-                    aria-pressed={capacitySource === "private"}
-                    disabled={!search.workspaceId}
-                    title={
-                      !search.workspaceId
-                        ? "Connect an authorised workspace to use reviewed results"
-                        : undefined
-                    }
-                    onClick={() => {
-                      setCapacitySource("private");
-                      void updateSearch({ capacitySource: "private" });
-                    }}
-                  >
-                    Reviewed
-                  </button>
-                </div>
+                <p className="capacity-source-status">
+                  {capacitySource === "demo" ? "Illustrative capacity screen" : "Reviewed capacity"}
+                </p>
                 <div className="capacity-required-heading">
                   <label htmlFor="required-capacity-range">Required power</label>
                   <span>
@@ -1849,7 +1813,7 @@ function PowerFinderPage() {
                 </small>
               </span>
               <label>
-                <span className="sr-only">Sort candidates</span>
+                <span>Sort by</span>
                 <select
                   name="candidate-sort"
                   value={candidateSort}

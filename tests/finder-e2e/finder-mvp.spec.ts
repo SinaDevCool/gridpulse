@@ -16,7 +16,7 @@ test("Finder MVP is public and contains no account entry points", async ({ page 
   await expect(page.getByText(/^Screening only\./i)).toHaveCount(0);
   await expect(page.getByText(/unknown capacity remains unknown/i).first()).toBeVisible();
   await expect(page.getByText("No declared site yet")).toBeVisible();
-  await page.getByText("Operator Questions & Report", { exact: true }).click();
+  await page.getByText(/Operator questions & report/i).click();
   await expect(page.getByRole("button", { name: /Download screening report/i })).toBeDisabled();
   await expect(page.getByRole("button", { name: /Show .* on map, .*\/100/ })).toHaveCount(0);
   expect(requests.some((url) => url.includes("/auth/v1/"))).toBe(false);
@@ -60,18 +60,15 @@ test("account-free project screening supports a custom site and BESS requirement
   });
   await page.getByLabel("Project name").fill("Brandenburg storage screen");
   await expect(page.getByLabel("Project name")).toHaveValue("Brandenburg storage screen");
-  await page.getByText("Operator Questions & Report", { exact: true }).click();
-  await expect(page.getByText(/What import capacity can be assessed for charging/i)).toBeVisible();
-  await expect(
-    page.getByText(/What export capacity can be assessed for discharging/i),
-  ).toBeVisible();
+  await page.getByText(/Operator questions & report/i).click();
+  await expect(page.getByText(/Confirm the operator, connection point/i)).toBeVisible();
   await expect(page.getByRole("button", { name: /Download screening report/i })).toBeEnabled();
   await expect
     .poll(() => page.evaluate(() => localStorage.getItem("gridpulse-finder-active-project")))
     .toContain("Brandenburg storage screen");
   await page.reload();
   await expect(page.getByLabel("Project name")).toHaveValue("Brandenburg storage screen");
-  await page.getByText("Operator Questions & Report", { exact: true }).click();
+  await page.getByText(/Operator questions & report/i).click();
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: /Download screening report/i }).click();
   const download = await downloadPromise;
@@ -165,11 +162,7 @@ test("calculated capacity separates solved reference buses from private mapped c
   const metric = page.locator('select[name="capacity-overlay-metric"]');
   await expect(metric).toBeVisible();
   await expect(page.locator('input[name="required-capacity-range"]')).toHaveValue("20");
-  await expect(page.getByRole("button", { name: "Illustrative" })).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
-  await expect(page.getByRole("button", { name: "Reviewed" })).toBeDisabled();
+  await expect(page.getByText("Illustrative capacity screen", { exact: true })).toBeVisible();
   await expect(page.getByText(/Illustrative values.*not real grid capacity/i)).toBeVisible();
   const fitSummary = page.locator(".capacity-fit-summary");
   const initialSummary = await fitSummary.innerText();

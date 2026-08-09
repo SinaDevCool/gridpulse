@@ -65,6 +65,36 @@ function publishVisibleLayerCounts(
   });
 }
 
+function withCapacityResults(
+  value: PowerFinderCollection,
+  capacityNodes: CalculatedCapacityNode[],
+  capacityMetric: CapacityMetric,
+  requiredCapacityMw: number,
+) {
+  const byNode = new Map(capacityNodes.map((result) => [result.publicNodeId, result]));
+  return {
+    ...value,
+    features: value.features.map((feature) => {
+      const result = byNode.get(String(feature.id));
+      const opportunity = classifyCapacityOpportunity(result, capacityMetric, requiredCapacityMw);
+      return result
+        ? ({
+            ...feature,
+            properties: {
+              ...feature.properties,
+              ...(result.valueMw === null ? {} : { calculated_capacity_mw: result.valueMw }),
+              capacity_validation_state: result.validationState,
+              capacity_fit: opportunity.fit,
+              capacity_ratio: opportunity.coverageRatio ?? 0,
+              capacity_meets: opportunity.fit === "meets" ? 1 : 0,
+              capacity_activation: opportunity.fit === "activation" ? 1 : 0,
+            },
+          } as PowerFinderFeature)
+        : feature;
+    }),
+  };
+}
+
 export function PowerFinderMap({
   collection,
   selectedFeature,
@@ -91,6 +121,8 @@ export function PowerFinderMap({
   const selectedFeatureRef = useRef(selectedFeature);
   const previewFeatureRef = useRef(previewFeature);
   const capacityNodesRef = useRef(capacityNodes);
+  const capacityMetricRef = useRef(capacityMetric);
+  const requiredCapacityMwRef = useRef(requiredCapacityMw);
   onSelectRef.current = onSelect;
   onViewportChangeRef.current = onViewportChange;
   collectionRef.current = collection;
@@ -100,29 +132,8 @@ export function PowerFinderMap({
   selectedFeatureRef.current = selectedFeature;
   previewFeatureRef.current = previewFeature;
   capacityNodesRef.current = capacityNodes;
-
-  const withCapacity = (value: PowerFinderCollection) => {
-    const byNode = new Map(capacityNodesRef.current.map((result) => [result.publicNodeId, result]));
-    return {
-      ...value,
-      features: value.features.map((feature) => {
-        const result = byNode.get(String(feature.id));
-        const opportunity = classifyCapacityOpportunity(result, capacityMetric, requiredCapacityMw);
-        return result
-          ? ({
-              ...feature,
-              properties: {
-                ...feature.properties,
-                ...(result.valueMw === null ? {} : { calculated_capacity_mw: result.valueMw }),
-                capacity_validation_state: result.validationState,
-                capacity_fit: opportunity.fit,
-                capacity_ratio: opportunity.coverageRatio ?? 0,
-              },
-            } as PowerFinderFeature)
-          : feature;
-      }),
-    };
-  };
+  capacityMetricRef.current = capacityMetric;
+  requiredCapacityMwRef.current = requiredCapacityMw;
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -155,13 +166,24 @@ export function PowerFinderMap({
       mapRef.current = map;
       map.addControl(new NavigationControl({ showCompass: false }), "top-right");
       map.on("load", () => {
-        const split = splitMapCollection(withCapacity(collectionRef.current));
+        const split = splitMapCollection(
+          withCapacityResults(
+            collectionRef.current,
+            capacityNodesRef.current,
+            capacityMetricRef.current,
+            requiredCapacityMwRef.current,
+          ),
+        );
         map.addSource(sourceIds.node, {
           type: "geojson",
           data: split.nodes,
           cluster: true,
           clusterMaxZoom: 12,
           clusterRadius: 38,
+          clusterProperties: {
+            capacity_meets: ["+", ["number", ["get", "capacity_meets"], 0]],
+            capacity_activation: ["+", ["number", ["get", "capacity_activation"], 0]],
+          },
         });
         map.addSource(sourceIds.line, { type: "geojson", data: split.lines });
         map.addSource(sourceIds.industrial_site, {
@@ -496,7 +518,9 @@ export function PowerFinderMap({
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    const split = splitMapCollection(withCapacity(collection));
+    const split = splitMapCollection(
+      withCapacityResults(collection, capacityNodes, capacityMetric, requiredCapacityMw),
+    );
     const updates = [
       [sourceIds.node, split.nodes],
       [sourceIds.line, split.lines],
@@ -569,6 +593,35 @@ export function PowerFinderMap({
       "#f59e0b",
       "#475569",
     ];
+    const voltageClusterColour = [
+      "step",
+      ["get", "point_count"],
+      "#f59e0b",
+      25,
+      "#f97316",
+      100,
+      "#ef4444",
+    ];
+    const capacityClusterColour = [
+      "case",
+      [
+        ">=",
+        ["number", ["get", "capacity_meets"], 0],
+        ["*", ["number", ["get", "point_count"], 1], 0.5],
+      ],
+      "#67e8f9",
+      [
+        ">",
+        [
+          "+",
+          ["number", ["get", "capacity_meets"], 0],
+          ["number", ["get", "capacity_activation"], 0],
+        ],
+        0,
+      ],
+      "#a78bfa",
+      "#52657a",
+    ];
     map.setPaintProperty(
       "grid-nodes",
       "circle-color",
@@ -579,6 +632,16 @@ export function PowerFinderMap({
           : voltageColour,
     );
     map.setPaintProperty("grid-nodes", "circle-radius", mapMode === "capacity" ? 9 : 7);
+    map.setPaintProperty(
+      "node-clusters",
+      "circle-color",
+      mapMode === "capacity" ? capacityClusterColour : voltageClusterColour,
+    );
+    map.setPaintProperty(
+      "node-clusters",
+      "circle-stroke-color",
+      mapMode === "capacity" ? "#dffaff" : "#fff7d6",
+    );
     map.setPaintProperty(
       "grid-nodes",
       "circle-stroke-color",

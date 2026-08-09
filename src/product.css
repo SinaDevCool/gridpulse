@@ -13843,3 +13843,108 @@ tbody tr:last-child td {
     padding: 7px 8px;
   }
 }
+
+/* Power Finder rail usability: final desktop overrides intentionally follow legacy release CSS. */
+@media (min-width: 761px) {
+  .power-finder-page {
+    grid-template-columns: 352px minmax(0, 1fr);
+  }
+
+  .power-finder-sidebar {
+    box-sizing: border-box;
+    padding-inline: 14px;
+  }
+
+  .power-finder-sidebar :is(input, select, button) {
+    min-width: 0;
+  }
+
+  .finder-rail-sticky {
+    margin-inline: -14px;
+    padding-inline: 14px;
+  }
+
+  .finder-question-summary {
+    margin: 8px 0;
+    color: #9bb1c3;
+    font-size: 0.7rem;
+    line-height: 1.45;
+  }
+
+  .finder-question-panel .secondary-button {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    width: 100%;
+    min-height: 34px;
+    padding: 7px 9px;
+    text-align: left;
+  }
+
+  .finder-question-panel .secondary-button svg {
+    flex: 0 0 16px;
+    width: 16px;
+    height: 16px;
+  }
+
+  .capacity-source-status {
+    margin: 0;
+    padding: 5px 8px;
+    border-left: 2px solid #55c8eb;
+    border-radius: 0 5px 5px 0;
+    background: rgba(85, 200, 235, 0.08);
+    color: #a9c6d8;
+    font-size: 0.66rem;
+    line-height: 1.3;
+  }
+
+  .finder-layers-menu[open] > summary {
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(112, 153, 184, 0.2);
+  }
+
+  .power-finder-layer-list {
+    gap: 6px;
+  }
+
+  .power-finder-layer-list label {
+    min-height: 38px;
+    padding: 7px 8px;
+  }
+
+  .power-finder-candidates > header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    align-items: stretch;
+    padding-bottom: 9px;
+  }
+
+  .power-finder-candidates > header > span {
+    min-width: 0;
+  }
+
+  .power-finder-candidates > header label {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 8px;
+    align-items: center;
+    width: 100%;
+  }
+
+  .power-finder-candidates > header label > span {
+    color: #8ca6b8;
+    font-size: 0.64rem;
+    font-weight: 650;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .power-finder-candidates > header select {
+    width: 100%;
+    min-width: 0;
+    height: 32px;
+  }
+}
