@@ -176,7 +176,20 @@ export async function handlePublicPowerFinderRequest(
     if (responseBody.length > 12_000_000) {
       return jsonResponse({ error: "Public Finder response exceeded the safe limit." }, 502);
     }
-    const publicResponse = new Response(responseBody, {
+    let publicBody = responseBody;
+    try {
+      const payload = JSON.parse(responseBody) as {
+        metadata?: Record<string, unknown> & { record_count?: number };
+      };
+      if (payload.metadata) {
+        payload.metadata.coverage_status =
+          Number(payload.metadata.record_count ?? 0) > 0 ? "accepted_partial" : "unavailable";
+        publicBody = JSON.stringify(payload);
+      }
+    } catch {
+      return jsonResponse({ error: "Public Finder origin returned invalid data." }, 502);
+    }
+    const publicResponse = new Response(publicBody, {
       status: 200,
       headers: {
         "content-type": "application/json; charset=utf-8",

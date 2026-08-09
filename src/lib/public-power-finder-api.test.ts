@@ -76,6 +76,9 @@ describe("public Power Finder API", () => {
     });
     expect(options.headers).not.toHaveProperty("service_role");
     expect(response?.headers.get("cache-control")).toContain("s-maxage=300");
+    await expect(response?.json()).resolves.toMatchObject({
+      metadata: { coverage_status: "unavailable" },
+    });
   });
 
   it("returns a controlled error when the public origin is unavailable", async () => {
