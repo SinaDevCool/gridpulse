@@ -201,6 +201,15 @@ export function ReferenceCapacityInset({
             {artifact.release3_governance.champion_decision.decision.replaceAll("_", " ")}
           </span>
         )}
+        {artifact.release4_governance && (
+          <span>
+            Release 4: {artifact.release4_governance.repository_acceptance.passed_gate_count}/
+            {artifact.release4_governance.repository_acceptance.total_gate_count} pilot gates passed
+            {" · "}operator data{" "}
+            {artifact.release4_governance.operator_replacement.operator_field_count}/
+            {artifact.release4_governance.operator_replacement.required_field_count}
+          </span>
+        )}
       </footer>
     </section>
   );

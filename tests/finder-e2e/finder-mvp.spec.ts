@@ -162,6 +162,8 @@ test("calculated capacity separates solved reference buses from private mapped c
     page.getByText(/Release 2: 6\/10 AI-prioritised cases verified by physics/),
   ).toBeVisible();
   await expect(page.getByText(/Release 3: 36\/36 shadow cases verified/)).toBeVisible();
+  await expect(page.getByText(/Release 4: 16\/16 pilot gates passed/)).toBeVisible();
+  await expect(page.getByText(/operator data 0\/11/)).toBeVisible();
   await expect(page.getByText(/not the OpenStreetMap grid/i)).toBeVisible();
   await expect(page.getByRole("button", { name: /REF 01.*megawatts/i })).toBeVisible();
   await page.getByRole("button", { name: /REF 01.*megawatts/i }).click();
@@ -179,6 +181,11 @@ test("calculated capacity separates solved reference buses from private mapped c
   await expect(page.getByText(/6\/10 prioritised cases verified by physics/)).toBeVisible();
   await expect(page.getByText("Release 3 shadow validation")).toBeVisible();
   await expect(page.getByText(/36\/36 physics verified/)).toBeVisible();
+  await expect(page.getByText("Release 4 operator-pilot readiness")).toBeVisible();
+  await expect(page.getByText(/16\/16 repository gates passed/)).toBeVisible();
+  await expect(page.getByText("Neo4j and physics boundary")).toBeVisible();
+  await expect(page.getByText(/4\/8 graph-prioritised cases replayed/)).toBeVisible();
+  await expect(page.getByText("Promotion state")).toBeVisible();
   await page.getByRole("button", { name: /Back to map/i }).click();
   await expect(page.getByText(/radial N‑1 outage removes firm supply/i)).toBeVisible();
   await page.getByLabel("Capacity source").selectOption("private");

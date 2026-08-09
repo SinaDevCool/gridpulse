@@ -123,6 +123,7 @@ export type ReferenceCapacityResult = {
   };
   release2_governance: ReferenceCapacityArtifact["release2_governance"];
   release3_governance: ReferenceCapacityArtifact["release3_governance"];
+  release4_governance: ReferenceCapacityArtifact["release4_governance"];
   binding_constraint: string | null;
   binding_case: string | null;
   validation_state: "reference_network_calculated";
@@ -216,6 +217,42 @@ export type ReferenceCapacityArtifact = {
     manifest_sha256: string;
     warning: string;
   } | null;
+  release4_governance: {
+    schema_version: "gridpulse-release4-governance-v1";
+    release: string;
+    validation_class: "synthetic_demonstration";
+    public_visibility: "governance_summary_only";
+    capacity_claim: false;
+    operator_confirmed: false;
+    display_as_capacity: false;
+    repository_acceptance: {
+      passed_gate_count: number;
+      total_gate_count: number;
+      all_repository_gates_passed: boolean;
+      synthetic_replacement_rehearsal_complete: boolean;
+    };
+    graph_and_physics: {
+      neo4j_provider_contract_exercised: boolean;
+      physics_reference_contract_exercised: boolean;
+      selected_case_count: number;
+      full_case_count: number;
+      compute_reduction: number;
+      infeasible_recall: number;
+      constraint_recall: number;
+      false_safe_rate: number;
+      reduced_search_qualified: boolean;
+      authority_boundary: string;
+    };
+    operator_replacement: {
+      required_field_count: number;
+      operator_field_count: number;
+      missing_operator_fields: string[];
+      external_gates: string[];
+    };
+    private_operator_data_published: false;
+    warning: string;
+    manifest_sha256: string;
+  } | null;
   results_sha256: string;
   results: ReferenceCapacityResult[];
   permitted_interpretation: string;
@@ -223,7 +260,7 @@ export type ReferenceCapacityArtifact = {
 };
 
 export async function loadReferenceCapacityMap(): Promise<ReferenceCapacityArtifact> {
-  const response = await fetch("/power-finder/reference-capacity-map.json?release=capacity-r3");
+  const response = await fetch("/power-finder/reference-capacity-map.json?release=capacity-r4");
   if (!response.ok) throw new Error(`Reference capacity artifact failed (${response.status}).`);
   const artifact = (await response.json()) as ReferenceCapacityArtifact;
   if (

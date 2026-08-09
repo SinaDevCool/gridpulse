@@ -135,6 +135,7 @@ def parser() -> argparse.ArgumentParser:
     acceptance = subcommands.add_parser("validate-synthetic-pilot")
     acceptance.add_argument("--input", type=Path, required=True)
     acceptance.add_argument("--output", type=Path, required=True)
+    acceptance.add_argument("--public-output", type=Path)
     return command
 
 
@@ -334,7 +335,7 @@ def main() -> None:
         )
     elif args.command == "validate-synthetic-pilot":
         bundle = SyntheticPilotDataProvider(args.input).load()
-        report = run_synthetic_pilot_acceptance(bundle, args.output)
+        report = run_synthetic_pilot_acceptance(bundle, args.output, args.public_output)
         if not report["all_repository_gates_passed"]:
             raise SystemExit("Synthetic pilot acceptance gates did not pass.")
         reduction = report["reduction_benchmark"]

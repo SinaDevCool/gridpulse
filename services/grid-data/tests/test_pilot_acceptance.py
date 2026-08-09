@@ -4,6 +4,7 @@ from grid_data.p0_foundation import PhysicsOutcome
 from grid_data.pilot_acceptance import (
     SYNTHETIC_WATERMARK,
     build_acceptance_report,
+    build_public_release4_governance,
     reduction_benchmark,
     replacement_readiness,
 )
@@ -56,3 +57,9 @@ def test_synthetic_package_is_replacement_ready_but_never_operator_confirmed(tmp
     assert report["watermark"] == SYNTHETIC_WATERMARK
     assert report["capacity_claim"] is False
     assert report["display_as_capacity"] is False
+    public = build_public_release4_governance(report)
+    assert public["repository_acceptance"]["passed_gate_count"] == 16
+    assert public["graph_and_physics"]["neo4j_provider_contract_exercised"] is True
+    assert public["operator_replacement"]["operator_field_count"] == 0
+    assert public["private_operator_data_published"] is False
+    assert "observations" not in public

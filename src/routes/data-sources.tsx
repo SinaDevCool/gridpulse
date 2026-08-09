@@ -592,6 +592,17 @@ function FinderDataSourcesPage() {
                   claim.
                 </p>
               </article>
+              <article>
+                <Network aria-hidden="true" />
+                <h3>Release 4 operator-pilot gate</h3>
+                <p>
+                  The complete synthetic package rehearses operator-model replacement, Neo4j study
+                  prioritisation, solver replay, SCADA reconciliation and evidence lineage. Public
+                  capacity remains disabled until real operator network, ratings, measurements and
+                  security criteria pass reconciliation and signed data-use and capacity-display
+                  permission are recorded.
+                </p>
+              </article>
             </div>
           </section>
 

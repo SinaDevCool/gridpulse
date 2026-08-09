@@ -716,6 +716,7 @@ function EvidenceView({ context }: { context: ActivationStudyContext }) {
   const ensemble = context.referenceCapacity?.ensemble;
   const release2 = context.referenceCapacity?.release2_governance;
   const release3 = context.referenceCapacity?.release3_governance;
+  const release4 = context.referenceCapacity?.release4_governance;
   const checklist = [
     "Confirm the responsible operator and candidate connection point.",
     "Obtain accepted equipment ratings and seasonal operating cases.",
@@ -772,6 +773,33 @@ function EvidenceView({ context }: { context: ActivationStudyContext }) {
               {release3.shadow.verified_count}/{release3.shadow.scenario_count} physics verified ·{" "}
               {release3.shadow.drift_status.replaceAll("_", " ")}
             </dd>
+          </div>
+        )}
+        {release4 && (
+          <div>
+            <dt>Release 4 operator-pilot readiness</dt>
+            <dd>
+              {release4.repository_acceptance.passed_gate_count}/
+              {release4.repository_acceptance.total_gate_count} repository gates passed · operator
+              inputs {release4.operator_replacement.operator_field_count}/
+              {release4.operator_replacement.required_field_count}
+            </dd>
+          </div>
+        )}
+        {release4 && (
+          <div>
+            <dt>Neo4j and physics boundary</dt>
+            <dd>
+              {release4.graph_and_physics.selected_case_count}/
+              {release4.graph_and_physics.full_case_count} graph-prioritised cases replayed ·
+              false-safe {release4.graph_and_physics.false_safe_rate.toFixed(3)}
+            </dd>
+          </div>
+        )}
+        {release4 && (
+          <div>
+            <dt>Promotion state</dt>
+            <dd>Not operator confirmed · synthetic results remain hidden from mapped capacity</dd>
           </div>
         )}
         {release3 && (

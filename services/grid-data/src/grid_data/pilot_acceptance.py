@@ -189,7 +189,73 @@ def build_acceptance_report(
     return report
 
 
-def run_synthetic_pilot_acceptance(bundle: PilotDataBundle, output: Path) -> dict[str, Any]:
+def build_public_release4_governance(report: dict[str, Any]) -> dict[str, Any]:
+    """Publish only the non-sensitive operator-pilot readiness boundary."""
+    phase_gates = report["phase_gates"]
+    replacement = report["replacement_readiness"]
+    operator_fields = replacement["operator_replacement"]
+    reduction = report.get("reduction_benchmark") or {}
+    manifest = {
+        "schema_version": "gridpulse-release4-governance-v1",
+        "release": "Release 4",
+        "validation_class": report["dataset"]["validation_class"],
+        "public_visibility": "governance_summary_only",
+        "capacity_claim": False,
+        "operator_confirmed": False,
+        "display_as_capacity": False,
+        "repository_acceptance": {
+            "passed_gate_count": sum(bool(value) for value in phase_gates.values()),
+            "total_gate_count": len(phase_gates),
+            "all_repository_gates_passed": report["all_repository_gates_passed"],
+            "synthetic_replacement_rehearsal_complete": replacement[
+                "synthetic_pilot_complete"
+            ],
+        },
+        "graph_and_physics": {
+            "neo4j_provider_contract_exercised": bool(
+                phase_gates.get("p6_neo4j_provider_contract")
+            ),
+            "physics_reference_contract_exercised": bool(
+                phase_gates.get("p7_physics_reference_contract")
+            ),
+            "selected_case_count": reduction.get("selected_case_count"),
+            "full_case_count": reduction.get("full_case_count"),
+            "compute_reduction": reduction.get("compute_reduction"),
+            "infeasible_recall": reduction.get("infeasible_recall"),
+            "constraint_recall": reduction.get("constraint_recall"),
+            "false_safe_rate": reduction.get("false_safe_rate"),
+            "reduced_search_qualified": bool(
+                reduction.get("accepted_for_reduced_search")
+            ),
+            "authority_boundary": (
+                "Neo4j selects and explains study pathways; the electrical solver remains "
+                "authoritative for MW."
+            ),
+        },
+        "operator_replacement": {
+            "required_field_count": len(operator_fields),
+            "operator_field_count": sum(
+                bool(value["operator_value_present"]) for value in operator_fields.values()
+            ),
+            "missing_operator_fields": [
+                key
+                for key, value in operator_fields.items()
+                if not value["operator_value_present"]
+            ],
+            "external_gates": report["external_gates"],
+        },
+        "private_operator_data_published": False,
+        "warning": report["watermark"],
+    }
+    manifest["manifest_sha256"] = hashlib.sha256(
+        json.dumps(manifest, sort_keys=True, default=str).encode()
+    ).hexdigest()
+    return manifest
+
+
+def run_synthetic_pilot_acceptance(
+    bundle: PilotDataBundle, output: Path, public_output: Path | None = None
+) -> dict[str, Any]:
     """Execute a bounded real-physics qualification and write the cross-phase report."""
     scenarios = [
         ScenarioDefinition(
@@ -236,4 +302,10 @@ def run_synthetic_pilot_acceptance(bundle: PilotDataBundle, output: Path) -> dic
         "qualification_study_sha256": graph_report["study_sha256"],
         "capacity_claim": False,
     }
-    return build_acceptance_report(bundle, reduction=reduction, output=output)
+    report = build_acceptance_report(bundle, reduction=reduction, output=output)
+    if public_output:
+        public_output.parent.mkdir(parents=True, exist_ok=True)
+        public_output.write_text(
+            json.dumps(build_public_release4_governance(report), indent=2), encoding="utf-8"
+        )
+    return report

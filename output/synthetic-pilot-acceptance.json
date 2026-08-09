@@ -1,11 +1,11 @@
 {
   "schema_version": "gridpulse-german-synthetic-pilot-acceptance-v1",
-  "generated_at": "2026-08-09T00:44:19.557791+00:00",
+  "generated_at": "2026-08-09T14:32:15.984212+00:00",
   "watermark": "Synthetic German operator pilot \u2014 not actual or operator-confirmed grid capacity.",
   "dataset": {
     "id": "synthetic-brandenburg-pilot",
     "version": "1.0.0",
-    "sha256": "fcb5288b66656cd3dba3d0d6c8491bc9509d361fbe17583b4c3eb2e2a056b494",
+    "sha256": "d0894883c7593d98bdcbdbf378260463009dd4e310ef9c0bf44b2480986d4f60",
     "validation_class": "synthetic_demonstration",
     "provenance": {
       "evidence_class": "synthetic",
@@ -126,5 +126,5 @@
     "operator security criteria",
     "signed data-use and capacity-representation permission"
   ],
-  "report_sha256": "427b5ed59b9c29f1e0e5eee10a4f2ff08360e315df0f230d99c1207ff75a02d3"
+  "report_sha256": "f7aec312aa1b295910da45437939f2cf804c8475df10a3f515006e9e0e684c5f"
 }

@@ -1,0 +1,53 @@
+{
+  "schema_version": "gridpulse-release4-governance-v1",
+  "release": "Release 4",
+  "validation_class": "synthetic_demonstration",
+  "public_visibility": "governance_summary_only",
+  "capacity_claim": false,
+  "operator_confirmed": false,
+  "display_as_capacity": false,
+  "repository_acceptance": {
+    "passed_gate_count": 16,
+    "total_gate_count": 16,
+    "all_repository_gates_passed": true,
+    "synthetic_replacement_rehearsal_complete": true
+  },
+  "graph_and_physics": {
+    "neo4j_provider_contract_exercised": true,
+    "physics_reference_contract_exercised": true,
+    "selected_case_count": 4,
+    "full_case_count": 8,
+    "compute_reduction": 0.5,
+    "infeasible_recall": 1.0,
+    "constraint_recall": 1.0,
+    "false_safe_rate": 0,
+    "reduced_search_qualified": true,
+    "authority_boundary": "Neo4j selects and explains study pathways; the electrical solver remains authoritative for MW."
+  },
+  "operator_replacement": {
+    "required_field_count": 11,
+    "operator_field_count": 0,
+    "missing_operator_fields": [
+      "network_model",
+      "equipment_ratings",
+      "switching_states",
+      "contingencies",
+      "measurements",
+      "connection_queue",
+      "reinforcements",
+      "planned_outages",
+      "security_criteria",
+      "data_use_agreement",
+      "capacity_representation_permission"
+    ],
+    "external_gates": [
+      "operator network and ratings package",
+      "operator SCADA reconciliation",
+      "operator security criteria",
+      "signed data-use and capacity-representation permission"
+    ]
+  },
+  "private_operator_data_published": false,
+  "warning": "Synthetic German operator pilot \u2014 not actual or operator-confirmed grid capacity.",
+  "manifest_sha256": "0dda6bcb769d943e192c159c194c4a76a04f04c7cfc387cb92bcfde75d27b2de"
+}
