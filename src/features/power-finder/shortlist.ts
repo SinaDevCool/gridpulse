@@ -7,6 +7,7 @@ export async function savePowerFinderCandidate(
   feature: PowerFinderFeature,
   opportunity?: CandidateOpportunity | null,
   requiredImportMw?: number,
+  activationStudy?: Record<string, unknown> | null,
 ): Promise<string> {
   const {
     data: { user },
@@ -35,6 +36,7 @@ export async function savePowerFinderCandidate(
           opportunity: opportunity
             ? { ...opportunity, requiredImportMw: requiredImportMw ?? null }
             : null,
+          activation_study: activationStudy ?? null,
           score: score
             ? {
                 score: score.total,

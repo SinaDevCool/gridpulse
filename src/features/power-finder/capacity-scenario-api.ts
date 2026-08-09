@@ -33,13 +33,8 @@ export async function loadReleaseAScenarios(
     return candidates
       .map((candidate) => {
         const result = byId.get(candidate.id)!;
-        const screeningRank = Math.min(
-          100,
-          Math.max(0, result.capacityScenario.score + result.networkScenario.rankingAdjustment),
-        );
         return {
           ...candidate,
-          screeningRank,
           capacityScenario: result.capacityScenario,
           networkScenario: result.networkScenario,
         };

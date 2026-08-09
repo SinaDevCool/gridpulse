@@ -3,6 +3,7 @@ import { voltageFitLabels, type CandidateOpportunity } from "./candidate-intelli
 import { finderProjectTypes, projectOperatorQuestions, type FinderProject } from "./finder-project";
 import { ruleReferencesForVoltage } from "./german-rules-registry";
 import { calculationClassLabels } from "./calculation-provenance";
+import { createActivationStudyContext } from "./activation-study";
 
 const clean = (value: unknown) => String(value ?? "Not established").replace(/[^ -~]/g, "-");
 const reportDate = new Intl.DateTimeFormat("en-GB", { dateStyle: "medium" });
@@ -86,6 +87,11 @@ export async function downloadFinderReport(
   heading("2. Investigation-priority candidates");
   if (!candidates.length) line("Result", "No candidates selected for comparison.");
   candidates.forEach((candidate, index) => {
+    const activation = createActivationStudyContext({
+      project,
+      candidate,
+      registeredStudy: null,
+    });
     line(`${index + 1}. Candidate`, `${candidate.nodeName} - ${candidate.distanceKm} km`);
     line(
       "Investigation priority",
@@ -97,6 +103,16 @@ export async function downloadFinderReport(
     );
     line("Method version", candidate.provenance?.methodVersion ?? candidate.calculationVersion);
     line("Operator", candidate.operator ?? "Confirmation required");
+    line(
+      "Activation Study boundary",
+      "Representative synthetic benchmark—not calculated capacity at this mapped node.",
+    );
+    activation.options.forEach((option) =>
+      line(
+        `Activation option — ${option.title}`,
+        `${option.initialImportMw.toFixed(1)} MW initial; ${option.eventualImportMw.toFixed(1)} MW eventual; ${option.analysis?.restrictedHours ?? "unavailable"} restricted hours in the representative profile; ${option.evidenceStatus.replaceAll("_", " ")}`,
+      ),
+    );
     if (candidate.capacityScenario) {
       line(
         "EXPERIMENTAL DEMONSTRATION — NOT GRID CAPACITY",
@@ -144,7 +160,7 @@ export async function downloadFinderReport(
   line("Evidence boundary", collection.metadata.evidence_boundary);
   line(
     "Capacity",
-    "The public report does not calculate available, firm, flexible, reserved or connectable capacity. Experimental values, when explicitly enabled, are watermarked demonstration assumptions and are not AC/DC power-flow results.",
+    "The public report does not calculate available, reserved or connectable capacity at a mapped node. Activation Study values are watermarked representative assumptions and remain separate from operator-model or operator-confirmed results.",
   );
   line(
     "Decision",

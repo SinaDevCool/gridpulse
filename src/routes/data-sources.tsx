@@ -436,6 +436,104 @@ function FinderDataSourcesPage() {
             </div>
           </section>
 
+          <section className="methodology-boundary" aria-labelledby="activation-method-title">
+            <div>
+              <p className="context-label">Finder To Activation</p>
+              <h2 id="activation-method-title">One journey, with explicit study modes.</h2>
+              <p>
+                A selected Power Finder candidate can open an Activation Study without leaving the
+                map. The map remains public geographic context; electrical and hourly conclusions
+                retain the model and evidence class that produced them.
+              </p>
+            </div>
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Mode</th>
+                    <th>Supports</th>
+                    <th>Does not support</th>
+                    <th>Next gate</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Public screening</td>
+                    <td>Evidence, voltage and proximity investigation priority</td>
+                    <td>Capacity, feasibility, cost or timing</td>
+                    <td>Select and save a candidate</td>
+                  </tr>
+                  <tr>
+                    <td>Synthetic demonstration</td>
+                    <td>Representative firm, flexible, BESS and staged comparisons</td>
+                    <td>Capacity at the mapped node</td>
+                    <td>Obtain a licensed operator model and project evidence</td>
+                  </tr>
+                  <tr>
+                    <td>Operator model — unvalidated</td>
+                    <td>Scoped model calculation and reconciliation work</td>
+                    <td>Operator-approved capacity</td>
+                    <td>Reconcile topology, parameters and observations</td>
+                  </tr>
+                  <tr>
+                    <td>Operator reviewed</td>
+                    <td>Reviewed results within the declared study scope</td>
+                    <td>A connection offer or reservation unless separately evidenced</td>
+                    <td>Capture the written operator decision</td>
+                  </tr>
+                  <tr>
+                    <td>Operator confirmed</td>
+                    <td>Claims explicitly supported by the confirmed scope</td>
+                    <td>Claims outside its validity period and conditions</td>
+                    <td>Operate and monitor the agreed envelope</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section className="methodology-outcomes" aria-labelledby="activation-calculation-title">
+            <p className="context-label">Activation Benchmark</p>
+            <h2 id="activation-calculation-title">
+              The public benchmark reuses governed GridPulse methods.
+            </h2>
+            <div>
+              <article>
+                <Calculator aria-hidden="true" />
+                <h3>Annual operating profile</h3>
+                <p>
+                  Release A evaluates 8,760 deterministic hours using the declared load shape,
+                  target year, flexibility, on-site generation and battery state of charge.
+                </p>
+              </article>
+              <article>
+                <Network aria-hidden="true" />
+                <h3>Reference-network security</h3>
+                <p>
+                  Release B compares base, high-load, outage and target-year sensitivities on an
+                  explicitly synthetic bounded network.
+                </p>
+              </article>
+              <article>
+                <Calculator aria-hidden="true" />
+                <h3>Shared option engine</h3>
+                <p>
+                  Firm, reduced-firm, staged, static-flexible, dynamic-flexible and
+                  storage-supported options reuse the same FCA calculation engine used in private
+                  assessments.
+                </p>
+              </article>
+              <article>
+                <Database aria-hidden="true" />
+                <h3>Registered studies</h3>
+                <p>
+                  C1, C2 and C3 registries distinguish benchmark artifacts from model-linked node
+                  studies and preserve validation metadata.
+                </p>
+              </article>
+            </div>
+          </section>
+
           <section className="methodology-boundary" aria-labelledby="finder-boundary-title">
             <div>
               <p className="context-label">Decision Boundary</p>

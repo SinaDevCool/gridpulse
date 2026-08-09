@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ValidationCaseRouteImport } from './routes/validation-case'
+import { Route as SyntheticNetworkStudyRouteImport } from './routes/synthetic-network-study'
 import { Route as ServiceRouteImport } from './routes/service'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as PowerFinderRouteImport } from './routes/power-finder'
@@ -35,6 +36,11 @@ import { Route as ApiPowerFinderScenarioRouteImport } from './routes/api.power-f
 const ValidationCaseRoute = ValidationCaseRouteImport.update({
   id: '/validation-case',
   path: '/validation-case',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SyntheticNetworkStudyRoute = SyntheticNetworkStudyRouteImport.update({
+  id: '/synthetic-network-study',
+  path: '/synthetic-network-study',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ServiceRoute = ServiceRouteImport.update({
@@ -157,6 +163,7 @@ export interface FileRoutesByFullPath {
   '/power-finder': typeof PowerFinderRoute
   '/reports': typeof ReportsRoute
   '/service': typeof ServiceRoute
+  '/synthetic-network-study': typeof SyntheticNetworkStudyRoute
   '/validation-case': typeof ValidationCaseRoute
   '/assessments/$id': typeof AssessmentsIdRoute
   '/assessments/new': typeof AssessmentsNewRoute
@@ -181,6 +188,7 @@ export interface FileRoutesByTo {
   '/power-finder': typeof PowerFinderRoute
   '/reports': typeof ReportsRoute
   '/service': typeof ServiceRoute
+  '/synthetic-network-study': typeof SyntheticNetworkStudyRoute
   '/validation-case': typeof ValidationCaseRoute
   '/assessments/$id': typeof AssessmentsIdRoute
   '/assessments/new': typeof AssessmentsNewRoute
@@ -206,6 +214,7 @@ export interface FileRoutesById {
   '/power-finder': typeof PowerFinderRoute
   '/reports': typeof ReportsRoute
   '/service': typeof ServiceRoute
+  '/synthetic-network-study': typeof SyntheticNetworkStudyRoute
   '/validation-case': typeof ValidationCaseRoute
   '/assessments/$id': typeof AssessmentsIdRoute
   '/assessments/new': typeof AssessmentsNewRoute
@@ -232,6 +241,7 @@ export interface FileRouteTypes {
     | '/power-finder'
     | '/reports'
     | '/service'
+    | '/synthetic-network-study'
     | '/validation-case'
     | '/assessments/$id'
     | '/assessments/new'
@@ -256,6 +266,7 @@ export interface FileRouteTypes {
     | '/power-finder'
     | '/reports'
     | '/service'
+    | '/synthetic-network-study'
     | '/validation-case'
     | '/assessments/$id'
     | '/assessments/new'
@@ -280,6 +291,7 @@ export interface FileRouteTypes {
     | '/power-finder'
     | '/reports'
     | '/service'
+    | '/synthetic-network-study'
     | '/validation-case'
     | '/assessments/$id'
     | '/assessments/new'
@@ -305,6 +317,7 @@ export interface RootRouteChildren {
   PowerFinderRoute: typeof PowerFinderRoute
   ReportsRoute: typeof ReportsRoute
   ServiceRoute: typeof ServiceRoute
+  SyntheticNetworkStudyRoute: typeof SyntheticNetworkStudyRoute
   ValidationCaseRoute: typeof ValidationCaseRoute
   AssessmentsIdRoute: typeof AssessmentsIdRoute
   AssessmentsNewRoute: typeof AssessmentsNewRoute
@@ -323,6 +336,13 @@ declare module '@tanstack/react-router' {
       path: '/validation-case'
       fullPath: '/validation-case'
       preLoaderRoute: typeof ValidationCaseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/synthetic-network-study': {
+      id: '/synthetic-network-study'
+      path: '/synthetic-network-study'
+      fullPath: '/synthetic-network-study'
+      preLoaderRoute: typeof SyntheticNetworkStudyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/service': {
@@ -489,6 +509,7 @@ const rootRouteChildren: RootRouteChildren = {
   PowerFinderRoute: PowerFinderRoute,
   ReportsRoute: ReportsRoute,
   ServiceRoute: ServiceRoute,
+  SyntheticNetworkStudyRoute: SyntheticNetworkStudyRoute,
   ValidationCaseRoute: ValidationCaseRoute,
   AssessmentsIdRoute: AssessmentsIdRoute,
   AssessmentsNewRoute: AssessmentsNewRoute,

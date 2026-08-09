@@ -14,6 +14,8 @@ describe("Finder MVP route boundary", () => {
     expect(isRouteEnabled("/")).toBe(true);
     expect(isRouteEnabled("/power-finder")).toBe(true);
     expect(isRouteEnabled("/data-sources")).toBe(true);
+    expect(isRouteEnabled("/synthetic-network-study")).toBe(true);
+    expect(isRouteEnabled("/api/synthetic-network-study")).toBe(false);
     expect(isRouteEnabled("/auth")).toBe(false);
     expect(isRouteEnabled("/portfolio")).toBe(false);
     expect(isRouteEnabled("/assessments/new")).toBe(false);

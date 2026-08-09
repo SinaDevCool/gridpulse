@@ -19,20 +19,23 @@ export function capabilitiesForMode(mode: ProductMode) {
 
 export const productCapabilities = capabilitiesForMode(productMode);
 
-export const publicFinderExperimentalModels =
-  import.meta.env.VITE_PUBLIC_FINDER_EXPERIMENTAL_MODE === "true";
-
 export const privateGraphUiEnabled =
   productCapabilities.workspace && import.meta.env.VITE_PRIVATE_GRAPH_UI !== "false";
 
 export const finderContactEmail = "sina.khedmati@outlook.de";
 
-const finderRoutes = new Set(["/", "/power-finder", "/data-sources"]);
+const finderRoutes = new Set(["/", "/power-finder", "/synthetic-network-study", "/data-sources"]);
+
+const finderApiRoutes = new Set([
+  "/api/power-finder/viewport",
+  "/api/power-finder/study",
+  "/api/power-finder/scenario",
+]);
 
 export function isRouteEnabledForMode(pathname: string, mode: ProductMode): boolean {
   if (mode !== "finder") return true;
   const normalized = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
-  return finderRoutes.has(normalized);
+  return finderRoutes.has(normalized) || finderApiRoutes.has(normalized);
 }
 
 export function isRouteEnabled(pathname: string): boolean {

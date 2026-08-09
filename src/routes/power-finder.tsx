@@ -13,12 +13,13 @@ import {
   ShieldCheck,
   Zap,
 } from "lucide-react";
-import { useEffect, useMemo, useState, type ChangeEvent } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { z } from "zod";
 import { AppShell } from "@/components/product/AppShell";
 import { PowerFinderMap } from "@/components/product/PowerFinderMap";
+import type { ActivationStudyTab } from "@/components/product/ActivationStudyPanel";
 import type { VisibleLayerCounts } from "@/components/product/power-finder-map-data";
-import { productCapabilities, publicFinderExperimentalModels } from "@/config/product-mode";
+import { productCapabilities } from "@/config/product-mode";
 import {
   featureSummary,
   pointCoordinates,
@@ -53,7 +54,6 @@ import {
   type CandidateOpportunity,
   type RankedCandidateResult,
 } from "@/features/power-finder/candidate-intelligence";
-import { loadReleaseAScenarios } from "@/features/power-finder/capacity-scenario-api";
 import {
   defaultFinderProject,
   finderProjectTypes,
@@ -81,9 +81,19 @@ import {
 import { loadC1Study, type C1StudyPayload } from "@/features/power-finder/c1-study";
 import { validationClassLabel } from "@/features/power-finder/validation-class";
 import { canonicalOperatorName } from "@/features/power-finder/operator-normalization";
+import {
+  activationStudySnapshot,
+  createActivationStudyContext,
+} from "@/features/power-finder/activation-study";
 
 const safeNumber = (minimum: number, maximum: number) =>
   z.coerce.number().min(minimum).max(maximum).optional().catch(undefined);
+
+const ActivationStudyPanel = lazy(() =>
+  import("@/components/product/ActivationStudyPanel").then((module) => ({
+    default: module.ActivationStudyPanel,
+  })),
+);
 
 export const Route = createFileRoute("/power-finder")({
   validateSearch: z.object({
@@ -101,6 +111,11 @@ export const Route = createFileRoute("/power-finder")({
     compare: z.string().max(700).optional().catch(undefined),
     region: z.enum(["DE", "DE-BB"]).optional().catch(undefined),
     mapMode: z.enum(["voltage", "evidence", "capacity"]).optional().catch(undefined),
+    study: z.enum(["activation"]).optional().catch(undefined),
+    studyTab: z
+      .enum(["geographic", "topology", "hourly", "options", "evidence"])
+      .optional()
+      .catch(undefined),
     lat: safeNumber(47, 56),
     lng: safeNumber(5, 16),
     projectType: z
@@ -115,6 +130,9 @@ export const Route = createFileRoute("/power-finder")({
       .optional()
       .catch(undefined),
     exportMw: safeNumber(0, 1000),
+    flexibleMw: safeNumber(0, 1000),
+    batteryMw: safeNumber(0, 1000),
+    batteryMwh: safeNumber(0, 20_000),
     preferredVoltage: z.coerce
       .number()
       .refine((value) => [0, 20, 110, 220, 380].includes(value))
@@ -177,6 +195,9 @@ function PowerFinderPage() {
       ultimateImportMw: search.mw ?? defaultFinderProject.ultimateImportMw,
       minimumFirmMw: search.mw ?? defaultFinderProject.minimumFirmMw,
       exportMw: search.exportMw ?? defaultFinderProject.exportMw,
+      flexibleLoadMw: search.flexibleMw ?? defaultFinderProject.flexibleLoadMw,
+      batteryPowerMw: search.batteryMw ?? defaultFinderProject.batteryPowerMw,
+      batteryEnergyMwh: search.batteryMwh ?? defaultFinderProject.batteryEnergyMwh,
       maxDistanceKm: search.distance ?? defaultFinderProject.maxDistanceKm,
       preferredVoltageKv: search.preferredVoltage ?? defaultFinderProject.preferredVoltageKv,
     };
@@ -277,10 +298,7 @@ function PowerFinderPage() {
   const [rankingState, setRankingState] = useState<"loading" | "ready" | "error">("loading");
   const [coverage, setCoverage] = useState<PowerFinderCoverage[]>(fallbackCoverage);
   const regionCode = search.region ?? "DE-BB";
-  const mapMode =
-    !publicFinderExperimentalModels && search.mapMode === "capacity"
-      ? "evidence"
-      : (search.mapMode ?? "voltage");
+  const mapMode = search.mapMode === "capacity" ? "evidence" : (search.mapMode ?? "voltage");
   const activeCoverage =
     coverage.find((item) => item.regionCode === regionCode) ?? fallbackCoverage[1];
   const viewportTarget = useMemo(
@@ -299,6 +317,9 @@ function PowerFinderPage() {
       ultimateImportMw: search.mw ?? saved.ultimateImportMw,
       minimumFirmMw: search.mw ?? saved.minimumFirmMw,
       exportMw: search.exportMw ?? saved.exportMw,
+      flexibleLoadMw: search.flexibleMw ?? saved.flexibleLoadMw,
+      batteryPowerMw: search.batteryMw ?? saved.batteryPowerMw,
+      batteryEnergyMwh: search.batteryMwh ?? saved.batteryEnergyMwh,
       maxDistanceKm: search.distance ?? saved.maxDistanceKm,
       preferredVoltageKv: search.preferredVoltage ?? saved.preferredVoltageKv,
     });
@@ -321,6 +342,9 @@ function PowerFinderPage() {
       "lng",
       "mw",
       "exportMw",
+      "flexibleMw",
+      "batteryMw",
+      "batteryMwh",
       "distance",
       "voltage",
       "sort",
@@ -519,6 +543,48 @@ function PowerFinderPage() {
     )
     .filter((candidate): candidate is CandidateOpportunity => Boolean(candidate));
   const coordinates = selected ? pointCoordinates(selected) : null;
+  const activationOpen = search.study === "activation" && Boolean(selectedOpportunity);
+  const activationTab: ActivationStudyTab = search.studyTab ?? "geographic";
+  const startPrivateAssessment = async () => {
+    if (!selected || !coordinates) return;
+    setSaveStatus("saving");
+    try {
+      const activation = selectedOpportunity
+        ? activationStudySnapshot(
+            createActivationStudyContext({
+              project,
+              candidate: selectedOpportunity,
+              registeredStudy: c1Study,
+            }),
+          )
+        : null;
+      const id = await savePowerFinderCandidate(
+        selected,
+        selectedOpportunity,
+        requiredImportMw,
+        activation,
+      );
+      setShortlistId(id);
+      setSaveStatus("saved");
+      await navigate({
+        to: "/assessments/new",
+        search: {
+          shortlistId: id,
+          name: selectedOpportunity?.siteName ?? selected.properties.name,
+          projectType: "large_load",
+          importMw: requiredImportMw,
+          latitude: coordinates[1],
+          longitude: coordinates[0],
+          federalState: "Brandenburg",
+          challenge: selectedOpportunity
+            ? `${selectedOpportunity.siteName} screened against ${selectedOpportunity.nodeName}. The saved Activation Study is a representative benchmark only; capacity, feasibility, cost and timing require operator confirmation.`
+            : `Screening candidate ${selected.id}; capacity and operator responsibility require confirmation.`,
+        },
+      });
+    } catch {
+      setSaveStatus("error");
+    }
+  };
   const score = selected ? scoreFeature(selected) : null;
   const confidenceItems = selected
     ? evidenceConfidence(selected, collection?.metadata.published_at)
@@ -596,24 +662,10 @@ function PowerFinderPage() {
       ),
     );
     void resultPromise
-      .then(async (result) =>
-        publicFinderExperimentalModels
-          ? {
-              ...result,
-              candidates: await loadReleaseAScenarios(
-                project,
-                applyPreferredVoltageContext(result.candidates, project.preferredVoltageKv),
-                controller.signal,
-              ),
-            }
-          : {
-              ...result,
-              candidates: applyPreferredVoltageContext(
-                result.candidates,
-                project.preferredVoltageKv,
-              ),
-            },
-      )
+      .then((result) => ({
+        ...result,
+        candidates: applyPreferredVoltageContext(result.candidates, project.preferredVoltageKv),
+      }))
       .then((result) => {
         if (!active) return;
         setRanking(result);
@@ -877,9 +929,9 @@ function PowerFinderPage() {
               </select>
               <small>Search context only—not a suitable or required connection voltage.</small>
             </label>
-            {publicFinderExperimentalModels && (
+            {search.study === "activation" && (
               <details className="finder-scenario-inputs">
-                <summary>Experimental demonstration assumptions</summary>
+                <summary>Activation Study assumptions</summary>
                 <p>
                   These inputs drive an explicitly synthetic, untrained hourly scenario. They do not
                   request or establish network capacity.
@@ -1166,15 +1218,12 @@ function PowerFinderPage() {
                   value={mapMode}
                   onChange={(event) =>
                     void updateSearch({
-                      mapMode: event.target.value as "voltage" | "evidence" | "capacity",
+                      mapMode: event.target.value as "voltage" | "evidence",
                     })
                   }
                 >
                   <option value="voltage">Voltage</option>
                   <option value="evidence">Evidence authority</option>
-                  {publicFinderExperimentalModels && (
-                    <option value="capacity">Experimental demonstration score</option>
-                  )}
                 </select>
               </label>
               <label>
@@ -1396,17 +1445,33 @@ function PowerFinderPage() {
                   const node =
                     opportunityNode(candidate, rankingCollection) ??
                     opportunityNode(candidate, collection);
-                  if (node) {
-                    setSelectedOpportunitySnapshot(candidate);
-                    setSelected(node);
-                    setInteractionNotice(
-                      `${candidate.nodeName} selected and highlighted on the map.`,
-                    );
-                  }
+                  const detailNode =
+                    node ??
+                    ({
+                      type: "Feature",
+                      id: candidate.nodeId,
+                      geometry: {
+                        type: "Point",
+                        coordinates: [project.longitude ?? 0, project.latitude ?? 0],
+                      },
+                      properties: {
+                        kind: "node",
+                        name: candidate.nodeName,
+                        operator: candidate.operator ?? undefined,
+                        voltage_kv: candidate.voltageKv,
+                        max_voltage_kv: Math.max(0, ...candidate.voltageKv),
+                        evidence_class: "open_mapping",
+                        capacity_state: "not_established",
+                      },
+                    } satisfies PowerFinderFeature);
+                  setSelectedOpportunitySnapshot(candidate);
+                  setSelected(detailNode);
+                  setInteractionNotice(
+                    `${candidate.nodeName} selected and highlighted on the map.`,
+                  );
                   void updateSearch({ candidate: candidate.id }).then(() => {
-                    if (!node) return;
                     setSelectedOpportunitySnapshot(candidate);
-                    setSelected(node);
+                    setSelected(detailNode);
                   });
                 }}
                 onMouseEnter={() => setPreviewCandidateId(candidate.id)}
@@ -1488,21 +1553,6 @@ function PowerFinderPage() {
               selectedFeature={selected}
               previewFeature={previewFeature}
               mapMode={mapMode}
-              syntheticNodeScenarios={Object.fromEntries(
-                candidates.flatMap((candidate) =>
-                  candidate.capacityScenario
-                    ? [
-                        [
-                          candidate.nodeId,
-                          {
-                            score: candidate.screeningRank,
-                            firmMw: candidate.capacityScenario.firmImportEnvelopeMw,
-                          },
-                        ] as const,
-                      ]
-                    : [],
-                ),
-              )}
               viewportTarget={viewportTarget}
               onSelect={(feature) => {
                 setSelected(feature);
@@ -1565,18 +1615,9 @@ function PowerFinderPage() {
           )}
 
           <div className="power-finder-legend" aria-label="Map legend">
-            <strong>
-              {mapMode === "voltage"
-                ? "Voltage context"
-                : mapMode === "evidence"
-                  ? "Evidence authority"
-                  : "Synthetic scenario score"}
-            </strong>
+            <strong>{mapMode === "voltage" ? "Voltage context" : "Evidence authority"}</strong>
             <span>
-              <i className="legend-node" />{" "}
-              {mapMode === "capacity"
-                ? "Red-to-green synthetic screening score"
-                : "Candidate grid node"}
+              <i className="legend-node" /> Candidate grid node
             </span>
             <span>
               <i className="legend-line" /> Mapped corridor
@@ -1590,12 +1631,25 @@ function PowerFinderPage() {
             <span>
               <i className="legend-storage" /> Registered storage
             </span>
-            {mapMode === "capacity" && (
-              <small>
-                Modelled screening scenario—not available grid capacity. Grey means no scenario.
-              </small>
-            )}
           </div>
+
+          {activationOpen && selectedOpportunity && (
+            <Suspense
+              fallback={<div className="activation-study-loading">Loading Activation Study…</div>}
+            >
+              <ActivationStudyPanel
+                project={project}
+                candidate={selectedOpportunity}
+                registeredStudy={c1Study}
+                tab={activationTab}
+                onTabChange={(studyTab) => void updateSearch({ studyTab })}
+                onClose={() => void updateSearch({ study: undefined, studyTab: undefined })}
+                onStartAssessment={
+                  productCapabilities.workspace ? startPrivateAssessment : undefined
+                }
+              />
+            </Suspense>
+          )}
 
           {comparedCandidates.length > 0 && (
             <section
@@ -2585,6 +2639,17 @@ function PowerFinderPage() {
                       Select a node to start an assessment. Industrial land remains site context
                       only.
                     </p>
+                  )}
+                  {selectedOpportunity && selected.properties.kind === "node" && (
+                    <button
+                      type="button"
+                      className="primary-button power-finder-activation-cta"
+                      onClick={() =>
+                        void updateSearch({ study: "activation", studyTab: "geographic" })
+                      }
+                    >
+                      <Zap aria-hidden="true" /> Explore activation options
+                    </button>
                   )}
                   <Link to="/data-sources" className="power-finder-method-link">
                     Review Evidence Methodology <ExternalLink aria-hidden="true" />

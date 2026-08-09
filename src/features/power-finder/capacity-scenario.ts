@@ -90,7 +90,7 @@ function baseRatingMw(voltageKv: number, seed: number) {
   return midpoint * (0.78 + seed * 0.44);
 }
 
-function loadFactor(project: FinderProject, hour: number) {
+export function syntheticProjectLoadFactor(project: FinderProject, hour: number) {
   const hourOfDay = hour % 24;
   const dayOfWeek = Math.floor(hour / 24) % 7;
   const month = Math.floor(hour / 730.5);
@@ -191,8 +191,10 @@ export function calculateCapacityScenario(
     const flexibleLimit = Math.min(conditionalCeiling, operatingLimit * (1.08 + seed * 0.08));
     hourlyLimits.push(flexibleLimit);
     const demand =
-      Math.max(minimumFirm, requestedImport * loadFactor(project, hour) * annualEnergyScale) -
-      project.onsiteGenerationMw;
+      Math.max(
+        minimumFirm,
+        requestedImport * syntheticProjectLoadFactor(project, hour) * annualEnergyScale,
+      ) - project.onsiteGenerationMw;
     let deficit = Math.max(0, demand - flexibleLimit);
     if (deficit > 0) preFlexConstrainedHours += 1;
     const loadResponse = Math.min(deficit, flexibleLoad);
@@ -345,7 +347,7 @@ export function applyReleaseAScenarios(project: FinderProject, candidates: Candi
   return candidates
     .map((candidate) => {
       const capacityScenario = calculateCapacityScenario(project, candidate);
-      return { ...candidate, screeningRank: capacityScenario.score, capacityScenario };
+      return { ...candidate, capacityScenario };
     })
     .sort(
       (left, right) =>

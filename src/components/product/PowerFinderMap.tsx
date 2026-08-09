@@ -24,37 +24,14 @@ type PowerFinderMapProps = {
   collection: PowerFinderCollection;
   selectedFeature?: PowerFinderFeature | null;
   previewFeature?: PowerFinderFeature | null;
-  mapMode: "voltage" | "evidence" | "capacity";
+  mapMode: "voltage" | "evidence";
   viewportTarget?: { center: [number, number]; zoom: number };
   onSelect: (feature: PowerFinderFeature) => void;
   onViewportChange?: (bounds: PowerFinderBounds) => void;
   projectSite?: [number, number] | null;
   onSitePlacement?: (coordinates: [number, number]) => void;
   onVisibleLayerCounts?: (counts: VisibleLayerCounts) => void;
-  syntheticNodeScenarios?: Record<string, { score: number; firmMw: number }>;
 };
-
-function withSyntheticNodeScenarios(
-  collection: PowerFinderCollection,
-  scenarios: Record<string, { score: number; firmMw: number }>,
-): PowerFinderCollection {
-  return {
-    ...collection,
-    features: collection.features.map((feature) => {
-      if (feature.properties.kind !== "node") return feature;
-      const scenario = scenarios[String(feature.id)];
-      if (!scenario) return feature;
-      return {
-        ...feature,
-        properties: {
-          ...feature.properties,
-          synthetic_scenario_score: scenario.score,
-          synthetic_firm_mw: scenario.firmMw,
-        },
-      };
-    }),
-  };
-}
 
 function isGeoJsonSource(source: Source | undefined): source is GeoJSONSource {
   return source?.type === "geojson";
@@ -93,13 +70,12 @@ export function PowerFinderMap({
   projectSite,
   onSitePlacement,
   onVisibleLayerCounts,
-  syntheticNodeScenarios = {},
 }: PowerFinderMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const onSelectRef = useRef(onSelect);
   const onViewportChangeRef = useRef(onViewportChange);
-  const collectionRef = useRef(withSyntheticNodeScenarios(collection, syntheticNodeScenarios));
+  const collectionRef = useRef(collection);
   const projectSiteRef = useRef(projectSite);
   const onSitePlacementRef = useRef(onSitePlacement);
   const onVisibleLayerCountsRef = useRef(onVisibleLayerCounts);
@@ -107,7 +83,7 @@ export function PowerFinderMap({
   const previewFeatureRef = useRef(previewFeature);
   onSelectRef.current = onSelect;
   onViewportChangeRef.current = onViewportChange;
-  collectionRef.current = withSyntheticNodeScenarios(collection, syntheticNodeScenarios);
+  collectionRef.current = collection;
   projectSiteRef.current = projectSite;
   onSitePlacementRef.current = onSitePlacement;
   onVisibleLayerCountsRef.current = onVisibleLayerCounts;
@@ -486,9 +462,7 @@ export function PowerFinderMap({
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    const split = splitMapCollection(
-      withSyntheticNodeScenarios(collection, syntheticNodeScenarios),
-    );
+    const split = splitMapCollection(collection);
     const updates = [
       [sourceIds.node, split.nodes],
       [sourceIds.line, split.lines],
@@ -500,7 +474,7 @@ export function PowerFinderMap({
       const source = map.getSource(sourceId);
       if (isGeoJsonSource(source)) source.setData(data);
     }
-  }, [collection, syntheticNodeScenarios]);
+  }, [collection]);
 
   useEffect(() => {
     const source = mapRef.current?.getSource("finder-project-site");
@@ -548,32 +522,10 @@ export function PowerFinderMap({
       "#f59e0b",
       "#64748b",
     ];
-    const capacityColour = [
-      "case",
-      ["has", "synthetic_scenario_score"],
-      [
-        "interpolate",
-        ["linear"],
-        ["number", ["get", "synthetic_scenario_score"], 0],
-        0,
-        "#ef4444",
-        40,
-        "#f59e0b",
-        70,
-        "#84cc16",
-        100,
-        "#22c55e",
-      ],
-      "#64748b",
-    ];
     map.setPaintProperty(
       "grid-nodes",
       "circle-color",
-      mapMode === "capacity"
-        ? capacityColour
-        : mapMode === "evidence"
-          ? evidenceColour
-          : voltageColour,
+      mapMode === "evidence" ? evidenceColour : voltageColour,
     );
   }, [mapMode]);
 

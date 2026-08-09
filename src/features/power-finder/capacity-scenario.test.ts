@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { calculateCapacityScenario, RELEASE_A_SCENARIO_VERSION } from "./capacity-scenario";
+import {
+  applyReleaseAScenarios,
+  calculateCapacityScenario,
+  RELEASE_A_SCENARIO_VERSION,
+} from "./capacity-scenario";
 import { defaultFinderProject } from "./finder-project";
 import type { CandidateOpportunity } from "./candidate-intelligence";
 
@@ -64,7 +68,9 @@ describe("Release A capacity scenario", () => {
       },
       candidate,
     );
-    expect(flexible.constrainedHoursPerYear).toBeLessThanOrEqual(inflexible.constrainedHoursPerYear);
+    expect(flexible.constrainedHoursPerYear).toBeLessThanOrEqual(
+      inflexible.constrainedHoursPerYear,
+    );
     expect(flexible.firmImportEnvelopeMw).toBe(inflexible.firmImportEnvelopeMw);
   });
 
@@ -72,6 +78,16 @@ describe("Release A capacity scenario", () => {
     const result = calculateCapacityScenario(defaultFinderProject, candidate);
     expect(result.scoreComponents).toHaveLength(8);
     expect(result.scoreComponents.reduce((sum, item) => sum + item.weight, 0)).toBe(100);
-    expect(result.limitingComponent).toMatch(/transformer|upstream_branch|voltage_security|contingency/);
+    expect(result.limitingComponent).toMatch(
+      /transformer|upstream_branch|voltage_security|contingency/,
+    );
+  });
+
+  it("never replaces the public evidence-based investigation priority", () => {
+    const [result] = applyReleaseAScenarios(defaultFinderProject, [
+      { ...candidate, screeningRank: 73 },
+    ]);
+    expect(result.screeningRank).toBe(73);
+    expect(result.capacityScenario?.score).toBeTypeOf("number");
   });
 });
