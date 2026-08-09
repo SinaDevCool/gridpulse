@@ -92,7 +92,7 @@ begin
     select l.source_record_id, 'line', coalesce(l.name, 'Mapped grid corridor'),
       l.operator_name, l.operational_status, l.voltage_kv, 'not_established', s.source_url,
       extensions.st_simplifypreservetopology(extensions.st_transform(l.geometry,3857),
-        case when z < 7 then 500 else when z < 10 then 80 else 5 end)
+        case when z < 7 then 500 when z < 10 then 80 else 5 end)
     from public.canonical_grid_lines l
     join public.grid_sources s on s.id=l.source_id
     join tile_bounds b on extensions.st_intersects(extensions.st_transform(l.geometry,3857), b.geom)
