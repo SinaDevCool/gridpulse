@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   compareOperatorFacts,
+  buildRelease5Acceptance,
   extractOperatorFacts,
   simulateRestrictionEvent,
 } from "./phase5-operator";
@@ -42,5 +43,14 @@ describe("Phase 5 operator engagement", () => {
     });
     expect(comparison.map((item) => item.status)).toEqual(["conflict", "confirmed", "confirmed"]);
     expect(comparison[0].action).toContain("do not overwrite");
+  });
+
+  it("passes the governed Release 5 rehearsal without creating a capacity claim", () => {
+    const result = buildRelease5Acceptance();
+    expect(result.all_repository_gates_passed).toBe(true);
+    expect(result.benchmark.discrepancy_statuses.import_limit_mw).toBe("conflict");
+    expect(result.benchmark.restriction_rehearsal.residual_mw).toBe(3.5);
+    expect(result.controls.operator_confirmation_created).toBe(false);
+    expect(result.controls.display_as_capacity).toBe(false);
   });
 });

@@ -210,6 +210,13 @@ export function ReferenceCapacityInset({
             {artifact.release4_governance.operator_replacement.required_field_count}
           </span>
         )}
+        {artifact.release5_governance && (
+          <span>
+            Release 5: {Object.values(artifact.release5_governance.gates).filter(Boolean).length}/
+            {Object.keys(artifact.release5_governance.gates).length} operator-control gates passed
+            {" · "}no dispatch or capacity confirmation
+          </span>
+        )}
       </footer>
     </section>
   );

@@ -124,6 +124,7 @@ export type ReferenceCapacityResult = {
   release2_governance: ReferenceCapacityArtifact["release2_governance"];
   release3_governance: ReferenceCapacityArtifact["release3_governance"];
   release4_governance: ReferenceCapacityArtifact["release4_governance"];
+  release5_governance: ReferenceCapacityArtifact["release5_governance"];
   binding_constraint: string | null;
   binding_case: string | null;
   validation_state: "reference_network_calculated";
@@ -253,6 +254,46 @@ export type ReferenceCapacityArtifact = {
     warning: string;
     manifest_sha256: string;
   } | null;
+  release5_governance: {
+    schema_version: "gridpulse-release5-acceptance-v1";
+    release: string;
+    methodology_version: string;
+    validation_class: "synthetic_demonstration";
+    gates: Record<string, boolean>;
+    all_repository_gates_passed: boolean;
+    benchmark: {
+      extracted_facts: {
+        import_limit_mw: number;
+        export_limit_mw: number;
+        flexibility_mode: string;
+        notice_minutes: number;
+        study_requirement_count: number;
+        signal_count: number;
+      };
+      discrepancy_statuses: Record<string, "confirmed" | "conflict" | "missing_operator_evidence">;
+      restriction_rehearsal: {
+        required_reduction_mw: number;
+        delivered_reduction_mw: number;
+        residual_mw: number;
+        compliant: boolean;
+      };
+    };
+    controls: {
+      human_source_review_required: true;
+      linked_source_document_required: true;
+      authenticated_grid_expert_approval_required: true;
+      declared_values_overwritten: false;
+      automatic_dispatch_authorized: false;
+      operator_confirmation_created: false;
+      display_as_capacity: false;
+      capacity_claim: false;
+    };
+    external_gates: string[];
+    public_visibility: "governance_summary_only";
+    private_operator_data_published: false;
+    warning: string;
+    manifest_sha256: string;
+  } | null;
   results_sha256: string;
   results: ReferenceCapacityResult[];
   permitted_interpretation: string;
@@ -260,7 +301,7 @@ export type ReferenceCapacityArtifact = {
 };
 
 export async function loadReferenceCapacityMap(): Promise<ReferenceCapacityArtifact> {
-  const response = await fetch("/power-finder/reference-capacity-map.json?release=capacity-r4");
+  const response = await fetch("/power-finder/reference-capacity-map.json?release=capacity-r5");
   if (!response.ok) throw new Error(`Reference capacity artifact failed (${response.status}).`);
   const artifact = (await response.json()) as ReferenceCapacityArtifact;
   if (

@@ -288,6 +288,7 @@ export function activationStudySnapshot(
           release2_governance: context.referenceCapacity.release2_governance,
           release3_governance: context.referenceCapacity.release3_governance,
           release4_governance: context.referenceCapacity.release4_governance,
+          release5_governance: context.referenceCapacity.release5_governance,
           restricted_hours: context.referenceCapacity.activation.flexible.restricted_hours,
           restricted_energy_mwh:
             context.referenceCapacity.activation.flexible.restricted_energy_mwh,

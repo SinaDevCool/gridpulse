@@ -717,6 +717,7 @@ function EvidenceView({ context }: { context: ActivationStudyContext }) {
   const release2 = context.referenceCapacity?.release2_governance;
   const release3 = context.referenceCapacity?.release3_governance;
   const release4 = context.referenceCapacity?.release4_governance;
+  const release5 = context.referenceCapacity?.release5_governance;
   const checklist = [
     "Confirm the responsible operator and candidate connection point.",
     "Obtain accepted equipment ratings and seasonal operating cases.",
@@ -784,6 +785,32 @@ function EvidenceView({ context }: { context: ActivationStudyContext }) {
               inputs {release4.operator_replacement.operator_field_count}/
               {release4.operator_replacement.required_field_count}
             </dd>
+          </div>
+        )}
+        {release5 && (
+          <div>
+            <dt>Release 5 operator evidence control</dt>
+            <dd>
+              {Object.values(release5.gates).filter(Boolean).length}/
+              {Object.keys(release5.gates).length} gates passed · reviewed extraction and conflict
+              preservation
+            </dd>
+          </div>
+        )}
+        {release5 && (
+          <div>
+            <dt>Restriction rehearsal</dt>
+            <dd>
+              {release5.benchmark.restriction_rehearsal.delivered_reduction_mw.toFixed(1)} MW of{" "}
+              {release5.benchmark.restriction_rehearsal.required_reduction_mw.toFixed(1)} MW ·
+              residual {release5.benchmark.restriction_rehearsal.residual_mw.toFixed(1)} MW
+            </dd>
+          </div>
+        )}
+        {release5 && (
+          <div>
+            <dt>Control authority</dt>
+            <dd>No automatic dispatch · no operator confirmation · no mapped capacity claim</dd>
           </div>
         )}
         {release4 && (

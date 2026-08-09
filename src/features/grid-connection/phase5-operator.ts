@@ -139,3 +139,80 @@ export function simulateRestrictionEvent(input: {
     disclaimer: "Simulation—not a network instruction or proof of connection capacity.",
   };
 }
+
+export function buildRelease5Acceptance() {
+  const statement =
+    "Dynamische Bezugsleistung 42,5 MW. Einspeisung 0 MW. Vorlauf 15 Minuten. Schutzkonzept und Telemetrie erforderlich.";
+  const facts = extractOperatorFacts(statement);
+  const discrepancies = compareOperatorFacts(facts, {
+    requestedImportMw: 60,
+    requestedExportMw: 0,
+    notificationLeadMinutes: 30,
+  });
+  const rehearsal = simulateRestrictionEvent({
+    baselineMw: 60,
+    networkLimitMw: facts.importLimitMw ?? 0,
+    batteryResponseMw: 8,
+    workloadResponseMw: 6,
+  });
+  const gates = {
+    operator_terms_extracted: facts.importLimitMw === 42.5 && facts.flexibilityMode === "dynamic",
+    source_review_warning_present: facts.warnings.some((warning) => warning.includes("draft only")),
+    discrepancy_preserved: discrepancies.some(
+      (item) =>
+        item.field === "import_limit_mw" &&
+        item.status === "conflict" &&
+        item.declaredValue === 60 &&
+        item.operatorValue === 42.5,
+    ),
+    confirmed_field_preserved: discrepancies.some(
+      (item) => item.field === "export_limit_mw" && item.status === "confirmed",
+    ),
+    restriction_response_rehearsed: rehearsal.requiredReductionMw === 17.5,
+    residual_exposure_visible: rehearsal.residualMw === 3.5 && rehearsal.compliant === false,
+  };
+  return {
+    schema_version: "gridpulse-release5-acceptance-v1" as const,
+    release: "Release 5",
+    methodology_version: PHASE5_VERSION,
+    validation_class: "synthetic_demonstration" as const,
+    gates,
+    all_repository_gates_passed: Object.values(gates).every(Boolean),
+    benchmark: {
+      extracted_facts: {
+        import_limit_mw: facts.importLimitMw,
+        export_limit_mw: facts.exportLimitMw,
+        flexibility_mode: facts.flexibilityMode,
+        notice_minutes: facts.noticeMinutes,
+        study_requirement_count: facts.studyRequirements.length,
+        signal_count: facts.signals.length,
+      },
+      discrepancy_statuses: Object.fromEntries(
+        discrepancies.map((item) => [item.field, item.status]),
+      ),
+      restriction_rehearsal: {
+        required_reduction_mw: rehearsal.requiredReductionMw,
+        delivered_reduction_mw: rehearsal.deliveredReductionMw,
+        residual_mw: rehearsal.residualMw,
+        compliant: rehearsal.compliant,
+      },
+    },
+    controls: {
+      human_source_review_required: true,
+      linked_source_document_required: true,
+      authenticated_grid_expert_approval_required: true,
+      declared_values_overwritten: false,
+      automatic_dispatch_authorized: false,
+      operator_confirmation_created: false,
+      display_as_capacity: false,
+      capacity_claim: false,
+    },
+    external_gates: [
+      "real operator source document linked to the project",
+      "human comparison of every extracted field with that source",
+      "authenticated grid-expert approval with content hash",
+      "operator-signed limits and validity scope",
+      "capacity-representation permission before any public display",
+    ],
+  };
+}

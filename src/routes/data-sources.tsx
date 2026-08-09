@@ -603,6 +603,17 @@ function FinderDataSourcesPage() {
                   permission are recorded.
                 </p>
               </article>
+              <article>
+                <FileCheck2 aria-hidden="true" />
+                <h3>Release 5 operator evidence control</h3>
+                <p>
+                  Operator correspondence can be machine-highlighted for review, but extracted
+                  values remain linked to the source and never overwrite customer declarations.
+                  Conflicts stay visible, authenticated grid-expert approval is required, and
+                  restriction events are non-operational rehearsals. They neither dispatch equipment
+                  nor establish mapped capacity.
+                </p>
+              </article>
             </div>
           </section>
 

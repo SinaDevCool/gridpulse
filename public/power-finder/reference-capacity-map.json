@@ -1,6 +1,6 @@
 {
   "schema_version": "gridpulse-reference-capacity-map-v1",
-  "generated_at": "2026-08-09T14:37:16.616073+00:00",
+  "generated_at": "2026-08-09T14:54:01.196049+00:00",
   "result_mode": "reference_network_calculated",
   "model": {
     "id": "simbench:1-MV-urban--0-sw",
@@ -266,7 +266,64 @@
     "warning": "Synthetic German operator pilot \u2014 not actual or operator-confirmed grid capacity.",
     "manifest_sha256": "0dda6bcb769d943e192c159c194c4a76a04f04c7cfc387cb92bcfde75d27b2de"
   },
-  "results_sha256": "fe2867226171e43635670a3f60427af265d31ef61fea112b2cb96cce071736e8",
+  "release5_governance": {
+    "schema_version": "gridpulse-release5-acceptance-v1",
+    "release": "Release 5",
+    "methodology_version": "de-operator-engagement-v1",
+    "validation_class": "synthetic_demonstration",
+    "gates": {
+      "operator_terms_extracted": true,
+      "source_review_warning_present": true,
+      "discrepancy_preserved": true,
+      "confirmed_field_preserved": true,
+      "restriction_response_rehearsed": true,
+      "residual_exposure_visible": true
+    },
+    "all_repository_gates_passed": true,
+    "benchmark": {
+      "extracted_facts": {
+        "import_limit_mw": 42.5,
+        "export_limit_mw": 0,
+        "flexibility_mode": "dynamic",
+        "notice_minutes": 15,
+        "study_requirement_count": 1,
+        "signal_count": 1
+      },
+      "discrepancy_statuses": {
+        "import_limit_mw": "conflict",
+        "export_limit_mw": "confirmed",
+        "notification_lead_minutes": "conflict"
+      },
+      "restriction_rehearsal": {
+        "required_reduction_mw": 17.5,
+        "delivered_reduction_mw": 14,
+        "residual_mw": 3.5,
+        "compliant": false
+      }
+    },
+    "controls": {
+      "human_source_review_required": true,
+      "linked_source_document_required": true,
+      "authenticated_grid_expert_approval_required": true,
+      "declared_values_overwritten": false,
+      "automatic_dispatch_authorized": false,
+      "operator_confirmation_created": false,
+      "display_as_capacity": false,
+      "capacity_claim": false
+    },
+    "external_gates": [
+      "real operator source document linked to the project",
+      "human comparison of every extracted field with that source",
+      "authenticated grid-expert approval with content hash",
+      "operator-signed limits and validity scope",
+      "capacity-representation permission before any public display"
+    ],
+    "public_visibility": "governance_summary_only",
+    "private_operator_data_published": false,
+    "warning": "Synthetic operator-engagement rehearsal\u2014not an operator response, operating instruction, connection offer, or mapped capacity result.",
+    "manifest_sha256": "fb5fddfece182022fcb6408938ddde96f4285107973f93d59fa59ab168c47ed2"
+  },
+  "results_sha256": "86362c956c974a85e7acc04454f343fd04a7ac2f02de8d73b918c301628fc2cd",
   "results": [
     {
       "result_id": "simbench-ref-01",
@@ -2034,6 +2091,63 @@
         "private_operator_data_published": false,
         "warning": "Synthetic German operator pilot \u2014 not actual or operator-confirmed grid capacity.",
         "manifest_sha256": "0dda6bcb769d943e192c159c194c4a76a04f04c7cfc387cb92bcfde75d27b2de"
+      },
+      "release5_governance": {
+        "schema_version": "gridpulse-release5-acceptance-v1",
+        "release": "Release 5",
+        "methodology_version": "de-operator-engagement-v1",
+        "validation_class": "synthetic_demonstration",
+        "gates": {
+          "operator_terms_extracted": true,
+          "source_review_warning_present": true,
+          "discrepancy_preserved": true,
+          "confirmed_field_preserved": true,
+          "restriction_response_rehearsed": true,
+          "residual_exposure_visible": true
+        },
+        "all_repository_gates_passed": true,
+        "benchmark": {
+          "extracted_facts": {
+            "import_limit_mw": 42.5,
+            "export_limit_mw": 0,
+            "flexibility_mode": "dynamic",
+            "notice_minutes": 15,
+            "study_requirement_count": 1,
+            "signal_count": 1
+          },
+          "discrepancy_statuses": {
+            "import_limit_mw": "conflict",
+            "export_limit_mw": "confirmed",
+            "notification_lead_minutes": "conflict"
+          },
+          "restriction_rehearsal": {
+            "required_reduction_mw": 17.5,
+            "delivered_reduction_mw": 14,
+            "residual_mw": 3.5,
+            "compliant": false
+          }
+        },
+        "controls": {
+          "human_source_review_required": true,
+          "linked_source_document_required": true,
+          "authenticated_grid_expert_approval_required": true,
+          "declared_values_overwritten": false,
+          "automatic_dispatch_authorized": false,
+          "operator_confirmation_created": false,
+          "display_as_capacity": false,
+          "capacity_claim": false
+        },
+        "external_gates": [
+          "real operator source document linked to the project",
+          "human comparison of every extracted field with that source",
+          "authenticated grid-expert approval with content hash",
+          "operator-signed limits and validity scope",
+          "capacity-representation permission before any public display"
+        ],
+        "public_visibility": "governance_summary_only",
+        "private_operator_data_published": false,
+        "warning": "Synthetic operator-engagement rehearsal\u2014not an operator response, operating instruction, connection offer, or mapped capacity result.",
+        "manifest_sha256": "fb5fddfece182022fcb6408938ddde96f4285107973f93d59fa59ab168c47ed2"
       },
       "binding_constraint": "unsupplied_load_bus",
       "binding_case": "line-0-out",
@@ -3807,6 +3921,63 @@
         "warning": "Synthetic German operator pilot \u2014 not actual or operator-confirmed grid capacity.",
         "manifest_sha256": "0dda6bcb769d943e192c159c194c4a76a04f04c7cfc387cb92bcfde75d27b2de"
       },
+      "release5_governance": {
+        "schema_version": "gridpulse-release5-acceptance-v1",
+        "release": "Release 5",
+        "methodology_version": "de-operator-engagement-v1",
+        "validation_class": "synthetic_demonstration",
+        "gates": {
+          "operator_terms_extracted": true,
+          "source_review_warning_present": true,
+          "discrepancy_preserved": true,
+          "confirmed_field_preserved": true,
+          "restriction_response_rehearsed": true,
+          "residual_exposure_visible": true
+        },
+        "all_repository_gates_passed": true,
+        "benchmark": {
+          "extracted_facts": {
+            "import_limit_mw": 42.5,
+            "export_limit_mw": 0,
+            "flexibility_mode": "dynamic",
+            "notice_minutes": 15,
+            "study_requirement_count": 1,
+            "signal_count": 1
+          },
+          "discrepancy_statuses": {
+            "import_limit_mw": "conflict",
+            "export_limit_mw": "confirmed",
+            "notification_lead_minutes": "conflict"
+          },
+          "restriction_rehearsal": {
+            "required_reduction_mw": 17.5,
+            "delivered_reduction_mw": 14,
+            "residual_mw": 3.5,
+            "compliant": false
+          }
+        },
+        "controls": {
+          "human_source_review_required": true,
+          "linked_source_document_required": true,
+          "authenticated_grid_expert_approval_required": true,
+          "declared_values_overwritten": false,
+          "automatic_dispatch_authorized": false,
+          "operator_confirmation_created": false,
+          "display_as_capacity": false,
+          "capacity_claim": false
+        },
+        "external_gates": [
+          "real operator source document linked to the project",
+          "human comparison of every extracted field with that source",
+          "authenticated grid-expert approval with content hash",
+          "operator-signed limits and validity scope",
+          "capacity-representation permission before any public display"
+        ],
+        "public_visibility": "governance_summary_only",
+        "private_operator_data_published": false,
+        "warning": "Synthetic operator-engagement rehearsal\u2014not an operator response, operating instruction, connection offer, or mapped capacity result.",
+        "manifest_sha256": "fb5fddfece182022fcb6408938ddde96f4285107973f93d59fa59ab168c47ed2"
+      },
       "binding_constraint": "unsupplied_load_bus",
       "binding_case": "line-0-out",
       "validation_state": "reference_network_calculated",
@@ -5578,6 +5749,63 @@
         "private_operator_data_published": false,
         "warning": "Synthetic German operator pilot \u2014 not actual or operator-confirmed grid capacity.",
         "manifest_sha256": "0dda6bcb769d943e192c159c194c4a76a04f04c7cfc387cb92bcfde75d27b2de"
+      },
+      "release5_governance": {
+        "schema_version": "gridpulse-release5-acceptance-v1",
+        "release": "Release 5",
+        "methodology_version": "de-operator-engagement-v1",
+        "validation_class": "synthetic_demonstration",
+        "gates": {
+          "operator_terms_extracted": true,
+          "source_review_warning_present": true,
+          "discrepancy_preserved": true,
+          "confirmed_field_preserved": true,
+          "restriction_response_rehearsed": true,
+          "residual_exposure_visible": true
+        },
+        "all_repository_gates_passed": true,
+        "benchmark": {
+          "extracted_facts": {
+            "import_limit_mw": 42.5,
+            "export_limit_mw": 0,
+            "flexibility_mode": "dynamic",
+            "notice_minutes": 15,
+            "study_requirement_count": 1,
+            "signal_count": 1
+          },
+          "discrepancy_statuses": {
+            "import_limit_mw": "conflict",
+            "export_limit_mw": "confirmed",
+            "notification_lead_minutes": "conflict"
+          },
+          "restriction_rehearsal": {
+            "required_reduction_mw": 17.5,
+            "delivered_reduction_mw": 14,
+            "residual_mw": 3.5,
+            "compliant": false
+          }
+        },
+        "controls": {
+          "human_source_review_required": true,
+          "linked_source_document_required": true,
+          "authenticated_grid_expert_approval_required": true,
+          "declared_values_overwritten": false,
+          "automatic_dispatch_authorized": false,
+          "operator_confirmation_created": false,
+          "display_as_capacity": false,
+          "capacity_claim": false
+        },
+        "external_gates": [
+          "real operator source document linked to the project",
+          "human comparison of every extracted field with that source",
+          "authenticated grid-expert approval with content hash",
+          "operator-signed limits and validity scope",
+          "capacity-representation permission before any public display"
+        ],
+        "public_visibility": "governance_summary_only",
+        "private_operator_data_published": false,
+        "warning": "Synthetic operator-engagement rehearsal\u2014not an operator response, operating instruction, connection offer, or mapped capacity result.",
+        "manifest_sha256": "fb5fddfece182022fcb6408938ddde96f4285107973f93d59fa59ab168c47ed2"
       },
       "binding_constraint": "unsupplied_load_bus",
       "binding_case": "line-0-out",
@@ -7351,6 +7579,63 @@
         "warning": "Synthetic German operator pilot \u2014 not actual or operator-confirmed grid capacity.",
         "manifest_sha256": "0dda6bcb769d943e192c159c194c4a76a04f04c7cfc387cb92bcfde75d27b2de"
       },
+      "release5_governance": {
+        "schema_version": "gridpulse-release5-acceptance-v1",
+        "release": "Release 5",
+        "methodology_version": "de-operator-engagement-v1",
+        "validation_class": "synthetic_demonstration",
+        "gates": {
+          "operator_terms_extracted": true,
+          "source_review_warning_present": true,
+          "discrepancy_preserved": true,
+          "confirmed_field_preserved": true,
+          "restriction_response_rehearsed": true,
+          "residual_exposure_visible": true
+        },
+        "all_repository_gates_passed": true,
+        "benchmark": {
+          "extracted_facts": {
+            "import_limit_mw": 42.5,
+            "export_limit_mw": 0,
+            "flexibility_mode": "dynamic",
+            "notice_minutes": 15,
+            "study_requirement_count": 1,
+            "signal_count": 1
+          },
+          "discrepancy_statuses": {
+            "import_limit_mw": "conflict",
+            "export_limit_mw": "confirmed",
+            "notification_lead_minutes": "conflict"
+          },
+          "restriction_rehearsal": {
+            "required_reduction_mw": 17.5,
+            "delivered_reduction_mw": 14,
+            "residual_mw": 3.5,
+            "compliant": false
+          }
+        },
+        "controls": {
+          "human_source_review_required": true,
+          "linked_source_document_required": true,
+          "authenticated_grid_expert_approval_required": true,
+          "declared_values_overwritten": false,
+          "automatic_dispatch_authorized": false,
+          "operator_confirmation_created": false,
+          "display_as_capacity": false,
+          "capacity_claim": false
+        },
+        "external_gates": [
+          "real operator source document linked to the project",
+          "human comparison of every extracted field with that source",
+          "authenticated grid-expert approval with content hash",
+          "operator-signed limits and validity scope",
+          "capacity-representation permission before any public display"
+        ],
+        "public_visibility": "governance_summary_only",
+        "private_operator_data_published": false,
+        "warning": "Synthetic operator-engagement rehearsal\u2014not an operator response, operating instruction, connection offer, or mapped capacity result.",
+        "manifest_sha256": "fb5fddfece182022fcb6408938ddde96f4285107973f93d59fa59ab168c47ed2"
+      },
       "binding_constraint": "unsupplied_load_bus",
       "binding_case": "line-0-out",
       "validation_state": "reference_network_calculated",
@@ -9122,6 +9407,63 @@
         "private_operator_data_published": false,
         "warning": "Synthetic German operator pilot \u2014 not actual or operator-confirmed grid capacity.",
         "manifest_sha256": "0dda6bcb769d943e192c159c194c4a76a04f04c7cfc387cb92bcfde75d27b2de"
+      },
+      "release5_governance": {
+        "schema_version": "gridpulse-release5-acceptance-v1",
+        "release": "Release 5",
+        "methodology_version": "de-operator-engagement-v1",
+        "validation_class": "synthetic_demonstration",
+        "gates": {
+          "operator_terms_extracted": true,
+          "source_review_warning_present": true,
+          "discrepancy_preserved": true,
+          "confirmed_field_preserved": true,
+          "restriction_response_rehearsed": true,
+          "residual_exposure_visible": true
+        },
+        "all_repository_gates_passed": true,
+        "benchmark": {
+          "extracted_facts": {
+            "import_limit_mw": 42.5,
+            "export_limit_mw": 0,
+            "flexibility_mode": "dynamic",
+            "notice_minutes": 15,
+            "study_requirement_count": 1,
+            "signal_count": 1
+          },
+          "discrepancy_statuses": {
+            "import_limit_mw": "conflict",
+            "export_limit_mw": "confirmed",
+            "notification_lead_minutes": "conflict"
+          },
+          "restriction_rehearsal": {
+            "required_reduction_mw": 17.5,
+            "delivered_reduction_mw": 14,
+            "residual_mw": 3.5,
+            "compliant": false
+          }
+        },
+        "controls": {
+          "human_source_review_required": true,
+          "linked_source_document_required": true,
+          "authenticated_grid_expert_approval_required": true,
+          "declared_values_overwritten": false,
+          "automatic_dispatch_authorized": false,
+          "operator_confirmation_created": false,
+          "display_as_capacity": false,
+          "capacity_claim": false
+        },
+        "external_gates": [
+          "real operator source document linked to the project",
+          "human comparison of every extracted field with that source",
+          "authenticated grid-expert approval with content hash",
+          "operator-signed limits and validity scope",
+          "capacity-representation permission before any public display"
+        ],
+        "public_visibility": "governance_summary_only",
+        "private_operator_data_published": false,
+        "warning": "Synthetic operator-engagement rehearsal\u2014not an operator response, operating instruction, connection offer, or mapped capacity result.",
+        "manifest_sha256": "fb5fddfece182022fcb6408938ddde96f4285107973f93d59fa59ab168c47ed2"
       },
       "binding_constraint": "unsupplied_load_bus",
       "binding_case": "line-0-out",
@@ -10895,6 +11237,63 @@
         "warning": "Synthetic German operator pilot \u2014 not actual or operator-confirmed grid capacity.",
         "manifest_sha256": "0dda6bcb769d943e192c159c194c4a76a04f04c7cfc387cb92bcfde75d27b2de"
       },
+      "release5_governance": {
+        "schema_version": "gridpulse-release5-acceptance-v1",
+        "release": "Release 5",
+        "methodology_version": "de-operator-engagement-v1",
+        "validation_class": "synthetic_demonstration",
+        "gates": {
+          "operator_terms_extracted": true,
+          "source_review_warning_present": true,
+          "discrepancy_preserved": true,
+          "confirmed_field_preserved": true,
+          "restriction_response_rehearsed": true,
+          "residual_exposure_visible": true
+        },
+        "all_repository_gates_passed": true,
+        "benchmark": {
+          "extracted_facts": {
+            "import_limit_mw": 42.5,
+            "export_limit_mw": 0,
+            "flexibility_mode": "dynamic",
+            "notice_minutes": 15,
+            "study_requirement_count": 1,
+            "signal_count": 1
+          },
+          "discrepancy_statuses": {
+            "import_limit_mw": "conflict",
+            "export_limit_mw": "confirmed",
+            "notification_lead_minutes": "conflict"
+          },
+          "restriction_rehearsal": {
+            "required_reduction_mw": 17.5,
+            "delivered_reduction_mw": 14,
+            "residual_mw": 3.5,
+            "compliant": false
+          }
+        },
+        "controls": {
+          "human_source_review_required": true,
+          "linked_source_document_required": true,
+          "authenticated_grid_expert_approval_required": true,
+          "declared_values_overwritten": false,
+          "automatic_dispatch_authorized": false,
+          "operator_confirmation_created": false,
+          "display_as_capacity": false,
+          "capacity_claim": false
+        },
+        "external_gates": [
+          "real operator source document linked to the project",
+          "human comparison of every extracted field with that source",
+          "authenticated grid-expert approval with content hash",
+          "operator-signed limits and validity scope",
+          "capacity-representation permission before any public display"
+        ],
+        "public_visibility": "governance_summary_only",
+        "private_operator_data_published": false,
+        "warning": "Synthetic operator-engagement rehearsal\u2014not an operator response, operating instruction, connection offer, or mapped capacity result.",
+        "manifest_sha256": "fb5fddfece182022fcb6408938ddde96f4285107973f93d59fa59ab168c47ed2"
+      },
       "binding_constraint": "unsupplied_load_bus",
       "binding_case": "line-0-out",
       "validation_state": "reference_network_calculated",
@@ -12666,6 +13065,63 @@
         "private_operator_data_published": false,
         "warning": "Synthetic German operator pilot \u2014 not actual or operator-confirmed grid capacity.",
         "manifest_sha256": "0dda6bcb769d943e192c159c194c4a76a04f04c7cfc387cb92bcfde75d27b2de"
+      },
+      "release5_governance": {
+        "schema_version": "gridpulse-release5-acceptance-v1",
+        "release": "Release 5",
+        "methodology_version": "de-operator-engagement-v1",
+        "validation_class": "synthetic_demonstration",
+        "gates": {
+          "operator_terms_extracted": true,
+          "source_review_warning_present": true,
+          "discrepancy_preserved": true,
+          "confirmed_field_preserved": true,
+          "restriction_response_rehearsed": true,
+          "residual_exposure_visible": true
+        },
+        "all_repository_gates_passed": true,
+        "benchmark": {
+          "extracted_facts": {
+            "import_limit_mw": 42.5,
+            "export_limit_mw": 0,
+            "flexibility_mode": "dynamic",
+            "notice_minutes": 15,
+            "study_requirement_count": 1,
+            "signal_count": 1
+          },
+          "discrepancy_statuses": {
+            "import_limit_mw": "conflict",
+            "export_limit_mw": "confirmed",
+            "notification_lead_minutes": "conflict"
+          },
+          "restriction_rehearsal": {
+            "required_reduction_mw": 17.5,
+            "delivered_reduction_mw": 14,
+            "residual_mw": 3.5,
+            "compliant": false
+          }
+        },
+        "controls": {
+          "human_source_review_required": true,
+          "linked_source_document_required": true,
+          "authenticated_grid_expert_approval_required": true,
+          "declared_values_overwritten": false,
+          "automatic_dispatch_authorized": false,
+          "operator_confirmation_created": false,
+          "display_as_capacity": false,
+          "capacity_claim": false
+        },
+        "external_gates": [
+          "real operator source document linked to the project",
+          "human comparison of every extracted field with that source",
+          "authenticated grid-expert approval with content hash",
+          "operator-signed limits and validity scope",
+          "capacity-representation permission before any public display"
+        ],
+        "public_visibility": "governance_summary_only",
+        "private_operator_data_published": false,
+        "warning": "Synthetic operator-engagement rehearsal\u2014not an operator response, operating instruction, connection offer, or mapped capacity result.",
+        "manifest_sha256": "fb5fddfece182022fcb6408938ddde96f4285107973f93d59fa59ab168c47ed2"
       },
       "binding_constraint": "unsupplied_load_bus",
       "binding_case": "line-0-out",
@@ -14439,6 +14895,63 @@
         "warning": "Synthetic German operator pilot \u2014 not actual or operator-confirmed grid capacity.",
         "manifest_sha256": "0dda6bcb769d943e192c159c194c4a76a04f04c7cfc387cb92bcfde75d27b2de"
       },
+      "release5_governance": {
+        "schema_version": "gridpulse-release5-acceptance-v1",
+        "release": "Release 5",
+        "methodology_version": "de-operator-engagement-v1",
+        "validation_class": "synthetic_demonstration",
+        "gates": {
+          "operator_terms_extracted": true,
+          "source_review_warning_present": true,
+          "discrepancy_preserved": true,
+          "confirmed_field_preserved": true,
+          "restriction_response_rehearsed": true,
+          "residual_exposure_visible": true
+        },
+        "all_repository_gates_passed": true,
+        "benchmark": {
+          "extracted_facts": {
+            "import_limit_mw": 42.5,
+            "export_limit_mw": 0,
+            "flexibility_mode": "dynamic",
+            "notice_minutes": 15,
+            "study_requirement_count": 1,
+            "signal_count": 1
+          },
+          "discrepancy_statuses": {
+            "import_limit_mw": "conflict",
+            "export_limit_mw": "confirmed",
+            "notification_lead_minutes": "conflict"
+          },
+          "restriction_rehearsal": {
+            "required_reduction_mw": 17.5,
+            "delivered_reduction_mw": 14,
+            "residual_mw": 3.5,
+            "compliant": false
+          }
+        },
+        "controls": {
+          "human_source_review_required": true,
+          "linked_source_document_required": true,
+          "authenticated_grid_expert_approval_required": true,
+          "declared_values_overwritten": false,
+          "automatic_dispatch_authorized": false,
+          "operator_confirmation_created": false,
+          "display_as_capacity": false,
+          "capacity_claim": false
+        },
+        "external_gates": [
+          "real operator source document linked to the project",
+          "human comparison of every extracted field with that source",
+          "authenticated grid-expert approval with content hash",
+          "operator-signed limits and validity scope",
+          "capacity-representation permission before any public display"
+        ],
+        "public_visibility": "governance_summary_only",
+        "private_operator_data_published": false,
+        "warning": "Synthetic operator-engagement rehearsal\u2014not an operator response, operating instruction, connection offer, or mapped capacity result.",
+        "manifest_sha256": "fb5fddfece182022fcb6408938ddde96f4285107973f93d59fa59ab168c47ed2"
+      },
       "binding_constraint": "unsupplied_load_bus",
       "binding_case": "line-0-out",
       "validation_state": "reference_network_calculated",
@@ -16210,6 +16723,63 @@
         "private_operator_data_published": false,
         "warning": "Synthetic German operator pilot \u2014 not actual or operator-confirmed grid capacity.",
         "manifest_sha256": "0dda6bcb769d943e192c159c194c4a76a04f04c7cfc387cb92bcfde75d27b2de"
+      },
+      "release5_governance": {
+        "schema_version": "gridpulse-release5-acceptance-v1",
+        "release": "Release 5",
+        "methodology_version": "de-operator-engagement-v1",
+        "validation_class": "synthetic_demonstration",
+        "gates": {
+          "operator_terms_extracted": true,
+          "source_review_warning_present": true,
+          "discrepancy_preserved": true,
+          "confirmed_field_preserved": true,
+          "restriction_response_rehearsed": true,
+          "residual_exposure_visible": true
+        },
+        "all_repository_gates_passed": true,
+        "benchmark": {
+          "extracted_facts": {
+            "import_limit_mw": 42.5,
+            "export_limit_mw": 0,
+            "flexibility_mode": "dynamic",
+            "notice_minutes": 15,
+            "study_requirement_count": 1,
+            "signal_count": 1
+          },
+          "discrepancy_statuses": {
+            "import_limit_mw": "conflict",
+            "export_limit_mw": "confirmed",
+            "notification_lead_minutes": "conflict"
+          },
+          "restriction_rehearsal": {
+            "required_reduction_mw": 17.5,
+            "delivered_reduction_mw": 14,
+            "residual_mw": 3.5,
+            "compliant": false
+          }
+        },
+        "controls": {
+          "human_source_review_required": true,
+          "linked_source_document_required": true,
+          "authenticated_grid_expert_approval_required": true,
+          "declared_values_overwritten": false,
+          "automatic_dispatch_authorized": false,
+          "operator_confirmation_created": false,
+          "display_as_capacity": false,
+          "capacity_claim": false
+        },
+        "external_gates": [
+          "real operator source document linked to the project",
+          "human comparison of every extracted field with that source",
+          "authenticated grid-expert approval with content hash",
+          "operator-signed limits and validity scope",
+          "capacity-representation permission before any public display"
+        ],
+        "public_visibility": "governance_summary_only",
+        "private_operator_data_published": false,
+        "warning": "Synthetic operator-engagement rehearsal\u2014not an operator response, operating instruction, connection offer, or mapped capacity result.",
+        "manifest_sha256": "fb5fddfece182022fcb6408938ddde96f4285107973f93d59fa59ab168c47ed2"
       },
       "binding_constraint": "unsupplied_load_bus",
       "binding_case": "line-0-out",
@@ -17983,6 +18553,63 @@
         "warning": "Synthetic German operator pilot \u2014 not actual or operator-confirmed grid capacity.",
         "manifest_sha256": "0dda6bcb769d943e192c159c194c4a76a04f04c7cfc387cb92bcfde75d27b2de"
       },
+      "release5_governance": {
+        "schema_version": "gridpulse-release5-acceptance-v1",
+        "release": "Release 5",
+        "methodology_version": "de-operator-engagement-v1",
+        "validation_class": "synthetic_demonstration",
+        "gates": {
+          "operator_terms_extracted": true,
+          "source_review_warning_present": true,
+          "discrepancy_preserved": true,
+          "confirmed_field_preserved": true,
+          "restriction_response_rehearsed": true,
+          "residual_exposure_visible": true
+        },
+        "all_repository_gates_passed": true,
+        "benchmark": {
+          "extracted_facts": {
+            "import_limit_mw": 42.5,
+            "export_limit_mw": 0,
+            "flexibility_mode": "dynamic",
+            "notice_minutes": 15,
+            "study_requirement_count": 1,
+            "signal_count": 1
+          },
+          "discrepancy_statuses": {
+            "import_limit_mw": "conflict",
+            "export_limit_mw": "confirmed",
+            "notification_lead_minutes": "conflict"
+          },
+          "restriction_rehearsal": {
+            "required_reduction_mw": 17.5,
+            "delivered_reduction_mw": 14,
+            "residual_mw": 3.5,
+            "compliant": false
+          }
+        },
+        "controls": {
+          "human_source_review_required": true,
+          "linked_source_document_required": true,
+          "authenticated_grid_expert_approval_required": true,
+          "declared_values_overwritten": false,
+          "automatic_dispatch_authorized": false,
+          "operator_confirmation_created": false,
+          "display_as_capacity": false,
+          "capacity_claim": false
+        },
+        "external_gates": [
+          "real operator source document linked to the project",
+          "human comparison of every extracted field with that source",
+          "authenticated grid-expert approval with content hash",
+          "operator-signed limits and validity scope",
+          "capacity-representation permission before any public display"
+        ],
+        "public_visibility": "governance_summary_only",
+        "private_operator_data_published": false,
+        "warning": "Synthetic operator-engagement rehearsal\u2014not an operator response, operating instruction, connection offer, or mapped capacity result.",
+        "manifest_sha256": "fb5fddfece182022fcb6408938ddde96f4285107973f93d59fa59ab168c47ed2"
+      },
       "binding_constraint": "unsupplied_load_bus",
       "binding_case": "line-0-out",
       "validation_state": "reference_network_calculated",
@@ -19755,6 +20382,63 @@
         "warning": "Synthetic German operator pilot \u2014 not actual or operator-confirmed grid capacity.",
         "manifest_sha256": "0dda6bcb769d943e192c159c194c4a76a04f04c7cfc387cb92bcfde75d27b2de"
       },
+      "release5_governance": {
+        "schema_version": "gridpulse-release5-acceptance-v1",
+        "release": "Release 5",
+        "methodology_version": "de-operator-engagement-v1",
+        "validation_class": "synthetic_demonstration",
+        "gates": {
+          "operator_terms_extracted": true,
+          "source_review_warning_present": true,
+          "discrepancy_preserved": true,
+          "confirmed_field_preserved": true,
+          "restriction_response_rehearsed": true,
+          "residual_exposure_visible": true
+        },
+        "all_repository_gates_passed": true,
+        "benchmark": {
+          "extracted_facts": {
+            "import_limit_mw": 42.5,
+            "export_limit_mw": 0,
+            "flexibility_mode": "dynamic",
+            "notice_minutes": 15,
+            "study_requirement_count": 1,
+            "signal_count": 1
+          },
+          "discrepancy_statuses": {
+            "import_limit_mw": "conflict",
+            "export_limit_mw": "confirmed",
+            "notification_lead_minutes": "conflict"
+          },
+          "restriction_rehearsal": {
+            "required_reduction_mw": 17.5,
+            "delivered_reduction_mw": 14,
+            "residual_mw": 3.5,
+            "compliant": false
+          }
+        },
+        "controls": {
+          "human_source_review_required": true,
+          "linked_source_document_required": true,
+          "authenticated_grid_expert_approval_required": true,
+          "declared_values_overwritten": false,
+          "automatic_dispatch_authorized": false,
+          "operator_confirmation_created": false,
+          "display_as_capacity": false,
+          "capacity_claim": false
+        },
+        "external_gates": [
+          "real operator source document linked to the project",
+          "human comparison of every extracted field with that source",
+          "authenticated grid-expert approval with content hash",
+          "operator-signed limits and validity scope",
+          "capacity-representation permission before any public display"
+        ],
+        "public_visibility": "governance_summary_only",
+        "private_operator_data_published": false,
+        "warning": "Synthetic operator-engagement rehearsal\u2014not an operator response, operating instruction, connection offer, or mapped capacity result.",
+        "manifest_sha256": "fb5fddfece182022fcb6408938ddde96f4285107973f93d59fa59ab168c47ed2"
+      },
       "binding_constraint": "unsupplied_load_bus",
       "binding_case": "line-0-out",
       "validation_state": "reference_network_calculated",
@@ -21526,6 +22210,63 @@
         "private_operator_data_published": false,
         "warning": "Synthetic German operator pilot \u2014 not actual or operator-confirmed grid capacity.",
         "manifest_sha256": "0dda6bcb769d943e192c159c194c4a76a04f04c7cfc387cb92bcfde75d27b2de"
+      },
+      "release5_governance": {
+        "schema_version": "gridpulse-release5-acceptance-v1",
+        "release": "Release 5",
+        "methodology_version": "de-operator-engagement-v1",
+        "validation_class": "synthetic_demonstration",
+        "gates": {
+          "operator_terms_extracted": true,
+          "source_review_warning_present": true,
+          "discrepancy_preserved": true,
+          "confirmed_field_preserved": true,
+          "restriction_response_rehearsed": true,
+          "residual_exposure_visible": true
+        },
+        "all_repository_gates_passed": true,
+        "benchmark": {
+          "extracted_facts": {
+            "import_limit_mw": 42.5,
+            "export_limit_mw": 0,
+            "flexibility_mode": "dynamic",
+            "notice_minutes": 15,
+            "study_requirement_count": 1,
+            "signal_count": 1
+          },
+          "discrepancy_statuses": {
+            "import_limit_mw": "conflict",
+            "export_limit_mw": "confirmed",
+            "notification_lead_minutes": "conflict"
+          },
+          "restriction_rehearsal": {
+            "required_reduction_mw": 17.5,
+            "delivered_reduction_mw": 14,
+            "residual_mw": 3.5,
+            "compliant": false
+          }
+        },
+        "controls": {
+          "human_source_review_required": true,
+          "linked_source_document_required": true,
+          "authenticated_grid_expert_approval_required": true,
+          "declared_values_overwritten": false,
+          "automatic_dispatch_authorized": false,
+          "operator_confirmation_created": false,
+          "display_as_capacity": false,
+          "capacity_claim": false
+        },
+        "external_gates": [
+          "real operator source document linked to the project",
+          "human comparison of every extracted field with that source",
+          "authenticated grid-expert approval with content hash",
+          "operator-signed limits and validity scope",
+          "capacity-representation permission before any public display"
+        ],
+        "public_visibility": "governance_summary_only",
+        "private_operator_data_published": false,
+        "warning": "Synthetic operator-engagement rehearsal\u2014not an operator response, operating instruction, connection offer, or mapped capacity result.",
+        "manifest_sha256": "fb5fddfece182022fcb6408938ddde96f4285107973f93d59fa59ab168c47ed2"
       },
       "binding_constraint": "unsupplied_load_bus",
       "binding_case": "line-0-out",

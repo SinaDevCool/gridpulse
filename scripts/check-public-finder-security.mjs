@@ -115,6 +115,15 @@ const release3Tables = [
   "grid_shadow_observations",
   "grid_champion_history",
 ];
+const release5Tables = [
+  "integration_events",
+  "assessment_reviews",
+  "operations_simulations",
+  "pilot_metrics",
+  "fca_envelopes",
+  "operator_engagements",
+  "operator_engagement_events",
+];
 const graphTables = [
   "grid_graph_projections",
   "grid_topology_studies",
@@ -155,6 +164,19 @@ for (const table of release3Tables) {
     throw new Error(`Anonymous Release 3 table ${table} returned ${response.status}.`);
   }
 }
+const release5Statuses = {};
+for (const table of release5Tables) {
+  const response = await fetch(`${supabaseUrl}/rest/v1/${table}?select=id&limit=1`, { headers });
+  release5Statuses[table] = response.status;
+  if ([401, 403].includes(response.status)) continue;
+  if (response.ok) {
+    const rows = await response.json();
+    if (Array.isArray(rows) && rows.length === 0) continue;
+  }
+  throw new Error(
+    `Anonymous Release 5 table ${table} exposed data or returned ${response.status}.`,
+  );
+}
 const graphTableStatuses = {};
 for (const table of graphTables) {
   const response = await fetch(`${supabaseUrl}/rest/v1/${table}?select=id&limit=1`, { headers });
@@ -183,7 +205,9 @@ const acceptCandidateLink = await fetch(
   },
 );
 if (![401, 403, 404].includes(acceptCandidateLink.status)) {
-  throw new Error(`Anonymous candidate-model reconciliation returned ${acceptCandidateLink.status}.`);
+  throw new Error(
+    `Anonymous candidate-model reconciliation returned ${acceptCandidateLink.status}.`,
+  );
 }
 
 const invalid = await fetch(
@@ -199,6 +223,7 @@ console.log(
     protected_table_status: protectedTable.status,
     release2_table_statuses: release2Statuses,
     release3_table_statuses: release3Statuses,
+    release5_table_statuses: release5Statuses,
     graph_table_statuses: graphTableStatuses,
     private_graph_ui_status: privateGraphUi.status,
     candidate_model_reconciliation_status: acceptCandidateLink.status,
