@@ -40,7 +40,7 @@ function LegacySyntheticStudyRedirect() {
         batteryMw: search.batteryMw,
         batteryMwh: search.batteryMwh,
         study: "activation",
-        studyTab: "geographic",
+        studyTab: "overview",
       }}
     />
   );

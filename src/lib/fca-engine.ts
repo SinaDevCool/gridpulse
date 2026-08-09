@@ -4,6 +4,10 @@ export type IntervalPoint = {
   exportMw: number;
   flexibleLoadMw?: number;
   onsiteGenerationMw?: number;
+  /** Optional time-varying connection envelope supplied by a benchmark or operator model. */
+  connectionLimitMw?: number;
+  /** Optional multiplier for a declared firm-plus-conditional envelope. */
+  connectionLimitFactor?: number;
 };
 
 export type ProfileQuality = {
@@ -247,7 +251,12 @@ export function simulateFlexibleConnection(
   let minimumViableBreaches = 0;
   const timeline = points.map((point) => {
     const baselineImportMw = Math.max(0, point.importMw - (point.onsiteGenerationMw ?? 0));
-    const connectionLimitMw = Math.max(0, settings.firmImportMw + settings.conditionalImportMw);
+    const connectionLimitMw = Math.max(
+      0,
+      point.connectionLimitMw ??
+        (settings.firmImportMw + settings.conditionalImportMw) *
+          Math.max(0, point.connectionLimitFactor ?? 1),
+    );
     const grossShortfallMw = Math.max(0, baselineImportMw - connectionLimitMw);
     const declaredShiftableMw = Math.min(
       point.flexibleLoadMw ?? settings.shiftableLoadMw,

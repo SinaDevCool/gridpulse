@@ -70,10 +70,21 @@ const operatorQuestions = {
   ],
 };
 
-function analyse(input: ConnectionOptionInput, firmImportMw: number, conditionalImportMw = 0) {
+function analyse(
+  input: ConnectionOptionInput,
+  firmImportMw: number,
+  conditionalImportMw = 0,
+  capabilities: { flexibleLoad: boolean; battery: boolean } = {
+    flexibleLoad: false,
+    battery: false,
+  },
+) {
   if (!input.profile?.length) return null;
   return simulateFlexibleConnection(input.profile, {
     ...input.dispatch,
+    shiftableLoadMw: capabilities.flexibleLoad ? input.dispatch.shiftableLoadMw : 0,
+    batteryPowerMw: capabilities.battery ? input.dispatch.batteryPowerMw : 0,
+    batteryEnergyMwh: capabilities.battery ? input.dispatch.batteryEnergyMwh : 0,
     firmImportMw,
     conditionalImportMw,
     minimumViableImportMw: input.minimumViableImportMw,
@@ -147,7 +158,10 @@ export function buildConnectionOptions(input: ConnectionOptionInput): Connection
       "Static flexible agreement",
       input.reducedFirmImportMw,
       input.requestedImportMw,
-      analyse(input, input.reducedFirmImportMw, input.conditionalImportMw),
+      analyse(input, input.reducedFirmImportMw, input.conditionalImportMw * 0.6, {
+        flexibleLoad: true,
+        battery: false,
+      }),
       ["Respect agreed time-window limits", "Operate declared workload flexibility"],
       operatorQuestions.staticFlexible,
     ),
@@ -156,7 +170,10 @@ export function buildConnectionOptions(input: ConnectionOptionInput): Connection
       "Dynamic flexible agreement",
       input.reducedFirmImportMw,
       input.requestedImportMw,
-      analyse(input, input.reducedFirmImportMw, input.conditionalImportMw),
+      analyse(input, input.reducedFirmImportMw, input.conditionalImportMw, {
+        flexibleLoad: true,
+        battery: false,
+      }),
       [
         "Respond safely to authenticated operator limits",
         "Maintain a fail-safe operating limit and auditable telemetry",
@@ -169,7 +186,10 @@ export function buildConnectionOptions(input: ConnectionOptionInput): Connection
       input.reducedFirmImportMw,
       input.requestedImportMw,
       input.dispatch.batteryPowerMw > 0
-        ? analyse(input, input.reducedFirmImportMw, input.conditionalImportMw)
+        ? analyse(input, input.reducedFirmImportMw, input.conditionalImportMw * 0.6, {
+            flexibleLoad: false,
+            battery: true,
+          })
         : null,
       [
         "Reserve usable state of charge for restriction events",

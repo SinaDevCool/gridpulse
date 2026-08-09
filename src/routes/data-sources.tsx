@@ -531,6 +531,42 @@ function FinderDataSourcesPage() {
                   studies and preserve validation metadata.
                 </p>
               </article>
+              <article>
+                <Calculator aria-hidden="true" />
+                <h3>Constraint-led comparison</h3>
+                <p>
+                  Every public strategy is tested against one versioned 8,760-hour reference case.
+                  Firm, reduced, staged, flexible and storage-supported strategies differ only
+                  through their declared connection envelope and customer-side response.
+                </p>
+              </article>
+              <article>
+                <Calculator aria-hidden="true" />
+                <h3>Recommendation method</h3>
+                <p>
+                  The leading pathway balances demand served, residual energy, restricted hours and
+                  activation capability. Synthetic calculations never alter the public
+                  evidence-based candidate rank.
+                </p>
+              </article>
+              <article>
+                <Database aria-hidden="true" />
+                <h3>Commercial sensitivity</h3>
+                <p>
+                  Customer-declared value per energized MW-month, months accelerated, flexibility
+                  cost and battery cost create a low/base/high representative comparison. It is not
+                  an investment return, operator cost or delivery date.
+                </p>
+              </article>
+              <article>
+                <ShieldCheck aria-hidden="true" />
+                <h3>Validation ladder</h3>
+                <p>
+                  Public evidence and customer declarations support the benchmark. A linked,
+                  reconciled and reviewed operator model is required before results become
+                  node-specific, and written confirmation still controls connection terms.
+                </p>
+              </article>
             </div>
           </section>
 

@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { createActivationStudyContext, resolveActivationStudyMode } from "./activation-study";
+import {
+  buildRepresentativeProfile,
+  calculateRepresentativeCommercialValue,
+  createActivationStudyContext,
+  resolveActivationStudyMode,
+} from "./activation-study";
 import { calculateCapacityScenario } from "./capacity-scenario";
 import type { CandidateOpportunity } from "./candidate-intelligence";
 import { defaultFinderProject } from "./finder-project";
@@ -54,5 +59,36 @@ describe("Activation Study orchestration", () => {
         evidence_boundary: "test",
       }),
     ).toBe("operator_reviewed");
+  });
+
+  it("uses one deterministic annual profile and produces differentiated strategies", () => {
+    const project = {
+      ...defaultFinderProject,
+      importMw: 20,
+      ultimateImportMw: 20,
+      minimumFirmMw: 10,
+      flexibleLoadMw: 4,
+      batteryPowerMw: 8,
+      batteryEnergyMwh: 24,
+    };
+    const profile = buildRepresentativeProfile(project);
+    const context = createActivationStudyContext({ project, candidate, registeredStudy: null });
+    expect(profile).toHaveLength(8760);
+    expect(buildRepresentativeProfile(project)).toEqual(profile);
+    expect(
+      new Set(context.options.map((option) => option.analysis?.residualUnservedMwh)).size,
+    ).toBeGreaterThan(1);
+    expect(context.recommendedOption).not.toBeNull();
+  });
+
+  it("keeps representative commercial value explicitly assumption-driven", () => {
+    const context = createActivationStudyContext({
+      project: { ...defaultFinderProject, importMw: 20, ultimateImportMw: 20 },
+      candidate,
+      registeredStudy: null,
+    });
+    const value = calculateRepresentativeCommercialValue(context);
+    expect(value.grossAccelerationValueEur).toBeGreaterThan(0);
+    expect(value.boundary).toMatch(/not an investment return/i);
   });
 });

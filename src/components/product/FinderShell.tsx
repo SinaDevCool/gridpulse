@@ -40,11 +40,6 @@ export function FinderShell({ children }: { children: ReactNode }) {
         >
           {menuOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
         </button>
-        <div className="header-account">
-          <a href={`mailto:${finderContactEmail}`} className="primary-button">
-            Discuss a site
-          </a>
-        </div>
       </header>
       {children}
       <footer className="product-footer">

@@ -3,7 +3,11 @@ import { voltageFitLabels, type CandidateOpportunity } from "./candidate-intelli
 import { finderProjectTypes, projectOperatorQuestions, type FinderProject } from "./finder-project";
 import { ruleReferencesForVoltage } from "./german-rules-registry";
 import { calculationClassLabels } from "./calculation-provenance";
-import { createActivationStudyContext } from "./activation-study";
+import {
+  activationStatusLabel,
+  calculateRepresentativeCommercialValue,
+  createActivationStudyContext,
+} from "./activation-study";
 
 const clean = (value: unknown) => String(value ?? "Not established").replace(/[^ -~]/g, "-");
 const reportDate = new Intl.DateTimeFormat("en-GB", { dateStyle: "medium" });
@@ -107,12 +111,32 @@ export async function downloadFinderReport(
       "Activation Study boundary",
       "Representative synthetic benchmark—not calculated capacity at this mapped node.",
     );
-    activation.options.forEach((option) =>
+    const recommended = activation.recommendedOption;
+    const commercial = calculateRepresentativeCommercialValue(activation);
+    line("Leading representative pathway", recommended?.title ?? "Not established");
+    if (recommended) {
+      line("Strategy interpretation", activationStatusLabel(recommended.operationalStatus));
+      line(
+        "Initial / eventual benchmark",
+        `${recommended.initialImportMw.toFixed(1)} MW / ${recommended.eventualImportMw.toFixed(1)} MW`,
+      );
+      line(
+        "Hourly benchmark",
+        `${recommended.analysis?.restrictedHours ?? "unavailable"} restricted hours; ${recommended.analysis?.residualUnservedMwh ?? "unavailable"} MWh residual energy; ${recommended.analysis?.demandServedPercent ?? "unavailable"}% demand served`,
+      );
+      line("Recommended validation action", recommended.nextAction);
+    }
+    activation.decisionMatrix.forEach((option) =>
       line(
         `Activation option — ${option.title}`,
         `${option.initialImportMw.toFixed(1)} MW initial; ${option.eventualImportMw.toFixed(1)} MW eventual; ${option.analysis?.restrictedHours ?? "unavailable"} restricted hours in the representative profile; ${option.evidenceStatus.replaceAll("_", " ")}`,
       ),
     );
+    line(
+      "Representative commercial sensitivity",
+      `EUR ${Math.round(commercial.lowIndicativeValueEur).toLocaleString("en-GB")} low / EUR ${Math.round(commercial.netIndicativeValueEur).toLocaleString("en-GB")} base / EUR ${Math.round(commercial.highIndicativeValueEur).toLocaleString("en-GB")} high`,
+    );
+    line("Commercial boundary", commercial.boundary);
     if (candidate.capacityScenario) {
       line(
         "EXPERIMENTAL DEMONSTRATION — NOT GRID CAPACITY",

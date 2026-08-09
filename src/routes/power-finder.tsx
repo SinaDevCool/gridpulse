@@ -113,7 +113,7 @@ export const Route = createFileRoute("/power-finder")({
     mapMode: z.enum(["voltage", "evidence", "capacity"]).optional().catch(undefined),
     study: z.enum(["activation"]).optional().catch(undefined),
     studyTab: z
-      .enum(["geographic", "topology", "hourly", "options", "evidence"])
+      .enum(["geographic", "overview", "topology", "hourly", "options", "commercial", "evidence"])
       .optional()
       .catch(undefined),
     lat: safeNumber(47, 56),
@@ -535,17 +535,35 @@ function PowerFinderPage() {
       opportunityNode(previewOpportunity, collection))
     : null;
   const comparisonIds = useMemo(() => parseComparison(search.compare), [search.compare]);
-  const comparedCandidates = comparisonIds
-    .map(
-      (id) =>
-        candidates.find((candidate) => candidate.id === id) ??
-        (selectedOpportunitySnapshot?.id === id ? selectedOpportunitySnapshot : undefined),
-    )
-    .filter((candidate): candidate is CandidateOpportunity => Boolean(candidate));
+  const comparedCandidates = useMemo(
+    () =>
+      comparisonIds
+        .map(
+          (id) =>
+            candidates.find((candidate) => candidate.id === id) ??
+            (selectedOpportunitySnapshot?.id === id ? selectedOpportunitySnapshot : undefined),
+        )
+        .filter((candidate): candidate is CandidateOpportunity => Boolean(candidate)),
+    [candidates, comparisonIds, selectedOpportunitySnapshot],
+  );
+  const comparedActivation = useMemo(
+    () =>
+      new Map(
+        comparedCandidates.map((candidate) => [
+          candidate.id,
+          createActivationStudyContext({ project, candidate, registeredStudy: null }),
+        ]),
+      ),
+    [comparedCandidates, project],
+  );
   const coordinates = selected ? pointCoordinates(selected) : null;
   const activationOpen = search.study === "activation" && Boolean(selectedOpportunity);
-  const activationTab: ActivationStudyTab = search.studyTab ?? "geographic";
-  const startPrivateAssessment = async () => {
+  const activationTab: ActivationStudyTab =
+    search.studyTab === "geographic" ? "overview" : (search.studyTab ?? "overview");
+  const startPrivateAssessment = async (studyInput?: {
+    selectedOptionKind: string | null;
+    commercialAssumptions: import("@/features/power-finder/activation-study").RepresentativeCommercialAssumptions;
+  }) => {
     if (!selected || !coordinates) return;
     setSaveStatus("saving");
     try {
@@ -556,6 +574,7 @@ function PowerFinderPage() {
               candidate: selectedOpportunity,
               registeredStudy: c1Study,
             }),
+            studyInput,
           )
         : null;
       const id = await savePowerFinderCandidate(
@@ -1725,6 +1744,41 @@ function PowerFinderPage() {
                           <dt>Evidence gaps</dt>
                           <dd>{candidate.missingEvidence.length}</dd>
                         </div>
+                        <div>
+                          <dt>Activation strategy</dt>
+                          <dd>
+                            {comparedActivation.get(candidate.id)?.recommendedOption?.title ??
+                              "Not established"}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>Initial / eventual benchmark</dt>
+                          <dd>
+                            {(() => {
+                              const option = comparedActivation.get(
+                                candidate.id,
+                              )?.recommendedOption;
+                              return option
+                                ? `${option.initialImportMw.toFixed(1)} / ${option.eventualImportMw.toFixed(1)} MW`
+                                : "—";
+                            })()}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>Representative restrictions</dt>
+                          <dd>
+                            {comparedActivation.get(candidate.id)?.recommendedOption?.analysis
+                              ?.restrictedHours ?? "—"}{" "}
+                            h
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>Primary validation blocker</dt>
+                          <dd>
+                            {comparedActivation.get(candidate.id)?.recommendedOption?.nextAction ??
+                              "Confirm operator evidence"}
+                          </dd>
+                        </div>
                       </dl>
                     </article>
                   ))}
@@ -2645,7 +2699,7 @@ function PowerFinderPage() {
                       type="button"
                       className="primary-button power-finder-activation-cta"
                       onClick={() =>
-                        void updateSearch({ study: "activation", studyTab: "geographic" })
+                        void updateSearch({ study: "activation", studyTab: "overview" })
                       }
                     >
                       <Zap aria-hidden="true" /> Explore activation options

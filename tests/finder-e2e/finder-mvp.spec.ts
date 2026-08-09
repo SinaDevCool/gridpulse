@@ -11,10 +11,7 @@ test("Finder MVP is public and contains no account entry points", async ({ page 
     "href",
     "mailto:sina.khedmati@outlook.de",
   );
-  await expect(page.getByRole("link", { name: "Discuss a site" })).toHaveAttribute(
-    "href",
-    "mailto:sina.khedmati@outlook.de",
-  );
+  await expect(page.getByRole("link", { name: "Discuss a site" })).toHaveCount(0);
   await expect(page.getByText(/Sign in|Sign up|Create account/i)).toHaveCount(0);
   await expect(page.getByText(/^Screening only\./i)).toHaveCount(0);
   await expect(page.getByText(/unknown capacity remains unknown/i).first()).toBeVisible();
@@ -29,10 +26,12 @@ test("Finder landing and methodology are the only public product pages", async (
   await page.goto("/");
   await expect(page.getByRole("heading", { name: /Find better starting points/i })).toBeVisible();
   await expect(page.getByRole("link", { name: /Open Power Finder/i })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Discuss a site" })).toHaveCount(0);
 
   await page.goto("/data-sources");
   await expect(page.getByRole("heading", { level: 1 })).toContainText("what the map supports");
   await expect(page.getByText(/product tour|start a pilot|review the assessment/i)).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Discuss a site" })).toHaveCount(0);
 
   for (const pathname of ["/auth", "/portfolio", "/assessments/new", "/reports", "/pilot"]) {
     const response = await page.goto(pathname);
