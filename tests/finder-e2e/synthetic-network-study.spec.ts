@@ -22,7 +22,7 @@ test("a selected Power Finder candidate opens the integrated Activation Study", 
   const candidates = page.getByRole("button", { name: /Show .* on map, .*\/100/ });
   await expect(candidates.first()).toBeVisible({ timeout: 15_000 });
   await candidates.first().click();
-  await page.getByRole("button", { name: "Explore activation options" }).click();
+  await page.getByRole("button", { name: "Assess activation pathways" }).click();
   const study = page.getByRole("dialog");
   await expect(study).toBeVisible();
   await expect(study.getByText(/Representative benchmark.*not calculated capacity/i)).toBeVisible();
@@ -33,7 +33,9 @@ test("a selected Power Finder candidate opens the integrated Activation Study", 
     study.getByRole("img", { name: /Baseline demand, connection limit/i }),
   ).toBeVisible();
   await expect(study.getByRole("heading", { name: "Staged connection" })).toBeVisible();
-  await expect(study.getByText(/Leading representative pathway|No viable representative pathway/)).toBeVisible();
+  await expect(
+    study.getByText(/Leading representative pathway|No viable representative pathway/),
+  ).toBeVisible();
   await study.getByText("Add Business Assumptions", { exact: true }).click();
   await expect(study.getByText("Representative commercial comparison")).toBeVisible();
   await expect(study.getByRole("button", { name: "Add business assumptions" })).toBeVisible();

@@ -143,8 +143,8 @@ test("public MVP excludes experimental capacity and network-study outputs", asyn
   await candidates.first().click();
   const detail = page.locator(".power-finder-detail.open");
   await expect(detail).toBeVisible({ timeout: 15_000 });
-  await expect(detail.getByText("Public Data Confidence", { exact: true })).toBeVisible();
-  await expect(page.getByText("German Connection Framework")).toBeVisible();
+  await expect(detail.getByText("Public Data Confidence", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("German Connection Framework")).toHaveCount(0);
   await expect(page.getByText(/Synthetic firm|N-0|N-1|security limit/i)).toHaveCount(0);
   await expect(page.getByText("Release A capacity-scenario assumptions")).toHaveCount(0);
   expect(scenarioRequests).toHaveLength(0);
@@ -329,19 +329,17 @@ test("candidate detail prioritises decisions, contains its layout and omits cand
   const detail = page.locator(".power-finder-detail.open");
   await expect(detail).toBeVisible({ timeout: 15_000 });
   await expect(detail.getByText("Selected candidate connection point")).toBeVisible();
-  await expect(detail.getByText("Screening Recommendation")).toBeVisible();
+  await expect(detail.getByText("Screening Fit")).toBeVisible();
   await expect(
     detail.getByRole("heading", { name: "Why This Candidate Was Shortlisted" }),
   ).toBeVisible();
-  await expect(detail.getByText("Public Data Confidence", { exact: true })).toBeVisible();
-  await expect(detail.getByRole("heading", { name: "What We Know" })).toBeVisible();
-  await expect(detail.getByRole("heading", { name: "What Remains Unknown" })).toBeVisible();
-  await expect(detail.getByText("Grid Study Status", { exact: true })).toBeVisible();
-  await expect(detail.getByText("Hourly Connection Envelope", { exact: true })).toBeVisible({
-    timeout: 15_000,
-  });
+  await expect(detail.getByText("Public Data Confidence", { exact: true })).toHaveCount(0);
+  await expect(detail.getByRole("heading", { name: "Connection Context" })).toBeVisible();
+  await expect(detail.getByRole("heading", { name: "What Remains Unknown" })).toHaveCount(0);
+  await expect(detail.getByText("Grid Study Status", { exact: true })).toHaveCount(0);
+  await expect(detail.getByText("Hourly Connection Envelope", { exact: true })).toHaveCount(0);
   await expect(detail.getByText("Evidence Readiness", { exact: true })).toHaveCount(0);
-  await expect(detail.getByText("German Connection Framework")).toBeVisible();
+  await expect(detail.getByText("German Connection Framework")).toHaveCount(0);
   await expect(detail.getByText(/Experimental Hourly Demonstration/)).toHaveCount(0);
   await expect(page.getByRole("link", { name: /Discuss this candidate/i })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Add to Comparison" })).toBeVisible();

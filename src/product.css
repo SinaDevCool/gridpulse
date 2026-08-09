@@ -250,6 +250,231 @@
   }
 }
 
+/* Minimal candidate decision panel: public facts first, technical depth on demand. */
+@media (min-width: 761px) {
+  .power-finder-detail {
+    width: min(420px, calc(100% - 32px));
+    padding: 14px;
+    border-radius: 12px;
+    background: rgb(8 17 29 / 97%);
+    box-shadow: 0 18px 48px rgb(0 0 0 / 38%);
+  }
+
+  .power-finder-detail .detail-sticky-header {
+    margin: -14px 0 0;
+    padding: 14px 36px 12px 0;
+    background: linear-gradient(180deg, #08111d 88%, rgb(8 17 29 / 0%));
+  }
+
+  .power-finder-detail .detail-sticky-header .context-label {
+    margin: 0 0 4px;
+    color: #7f9aad;
+    font-size: 0.61rem;
+    font-weight: 700;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+  }
+
+  .power-finder-detail .detail-sticky-header h2 {
+    margin: 0 0 4px;
+    color: #f4f8fb;
+    font-size: 1rem;
+    line-height: 1.25;
+  }
+
+  .power-finder-detail .detail-sticky-header > p:not(.context-label) {
+    margin: 0 0 4px;
+    color: #9bb0c0;
+    font-size: 0.69rem;
+    line-height: 1.4;
+  }
+
+  .power-finder-detail .detail-close {
+    display: grid;
+    z-index: 3;
+    top: 10px;
+    right: 10px;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    place-items: center;
+    border-radius: 7px;
+    color: #9db2c2;
+  }
+
+  .power-finder-detail .detail-close:focus-visible {
+    outline: 2px solid #55c8eb;
+    outline-offset: 2px;
+  }
+
+  .power-finder-detail .candidate-truth-status {
+    margin-top: 5px;
+    padding: 4px 7px;
+    font-size: 0.61rem;
+    line-height: 1.25;
+  }
+
+  .power-finder-detail .candidate-fact-section {
+    margin-top: 9px;
+    padding: 10px 11px;
+    border: 1px solid rgb(105 145 174 / 20%);
+    border-radius: 8px;
+    background: rgb(15 30 48 / 58%);
+  }
+
+  .power-finder-detail .candidate-fact-section h3 {
+    margin: 0 0 5px;
+    color: #9bb5c7;
+    font-size: 0.63rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .power-finder-detail .candidate-fact-section dl {
+    margin: 0;
+  }
+
+  .power-finder-detail .candidate-fact-section dl div {
+    min-height: 0;
+    padding: 6px 0;
+    border-bottom: 1px solid rgb(148 163 184 / 10%);
+    font-size: 0.68rem;
+  }
+
+  .power-finder-detail .candidate-fact-section dl div:last-child {
+    border-bottom: 0;
+  }
+
+  .power-finder-detail .candidate-intelligence {
+    margin-top: 9px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+
+  .power-finder-detail .candidate-intelligence > header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 11px;
+    border: 1px solid rgb(85 200 235 / 24%);
+    border-radius: 8px;
+    background: rgb(11 39 58 / 72%);
+  }
+
+  .power-finder-detail .candidate-intelligence > header span {
+    display: grid;
+  }
+
+  .power-finder-detail .candidate-intelligence > header strong {
+    color: #7ddcf5;
+    font-size: 1.05rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .power-finder-detail .candidate-intelligence > header small,
+  .power-finder-detail .candidate-intelligence > header b {
+    color: #9bb0c0;
+    font-size: 0.62rem;
+  }
+
+  .power-finder-detail .candidate-intelligence > header b {
+    max-width: 56%;
+    color: #dbe7ef;
+    text-align: right;
+  }
+
+  .power-finder-detail .candidate-outcome {
+    margin-top: 7px;
+    padding: 9px 10px;
+    border-radius: 8px;
+  }
+
+  .power-finder-detail .candidate-outcome > div {
+    display: grid;
+    gap: 3px;
+  }
+
+  .power-finder-detail .candidate-outcome span {
+    font-size: 0.59rem;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+
+  .power-finder-detail .candidate-outcome strong {
+    font-size: 0.76rem;
+  }
+
+  .power-finder-detail .candidate-key-drivers {
+    margin-top: 7px;
+    padding: 9px 10px;
+    border: 1px solid rgb(105 145 174 / 18%);
+    border-radius: 8px;
+    background: rgb(10 24 39 / 66%);
+  }
+
+  .power-finder-detail .candidate-key-drivers h3 {
+    margin: 0 0 5px;
+    color: #c9d9e4;
+    font-size: 0.65rem;
+  }
+
+  .power-finder-detail .candidate-key-drivers ul {
+    display: grid;
+    gap: 4px;
+    margin: 0;
+    padding-left: 15px;
+    color: #9fb3c2;
+    font-size: 0.66rem;
+    line-height: 1.38;
+  }
+
+  .power-finder-detail .candidate-intelligence > dl {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    margin: 7px 0;
+    border: 0;
+  }
+
+  .power-finder-detail .candidate-intelligence > dl div {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 3px;
+    min-width: 0;
+    padding: 8px;
+    border: 1px solid rgb(105 145 174 / 18%);
+    border-radius: 7px;
+    background: rgb(10 24 39 / 62%);
+  }
+
+  .power-finder-detail .candidate-intelligence > dl dt {
+    color: #7893a6;
+    font-size: 0.58rem;
+  }
+
+  .power-finder-detail .candidate-intelligence > dl dd {
+    overflow-wrap: anywhere;
+    color: #dce7ee;
+    font-size: 0.67rem;
+    font-variant-numeric: tabular-nums;
+    text-align: left;
+  }
+
+  .power-finder-detail .candidate-intelligence > .secondary-button,
+  .power-finder-detail .power-finder-activation-cta {
+    width: 100%;
+    min-height: 36px;
+    justify-content: center;
+    font-size: 0.72rem;
+  }
+
+  .power-finder-detail .power-finder-activation-cta {
+    margin-top: 8px;
+  }
+}
+
 /* Power Finder decision-workspace redesign */
 .power-finder-page {
   grid-template-columns: clamp(300px, 23vw, 340px) minmax(0, 1fr);

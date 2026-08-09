@@ -39,14 +39,12 @@ import {
   loadPowerFinderCoverage,
   type PowerFinderCoverage,
 } from "@/features/power-finder/coverage";
-import { evidenceConfidence, scoreFeature } from "@/features/power-finder/screening-score";
 import { savePowerFinderCandidate } from "@/features/power-finder/shortlist";
 import {
   loadOperatorEvidence,
   type OperatorEvidenceResult,
 } from "@/features/power-finder/operator-evidence";
 import {
-  candidateEvidenceBoundary,
   applyPreferredVoltageContext,
   highestRankedOpportunityForNode,
   opportunityNode,
@@ -65,10 +63,6 @@ import {
 import { loadFinderProject, saveFinderProject } from "@/features/power-finder/project-store";
 import { downloadFinderReport } from "@/features/power-finder/finder-report";
 import {
-  regulatoryQuestions,
-  ruleReferencesForVoltage,
-} from "@/features/power-finder/german-rules-registry";
-import {
   addComparisonCandidate,
   parseComparison,
   removeComparisonCandidate,
@@ -79,7 +73,6 @@ import {
   type FinderNumericField,
 } from "@/features/power-finder/project-validation";
 import { loadC1Study, type C1StudyPayload } from "@/features/power-finder/c1-study";
-import { validationClassLabel } from "@/features/power-finder/validation-class";
 import { canonicalOperatorName } from "@/features/power-finder/operator-normalization";
 import {
   activationStudySnapshot,
@@ -211,7 +204,6 @@ type CandidateSort = "context" | "voltage" | "name";
 const distanceFormatter = new Intl.NumberFormat("en-GB", { maximumFractionDigits: 1 });
 const scoreFormatter = new Intl.NumberFormat("en-GB", { maximumFractionDigits: 1 });
 const mwFormatter = new Intl.NumberFormat("en-GB", { maximumFractionDigits: 1 });
-const integerFormatter = new Intl.NumberFormat("en-GB", { maximumFractionDigits: 0 });
 
 function formatScore(value: number) {
   return scoreFormatter.format(value);
@@ -269,7 +261,6 @@ function PowerFinderPage() {
     "idle" | "loading" | "ready" | "unavailable"
   >("idle");
   const [c1Study, setC1Study] = useState<C1StudyPayload | null>(null);
-  const [c1StudyState, setC1StudyState] = useState<"idle" | "loading" | "ready">("idle");
   const updateSearch = (patch: Partial<typeof search>) =>
     navigate({
       to: "/power-finder",
@@ -831,11 +822,6 @@ function PowerFinderPage() {
       setSaveStatus("error");
     }
   };
-  const score = selected ? scoreFeature(selected) : null;
-  const confidenceItems = selected
-    ? evidenceConfidence(selected, collection?.metadata.published_at)
-    : [];
-
   useEffect(() => {
     if (!productCapabilities.workspace) return;
     setSaveStatus("idle");
@@ -868,19 +854,14 @@ function PowerFinderPage() {
   useEffect(() => {
     setC1Study(null);
     if (!selected || selected.properties.kind !== "node") {
-      setC1StudyState("idle");
       return;
     }
     const controller = new AbortController();
-    setC1StudyState("loading");
     void loadC1Study(String(selected.id), controller.signal)
       .then((result) => {
         setC1Study(result);
-        setC1StudyState("ready");
       })
-      .catch(() => {
-        if (!controller.signal.aborted) setC1StudyState("idle");
-      });
+      .catch(() => undefined);
     return () => controller.abort();
   }, [selected]);
 
@@ -2321,16 +2302,6 @@ function PowerFinderPage() {
                           : "Public-source candidate · capacity not established"}
                       </span>
                     )}
-                    {selectedOpportunity && (
-                      <details className="candidate-provenance-summary">
-                        <summary>How This Result Was Produced</summary>
-                        <p>
-                          Combines public infrastructure data, calculated straight-line proximity
-                          and GridPulse screening rules. Open each field below to inspect its
-                          evidence status. No cable route or available capacity is calculated.
-                        </p>
-                      </details>
-                    )}
                   </div>
                   {selectedOpportunity && selectedNodePathways.length > 1 && (
                     <p className="node-pathway-notice" role="status">
@@ -2396,7 +2367,7 @@ function PowerFinderPage() {
                         className="candidate-fact-section"
                         aria-labelledby="candidate-known-title"
                       >
-                        <h3 id="candidate-known-title">What We Know</h3>
+                        <h3 id="candidate-known-title">Connection Context</h3>
                         <dl>
                           <div>
                             <dt>Mapped Asset</dt>
@@ -2436,23 +2407,6 @@ function PowerFinderPage() {
                             </dd>
                           </div>
                         </dl>
-                      </section>
-                      <section
-                        className="candidate-unknown-section"
-                        aria-labelledby="candidate-unknown-title"
-                      >
-                        <h3 id="candidate-unknown-title">What Remains Unknown</h3>
-                        <ul>
-                          {!selectedCapacity && <li>Available import and export capacity</li>}
-                          {selectedCapacity && selectedCapacity.validationState === "stale" && (
-                            <li>
-                              Current capacity until the changed model dependencies are recalculated
-                            </li>
-                          )}
-                          <li>Technically suitable connection point and route</li>
-                          <li>Required reinforcement and connection cost</li>
-                          <li>Feasibility and achievable energisation date</li>
-                        </ul>
                       </section>
                       {selected.properties.planning_status &&
                         selected.properties.planning_status !== "screening_only" && (
@@ -2499,124 +2453,6 @@ function PowerFinderPage() {
                       grid headroom or connection availability.
                     </p>
                   )}
-                  {score && (
-                    <details className="power-finder-score evidence-confidence" open>
-                      <summary>
-                        <span>Public Data Confidence</span>
-                        <b>Field-by-field</b>
-                      </summary>
-                      <p>
-                        Each status describes the strongest accepted evidence for that field. These
-                        are evidence classes, not accuracy percentages or connection probabilities.
-                      </p>
-                      <ul>
-                        {confidenceItems.map((item) => (
-                          <li key={item.label}>
-                            <span>
-                              <strong>{item.label}</strong>
-                              <small>{item.value}</small>
-                            </span>
-                            <b data-confidence-level={item.level}>{item.level}</b>
-                            <p>{item.reason}</p>
-                          </li>
-                        ))}
-                      </ul>
-                    </details>
-                  )}
-                  {selected.properties.kind === "node" && (
-                    <details
-                      className="power-finder-score study-availability"
-                      aria-label="Grid study status"
-                    >
-                      <summary>
-                        <span>Grid Study Status</span>
-                        <b>
-                          {c1StudyState === "loading"
-                            ? "Checking…"
-                            : c1Study?.node_study.available
-                              ? "Operator model linked"
-                              : "Not available"}
-                        </b>
-                      </summary>
-                      {c1Study?.node_study.available ? (
-                        <>
-                          <header>
-                            <span>
-                              <strong>
-                                {c1Study.node_study.result?.firm_import_capacity_mw ?? "—"} MW
-                              </strong>
-                              <small>{c1Study.node_study.validation_class}</small>
-                            </span>
-                            <b>Operator-linked node study</b>
-                          </header>
-                          <p>
-                            Binding case:{" "}
-                            {c1Study.node_study.result?.binding_case ?? "not reported"}; constraint:{" "}
-                            {c1Study.node_study.result?.binding_constraint ?? "not reported"}.
-                          </p>
-                        </>
-                      ) : (
-                        <p>
-                          No operator network model is linked to this mapped asset. Capacity,
-                          loading, voltage compliance and contingency performance are therefore not
-                          calculated for this candidate.
-                        </p>
-                      )}
-                      {!c1Study?.node_study.available && (
-                        <a href="/data-sources#electrical-models">Review Solver Methodology</a>
-                      )}
-                    </details>
-                  )}
-                  {selected.properties.kind === "node" && c1Study?.c2 && (
-                    <details
-                      className="power-finder-score study-availability"
-                      aria-label="Hourly connection envelope status"
-                    >
-                      <summary>
-                        <span>Hourly Connection Envelope</span>
-                        <b>
-                          {c1Study.c2.node_envelope.available
-                            ? "Operator model linked"
-                            : "Not available"}
-                        </b>
-                      </summary>
-                      {c1Study.c2.node_envelope.available ? (
-                        <>
-                          <header>
-                            <span>
-                              <strong>
-                                P50 {c1Study.c2.node_envelope.summary?.p50_capacity_mw ?? "—"} MW
-                              </strong>
-                              <small>
-                                {validationClassLabel(c1Study.c2.node_envelope.validation_class)}
-                              </small>
-                            </span>
-                            <b>{c1Study.c2.node_envelope.target_year}</b>
-                          </header>
-                          <p>
-                            P10/P50/P90: {c1Study.c2.node_envelope.summary?.p10_capacity_mw ?? "—"}/
-                            {c1Study.c2.node_envelope.summary?.p50_capacity_mw ?? "—"}/
-                            {c1Study.c2.node_envelope.summary?.p90_capacity_mw ?? "—"} MW across{" "}
-                            {c1Study.c2.node_envelope.weather_years?.join(", ")}.
-                          </p>
-                          <p>
-                            P10 is the lower simulated percentile, P50 is the median and P90 is an
-                            upper percentile. The minimum simulated envelope—not P90—is the
-                            conservative screening value.
-                          </p>
-                        </>
-                      ) : (
-                        <p>
-                          Requires an operator-linked network model, hourly loading cases and agreed
-                          security constraints. SMARD, weather and registered-asset data can inform
-                          scenarios but cannot establish a capacity envelope for this node.
-                        </p>
-                      )}
-                      {!c1Study.c2.node_envelope.available && (
-                        <a href="/data-sources#hourly-scenarios">Review Hourly Methodology</a>
-                      )}
-                    </details>
-                  )}
                   {selectedOpportunity && (
                     <section className="candidate-intelligence" aria-label="Candidate intelligence">
                       <header>
@@ -2626,73 +2462,20 @@ function PowerFinderPage() {
                         </span>
                         <b>{selectedOpportunity.siteName}</b>
                       </header>
-                      <small className="candidate-method-boundary">
-                        {selectedOpportunity.provenance?.methodVersion ??
-                          selectedOpportunity.calculationVersion}{" "}
-                        · heuristic, not a capacity or connection-probability model
-                      </small>
                       <section
                         className="candidate-outcome"
                         aria-labelledby="candidate-outcome-title"
                       >
                         <div>
-                          <span id="candidate-outcome-title">Screening Recommendation</span>
+                          <span id="candidate-outcome-title">Screening Fit</span>
                           <strong>
                             {selectedOpportunity.screeningRank >= 70
-                              ? "Higher investigation priority"
+                              ? "Strong public-evidence match"
                               : selectedOpportunity.screeningRank >= 40
-                                ? "Review"
+                                ? "Candidate to compare"
                                 : "Limited public evidence"}
                           </strong>
                         </div>
-                        {selectedOpportunity.capacityScenario && (
-                          <dl>
-                            <div>
-                              <dt>Requested Demand</dt>
-                              <dd>
-                                {formatMw(selectedOpportunity.capacityScenario.requestedImportMw)}
-                              </dd>
-                            </div>
-                            <div>
-                              <dt>Demonstration Import Assumption</dt>
-                              <dd>
-                                {formatMw(
-                                  selectedOpportunity.capacityScenario.firmImportEnvelopeMw,
-                                )}
-                              </dd>
-                            </div>
-                            <div>
-                              <dt>Demonstration Requirement Difference</dt>
-                              <dd
-                                className={
-                                  selectedOpportunity.capacityScenario.firmImportEnvelopeMw -
-                                    selectedOpportunity.capacityScenario.requestedImportMw <
-                                  0
-                                    ? "is-negative"
-                                    : "is-positive"
-                                }
-                              >
-                                {formatMw(
-                                  selectedOpportunity.capacityScenario.firmImportEnvelopeMw -
-                                    selectedOpportunity.capacityScenario.requestedImportMw,
-                                )}
-                              </dd>
-                            </div>
-                            <div>
-                              <dt>Demonstration Shortfall Hours</dt>
-                              <dd>
-                                {integerFormatter.format(
-                                  selectedOpportunity.capacityScenario.constrainedHoursPerYear,
-                                )}{" "}
-                                h/year
-                              </dd>
-                            </div>
-                          </dl>
-                        )}
-                        <p>
-                          Experimental demonstration assumptions—not available or operator-confirmed
-                          capacity.
-                        </p>
                       </section>
                       <section
                         className="candidate-key-drivers"
@@ -2710,43 +2493,7 @@ function PowerFinderPage() {
                               ? `Mapped operator tag: ${canonicalOperatorName(selectedOpportunity.operator)}.`
                               : "Responsible operator requires confirmation."}
                           </li>
-                          {selectedOpportunity.networkScenario && (
-                            <li>
-                              Synthetic binding constraint:{" "}
-                              {selectedOpportunity.networkScenario.bindingConstraint.replaceAll(
-                                "_",
-                                " ",
-                              )}
-                              .
-                            </li>
-                          )}
                         </ul>
-                        {selectedOpportunity.rankComponents && (
-                          <dl aria-label="Investigation priority components">
-                            <div>
-                              <dt>Evidence readiness · 30%</dt>
-                              <dd>{selectedOpportunity.rankComponents.evidenceReadiness}/100</dd>
-                            </div>
-                            <div>
-                              <dt>Mapped-voltage relevance · 25%</dt>
-                              <dd>
-                                {selectedOpportunity.rankComponents.mappedVoltageRelevance}/100
-                              </dd>
-                            </div>
-                            <div>
-                              <dt>Proximity · 25%</dt>
-                              <dd>{selectedOpportunity.rankComponents.proximity}/100</dd>
-                            </div>
-                            <div>
-                              <dt>Operator attribution · 10%</dt>
-                              <dd>{selectedOpportunity.rankComponents.operatorAttribution}/100</dd>
-                            </div>
-                            <div>
-                              <dt>Source freshness · 10%</dt>
-                              <dd>{selectedOpportunity.rankComponents.sourceFreshness}/100</dd>
-                            </div>
-                          </dl>
-                        )}
                       </section>
                       <dl>
                         <div>
@@ -2762,270 +2509,6 @@ function PowerFinderPage() {
                           <dd>{selectedOpportunity.confidence}</dd>
                         </div>
                       </dl>
-                      {selectedOpportunity.capacityScenario && (
-                        <details
-                          className="release-a-scenario"
-                          aria-label="Experimental hourly demonstration"
-                        >
-                          <summary>
-                            <span>Experimental Hourly Demonstration</span>
-                            <b>
-                              {formatMw(selectedOpportunity.capacityScenario.firmImportEnvelopeMw)}
-                            </b>
-                          </summary>
-                          <header>
-                            <span className="synthetic-badge">
-                              Synthetic scenario · untrained model
-                            </span>
-                            <b>Not available grid capacity</b>
-                          </header>
-                          <dl>
-                            <div>
-                              <dt>Requested import</dt>
-                              <dd>{selectedOpportunity.capacityScenario.requestedImportMw} MW</dd>
-                            </div>
-                            <div>
-                              <dt>Demonstration import assumption</dt>
-                              <dd>
-                                {formatMw(
-                                  selectedOpportunity.capacityScenario.firmImportEnvelopeMw,
-                                )}
-                              </dd>
-                            </div>
-                            <div>
-                              <dt>Demonstration flexible-import profile</dt>
-                              <dd>
-                                {selectedOpportunity.capacityScenario.flexibleImportEnvelopeMw} MW
-                              </dd>
-                            </div>
-                            <div>
-                              <dt>Demonstration export assumption</dt>
-                              <dd>
-                                {selectedOpportunity.capacityScenario.syntheticExportEnvelopeMw} MW
-                              </dd>
-                            </div>
-                            <div>
-                              <dt>Hourly demonstration range</dt>
-                              <dd>
-                                {selectedOpportunity.capacityScenario.p10FlexibleEnvelopeMw}–
-                                {selectedOpportunity.capacityScenario.p90FlexibleEnvelopeMw} MW
-                              </dd>
-                            </div>
-                            <div>
-                              <dt>Demonstration shortfall hours</dt>
-                              <dd>
-                                {selectedOpportunity.capacityScenario.constrainedHoursPerYear}{" "}
-                                h/year
-                              </dd>
-                            </div>
-                            <div>
-                              <dt>Maximum demonstration shortfall</dt>
-                              <dd>{selectedOpportunity.capacityScenario.maximumReductionMw} MW</dd>
-                            </div>
-                            <div>
-                              <dt>Assumed limiting component</dt>
-                              <dd>
-                                {selectedOpportunity.capacityScenario.limitingComponent.replaceAll(
-                                  "_",
-                                  " ",
-                                )}
-                              </dd>
-                            </div>
-                            <div>
-                              <dt>Declared-input result</dt>
-                              <dd>
-                                {selectedOpportunity.capacityScenario.feasibleOnDeclaredInputs
-                                  ? "Meets synthetic scenario limits"
-                                  : "Does not meet synthetic scenario limits"}
-                              </dd>
-                            </div>
-                          </dl>
-                          <h3>Explainable score</h3>
-                          <ul className="scenario-score-components">
-                            {selectedOpportunity.capacityScenario.scoreComponents.map(
-                              (component) => (
-                                <li key={component.key} title={component.explanation}>
-                                  <span>{component.label}</span>
-                                  <b>
-                                    {component.score}/100 · {component.weight}%
-                                  </b>
-                                </li>
-                              ),
-                            )}
-                          </ul>
-                          <p>
-                            {selectedOpportunity.capacityScenario.limitations[0]} Operator data must
-                            replace the synthetic assumptions before any connection decision.
-                          </p>
-                          <small>
-                            {selectedOpportunity.capacityScenario.scenarioVersion} ·{" "}
-                            {selectedOpportunity.capacityScenario.modelVersion}
-                          </small>
-                        </details>
-                      )}
-                      {selectedOpportunity.networkScenario && (
-                        <details
-                          className="release-a-scenario release-b-network"
-                          aria-label="Experimental reference-network demonstration"
-                        >
-                          <summary>
-                            <span>Experimental Reference-Network Demonstration</span>
-                            <b>
-                              {formatMw(
-                                selectedOpportunity.networkScenario.selectedSecurityLimitMw,
-                              )}
-                            </b>
-                          </summary>
-                          <header>
-                            <span className="synthetic-badge">
-                              Experimental · unvalidated reference model
-                            </span>
-                            <b>Not a power-flow or connection study</b>
-                          </header>
-                          <dl>
-                            <div>
-                              <dt>Base-case demonstration limit</dt>
-                              <dd>{selectedOpportunity.networkScenario.n0TransferLimitMw} MW</dd>
-                            </div>
-                            <div>
-                              <dt>Outage-case demonstration limit</dt>
-                              <dd>{selectedOpportunity.networkScenario.n1TransferLimitMw} MW</dd>
-                            </div>
-                            <div>
-                              <dt>Selected demonstration limit</dt>
-                              <dd>
-                                {formatMw(
-                                  selectedOpportunity.networkScenario.selectedSecurityLimitMw,
-                                )}
-                              </dd>
-                            </div>
-                            <div>
-                              <dt>Demonstration requirement difference</dt>
-                              <dd>
-                                {formatMw(
-                                  selectedOpportunity.networkScenario.residualSecurityMarginMw,
-                                )}
-                              </dd>
-                            </div>
-                            <div>
-                              <dt>Demonstration voltage indicator</dt>
-                              <dd>{selectedOpportunity.networkScenario.voltageProxyPu} p.u.</dd>
-                            </div>
-                            <div>
-                              <dt>Assumed limiting component</dt>
-                              <dd>
-                                {selectedOpportunity.networkScenario.bindingConstraint.replaceAll(
-                                  "_",
-                                  " ",
-                                )}
-                              </dd>
-                            </div>
-                            <div>
-                              <dt>Demonstration scenario score</dt>
-                              <dd>{selectedOpportunity.networkScenario.securityScore}/100</dd>
-                            </div>
-                            <div>
-                              <dt>Input-completeness score</dt>
-                              <dd>
-                                {selectedOpportunity.networkScenario.topologyQualityScore}/100
-                              </dd>
-                            </div>
-                          </dl>
-                          <h3>Demonstration sensitivities</h3>
-                          <ul className="scenario-score-components release-b-sensitivities">
-                            {selectedOpportunity.networkScenario.sensitivities.map(
-                              (sensitivity) => (
-                                <li key={sensitivity.key}>
-                                  <span>{sensitivity.label}</span>
-                                  <b>
-                                    {formatMw(sensitivity.transferLimitMw)} ·{" "}
-                                    {formatMw(sensitivity.residualMarginMw)} margin ·{" "}
-                                    {sensitivity.passesDeclaredFirmRequirement
-                                      ? "meets demonstration assumption"
-                                      : "does not meet demonstration assumption"}
-                                  </b>
-                                </li>
-                              ),
-                            )}
-                          </ul>
-                          <details>
-                            <summary>Inspect synthetic branches and provenance</summary>
-                            <ul className="release-b-branches">
-                              {selectedOpportunity.networkScenario.branches.map((branch) => (
-                                <li key={branch.id}>
-                                  <b>
-                                    {branch.from} → {branch.to}
-                                  </b>
-                                  <span>
-                                    {branch.voltageKv} kV · {branch.syntheticRatingMw} MW rating ·{" "}
-                                    {branch.syntheticBaseLoadingMw} MW base loading · X proxy{" "}
-                                    {branch.reactanceProxy}
-                                  </span>
-                                </li>
-                              ))}
-                            </ul>
-                          </details>
-                          <p>{selectedOpportunity.networkScenario.limitations.join(" ")}</p>
-                          <small>
-                            {selectedOpportunity.networkScenario.networkVersion} · replace with
-                            reviewed operator CGMES/planning data
-                          </small>
-                        </details>
-                      )}
-                      <h3>Open constraints</h3>
-                      <ul>
-                        {selectedOpportunity.constraints.map((constraint) => (
-                          <li key={constraint}>{constraint}</li>
-                        ))}
-                      </ul>
-                      <h3>Evidence Still Required</h3>
-                      <ul className="candidate-evidence-gaps">
-                        {selectedOpportunity.missingEvidence.map((item) => (
-                          <li key={item}>{item}</li>
-                        ))}
-                      </ul>
-                      <section
-                        className="candidate-regulatory-context"
-                        aria-labelledby="regulatory-context-title"
-                      >
-                        <h3 id="regulatory-context-title">German Connection Framework</h3>
-                        <ul>
-                          {ruleReferencesForVoltage(selectedOpportunity.voltageKv).map((rule) => (
-                            <li key={rule.id}>
-                              <a href={rule.url} target="_blank" rel="noreferrer">
-                                {rule.title}
-                              </a>
-                              <span>{rule.publicSummary}</span>
-                            </li>
-                          ))}
-                        </ul>
-                        <h3>Operator Confirmation Questions</h3>
-                        <ul>
-                          {regulatoryQuestions(project, selectedOpportunity.voltageKv).map(
-                            (question) => (
-                              <li key={question}>{question}</li>
-                            ),
-                          )}
-                        </ul>
-                      </section>
-                      <small className="candidate-calculation-version">
-                        {selectedOpportunity.source === "database"
-                          ? "Live spatial metric"
-                          : "Accepted-release fallback"}{" "}
-                        · {selectedOpportunity.calculationVersion}
-                      </small>
-                      <p>{candidateEvidenceBoundary}</p>
-                      <section
-                        className="candidate-next-step"
-                        aria-labelledby="candidate-next-step-title"
-                      >
-                        <h3 id="candidate-next-step-title">Recommended Next Step</h3>
-                        <p>
-                          Compare this pathway with the strongest alternatives, then use the
-                          screening report and operator questions to request a suitable
-                          connection-point review.
-                        </p>
-                      </section>
                       <button
                         type="button"
                         className="secondary-button"
@@ -3243,12 +2726,9 @@ function PowerFinderPage() {
                         void updateSearch({ study: "activation", studyTab: "overview" })
                       }
                     >
-                      <Zap aria-hidden="true" /> Explore activation options
+                      <Zap aria-hidden="true" /> Assess activation pathways
                     </button>
                   )}
-                  <Link to="/data-sources" className="power-finder-method-link">
-                    Review Evidence Methodology <ExternalLink aria-hidden="true" />
-                  </Link>
                 </>
               ))(selectedDetailFeature)
             ) : (
