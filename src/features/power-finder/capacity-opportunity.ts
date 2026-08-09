@@ -73,3 +73,42 @@ export function summariseCapacityOpportunities(
   counts.unknown += Math.max(0, mappedCount - nodes.length);
   return counts;
 }
+
+function stableCapacitySeed(identifier: string) {
+  let value = 2166136261;
+  for (const character of identifier) {
+    value ^= character.charCodeAt(0);
+    value = Math.imul(value, 16777619);
+  }
+  return Math.abs(value >>> 0);
+}
+
+export function createIllustrativeCapacityNodes(nodeIds: string[]): CalculatedCapacityNode[] {
+  return nodeIds.map((publicNodeId, index) => {
+    const seed = stableCapacitySeed(publicNodeId);
+    const firm = 8 + (seed % 113);
+    const flexible = firm + 4 + ((seed >>> 4) % 28);
+    const bess = flexible + 3 + ((seed >>> 9) % 18);
+    return {
+      resultId: `illustrative-${publicNodeId}`,
+      studyRunId: "illustrative-public-demo",
+      publicNodeId,
+      candidateId: `illustrative-candidate-${index}`,
+      modelBusId: `illustrative-bus-${String(index + 1).padStart(3, "0")}`,
+      valueMw: firm,
+      firmCapacityMw: firm,
+      flexibleCapacityMw: flexible,
+      bessAssistedCapacityMw: bess,
+      stagedInitialCapacityMw: Math.max(4, Math.round(firm * 0.72)),
+      eventualCapacityMw: Math.max(flexible, firm + 12 + ((seed >>> 13) % 35)),
+      restrictedHours: 40 + (seed % 360),
+      restrictedEnergyMwh: 80 + (seed % 920),
+      bindingCategory: ["thermal", "voltage", "contingency"][seed % 3],
+      validationState: "calculated",
+      calculatedAt: "2026-08-09T00:00:00.000Z",
+      modelVersion: "illustrative-capacity-demo-v1",
+      scenarioLabel: "Illustrative demo — not a network study",
+      securityCase: "n_1",
+    };
+  });
+}

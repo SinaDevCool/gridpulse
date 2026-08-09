@@ -4,6 +4,252 @@
   color: #eef6fb;
 }
 
+/* Power Finder compact desktop rail: progressive disclosure and quiet controls. */
+@media (min-width: 761px) {
+  .power-finder-page {
+    grid-template-columns: 304px minmax(0, 1fr);
+  }
+
+  .power-finder-sidebar {
+    padding: 0 10px 14px;
+    font-size: 0.75rem;
+  }
+
+  .finder-rail-sticky {
+    gap: 6px;
+    margin: 0 -10px 8px;
+    padding: 9px 10px;
+    box-shadow: 0 5px 16px rgb(0 0 0 / 18%);
+  }
+
+  .finder-project-summary strong {
+    font-size: 0.78rem;
+    line-height: 1.2;
+  }
+
+  .finder-project-summary span {
+    font-size: 0.64rem;
+  }
+
+  .finder-project-summary button,
+  .finder-more-filters {
+    min-height: 30px;
+    padding: 5px 8px;
+    border-radius: 6px;
+    font-size: 0.68rem;
+  }
+
+  .power-finder-filter-panel {
+    gap: 6px;
+    padding: 6px 0 8px;
+  }
+
+  .power-finder-filter-panel input[type="search"] {
+    height: 34px;
+    font-size: 0.73rem;
+  }
+
+  .capacity-opportunity-card {
+    gap: 8px;
+    margin-bottom: 7px;
+    padding: 9px 10px;
+    border-color: #20394d;
+    border-radius: 8px;
+    background: #081725;
+  }
+
+  .capacity-overlay-switch {
+    gap: 8px;
+  }
+
+  .capacity-overlay-switch strong {
+    font-size: 0.76rem;
+  }
+
+  .capacity-overlay-switch small,
+  .reference-lab-link small {
+    font-size: 0.62rem;
+    line-height: 1.35;
+  }
+
+  .capacity-overlay-switch input {
+    width: 36px;
+    height: 20px;
+  }
+
+  .capacity-overlay-switch input::before {
+    width: 14px;
+    height: 14px;
+  }
+
+  .capacity-overlay-switch input:checked::before {
+    transform: translateX(16px);
+  }
+
+  .capacity-opportunity-controls {
+    gap: 7px;
+    padding-top: 7px;
+    border-top: 1px solid #1d3447;
+  }
+
+  .capacity-source-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    padding: 2px;
+    border-radius: 6px;
+    background: #06111d;
+  }
+
+  .capacity-source-tabs button {
+    min-height: 26px;
+    border: 0;
+    border-radius: 5px;
+    color: #8298aa;
+    background: transparent;
+    font-size: 0.65rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .capacity-source-tabs button.is-active {
+    color: #e6f8ff;
+    background: #153247;
+    box-shadow: inset 0 -1px #46c9ef;
+  }
+
+  .capacity-source-tabs button:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+
+  .capacity-required-heading label,
+  .capacity-required-heading span {
+    font-size: 0.7rem;
+  }
+
+  .capacity-opportunity-controls input[type="range"] {
+    height: 14px;
+    margin: 0;
+  }
+
+  .capacity-control-row input,
+  .capacity-control-row select {
+    height: 30px;
+    font-size: 0.7rem;
+  }
+
+  .capacity-control-row label > span {
+    font-size: 0.56rem;
+  }
+
+  .capacity-reset-demand,
+  .capacity-data-basis,
+  .capacity-overlay-empty {
+    font-size: 0.62rem;
+  }
+
+  .capacity-fit-summary {
+    display: flex;
+    gap: 0;
+    padding: 6px 0 0;
+    border-top: 1px solid #1d3447;
+  }
+
+  .capacity-fit-summary span {
+    flex: 1;
+    padding: 0 5px;
+    border: 0;
+    border-right: 1px solid #1d3447;
+    border-radius: 0;
+    background: transparent;
+    font-size: 0.56rem;
+  }
+
+  .capacity-fit-summary span:last-child {
+    border-right: 0;
+  }
+
+  .capacity-fit-summary b {
+    font-size: 0.72rem;
+  }
+
+  .reference-lab-link {
+    padding: 6px 0 0;
+    border: 0;
+    border-top: 1px solid #1d3447;
+    border-radius: 0;
+    background: transparent;
+    font-size: 0.68rem;
+  }
+
+  .reference-lab-link:hover {
+    border-color: #31526c;
+    background: transparent;
+    color: #b4efff;
+  }
+
+  .finder-question-panel,
+  .finder-layers-menu {
+    margin-bottom: 7px;
+    padding: 7px 9px;
+    border-color: #1d3447;
+    border-radius: 7px;
+    background: #081522;
+  }
+
+  .finder-question-panel > summary,
+  .finder-layers-menu > summary {
+    font-size: 0.7rem;
+  }
+
+  .power-finder-layer-list label {
+    min-height: 31px;
+    padding: 4px 5px;
+    font-size: 0.68rem;
+  }
+
+  .power-finder-layer-list small {
+    font-size: 0.57rem;
+  }
+
+  .power-finder-candidates > header {
+    top: 112px;
+    padding: 7px 0 6px;
+  }
+
+  .power-finder-candidates > header h2 {
+    font-size: 0.65rem;
+    letter-spacing: 0.09em;
+  }
+
+  .power-finder-candidates > header small,
+  .power-finder-candidates > header select {
+    font-size: 0.58rem;
+  }
+
+  .power-finder-candidates button {
+    min-height: 56px;
+    padding: 7px 8px;
+  }
+
+  .power-finder-candidates b {
+    font-size: 0.68rem;
+  }
+
+  .power-finder-candidates small,
+  .candidate-capacity-fit {
+    font-size: 0.58rem;
+  }
+
+  .capacity-source-tabs button:focus-visible,
+  .capacity-reset-demand:focus-visible,
+  .reference-lab-link:focus-visible {
+    outline: 2px solid #67ddfa;
+    outline-offset: 2px;
+  }
+}
+
 /* Power Finder decision-workspace redesign */
 .power-finder-page {
   grid-template-columns: clamp(300px, 23vw, 340px) minmax(0, 1fr);
@@ -13560,5 +13806,40 @@ tbody tr:last-child td {
   }
   .activation-evidence-ladder {
     overflow: visible;
+  }
+}
+
+/* Final compact-rail cascade overrides for legacy release styles below the component rules. */
+@media (min-width: 761px) {
+  .power-finder-page {
+    grid-template-columns: 304px minmax(0, 1fr);
+  }
+  .power-finder-sidebar {
+    padding-inline: 10px;
+    font-size: 0.75rem;
+  }
+  .finder-rail-sticky {
+    gap: 6px;
+    margin-inline: -10px;
+    padding: 9px 10px;
+  }
+  .capacity-opportunity-card {
+    gap: 8px;
+    margin-bottom: 7px;
+    padding: 9px 10px;
+    border-radius: 8px;
+  }
+  .finder-question-panel,
+  .finder-layers-menu {
+    margin-bottom: 7px;
+    padding: 7px 9px;
+  }
+  .power-finder-candidates > header {
+    top: 112px;
+    padding: 7px 0 6px;
+  }
+  .power-finder-candidates button {
+    min-height: 56px;
+    padding: 7px 8px;
   }
 }

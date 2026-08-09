@@ -165,7 +165,16 @@ test("calculated capacity separates solved reference buses from private mapped c
   const metric = page.locator('select[name="capacity-overlay-metric"]');
   await expect(metric).toBeVisible();
   await expect(page.locator('input[name="required-capacity-range"]')).toHaveValue("20");
-  await expect(page.getByText(/Private reviewed results.*no coverage/i)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Illustrative" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(page.getByRole("button", { name: "Reviewed" })).toBeDisabled();
+  await expect(page.getByText(/Illustrative values.*not real grid capacity/i)).toBeVisible();
+  const fitSummary = page.locator(".capacity-fit-summary");
+  const initialSummary = await fitSummary.innerText();
+  await page.getByLabel("Exact MW").fill("100");
+  await expect(fitSummary).not.toHaveText(initialSummary);
   await page.getByRole("button", { name: /Open Reference Capacity Lab/i }).click();
   await expect(page.getByText("Reference Capacity Lab", { exact: true })).toBeVisible();
   await expect(page.locator('select[name="reference-capacity-metric"]')).toHaveValue(
@@ -199,8 +208,9 @@ test("calculated capacity separates solved reference buses from private mapped c
   await expect(page.getByText("Control authority")).toBeVisible();
   await page.getByRole("button", { name: /Back to map/i }).click();
   await expect(page.getByText(/0 MW firm result means.*not N-1 secure/i)).toBeVisible();
-  await expect(page.getByText(/No reviewed capacity results cover this map/i)).toBeVisible();
-  await expect(page.getByText(/No governed results in this workspace view/i)).toBeVisible();
+  await expect(
+    page.getByText(/Illustrative demo.*synthetic values, not grid capacity/i),
+  ).toBeVisible();
   await metric.selectOption("bess_assisted_import_mw");
   await expect(metric).toHaveValue("bess_assisted_import_mw");
   await expect(page.locator(".power-finder-legend strong")).toContainText("BESS-assisted import");

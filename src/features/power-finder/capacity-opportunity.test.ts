@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   classifyCapacityOpportunity,
+  createIllustrativeCapacityNodes,
   summariseCapacityOpportunities,
 } from "./capacity-opportunity";
 import type { CalculatedCapacityNode } from "./calculated-capacity";
@@ -53,5 +54,11 @@ describe("capacity opportunity classification", () => {
       stale: 0,
       unknown: 2,
     });
+  });
+  it("creates deterministic illustrative values without operator claims", () => {
+    const first = createIllustrativeCapacityNodes(["node-a"])[0];
+    expect(first).toEqual(createIllustrativeCapacityNodes(["node-a"])[0]);
+    expect(first.scenarioLabel).toContain("Illustrative demo");
+    expect(first.flexibleCapacityMw).toBeGreaterThan(first.firmCapacityMw ?? 0);
   });
 });
