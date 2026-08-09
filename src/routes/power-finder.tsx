@@ -258,11 +258,6 @@ function PowerFinderPage() {
       search: (current) => ({ ...current, ...patch }),
       replace: true,
     });
-  const replaceLocalSearchValue = (key: string, value: string) => {
-    const url = new URL(window.location.href);
-    url.searchParams.set(key, value);
-    window.history.replaceState(window.history.state, "", url);
-  };
   const updateProject = (patch: Partial<FinderProject>) => {
     setProject((current) => ({ ...current, ...patch, updatedAt: new Date().toISOString() }));
   };
@@ -304,6 +299,10 @@ function PowerFinderPage() {
   });
   const [reportPreparing, setReportPreparing] = useState(false);
   const [comparisonOpen, setComparisonOpen] = useState(false);
+  const [projectEditorOpen, setProjectEditorOpen] = useState(
+    Boolean(search.projectType || search.exportMw || search.batteryMw || search.batteryMwh),
+  );
+  const [secondaryControlsOpen, setSecondaryControlsOpen] = useState(false);
   const commitNumber = (
     field: FinderNumericField,
     raw: string,
@@ -349,6 +348,12 @@ function PowerFinderPage() {
     () => ({ center: activeCoverage.center, zoom: activeCoverage.zoom }),
     [activeCoverage.center, activeCoverage.zoom],
   );
+
+  useEffect(() => {
+    setMapMode(search.mapMode ?? "voltage");
+    setCapacitySource(search.capacitySource ?? "reference");
+    setCapacityMetric(search.capacityMetric ?? "firm_import_mw");
+  }, [search.capacityMetric, search.capacitySource, search.mapMode]);
 
   useEffect(() => {
     if (mapMode !== "capacity" || capacitySource !== "private") return;
@@ -841,6 +846,86 @@ function PowerFinderPage() {
     <AppShell>
       <main id="main-content" className="power-finder-page">
         <section className="power-finder-sidebar" aria-label="Power Finder controls">
+          <div className="finder-rail-sticky">
+            <div className="finder-view-switch" role="group" aria-label="Map view">
+              <button
+                type="button"
+                className={mapMode !== "capacity" ? "is-active" : ""}
+                aria-pressed={mapMode !== "capacity"}
+                onClick={() => {
+                  setMapMode("voltage");
+                  void updateSearch({ mapMode: "voltage" });
+                }}
+              >
+                Grid context
+              </button>
+              <button
+                type="button"
+                className={mapMode === "capacity" ? "is-active" : ""}
+                aria-pressed={mapMode === "capacity"}
+                onClick={() => {
+                  setMapMode("capacity");
+                  void updateSearch({ mapMode: "capacity" });
+                }}
+              >
+                Capacity
+              </button>
+            </div>
+            {mapMode === "capacity" && (
+              <div className="finder-capacity-controls">
+                <label>
+                  <span>Source</span>
+                  <select
+                    name="sticky-capacity-source"
+                    value={capacitySource}
+                    onChange={(event) => {
+                      const value = event.target.value as "reference" | "private";
+                      setCapacitySource(value);
+                      setSelectedReferenceCapacity(null);
+                      void updateSearch({ capacitySource: value, candidate: undefined });
+                    }}
+                  >
+                    <option value="reference">Reference demo</option>
+                    <option value="private">Private reviewed</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Metric</span>
+                  <select
+                    name="sticky-capacity-metric"
+                    value={capacityMetric}
+                    onChange={(event) => {
+                      const value = event.target.value as CapacityMetric;
+                      setCapacityMetric(value);
+                      void updateSearch({ capacityMetric: value });
+                    }}
+                  >
+                    {(Object.entries(capacityMetricLabels) as [CapacityMetric, string][]).map(
+                      ([value, label]) => (
+                        <option key={value} value={value}>{label}</option>
+                      ),
+                    )}
+                  </select>
+                </label>
+              </div>
+            )}
+            <div className="finder-project-summary">
+              <div>
+                <strong>{project.name}</strong>
+                <span>
+                  {formatMw(project.importMw)} import · {project.preferredVoltageKv ?? "Any"} kV · {project.maxDistanceKm} km
+                </span>
+              </div>
+              <button
+                type="button"
+                aria-expanded={projectEditorOpen}
+                aria-controls="finder-project-editor"
+                onClick={() => setProjectEditorOpen((current) => !current)}
+              >
+                {projectEditorOpen ? "Close" : "Edit Project"}
+              </button>
+            </div>
+          </div>
           <header>
             <p className="context-label">Power Finder · Public-source screen</p>
             <h1>{activeCoverage.regionName} connection context</h1>
@@ -858,7 +943,12 @@ function PowerFinderPage() {
             </div>
           </aside>
 
-          <section className="finder-project-panel" aria-labelledby="finder-project-title">
+          <section
+            id="finder-project-editor"
+            className={`finder-project-panel ${projectEditorOpen ? "is-open" : ""}`}
+            aria-labelledby="finder-project-title"
+            hidden={!projectEditorOpen}
+          >
             <div className="finder-project-heading">
               <div>
                 <p className="context-label">Your screening project</p>
@@ -1327,7 +1417,20 @@ function PowerFinderPage() {
                 placeholder="Search node, operator, or ID…"
               />
             </label>
-            <div className="power-finder-filter-grid">
+            <button
+              type="button"
+              className="finder-more-filters"
+              aria-expanded={secondaryControlsOpen}
+              aria-controls="finder-secondary-controls"
+              onClick={() => setSecondaryControlsOpen((current) => !current)}
+            >
+              More Filters
+            </button>
+            <div
+              id="finder-secondary-controls"
+              className="power-finder-filter-grid"
+              hidden={!secondaryControlsOpen}
+            >
               <label>
                 <span>Region</span>
                 <select
@@ -1350,7 +1453,7 @@ function PowerFinderPage() {
                   ))}
                 </select>
               </label>
-              <label>
+              {false && <label>
                 <span>Map insight</span>
                 <select
                   name="map-insight"
@@ -1358,15 +1461,15 @@ function PowerFinderPage() {
                   onChange={(event) => {
                     const value = event.target.value as "voltage" | "evidence" | "capacity";
                     setMapMode(value);
-                    replaceLocalSearchValue("mapMode", value);
+                    void updateSearch({ mapMode: value });
                   }}
                 >
                   <option value="voltage">Public evidence · voltage</option>
                   <option value="evidence">Public evidence · authority</option>
                   <option value="capacity">Calculated capacity</option>
                 </select>
-              </label>
-              {mapMode === "capacity" && (
+              </label>}
+              {false && mapMode === "capacity" && (
                 <>
                   <label>
                     <span>Capacity source</span>
@@ -1377,7 +1480,7 @@ function PowerFinderPage() {
                         const value = event.target.value as "reference" | "private";
                         setCapacitySource(value);
                         setSelectedReferenceCapacity(null);
-                        replaceLocalSearchValue("capacitySource", value);
+                        void updateSearch({ capacitySource: value, candidate: undefined });
                       }}
                     >
                       <option value="reference">Reference network demonstration</option>
@@ -1392,7 +1495,7 @@ function PowerFinderPage() {
                       onChange={(event) => {
                         const value = event.target.value as CapacityMetric;
                         setCapacityMetric(value);
-                        replaceLocalSearchValue("capacityMetric", value);
+                        void updateSearch({ capacityMetric: value });
                       }}
                     >
                       {(Object.entries(capacityMetricLabels) as [CapacityMetric, string][]).map(
@@ -1509,8 +1612,8 @@ function PowerFinderPage() {
             )}
           </section>
 
-          <section className="finder-question-panel" aria-labelledby="finder-question-title">
-            <h2 id="finder-question-title">Questions for the operator</h2>
+          <details className="finder-question-panel">
+            <summary id="finder-question-title">Operator Questions &amp; Report</summary>
             <ol>
               {projectOperatorQuestions(project).map((question) => (
                 <li key={question}>{question}</li>
@@ -1540,14 +1643,14 @@ function PowerFinderPage() {
               <Download aria-hidden="true" />
               {reportPreparing ? "Preparing report…" : "Download screening report"}
             </button>
-          </section>
+          </details>
 
           <p className="sr-only" role="status" aria-live="polite">
             {interactionNotice}
           </p>
 
-          <section>
-            <h2>Layers</h2>
+          <details className="finder-layers-menu" suppressHydrationWarning>
+            <summary>Map Layers</summary>
             <div className="power-finder-layer-list">
               {(Object.keys(kindLabels) as PowerFinderKind[]).map((kind) => (
                 <label
@@ -1596,7 +1699,7 @@ function PowerFinderPage() {
                   zoom out to inspect the regional layer.
                 </p>
               )}
-          </section>
+          </details>
 
           <section className="power-finder-candidates">
             <header>
@@ -1760,7 +1863,7 @@ function PowerFinderPage() {
           {!visibleCollection && !error && (
             <div className="power-finder-loading">Loading map context…</div>
           )}
-          {visibleCollection && (
+          {visibleCollection && !(mapMode === "capacity" && capacitySource === "reference") && (
             <PowerFinderMap
               collection={visibleCollection}
               selectedFeature={selected}
@@ -1840,6 +1943,7 @@ function PowerFinderPage() {
             />
           )}
 
+          {!(mapMode === "capacity" && capacitySource === "reference") && (
           <div className="power-finder-legend" aria-label="Map legend">
             <strong>
               {mapMode === "capacity"
@@ -1888,6 +1992,7 @@ function PowerFinderPage() {
               </>
             )}
           </div>
+          )}
 
           {activationOpen && (referenceCandidate || selectedOpportunity) && (
             <Suspense

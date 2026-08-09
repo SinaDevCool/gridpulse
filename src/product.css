@@ -3,6 +3,385 @@
   background: #07131f;
   color: #eef6fb;
 }
+
+/* Power Finder decision-workspace redesign */
+.power-finder-page {
+  grid-template-columns: clamp(300px, 23vw, 340px) minmax(0, 1fr);
+  overflow: hidden;
+}
+
+.power-finder-sidebar {
+  padding: 0 14px 18px;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+}
+
+.power-finder-sidebar > header,
+.power-finder-sidebar > .power-finder-boundary {
+  display: none;
+}
+
+.finder-rail-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: grid;
+  gap: 10px;
+  margin: 0 -14px 12px;
+  padding: 14px;
+  background: color-mix(in srgb, #071525 96%, transparent);
+  border-bottom: 1px solid #20364a;
+  box-shadow: 0 8px 22px rgb(0 0 0 / 24%);
+}
+
+.finder-view-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 3px;
+  border: 1px solid #29445b;
+  border-radius: 9px;
+  background: #06111f;
+}
+
+.finder-view-switch button {
+  min-height: 36px;
+  border: 0;
+  border-radius: 7px;
+  color: #91a5b8;
+  background: transparent;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.finder-view-switch button:hover,
+.finder-view-switch button.is-active {
+  color: #ecf9ff;
+  background: #16354a;
+}
+
+.finder-view-switch button.is-active {
+  box-shadow: inset 0 -2px #46c9ef;
+}
+
+.finder-capacity-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.finder-capacity-controls label {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.finder-capacity-controls label span {
+  color: #7f96aa;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.finder-capacity-controls select {
+  min-width: 0;
+  width: 100%;
+  height: 36px;
+  padding: 0 8px;
+  color: #dff7ff;
+  background: #0d2031;
+  border: 1px solid #29445b;
+  border-radius: 7px;
+}
+
+.finder-project-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.finder-project-summary > div {
+  display: grid;
+  min-width: 0;
+}
+
+.finder-project-summary strong,
+.finder-project-summary span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.finder-project-summary span {
+  color: #8da4b8;
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.finder-project-summary button,
+.finder-more-filters {
+  flex: 0 0 auto;
+  border: 1px solid #31526c;
+  border-radius: 7px;
+  padding: 7px 9px;
+  color: #79dfff;
+  background: #0c1c2b;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.finder-project-summary button:hover,
+.finder-more-filters:hover {
+  border-color: #46c9ef;
+  background: #123049;
+}
+
+.finder-project-panel {
+  scroll-margin-top: 170px;
+  max-height: min(62vh, 620px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.power-finder-filter-panel {
+  display: grid;
+  gap: 9px;
+  padding: 10px 0 12px;
+}
+
+.power-finder-filter-panel label:has(select[name="map-insight"]),
+.power-finder-filter-panel label:has(select[name="capacity-source"]),
+.power-finder-filter-panel label:has(select[name="capacity-metric"]) {
+  display: none;
+}
+
+.power-finder-filter-grid[hidden] {
+  display: none;
+}
+
+.finder-more-filters {
+  width: 100%;
+}
+
+.finder-question-panel,
+.finder-layers-menu {
+  margin: 0 0 10px;
+  padding: 9px 10px;
+  border: 1px solid #20364a;
+  border-radius: 8px;
+  background: #0a1726;
+}
+
+.finder-question-panel > summary,
+.finder-layers-menu > summary,
+.activation-analysis-section > summary,
+.activation-technical-audit > summary {
+  cursor: pointer;
+  color: #bcd0df;
+  font-weight: 700;
+}
+
+.power-finder-candidates > header {
+  position: sticky;
+  top: 166px;
+  z-index: 10;
+  padding: 10px 0 8px;
+  background: #071525;
+}
+
+.power-finder-candidates button {
+  min-height: 68px;
+  padding: 9px 10px;
+}
+
+.power-finder-candidates .candidate-boundary,
+.power-finder-candidates .candidate-badges > span:nth-child(n + 2) {
+  display: none;
+}
+
+.power-finder-candidates b,
+.power-finder-candidates small,
+.power-finder-candidates button span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.reference-capacity-inset {
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  width: auto;
+  max-height: none;
+  border: 0;
+  border-radius: 0;
+  background:
+    radial-gradient(circle at 50% 45%, rgb(35 112 145 / 20%), transparent 38%),
+    #050d17;
+  overflow: hidden;
+}
+
+.reference-capacity-inset > header {
+  padding: 16px 20px;
+  background: #081522;
+  border-bottom: 1px solid #20384b;
+}
+
+.reference-capacity-boundary {
+  margin: 12px 20px 0;
+}
+
+.reference-network-canvas {
+  position: relative;
+  min-height: 0;
+  overflow: auto;
+}
+
+.reference-network-canvas svg {
+  position: absolute;
+  inset: 4% 4%;
+  width: 92%;
+  height: 92%;
+  fill: none;
+  stroke: #2d6680;
+  stroke-width: 4;
+  stroke-linecap: round;
+  opacity: 0.62;
+}
+
+.reference-capacity-grid {
+  position: absolute;
+  inset: 8% 7%;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(112px, 1fr));
+  grid-template-rows: repeat(3, minmax(78px, 1fr));
+  gap: clamp(12px, 2vw, 28px);
+  align-items: center;
+}
+
+.reference-capacity-grid button {
+  position: relative;
+  min-width: 0;
+  min-height: 76px;
+  border-radius: 14px;
+  box-shadow: 0 10px 28px rgb(0 0 0 / 28%);
+}
+
+.reference-workspace-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 20px;
+  border-top: 1px solid #20384b;
+  color: #7890a4;
+  background: #081522;
+}
+
+.reference-capacity-detail {
+  position: absolute;
+  inset: 86px 18px 18px auto;
+  z-index: 5;
+  width: min(420px, 42%);
+  max-height: calc(100% - 104px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px;
+  border: 1px solid #2a5872;
+  border-radius: 14px;
+  background: rgb(6 19 32 / 96%);
+  box-shadow: 0 24px 70px rgb(0 0 0 / 48%);
+}
+
+.reference-capacity-detail-heading > div {
+  display: grid;
+  gap: 2px;
+}
+
+.reference-capacity-detail-heading svg {
+  width: 18px;
+  height: 18px;
+}
+
+.reference-capacity-detail dl,
+.activation-evidence-summary {
+  font-variant-numeric: tabular-nums;
+}
+
+.activation-study-panel {
+  width: min(640px, calc(100% - 32px));
+  max-width: 640px;
+  overflow: hidden;
+}
+
+.activation-study-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.activation-analysis-tabs {
+  display: none;
+}
+
+.activation-analysis-section,
+.activation-technical-audit {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid #213b50;
+  border-radius: 10px;
+  background: #081827;
+}
+
+.activation-analysis-section[open] > summary,
+.activation-technical-audit[open] > summary {
+  margin-bottom: 12px;
+  color: #63daf8;
+}
+
+.activation-evidence-ladder {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  overflow: hidden;
+}
+
+.activation-evidence-ladder li {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.activation-study-body {
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+}
+
+.activation-study-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.activation-study-actions small {
+  grid-column: 1 / -1;
+}
+
+.finder-view-switch button:focus-visible,
+.finder-project-summary button:focus-visible,
+.finder-more-filters:focus-visible,
+.reference-capacity-grid button:focus-visible,
+.reference-capacity-detail button:focus-visible,
+.activation-analysis-section > summary:focus-visible,
+.activation-technical-audit > summary:focus-visible {
+  outline: 3px solid #63daf8;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reference-capacity-inset,
+  .activation-study-panel {
+    scroll-behavior: auto;
+  }
+}
 .service-page {
   min-height: 100vh;
   padding-bottom: 80px;
@@ -12801,4 +13180,54 @@ tbody tr:last-child td {
     align-items: stretch;
     flex-direction: column;
   }
+}
+
+/* Power Finder desktop redesign: keep last so legacy release CSS cannot override it. */
+@media (min-width: 761px) {
+  .power-finder-page { grid-template-columns: clamp(300px, 23vw, 340px) minmax(0, 1fr); overflow: hidden; }
+  .power-finder-sidebar { padding: 0 14px 18px; overflow-x: hidden; }
+  .power-finder-sidebar > .power-finder-boundary { display: none; }
+  .power-finder-sidebar > header { display: block; padding: 2px 0 10px; }
+  .power-finder-sidebar > header p { display: none; }
+  .power-finder-sidebar > header h1 {
+    margin: 0;
+    color: #dbeefa;
+    font-size: 0.9rem;
+    line-height: 1.3;
+    text-wrap: balance;
+  }
+  .finder-rail-sticky { position: sticky; top: 0; z-index: 20; }
+  .power-finder-candidates > header { position: sticky; top: 166px; z-index: 10; }
+  .power-finder-candidates > header small { color: #91a7b9; }
+  .reference-capacity-inset {
+    position: absolute;
+    inset: 0;
+    z-index: 12;
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    overflow: hidden;
+    border: 0;
+    border-radius: 0;
+  }
+  .reference-capacity-grid {
+    position: absolute;
+    inset: 8% 7%;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(112px, 1fr));
+    grid-template-rows: repeat(3, minmax(78px, 1fr));
+  }
+  .reference-capacity-detail {
+    position: absolute;
+    inset: 86px 18px 18px auto;
+    width: min(420px, 42%);
+    max-height: calc(100% - 104px);
+    overflow-y: auto;
+  }
+  .activation-study-panel { z-index: 30; width: min(640px, calc(100% - 32px)); max-width: 640px; overflow: hidden; }
+  .activation-study-tabs { display: grid; grid-template-columns: repeat(3, 1fr); }
+  .activation-study-actions { display: grid; grid-template-columns: 1fr 1fr; }
+  .activation-evidence-ladder { overflow: visible; }
 }

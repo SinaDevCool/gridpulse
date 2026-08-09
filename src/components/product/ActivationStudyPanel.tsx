@@ -742,6 +742,26 @@ function EvidenceView({ context }: { context: ActivationStudyContext }) {
         <li>Linked and reconciled network model</li>
         <li>Operator-reviewed or confirmed result</li>
       </ol>
+      <dl className="activation-facts activation-evidence-summary">
+        <div>
+          <dt>Current Result</dt>
+          <dd>{validationClassLabel(context.validationClass)}</dd>
+        </div>
+        <div>
+          <dt>Network Model</dt>
+          <dd>{context.registeredStudy?.node_study.model?.key ?? "Representative reference model"}</dd>
+        </div>
+        <div>
+          <dt>Operator Review</dt>
+          <dd>{context.mode === "operator_confirmed" ? "Confirmed within declared scope" : "Not reviewed"}</dd>
+        </div>
+        <div>
+          <dt>Next Evidence Gate</dt>
+          <dd>Reviewed candidate-to-model-bus match and accepted operating cases</dd>
+        </div>
+      </dl>
+      <details className="activation-technical-audit">
+        <summary>Technical Audit &amp; Model Governance</summary>
       <dl className="activation-facts">
         {release2 && (
           <div>
@@ -901,6 +921,7 @@ function EvidenceView({ context }: { context: ActivationStudyContext }) {
           <dd>{context.mode === "operator_confirmed" ? "Yes, within declared scope" : "No"}</dd>
         </div>
       </dl>
+      </details>
       <h3>Required validation actions</h3>
       <ul>
         {checklist.map((item) => (
@@ -942,40 +963,23 @@ function StrategiesWorkspace({
   commercialEnabled: boolean;
   onCommercialEnable: () => void;
 }) {
-  const [view, setView] = useState<StrategyAnalysisView>(initialView);
   const selected =
     context.decisionMatrix.find((option) => option.kind === selectedKind) ??
     context.recommendedOption ??
     context.bestInvestigativeHypothesis;
   return (
     <div className="activation-strategy-workspace">
-      <nav className="activation-analysis-tabs" aria-label="Strategy analysis views" role="tablist">
-        {(
-          [
-            ["comparison", "Compare"],
-            ["constraint", "Constraint"],
-            ["hourly", "Operating envelope"],
-            ["value", "Business sensitivity"],
-          ] as Array<[StrategyAnalysisView, string]>
-        ).map(([id, label]) => (
-          <button
-            type="button"
-            key={id}
-            className={view === id ? "active" : ""}
-            role="tab"
-            aria-selected={view === id}
-            onClick={() => setView(id)}
-          >
-            {label}
-          </button>
-        ))}
-      </nav>
-      {view === "comparison" && (
-        <OptionsView context={context} selectedKind={selected?.kind ?? null} onSelect={onSelect} />
-      )}
-      {view === "constraint" && <TopologyView context={context} />}
-      {view === "hourly" && <HourlyView context={context} option={selected} />}
-      {view === "value" && (
+      <OptionsView context={context} selectedKind={selected?.kind ?? null} onSelect={onSelect} />
+      <details className="activation-analysis-section" open={initialView === "constraint"}>
+        <summary>Constraint &amp; Network Path</summary>
+        <TopologyView context={context} />
+      </details>
+      <details className="activation-analysis-section" open={initialView === "hourly"}>
+        <summary>Hourly Operating Envelope</summary>
+        <HourlyView context={context} option={selected} />
+      </details>
+      <details className="activation-analysis-section" open={initialView === "value"}>
+        <summary>Add Business Assumptions</summary>
         <CommercialView
           context={context}
           option={selected}
@@ -984,7 +988,7 @@ function StrategiesWorkspace({
           enabled={commercialEnabled}
           onEnable={onCommercialEnable}
         />
-      )}
+      </details>
     </div>
   );
 }
@@ -1007,7 +1011,32 @@ export function ActivationStudyPanel(props: Props) {
   );
   const [commercialEnabled, setCommercialEnabled] = useState(false);
   useEffect(() => {
-    panelRef.current?.focus();
+    const previousFocus = document.activeElement as HTMLElement | null;
+    const panel = panelRef.current;
+    panel?.focus();
+    const trapFocus = (event: KeyboardEvent) => {
+      if (event.key !== "Tab" || !panel) return;
+      const focusable = Array.from(
+        panel.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), summary, [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    panel?.addEventListener("keydown", trapFocus);
+    return () => {
+      panel?.removeEventListener("keydown", trapFocus);
+      previousFocus?.focus();
+    };
   }, []);
   const selectedOption =
     context.decisionMatrix.find((option) => option.kind === selectedKind) ??
@@ -1051,8 +1080,8 @@ export function ActivationStudyPanel(props: Props) {
     URL.revokeObjectURL(url);
   };
   const tabs: Array<{ id: ActivationStudyTab; label: string }> = [
-    { id: "overview", label: "Overview" },
-    { id: "options", label: "Strategies" },
+    { id: "overview", label: "Summary" },
+    { id: "options", label: "Options" },
     { id: "evidence", label: "Evidence" },
   ];
   const primaryTab = ["topology", "hourly", "commercial", "options"].includes(props.tab)
