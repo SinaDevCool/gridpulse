@@ -25,6 +25,7 @@ const sourceIds = {
 
 type PowerFinderMapProps = {
   collection: PowerFinderCollection;
+  enabledLayers: Record<PowerFinderFeature["properties"]["kind"], boolean>;
   selectedFeature?: PowerFinderFeature | null;
   previewFeature?: PowerFinderFeature | null;
   mapMode: "voltage" | "evidence" | "capacity";
@@ -60,8 +61,11 @@ function publishVisibleLayerCounts(
   callback: ((counts: VisibleLayerCounts) => void) | undefined,
 ) {
   callback?.({
-    line: renderedFeatureCount(map, "grid-lines"),
-    industrial_site: renderedFeatureCount(map, "industrial-sites"),
+    line:
+      renderedFeatureCount(map, "national-grid-lines") + renderedFeatureCount(map, "grid-lines"),
+    industrial_site:
+      renderedFeatureCount(map, "national-industrial-sites") +
+      renderedFeatureCount(map, "industrial-sites"),
   });
 }
 
@@ -97,6 +101,7 @@ function withCapacityResults(
 
 export function PowerFinderMap({
   collection,
+  enabledLayers,
   selectedFeature,
   previewFeature,
   mapMode,
@@ -206,7 +211,9 @@ export function PowerFinderMap({
         });
         map.addSource("power-finder-national-tiles", {
           type: "vector",
-          tiles: [`${window.location.origin}/api/power-finder/tile/{z}/{x}/{y}`],
+          tiles: [
+            `${window.location.origin}/api/power-finder/tile/{z}/{x}/{y}?release=20260810-all-layers`,
+          ],
           minzoom: 4,
           maxzoom: 10,
         });
@@ -250,9 +257,9 @@ export function PowerFinderMap({
           source: "power-finder-national-tiles",
           "source-layer": "power_finder",
           minzoom: 4,
-          maxzoom: 8,
+          maxzoom: 24,
           filter: ["==", ["get", "kind"], "line"],
-          layout: { visibility: split.lines.features.length ? "visible" : "none" },
+          layout: { visibility: enabledLayers.line ? "visible" : "none" },
           paint: {
             "line-color": [
               "case",
@@ -271,10 +278,10 @@ export function PowerFinderMap({
           type: "circle",
           source: "power-finder-national-tiles",
           "source-layer": "power_finder",
-          minzoom: 7,
-          maxzoom: 8,
+          minzoom: 5,
+          maxzoom: 24,
           filter: ["==", ["get", "kind"], "node"],
-          layout: { visibility: split.nodes.features.length ? "visible" : "none" },
+          layout: { visibility: enabledLayers.node ? "visible" : "none" },
           paint: {
             "circle-radius": ["interpolate", ["linear"], ["zoom"], 5, 2, 8, 5],
             "circle-color": "#f59e0b",
@@ -283,9 +290,57 @@ export function PowerFinderMap({
           },
         });
         map.addLayer({
+          id: "national-industrial-sites",
+          type: "fill",
+          source: "power-finder-national-tiles",
+          "source-layer": "power_finder",
+          minzoom: 7,
+          maxzoom: 24,
+          filter: ["==", ["get", "kind"], "industrial_site"],
+          layout: { visibility: enabledLayers.industrial_site ? "visible" : "none" },
+          paint: {
+            "fill-color": "#17c3b2",
+            "fill-opacity": 0.22,
+            "fill-outline-color": "#5eead4",
+          },
+        });
+        map.addLayer({
+          id: "national-generation-assets",
+          type: "circle",
+          source: "power-finder-national-tiles",
+          "source-layer": "power_finder",
+          minzoom: 6,
+          maxzoom: 24,
+          filter: ["==", ["get", "kind"], "generation_asset"],
+          layout: { visibility: enabledLayers.generation_asset ? "visible" : "none" },
+          paint: {
+            "circle-radius": ["interpolate", ["linear"], ["zoom"], 6, 2, 9, 4],
+            "circle-color": "#22c55e",
+            "circle-stroke-color": "#dcfce7",
+            "circle-stroke-width": 1,
+          },
+        });
+        map.addLayer({
+          id: "national-storage-assets",
+          type: "circle",
+          source: "power-finder-national-tiles",
+          "source-layer": "power_finder",
+          minzoom: 6,
+          maxzoom: 24,
+          filter: ["==", ["get", "kind"], "storage_asset"],
+          layout: { visibility: enabledLayers.storage_asset ? "visible" : "none" },
+          paint: {
+            "circle-radius": ["interpolate", ["linear"], ["zoom"], 6, 3, 9, 5],
+            "circle-color": "#a855f7",
+            "circle-stroke-color": "#f3e8ff",
+            "circle-stroke-width": 1,
+          },
+        });
+        map.addLayer({
           id: "industrial-sites",
           type: "fill",
           source: sourceIds.industrial_site,
+          layout: { visibility: "none" },
           paint: {
             "fill-color": "#17c3b2",
             "fill-opacity": 0.2,
@@ -297,6 +352,7 @@ export function PowerFinderMap({
           type: "line",
           source: sourceIds.line,
           minzoom: 8,
+          layout: { visibility: "none" },
           paint: {
             "line-color": [
               "step",
@@ -330,6 +386,7 @@ export function PowerFinderMap({
           type: "circle",
           source: sourceIds.node,
           minzoom: 8,
+          layout: { visibility: "none" },
           filter: ["has", "point_count"],
           paint: {
             "circle-radius": ["step", ["get", "point_count"], 15, 25, 19, 100, 24],
@@ -353,6 +410,7 @@ export function PowerFinderMap({
           minzoom: 8,
           filter: ["has", "point_count"],
           layout: {
+            visibility: "none",
             "text-field": ["get", "point_count_abbreviated"],
             "text-size": 11,
           },
@@ -363,6 +421,7 @@ export function PowerFinderMap({
           type: "circle",
           source: sourceIds.node,
           minzoom: 8,
+          layout: { visibility: "none" },
           filter: ["!", ["has", "point_count"]],
           paint: {
             "circle-radius": 7,
@@ -375,6 +434,7 @@ export function PowerFinderMap({
           id: "generation-clusters",
           type: "circle",
           source: sourceIds.generation_asset,
+          layout: { visibility: "none" },
           filter: ["has", "point_count"],
           paint: {
             "circle-radius": ["step", ["get", "point_count"], 12, 20, 16, 100, 20],
@@ -387,14 +447,15 @@ export function PowerFinderMap({
           id: "generation-cluster-count",
           type: "symbol",
           source: sourceIds.generation_asset,
+          layout: { visibility: "none", "text-field": ["get", "point_count_abbreviated"], "text-size": 10 },
           filter: ["has", "point_count"],
-          layout: { "text-field": ["get", "point_count_abbreviated"], "text-size": 10 },
           paint: { "text-color": "#052e16" },
         });
         map.addLayer({
           id: "generation-assets",
           type: "circle",
           source: sourceIds.generation_asset,
+          layout: { visibility: "none" },
           filter: ["!", ["has", "point_count"]],
           paint: {
             "circle-radius": 4,
@@ -407,6 +468,7 @@ export function PowerFinderMap({
           id: "storage-clusters",
           type: "circle",
           source: sourceIds.storage_asset,
+          layout: { visibility: "none" },
           filter: ["has", "point_count"],
           paint: {
             "circle-radius": ["step", ["get", "point_count"], 13, 10, 17, 50, 21],
@@ -419,14 +481,15 @@ export function PowerFinderMap({
           id: "storage-cluster-count",
           type: "symbol",
           source: sourceIds.storage_asset,
+          layout: { visibility: "none", "text-field": ["get", "point_count_abbreviated"], "text-size": 10 },
           filter: ["has", "point_count"],
-          layout: { "text-field": ["get", "point_count_abbreviated"], "text-size": 10 },
           paint: { "text-color": "#2e1065" },
         });
         map.addLayer({
           id: "storage-assets",
           type: "circle",
           source: sourceIds.storage_asset,
+          layout: { visibility: "none" },
           filter: ["!", ["has", "point_count"]],
           paint: {
             "circle-radius": 5,
@@ -580,21 +643,17 @@ export function PowerFinderMap({
       const source = map.getSource(sourceId);
       if (isGeoJsonSource(source)) source.setData(data);
     }
-    if (map.getLayer("national-grid-lines")) {
-      map.setLayoutProperty(
-        "national-grid-lines",
-        "visibility",
-        split.lines.features.length ? "visible" : "none",
-      );
+    const nationalLayers = {
+      "national-grid-lines": enabledLayers.line,
+      "national-grid-nodes": enabledLayers.node,
+      "national-industrial-sites": enabledLayers.industrial_site,
+      "national-generation-assets": enabledLayers.generation_asset,
+      "national-storage-assets": enabledLayers.storage_asset,
+    } as const;
+    for (const [layer, visible] of Object.entries(nationalLayers)) {
+      if (map.getLayer(layer)) map.setLayoutProperty(layer, "visibility", visible ? "visible" : "none");
     }
-    if (map.getLayer("national-grid-nodes")) {
-      map.setLayoutProperty(
-        "national-grid-nodes",
-        "visibility",
-        split.nodes.features.length ? "visible" : "none",
-      );
-    }
-  }, [collection, capacityNodes, capacityMetric, requiredCapacityMw]);
+  }, [collection, capacityNodes, capacityMetric, requiredCapacityMw, enabledLayers]);
 
   useEffect(() => {
     const source = mapRef.current?.getSource("finder-project-site");

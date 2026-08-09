@@ -451,6 +451,7 @@ function PowerFinderPage() {
   }, []);
 
   useEffect(() => {
+    if ((bounds.east - bounds.west) * (bounds.north - bounds.south) > 6) return;
     const controller = new AbortController();
     const timeout = window.setTimeout(() => {
       void loadPowerFinderViewport(bounds, controller.signal, {
@@ -1640,13 +1641,13 @@ function PowerFinderPage() {
               {(Object.keys(kindLabels) as PowerFinderKind[]).map((kind) => (
                 <label
                   key={kind}
-                  title={collection ? layerAvailability(collection, kind).explanation : undefined}
+                  title={`${kindLabels[kind]} is delivered from the accepted national tile release.`}
                 >
                   <input
                     name={`layer-${kind}`}
                     type="checkbox"
                     checked={enabled[kind]}
-                    disabled={collection ? !layerAvailability(collection, kind).available : false}
+                    disabled={false}
                     onChange={(event) => {
                       const checked = event.target.checked;
                       setEnabled((current) => ({ ...current, [kind]: checked }));
@@ -1663,7 +1664,7 @@ function PowerFinderPage() {
                         (feature) => feature.properties.kind === kind,
                       ).length;
                       const availability = layerAvailability(collection, kind);
-                      if (!availability.available) return "Unavailable in this release";
+                      if (!availability.available) return "0 in current detail view";
                       if (total === 0) return "0 in view";
                       if (kind === "line" || kind === "industrial_site") {
                         return `${visibleLayerCounts[kind]} visible · ${total} total`;
@@ -1883,6 +1884,7 @@ function PowerFinderPage() {
           {visibleCollection && (
             <PowerFinderMap
               collection={visibleCollection}
+              enabledLayers={enabled}
               selectedFeature={selected}
               previewFeature={previewFeature}
               mapMode={mapMode}

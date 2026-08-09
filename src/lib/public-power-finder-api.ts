@@ -240,7 +240,7 @@ export async function handlePublicPowerFinderTileRequest(
     const response = await fetch(`${supabaseUrl}/rest/v1/rpc/power_finder_public_tile`, {
       method: "POST",
       headers,
-      body: JSON.stringify({ z, x, y, include_generation: false, include_storage: false }),
+      body: JSON.stringify({ z, x, y, include_generation: true, include_storage: true }),
     });
     if (!response.ok) return jsonResponse({ error: "Tile origin unavailable." }, 502);
     const encoded = (await response.json()) as string;
