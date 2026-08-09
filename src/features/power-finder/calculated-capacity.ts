@@ -161,7 +161,7 @@ export type ReferenceCapacityArtifact = {
 };
 
 export async function loadReferenceCapacityMap(): Promise<ReferenceCapacityArtifact> {
-  const response = await fetch("/power-finder/reference-capacity-map.json");
+  const response = await fetch("/power-finder/reference-capacity-map.json?release=capacity-r1");
   if (!response.ok) throw new Error(`Reference capacity artifact failed (${response.status}).`);
   const artifact = (await response.json()) as ReferenceCapacityArtifact;
   if (
