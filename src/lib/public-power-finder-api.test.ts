@@ -13,19 +13,22 @@ afterEach(() => {
 });
 
 describe("public Power Finder API", () => {
-  it("accepts only a bounded Brandenburg viewport", () => {
+  it("accepts bounded viewports across Germany", () => {
     expect(parsePublicViewportRequest(new URL(viewportUrl))).toMatchObject({
       west: 12.9,
       includeGeneration: true,
       includeStorage: true,
     });
+    expect(parsePublicViewportRequest(new URL(
+      "https://gridpulseinsights.com/api/power-finder/viewport?west=11.3&south=48.0&east=12.0&north=48.5",
+    ))).toMatchObject({ west: 11.3, south: 48 });
     expect(() =>
       parsePublicViewportRequest(
         new URL(
           "https://gridpulseinsights.com/api/power-finder/viewport?west=-20&south=0&east=20&north=60",
         ),
       ),
-    ).toThrow(/outside the accepted Brandenburg coverage/);
+    ).toThrow(/outside Germany or exceeds the safe query area/);
   });
 
   it("rejects unsupported methods and invalid parameters without contacting the database", async () => {

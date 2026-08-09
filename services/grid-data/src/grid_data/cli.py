@@ -11,9 +11,10 @@ from .c2_publish import publish_c2_artifact
 from .cgmes_import import import_cgmes_model
 from .download import download_artifact
 from .fixture import build_fixture
-from .geofabrik import discover_germany_pbf
+from .geofabrik import discover_germany_pbf, discover_state_manifest
 from .health import check_source, discover_mastr_export
 from .mastr import parse_mastr_export, stream_mastr_export
+from .national_release import combine_state_releases, parse_pbf_to_ndjson, write_copy_files
 from .network_state import NetworkStateBuilder
 from .network_study import PandapowerProvider
 from .operator_evidence import fetch_operator_sources
@@ -79,6 +80,19 @@ def parser() -> argparse.ArgumentParser:
     mastr_health.add_argument("--output", type=Path, required=True)
     geofabrik_health = subcommands.add_parser("check-geofabrik")
     geofabrik_health.add_argument("--output", type=Path, required=True)
+    geofabrik_states = subcommands.add_parser("discover-geofabrik-states")
+    geofabrik_states.add_argument("--output", type=Path, required=True)
+    parse_pbf = subcommands.add_parser("parse-osm-pbf")
+    parse_pbf.add_argument("--input", type=Path, required=True)
+    parse_pbf.add_argument("--output", type=Path, required=True)
+    parse_pbf.add_argument("--expected-md5", required=True)
+    parse_pbf.add_argument("--geographic-scope", required=True)
+    aggregate_pbf = subcommands.add_parser("aggregate-osm-states")
+    aggregate_pbf.add_argument("--input", type=Path, action="append", required=True)
+    aggregate_pbf.add_argument("--output", type=Path, required=True)
+    copy_pbf = subcommands.add_parser("write-osm-copy")
+    copy_pbf.add_argument("--input", type=Path, required=True)
+    copy_pbf.add_argument("--output-dir", type=Path, required=True)
     operator_sources = subcommands.add_parser("fetch-operator-evidence")
     operator_sources.add_argument("--output", type=Path, required=True)
     operator_matches = subcommands.add_parser("propose-operator-matches")
@@ -204,6 +218,24 @@ def main() -> None:
             f"Current Germany PBF advertises {report['content_length']} bytes; "
             "manifest remains unaccepted until batch validation."
         )
+    elif args.command == "discover-geofabrik-states":
+        report = discover_state_manifest(args.output)
+        print(f"Discovered {len(report['extracts'])} bounded extracts covering 16 states.")
+    elif args.command == "parse-osm-pbf":
+        report = parse_pbf_to_ndjson(
+            args.input, args.output,
+            expected_md5=args.expected_md5,
+            geographic_scope=args.geographic_scope,
+        )
+        print(f"Staged {report.records_staged} OSM records; valid={report.valid}.")
+        if not report.valid:
+            raise SystemExit(1)
+    elif args.command == "aggregate-osm-states":
+        report = combine_state_releases(args.input, args.output)
+        print(f"Validated national manifest with {report['record_count']} records.")
+    elif args.command == "write-osm-copy":
+        counts = write_copy_files(args.input, args.output_dir)
+        print(f"Wrote COPY files: {counts}.")
     elif args.command == "fetch-operator-evidence":
         report = fetch_operator_sources(args.output)
         print(

@@ -17,8 +17,10 @@ The service includes a deterministic synthetic fixture for isolated tests and a 
 OpenStreetMap connector for real substations, lines, cables, and industrial land.
 
 The OSM connector uses Overpass for bounded pilot releases. A national production refresh should
-download the appropriate Geofabrik `.osm.pbf` extract once, retain it as an immutable raw artifact,
-and run equivalent parsing in batch infrastructure instead of issuing many Overpass queries.
+uses the official bounded Geofabrik state extracts, verifies every advertised MD5, retains each
+raw artifact immutably, and streams it with pyosmium. Fourteen extracts cover the 16 Länder because
+Bremen is bundled with Niedersachsen and Saarland with Rheinland-Pfalz. State releases can be
+retried independently and are combined only after every supplied state report is accepted.
 
 The MaStR connector streams the official XML full-export ZIP and emits canonical generation,
 storage, and consumption asset context. The official archive is roughly 3 GB compressed, so it is
@@ -40,6 +42,19 @@ python -m grid_data.cli write-sql `
   --output releases/brandenburg-osm-load.sql
 python -m grid_data.cli check-mastr `
   --output D:\grid-data\mastr-source-health.json
+python -m grid_data.cli discover-geofabrik-states `
+  --output D:\grid-data\geofabrik-states.json
+python -m grid_data.cli download `
+  --url https://download.geofabrik.de/europe/germany/berlin-latest.osm.pbf `
+  --output D:\grid-data\berlin.osm.pbf
+python -m grid_data.cli parse-osm-pbf `
+  --input D:\grid-data\berlin.osm.pbf `
+  --output D:\grid-data\berlin.ndjson `
+  --expected-md5 <value-from-manifest> `
+  --geographic-scope Berlin
+python -m grid_data.cli write-osm-copy `
+  --input D:\grid-data\berlin.ndjson `
+  --output-dir D:\grid-data\berlin-copy
 python -m grid_data.cli download `
   --url https://download.marktstammdatenregister.de/Gesamtdatenexport_YYYYMMDD_VERSION.zip `
   --output D:\grid-data\mastr-public-export.zip
@@ -80,6 +95,9 @@ python -m pip install -e .
 ## Production boundary
 
 - Browser and Worker code read published artifacts or Supabase rows.
+- Germany-wide query and vector-tile capability does not imply Germany-wide accepted coverage.
+  `/rpc/power_finder_public_coverage` is authoritative and reports `partial` or `unavailable`
+  until a governed national aggregate is active.
 - Long-running ingestion runs outside the Cloudflare request path.
 - Service-role credentials are server-side secrets and never browser variables.
 - A source is promoted only after validation.

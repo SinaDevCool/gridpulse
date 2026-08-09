@@ -51,14 +51,13 @@ export function parsePublicViewportRequest(url: URL): ViewportParameters {
   if (
     parameters.west >= parameters.east ||
     parameters.south >= parameters.north ||
-    parameters.west < 10.5 ||
-    parameters.east > 15.2 ||
-    parameters.south < 50.8 ||
-    parameters.north > 54 ||
-    parameters.east - parameters.west > 4.7 ||
-    parameters.north - parameters.south > 3.2
+    parameters.west < 5.8 ||
+    parameters.east > 15.1 ||
+    parameters.south < 47.2 ||
+    parameters.north > 55.2 ||
+    (parameters.east - parameters.west) * (parameters.north - parameters.south) > 6
   ) {
-    throw new Error("The viewport is outside the accepted Brandenburg coverage.");
+    throw new Error("The viewport is outside Germany or exceeds the safe query area.");
   }
   return parameters;
 }
