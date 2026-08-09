@@ -1609,6 +1609,11 @@ function PowerFinderPage() {
                     ? "Illustrative values · not real grid capacity"
                     : `Private reviewed results · ${capacityViewport?.access === "ready" ? "workspace connected" : "no coverage"}`}
                 </p>
+                <p className="capacity-overlay-empty">
+                  Required MW updates calculated or illustrative results in the loaded detail
+                  viewport. National OSM nodes remain grey because public operator headroom is not
+                  established.
+                </p>
                 <div className="capacity-fit-summary" role="status" aria-live="polite">
                   <span>
                     <b>{capacitySummary.meets}</b> meet
@@ -1678,6 +1683,12 @@ function PowerFinderPage() {
                 </label>
               ))}
             </div>
+            {(enabled.generation_asset || enabled.storage_asset) && (
+              <p className="layer-visibility-note">
+                Registered assets are plotted only where MaStR publishes an exact mapped coordinate.
+                Regional-only registry records are intentionally not placed at invented locations.
+              </p>
+            )}
             {(enabled.line || enabled.industrial_site) &&
               visibleLayerCounts.line + visibleLayerCounts.industrial_site === 0 && (
                 <p className="layer-visibility-note" role="status">

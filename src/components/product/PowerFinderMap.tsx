@@ -212,7 +212,7 @@ export function PowerFinderMap({
         map.addSource("power-finder-national-tiles", {
           type: "vector",
           tiles: [
-            `${window.location.origin}/api/power-finder/tile/{z}/{x}/{y}?release=20260810-all-layers`,
+            `${window.location.origin}/api/power-finder/tile/{z}/{x}/{y}?release=20260810-progressive-3`,
           ],
           minzoom: 4,
           maxzoom: 10,
@@ -278,12 +278,12 @@ export function PowerFinderMap({
           type: "circle",
           source: "power-finder-national-tiles",
           "source-layer": "power_finder",
-          minzoom: 5,
+          minzoom: 8.5,
           maxzoom: 24,
           filter: ["==", ["get", "kind"], "node"],
           layout: { visibility: enabledLayers.node ? "visible" : "none" },
           paint: {
-            "circle-radius": ["interpolate", ["linear"], ["zoom"], 5, 2, 8, 5],
+            "circle-radius": ["interpolate", ["linear"], ["zoom"], 8.5, 1.2, 11, 4.5],
             "circle-color": "#f59e0b",
             "circle-stroke-color": "#fff7d6",
             "circle-stroke-width": 1,
@@ -294,14 +294,60 @@ export function PowerFinderMap({
           type: "fill",
           source: "power-finder-national-tiles",
           "source-layer": "power_finder",
-          minzoom: 7,
+          minzoom: 8,
           maxzoom: 24,
           filter: ["==", ["get", "kind"], "industrial_site"],
           layout: { visibility: enabledLayers.industrial_site ? "visible" : "none" },
           paint: {
             "fill-color": "#17c3b2",
-            "fill-opacity": 0.22,
+            "fill-opacity": ["interpolate", ["linear"], ["zoom"], 10, 0.28, 16, 0.48],
             "fill-outline-color": "#5eead4",
+          },
+        });
+        map.addLayer({
+          id: "national-industrial-overview",
+          type: "circle",
+          source: "power-finder-national-tiles",
+          "source-layer": "power_finder",
+          minzoom: 8,
+          maxzoom: 10,
+          filter: ["==", ["get", "kind"], "industrial_site"],
+          layout: { visibility: enabledLayers.industrial_site ? "visible" : "none" },
+          paint: {
+            "circle-radius": ["interpolate", ["linear"], ["zoom"], 8, 1.4, 10, 4],
+            "circle-color": "#17c3b2",
+            "circle-stroke-color": "#99f6e4",
+            "circle-stroke-width": 1,
+            "circle-opacity": 0.78,
+          },
+        });
+        map.addLayer({
+          id: "national-generation-density",
+          type: "heatmap",
+          source: "power-finder-national-tiles",
+          "source-layer": "power_finder",
+          minzoom: 6,
+          maxzoom: 9,
+          filter: ["==", ["get", "kind"], "generation_asset"],
+          layout: { visibility: enabledLayers.generation_asset ? "visible" : "none" },
+          paint: {
+            "heatmap-weight": 0.65,
+            "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 6, 0.35, 9, 0.8],
+            "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 6, 9, 9, 16],
+            "heatmap-opacity": 0.72,
+            "heatmap-color": [
+              "interpolate",
+              ["linear"],
+              ["heatmap-density"],
+              0,
+              "rgba(34,197,94,0)",
+              0.35,
+              "rgba(34,197,94,0.35)",
+              0.7,
+              "#4ade80",
+              1,
+              "#dcfce7",
+            ],
           },
         });
         map.addLayer({
@@ -309,7 +355,7 @@ export function PowerFinderMap({
           type: "circle",
           source: "power-finder-national-tiles",
           "source-layer": "power_finder",
-          minzoom: 6,
+          minzoom: 9,
           maxzoom: 24,
           filter: ["==", ["get", "kind"], "generation_asset"],
           layout: { visibility: enabledLayers.generation_asset ? "visible" : "none" },
@@ -647,6 +693,8 @@ export function PowerFinderMap({
       "national-grid-lines": enabledLayers.line,
       "national-grid-nodes": enabledLayers.node,
       "national-industrial-sites": enabledLayers.industrial_site,
+      "national-industrial-overview": enabledLayers.industrial_site,
+      "national-generation-density": enabledLayers.generation_asset,
       "national-generation-assets": enabledLayers.generation_asset,
       "national-storage-assets": enabledLayers.storage_asset,
     } as const;
@@ -752,6 +800,18 @@ export function PowerFinderMap({
           ? evidenceColour
           : voltageColour,
     );
+    if (map.getLayer("national-grid-nodes")) {
+      map.setPaintProperty(
+        "national-grid-nodes",
+        "circle-color",
+        mapMode === "capacity" ? "#475569" : "#f59e0b",
+      );
+      map.setPaintProperty(
+        "national-grid-nodes",
+        "circle-stroke-color",
+        mapMode === "capacity" ? "#cbd5e1" : "#fff7d6",
+      );
+    }
     map.setPaintProperty("grid-nodes", "circle-radius", mapMode === "capacity" ? 9 : 7);
     map.setPaintProperty(
       "node-clusters",
