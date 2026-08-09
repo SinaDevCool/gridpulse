@@ -12,7 +12,7 @@ const checks = [
       if (/Power Activation|Power Operations|dispatch engine|Start a Pilot/i.test(html)) {
         throw new Error("landing page promises a capability outside the Finder MVP");
       }
-      if (!html.includes("sina.khedmati@outlook.de")) {
+      if (!html.includes("kshitijjindal1@gmail.com")) {
         throw new Error("Finder contact email is missing");
       }
     },
