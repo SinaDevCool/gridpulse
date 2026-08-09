@@ -161,12 +161,15 @@ test("calculated capacity separates solved reference buses from private mapped c
   await expect(page.getByText(/not the OpenStreetMap grid/i)).toBeVisible();
   await expect(page.getByRole("button", { name: /REF 01.*megawatts/i })).toBeVisible();
   await page.getByRole("button", { name: /REF 01.*megawatts/i }).click();
+  await expect(page.getByText(/27 scenarios/)).toBeVisible();
+  await expect(page.getByText(/236,520 h/)).toBeVisible();
   await expect(page.getByText("N-0 calculated")).toBeVisible();
   await expect(page.getByText("Additional unlocked")).toBeVisible();
   await expect(page.getByText(/131 h\/year/)).toBeVisible();
   await page.getByRole("button", { name: "Explore activation options" }).click();
   await expect(page.getByText("Calculated reference network")).toBeVisible();
   await expect(page.getByText(/activatable in the representative annual envelope/i)).toBeVisible();
+  await expect(page.getByText("Operating scenario range (P10 / P50 / P90)")).toBeVisible();
   await page.getByRole("button", { name: /Back to map/i }).click();
   await expect(page.getByText(/radial N‑1 outage removes firm supply/i)).toBeVisible();
   await page.getByLabel("Capacity source").selectOption("private");

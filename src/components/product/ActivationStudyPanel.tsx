@@ -73,6 +73,7 @@ function OverviewView({ context }: { context: ActivationStudyContext }) {
   const option = context.recommendedOption;
   const displayed = option ?? context.bestInvestigativeHypothesis;
   const reference = context.referenceCapacity?.activation;
+  const ensemble = context.referenceCapacity?.ensemble;
   return (
     <div className="activation-view">
       <section className="activation-callout">
@@ -109,6 +110,25 @@ function OverviewView({ context }: { context: ActivationStudyContext }) {
               </dd>
               <EvidenceTag origin="synthetic_assumption" />
             </div>
+            {ensemble && (
+              <div>
+                <dt>Operating scenario range (P10 / P50 / P90)</dt>
+                <dd>
+                  {ensemble.confidence.p10_mw.toFixed(2)} / {ensemble.confidence.p50_mw.toFixed(2)}{" "}
+                  / {ensemble.confidence.p90_mw.toFixed(2)} MW
+                </dd>
+                <EvidenceTag origin="synthetic_assumption" />
+              </div>
+            )}
+            {ensemble && (
+              <div>
+                <dt>Scenario coverage</dt>
+                <dd>
+                  {ensemble.scenario_count} cases · {ensemble.hours_evaluated.toLocaleString()} h
+                </dd>
+                <EvidenceTag origin="synthetic_assumption" />
+              </div>
+            )}
           </>
         )}
         <div>
@@ -693,6 +713,7 @@ function CommercialView({
 }
 
 function EvidenceView({ context }: { context: ActivationStudyContext }) {
+  const ensemble = context.referenceCapacity?.ensemble;
   const checklist = [
     "Confirm the responsible operator and candidate connection point.",
     "Obtain accepted equipment ratings and seasonal operating cases.",
@@ -718,6 +739,35 @@ function EvidenceView({ context }: { context: ActivationStudyContext }) {
         <li>Operator-reviewed or confirmed result</li>
       </ol>
       <dl className="activation-facts">
+        {ensemble && (
+          <div>
+            <dt>Operating scenario set</dt>
+            <dd>
+              {ensemble.scenario_count} mocked cases / {ensemble.hours_evaluated.toLocaleString()}{" "}
+              evaluated hours
+            </dd>
+          </div>
+        )}
+        {ensemble && (
+          <div>
+            <dt>Scenario-specific physics replays</dt>
+            <dd>
+              {ensemble.scenario_specific_physics_replays}; the shared ceiling is physics-calculated
+            </dd>
+          </div>
+        )}
+        {ensemble && (
+          <div>
+            <dt>Dominant uncertainty</dt>
+            <dd>{ensemble.dominant_uncertainty}</dd>
+          </div>
+        )}
+        {ensemble && (
+          <div>
+            <dt>Scenario evidence hash</dt>
+            <dd>{ensemble.scenario_set_sha256.slice(0, 16)}…</dd>
+          </div>
+        )}
         <div>
           <dt>Validation class</dt>
           <dd>{validationClassLabel(context.validationClass)}</dd>

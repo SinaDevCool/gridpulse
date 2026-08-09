@@ -1,6 +1,6 @@
 {
   "schema_version": "gridpulse-reference-capacity-map-v1",
-  "generated_at": "2026-08-09T12:56:08.919035+00:00",
+  "generated_at": "2026-08-09T13:35:18.841991+00:00",
   "result_mode": "reference_network_calculated",
   "model": {
     "id": "simbench:1-MV-urban--0-sw",
@@ -26,12 +26,71 @@
     "operator_approved_complete_set": false
   },
   "strategy_assumptions": {
-    "hourly_profile": "8,760 deterministic synthetic operating hours bounded by the solved N-0 electrical ceiling.",
+    "hourly_profile": "27 deterministic synthetic operating scenarios (236,520 hours) bounded by the solved N-0 electrical ceiling.",
     "flexibility": "Customer-side managed reduction follows the versioned activation policy.",
     "battery": "State-of-charge, reserve, efficiency, power and energy are enforced; dispatch is representative planning, not real-time control.",
     "staging": "Stages are representative; reinforcement scope and delivery dates are not modelled."
   },
-  "results_sha256": "5da6a0451666a459a3e04981906f81f833bf4d8c2c2809b66b602be5921f4d6a",
+  "pilot_fixture": {
+    "manifest": {
+      "dataset_id": "synthetic-brandenburg-pilot",
+      "dataset_version": "1.0.0",
+      "title": "Synthetic Brandenburg operator-pilot replacement pack",
+      "geographic_scope": "Fictional Brandenburg-like 110/20 kV network; not tied to a mapped substation",
+      "provenance": {
+        "evidence_class": "synthetic",
+        "validation_class": "synthetic_demonstration",
+        "is_synthetic": true,
+        "source_id": "synthetic-bb-pilot-v1",
+        "source_url": null,
+        "source_published_at": null,
+        "model_version": "synthetic-bb-pilot-network-v1",
+        "replacement_contract": "operator_pilot_data_v1",
+        "license": "GridPulse internal synthetic fixture",
+        "artifact_sha256": null
+      },
+      "file_hashes": {
+        "network.json": "72c83f1bcaf497efa1c15d78bc13da070e96037cabc36867f71126574fac0f0f",
+        "observations.json": "4a370055ea645d3c8f5c0da21167f5d3e6b1225906d0dcf256e97f92989fd741",
+        "queue.json": "9fec7d16108465c3f036e4274e94d29c64e0c98d04ec56859f59d179299fe660",
+        "reinforcements.json": "f88897131712d33acad1950ca4927b422057456634e9acefb04bac1634477a00",
+        "contingencies.json": "f11e1379254508c6e280e6695b7be15630120e8b7ac6fbbd07e06d5738af4d13",
+        "security-criteria.json": "b040054b8c22ade8856e90c2fa7ee6168abf2f4c970b7af202eecc60f725e356",
+        "switching-states.json": "78644a73a7a90815cc61cb8c55dd041b995d8c8a352ed2a74fda440ea3e65a02",
+        "planned-outages.json": "c65ab1c6173c6820cef19b6ec2fc230cf78110ad801b237f72bb303eb1e34462",
+        "customer-profiles.json": "188698f885a7ced0f0d748fd03fb143c15e7da6b74b42324db36793ec6155c13",
+        "flexibility-assets.json": "2e7dcca8d0ddcf33abd2dd50c4e691664bc495e217799df726340ca5f2f108ab",
+        "activation-policy.json": "b229a5ee13c451eb52b0fa11b2237e11c0fff4f55c060a6987acc2c72c87374d"
+      },
+      "created_at": "2026-08-08T00:00:00Z",
+      "warning": "SYNTHETIC DEMONSTRATION DATA. Not associated with an actual German substation, network operator, available capacity, connection offer, cost, or delivery date. Replace via operator_pilot_data_v1."
+    },
+    "evidence": {
+      "network_model": {
+        "origin": "SimBench",
+        "class": "open_reference",
+        "accepted_by_operator": false
+      },
+      "topology_analysis": {
+        "origin": "configured Neo4j-compatible topology provider",
+        "class": "calculated_reference",
+        "accepted_by_operator": false
+      },
+      "electrical_ceiling": {
+        "origin": "pandapower N-0/N-1 calculation",
+        "class": "calculated_reference",
+        "accepted_by_operator": false
+      },
+      "operating_scenarios": {
+        "origin": "synthetic-bb-pilot-v1",
+        "class": "synthetic",
+        "accepted_by_operator": false
+      }
+    },
+    "manifest_sha256": "a31bc0c1eb57fc0b5ab8e5f11143d9dcbfd8a590bee55c36ba00cfc6b5d0f3fc",
+    "evidence_sha256": "cde237b65f8354929b492bc56457d2bb2db95a19c27be86abe0805f752f44156"
+  },
+  "results_sha256": "bc16698a8a033e57d944d6bcc624908dc0ce6905f2a53332e5d12f537386fa4a",
   "results": [
     {
       "result_id": "simbench-ref-01",
@@ -1275,8 +1334,354 @@
           "battery_round_trip_efficiency": 0.9,
           "battery_reserve_fraction": 0.1
         },
+        "scenario": {
+          "weather_year": 2024,
+          "demand_case": "base",
+          "renewable_case": "base"
+        },
         "calculation_boundary": "The electrical ceiling is a Pandapower result; hourly utilisation and operating commitments are representative synthetic conditions.",
-        "result_sha256": "480ea15a2df6559153213ab94ce878ee572e20a828c655e487be994267247f51"
+        "result_sha256": "23084e1100a5984ebe38cee993ccaa43c771b9d75f98c8a1b1ab935496de6636"
+      },
+      "ensemble": {
+        "schema_version": "gridpulse-activation-ensemble-v1",
+        "scenario_count": 27,
+        "hours_evaluated": 236520,
+        "electrical_ceiling_physics_verified": true,
+        "scenario_specific_physics_replays": 0,
+        "confidence": {
+          "p10_mw": 4.408,
+          "p50_mw": 4.631,
+          "p90_mw": 4.854,
+          "interpretation": "Distribution across representative mocked operating conditions; not statistical operator confidence."
+        },
+        "dominant_uncertainty": "Synthetic operating conditions are not time-aligned operator telemetry.",
+        "scenarios": [
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "low",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 4.631,
+            "additional_unlocked_mw": 4.631,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 67.67,
+            "result_sha256": "31c32982e6f3d5331e1d49830c5a0d4456c26cb38e29fe0f59e63fecafb05a6a"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "low",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 4.736,
+            "additional_unlocked_mw": 4.736,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 68.064,
+            "result_sha256": "a5f2135bf88be7a7a0e08ebca8579627ec478d027fd62952779ee3a6c3d79ede"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "low",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 4.84,
+            "additional_unlocked_mw": 4.84,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 68.404,
+            "result_sha256": "376b0759351ddca0273ebf8756a259eb54529899946adf442d00b07b7f10e6fb"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "base",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 4.486,
+            "additional_unlocked_mw": 4.486,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 66.944,
+            "result_sha256": "728180b37adf619a0eb20eebe31437f820fb6f43ced7a555ae41517d49765fa0"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "base",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 4.59,
+            "additional_unlocked_mw": 4.59,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 67.475,
+            "result_sha256": "ad472a23c4e6509992491990841338bd68bda601b4cf6bdf97fa13fc8951fd4a"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "base",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 4.695,
+            "additional_unlocked_mw": 4.695,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 67.918,
+            "result_sha256": "097309e7869bb594e0e56e96e3b5de1b2e364a6be1bb84d79bd7593c8bb450c3"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "high",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 4.282,
+            "additional_unlocked_mw": 4.282,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 65.781,
+            "result_sha256": "153363c472fb13c380c9b0fa447b3d2ceade825240fdeceae5fcc1296bf8ff9d"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "high",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 4.387,
+            "additional_unlocked_mw": 4.387,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 66.404,
+            "result_sha256": "1cde7b3e8737e495de0fcf347579de3a4eac398f40bee0335de2203197c838d5"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "high",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 4.491,
+            "additional_unlocked_mw": 4.491,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 66.976,
+            "result_sha256": "64b0f4c7969da748c07899f24267558ceb70f898ef86dd14a3d00ba34f2c5ac2"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "low",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 4.701,
+            "additional_unlocked_mw": 4.701,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 67.94,
+            "result_sha256": "f4a51d2675ee788f99e891761d2a5b7d314a33653146de8eae7970e53355e352"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "low",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 4.805,
+            "additional_unlocked_mw": 4.805,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 68.29,
+            "result_sha256": "f7f6fb45e15d4d59bc161dc1ee63f2e775ca883511ade81651c297dbbe61f814"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "low",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 4.91,
+            "additional_unlocked_mw": 4.91,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 68.615,
+            "result_sha256": "5b9fdde8dee4a9b8738f7d8620447195e0aaa8cb0ee1070507edb540e323d375"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "base",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 4.555,
+            "additional_unlocked_mw": 4.555,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 67.301,
+            "result_sha256": "6890e97987654b278541e182c4c37f0aa3ceb554c03c8288f1abe2cb5acced70"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "base",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 4.66,
+            "additional_unlocked_mw": 4.66,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 67.786,
+            "result_sha256": "23084e1100a5984ebe38cee993ccaa43c771b9d75f98c8a1b1ab935496de6636"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "base",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 4.765,
+            "additional_unlocked_mw": 4.765,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 68.158,
+            "result_sha256": "94096c45459ea14a9fe652f59cc42ac0fdca298be6ae15b7aaf85032506cf1a1"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "high",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 4.352,
+            "additional_unlocked_mw": 4.352,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 66.207,
+            "result_sha256": "75f4d504e29a6ab5412f1661b00459eb36d19745e533cd7b0a40308887949cb5"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "high",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 4.457,
+            "additional_unlocked_mw": 4.457,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 66.787,
+            "result_sha256": "3239e8cd4713e51f805afdd6c2f69057644a614215096e57c1b0417e088f0320"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "high",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 4.561,
+            "additional_unlocked_mw": 4.561,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 67.33,
+            "result_sha256": "6faf8b8de4eccee6ecc2fc6f72c9cf0d102a9cbb0963a93d2b92c970e50c73cb"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "low",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 4.77,
+            "additional_unlocked_mw": 4.77,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 68.177,
+            "result_sha256": "d503fac902b6f69a10ae5ea8895fdf7b478107673e65d5c3b007f8814e0ca3fb"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "low",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 4.875,
+            "additional_unlocked_mw": 4.875,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 68.517,
+            "result_sha256": "ba1c8c2f17d60d83f9bb200faabe5280eaaff1c18a8f22bc36910fc6baf23f9c"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "low",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 4.98,
+            "additional_unlocked_mw": 4.98,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 68.789,
+            "result_sha256": "b6d01c1f089335f3bb5ec211b1e4d9a15655dc75bb57286b8b7966c499c4ae72"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "base",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 4.625,
+            "additional_unlocked_mw": 4.625,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 67.645,
+            "result_sha256": "3de2f08ddfb7aa0ce3b6420ee70b4f6d473278a986ac476428d3fe13dce3aebd"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "base",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 4.73,
+            "additional_unlocked_mw": 4.73,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 68.045,
+            "result_sha256": "0d55eace25cf40a8ca2498610f035612ec2133b698032f9c5c85746fac519578"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "base",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 4.834,
+            "additional_unlocked_mw": 4.834,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 68.384,
+            "result_sha256": "51d41195b3ed42a676488885494bfb16a20aafe5be6142c2c6b6d6e98de14c5f"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "high",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 4.422,
+            "additional_unlocked_mw": 4.422,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 66.596,
+            "result_sha256": "037334083792c9e1e356cc04baa6bf0887b6808503e9af760f0021df73978f47"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "high",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 4.526,
+            "additional_unlocked_mw": 4.526,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 67.156,
+            "result_sha256": "3783067d9dd85716345f9827d522c2507c1f756c0d6ea8c852189e41bc24911c"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "high",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 4.631,
+            "additional_unlocked_mw": 4.631,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 67.67,
+            "result_sha256": "97812e587313f291e5c16e71659f63bb34d41f8e6448e4484566af1a5a889472"
+          }
+        ],
+        "scenario_set_sha256": "377a8f0e4ea69a2800bf5b5c632c5f86a40bc6757c48107206c6bba5df91f228"
       },
       "binding_constraint": "unsupplied_load_bus",
       "binding_case": "line-0-out",
@@ -2525,8 +2930,354 @@
           "battery_round_trip_efficiency": 0.9,
           "battery_reserve_fraction": 0.1
         },
+        "scenario": {
+          "weather_year": 2024,
+          "demand_case": "base",
+          "renewable_case": "base"
+        },
         "calculation_boundary": "The electrical ceiling is a Pandapower result; hourly utilisation and operating commitments are representative synthetic conditions.",
-        "result_sha256": "5b49464e90e2fa2df040c9e2a6b6fe5f22b5263f81146b50de9661d678873e13"
+        "result_sha256": "a1db888ad49c220f00841ccc8bcbe1757549d1358fc05bb78ad5fb1be8c5d51e"
+      },
+      "ensemble": {
+        "schema_version": "gridpulse-activation-ensemble-v1",
+        "scenario_count": 27,
+        "hours_evaluated": 236520,
+        "electrical_ceiling_physics_verified": true,
+        "scenario_specific_physics_replays": 0,
+        "confidence": {
+          "p10_mw": 3.46,
+          "p50_mw": 3.635,
+          "p90_mw": 3.81,
+          "interpretation": "Distribution across representative mocked operating conditions; not statistical operator confidence."
+        },
+        "dominant_uncertainty": "Synthetic operating conditions are not time-aligned operator telemetry.",
+        "scenarios": [
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "low",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.635,
+            "additional_unlocked_mw": 3.635,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 53.341,
+            "result_sha256": "dde1c6bc9e9403bab0358e19b39320a19ab022454a1f524a29e374593a6b91bb"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "low",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.717,
+            "additional_unlocked_mw": 3.717,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 53.686,
+            "result_sha256": "05ed95fcba2acc33eb21573189eae33efa36696ca7aa48c05b4667356f604fa3"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "low",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.799,
+            "additional_unlocked_mw": 3.799,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 53.973,
+            "result_sha256": "5771c55a37319fd6657dc87c418d85fe5b0b282bc9df6aa02f25988bc31d09c2"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "base",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.521,
+            "additional_unlocked_mw": 3.521,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 52.792,
+            "result_sha256": "9498fbec1cb856fe5f331ed630668c9ea43f087b3567e666e15227f6c11fc6cd"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "base",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.603,
+            "additional_unlocked_mw": 3.603,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 53.197,
+            "result_sha256": "b0be099e583a6768d5fb731fb8489d2c920860f5e93beb3532ed263706bb8990"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "base",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.685,
+            "additional_unlocked_mw": 3.685,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 53.562,
+            "result_sha256": "4530465c7128944458ebd410989aef60e22c280a795db4ed81ec6f05c7751a51"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "high",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.361,
+            "additional_unlocked_mw": 3.361,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 51.854,
+            "result_sha256": "54c6d308a98f1e27c70c7f0c1a06eaee7c21bc6c34678fce9d2adc96b27d3698"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "high",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.443,
+            "additional_unlocked_mw": 3.443,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 52.36,
+            "result_sha256": "cddc7194c8f105fc058bc57518bd591d5e202cdc3375f35695f05b1de06f4718"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "high",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.525,
+            "additional_unlocked_mw": 3.525,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 52.814,
+            "result_sha256": "ec820258215d9e25df00a4d722f75c45b130c582800e671d29027c4342b61d41"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "low",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.69,
+            "additional_unlocked_mw": 3.69,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 53.58,
+            "result_sha256": "13cd74d0370fb3ec3cc96e2c390b8ad7ee3d4da1f38d72e156751eaae7162629"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "low",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.772,
+            "additional_unlocked_mw": 3.772,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 53.885,
+            "result_sha256": "23444876eb056743ac43613b9dd336d4c501e2dd8f91b759407c2f153740013e"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "low",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.854,
+            "additional_unlocked_mw": 3.854,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 54.136,
+            "result_sha256": "67c62016af7ea3e618a071f92f39290ef32e25e5908bbfac81745389cacffe07"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "base",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.576,
+            "additional_unlocked_mw": 3.576,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 53.065,
+            "result_sha256": "86aa6af6b5adb75c8ad4cc149ce535887ae60998165bdb70477a2fdc7091d943"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "base",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.658,
+            "additional_unlocked_mw": 3.658,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 53.444,
+            "result_sha256": "a1db888ad49c220f00841ccc8bcbe1757549d1358fc05bb78ad5fb1be8c5d51e"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "base",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.74,
+            "additional_unlocked_mw": 3.74,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 53.772,
+            "result_sha256": "034564dd028f60f315d011ff6532cf56c15a2cac63f2dd5e8af781f44fd7e7dd"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "high",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.416,
+            "additional_unlocked_mw": 3.416,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 52.199,
+            "result_sha256": "d26cc36b0482ee0c3c285320c69db9382b62b6f8711ba57de6cc0bf8502659e0"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "high",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.498,
+            "additional_unlocked_mw": 3.498,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 52.671,
+            "result_sha256": "4b7deb01977b2c000f2aed9127aaf910fe033ae7eaa79737ceb3ff73e95770cf"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "high",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.58,
+            "additional_unlocked_mw": 3.58,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 53.088,
+            "result_sha256": "4844faf0410f776151b8b22aa1a8470ec0ec35f14ff389c32acf6915ff07021c"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "low",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.744,
+            "additional_unlocked_mw": 3.744,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 53.788,
+            "result_sha256": "07310948bb88fec73aba4a0405f171a9d44b29b9055777ccef4e8e8735469a3a"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "low",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.827,
+            "additional_unlocked_mw": 3.827,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 54.055,
+            "result_sha256": "803389f704bc2b6efa86411864bb5dcdad8071e20a1de5fe3fd97c700b6e3b81"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "low",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.909,
+            "additional_unlocked_mw": 3.909,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 54.282,
+            "result_sha256": "2fd97dac6b5451df82458154384615e45058ed87a2fbfb1d6b03442f40d588b3"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "base",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.63,
+            "additional_unlocked_mw": 3.63,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 53.32,
+            "result_sha256": "2a4ecf2ed375ce10538aad33b3aee259cbf5bbd9e84ba54f7801b6e7993889be"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "base",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.712,
+            "additional_unlocked_mw": 3.712,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 53.669,
+            "result_sha256": "bd3cd49893cd69c980ebb2d1600c484725fc7027c9ff25ec71cf103a1a4e419f"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "base",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.795,
+            "additional_unlocked_mw": 3.795,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 53.959,
+            "result_sha256": "faff167e05f6f0059d61776519bf6649ec69585aac4c8745550ee7815574ff39"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "high",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.471,
+            "additional_unlocked_mw": 3.471,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 52.517,
+            "result_sha256": "46343056d8aad303b487f6a044f5dc811c7c2209957012744cf73b879ec1622e"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "high",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.553,
+            "additional_unlocked_mw": 3.553,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 52.951,
+            "result_sha256": "7babff45db3d02dbe4018348520c0e8f062db75cbcff1287e1453fff4823a0d1"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "high",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.635,
+            "additional_unlocked_mw": 3.635,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 53.341,
+            "result_sha256": "002a76c03f50d042ea542a4cd22c8608caf466b46476994f0512ea0965136f93"
+          }
+        ],
+        "scenario_set_sha256": "2bf9a51e0ee7f6064c05e7c6cfd1bf66967e959d1b0ab5a1530f8f5a10a2f995"
       },
       "binding_constraint": "unsupplied_load_bus",
       "binding_case": "line-0-out",
@@ -3775,8 +4526,354 @@
           "battery_round_trip_efficiency": 0.9,
           "battery_reserve_fraction": 0.1
         },
+        "scenario": {
+          "weather_year": 2024,
+          "demand_case": "base",
+          "renewable_case": "base"
+        },
         "calculation_boundary": "The electrical ceiling is a Pandapower result; hourly utilisation and operating commitments are representative synthetic conditions.",
-        "result_sha256": "71724622759d7ed94ec60f3e83d4657f371239bda7b18873b07879ca8d5ba710"
+        "result_sha256": "f2c55019fec944813cb61a1b06e049519c96c68384e415d0eb6f622581ff68c2"
+      },
+      "ensemble": {
+        "schema_version": "gridpulse-activation-ensemble-v1",
+        "scenario_count": 27,
+        "hours_evaluated": 236520,
+        "electrical_ceiling_physics_verified": true,
+        "scenario_specific_physics_replays": 0,
+        "confidence": {
+          "p10_mw": 2.842,
+          "p50_mw": 2.986,
+          "p90_mw": 3.13,
+          "interpretation": "Distribution across representative mocked operating conditions; not statistical operator confidence."
+        },
+        "dominant_uncertainty": "Synthetic operating conditions are not time-aligned operator telemetry.",
+        "scenarios": [
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "low",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 2.986,
+            "additional_unlocked_mw": 2.986,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 43.609,
+            "result_sha256": "f58730c9a1313f552d900f2f1788052415cfd3d5eef17368464beeeb8b56afc9"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "low",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.054,
+            "additional_unlocked_mw": 3.054,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 43.879,
+            "result_sha256": "5f43b98667d6c327d938a2a32fb08e2a1f2d8ec6a554fa996009b28442aaa687"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "low",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.121,
+            "additional_unlocked_mw": 3.121,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 44.093,
+            "result_sha256": "c211f3ae8f5c65aeb42701090350f0daaf3604d8b52249130e125945b1e33896"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "base",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 2.892,
+            "additional_unlocked_mw": 2.892,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 43.179,
+            "result_sha256": "0ea0956e6035e879dc6dd99cbb8cfe762f3a12f2adb9548784993a0424a441fa"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "base",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 2.96,
+            "additional_unlocked_mw": 2.96,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 43.496,
+            "result_sha256": "1145afc7b57bf7522763c311859a16520f1c6054eb84da755098d7cc9512271e"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "base",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.027,
+            "additional_unlocked_mw": 3.027,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 43.78,
+            "result_sha256": "c72f757050bdd23cc836cec353b200544d7a92202e28679bebe7dccf1acb4e84"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "high",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 2.761,
+            "additional_unlocked_mw": 2.761,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 42.431,
+            "result_sha256": "b884c62bc60a5f011dcc9f4750cd0b7bdbec1c67f70a9fd8b9ad6009121f6629"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "high",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 2.829,
+            "additional_unlocked_mw": 2.829,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 42.831,
+            "result_sha256": "8bb7f57b4bb99cdfb727147af2d1dcd53d862bb77fecc366c4975125389d0029"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "high",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 2.896,
+            "additional_unlocked_mw": 2.896,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 43.197,
+            "result_sha256": "a7d665923bab3c4ff4476eec5613f552537a5585238b103a64ca8c8f106a648e"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "low",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.031,
+            "additional_unlocked_mw": 3.031,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 43.795,
+            "result_sha256": "91e9800f2bfce7dc47dcc1a5dad60e3126fe6afe91812cbc5a2800d9d3a3e50d"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "low",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.099,
+            "additional_unlocked_mw": 3.099,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 44.029,
+            "result_sha256": "8b222a397fe29d17b562c2548b56571c72d2730332d6f67f89911dc5dc16b7e2"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "low",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.166,
+            "additional_unlocked_mw": 3.166,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 44.207,
+            "result_sha256": "5b409e57e3a9cb71ea23b64ca5cb483f0728c628716fab088c2034a47f8bd818"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "base",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 2.937,
+            "additional_unlocked_mw": 2.937,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 43.393,
+            "result_sha256": "f21d370706cf71e786def5b70f6db9587515ba71c56c8bb5eac681c2a67c18c5"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "base",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.005,
+            "additional_unlocked_mw": 3.005,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 43.688,
+            "result_sha256": "f2c55019fec944813cb61a1b06e049519c96c68384e415d0eb6f622581ff68c2"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "base",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.072,
+            "additional_unlocked_mw": 3.072,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 43.944,
+            "result_sha256": "fe6dd7052e559f46c4f32c52a90ebd9d47ac457435cfc65b5e69e683ea6b399c"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "high",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 2.806,
+            "additional_unlocked_mw": 2.806,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 42.702,
+            "result_sha256": "7da681787436b2f4060b1c0acefb9cbc94be8325a58e5dabc09f3fa8b50d336a"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "high",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 2.874,
+            "additional_unlocked_mw": 2.874,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 43.084,
+            "result_sha256": "e76b70e71f903253eeeec7fe985c3a885a0b0c32f23df71b50b942055e3cb139"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "high",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 2.941,
+            "additional_unlocked_mw": 2.941,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 43.411,
+            "result_sha256": "0c12131622c760ec9189a822fe164d84bf43560fb5662ca7493ea763de269cab"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "low",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.076,
+            "additional_unlocked_mw": 3.076,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 43.956,
+            "result_sha256": "a86274f168ed3797b4910190856c149f336f135f0993e970f4b61067848042f6"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "low",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.144,
+            "additional_unlocked_mw": 3.144,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 44.15,
+            "result_sha256": "391bbe323e99a5fc270cf58d4892dbc1483471870a084ee1f1f78375b0ab483f"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "low",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.211,
+            "additional_unlocked_mw": 3.211,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 44.313,
+            "result_sha256": "fb5edd52f2d9ffa2b7ce0c4ee39296aa698cf1b92813703852b1cc3f1390d18a"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "base",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 2.982,
+            "additional_unlocked_mw": 2.982,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 43.593,
+            "result_sha256": "2267c46ae14c70ca0b7b17cdecae08993cc1611d0192ef01350213a7d901aa62"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "base",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.05,
+            "additional_unlocked_mw": 3.05,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 43.866,
+            "result_sha256": "693a881522cb6f47b470de02fc3e1f9c716f47f3209e5347a852130a2bb3fc9d"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "base",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.117,
+            "additional_unlocked_mw": 3.117,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 44.083,
+            "result_sha256": "cb8ec5b1807293535f7c0552c3eea618e234fc83e5c1ba16e5b1009218b0fd20"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "high",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 2.851,
+            "additional_unlocked_mw": 2.851,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 42.96,
+            "result_sha256": "b4bbacf9d79231eb67662fff837010adb301b2d2d2bc703333c65dba0b26bca2"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "high",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 2.919,
+            "additional_unlocked_mw": 2.919,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 43.304,
+            "result_sha256": "3eb4381e276e1a3f3b91b5a9a48cbd2efbab6159a62365e3bd6270f9c7e277a5"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "high",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 2.986,
+            "additional_unlocked_mw": 2.986,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 43.609,
+            "result_sha256": "0e44f59994cf604ad4de621fe215c566119c3688d82b009041edab1f28636f7b"
+          }
+        ],
+        "scenario_set_sha256": "526d8535dd57dffbe93b2e1676f54710af1f8d8ed39d72bba50ce8a8dd8d6cea"
       },
       "binding_constraint": "unsupplied_load_bus",
       "binding_case": "line-0-out",
@@ -5025,8 +6122,354 @@
           "battery_round_trip_efficiency": 0.9,
           "battery_reserve_fraction": 0.1
         },
+        "scenario": {
+          "weather_year": 2024,
+          "demand_case": "base",
+          "renewable_case": "base"
+        },
         "calculation_boundary": "The electrical ceiling is a Pandapower result; hourly utilisation and operating commitments are representative synthetic conditions.",
-        "result_sha256": "41bd11ec11074715563289d77060a4e9b1a35b1282c65c9188fe6adcedba29e5"
+        "result_sha256": "a9cf066b769bc60f0f2774c18f89581b45da5ccf1ec369eac2dc981c42475589"
+      },
+      "ensemble": {
+        "schema_version": "gridpulse-activation-ensemble-v1",
+        "scenario_count": 27,
+        "hours_evaluated": 236520,
+        "electrical_ceiling_physics_verified": true,
+        "scenario_specific_physics_replays": 0,
+        "confidence": {
+          "p10_mw": 1.987,
+          "p50_mw": 2.088,
+          "p90_mw": 2.188,
+          "interpretation": "Distribution across representative mocked operating conditions; not statistical operator confidence."
+        },
+        "dominant_uncertainty": "Synthetic operating conditions are not time-aligned operator telemetry.",
+        "scenarios": [
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "low",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 2.088,
+            "additional_unlocked_mw": 2.088,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 32.594,
+            "result_sha256": "4ec0cffbfbbd06881de5472303f29c4a9fa0318a56e82ebfb86a5ceeb8250fbc"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "low",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 2.135,
+            "additional_unlocked_mw": 2.135,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 32.787,
+            "result_sha256": "4d47a14e2378843dc35878478e1cd5077c3a4fd78a98bb6e7aab458da11b200d"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "low",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 2.182,
+            "additional_unlocked_mw": 2.182,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 32.952,
+            "result_sha256": "29b167cdcb8fba0f3c1dbcef7c550c7a7ed2629fd9e887ab4f1a38939d021553"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "base",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 2.022,
+            "additional_unlocked_mw": 2.022,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 32.308,
+            "result_sha256": "08e7244deae7bdfb8fdb860e78424e225cfa53f4250701ac73a0fb819894f66f"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "base",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 2.07,
+            "additional_unlocked_mw": 2.07,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 32.517,
+            "result_sha256": "30e5bea45ebfcbebc794e6b3aae0ccb67464381e3b26c8e09d115720a836e808"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "base",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 2.117,
+            "additional_unlocked_mw": 2.117,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 32.714,
+            "result_sha256": "003c26c4135dc5a465bcb701beb13d2f14586e691efd10ec31c9d6163a1e4e99"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "high",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 1.93,
+            "additional_unlocked_mw": 1.93,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 31.79,
+            "result_sha256": "2687d30e7129fc19386a71ea14937fc14baa751368e06c7c86645f5cfe50532b"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "high",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 1.978,
+            "additional_unlocked_mw": 1.978,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 32.08,
+            "result_sha256": "64939ae60f7b9365603ccd07ae56e2c2486195fa68cd9b41da4337299ee1aa78"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "high",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 2.025,
+            "additional_unlocked_mw": 2.025,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 32.32,
+            "result_sha256": "ccb3c301cea368ecf357258af455f9d294a5ef0937f73fdb32b9802da25da168"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "low",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 2.119,
+            "additional_unlocked_mw": 2.119,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 32.724,
+            "result_sha256": "e17439bd955446fdda9b6aa80b9acf6aec097fc25074a7b848d0d5b3fa7ecf8b"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "low",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 2.167,
+            "additional_unlocked_mw": 2.167,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 32.902,
+            "result_sha256": "eed783238b56389f4ad421cb03f481ba72d425d15f5403693985a1f276f6ebde"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "low",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 2.214,
+            "additional_unlocked_mw": 2.214,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 33.041,
+            "result_sha256": "b32dc90af68ada30c0fc81a47adfcbee455be8f703454c7ba951feb1c281a3b4"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "base",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 2.054,
+            "additional_unlocked_mw": 2.054,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 32.45,
+            "result_sha256": "96cda8dd13c82cf7fb9fff40ffa07d0a515b2eef57038f695d86928fe21ffbdb"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "base",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 2.101,
+            "additional_unlocked_mw": 2.101,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 32.65,
+            "result_sha256": "a9cf066b769bc60f0f2774c18f89581b45da5ccf1ec369eac2dc981c42475589"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "base",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 2.148,
+            "additional_unlocked_mw": 2.148,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 32.837,
+            "result_sha256": "1c28657fe3fd3d5b8e50c7ab1c7811ec1d6be1fc54d611437243f2b780602ff1"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "high",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 1.962,
+            "additional_unlocked_mw": 1.962,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 31.99,
+            "result_sha256": "152ea1205d54d105cd0dc55e5b8c811acc3e76b56c860bc51dbd545e0fd49547"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "high",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 2.009,
+            "additional_unlocked_mw": 2.009,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 32.243,
+            "result_sha256": "d5283f74fb3952d3291d6dccab06bb914eb0bad25d3954df94a035f070d17288"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "high",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 2.056,
+            "additional_unlocked_mw": 2.056,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 32.46,
+            "result_sha256": "6b071a9bd2ecdb5414b51d7a922a274acf3bc3a58390d6ca073802869f6cf537"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "low",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 2.151,
+            "additional_unlocked_mw": 2.151,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 32.846,
+            "result_sha256": "fe4eff8c49f79ce87ff0d44d2ef357af23d07e69479e3a1661e3eddabef37465"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "low",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 2.198,
+            "additional_unlocked_mw": 2.198,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 32.999,
+            "result_sha256": "230802da19406e9f344c7d27f09142c72c04678557028b0cabb1a184e5f565da"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "low",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 2.245,
+            "additional_unlocked_mw": 2.245,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 33.113,
+            "result_sha256": "beb256e90f536d5b324be47e6432726ae9637961559906d2e124e5e46657cde1"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "base",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 2.085,
+            "additional_unlocked_mw": 2.085,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 32.583,
+            "result_sha256": "9333e56452af783ec3bf091a2edb9f38a905f0d4b3c85a672dbf749bfbe9d1b3"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "base",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 2.133,
+            "additional_unlocked_mw": 2.133,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 32.777,
+            "result_sha256": "c3cdb7ac7d0e0cf1413aa3f2caba6447d6c6a275550d7a950401bbc5717a7968"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "base",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 2.18,
+            "additional_unlocked_mw": 2.18,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 32.944,
+            "result_sha256": "7da94665887ace9236b90fd167f4af9808f8bb0ad3163186a199a75d421f0368"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "high",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 1.993,
+            "additional_unlocked_mw": 1.993,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 32.163,
+            "result_sha256": "c911ebda9cd1eb04a3b8e88d5343a374b83a63c26c2e4ce5f10d995996717274"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "high",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 2.041,
+            "additional_unlocked_mw": 2.041,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 32.392,
+            "result_sha256": "717a99722ab8045a154cebb952c41b4d8428dcdd65aeb1ceb7ad5734fd4b4807"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "high",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 2.088,
+            "additional_unlocked_mw": 2.088,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 32.594,
+            "result_sha256": "6ba61e5c599c3bb8789ae25054d4dceb1e123e84fa36a55be81d1ced842d43af"
+          }
+        ],
+        "scenario_set_sha256": "b23347c33a787809f6143266deddc01e9b10e76ef323a295192e369e50d7a31f"
       },
       "binding_constraint": "unsupplied_load_bus",
       "binding_case": "line-0-out",
@@ -6275,8 +7718,354 @@
           "battery_round_trip_efficiency": 0.9,
           "battery_reserve_fraction": 0.1
         },
+        "scenario": {
+          "weather_year": 2024,
+          "demand_case": "base",
+          "renewable_case": "base"
+        },
         "calculation_boundary": "The electrical ceiling is a Pandapower result; hourly utilisation and operating commitments are representative synthetic conditions.",
-        "result_sha256": "4936c7e51f3731dd74e8d9a8da1a4d411a0cc6b4745618aeaa627a44914c85cf"
+        "result_sha256": "3bb7bb2469b9997d06e921efe228957484834c8dbdaa72ef9b700be91fc55996"
+      },
+      "ensemble": {
+        "schema_version": "gridpulse-activation-ensemble-v1",
+        "scenario_count": 27,
+        "hours_evaluated": 236520,
+        "electrical_ceiling_physics_verified": true,
+        "scenario_specific_physics_replays": 0,
+        "confidence": {
+          "p10_mw": 3.69,
+          "p50_mw": 3.878,
+          "p90_mw": 4.065,
+          "interpretation": "Distribution across representative mocked operating conditions; not statistical operator confidence."
+        },
+        "dominant_uncertainty": "Synthetic operating conditions are not time-aligned operator telemetry.",
+        "scenarios": [
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "low",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.878,
+            "additional_unlocked_mw": 3.878,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 61.131,
+            "result_sha256": "3d67631a5f3be67fc3e9ef506b4605222679b4a571e6d55c24c9d7330cda6e86"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "low",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.965,
+            "additional_unlocked_mw": 3.965,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 61.53,
+            "result_sha256": "ade816418c6e5e5eda88cbbe44fdbe18fb7d0a72c6afadb347a7a4b30a8132f0"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "low",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 4.053,
+            "additional_unlocked_mw": 4.053,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 61.859,
+            "result_sha256": "1c742f83861d9f8f906c046feda0abdf2bd3d951d84edbe09c64f4d1f4031236"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "base",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.756,
+            "additional_unlocked_mw": 3.756,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 60.531,
+            "result_sha256": "afd1966abd82eaed68489cb06e29451bb1b95e84f9cd411f1bcb90d4355819d6"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "base",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.843,
+            "additional_unlocked_mw": 3.843,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 60.968,
+            "result_sha256": "d363b54a234365153667e781261b9f00ce97659b5eaa8ae947bb8b2fea470a69"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "base",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.931,
+            "additional_unlocked_mw": 3.931,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 61.379,
+            "result_sha256": "23cac273c15f9639b54ca0458c9b77be71c003d57a191ab32a0b852bbda751b9"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "high",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.585,
+            "additional_unlocked_mw": 3.585,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 59.508,
+            "result_sha256": "5f5be69e6b947a89f62ebfed4cbb5015902959cea00476138ceda7610e806b87"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "high",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.673,
+            "additional_unlocked_mw": 3.673,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 60.066,
+            "result_sha256": "c7ab63457810e3c5a28533871f3276ecd149ede3be839588f8fcb50d838f9a78"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "high",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.761,
+            "additional_unlocked_mw": 3.761,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 60.557,
+            "result_sha256": "d64eacb95afa69c8e10dd84ed862f10b6f0be36e20eebc8ac4b3359571a958f0"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "low",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.936,
+            "additional_unlocked_mw": 3.936,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 61.402,
+            "result_sha256": "e7c9bd7838a08cf549e34e9b935cf1fd44a1d4a8739edb13757dea09d4b00161"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "low",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 4.024,
+            "additional_unlocked_mw": 4.024,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 61.762,
+            "result_sha256": "c3bdc2d2ba665c5f2f9518e31fc027de339b280a150b283b5c7e434a7bdb4c4e"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "low",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 4.112,
+            "additional_unlocked_mw": 4.112,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 62.045,
+            "result_sha256": "8666b39e77df13cb571ae34ab681575a1b59183d1490ce95ad28084eb1dfc77b"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "base",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.814,
+            "additional_unlocked_mw": 3.814,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 60.829,
+            "result_sha256": "5152cd2d921b29a1dcb68baeea20891500b5729d2003ab35e3b06eaaa0e8174c"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "base",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.902,
+            "additional_unlocked_mw": 3.902,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 61.246,
+            "result_sha256": "3bb7bb2469b9997d06e921efe228957484834c8dbdaa72ef9b700be91fc55996"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "base",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.99,
+            "additional_unlocked_mw": 3.99,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 61.632,
+            "result_sha256": "91e4c0555584cb524c76b7a1de13cab7c42e2faf22f74ddcaa3ccf572671912b"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "high",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.644,
+            "additional_unlocked_mw": 3.644,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 59.898,
+            "result_sha256": "55d49c722fe8e3be5c41d89f02424952b38a71efdbb88410f123f65528f148a6"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "high",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.731,
+            "additional_unlocked_mw": 3.731,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 60.401,
+            "result_sha256": "f5d8115a61d7d86c72697419fa34e487e5b7c2af8a1e8d043a875019766011c2"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "high",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.819,
+            "additional_unlocked_mw": 3.819,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 60.853,
+            "result_sha256": "8f2d86608bc9596931b0872f79521005894111573bb0c8273094a27b27901b62"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "low",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.995,
+            "additional_unlocked_mw": 3.995,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 61.652,
+            "result_sha256": "2af8f092fd39f47dc69547da350c36e9d5fde095a53e87b2876f7cbafd74bb94"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "low",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 4.082,
+            "additional_unlocked_mw": 4.082,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 61.954,
+            "result_sha256": "966a366d6f1224e082821dd764beda12e39b80f66685df6e9777c0092bb60ac4"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "low",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 4.17,
+            "additional_unlocked_mw": 4.17,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 62.194,
+            "result_sha256": "43f314f0a159282240f80b30ac329d518b787e89f04f799f1d9c41b0cd70e4ee"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "base",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.873,
+            "additional_unlocked_mw": 3.873,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 61.107,
+            "result_sha256": "fd67e0f3f468b710ceeffe0f0edcec1ac7307fa58b53a6d1c08b7d1568be7b5d"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "base",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.96,
+            "additional_unlocked_mw": 3.96,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 61.508,
+            "result_sha256": "8c1c85b1380b6eb6d6a70d4c74dc7aa1fd170bcb5e6b2a319c621cd44436144a"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "base",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 4.048,
+            "additional_unlocked_mw": 4.048,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 61.843,
+            "result_sha256": "0cf8c938cf737e30d51bf0a515be256f1cd980ef4cc7fadc50c6005ba9ac0945"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "high",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.702,
+            "additional_unlocked_mw": 3.702,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 60.234,
+            "result_sha256": "e010a67ffd47abf98e813645fd6dcc2fa6d15241b146684806fe573d20c73e14"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "high",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.79,
+            "additional_unlocked_mw": 3.79,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 60.71,
+            "result_sha256": "7e3d63bb5805c3dedd823c2113abd38c2e9596aa7b6cb2908393fc888c1429df"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "high",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.878,
+            "additional_unlocked_mw": 3.878,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 61.131,
+            "result_sha256": "81e6872c7c52c537e98f212bb1bfd67f6d16e6dff45a7334b2b0c0177e25b545"
+          }
+        ],
+        "scenario_set_sha256": "b612da1b9371390310d3cd974056ee03b9160ddfe856990fdd52a9234c9a068a"
       },
       "binding_constraint": "unsupplied_load_bus",
       "binding_case": "line-0-out",
@@ -7525,8 +9314,354 @@
           "battery_round_trip_efficiency": 0.9,
           "battery_reserve_fraction": 0.1
         },
+        "scenario": {
+          "weather_year": 2024,
+          "demand_case": "base",
+          "renewable_case": "base"
+        },
         "calculation_boundary": "The electrical ceiling is a Pandapower result; hourly utilisation and operating commitments are representative synthetic conditions.",
-        "result_sha256": "5bed4db16fcff584aeed4436d8337a05f270554bc0493a27803a18bf4a1fd715"
+        "result_sha256": "21dcde07f90dd3f142a8cdce159525c93f3c3f48bcc79a6cf49bc94ae5928cba"
+      },
+      "ensemble": {
+        "schema_version": "gridpulse-activation-ensemble-v1",
+        "scenario_count": 27,
+        "hours_evaluated": 236520,
+        "electrical_ceiling_physics_verified": true,
+        "scenario_specific_physics_replays": 0,
+        "confidence": {
+          "p10_mw": 3.033,
+          "p50_mw": 3.187,
+          "p90_mw": 3.341,
+          "interpretation": "Distribution across representative mocked operating conditions; not statistical operator confidence."
+        },
+        "dominant_uncertainty": "Synthetic operating conditions are not time-aligned operator telemetry.",
+        "scenarios": [
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "low",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.187,
+            "additional_unlocked_mw": 3.187,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 46.749,
+            "result_sha256": "e617fb3a72306108e6153bfe1a74cf58bae8e7f556763b2fbfad495303c72658"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "low",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.259,
+            "additional_unlocked_mw": 3.259,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 47.044,
+            "result_sha256": "ed3c99ccdf024eaa58310cbd62df94134999351e4db57df76be0a0d3d687202a"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "low",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.331,
+            "additional_unlocked_mw": 3.331,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 47.307,
+            "result_sha256": "f8d5a47b5701eef6124520ffe2fab167c298130499ad3838a3be246265b676c1"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "base",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.087,
+            "additional_unlocked_mw": 3.087,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 46.293,
+            "result_sha256": "574d995fc6775da436185ed296154a7e2169a64f4d142b8a3a99b3c9ba6db7ab"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "base",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.159,
+            "additional_unlocked_mw": 3.159,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 46.63,
+            "result_sha256": "97e703a8d3c445db2bd5ae50ad5b036316a99793c9441c7cb4eaec504035a466"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "base",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.231,
+            "additional_unlocked_mw": 3.231,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 46.935,
+            "result_sha256": "81e90b56355d626e7480018cfc7ba1d332d346dbeaa3b9a6399469384d188f77"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "high",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 2.947,
+            "additional_unlocked_mw": 2.947,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 45.465,
+            "result_sha256": "dd66f105276ce4047df123d1c79c08b73a13bf39ecb753d3fe92c7ff3d2820a9"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "high",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.019,
+            "additional_unlocked_mw": 3.019,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 45.923,
+            "result_sha256": "dae0989f45bf2a57bb74690f0c3d7d9f4fab0ba03cf18c4efa0625fd4843490f"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "high",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.091,
+            "additional_unlocked_mw": 3.091,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 46.313,
+            "result_sha256": "ec880e51620410e981db0abc511f4afa992e1874a07c3ea898ab31fe386e54b6"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "low",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.235,
+            "additional_unlocked_mw": 3.235,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 46.951,
+            "result_sha256": "7c9b792b3788a0b982c11b2b12cd8b870d202f5208cbb4a99fe05462a8bc2448"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "low",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.307,
+            "additional_unlocked_mw": 3.307,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 47.224,
+            "result_sha256": "e4813aec9ea537548164d3d2a5254f23e19d26731d52d267d8b04098763ce7a1"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "low",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.379,
+            "additional_unlocked_mw": 3.379,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 47.455,
+            "result_sha256": "a91793874f05bc4975232f5ddaf5ef0d6d8cdbfedfdac50b92617ee384a184fc"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "base",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.135,
+            "additional_unlocked_mw": 3.135,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 46.522,
+            "result_sha256": "ae064dac7ab069841f97ebcc23da14b82882fb68e55fd398559120f8afb58846"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "base",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.207,
+            "additional_unlocked_mw": 3.207,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 46.834,
+            "result_sha256": "21dcde07f90dd3f142a8cdce159525c93f3c3f48bcc79a6cf49bc94ae5928cba"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "base",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.279,
+            "additional_unlocked_mw": 3.279,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 47.119,
+            "result_sha256": "66d8f2b3d8f6c8139ea34ffee8bf2f1db68273df02b724e4b316010b15087fa5"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "high",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 2.995,
+            "additional_unlocked_mw": 2.995,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 45.776,
+            "result_sha256": "69df3930692662a3a9bc7946defd80d70ef37121cb48bcfaf903cd838d681c49"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "high",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.067,
+            "additional_unlocked_mw": 3.067,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 46.19,
+            "result_sha256": "18a093b0630dbde17d31b6d3778120efd4868b36c985fd6501430af0853fb7f8"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "high",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.139,
+            "additional_unlocked_mw": 3.139,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 46.541,
+            "result_sha256": "79bfbeeffa49742c9139fe3176370b6f27e038346ff825161b6d526749ea2dae"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "low",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.283,
+            "additional_unlocked_mw": 3.283,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 47.134,
+            "result_sha256": "7a3c890be5186d47fdd6814d76a69c0a2d073d9124fdbf10a052989151c657d1"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "low",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.355,
+            "additional_unlocked_mw": 3.355,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 47.383,
+            "result_sha256": "c6e82fe39719224a683a0d0841d703213aee4b8e076fdaf825cea3a80d802ba6"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "low",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.427,
+            "additional_unlocked_mw": 3.427,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 47.578,
+            "result_sha256": "89bde73083e4bfcc6b473e361e5036938e52cc85ebb9f3b8a16fa2a2af2bc2b0"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "base",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.183,
+            "additional_unlocked_mw": 3.183,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 46.732,
+            "result_sha256": "4e46ab208cfc9ac7e61d263c3c0c7cb37a4e9a8395192d4ac8098279fddccd68"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "base",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.255,
+            "additional_unlocked_mw": 3.255,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 47.029,
+            "result_sha256": "e40f8027f69de5e9dca7127750b96a4d9dec7919d4ac497401ae0ff9b6ad20e3"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "base",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.327,
+            "additional_unlocked_mw": 3.327,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 47.294,
+            "result_sha256": "21dea03e18cec7a8a46fdcc335234f32f653c2c5d4deb65739bfdb82e533b3b5"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "high",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.043,
+            "additional_unlocked_mw": 3.043,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 46.058,
+            "result_sha256": "b9c82517f7ad5a9ef942636b760566e741dbe3be0ee1e19a55838e4fab495ab2"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "high",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.115,
+            "additional_unlocked_mw": 3.115,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 46.427,
+            "result_sha256": "61308c4b909b0770291bbe2e031bf88f96236ec9a6c318e1572d9d36c2a3be40"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "high",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.187,
+            "additional_unlocked_mw": 3.187,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 46.749,
+            "result_sha256": "26777145bf39e2b03d55c56a2ae148ca1a95795f83aaa20017a41b00b8400a92"
+          }
+        ],
+        "scenario_set_sha256": "f1eb79b1581c5e719e4b6b0a16038e2f7a56223b9e2050d777a1e91df1afb9be"
       },
       "binding_constraint": "unsupplied_load_bus",
       "binding_case": "line-0-out",
@@ -8775,8 +10910,354 @@
           "battery_round_trip_efficiency": 0.9,
           "battery_reserve_fraction": 0.1
         },
+        "scenario": {
+          "weather_year": 2024,
+          "demand_case": "base",
+          "renewable_case": "base"
+        },
         "calculation_boundary": "The electrical ceiling is a Pandapower result; hourly utilisation and operating commitments are representative synthetic conditions.",
-        "result_sha256": "b67119a98f8bfb31f9408a7c7af15a60c92cbad017bccd0a664c781eb7233a5d"
+        "result_sha256": "52bd67beb8f3c522394a40471452303a7c63f884ba9a61531d97662276d0168c"
+      },
+      "ensemble": {
+        "schema_version": "gridpulse-activation-ensemble-v1",
+        "scenario_count": 27,
+        "hours_evaluated": 236520,
+        "electrical_ceiling_physics_verified": true,
+        "scenario_specific_physics_replays": 0,
+        "confidence": {
+          "p10_mw": 3.033,
+          "p50_mw": 3.187,
+          "p90_mw": 3.341,
+          "interpretation": "Distribution across representative mocked operating conditions; not statistical operator confidence."
+        },
+        "dominant_uncertainty": "Synthetic operating conditions are not time-aligned operator telemetry.",
+        "scenarios": [
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "low",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.187,
+            "additional_unlocked_mw": 3.187,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 46.037,
+            "result_sha256": "4148a416a09c65f2e9e73d59c4fbafd0415594731da206801c31cd10848c7837"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "low",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.259,
+            "additional_unlocked_mw": 3.259,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 46.326,
+            "result_sha256": "aa251a1cd9061dd6bca0b3cdeecb3ca35e5fd460e2eb82575a49422edd2b36fc"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "low",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.331,
+            "additional_unlocked_mw": 3.331,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 46.567,
+            "result_sha256": "3f2c864b0cc5592dd2b72422d0959007ae859988efc7978de5e0ca2b77df366d"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "base",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.087,
+            "additional_unlocked_mw": 3.087,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 45.567,
+            "result_sha256": "9407cd47a55cd0a2de5b9cd84140f110410ceace0e7f4c2035eabd5ad77ea520"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "base",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.159,
+            "additional_unlocked_mw": 3.159,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 45.914,
+            "result_sha256": "56da063d5f0a93224b9d60012933454e6dd29e43603d3037a2dcc59eea21b568"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "base",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.231,
+            "additional_unlocked_mw": 3.231,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 46.222,
+            "result_sha256": "2d2009aaba15e15b761f00988f1e8a432a12c35ead10a3ac81689f89094375b5"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "high",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 2.947,
+            "additional_unlocked_mw": 2.947,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 44.784,
+            "result_sha256": "7e3f2b0e378f4841c2042f156db59a26148d7b03e8005c04263c1243554074fe"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "high",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.019,
+            "additional_unlocked_mw": 3.019,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 45.21,
+            "result_sha256": "88c7273db28eee77f34cebbbeacea5f867d7d5c044be1b93d005ad9f9d8c4cac"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "high",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.091,
+            "additional_unlocked_mw": 3.091,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 45.587,
+            "result_sha256": "f05d090b0afcc8b61bc4debda4462049c5e06ea18f816a6169c299241d92b977"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "low",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.235,
+            "additional_unlocked_mw": 3.235,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 46.237,
+            "result_sha256": "d30a99cd17673c2764690de46d2c4ede2699ef38be04fec89e1bb532ac6e896b"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "low",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.307,
+            "additional_unlocked_mw": 3.307,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 46.491,
+            "result_sha256": "6841016ed7d8d979c5271b464553b08fbf616d1d40bbbd5b17a357351d5e20f8"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "low",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.379,
+            "additional_unlocked_mw": 3.379,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 46.711,
+            "result_sha256": "0571666ed0c3a30a55a7fe251c14d53df25e9f7211da84afa853b4ce7e4b3778"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "base",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.135,
+            "additional_unlocked_mw": 3.135,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 45.802,
+            "result_sha256": "37fdac67f415eff55da02e4f6013154d6e48c860d1ea5362ac26b64a7c1c0ba0"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "base",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.207,
+            "additional_unlocked_mw": 3.207,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 46.122,
+            "result_sha256": "52bd67beb8f3c522394a40471452303a7c63f884ba9a61531d97662276d0168c"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "base",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.279,
+            "additional_unlocked_mw": 3.279,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 46.396,
+            "result_sha256": "b7ee10924378ca3f4ef78e3825725bc5ae037181d915a17738ee26d0322d2de7"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "high",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 2.995,
+            "additional_unlocked_mw": 2.995,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 45.072,
+            "result_sha256": "ec1831be9b0831d31e2e34cad03c8c232899cd7b18128f1a8f5f10a27867174f"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "high",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.067,
+            "additional_unlocked_mw": 3.067,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 45.467,
+            "result_sha256": "8be649dbf1261b8917450d4fc6912263119a45491f33ffec214edfa1caa90e1c"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "high",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.139,
+            "additional_unlocked_mw": 3.139,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 45.821,
+            "result_sha256": "e02cbe15b3bba5444e329a980c24331668488f6e4c331fd0fd8f81dd609b3aa7"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "low",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.283,
+            "additional_unlocked_mw": 3.283,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 46.41,
+            "result_sha256": "8a3b01f549999afadabaeec597a60641589ca9c9988f1a76bfe50f03fcb3b24b"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "low",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.355,
+            "additional_unlocked_mw": 3.355,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 46.639,
+            "result_sha256": "eadd396aa1a0e83c191ffdcc8b464809c96ab19097e6c7ff86d6de1bd3ee148f"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "low",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.427,
+            "additional_unlocked_mw": 3.427,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 46.837,
+            "result_sha256": "8b2de1ad8ee0e34e4e8a5c576563463b6e8472f54aaf74da8f42d5814386a1b2"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "base",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.183,
+            "additional_unlocked_mw": 3.183,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 46.02,
+            "result_sha256": "8b0b52684e38ec4228f5fa96e4ac8e7e5021563b7ddf5143287c0d8bb19b7f15"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "base",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.255,
+            "additional_unlocked_mw": 3.255,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 46.312,
+            "result_sha256": "2ccd1f5b3a6044dd4b785f78ba5377e74ce5f543e9df5a4b2340c986ade15b1d"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "base",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.327,
+            "additional_unlocked_mw": 3.327,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 46.555,
+            "result_sha256": "f5feaa15fda03146363eee8152a2222f766e9b8e44830e3d813ce09101d90131"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "high",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.043,
+            "additional_unlocked_mw": 3.043,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 45.342,
+            "result_sha256": "2fadf16725bd46c579ae2907f9aa97d05b7c2bcba5bf65a9019a9bdc00126971"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "high",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.115,
+            "additional_unlocked_mw": 3.115,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 45.707,
+            "result_sha256": "00e7e9cb1ff3e7d8fdbf6ad97231b50ecc7b63f4f9bd729d172a3697959f4ef8"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "high",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.187,
+            "additional_unlocked_mw": 3.187,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 46.037,
+            "result_sha256": "98a6802ec5b325955f0e0b8142d86a56b1bd2fcdb56c896ffa38cfb9840734e8"
+          }
+        ],
+        "scenario_set_sha256": "353ff26d57cba08092aeb6808c5a39f05508116e41b1c59455a1b9dc4bfa0ab8"
       },
       "binding_constraint": "unsupplied_load_bus",
       "binding_case": "line-0-out",
@@ -10025,8 +12506,354 @@
           "battery_round_trip_efficiency": 0.9,
           "battery_reserve_fraction": 0.1
         },
+        "scenario": {
+          "weather_year": 2024,
+          "demand_case": "base",
+          "renewable_case": "base"
+        },
         "calculation_boundary": "The electrical ceiling is a Pandapower result; hourly utilisation and operating commitments are representative synthetic conditions.",
-        "result_sha256": "e93317edfa78a8eca153236d59189e6d18ff5ce0dc14f18ff6c9668332302019"
+        "result_sha256": "bce654d1979e569ac7ba0b7c7c25e8ff82c65ad559d0b2b0613851aefadea19a"
+      },
+      "ensemble": {
+        "schema_version": "gridpulse-activation-ensemble-v1",
+        "scenario_count": 27,
+        "hours_evaluated": 236520,
+        "electrical_ceiling_physics_verified": true,
+        "scenario_specific_physics_replays": 0,
+        "confidence": {
+          "p10_mw": 4.028,
+          "p50_mw": 4.233,
+          "p90_mw": 4.437,
+          "interpretation": "Distribution across representative mocked operating conditions; not statistical operator confidence."
+        },
+        "dominant_uncertainty": "Synthetic operating conditions are not time-aligned operator telemetry.",
+        "scenarios": [
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "low",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 4.233,
+            "additional_unlocked_mw": 4.233,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 62.091,
+            "result_sha256": "fe7dffe08edebd0da6a5dd1bd5c55eeb80ad9240a12c05ab6e45dff18d876b87"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "low",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 4.328,
+            "additional_unlocked_mw": 4.328,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 62.469,
+            "result_sha256": "286a9bc9040af9eafd62713e3f6a699fc16f54369d065b5bbcc758ab9c947f1d"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "low",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 4.424,
+            "additional_unlocked_mw": 4.424,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 62.782,
+            "result_sha256": "9c315d6644ebdbf410877cd35b217c73fac181bbe6b50fd92ed1a02213c81905"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "base",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 4.1,
+            "additional_unlocked_mw": 4.1,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 61.422,
+            "result_sha256": "6611bfc704d15b64bdac4358c595238eee1d0d7aa97c11adb3fc092248ae7da4"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "base",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 4.195,
+            "additional_unlocked_mw": 4.195,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 61.913,
+            "result_sha256": "f079f4f2277686bcb6554a95e31394f755c3052f885976967dc6371fdabef7cb"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "base",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 4.291,
+            "additional_unlocked_mw": 4.291,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 62.334,
+            "result_sha256": "fa05ebfa2beef29ce506311f58f73c06e433a0e81d92acc042c56bb30eb213a2"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "high",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.914,
+            "additional_unlocked_mw": 3.914,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 60.358,
+            "result_sha256": "6772d41930aed7561f789884d7115dc09b35ba18d66ffd636ec74df73bac41dc"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "high",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 4.009,
+            "additional_unlocked_mw": 4.009,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 60.925,
+            "result_sha256": "248edf5fe090d1928b8472053737db009ad2d62bacf59bb12fdc5c5aa2031446"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "high",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 4.105,
+            "additional_unlocked_mw": 4.105,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 61.452,
+            "result_sha256": "fced0b3fe37bcf6e564c1dba2cc428064679e7876e7d187ea78c76915dabc662"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "low",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 4.296,
+            "additional_unlocked_mw": 4.296,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 62.355,
+            "result_sha256": "ad19e5306459f1a4d758eb7f23576365fe8b8aebab238138da820b31d73f3620"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "low",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 4.392,
+            "additional_unlocked_mw": 4.392,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 62.678,
+            "result_sha256": "0b54c3795779a4d1d33d21b7b50aa36af187f49734b44675bab93ad7bf1e4e54"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "low",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 4.487,
+            "additional_unlocked_mw": 4.487,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 62.981,
+            "result_sha256": "cbd0e7c933b2f44246aadcd52bd04157969f1645cfea2391479af423133e0dda"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "base",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 4.163,
+            "additional_unlocked_mw": 4.163,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 61.754,
+            "result_sha256": "cc79f768e2f1dcb0986b658fdd6895fd7948e30f6f1bd160fde7145402087105"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "base",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 4.259,
+            "additional_unlocked_mw": 4.259,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 62.204,
+            "result_sha256": "bce654d1979e569ac7ba0b7c7c25e8ff82c65ad559d0b2b0613851aefadea19a"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "base",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 4.355,
+            "additional_unlocked_mw": 4.355,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 62.557,
+            "result_sha256": "a15e515fab56a593b6dd9c282c172b749be86106b914bfeae4505a8f381af724"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "high",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.978,
+            "additional_unlocked_mw": 3.978,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 60.749,
+            "result_sha256": "a50111ddb07f14af09680551466a0df6cd3dd6d57c678937f81b31b4217fff65"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "high",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 4.073,
+            "additional_unlocked_mw": 4.073,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 61.276,
+            "result_sha256": "bbe51e3be602e08ccd55de76ef33f80e1095ef721203cc26b10ad17bbaf0dfcb"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "high",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 4.169,
+            "additional_unlocked_mw": 4.169,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 61.78,
+            "result_sha256": "9a4a4600c164127e425578a7f30225a08130a18e340c3c5bfe47ea66afbad976"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "low",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 4.36,
+            "additional_unlocked_mw": 4.36,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 62.574,
+            "result_sha256": "dea9bd5e5743564cd932132fdaf1c790675d8794fc5378210ddc9c6c1d882c22"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "low",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 4.456,
+            "additional_unlocked_mw": 4.456,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 62.886,
+            "result_sha256": "2d29e186c74b51a20b2c2625f0a5c83890574b85a561ab8eab4be081bb9097ad"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "low",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 4.551,
+            "additional_unlocked_mw": 4.551,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 63.151,
+            "result_sha256": "2f411b2cc8832c097490a5aa95d14c99c238570d1133c87b0df08ba26aee82cd"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "base",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 4.227,
+            "additional_unlocked_mw": 4.227,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 62.068,
+            "result_sha256": "b1e80718e309a1b073ec3d6a5504cc6df26d720e7aecae5b2d735070e2585d4a"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "base",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 4.323,
+            "additional_unlocked_mw": 4.323,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 62.45,
+            "result_sha256": "fa98306c294aa581e54e9789bbc3f3b83f297df6aada88026e6b07f6aacfd03a"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "base",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 4.418,
+            "additional_unlocked_mw": 4.418,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 62.764,
+            "result_sha256": "794ccac472fbd693742e54193cfae1d96ee8f399c842753c61b40335544cf460"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "high",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 4.041,
+            "additional_unlocked_mw": 4.041,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 61.101,
+            "result_sha256": "5cf80ac993d998c32dcae40e8199eaab1b48236d5204d11a22033b53c1b2f03a"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "high",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 4.137,
+            "additional_unlocked_mw": 4.137,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 61.62,
+            "result_sha256": "40d35b0c8742f02b2f0992c03892667ea477d88d6e334bc62985d117dd0adb44"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "high",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 4.233,
+            "additional_unlocked_mw": 4.233,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 62.091,
+            "result_sha256": "8a331adad9ae700b3715e89f68858d6ed54c9ef7c18d350f0416feacbc411009"
+          }
+        ],
+        "scenario_set_sha256": "e16e67ce66b550e1d200a124d7185547704cf36a23c372a0161f367e73d89153"
       },
       "binding_constraint": "unsupplied_load_bus",
       "binding_case": "line-0-out",
@@ -11275,8 +14102,354 @@
           "battery_round_trip_efficiency": 0.9,
           "battery_reserve_fraction": 0.1
         },
+        "scenario": {
+          "weather_year": 2024,
+          "demand_case": "base",
+          "renewable_case": "base"
+        },
         "calculation_boundary": "The electrical ceiling is a Pandapower result; hourly utilisation and operating commitments are representative synthetic conditions.",
-        "result_sha256": "b039884549334fe57757ae04107e878f7d62526fbbf0ceac4a608d80d5ee3667"
+        "result_sha256": "52db76a2606076b7f09c11bdb46eb85588dd3d2fa5d7f9f8b9908ecc465e78a5"
+      },
+      "ensemble": {
+        "schema_version": "gridpulse-activation-ensemble-v1",
+        "scenario_count": 27,
+        "hours_evaluated": 236520,
+        "electrical_ceiling_physics_verified": true,
+        "scenario_specific_physics_replays": 0,
+        "confidence": {
+          "p10_mw": 3.413,
+          "p50_mw": 3.586,
+          "p90_mw": 3.759,
+          "interpretation": "Distribution across representative mocked operating conditions; not statistical operator confidence."
+        },
+        "dominant_uncertainty": "Synthetic operating conditions are not time-aligned operator telemetry.",
+        "scenarios": [
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "low",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.586,
+            "additional_unlocked_mw": 3.586,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 51.231,
+            "result_sha256": "72c31a218aaa775c4e4d349794723367c956716db1e89673aaf5536c3303ac3d"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "low",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.667,
+            "additional_unlocked_mw": 3.667,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 51.567,
+            "result_sha256": "4523aa15a239a5483a55038aa0066da024efbed829e9e11d091080d27b51ffc8"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "low",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.748,
+            "additional_unlocked_mw": 3.748,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 51.864,
+            "result_sha256": "3a7851895b1079a61d43031e3760c2e6b5b615a9160ebdf49d363046cddd5b95"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "base",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.473,
+            "additional_unlocked_mw": 3.473,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 50.734,
+            "result_sha256": "bf968ae7d9096e0a68e2fe500d25f6ca4bdc36bc016f10cb8ac1996aa6938601"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "base",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.554,
+            "additional_unlocked_mw": 3.554,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 51.097,
+            "result_sha256": "dc4784321aab17afa52412d43856396f0c4234fb17d5a7214a0b3f3722c0d253"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "base",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.635,
+            "additional_unlocked_mw": 3.635,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 51.441,
+            "result_sha256": "0b4b2088f6e6d0a91eac2c59c6a438ceff80d5a52a13e2124dab321fdcd22689"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "high",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.316,
+            "additional_unlocked_mw": 3.316,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 49.872,
+            "result_sha256": "19e2d4d9c3b2b85b40d9f4d6265811121aee293af075d0294119fb6216d5ff60"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "high",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.397,
+            "additional_unlocked_mw": 3.397,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 50.342,
+            "result_sha256": "3bd5761fa989bc83df2483cf594d2e620392e9716b19a3d9338e5038a8ecbf3e"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "high",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.478,
+            "additional_unlocked_mw": 3.478,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 50.756,
+            "result_sha256": "9900316d5efeb7dfb8181b9315c1233b52253eb76696c047fc505141ac335bf7"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "low",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.64,
+            "additional_unlocked_mw": 3.64,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 51.459,
+            "result_sha256": "d6334bdf2b48a36a3ccd24f3cf54e43511c1187866b78e660f429eef56ce078f"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "low",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.721,
+            "additional_unlocked_mw": 3.721,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 51.772,
+            "result_sha256": "f7b6b1136acead9e1ec4b1e4e4e76e2060b6c957545e7f804be67a1eac9e5ab5"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "low",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.802,
+            "additional_unlocked_mw": 3.802,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 52.023,
+            "result_sha256": "49c1148301f3a8f2efb907fa60838469bb9a3e78e8068afe9197d924376fa681"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "base",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.527,
+            "additional_unlocked_mw": 3.527,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 50.983,
+            "result_sha256": "69ea42cfa20b3860a9fbbd49597e1a19f8bc832e8b068928d6d6c14ce6af6841"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "base",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.608,
+            "additional_unlocked_mw": 3.608,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 51.327,
+            "result_sha256": "52db76a2606076b7f09c11bdb46eb85588dd3d2fa5d7f9f8b9908ecc465e78a5"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "base",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.689,
+            "additional_unlocked_mw": 3.689,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 51.655,
+            "result_sha256": "f039996b538a36b697c4041d16e893e9c99d19d1bef3f88d5bcc346824731aef"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "high",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.37,
+            "additional_unlocked_mw": 3.37,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 50.194,
+            "result_sha256": "3b3f69cd1395bf6daf1963852337a3ceca842b34b4d7f7b7d03086cb5d2ca270"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "high",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.451,
+            "additional_unlocked_mw": 3.451,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 50.621,
+            "result_sha256": "6a1469e10a75eeca1b5a7df3f7bbebdfff969b9edb4bcf868513b1832f9e26f1"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "high",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.532,
+            "additional_unlocked_mw": 3.532,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 51.002,
+            "result_sha256": "eecefc73d4c0ae96148f42e36b88a8874a0f007c872c734295954064805fde4c"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "low",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.694,
+            "additional_unlocked_mw": 3.694,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 51.672,
+            "result_sha256": "077aa6cf4808dd92747095025b69ededfbf6ecf695975df7136a8965c3ed3e3d"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "low",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.775,
+            "additional_unlocked_mw": 3.775,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 51.947,
+            "result_sha256": "00507bbc73caecc2cc9cb1bbd378219556859aefaa6801e52d52f49ec4736ac6"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "low",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.856,
+            "additional_unlocked_mw": 3.856,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 52.151,
+            "result_sha256": "8f7bc50201fe2b3244e5b982904aca4ed3ff29f5588fa36e7839009cb5f7e59e"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "base",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.581,
+            "additional_unlocked_mw": 3.581,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 51.212,
+            "result_sha256": "c2c1fc3436c0cfd286987a99aa22e92b5a88b54d66f4ff392e68135f3c7cbd47"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "base",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.662,
+            "additional_unlocked_mw": 3.662,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 51.549,
+            "result_sha256": "095c098b4de9b1e055b5e3fbe3e94313359d7c6069f3b2a83bd3f9c687295303"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "base",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.743,
+            "additional_unlocked_mw": 3.743,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 51.849,
+            "result_sha256": "eca6eeb14f3fb05dd244584431fee702bb661ca5ceb88505b3f1776de042e987"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "high",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.424,
+            "additional_unlocked_mw": 3.424,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 50.484,
+            "result_sha256": "2beff41f7865e4f78de2784fbe8530d86204a57aea0af949eab0dea27d33f91a"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "high",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.505,
+            "additional_unlocked_mw": 3.505,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 50.883,
+            "result_sha256": "38024fe675e16ebf2b5a822f3729cd70983b73c1db42931229667cd52967e754"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "high",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.586,
+            "additional_unlocked_mw": 3.586,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 51.231,
+            "result_sha256": "2508952f65764469f3afd589e0dadbf72456b795587542a1f37dbdfab8addfc8"
+          }
+        ],
+        "scenario_set_sha256": "dc5560588a5e87114d0e2c15317616fa900bd027d283feb1df2f42ab35f18882"
       },
       "binding_constraint": "unsupplied_load_bus",
       "binding_case": "line-0-out",
@@ -12525,8 +15698,354 @@
           "battery_round_trip_efficiency": 0.9,
           "battery_reserve_fraction": 0.1
         },
+        "scenario": {
+          "weather_year": 2024,
+          "demand_case": "base",
+          "renewable_case": "base"
+        },
         "calculation_boundary": "The electrical ceiling is a Pandapower result; hourly utilisation and operating commitments are representative synthetic conditions.",
-        "result_sha256": "41229ab362614ab40f3d27ebb39ea2833c3ca34c3c2295fba0f8130472cbfe56"
+        "result_sha256": "1422ef6e0fe2220e87aa61b4a4b3dba7ebff08d4f4f21e734a323dfa360e51fd"
+      },
+      "ensemble": {
+        "schema_version": "gridpulse-activation-ensemble-v1",
+        "scenario_count": 27,
+        "hours_evaluated": 236520,
+        "electrical_ceiling_physics_verified": true,
+        "scenario_specific_physics_replays": 0,
+        "confidence": {
+          "p10_mw": 4.019,
+          "p50_mw": 4.223,
+          "p90_mw": 4.427,
+          "interpretation": "Distribution across representative mocked operating conditions; not statistical operator confidence."
+        },
+        "dominant_uncertainty": "Synthetic operating conditions are not time-aligned operator telemetry.",
+        "scenarios": [
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "low",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 4.223,
+            "additional_unlocked_mw": 4.223,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 64.634,
+            "result_sha256": "bc31feda58987bba3e432cdb79f128548b7a947c7161590a9c391ab4d998e9a7"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "low",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 4.319,
+            "additional_unlocked_mw": 4.319,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 65.023,
+            "result_sha256": "1cbde1eef955e77ab9a3e94366ff0a4e09ab26813145e9ed0c5378ef201f585f"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "low",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 4.414,
+            "additional_unlocked_mw": 4.414,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 65.364,
+            "result_sha256": "81958b27e390911fa83715664efd536b7c4eb5f5d7ed6b4e74cd2696c248ae9e"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "base",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 4.09,
+            "additional_unlocked_mw": 4.09,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 64.046,
+            "result_sha256": "761ecce46b653a9cc014907f3c79e111cf24d8a24dd08734879e1b71396a6371"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "base",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 4.186,
+            "additional_unlocked_mw": 4.186,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 64.477,
+            "result_sha256": "647216e95bf529866298b1f18fe05f03ae51fa108b70ef15b6e653eb94de9669"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "base",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 4.281,
+            "additional_unlocked_mw": 4.281,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 64.875,
+            "result_sha256": "a37d822765be0509465c0fa4fcfe0c84d68f6cd8517b31b2a6b02684828af528"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "high",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.904,
+            "additional_unlocked_mw": 3.904,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 62.975,
+            "result_sha256": "fb459a09664e9291ee14207ea17afbb9934f4eae936ac275e4b62408acc87e92"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "high",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 4.0,
+            "additional_unlocked_mw": 4.0,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 63.564,
+            "result_sha256": "82315f9a50e36cce2f22d89d1c79b2168248b271cff889ae68d4c2014efb22c0"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "high",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 4.095,
+            "additional_unlocked_mw": 4.095,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 64.073,
+            "result_sha256": "c713f22cd80955e5e8537f00e4d329f8d0b5ce849d184139ecd29bbbc651feee"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "low",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 4.287,
+            "additional_unlocked_mw": 4.287,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 64.896,
+            "result_sha256": "ae2a6e3e0faecaa8e0aa2151bf3054b3d793689283bfabd66c2037f8527dc9bc"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "low",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 4.382,
+            "additional_unlocked_mw": 4.382,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 65.253,
+            "result_sha256": "e68c3b3401ff9eb8c24f505746934da03b9399652de4fcd4669d7e4b30ec33b1"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "low",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 4.478,
+            "additional_unlocked_mw": 4.478,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 65.541,
+            "result_sha256": "18b8d23dc79b8dc1a7cf57d7fafcaf3ad4e8a8b1e1289a6d6a428bb91eeabd43"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "base",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 4.154,
+            "additional_unlocked_mw": 4.154,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 64.34,
+            "result_sha256": "e43bf8bf953b3016ed986c4efc7c2db0dfa33334cfac9f88c26d48d58f291da4"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "base",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 4.249,
+            "additional_unlocked_mw": 4.249,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 64.747,
+            "result_sha256": "1422ef6e0fe2220e87aa61b4a4b3dba7ebff08d4f4f21e734a323dfa360e51fd"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "base",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 4.345,
+            "additional_unlocked_mw": 4.345,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 65.123,
+            "result_sha256": "7541cf5e70bb8642ce5909632749163123988df3dd675920846e0193e0e1d6bf"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "high",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.968,
+            "additional_unlocked_mw": 3.968,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 63.379,
+            "result_sha256": "8f49497bd67958de4d7677c78a2758bc6d72a855b4c1a360ae40fc19b858071d"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "high",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 4.064,
+            "additional_unlocked_mw": 4.064,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 63.908,
+            "result_sha256": "897831a9dff486ca1679ec77d61e00732fad9eb6ef567a9d95461a190bf7b61b"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "high",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 4.159,
+            "additional_unlocked_mw": 4.159,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 64.363,
+            "result_sha256": "40346d6084e38d54842045f66a713e2b606cfdea2bbbb400fe9dd529b563dac2"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "low",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 4.35,
+            "additional_unlocked_mw": 4.35,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 65.142,
+            "result_sha256": "b2d442aa714ae78d7a0616f99ef4e3ce78a203aafec1bbce5ea836ac8e339bb8"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "low",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 4.446,
+            "additional_unlocked_mw": 4.446,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 65.454,
+            "result_sha256": "671a578a7c119e6c6acc4e2534ce5b22719fee6d716fcb31e85ab20a3f7ed35d"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "low",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 4.542,
+            "additional_unlocked_mw": 4.542,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 65.692,
+            "result_sha256": "52021678e76d2af67ce73ac384e0133c74f564331f46f5c6dbe5600841237637"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "base",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 4.218,
+            "additional_unlocked_mw": 4.218,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 64.612,
+            "result_sha256": "c34b57d035c22a192915910b6795c8fa4fd334c62758a3a76a192ebdb6d84569"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "base",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 4.313,
+            "additional_unlocked_mw": 4.313,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 65.002,
+            "result_sha256": "6ebe19819c3084ba3d54da9a257209abd07b3109e2847d7a6b3b714bb2830eb9"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "base",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 4.409,
+            "additional_unlocked_mw": 4.409,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 65.346,
+            "result_sha256": "f1ffc554b6e453818f04f6275ca76aba9817f2448544fb479487810e1e212639"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "high",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 4.032,
+            "additional_unlocked_mw": 4.032,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 63.739,
+            "result_sha256": "775e8b7af6a9c545f1036242e5689204be1319f9398192073429bbd3b5110a58"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "high",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 4.127,
+            "additional_unlocked_mw": 4.127,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 64.22,
+            "result_sha256": "9cb59bff6d9b058f99b2b3ed2c8ba742727c36a49c56c9f0a66b4548ab785b19"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "high",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 4.223,
+            "additional_unlocked_mw": 4.223,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 64.634,
+            "result_sha256": "3f60d7c4abc8fa44ce341672db40655fc4ee84297d7fb5b7426d4a0016edb7c8"
+          }
+        ],
+        "scenario_set_sha256": "8b22dd6fc5bb15b83c732a10eec6debf8b45ad6af2999cb5576b7ba5e8846730"
       },
       "binding_constraint": "unsupplied_load_bus",
       "binding_case": "line-0-out",
@@ -13775,8 +17294,354 @@
           "battery_round_trip_efficiency": 0.9,
           "battery_reserve_fraction": 0.1
         },
+        "scenario": {
+          "weather_year": 2024,
+          "demand_case": "base",
+          "renewable_case": "base"
+        },
         "calculation_boundary": "The electrical ceiling is a Pandapower result; hourly utilisation and operating commitments are representative synthetic conditions.",
-        "result_sha256": "bef575b3c4b940eb552e13d134201b0f57be7476abea8300f486d124cdf230f5"
+        "result_sha256": "106da2f53b02769574eeda2db405b35457b4c283f9203636db26b361e8b835b1"
+      },
+      "ensemble": {
+        "schema_version": "gridpulse-activation-ensemble-v1",
+        "scenario_count": 27,
+        "hours_evaluated": 236520,
+        "electrical_ceiling_physics_verified": true,
+        "scenario_specific_physics_replays": 0,
+        "confidence": {
+          "p10_mw": 3.792,
+          "p50_mw": 3.984,
+          "p90_mw": 4.176,
+          "interpretation": "Distribution across representative mocked operating conditions; not statistical operator confidence."
+        },
+        "dominant_uncertainty": "Synthetic operating conditions are not time-aligned operator telemetry.",
+        "scenarios": [
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "low",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.984,
+            "additional_unlocked_mw": 3.984,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 56.643,
+            "result_sha256": "e295c44df3525ed89c7f1e7464e88b7453e4a770d56bf0c6ead256597f2857b3"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "low",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 4.074,
+            "additional_unlocked_mw": 4.074,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 56.925,
+            "result_sha256": "4e9d78705d99b8cca03032dca89d46142053dcd13ee8e287ff50bcad98e0f945"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "low",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 4.164,
+            "additional_unlocked_mw": 4.164,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 57.192,
+            "result_sha256": "f4fd7501f5338a268c44c1aaadf79830e6f2f5592214acea9c8ec312317b2510"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "base",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.859,
+            "additional_unlocked_mw": 3.859,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 56.181,
+            "result_sha256": "30c7324c159281a680869bd5c50367184baaf02bafdcc43e37cd8bdf51cacb70"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "base",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.949,
+            "additional_unlocked_mw": 3.949,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 56.524,
+            "result_sha256": "c9a5e6617e53107136fea26e3b54cc441f134bcc45f583789128a691d0f71f6f"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "base",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 4.039,
+            "additional_unlocked_mw": 4.039,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 56.82,
+            "result_sha256": "4350323a5a8c88a7366196e655a6a0c78768b0ffada7dddaaa17a1be390df9b0"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "high",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.684,
+            "additional_unlocked_mw": 3.684,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 55.357,
+            "result_sha256": "1af51276d26061f9dffef8d93178d772a7c3819d01fee3f3702840d8371a946d"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "high",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.774,
+            "additional_unlocked_mw": 3.774,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 55.82,
+            "result_sha256": "97cc80e0602bcf970550f1ffd5fd6c4a40386404f2d70d4795278cc311bec435"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "high",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.864,
+            "additional_unlocked_mw": 3.864,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 56.201,
+            "result_sha256": "4ac051409e5f5b7571c16c97ff7180871ea66dd0ab27115370e5f48fafeed549"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "low",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 4.044,
+            "additional_unlocked_mw": 4.044,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 56.835,
+            "result_sha256": "ea3c5b23448efdac1859b41ca93e59a6cce1b80b77fde19ff6a8045dd1dd845a"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "low",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 4.134,
+            "additional_unlocked_mw": 4.134,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 57.105,
+            "result_sha256": "4025032d62baa732c5da09cdcbfd6005adf6862c6fcfed3fc6d4996a7e78f991"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "low",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 4.224,
+            "additional_unlocked_mw": 4.224,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 57.344,
+            "result_sha256": "ef41bfbc488393b8261657ff5aa3b83b02ed26cc24b18dbd939699df2402b94a"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "base",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.919,
+            "additional_unlocked_mw": 3.919,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 56.415,
+            "result_sha256": "930259201df4a733e4941c5d9f5d4ac4c80ff28f00569d507f54e527b3dbf202"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "base",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 4.009,
+            "additional_unlocked_mw": 4.009,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 56.725,
+            "result_sha256": "106da2f53b02769574eeda2db405b35457b4c283f9203636db26b361e8b835b1"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "base",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 4.099,
+            "additional_unlocked_mw": 4.099,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 57.0,
+            "result_sha256": "cbd2518b78e5838f6699c052df67be2dc00e33c404c08f2137fa7fa7ef2217b4"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "high",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.744,
+            "additional_unlocked_mw": 3.744,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 55.672,
+            "result_sha256": "8f2816585daa5579b8f53c311ffe8761961ad99f0349d8f101ec8d968727bbbe"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "high",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.834,
+            "additional_unlocked_mw": 3.834,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 56.081,
+            "result_sha256": "9d2cfa6f921610029981c91724b2509f70dd5bff68e857a2c4c0c57af626a67d"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "high",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.924,
+            "additional_unlocked_mw": 3.924,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 56.433,
+            "result_sha256": "bc7c71622f99983f35ccb3390a3db192e76c98b96831f691a44c46ff7dd8d78a"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "low",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 4.104,
+            "additional_unlocked_mw": 4.104,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 57.015,
+            "result_sha256": "0996b39a70a0beb7d881d5875f60da9ccba71c06950f2ee16ed705c0a9d60af8"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "low",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 4.194,
+            "additional_unlocked_mw": 4.194,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 57.269,
+            "result_sha256": "52ba8d7af055a6191b08fe2b6f4a0547a8bbb60e5786c93c34c11d90f449b462"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "low",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 4.284,
+            "additional_unlocked_mw": 4.284,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 57.472,
+            "result_sha256": "b220a119deb6d0f49b6a132eb0cf8b070b01e32eb34a8842d766ab723e73e332"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "base",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.979,
+            "additional_unlocked_mw": 3.979,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 56.627,
+            "result_sha256": "1081bf9274f7aa0dbfdc46aba6210c7ad546b21217e887ab770a9f9c19ef7e39"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "base",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 4.069,
+            "additional_unlocked_mw": 4.069,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 56.91,
+            "result_sha256": "8bf737c51107c1ade98e9a1f7b4d8b39d94c5a0f12051a033115443796bed6a7"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "base",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 4.159,
+            "additional_unlocked_mw": 4.159,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 57.179,
+            "result_sha256": "4a5586b9363f83843772fb6d86dbf92d8eba8c6fe221fb4ad8fdfe3b3b7ae002"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "high",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.804,
+            "additional_unlocked_mw": 3.804,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 55.955,
+            "result_sha256": "71e24a3c496fc17588599d75216e3efb2dc5e50a625f039150788f5dd3099ea5"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "high",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.894,
+            "additional_unlocked_mw": 3.894,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 56.321,
+            "result_sha256": "4945d31697138483f4126ab38e1133335cbf2c6c74716c14d6d449b289a8c550"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "high",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.984,
+            "additional_unlocked_mw": 3.984,
+            "restricted_hours": 131,
+            "restricted_energy_mwh": 56.643,
+            "result_sha256": "775381c505379705b06beea03ffdf2dd593bd67cb246cce71863add8cac89e1f"
+          }
+        ],
+        "scenario_set_sha256": "033d4e58f2ff2a3a953298419b684dd972b1fb6eca7b7b0812dbe5470c9aca63"
       },
       "binding_constraint": "unsupplied_load_bus",
       "binding_case": "line-0-out",
@@ -15025,8 +18890,354 @@
           "battery_round_trip_efficiency": 0.9,
           "battery_reserve_fraction": 0.1
         },
+        "scenario": {
+          "weather_year": 2024,
+          "demand_case": "base",
+          "renewable_case": "base"
+        },
         "calculation_boundary": "The electrical ceiling is a Pandapower result; hourly utilisation and operating commitments are representative synthetic conditions.",
-        "result_sha256": "f7aebe94f2b6f1199efb5f9ea247bda14a2cb3c36dbe42ccb78264fb351620ef"
+        "result_sha256": "cfe85dcc63a43dea9e386f97d2807eb3911135a3d24b0e28a183e426b58f30ee"
+      },
+      "ensemble": {
+        "schema_version": "gridpulse-activation-ensemble-v1",
+        "scenario_count": 27,
+        "hours_evaluated": 236520,
+        "electrical_ceiling_physics_verified": true,
+        "scenario_specific_physics_replays": 0,
+        "confidence": {
+          "p10_mw": 3.783,
+          "p50_mw": 3.975,
+          "p90_mw": 4.167,
+          "interpretation": "Distribution across representative mocked operating conditions; not statistical operator confidence."
+        },
+        "dominant_uncertainty": "Synthetic operating conditions are not time-aligned operator telemetry.",
+        "scenarios": [
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "low",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.975,
+            "additional_unlocked_mw": 3.975,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 60.759,
+            "result_sha256": "5c14cd12f11f74113e7aa143edad70ddd3bc15501751224eb892e3a5532d777f"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "low",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 4.065,
+            "additional_unlocked_mw": 4.065,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 61.125,
+            "result_sha256": "4c8c4034d96a60bda0853f11950234b59e389394fa70125a08e02770937de390"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "low",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 4.155,
+            "additional_unlocked_mw": 4.155,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 61.445,
+            "result_sha256": "d219618eda75846e506af70b9bdf38794fbe1dad6dbee9040375865d1527d383"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "base",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.85,
+            "additional_unlocked_mw": 3.85,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 60.205,
+            "result_sha256": "3b226cd5d8bceabff84186e7bf7c249a976d8397002fc43f9c55e3b77c150f4c"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "base",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.94,
+            "additional_unlocked_mw": 3.94,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 60.61,
+            "result_sha256": "144c47bde3c576b2b287949bd6ca7f613dd7185a5053c08b66a81c0d96c54410"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "base",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 4.03,
+            "additional_unlocked_mw": 4.03,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 60.985,
+            "result_sha256": "4b4ce27d83eee7e699ca05d0de1b160c9f34dd839a66a65adeb5fdf0df5e7c1e"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "high",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.675,
+            "additional_unlocked_mw": 3.675,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 59.236,
+            "result_sha256": "2f34078e1035e66ecc258f5f0e17761586c0ce1a5d5360b84f0f8b06c7268fb2"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "high",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.765,
+            "additional_unlocked_mw": 3.765,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 59.77,
+            "result_sha256": "eed154bf38f5e7d788d1c2d709cd511e7b61b4eeb3ce120281fcfa60ed8dce7c"
+          },
+          {
+            "scenario": {
+              "weather_year": 2023,
+              "demand_case": "high",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.855,
+            "additional_unlocked_mw": 3.855,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 60.23,
+            "result_sha256": "d8125cf64f2bdb8839d76f594dd5b602cc8910c45c594106f32d8a7c4a8fe6b2"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "low",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 4.035,
+            "additional_unlocked_mw": 4.035,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 61.005,
+            "result_sha256": "9c088a36d58ed5dcd71e5d6ebddfd5ad523ac752eb8b668b08f488ad15a35148"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "low",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 4.125,
+            "additional_unlocked_mw": 4.125,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 61.342,
+            "result_sha256": "5c45a9ea533d8257bf780a2104aac8aa449ddacea8193b36bbf76125d9b7ca3f"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "low",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 4.215,
+            "additional_unlocked_mw": 4.215,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 61.601,
+            "result_sha256": "aa4bdf0a768b68a5506e672bf304e0a351881d5b3bbc6024b214e4d07ab22512"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "base",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.91,
+            "additional_unlocked_mw": 3.91,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 60.481,
+            "result_sha256": "6eede71e5202ae814ff45d1c6f1249328d5ba022305c75f4d3239bb4bce7b25c"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "base",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 4.0,
+            "additional_unlocked_mw": 4.0,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 60.865,
+            "result_sha256": "cfe85dcc63a43dea9e386f97d2807eb3911135a3d24b0e28a183e426b58f30ee"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "base",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 4.09,
+            "additional_unlocked_mw": 4.09,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 61.219,
+            "result_sha256": "433238c0d5d0d96a9d7927939be1b381a5fda195f72353f48a89a23376d84207"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "high",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.735,
+            "additional_unlocked_mw": 3.735,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 59.603,
+            "result_sha256": "8861a3ac54829b41067e08610c0780ebb26aac8ab9284cf4aa79f056aa4f18ff"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "high",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.825,
+            "additional_unlocked_mw": 3.825,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 60.08,
+            "result_sha256": "9f3f4d3cd6ebda06350fb2647c0f578195d59a76c5585f83bbb37b1951d5dfa0"
+          },
+          {
+            "scenario": {
+              "weather_year": 2024,
+              "demand_case": "high",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.915,
+            "additional_unlocked_mw": 3.915,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 60.504,
+            "result_sha256": "c1dba58abd8752e862ede9155fe1e31a64f0995cce491bda53e241a7f5ca6615"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "low",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 4.095,
+            "additional_unlocked_mw": 4.095,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 61.237,
+            "result_sha256": "af1915f99406d0de654f22a7caf6a71f5e81715a885b51a4b7df3724ef3f9633"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "low",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 4.185,
+            "additional_unlocked_mw": 4.185,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 61.526,
+            "result_sha256": "d1b98ced773e9c49c22fface800344085d35276ddf10c28aefcf629c47fe725a"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "low",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 4.275,
+            "additional_unlocked_mw": 4.275,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 61.736,
+            "result_sha256": "24e4c83d4296f94e27e5596eecc16fc4df2ff5d5382dff754b1d8f4a64f9143c"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "base",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.97,
+            "additional_unlocked_mw": 3.97,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 60.738,
+            "result_sha256": "a4791013fc27eb97bdb7952c9cc3618a74778a8e8431cefb3e699a16987582e5"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "base",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 4.06,
+            "additional_unlocked_mw": 4.06,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 61.105,
+            "result_sha256": "a81d41381a465dca47e6a80e9517e0fd22cd6d7e80526f01cc44f3372bba8cf4"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "base",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 4.15,
+            "additional_unlocked_mw": 4.15,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 61.429,
+            "result_sha256": "4bcc7c602f819ef78486c4efd0c897f1f4a70fc9d0481f05c3f1b3cf402409ac"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "high",
+              "renewable_case": "low"
+            },
+            "activatable_capacity_mw": 3.795,
+            "additional_unlocked_mw": 3.795,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 59.928,
+            "result_sha256": "4fccd397fac45a1b50ed5def5e0e41f11fca885795832501824a269e9e574af2"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "high",
+              "renewable_case": "base"
+            },
+            "activatable_capacity_mw": 3.885,
+            "additional_unlocked_mw": 3.885,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 60.369,
+            "result_sha256": "4d517fb7079253a031caf27da31e73de30248261b03687e711a0904c41ac752e"
+          },
+          {
+            "scenario": {
+              "weather_year": 2025,
+              "demand_case": "high",
+              "renewable_case": "high"
+            },
+            "activatable_capacity_mw": 3.975,
+            "additional_unlocked_mw": 3.975,
+            "restricted_hours": 130,
+            "restricted_energy_mwh": 60.759,
+            "result_sha256": "7e08775ac2e128c49a9e95019775a1efbeeb4032b60d93a6906faf2648e2ddf1"
+          }
+        ],
+        "scenario_set_sha256": "c1a943565beb1da4e3e6861507a7d7783219dcc8f34d606333b7de29e861541e"
       },
       "binding_constraint": "unsupplied_load_bus",
       "binding_case": "line-0-out",

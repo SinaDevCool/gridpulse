@@ -502,8 +502,8 @@ function FinderDataSourcesPage() {
                 <Calculator aria-hidden="true" />
                 <h3>Annual operating profile</h3>
                 <p>
-                  Release A evaluates 8,760 deterministic hours using the declared load shape,
-                  target year, flexibility, on-site generation and battery state of charge.
+                  Release 1 evaluates 27 deterministic operating cases across three weather years,
+                  demand cases and renewable-coincidence cases: 236,520 modeled hours per bus.
                 </p>
               </article>
               <article>
@@ -535,9 +535,10 @@ function FinderDataSourcesPage() {
                 <Calculator aria-hidden="true" />
                 <h3>Constraint-led comparison</h3>
                 <p>
-                  Every public strategy is tested against one versioned 8,760-hour reference case.
-                  Firm, reduced, staged, flexible and storage-supported strategies differ only
-                  through their declared connection envelope and customer-side response.
+                  Every public strategy is tested against one central case and a versioned 27-case
+                  operating ensemble. Firm, reduced, staged, flexible and storage-supported
+                  strategies differ only through their declared connection envelope and
+                  customer-side response.
                 </p>
               </article>
               <article>
@@ -636,8 +637,12 @@ function FinderDataSourcesPage() {
                     solver hash
                   </li>
                   <li>
-                    Activatable capacity: 8,760 deterministic synthetic operating hours bounded by
-                    each reference bus&apos;s solved Pandapower N-0 ceiling
+                    Activatable capacity: 27 deterministic synthetic operating cases (236,520 hours)
+                    bounded by each reference bus&apos;s solved Pandapower N-0 ceiling
+                  </li>
+                  <li>
+                    P10/P50/P90 describes spread across mocked operating scenarios, not statistical
+                    operator confidence; the fixture and field-level evidence classes are hashed
                   </li>
                   <li>
                     Operating commitments: restricted hours and energy, maximum reduction, event

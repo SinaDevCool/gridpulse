@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from .benchmark_model import SIMBENCH_LICENSE, SIMBENCH_SOURCE, import_simbench_model
-from .activatable_capacity import calculate_activatable_capacity
+from .activatable_capacity import ActivationPolicy, calculate_activation_ensemble
 from .graph.contracts import build_projection
 from .graph.provider import configured_topology_provider
 from .network_study import PandapowerProvider
@@ -22,7 +22,9 @@ def _candidate_buses(model, limit: int) -> list[str]:
         demand_by_bus[str(load["bus"])] = demand_by_bus.get(str(load["bus"]), 0.0) + float(
             load.get("p_mw", 0)
         )
-    return [bus for bus, _ in sorted(demand_by_bus.items(), key=lambda row: (-row[1], row[0]))[:limit]]
+    return [
+        bus for bus, _ in sorted(demand_by_bus.items(), key=lambda row: (-row[1], row[0]))[:limit]
+    ]
 
 
 def build_reference_capacity_map_artifact(
@@ -30,6 +32,37 @@ def build_reference_capacity_map_artifact(
     code: str = "1-MV-urban--0-sw",
     limit: int = 12,
 ) -> dict[str, Any]:
+    repo_root = Path(__file__).resolve().parents[4]
+    fixture_root = repo_root / "services" / "grid-data" / "fixtures" / "synthetic-pilot"
+    manifest = json.loads((fixture_root / "manifest.json").read_text(encoding="utf-8"))
+    policy_payload = json.loads(
+        (fixture_root / "activation-policy.json").read_text(encoding="utf-8")
+    )
+    evidence_manifest = {
+        "network_model": {
+            "origin": "SimBench",
+            "class": "open_reference",
+            "accepted_by_operator": False,
+        },
+        "topology_analysis": {
+            "origin": "configured Neo4j-compatible topology provider",
+            "class": "calculated_reference",
+            "accepted_by_operator": False,
+        },
+        "electrical_ceiling": {
+            "origin": "pandapower N-0/N-1 calculation",
+            "class": "calculated_reference",
+            "accepted_by_operator": False,
+        },
+        "operating_scenarios": {
+            "origin": manifest["provenance"]["source_id"],
+            "class": "synthetic",
+            "accepted_by_operator": False,
+        },
+    }
+    policy = ActivationPolicy(
+        **{key: value for key, value in policy_payload.items() if key != "schema_version"}
+    )
     model = import_simbench_model(code)
     projection = build_projection(model)
     topology = configured_topology_provider()
@@ -54,11 +87,13 @@ def build_reference_capacity_map_artifact(
         n0_mw = float(n0.values["firm_import_capacity_mw"])
         n1_mw = float(n1.values["firm_import_capacity_mw"])
         firm = min(n0_mw, n1_mw)
-        activation = calculate_activatable_capacity(
+        ensemble = calculate_activation_ensemble(
             result_id=f"simbench-ref-{index + 1:02d}",
             electrical_ceiling_mw=n0_mw,
             n1_capacity_mw=n1_mw,
+            policy=policy,
         )
+        activation = ensemble.pop("central_result")
         results.append(
             {
                 "result_id": f"simbench-ref-{index + 1:02d}",
@@ -74,6 +109,7 @@ def build_reference_capacity_map_artifact(
                 "activatable_capacity_mw": activation["activatable_capacity_mw"],
                 "additional_unlocked_mw": activation["additional_unlocked_mw"],
                 "activation": activation,
+                "ensemble": ensemble,
                 "binding_constraint": n1.values.get("binding_constraint"),
                 "binding_case": n1.values.get("binding_case"),
                 "validation_state": "reference_network_calculated",
@@ -104,10 +140,20 @@ def build_reference_capacity_map_artifact(
             "operator_approved_complete_set": False,
         },
         "strategy_assumptions": {
-            "hourly_profile": "8,760 deterministic synthetic operating hours bounded by the solved N-0 electrical ceiling.",
+            "hourly_profile": "27 deterministic synthetic operating scenarios (236,520 hours) bounded by the solved N-0 electrical ceiling.",
             "flexibility": "Customer-side managed reduction follows the versioned activation policy.",
             "battery": "State-of-charge, reserve, efficiency, power and energy are enforced; dispatch is representative planning, not real-time control.",
             "staging": "Stages are representative; reinforcement scope and delivery dates are not modelled.",
+        },
+        "pilot_fixture": {
+            "manifest": manifest,
+            "evidence": evidence_manifest,
+            "manifest_sha256": hashlib.sha256(
+                json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode()
+            ).hexdigest(),
+            "evidence_sha256": hashlib.sha256(
+                json.dumps(evidence_manifest, sort_keys=True, separators=(",", ":")).encode()
+            ).hexdigest(),
         },
         "results_sha256": hashlib.sha256(canonical.encode()).hexdigest(),
         "results": results,

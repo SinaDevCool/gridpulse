@@ -89,6 +89,21 @@ export function ReferenceCapacityInset({
               <dd>{selected.additional_unlocked_mw.toFixed(3)} MW</dd>
             </div>
             <div>
+              <dt>Scenario range (P10 / P50 / P90)</dt>
+              <dd>
+                {selected.ensemble.confidence.p10_mw.toFixed(2)} /{" "}
+                {selected.ensemble.confidence.p50_mw.toFixed(2)} /{" "}
+                {selected.ensemble.confidence.p90_mw.toFixed(2)} MW
+              </dd>
+            </div>
+            <div>
+              <dt>Operating evidence</dt>
+              <dd>
+                {selected.ensemble.scenario_count} scenarios ·{" "}
+                {selected.ensemble.hours_evaluated.toLocaleString()} h
+              </dd>
+            </div>
+            <div>
               <dt>N-0 calculated</dt>
               <dd>{selected.n0_capacity_mw.toFixed(3)} MW</dd>
             </div>
@@ -154,7 +169,12 @@ export function ReferenceCapacityInset({
           <details className="reference-capacity-evidence">
             <summary>Calculation evidence</summary>
             <p>{selected.activation.calculation_boundary}</p>
+            <p>{selected.ensemble.confidence.interpretation}</p>
+            <p>
+              <strong>Dominant uncertainty:</strong> {selected.ensemble.dominant_uncertainty}
+            </p>
             <code>{selected.activation.result_sha256}</code>
+            <code>{selected.ensemble.scenario_set_sha256}</code>
           </details>
         </aside>
       )}

@@ -106,6 +106,21 @@ export type ReferenceCapacityResult = {
     result_sha256: string;
     calculation_boundary: string;
   };
+  ensemble: {
+    schema_version: "gridpulse-activation-ensemble-v1";
+    scenario_count: number;
+    hours_evaluated: number;
+    electrical_ceiling_physics_verified: boolean;
+    scenario_specific_physics_replays: number;
+    confidence: {
+      p10_mw: number;
+      p50_mw: number;
+      p90_mw: number;
+      interpretation: string;
+    };
+    dominant_uncertainty: string;
+    scenario_set_sha256: string;
+  };
   binding_constraint: string | null;
   binding_case: string | null;
   validation_state: "reference_network_calculated";
@@ -133,6 +148,12 @@ export type ReferenceCapacityArtifact = {
     operator_approved_complete_set: boolean;
   };
   strategy_assumptions: Record<string, string>;
+  pilot_fixture: {
+    manifest: Record<string, unknown>;
+    evidence: Record<string, unknown>;
+    manifest_sha256: string;
+    evidence_sha256: string;
+  };
   results_sha256: string;
   results: ReferenceCapacityResult[];
   permitted_interpretation: string;
