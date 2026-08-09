@@ -5,7 +5,7 @@ from enum import Enum
 from typing import Any, Literal
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class JobStatus(str, Enum):
@@ -150,6 +150,12 @@ class GraphGuidedStudyRequest(BaseModel):
     solver_budget: int = Field(ge=1, le=10_000)
     validation_mode: Literal["qualification", "promoted"] = "qualification"
     reduction_policy: dict[str, Any] | None = None
+
+    @model_validator(mode="after")
+    def promoted_studies_require_workspace(self) -> "GraphGuidedStudyRequest":
+        if self.validation_mode == "promoted" and self.workspace_id is None:
+            raise ValueError("Promoted graph studies require an authorised workspace_id.")
+        return self
 
 
 class UserIdentity(BaseModel):

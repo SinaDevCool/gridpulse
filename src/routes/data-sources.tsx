@@ -544,18 +544,20 @@ function FinderDataSourcesPage() {
                 <Calculator aria-hidden="true" />
                 <h3>Recommendation method</h3>
                 <p>
-                  The leading pathway balances demand served, residual energy, restricted hours and
-                  activation capability. Synthetic calculations never alter the public
-                  evidence-based candidate rank.
+                  A representative pathway is recommended only when it meets the declared minimum
+                  and has the inputs required for analysis. When all options fail, GridPulse shows
+                  the strongest investigation hypothesis without calling it a recommendation.
+                  Synthetic calculations never alter the public evidence-based candidate rank.
                 </p>
               </article>
               <article>
                 <Database aria-hidden="true" />
                 <h3>Commercial sensitivity</h3>
                 <p>
-                  Customer-declared value per energized MW-month, months accelerated, flexibility
-                  cost and battery cost create a low/base/high representative comparison. It is not
-                  an investment return, operator cost or delivery date.
+                  GridPulse supplies no default business case. A user must explicitly enter value,
+                  acceleration, flexibility and battery-cost assumptions before a sensitivity is
+                  calculated. Failed or stale technical strategies cannot support a positive value
+                  result.
                 </p>
               </article>
               <article>
@@ -566,6 +568,43 @@ function FinderDataSourcesPage() {
                   reconciled and reviewed operator model is required before results become
                   node-specific, and written confirmation still controls connection terms.
                 </p>
+              </article>
+            </div>
+          </section>
+
+          <section className="methodology-boundary" aria-labelledby="graph-method-title">
+            <div>
+              <p className="context-label">Private Topology Intelligence</p>
+              <h2 id="graph-method-title">Neo4j organises pathways and study evidence—not MW.</h2>
+              <p>
+                Inside an authorised operator workspace, GridPulse projects a versioned electrical
+                model into Neo4j to inspect connectivity, alternative pathways, bridge assets,
+                shared upstream dependencies and scenario relevance. The graph proposes and
+                explains the study space; a verified electrical solver remains authoritative.
+              </p>
+            </div>
+            <div className="methodology-boundary-grid">
+              <article>
+                <h3>Graph-derived evidence supports</h3>
+                <ul>
+                  <li>Reviewed candidate-to-model-bus reconciliation</li>
+                  <li>Bounded alternative topology pathways</li>
+                  <li>Bridge, articulation and radial-exposure investigation</li>
+                  <li>Mandatory-contingency-preserving scenario prioritisation</li>
+                  <li>Shared upstream exposure across a candidate portfolio</li>
+                  <li>Version lineage, invalidation and stale-result detection</li>
+                </ul>
+              </article>
+              <article>
+                <h3>Graph-derived evidence does not establish</h3>
+                <ul>
+                  <li>Available, reserved or connectable capacity</li>
+                  <li>Connection probability or queue position</li>
+                  <li>Voltage, thermal or contingency feasibility without physics</li>
+                  <li>Operator-approved switching or restoration actions</li>
+                  <li>Connection cost, offer or delivery date</li>
+                  <li>Operator confirmation without the governed review gate</li>
+                </ul>
               </article>
             </div>
           </section>

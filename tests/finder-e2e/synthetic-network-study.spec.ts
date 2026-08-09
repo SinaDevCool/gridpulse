@@ -23,20 +23,22 @@ test("a selected Power Finder candidate opens the integrated Activation Study", 
   await expect(candidates.first()).toBeVisible({ timeout: 15_000 });
   await candidates.first().click();
   await page.getByRole("button", { name: "Explore activation options" }).click();
-  const study = page.getByRole("complementary", { name: "Activation Study" });
+  const study = page.getByRole("dialog");
   await expect(study).toBeVisible();
   await expect(study.getByText(/Representative benchmark.*not calculated capacity/i)).toBeVisible();
   await expect(study.getByText("Activation decision overview")).toBeVisible();
-  await study.getByRole("button", { name: "Hourly" }).click();
+  await study.getByRole("tab", { name: "Strategies" }).click();
+  await study.getByRole("tab", { name: "Operating envelope" }).click();
   await expect(
     study.getByRole("img", { name: /Baseline demand, connection limit/i }),
   ).toBeVisible();
-  await study.getByRole("button", { name: "Strategies" }).click();
+  await study.getByRole("tab", { name: "Compare" }).click();
   await expect(study.getByRole("heading", { name: "Staged connection" })).toBeVisible();
-  await expect(study.getByText("Leading representative pathway")).toBeVisible();
-  await study.getByRole("button", { name: "Value" }).click();
+  await expect(study.getByText(/Leading representative pathway|No viable representative pathway/)).toBeVisible();
+  await study.getByRole("tab", { name: "Business sensitivity" }).click();
   await expect(study.getByText("Representative commercial comparison")).toBeVisible();
-  await study.getByRole("button", { name: "Evidence" }).click();
+  await expect(study.getByRole("button", { name: "Add business assumptions" })).toBeVisible();
+  await study.getByRole("tab", { name: "Evidence" }).click();
   await expect(study.getByText("No node-linked model")).toBeVisible();
   const result = await new AxeBuilder({ page })
     .include(".activation-study-panel")

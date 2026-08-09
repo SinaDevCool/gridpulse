@@ -19,7 +19,7 @@ import { AppShell } from "@/components/product/AppShell";
 import { PowerFinderMap } from "@/components/product/PowerFinderMap";
 import type { ActivationStudyTab } from "@/components/product/ActivationStudyPanel";
 import type { VisibleLayerCounts } from "@/components/product/power-finder-map-data";
-import { productCapabilities } from "@/config/product-mode";
+import { integratedActivationStudyEnabled, productCapabilities } from "@/config/product-mode";
 import {
   featureSummary,
   pointCoordinates,
@@ -557,7 +557,8 @@ function PowerFinderPage() {
     [comparedCandidates, project],
   );
   const coordinates = selected ? pointCoordinates(selected) : null;
-  const activationOpen = search.study === "activation" && Boolean(selectedOpportunity);
+  const activationOpen =
+    integratedActivationStudyEnabled && search.study === "activation" && Boolean(selectedOpportunity);
   const activationTab: ActivationStudyTab =
     search.studyTab === "geographic" ? "overview" : (search.studyTab ?? "overview");
   const startPrivateAssessment = async (studyInput?: {

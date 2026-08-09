@@ -12,9 +12,12 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import {
+  acceptCandidateModelBusLink,
   graphSafetyBoundary,
+  loadCandidateModelBusLinks,
   loadPrivateGraphWorkspace,
   privateGraphStateLabels,
+  type CandidateModelBusLink,
   type PrivateGraphWorkspace,
 } from "./private-graph-workspace";
 
@@ -101,6 +104,65 @@ function AuditTimeline({ rows }: { rows: Array<Record<string, unknown>> }) {
   );
 }
 
+function CandidateModelReconciliation({ siteId }: { siteId: string }) {
+  const [links, setLinks] = useState<CandidateModelBusLink[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const refresh = () =>
+    loadCandidateModelBusLinks(siteId)
+      .then(setLinks)
+      .catch((reason) => setError(reason instanceof Error ? reason.message : "Reconciliation unavailable"));
+  useEffect(() => void refresh(), [siteId]);
+  const accepted = links.find((link) => link.match_status === "accepted");
+  const suggestions = links.filter((link) => link.match_status === "suggested" || link.match_status === "under_review");
+  return (
+    <section className="candidate-model-reconciliation" aria-labelledby="candidate-model-link-title">
+      <header>
+        <div>
+          <span className="eyebrow">Candidate reconciliation</span>
+          <h4 id="candidate-model-link-title">Public candidate to operator-model bus</h4>
+        </div>
+        <strong>{accepted ? "Accepted" : suggestions.length ? "Review required" : "Unmatched"}</strong>
+      </header>
+      <p>
+        Geographic proximity can suggest a bus, but a reviewed link is required before any
+        node-specific graph or physics study can be used.
+      </p>
+      {error && <p role="alert">{error}</p>}
+      {accepted && (
+        <dl className="private-graph-facts">
+          <div><dt>Model</dt><dd>{accepted.model_id} · {accepted.model_version}</dd></div>
+          <div><dt>Accepted bus</dt><dd>{accepted.operator_bus_id}</dd></div>
+          <div><dt>Method</dt><dd>{accepted.match_method.replaceAll("_", " ")}</dd></div>
+          <div><dt>Reviewed</dt><dd>{date(accepted.reviewed_at)}</dd></div>
+        </dl>
+      )}
+      {!accepted && suggestions.map((link) => (
+        <article className="candidate-model-suggestion" key={link.id}>
+          <span>
+            <b>{link.operator_bus_id}</b>
+            <small>{link.model_id} · {link.model_version} · {link.distance_m == null ? "distance unavailable" : `${Math.round(link.distance_m)} m`}</small>
+          </span>
+          <button
+            type="button"
+            className="secondary-button"
+            disabled={busy === link.id}
+            onClick={() => {
+              setBusy(link.id);
+              void acceptCandidateModelBusLink(link.id, "Accepted in candidate reconciliation workbench")
+                .then(refresh)
+                .catch((reason) => setError(reason instanceof Error ? reason.message : "Could not accept link"))
+                .finally(() => setBusy(null));
+            }}
+          >
+            {busy === link.id ? "Accepting…" : "Accept reviewed link"}
+          </button>
+        </article>
+      ))}
+    </section>
+  );
+}
+
 export function PrivateGraphIntelligence({ siteId }: { siteId: string }) {
   const [graph, setGraph] = useState<PrivateGraphWorkspace | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -156,10 +218,17 @@ export function PrivateGraphIntelligence({ siteId }: { siteId: string }) {
         <p>Loading graph workspace…</p>
       </section>
     );
-  if (!graph.model) return <EmptyGraphState graph={graph} />;
+  if (!graph.model)
+    return (
+      <>
+        <CandidateModelReconciliation siteId={siteId} />
+        <EmptyGraphState graph={graph} />
+      </>
+    );
 
   return (
     <section className="private-graph" aria-labelledby="private-graph-title">
+      <CandidateModelReconciliation siteId={siteId} />
       <header className="private-graph-header">
         <div>
           <span className="eyebrow">Private topology intelligence</span>
@@ -186,13 +255,14 @@ export function PrivateGraphIntelligence({ siteId }: { siteId: string }) {
         </div>
       )}
 
-      <nav className="private-graph-tabs" aria-label="Topology intelligence views">
+      <nav className="private-graph-tabs" aria-label="Topology intelligence views" role="tablist">
         {(["overview", "pathways", "scenarios", "evidence", "audit"] as Tab[]).map((item) => (
           <button
             type="button"
             key={item}
             className={tab === item ? "active" : ""}
-            aria-current={tab === item ? "page" : undefined}
+            role="tab"
+            aria-selected={tab === item}
             onClick={() => setTab(item)}
           >
             {item[0].toUpperCase() + item.slice(1)}

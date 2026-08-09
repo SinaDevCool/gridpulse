@@ -88,7 +88,33 @@ describe("Activation Study orchestration", () => {
       registeredStudy: null,
     });
     const value = calculateRepresentativeCommercialValue(context);
-    expect(value.grossAccelerationValueEur).toBeGreaterThan(0);
+    expect(value.grossAccelerationValueEur).toBe(0);
+    expect(value.eligible).toBe(false);
     expect(value.boundary).toMatch(/not an investment return/i);
+  });
+
+  it("does not recommend a pathway when every alternative fails the declared minimum", () => {
+    const project = {
+      ...defaultFinderProject,
+      importMw: 20,
+      ultimateImportMw: 20,
+      minimumFirmMw: 20,
+      flexibleLoadMw: 0,
+      batteryPowerMw: 0,
+      batteryEnergyMwh: 0,
+    };
+    const context = createActivationStudyContext({ project, candidate, registeredStudy: null });
+    expect(context.recommendedOption).toBeNull();
+    expect(context.hasViableOption).toBe(false);
+    expect(context.bestInvestigativeHypothesis).not.toBeNull();
+  });
+
+  it("preserves the full requested-firm entitlement across the representative profile", () => {
+    const profile = buildRepresentativeProfile({
+      ...defaultFinderProject,
+      importMw: 20,
+      ultimateImportMw: 20,
+    });
+    expect(profile.every((point) => point.connectionLimitFactor === 1)).toBe(true);
   });
 });

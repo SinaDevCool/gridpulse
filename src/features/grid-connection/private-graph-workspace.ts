@@ -53,6 +53,25 @@ export type PrivateGraphWorkspace = {
   capacity_claim: false;
 };
 
+export type CandidateModelBusLink = {
+  id: string;
+  site_id: string;
+  workspace_id: string;
+  public_candidate_id: string;
+  public_node_id: string | null;
+  model_id: string;
+  model_version: string;
+  operator_bus_id: string;
+  match_method: "manual" | "identifier" | "assisted_geographic" | "operator_supplied";
+  match_status: "suggested" | "under_review" | "accepted" | "rejected" | "superseded";
+  distance_m: number | null;
+  voltage_match: boolean | null;
+  operator_match: boolean | null;
+  evidence_reference: string | null;
+  review_note: string | null;
+  reviewed_at: string | null;
+};
+
 const object = (value: unknown): Record<string, unknown> =>
   value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
@@ -145,6 +164,25 @@ export async function loadPrivateGraphWorkspace(siteId: string) {
   });
   if (error) throw error;
   return parsePrivateGraphWorkspace(data);
+}
+
+export async function loadCandidateModelBusLinks(siteId: string) {
+  const { data, error } = await supabase
+    .from("grid_candidate_model_bus_links")
+    .select("id,site_id,workspace_id,public_candidate_id,public_node_id,model_id,model_version,operator_bus_id,match_method,match_status,distance_m,voltage_match,operator_match,evidence_reference,review_note,reviewed_at")
+    .eq("site_id", siteId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as CandidateModelBusLink[];
+}
+
+export async function acceptCandidateModelBusLink(linkId: string, reviewNote: string) {
+  const { data, error } = await supabase.rpc("accept_candidate_model_bus_link", {
+    p_link_id: linkId,
+    p_review_note: reviewNote || null,
+  });
+  if (error) throw error;
+  return data as CandidateModelBusLink;
 }
 
 export const privateGraphStateLabels: Record<PrivateGraphState, string> = {

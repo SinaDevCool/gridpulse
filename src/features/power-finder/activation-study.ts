@@ -15,6 +15,7 @@ import type { FinderProject } from "./finder-project";
 import type { ReleaseBNetworkResult } from "./release-b-network";
 import { calculateReleaseBNetwork } from "./release-b-network";
 import type { ValidationClass } from "./validation-class";
+import { evidenceStateForMode, type ActivationEvidenceState } from "./activation-evidence";
 
 export type ActivationStudyMode =
   | "synthetic_demonstration"
@@ -36,6 +37,9 @@ export type ActivationStudyContext = {
   recommendedOption: DecisionMatrixRow | null;
   permittedClaims: string[];
   prohibitedClaims: string[];
+  evidenceState: ActivationEvidenceState;
+  hasViableOption: boolean;
+  bestInvestigativeHypothesis: DecisionMatrixRow | null;
 };
 
 const operatorClasses = new Set<ActivationStudyMode>([
@@ -62,9 +66,10 @@ export function buildRepresentativeProfile(project: FinderProject, hours = 8760)
     exportMw: project.exportMw,
     flexibleLoadMw: project.flexibleLoadMw,
     onsiteGenerationMw: project.onsiteGenerationMw,
-    connectionLimitFactor:
-      (0.94 + 0.04 * Math.sin((hour / 8760) * Math.PI * 2)) *
-      (hour % 24 >= 17 && hour % 24 < 21 ? 0.86 : 1),
+    // Demand shape is representative. Connection-option builders supply the
+    // firm and conditional entitlement; a firm entitlement must not be
+    // silently derated in every interval.
+    connectionLimitFactor: 1,
   }));
 }
 
@@ -118,6 +123,7 @@ export function createActivationStudyContext(input: {
   );
   const decisionMatrix = buildDecisionMatrix(options);
   const recommendedOption = recommendActivationOption(decisionMatrix);
+  const bestInvestigativeHypothesis = rankInvestigativeHypotheses(decisionMatrix)[0] ?? null;
   return {
     mode,
     validationClass: mode,
@@ -140,6 +146,9 @@ export function createActivationStudyContext(input: {
       "A benchmark result is not available capacity at the mapped node.",
       "No result is a connection offer, reservation, cost or delivery date.",
     ],
+    evidenceState: evidenceStateForMode(mode),
+    hasViableOption: Boolean(recommendedOption),
+    bestInvestigativeHypothesis,
   };
 }
 
@@ -154,9 +163,17 @@ export function activationStatusLabel(status: DecisionMatrixRow["operationalStat
 }
 
 export function recommendActivationOption(options: DecisionMatrixRow[]) {
+  return rankInvestigativeHypotheses(options).find(
+    (option) =>
+      option.analysis &&
+      option.operationalStatus !== "fails_minimum_viable_capacity" &&
+      option.operationalStatus !== "insufficient_evidence",
+  ) ?? null;
+}
+
+export function rankInvestigativeHypotheses(options: DecisionMatrixRow[]) {
   const candidates = options.filter((option) => option.kind !== "requested_firm");
-  return (
-    [...candidates].sort((left, right) => {
+  return [...candidates].sort((left, right) => {
       const score = (option: DecisionMatrixRow) => {
         const analysis = option.analysis;
         const viable = option.operationalStatus === "fails_minimum_viable_capacity" ? -1000 : 0;
@@ -168,8 +185,7 @@ export function recommendActivationOption(options: DecisionMatrixRow[]) {
         return viable + served * 2 - residual * 0.1 - restriction * 0.02 + activationBonus;
       };
       return score(right) - score(left);
-    })[0] ?? null
-  );
+    });
 }
 
 export type RepresentativeCommercialAssumptions = {
@@ -180,10 +196,10 @@ export type RepresentativeCommercialAssumptions = {
 };
 
 export const defaultRepresentativeCommercialAssumptions: RepresentativeCommercialAssumptions = {
-  valuePerEnergizedMwMonthEur: 50_000,
-  monthsAccelerated: 12,
-  flexibilityEnablementCostEur: 250_000,
-  batteryCapitalCostEurMwh: 300_000,
+  valuePerEnergizedMwMonthEur: 0,
+  monthsAccelerated: 0,
+  flexibilityEnablementCostEur: 0,
+  batteryCapitalCostEurMwh: 0,
 };
 
 export function calculateRepresentativeCommercialValue(
@@ -192,17 +208,23 @@ export function calculateRepresentativeCommercialValue(
   selectedOption: DecisionMatrixRow | null = context.recommendedOption,
 ) {
   const option = selectedOption;
-  const earlierMw = option ? Math.max(0, option.initialImportMw) : 0;
+  const eligible = Boolean(
+    option &&
+      option.analysis &&
+      option.operationalStatus !== "fails_minimum_viable_capacity" &&
+      option.operationalStatus !== "insufficient_evidence",
+  );
+  const earlierMw = eligible && option ? Math.max(0, option.initialImportMw) : 0;
   const grossAccelerationValueEur =
     earlierMw * assumptions.monthsAccelerated * assumptions.valuePerEnergizedMwMonthEur;
   const batteryCostEur =
-    option?.kind === "storage_supported"
+    eligible && option?.kind === "storage_supported"
       ? context.project.batteryEnergyMwh * assumptions.batteryCapitalCostEurMwh
       : 0;
-  const flexibilityCostEur = option?.kind.includes("flexible")
+  const flexibilityCostEur = eligible && option?.kind.includes("flexible")
     ? assumptions.flexibilityEnablementCostEur
     : 0;
-  const operatingExposureEur = option?.annualExposureEur ?? 0;
+  const operatingExposureEur = eligible ? (option?.annualExposureEur ?? 0) : 0;
   const netIndicativeValueEur =
     grossAccelerationValueEur - batteryCostEur - flexibilityCostEur - operatingExposureEur;
   return {
@@ -215,6 +237,7 @@ export function calculateRepresentativeCommercialValue(
     lowIndicativeValueEur: netIndicativeValueEur * 0.5,
     highIndicativeValueEur: netIndicativeValueEur * 1.5,
     assumptions,
+    eligible,
     boundary:
       "Representative customer-declared sensitivity only; it is not an investment return, operator offer, cost estimate or delivery commitment.",
   };

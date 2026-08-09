@@ -107,7 +107,10 @@ export function buildConnectionOptions(input: ConnectionOptionInput): Connection
     initialImportMw,
     eventualImportMw,
     evidenceStatus,
-    operationalStatus: analysis?.classification ?? "insufficient_evidence",
+    operationalStatus:
+      initialImportMw < input.minimumViableImportMw
+        ? "fails_minimum_viable_capacity"
+        : (analysis?.classification ?? "insufficient_evidence"),
     analysis,
     customerCommitments,
     operatorQuestions: questions,

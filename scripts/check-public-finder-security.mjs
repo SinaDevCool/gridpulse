@@ -134,6 +134,7 @@ const graphTables = [
   "grid_graph_projection_deltas",
   "grid_graph_quality_runs",
   "grid_graph_workspace_policies",
+  "grid_candidate_model_bus_links",
 ];
 const release2Statuses = {};
 for (const table of release2Tables) {
@@ -167,6 +168,20 @@ const privateGraphUi = await fetch(`${supabaseUrl}/rest/v1/rpc/private_graph_wor
 if (![401, 403].includes(privateGraphUi.status)) {
   throw new Error(`Anonymous private graph UI access returned ${privateGraphUi.status}.`);
 }
+const acceptCandidateLink = await fetch(
+  `${supabaseUrl}/rest/v1/rpc/accept_candidate_model_bus_link`,
+  {
+    method: "POST",
+    headers: { ...headers, "content-type": "application/json" },
+    body: JSON.stringify({
+      p_link_id: "00000000-0000-0000-0000-000000000000",
+      p_review_note: "anonymous security probe",
+    }),
+  },
+);
+if (![401, 403, 404].includes(acceptCandidateLink.status)) {
+  throw new Error(`Anonymous candidate-model reconciliation returned ${acceptCandidateLink.status}.`);
+}
 
 const invalid = await fetch(
   `${baseUrl}/api/power-finder/viewport?west=-20&south=0&east=20&north=60`,
@@ -183,6 +198,7 @@ console.log(
     release3_table_statuses: release3Statuses,
     graph_table_statuses: graphTableStatuses,
     private_graph_ui_status: privateGraphUi.status,
+    candidate_model_reconciliation_status: acceptCandidateLink.status,
     invalid_viewport_status: invalid.status,
     scenario_status: scenarioResponse.status,
   }),

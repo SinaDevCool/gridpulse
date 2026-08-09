@@ -7,7 +7,7 @@ import {
   ShieldCheck,
   Zap,
 } from "lucide-react";
-import { useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import {
   activationStatusLabel,
   activationStudySnapshot,
@@ -21,6 +21,7 @@ import type { C1StudyPayload } from "@/features/power-finder/c1-study";
 import type { CandidateOpportunity } from "@/features/power-finder/candidate-intelligence";
 import type { FinderProject } from "@/features/power-finder/finder-project";
 import { validationClassLabel } from "@/features/power-finder/validation-class";
+import { activationEvidenceLabels, type ActivationEvidenceOrigin } from "@/features/power-finder/activation-evidence";
 
 export type ActivationStudyTab =
   | "overview"
@@ -44,6 +45,11 @@ type Props = {
 };
 
 type SelectedOption = NonNullable<ActivationStudyContext["recommendedOption"]>;
+type StrategyAnalysisView = "comparison" | "constraint" | "hourly" | "value";
+
+function EvidenceTag({ origin }: { origin: ActivationEvidenceOrigin }) {
+  return <small className={`activation-evidence-tag origin-${origin}`}>{activationEvidenceLabels[origin]}</small>;
+}
 
 export function StudyEvidenceBadge({ context }: { context: ActivationStudyContext }) {
   return (
@@ -56,6 +62,7 @@ export function StudyEvidenceBadge({ context }: { context: ActivationStudyContex
 
 function OverviewView({ context }: { context: ActivationStudyContext }) {
   const option = context.recommendedOption;
+  const displayed = option ?? context.bestInvestigativeHypothesis;
   return (
     <div className="activation-view">
       <section className="activation-callout">
@@ -64,8 +71,10 @@ function OverviewView({ context }: { context: ActivationStudyContext }) {
           <h3>Activation decision overview</h3>
           <p>
             {option
-              ? `Investigate ${option.title.toLowerCase()} as the leading representative pathway. The visible map remains public geographic evidence, not available capacity.`
-              : "Complete the project requirement to compare representative activation pathways."}
+              ? `Investigate ${option.title.toLowerCase()} as a viable representative pathway. The visible map remains public geographic evidence, not available capacity.`
+              : displayed
+                ? `No representative pathway meets the declared minimum. ${displayed.title} is the strongest investigation hypothesis, not a recommendation.`
+                : "Complete the project requirement to compare representative activation pathways."}
           </p>
         </div>
       </section>
@@ -73,47 +82,55 @@ function OverviewView({ context }: { context: ActivationStudyContext }) {
         <div>
           <dt>Candidate</dt>
           <dd>{context.candidate.nodeName}</dd>
+          <EvidenceTag origin="public_mapped" />
         </div>
         <div>
           <dt>Requested / minimum viable</dt>
           <dd>
             {context.project.importMw} / {context.project.minimumFirmMw} MW
           </dd>
+          <EvidenceTag origin="customer_declared" />
         </div>
         <div>
-          <dt>Leading strategy</dt>
-          <dd>{option?.title ?? "Not established"}</dd>
+          <dt>{option ? "Viable representative strategy" : "Decision status"}</dt>
+          <dd>{option?.title ?? "No pathway meets the minimum"}</dd>
+          <EvidenceTag origin="synthetic_assumption" />
         </div>
         <div>
           <dt>Initial / eventual benchmark</dt>
           <dd>
-            {option
-              ? `${option.initialImportMw.toFixed(1)} / ${option.eventualImportMw.toFixed(1)} MW`
+            {displayed
+              ? `${displayed.initialImportMw.toFixed(1)} / ${displayed.eventualImportMw.toFixed(1)} MW`
               : "—"}
           </dd>
+          <EvidenceTag origin="synthetic_assumption" />
         </div>
         <div>
           <dt>Restricted hours</dt>
           <dd>
-            {option?.analysis ? `${option.analysis.restrictedHours} h/year` : "Needs profile"}
+            {displayed?.analysis ? `${displayed.analysis.restrictedHours} h/year` : "Needs profile"}
           </dd>
+          <EvidenceTag origin="synthetic_assumption" />
         </div>
         <div>
           <dt>Residual energy</dt>
-          <dd>{option?.analysis ? `${option.analysis.residualUnservedMwh} MWh` : "—"}</dd>
+          <dd>{displayed?.analysis ? `${displayed.analysis.residualUnservedMwh} MWh` : "—"}</dd>
+          <EvidenceTag origin="synthetic_assumption" />
         </div>
         <div>
           <dt>Public investigation priority</dt>
           <dd>{context.candidate.screeningRank}/100</dd>
+          <EvidenceTag origin="public_mapped" />
         </div>
         <div>
           <dt>Likely operator</dt>
           <dd>{context.candidate.operator ?? "Requires confirmation"}</dd>
+          <EvidenceTag origin="public_mapped" />
         </div>
       </dl>
       <section className="activation-next-action">
         <strong>Recommended next action</strong>
-        <p>{option?.nextAction ?? "Complete the declared project requirement."}</p>
+        <p>{option?.nextAction ?? displayed?.nextAction ?? "Complete the declared project requirement."}</p>
       </section>
     </div>
   );
@@ -207,9 +224,13 @@ function HourlyView({
 }) {
   const analysis = option?.analysis;
   const timeline = analysis?.timeline ?? [];
-  const sample = timeline
-    .filter((_, index) => index % Math.max(1, Math.floor(timeline.length / 168)) === 0)
-    .slice(0, 168);
+  const criticalIndex = timeline.reduce(
+    (best, point, index) =>
+      point.residualShortfallMw > (timeline[best]?.residualShortfallMw ?? -1) ? index : best,
+    0,
+  );
+  const criticalStart = Math.max(0, Math.min(timeline.length - 168, criticalIndex - 84));
+  const sample = timeline.slice(criticalStart, criticalStart + 168);
   const maximum = Math.max(
     1,
     ...sample.map((point) => Math.max(point.baselineImportMw, point.connectionLimitMw)),
@@ -288,7 +309,7 @@ function HourlyView({
           <section className="activation-hourly-chart">
             <header>
               <strong>Demand and connection envelope</strong>
-              <span>168 sampled points from the annual result</span>
+              <span>Contiguous critical week from the annual result</span>
             </header>
             <svg
               viewBox="0 0 840 230"
@@ -377,12 +398,21 @@ function OptionsView({
           </p>
         </div>
       </section>
-      {recommended && (
+      {recommended ? (
         <section className="activation-recommendation">
           <span>Leading representative pathway</span>
           <h3>{recommended.title}</h3>
           <p>
             {activationStatusLabel(recommended.operationalStatus)}. {recommended.nextAction}
+          </p>
+        </section>
+      ) : (
+        <section className="activation-recommendation is-blocked" role="status">
+          <span>No viable representative pathway</span>
+          <h3>The declared minimum is not met</h3>
+          <p>
+            Review the minimum operable load, add a real flexibility profile, or obtain operator
+            evidence before selecting a strategy.
           </p>
         </section>
       )}
@@ -457,11 +487,15 @@ function CommercialView({
   option,
   assumptions,
   onChange,
+  enabled,
+  onEnable,
 }: {
   context: ActivationStudyContext;
   option: SelectedOption | null;
   assumptions: RepresentativeCommercialAssumptions;
   onChange: (next: RepresentativeCommercialAssumptions) => void;
+  enabled: boolean;
+  onEnable: () => void;
 }) {
   const value = calculateRepresentativeCommercialValue(context, assumptions, option);
   const update = (key: keyof RepresentativeCommercialAssumptions, raw: string) =>
@@ -478,11 +512,33 @@ function CommercialView({
           </p>
         </div>
       </section>
+      {!enabled && (
+        <section className="activation-commercial-empty">
+          <h3>Add your business assumptions</h3>
+          <p>
+            GridPulse does not supply default revenue, acceleration, flexibility, or battery-cost
+            assumptions. Enter project-owned values to create a sensitivity.
+          </p>
+          <button type="button" className="primary-button" onClick={onEnable}>
+            Add business assumptions
+          </button>
+        </section>
+      )}
+      {enabled && (
+        <>
+      {!value.eligible && (
+        <section className="activation-recommendation is-blocked" role="alert">
+          <h3>Business sensitivity unavailable</h3>
+          <p>The selected strategy does not meet the declared minimum or lacks the required technical analysis.</p>
+        </section>
+      )}
       <form className="activation-commercial-form" onSubmit={(event) => event.preventDefault()}>
         <label>
           Value per energized MW/month (€)
           <input
             type="number"
+            name="value_per_energized_mw_month_eur"
+            inputMode="decimal"
             min="0"
             value={assumptions.valuePerEnergizedMwMonthEur}
             onChange={(event) => update("valuePerEnergizedMwMonthEur", event.target.value)}
@@ -492,6 +548,8 @@ function CommercialView({
           Representative months accelerated
           <input
             type="number"
+            name="months_accelerated"
+            inputMode="numeric"
             min="0"
             value={assumptions.monthsAccelerated}
             onChange={(event) => update("monthsAccelerated", event.target.value)}
@@ -501,6 +559,8 @@ function CommercialView({
           Flexibility enablement cost (€)
           <input
             type="number"
+            name="flexibility_enablement_cost_eur"
+            inputMode="decimal"
             min="0"
             value={assumptions.flexibilityEnablementCostEur}
             onChange={(event) => update("flexibilityEnablementCostEur", event.target.value)}
@@ -510,15 +570,19 @@ function CommercialView({
           Battery capital cost (€/MWh)
           <input
             type="number"
+            name="battery_capital_cost_eur_mwh"
+            inputMode="decimal"
             min="0"
             value={assumptions.batteryCapitalCostEurMwh}
             onChange={(event) => update("batteryCapitalCostEurMwh", event.target.value)}
           />
         </label>
       </form>
+      {value.eligible && (
+        <>
       <dl className="activation-facts activation-commercial-results">
         <div>
-          <dt>MW potentially energized earlier</dt>
+          <dt>Initial MW included in this sensitivity</dt>
           <dd>{value.earlierMw.toFixed(1)} MW</dd>
         </div>
         <div>
@@ -549,6 +613,10 @@ function CommercialView({
         </div>
       </dl>
       <p className="activation-boundary">{value.boundary}</p>
+        </>
+      )}
+        </>
+      )}
     </div>
   );
 }
@@ -626,7 +694,74 @@ function EvidenceView({ context }: { context: ActivationStudyContext }) {
   );
 }
 
+function StrategiesWorkspace({
+  context,
+  selectedKind,
+  onSelect,
+  initialView,
+  commercialAssumptions,
+  onCommercialChange,
+  commercialEnabled,
+  onCommercialEnable,
+}: {
+  context: ActivationStudyContext;
+  selectedKind: string | null;
+  onSelect: (kind: string) => void;
+  initialView: StrategyAnalysisView;
+  commercialAssumptions: RepresentativeCommercialAssumptions;
+  onCommercialChange: (value: RepresentativeCommercialAssumptions) => void;
+  commercialEnabled: boolean;
+  onCommercialEnable: () => void;
+}) {
+  const [view, setView] = useState<StrategyAnalysisView>(initialView);
+  const selected =
+    context.decisionMatrix.find((option) => option.kind === selectedKind) ??
+    context.recommendedOption ??
+    context.bestInvestigativeHypothesis;
+  return (
+    <div className="activation-strategy-workspace">
+      <nav className="activation-analysis-tabs" aria-label="Strategy analysis views" role="tablist">
+        {(
+          [
+            ["comparison", "Compare"],
+            ["constraint", "Constraint"],
+            ["hourly", "Operating envelope"],
+            ["value", "Business sensitivity"],
+          ] as Array<[StrategyAnalysisView, string]>
+        ).map(([id, label]) => (
+          <button
+            type="button"
+            key={id}
+            className={view === id ? "active" : ""}
+            role="tab"
+            aria-selected={view === id}
+            onClick={() => setView(id)}
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
+      {view === "comparison" && (
+        <OptionsView context={context} selectedKind={selected?.kind ?? null} onSelect={onSelect} />
+      )}
+      {view === "constraint" && <TopologyView context={context} />}
+      {view === "hourly" && <HourlyView context={context} option={selected} />}
+      {view === "value" && (
+        <CommercialView
+          context={context}
+          option={selected}
+          assumptions={commercialAssumptions}
+          onChange={onCommercialChange}
+          enabled={commercialEnabled}
+          onEnable={onCommercialEnable}
+        />
+      )}
+    </div>
+  );
+}
+
 export function ActivationStudyPanel(props: Props) {
+  const panelRef = useRef<HTMLElement>(null);
   const context = useMemo(
     () =>
       createActivationStudyContext({
@@ -640,15 +775,18 @@ export function ActivationStudyPanel(props: Props) {
   const [commercialAssumptions, setCommercialAssumptions] = useState(
     defaultRepresentativeCommercialAssumptions,
   );
+  const [commercialEnabled, setCommercialEnabled] = useState(false);
+  useEffect(() => {
+    panelRef.current?.focus();
+  }, []);
   const selectedOption =
     context.decisionMatrix.find((option) => option.kind === selectedKind) ??
-    context.recommendedOption;
+    context.recommendedOption ??
+    context.bestInvestigativeHypothesis;
   const downloadBrief = () => {
-    const value = calculateRepresentativeCommercialValue(
-      context,
-      commercialAssumptions,
-      selectedOption,
-    );
+    const value = commercialEnabled
+      ? calculateRepresentativeCommercialValue(context, commercialAssumptions, selectedOption)
+      : null;
     const brief = {
       title: "GridPulse representative activation brief",
       candidate: {
@@ -669,8 +807,8 @@ export function ActivationStudyPanel(props: Props) {
         : null,
       commercialSensitivity: value,
       snapshot: activationStudySnapshot(context, {
-        selectedOptionKind: selectedOption?.kind ?? null,
-        commercialAssumptions,
+        selectedOptionKind: selectedKind ?? context.recommendedOption?.kind ?? null,
+        commercialAssumptions: commercialEnabled ? commercialAssumptions : null,
       }),
     };
     const url = URL.createObjectURL(
@@ -684,21 +822,39 @@ export function ActivationStudyPanel(props: Props) {
   };
   const tabs: Array<{ id: ActivationStudyTab; label: string }> = [
     { id: "overview", label: "Overview" },
-    { id: "topology", label: "Constraint" },
-    { id: "hourly", label: "Hourly" },
     { id: "options", label: "Strategies" },
-    { id: "commercial", label: "Value" },
     { id: "evidence", label: "Evidence" },
   ];
+  const primaryTab = ["topology", "hourly", "commercial", "options"].includes(props.tab)
+    ? "options"
+    : props.tab;
+  const initialStrategyView: StrategyAnalysisView =
+    props.tab === "topology"
+      ? "constraint"
+      : props.tab === "hourly"
+        ? "hourly"
+        : props.tab === "commercial"
+          ? "value"
+          : "comparison";
   return (
-    <aside className="activation-study-panel" aria-label="Activation Study">
+    <aside
+      ref={panelRef}
+      className="activation-study-panel"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="activation-study-title"
+      tabIndex={-1}
+      onKeyDown={(event) => {
+        if (event.key === "Escape") props.onClose();
+      }}
+    >
       <header className="activation-study-header">
         <button type="button" onClick={props.onClose}>
           <ArrowLeft aria-hidden="true" /> Back to map
         </button>
         <div>
           <span className="eyebrow">Selected candidate · Activation Study</span>
-          <h2>{context.candidate.nodeName}</h2>
+          <h2 id="activation-study-title">{context.candidate.nodeName}</h2>
         </div>
         <StudyEvidenceBadge context={context} />
         {context.mode === "synthetic_demonstration" && (
@@ -707,39 +863,40 @@ export function ActivationStudyPanel(props: Props) {
           </p>
         )}
       </header>
-      <nav className="activation-study-tabs" aria-label="Activation Study views">
+      <nav className="activation-study-tabs" aria-label="Activation Study views" role="tablist">
         {tabs.map((item) => (
           <button
             type="button"
             key={item.id}
-            className={props.tab === item.id ? "active" : ""}
-            aria-current={props.tab === item.id ? "page" : undefined}
+            className={primaryTab === item.id ? "active" : ""}
+            role="tab"
+            aria-selected={primaryTab === item.id}
             onClick={() => props.onTabChange(item.id)}
           >
             {item.label}
           </button>
         ))}
       </nav>
-      <div className="activation-study-body" tabIndex={0} aria-label="Activation Study content">
-        {props.tab === "overview" && <OverviewView context={context} />}
-        {props.tab === "topology" && <TopologyView context={context} />}
-        {props.tab === "hourly" && <HourlyView context={context} option={selectedOption} />}
-        {props.tab === "options" && (
-          <OptionsView
+      <div
+        className="activation-study-body"
+        role="tabpanel"
+        tabIndex={0}
+        aria-label="Activation Study content"
+      >
+        {primaryTab === "overview" && <OverviewView context={context} />}
+        {primaryTab === "options" && (
+          <StrategiesWorkspace
             context={context}
             selectedKind={selectedOption?.kind ?? null}
             onSelect={setSelectedKind}
+            initialView={initialStrategyView}
+            commercialAssumptions={commercialAssumptions}
+            onCommercialChange={setCommercialAssumptions}
+            commercialEnabled={commercialEnabled}
+            onCommercialEnable={() => setCommercialEnabled(true)}
           />
         )}
-        {props.tab === "commercial" && (
-          <CommercialView
-            context={context}
-            option={selectedOption}
-            assumptions={commercialAssumptions}
-            onChange={setCommercialAssumptions}
-          />
-        )}
-        {props.tab === "evidence" && <EvidenceView context={context} />}
+        {primaryTab === "evidence" && <EvidenceView context={context} />}
       </div>
       <footer className="activation-study-actions">
         <button type="button" className="secondary-button" onClick={props.onClose}>
@@ -754,7 +911,7 @@ export function ActivationStudyPanel(props: Props) {
             className="primary-button"
             onClick={() =>
               props.onStartAssessment?.({
-                selectedOptionKind: selectedOption?.kind ?? null,
+                selectedOptionKind: selectedKind ?? context.recommendedOption?.kind ?? null,
                 commercialAssumptions,
               })
             }

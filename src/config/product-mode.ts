@@ -22,6 +22,12 @@ export const productCapabilities = capabilitiesForMode(productMode);
 export const privateGraphUiEnabled =
   productCapabilities.workspace && import.meta.env.VITE_PRIVATE_GRAPH_UI !== "false";
 
+export const integratedActivationStudyEnabled =
+  import.meta.env.VITE_INTEGRATED_ACTIVATION_STUDY !== "false";
+
+export const graphStudySubmissionEnabled =
+  productCapabilities.workspace && import.meta.env.VITE_GRAPH_STUDY_SUBMISSION === "true";
+
 export const finderContactEmail = "sina.khedmati@outlook.de";
 
 const finderRoutes = new Set(["/", "/power-finder", "/synthetic-network-study", "/data-sources"]);
