@@ -52,6 +52,16 @@ export type CalculatedCapacityViewport = {
   evidenceBoundary: string;
 };
 
+export type ReferenceOperatingStrategy = {
+  capacity_mw: number;
+  restricted_hours: number;
+  restricted_energy_mwh: number;
+  maximum_reduction_mw: number;
+  longest_event_hours: number;
+  event_count: number;
+  demand_served_percent: number;
+};
+
 export type ReferenceCapacityResult = {
   result_id: string;
   reference_bus_id: string;
@@ -63,6 +73,39 @@ export type ReferenceCapacityResult = {
   bess_assisted_capacity_mw: number;
   staged_initial_capacity_mw: number;
   eventual_capacity_mw: number;
+  activatable_capacity_mw: number;
+  additional_unlocked_mw: number;
+  activation: {
+    schema_version: "gridpulse-activatable-capacity-v1";
+    requested_capacity_mw: number;
+    conventional_firm_mw: number;
+    immediately_energisable_mw: number;
+    activatable_capacity_mw: number;
+    additional_unlocked_mw: number;
+    flexible: ReferenceOperatingStrategy;
+    bess_assisted: ReferenceOperatingStrategy & {
+      battery_power_mw: number;
+      battery_energy_mwh: number;
+    };
+    staged: {
+      initial_capacity_mw: number;
+      eventual_capacity_mw: number;
+      representative_stage_count: number;
+    };
+    hourly: {
+      hour_count: number;
+      profile_class: string;
+      samples: Array<{
+        timestamp: string;
+        envelope_mw: number;
+        flexible_target_mw: number;
+        bess_target_mw: number;
+        battery_soc_mwh: number;
+      }>;
+    };
+    result_sha256: string;
+    calculation_boundary: string;
+  };
   binding_constraint: string | null;
   binding_case: string | null;
   validation_state: "reference_network_calculated";

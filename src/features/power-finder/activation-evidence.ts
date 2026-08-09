@@ -52,6 +52,7 @@ export const activationEvidenceLabels: Record<ActivationEvidenceOrigin, string> 
 export function evidenceStateForMode(mode: ActivationStudyMode): ActivationEvidenceState {
   return {
     synthetic_demonstration: "illustrative_sandbox",
+    reference_network_calculated: "physics_verified",
     operator_model_unvalidated: "topology_accepted",
     operator_model_reconciled: "physics_verified",
     operator_reviewed: "operator_reviewed",
@@ -80,5 +81,10 @@ export function canRecommendActivationStrategy(input: {
   hasAnalysis: boolean;
   current?: boolean;
 }) {
-  return input.passesMinimum && input.hasAnalysis && input.current !== false && input.state !== "results_stale";
+  return (
+    input.passesMinimum &&
+    input.hasAnalysis &&
+    input.current !== false &&
+    input.state !== "results_stale"
+  );
 }

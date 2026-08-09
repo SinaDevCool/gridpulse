@@ -13,11 +13,13 @@ export function ReferenceCapacityInset({
   metric,
   selected,
   onSelect,
+  onExplore,
 }: {
   artifact: ReferenceCapacityArtifact;
   metric: CapacityMetric;
   selected: ReferenceCapacityResult | null;
   onSelect: (result: ReferenceCapacityResult | null) => void;
+  onExplore: (result: ReferenceCapacityResult) => void;
 }) {
   const maximum = Math.max(
     0.001,
@@ -79,6 +81,14 @@ export function ReferenceCapacityInset({
           </div>
           <dl>
             <div>
+              <dt>Activatable</dt>
+              <dd>{selected.activatable_capacity_mw.toFixed(3)} MW</dd>
+            </div>
+            <div>
+              <dt>Additional unlocked</dt>
+              <dd>{selected.additional_unlocked_mw.toFixed(3)} MW</dd>
+            </div>
+            <div>
               <dt>N-0 calculated</dt>
               <dd>{selected.n0_capacity_mw.toFixed(3)} MW</dd>
             </div>
@@ -102,6 +112,29 @@ export function ReferenceCapacityInset({
               <dt>Constraint</dt>
               <dd>{selected.binding_constraint?.replaceAll("_", " ") ?? "None"}</dd>
             </div>
+            <div>
+              <dt>Flexible restrictions</dt>
+              <dd>{selected.activation.flexible.restricted_hours} h/year</dd>
+            </div>
+            <div>
+              <dt>Restricted energy</dt>
+              <dd>{selected.activation.flexible.restricted_energy_mwh.toFixed(1)} MWh</dd>
+            </div>
+            <div>
+              <dt>Longest event</dt>
+              <dd>{selected.activation.flexible.longest_event_hours} h</dd>
+            </div>
+            <div>
+              <dt>Demand served</dt>
+              <dd>{selected.activation.flexible.demand_served_percent.toFixed(1)}%</dd>
+            </div>
+            <div>
+              <dt>Representative BESS</dt>
+              <dd>
+                {selected.activation.bess_assisted.battery_power_mw} MW /{" "}
+                {selected.activation.bess_assisted.battery_energy_mwh} MWh
+              </dd>
+            </div>
           </dl>
           <div className="reference-capacity-explanation">
             <Sparkles aria-hidden="true" />
@@ -111,6 +144,18 @@ export function ReferenceCapacityInset({
               figures are explicit screening assumptions—not operator offers.
             </p>
           </div>
+          <button
+            type="button"
+            className="primary-button reference-capacity-explore"
+            onClick={() => onExplore(selected)}
+          >
+            Explore activation options
+          </button>
+          <details className="reference-capacity-evidence">
+            <summary>Calculation evidence</summary>
+            <p>{selected.activation.calculation_boundary}</p>
+            <code>{selected.activation.result_sha256}</code>
+          </details>
         </aside>
       )}
       <footer>

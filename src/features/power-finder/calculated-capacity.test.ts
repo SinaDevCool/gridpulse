@@ -3,6 +3,7 @@ import {
   capacityValueForMetric,
   isCurrentCalculatedCapacity,
   referenceCapacityValue,
+  type ReferenceCapacityResult,
 } from "./calculated-capacity";
 
 const node = {
@@ -57,7 +58,9 @@ describe("calculated capacity contract", () => {
       validation_state: "reference_network_calculated" as const,
       graph_pathway_available: true,
     };
-    expect(referenceCapacityValue(reference, "flexible_import_mw")).toBe(6.8);
+    expect(referenceCapacityValue(reference as ReferenceCapacityResult, "flexible_import_mw")).toBe(
+      6.8,
+    );
     expect(reference).not.toHaveProperty("publicNodeId");
   });
 });

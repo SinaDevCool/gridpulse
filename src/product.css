@@ -10355,6 +10355,27 @@ tbody tr:last-child td {
   color: #e7f8ff;
   margin-bottom: 3px;
 }
+
+.reference-capacity-explore {
+  width: 100%;
+  margin-top: 12px;
+  justify-content: center;
+}
+
+.reference-capacity-evidence {
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid #1b394e;
+  border-radius: 8px;
+  color: #91aab8;
+  font-size: 12px;
+}
+
+.reference-capacity-evidence code {
+  display: block;
+  overflow-wrap: anywhere;
+  color: #63d9f4;
+}
 .reference-capacity-inset > footer {
   border-top: 1px solid #1e4056;
   color: #829dad;

@@ -61,6 +61,32 @@ describe("Activation Study orchestration", () => {
     ).toBe("operator_reviewed");
   });
 
+  it("uses governed reference capacity instead of the legacy percentage assumption", () => {
+    const reference = {
+      activatable_capacity_mw: 4.66,
+      activation: {
+        conventional_firm_mw: 0,
+        immediately_energisable_mw: 3.2,
+        staged: { eventual_capacity_mw: 5.8 },
+        result_sha256: "a".repeat(64),
+      },
+    } as never;
+    const context = createActivationStudyContext({
+      project: {
+        ...defaultFinderProject,
+        importMw: 5.8,
+        ultimateImportMw: 5.8,
+        minimumFirmMw: 3.2,
+      },
+      candidate,
+      registeredStudy: null,
+      referenceCapacity: reference,
+    });
+    expect(context.mode).toBe("reference_network_calculated");
+    expect(context.referenceCapacity).toBe(reference);
+    expect(context.options.some((option) => option.initialImportMw <= 4.66)).toBe(true);
+  });
+
   it("uses one deterministic annual profile and produces differentiated strategies", () => {
     const project = {
       ...defaultFinderProject,

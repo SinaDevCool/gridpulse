@@ -16,9 +16,11 @@ import type { ReleaseBNetworkResult } from "./release-b-network";
 import { calculateReleaseBNetwork } from "./release-b-network";
 import type { ValidationClass } from "./validation-class";
 import { evidenceStateForMode, type ActivationEvidenceState } from "./activation-evidence";
+import type { ReferenceCapacityResult } from "./calculated-capacity";
 
 export type ActivationStudyMode =
   | "synthetic_demonstration"
+  | "reference_network_calculated"
   | "operator_model_unvalidated"
   | "operator_model_reconciled"
   | "operator_reviewed"
@@ -32,6 +34,7 @@ export type ActivationStudyContext = {
   capacityScenario: CapacityScenarioResult | null;
   networkScenario: ReleaseBNetworkResult | null;
   registeredStudy: C1StudyPayload | null;
+  referenceCapacity: ReferenceCapacityResult | null;
   options: ReturnType<typeof buildConnectionOptions>;
   decisionMatrix: DecisionMatrixRow[];
   recommendedOption: DecisionMatrixRow | null;
@@ -77,9 +80,12 @@ export function createActivationStudyContext(input: {
   project: FinderProject;
   candidate: CandidateOpportunity;
   registeredStudy: C1StudyPayload | null;
+  referenceCapacity?: ReferenceCapacityResult | null;
 }): ActivationStudyContext {
-  const { project, candidate, registeredStudy } = input;
-  const mode = resolveActivationStudyMode(registeredStudy);
+  const { project, candidate, registeredStudy, referenceCapacity = null } = input;
+  const mode = referenceCapacity
+    ? "reference_network_calculated"
+    : resolveActivationStudyMode(registeredStudy);
   const capacityScenario =
     candidate.capacityScenario ?? calculateCapacityScenario(project, candidate);
   const networkScenario =
@@ -88,7 +94,9 @@ export function createActivationStudyContext(input: {
   const syntheticFirm =
     networkScenario?.selectedSecurityLimitMw ?? capacityScenario?.firmImportEnvelopeMw;
   const registeredFirm = registeredStudy?.node_study.result?.firm_import_capacity_mw;
-  const firm = mode === "synthetic_demonstration" ? syntheticFirm : registeredFirm;
+  const firm =
+    referenceCapacity?.activation.conventional_firm_mw ??
+    (mode === "synthetic_demonstration" ? syntheticFirm : registeredFirm);
   // Public mode needs a bounded constraint in order to compare activation strategies. The
   // 65% floor is a versioned reference-case assumption, never a claim about the mapped node.
   const representativeFirm = requested * 0.65;
@@ -96,10 +104,16 @@ export function createActivationStudyContext(input: {
     0,
     Math.min(
       requested,
-      mode === "synthetic_demonstration" ? representativeFirm : (firm ?? project.minimumFirmMw),
+      mode === "synthetic_demonstration"
+        ? representativeFirm
+        : (referenceCapacity?.activation.conventional_firm_mw ?? firm ?? project.minimumFirmMw),
     ),
   );
-  const conditional = mode === "synthetic_demonstration" ? Math.max(0, requested - reducedFirm) : 0;
+  const conditional = referenceCapacity
+    ? Math.max(0, Math.min(requested, referenceCapacity.activatable_capacity_mw) - reducedFirm)
+    : mode === "synthetic_demonstration"
+      ? Math.max(0, requested - reducedFirm)
+      : 0;
   const options = rankConnectionOptions(
     buildConnectionOptions({
       requestedImportMw: requested,
@@ -132,11 +146,12 @@ export function createActivationStudyContext(input: {
     capacityScenario,
     networkScenario,
     registeredStudy,
+    referenceCapacity,
     options,
     decisionMatrix,
     recommendedOption,
     permittedClaims:
-      mode === "synthetic_demonstration"
+      mode === "synthetic_demonstration" || mode === "reference_network_calculated"
         ? [
             "Compare representative activation strategies",
             "Identify evidence and operator questions",
@@ -163,29 +178,31 @@ export function activationStatusLabel(status: DecisionMatrixRow["operationalStat
 }
 
 export function recommendActivationOption(options: DecisionMatrixRow[]) {
-  return rankInvestigativeHypotheses(options).find(
-    (option) =>
-      option.analysis &&
-      option.operationalStatus !== "fails_minimum_viable_capacity" &&
-      option.operationalStatus !== "insufficient_evidence",
-  ) ?? null;
+  return (
+    rankInvestigativeHypotheses(options).find(
+      (option) =>
+        option.analysis &&
+        option.operationalStatus !== "fails_minimum_viable_capacity" &&
+        option.operationalStatus !== "insufficient_evidence",
+    ) ?? null
+  );
 }
 
 export function rankInvestigativeHypotheses(options: DecisionMatrixRow[]) {
   const candidates = options.filter((option) => option.kind !== "requested_firm");
   return [...candidates].sort((left, right) => {
-      const score = (option: DecisionMatrixRow) => {
-        const analysis = option.analysis;
-        const viable = option.operationalStatus === "fails_minimum_viable_capacity" ? -1000 : 0;
-        const served = analysis?.demandServedPercent ?? 0;
-        const residual = analysis?.residualUnservedMwh ?? 1_000_000;
-        const restriction = analysis?.restrictedHours ?? 8_760;
-        const activationBonus =
-          option.kind === "storage_supported" ? 8 : option.kind.includes("flexible") ? 6 : 2;
-        return viable + served * 2 - residual * 0.1 - restriction * 0.02 + activationBonus;
-      };
-      return score(right) - score(left);
-    });
+    const score = (option: DecisionMatrixRow) => {
+      const analysis = option.analysis;
+      const viable = option.operationalStatus === "fails_minimum_viable_capacity" ? -1000 : 0;
+      const served = analysis?.demandServedPercent ?? 0;
+      const residual = analysis?.residualUnservedMwh ?? 1_000_000;
+      const restriction = analysis?.restrictedHours ?? 8_760;
+      const activationBonus =
+        option.kind === "storage_supported" ? 8 : option.kind.includes("flexible") ? 6 : 2;
+      return viable + served * 2 - residual * 0.1 - restriction * 0.02 + activationBonus;
+    };
+    return score(right) - score(left);
+  });
 }
 
 export type RepresentativeCommercialAssumptions = {
@@ -210,9 +227,9 @@ export function calculateRepresentativeCommercialValue(
   const option = selectedOption;
   const eligible = Boolean(
     option &&
-      option.analysis &&
-      option.operationalStatus !== "fails_minimum_viable_capacity" &&
-      option.operationalStatus !== "insufficient_evidence",
+    option.analysis &&
+    option.operationalStatus !== "fails_minimum_viable_capacity" &&
+    option.operationalStatus !== "insufficient_evidence",
   );
   const earlierMw = eligible && option ? Math.max(0, option.initialImportMw) : 0;
   const grossAccelerationValueEur =
@@ -221,9 +238,8 @@ export function calculateRepresentativeCommercialValue(
     eligible && option?.kind === "storage_supported"
       ? context.project.batteryEnergyMwh * assumptions.batteryCapitalCostEurMwh
       : 0;
-  const flexibilityCostEur = eligible && option?.kind.includes("flexible")
-    ? assumptions.flexibilityEnablementCostEur
-    : 0;
+  const flexibilityCostEur =
+    eligible && option?.kind.includes("flexible") ? assumptions.flexibilityEnablementCostEur : 0;
   const operatingExposureEur = eligible ? (option?.annualExposureEur ?? 0) : 0;
   const netIndicativeValueEur =
     grossAccelerationValueEur - batteryCostEur - flexibilityCostEur - operatingExposureEur;
@@ -258,6 +274,19 @@ export function activationStudySnapshot(
     scenario_version: context.capacityScenario?.scenarioVersion ?? null,
     network_version: context.networkScenario?.networkVersion ?? null,
     model_version: context.registeredStudy?.node_study.model?.version ?? null,
+    reference_result: context.referenceCapacity
+      ? {
+          result_id: context.referenceCapacity.result_id,
+          result_sha256: context.referenceCapacity.activation.result_sha256,
+          conventional_firm_mw: context.referenceCapacity.activation.conventional_firm_mw,
+          activatable_capacity_mw: context.referenceCapacity.activatable_capacity_mw,
+          additional_unlocked_mw: context.referenceCapacity.additional_unlocked_mw,
+          restricted_hours: context.referenceCapacity.activation.flexible.restricted_hours,
+          restricted_energy_mwh:
+            context.referenceCapacity.activation.flexible.restricted_energy_mwh,
+          validation_class: context.referenceCapacity.validation_state,
+        }
+      : null,
     option_kinds: context.options.map((option) => option.kind),
     recommended_option_kind: context.recommendedOption?.kind ?? null,
     selected_option_kind: input?.selectedOptionKind ?? context.recommendedOption?.kind ?? null,

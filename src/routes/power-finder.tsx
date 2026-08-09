@@ -636,10 +636,48 @@ function PowerFinderPage() {
     [comparedCandidates, project],
   );
   const coordinates = selected ? pointCoordinates(selected) : null;
+  const referenceCandidate = useMemo<CandidateOpportunity | null>(() => {
+    if (!selectedReferenceCapacity) return null;
+    return {
+      id: selectedReferenceCapacity.result_id,
+      siteId: "simbench-reference-project",
+      nodeId: selectedReferenceCapacity.reference_bus_id,
+      siteName: "Representative activation project",
+      nodeName: selectedReferenceCapacity.label,
+      operator: null,
+      voltageKv: [20],
+      distanceKm: 0,
+      contextScore: 0,
+      evidenceScore: 100,
+      screeningRank: 100,
+      voltageFit: "compatible",
+      confidence: "high",
+      missingEvidence: ["Accepted operator model", "Operator-approved contingency set"],
+      constraints: [selectedReferenceCapacity.binding_constraint ?? "Reference-network constraint"],
+      calculationVersion: selectedReferenceCapacity.activation.result_sha256,
+      source: "published_artifact",
+    };
+  }, [selectedReferenceCapacity]);
+  const activationProject = useMemo(
+    () =>
+      selectedReferenceCapacity
+        ? {
+            ...project,
+            name: "Representative activation project",
+            importMw: selectedReferenceCapacity.activation.requested_capacity_mw,
+            ultimateImportMw: selectedReferenceCapacity.activation.staged.eventual_capacity_mw,
+            minimumFirmMw: selectedReferenceCapacity.activation.immediately_energisable_mw,
+            flexibleLoadMw: selectedReferenceCapacity.activation.flexible.maximum_reduction_mw,
+            batteryPowerMw: selectedReferenceCapacity.activation.bess_assisted.battery_power_mw,
+            batteryEnergyMwh: selectedReferenceCapacity.activation.bess_assisted.battery_energy_mwh,
+          }
+        : project,
+    [project, selectedReferenceCapacity],
+  );
   const activationOpen =
     integratedActivationStudyEnabled &&
     search.study === "activation" &&
-    Boolean(selectedOpportunity);
+    Boolean(referenceCandidate ?? selectedOpportunity);
   const activationTab: ActivationStudyTab =
     search.studyTab === "geographic" ? "overview" : (search.studyTab ?? "overview");
   const startPrivateAssessment = async (studyInput?: {
@@ -1795,6 +1833,10 @@ function PowerFinderPage() {
               metric={capacityMetric}
               selected={selectedReferenceCapacity}
               onSelect={setSelectedReferenceCapacity}
+              onExplore={(result) => {
+                setSelectedReferenceCapacity(result);
+                void updateSearch({ study: "activation", studyTab: "overview" });
+              }}
             />
           )}
 
@@ -1847,14 +1889,15 @@ function PowerFinderPage() {
             )}
           </div>
 
-          {activationOpen && selectedOpportunity && (
+          {activationOpen && (referenceCandidate || selectedOpportunity) && (
             <Suspense
               fallback={<div className="activation-study-loading">Loading Activation Study…</div>}
             >
               <ActivationStudyPanel
-                project={project}
-                candidate={selectedOpportunity}
-                registeredStudy={c1Study}
+                project={activationProject}
+                candidate={referenceCandidate ?? selectedOpportunity!}
+                registeredStudy={referenceCandidate ? null : c1Study}
+                referenceCapacity={referenceCandidate ? selectedReferenceCapacity : null}
                 tab={activationTab}
                 onTabChange={(studyTab) => void updateSearch({ studyTab })}
                 onClose={() => void updateSearch({ study: undefined, studyTab: undefined })}

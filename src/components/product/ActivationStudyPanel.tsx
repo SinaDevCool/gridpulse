@@ -20,8 +20,12 @@ import {
 import type { C1StudyPayload } from "@/features/power-finder/c1-study";
 import type { CandidateOpportunity } from "@/features/power-finder/candidate-intelligence";
 import type { FinderProject } from "@/features/power-finder/finder-project";
+import type { ReferenceCapacityResult } from "@/features/power-finder/calculated-capacity";
 import { validationClassLabel } from "@/features/power-finder/validation-class";
-import { activationEvidenceLabels, type ActivationEvidenceOrigin } from "@/features/power-finder/activation-evidence";
+import {
+  activationEvidenceLabels,
+  type ActivationEvidenceOrigin,
+} from "@/features/power-finder/activation-evidence";
 
 export type ActivationStudyTab =
   | "overview"
@@ -35,6 +39,7 @@ type Props = {
   project: FinderProject;
   candidate: CandidateOpportunity;
   registeredStudy: C1StudyPayload | null;
+  referenceCapacity?: ReferenceCapacityResult | null;
   tab: ActivationStudyTab;
   onTabChange: (tab: ActivationStudyTab) => void;
   onClose: () => void;
@@ -48,7 +53,11 @@ type SelectedOption = NonNullable<ActivationStudyContext["recommendedOption"]>;
 type StrategyAnalysisView = "comparison" | "constraint" | "hourly" | "value";
 
 function EvidenceTag({ origin }: { origin: ActivationEvidenceOrigin }) {
-  return <small className={`activation-evidence-tag origin-${origin}`}>{activationEvidenceLabels[origin]}</small>;
+  return (
+    <small className={`activation-evidence-tag origin-${origin}`}>
+      {activationEvidenceLabels[origin]}
+    </small>
+  );
 }
 
 export function StudyEvidenceBadge({ context }: { context: ActivationStudyContext }) {
@@ -63,6 +72,7 @@ export function StudyEvidenceBadge({ context }: { context: ActivationStudyContex
 function OverviewView({ context }: { context: ActivationStudyContext }) {
   const option = context.recommendedOption;
   const displayed = option ?? context.bestInvestigativeHypothesis;
+  const reference = context.referenceCapacity?.activation;
   return (
     <div className="activation-view">
       <section className="activation-callout">
@@ -70,15 +80,37 @@ function OverviewView({ context }: { context: ActivationStudyContext }) {
         <div>
           <h3>Activation decision overview</h3>
           <p>
-            {option
-              ? `Investigate ${option.title.toLowerCase()} as a viable representative pathway. The visible map remains public geographic evidence, not available capacity.`
-              : displayed
-                ? `No representative pathway meets the declared minimum. ${displayed.title} is the strongest investigation hypothesis, not a recommendation.`
-                : "Complete the project requirement to compare representative activation pathways."}
+            {reference
+              ? `${reference.activatable_capacity_mw.toFixed(2)} MW is activatable in the representative annual envelope, ${reference.additional_unlocked_mw.toFixed(2)} MW above the demonstrated conventional firm baseline.`
+              : option
+                ? `Investigate ${option.title.toLowerCase()} as a viable representative pathway. The visible map remains public geographic evidence, not available capacity.`
+                : displayed
+                  ? `No representative pathway meets the declared minimum. ${displayed.title} is the strongest investigation hypothesis, not a recommendation.`
+                  : "Complete the project requirement to compare representative activation pathways."}
           </p>
         </div>
       </section>
       <dl className="activation-facts">
+        {reference && (
+          <>
+            <div>
+              <dt>Activatable / additional unlocked</dt>
+              <dd>
+                {reference.activatable_capacity_mw.toFixed(2)} /{" "}
+                {reference.additional_unlocked_mw.toFixed(2)} MW
+              </dd>
+              <EvidenceTag origin="physics_verified" />
+            </div>
+            <div>
+              <dt>Representative operating commitment</dt>
+              <dd>
+                {reference.flexible.restricted_hours} h/year ·{" "}
+                {reference.flexible.restricted_energy_mwh.toFixed(1)} MWh
+              </dd>
+              <EvidenceTag origin="synthetic_assumption" />
+            </div>
+          </>
+        )}
         <div>
           <dt>Candidate</dt>
           <dd>{context.candidate.nodeName}</dd>
@@ -130,7 +162,11 @@ function OverviewView({ context }: { context: ActivationStudyContext }) {
       </dl>
       <section className="activation-next-action">
         <strong>Recommended next action</strong>
-        <p>{option?.nextAction ?? displayed?.nextAction ?? "Complete the declared project requirement."}</p>
+        <p>
+          {option?.nextAction ??
+            displayed?.nextAction ??
+            "Complete the declared project requirement."}
+        </p>
       </section>
     </div>
   );
@@ -138,6 +174,7 @@ function OverviewView({ context }: { context: ActivationStudyContext }) {
 
 function TopologyView({ context }: { context: ActivationStudyContext }) {
   const network = context.networkScenario;
+  const reference = context.referenceCapacity;
   const branches = network?.branches ?? [];
   const bindingIndex =
     network?.bindingConstraint === "transformer"
@@ -208,6 +245,34 @@ function TopologyView({ context }: { context: ActivationStudyContext }) {
           <div>
             <dt>Replacement evidence</dt>
             <dd>Accepted ratings, seasonal cases and contingencies</dd>
+          </div>
+        </dl>
+      )}
+      {reference && (
+        <dl className="activation-facts">
+          <div>
+            <dt>N-0 calculated ceiling</dt>
+            <dd>{reference.n0_capacity_mw} MW</dd>
+          </div>
+          <div>
+            <dt>N-1 firm</dt>
+            <dd>{reference.n1_capacity_mw} MW</dd>
+          </div>
+          <div>
+            <dt>Binding case</dt>
+            <dd>{reference.binding_case ?? "None"}</dd>
+          </div>
+          <div>
+            <dt>Binding constraint</dt>
+            <dd>{reference.binding_constraint?.replaceAll("_", " ") ?? "None"}</dd>
+          </div>
+          <div>
+            <dt>Graph pathway</dt>
+            <dd>{reference.graph_pathway_available ? "Traceable" : "Unavailable"}</dd>
+          </div>
+          <div>
+            <dt>Model status</dt>
+            <dd>Calculated reference network</dd>
           </div>
         </dl>
       )}
@@ -526,95 +591,101 @@ function CommercialView({
       )}
       {enabled && (
         <>
-      {!value.eligible && (
-        <section className="activation-recommendation is-blocked" role="alert">
-          <h3>Business sensitivity unavailable</h3>
-          <p>The selected strategy does not meet the declared minimum or lacks the required technical analysis.</p>
-        </section>
-      )}
-      <form className="activation-commercial-form" onSubmit={(event) => event.preventDefault()}>
-        <label>
-          Value per energized MW/month (€)
-          <input
-            type="number"
-            name="value_per_energized_mw_month_eur"
-            inputMode="decimal"
-            min="0"
-            value={assumptions.valuePerEnergizedMwMonthEur}
-            onChange={(event) => update("valuePerEnergizedMwMonthEur", event.target.value)}
-          />
-        </label>
-        <label>
-          Representative months accelerated
-          <input
-            type="number"
-            name="months_accelerated"
-            inputMode="numeric"
-            min="0"
-            value={assumptions.monthsAccelerated}
-            onChange={(event) => update("monthsAccelerated", event.target.value)}
-          />
-        </label>
-        <label>
-          Flexibility enablement cost (€)
-          <input
-            type="number"
-            name="flexibility_enablement_cost_eur"
-            inputMode="decimal"
-            min="0"
-            value={assumptions.flexibilityEnablementCostEur}
-            onChange={(event) => update("flexibilityEnablementCostEur", event.target.value)}
-          />
-        </label>
-        <label>
-          Battery capital cost (€/MWh)
-          <input
-            type="number"
-            name="battery_capital_cost_eur_mwh"
-            inputMode="decimal"
-            min="0"
-            value={assumptions.batteryCapitalCostEurMwh}
-            onChange={(event) => update("batteryCapitalCostEurMwh", event.target.value)}
-          />
-        </label>
-      </form>
-      {value.eligible && (
-        <>
-      <dl className="activation-facts activation-commercial-results">
-        <div>
-          <dt>Initial MW included in this sensitivity</dt>
-          <dd>{value.earlierMw.toFixed(1)} MW</dd>
-        </div>
-        <div>
-          <dt>Gross acceleration value</dt>
-          <dd>€{Math.round(value.grossAccelerationValueEur).toLocaleString("en-GB")}</dd>
-        </div>
-        <div>
-          <dt>Operating exposure</dt>
-          <dd>€{Math.round(value.operatingExposureEur).toLocaleString("en-GB")}</dd>
-        </div>
-        <div>
-          <dt>Strategy enablement cost</dt>
-          <dd>
-            €{Math.round(value.batteryCostEur + value.flexibilityCostEur).toLocaleString("en-GB")}
-          </dd>
-        </div>
-        <div>
-          <dt>Low indicative value</dt>
-          <dd>€{Math.round(value.lowIndicativeValueEur).toLocaleString("en-GB")}</dd>
-        </div>
-        <div>
-          <dt>Base indicative value</dt>
-          <dd>€{Math.round(value.netIndicativeValueEur).toLocaleString("en-GB")}</dd>
-        </div>
-        <div>
-          <dt>High indicative value</dt>
-          <dd>€{Math.round(value.highIndicativeValueEur).toLocaleString("en-GB")}</dd>
-        </div>
-      </dl>
-      <p className="activation-boundary">{value.boundary}</p>
-        </>
-      )}
+          {!value.eligible && (
+            <section className="activation-recommendation is-blocked" role="alert">
+              <h3>Business sensitivity unavailable</h3>
+              <p>
+                The selected strategy does not meet the declared minimum or lacks the required
+                technical analysis.
+              </p>
+            </section>
+          )}
+          <form className="activation-commercial-form" onSubmit={(event) => event.preventDefault()}>
+            <label>
+              Value per energized MW/month (€)
+              <input
+                type="number"
+                name="value_per_energized_mw_month_eur"
+                inputMode="decimal"
+                min="0"
+                value={assumptions.valuePerEnergizedMwMonthEur}
+                onChange={(event) => update("valuePerEnergizedMwMonthEur", event.target.value)}
+              />
+            </label>
+            <label>
+              Representative months accelerated
+              <input
+                type="number"
+                name="months_accelerated"
+                inputMode="numeric"
+                min="0"
+                value={assumptions.monthsAccelerated}
+                onChange={(event) => update("monthsAccelerated", event.target.value)}
+              />
+            </label>
+            <label>
+              Flexibility enablement cost (€)
+              <input
+                type="number"
+                name="flexibility_enablement_cost_eur"
+                inputMode="decimal"
+                min="0"
+                value={assumptions.flexibilityEnablementCostEur}
+                onChange={(event) => update("flexibilityEnablementCostEur", event.target.value)}
+              />
+            </label>
+            <label>
+              Battery capital cost (€/MWh)
+              <input
+                type="number"
+                name="battery_capital_cost_eur_mwh"
+                inputMode="decimal"
+                min="0"
+                value={assumptions.batteryCapitalCostEurMwh}
+                onChange={(event) => update("batteryCapitalCostEurMwh", event.target.value)}
+              />
+            </label>
+          </form>
+          {value.eligible && (
+            <>
+              <dl className="activation-facts activation-commercial-results">
+                <div>
+                  <dt>Initial MW included in this sensitivity</dt>
+                  <dd>{value.earlierMw.toFixed(1)} MW</dd>
+                </div>
+                <div>
+                  <dt>Gross acceleration value</dt>
+                  <dd>€{Math.round(value.grossAccelerationValueEur).toLocaleString("en-GB")}</dd>
+                </div>
+                <div>
+                  <dt>Operating exposure</dt>
+                  <dd>€{Math.round(value.operatingExposureEur).toLocaleString("en-GB")}</dd>
+                </div>
+                <div>
+                  <dt>Strategy enablement cost</dt>
+                  <dd>
+                    €
+                    {Math.round(value.batteryCostEur + value.flexibilityCostEur).toLocaleString(
+                      "en-GB",
+                    )}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Low indicative value</dt>
+                  <dd>€{Math.round(value.lowIndicativeValueEur).toLocaleString("en-GB")}</dd>
+                </div>
+                <div>
+                  <dt>Base indicative value</dt>
+                  <dd>€{Math.round(value.netIndicativeValueEur).toLocaleString("en-GB")}</dd>
+                </div>
+                <div>
+                  <dt>High indicative value</dt>
+                  <dd>€{Math.round(value.highIndicativeValueEur).toLocaleString("en-GB")}</dd>
+                </div>
+              </dl>
+              <p className="activation-boundary">{value.boundary}</p>
+            </>
+          )}
         </>
       )}
     </div>
@@ -768,8 +839,9 @@ export function ActivationStudyPanel(props: Props) {
         project: props.project,
         candidate: props.candidate,
         registeredStudy: props.registeredStudy,
+        referenceCapacity: props.referenceCapacity,
       }),
-    [props.project, props.candidate, props.registeredStudy],
+    [props.project, props.candidate, props.referenceCapacity, props.registeredStudy],
   );
   const [selectedKind, setSelectedKind] = useState<string | null>(null);
   const [commercialAssumptions, setCommercialAssumptions] = useState(
