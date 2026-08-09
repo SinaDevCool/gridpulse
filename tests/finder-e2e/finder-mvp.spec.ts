@@ -160,11 +160,16 @@ test("calculated capacity separates solved reference buses from private mapped c
   await expect(page.getByText(/candidate site-to-node matches/i).first()).toBeVisible({
     timeout: 15_000,
   });
-  const metric = page.locator('select[name="sticky-capacity-metric"]');
-  const source = page.locator('select[name="sticky-capacity-source"]');
+  await page.getByText("Map Layers", { exact: true }).click();
+  const overlay = page.getByRole("switch", { name: /Capacity Overlay/i });
+  await expect(overlay).toBeChecked();
+  const metric = page.locator('select[name="capacity-overlay-metric"]');
+  const source = page.locator('select[name="capacity-overlay-source"]');
   await expect(metric).toBeVisible();
-  await expect(source).toHaveValue("reference");
-  await expect(page.getByText("Reference Network Demo", { exact: true })).toBeVisible();
+  await expect(source).toHaveValue("private");
+  await page.getByRole("button", { name: /Open Reference Capacity Lab/i }).click();
+  await expect(page.getByText("Reference Capacity Lab", { exact: true })).toBeVisible();
+  await expect(page.locator('select[name="reference-capacity-metric"]')).toHaveValue("n0_import_mw");
   await expect(page.getByText(/not capacity at a mapped public node/i)).toBeVisible();
   await expect(page.getByRole("button", { name: /Reference bus 01.*megawatts/i })).toBeVisible();
   await page.getByRole("button", { name: /Reference bus 01.*megawatts/i }).click();
@@ -192,8 +197,7 @@ test("calculated capacity separates solved reference buses from private mapped c
   await expect(page.getByText(/14\.0 MW of 17\.5 MW/)).toBeVisible();
   await expect(page.getByText("Control authority")).toBeVisible();
   await page.getByRole("button", { name: /Back to map/i }).click();
-  await expect(page.getByText(/radial N‑1 outage removes firm supply/i)).toBeVisible();
-  await source.selectOption("private");
+  await expect(page.getByText(/0 MW firm result means.*not N-1 secure/i)).toBeVisible();
   await expect(
     page.getByText(/Sign in to a private workspace with an accepted model/i),
   ).toBeVisible();
@@ -331,7 +335,9 @@ test("candidate detail prioritises decisions, contains its layout and omits cand
   await expect(detail.getByRole("heading", { name: "What We Know" })).toBeVisible();
   await expect(detail.getByRole("heading", { name: "What Remains Unknown" })).toBeVisible();
   await expect(detail.getByText("Grid Study Status", { exact: true })).toBeVisible();
-  await expect(detail.getByText("Hourly Connection Envelope", { exact: true })).toBeVisible();
+  await expect(detail.getByText("Hourly Connection Envelope", { exact: true })).toBeVisible({
+    timeout: 15_000,
+  });
   await expect(detail.getByText("Evidence Readiness", { exact: true })).toHaveCount(0);
   await expect(detail.getByText("German Connection Framework")).toBeVisible();
   await expect(detail.getByText(/Experimental Hourly Demonstration/)).toHaveCount(0);

@@ -1,6 +1,7 @@
 import { supabase } from "../../integrations/supabase/client";
 
 export type CapacityMetric =
+  | "n0_import_mw"
   | "firm_import_mw"
   | "flexible_import_mw"
   | "bess_assisted_import_mw"
@@ -315,6 +316,7 @@ export async function loadReferenceCapacityMap(): Promise<ReferenceCapacityArtif
 
 export function referenceCapacityValue(result: ReferenceCapacityResult, metric: CapacityMetric) {
   return {
+    n0_import_mw: result.n0_capacity_mw,
     firm_import_mw: result.firm_capacity_mw,
     flexible_import_mw: result.flexible_capacity_mw,
     bess_assisted_import_mw: result.bess_assisted_capacity_mw,
@@ -324,6 +326,7 @@ export function referenceCapacityValue(result: ReferenceCapacityResult, metric: 
 }
 
 export const capacityMetricLabels: Record<CapacityMetric, string> = {
+  n0_import_mw: "N-0 import envelope",
   firm_import_mw: "Firm import",
   flexible_import_mw: "Flexible import",
   bess_assisted_import_mw: "BESS-assisted import",
@@ -336,6 +339,7 @@ export function capacityValueForMetric(
   metric: CapacityMetric,
 ) {
   return {
+    n0_import_mw: node.firmCapacityMw,
     firm_import_mw: node.firmCapacityMw,
     flexible_import_mw: node.flexibleCapacityMw,
     bess_assisted_import_mw: node.bessAssistedCapacityMw,

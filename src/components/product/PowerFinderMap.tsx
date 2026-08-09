@@ -106,7 +106,7 @@ export function PowerFinderMap({
               ...feature,
               properties: {
                 ...feature.properties,
-                calculated_capacity_mw: result.valueMw,
+                ...(result.valueMw === null ? {} : { calculated_capacity_mw: result.valueMw }),
                 capacity_validation_state: result.validationState,
               },
             } as PowerFinderFeature)
@@ -547,6 +547,17 @@ export function PowerFinderMap({
       "#f59e0b",
       "#64748b",
     ];
+    const capacityValues = capacityNodes
+      .map((result) => result.valueMw)
+      .filter((value): value is number => value !== null)
+      .sort((left, right) => left - right);
+    const quantile = (fraction: number, fallback: number) =>
+      capacityValues.length >= 5
+        ? capacityValues[Math.floor((capacityValues.length - 1) * fraction)]
+        : fallback;
+    const capacityQ1 = quantile(0.33, 20);
+    const capacityQ2 = Math.max(capacityQ1 + 0.001, quantile(0.66, 50));
+    const capacityQ3 = Math.max(capacityQ2 + 0.001, quantile(1, 100));
     const capacityColour = [
       "case",
       ["==", ["get", "capacity_validation_state"], "stale"],
@@ -559,11 +570,11 @@ export function PowerFinderMap({
         ["number", ["get", "calculated_capacity_mw"], 0],
         0,
         "#164e63",
-        20,
+        capacityQ1,
         "#0891b2",
-        50,
+        capacityQ2,
         "#22d3ee",
-        100,
+        capacityQ3,
         "#a5f3fc",
       ],
     ];

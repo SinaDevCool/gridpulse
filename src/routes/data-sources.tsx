@@ -661,8 +661,9 @@ function FinderDataSourcesPage() {
                 MW appears only after topology reconciliation and an electrical solve.
               </h2>
               <p>
-                The Calculated capacity view has two deliberately separate sources. Its reference
-                lab runs Pandapower on the open SimBench network and uses the configured topology
+                Power Finder keeps the geographic map visible and adds governed private capacity
+                as an optional Map Layers overlay. Its separate reference lab runs Pandapower on
+                the open SimBench network and uses the configured topology
                 provider—Neo4j GDS when configured, with the deterministic graph fallback for
                 reproducible public builds—to expose traceable pathways; its results stay in a
                 labelled inset and never colour OpenStreetMap infrastructure. The private source
@@ -705,8 +706,8 @@ function FinderDataSourcesPage() {
                   <li>Unknown nodes remain grey; unknown never means zero</li>
                   <li>Synthetic benchmarks never colour public infrastructure</li>
                   <li>
-                    Reference MW is shown only against anonymous REF buses in a separate network
-                    inset
+                    Reference MW is shown only against anonymous buses in the separate Reference
+                    Capacity Lab
                   </li>
                   <li>Stale results remain visible but cannot support recommendations</li>
                   <li>Private results remain workspace-scoped and access-controlled</li>

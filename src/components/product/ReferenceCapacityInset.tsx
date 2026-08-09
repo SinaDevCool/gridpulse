@@ -13,33 +13,55 @@ const number = new Intl.NumberFormat("en-GB", { maximumFractionDigits: 2 });
 export function ReferenceCapacityInset({
   artifact,
   metric,
+  onMetricChange,
   selected,
   onSelect,
   onExplore,
+  onClose,
 }: {
   artifact: ReferenceCapacityArtifact;
   metric: CapacityMetric;
+  onMetricChange: (metric: CapacityMetric) => void;
   selected: ReferenceCapacityResult | null;
   onSelect: (result: ReferenceCapacityResult | null) => void;
   onExplore: (result: ReferenceCapacityResult) => void;
+  onClose: () => void;
 }) {
   const maximum = Math.max(
     0.001,
     ...artifact.results.map((item) => referenceCapacityValue(item, metric)),
   );
+
   return (
     <section className="reference-capacity-inset" aria-labelledby="reference-workspace-title">
       <header>
         <div>
           <Network aria-hidden="true" />
           <span>
-            <strong id="reference-workspace-title">Reference Network Demo</strong>
+            <strong id="reference-workspace-title">Reference Capacity Lab</strong>
             <small>Abstract SimBench topology · separate from the geographic map</small>
           </span>
         </div>
-        <span className="reference-capacity-badge">
-          <ShieldCheck aria-hidden="true" /> Reference Calculated
-        </span>
+        <div className="reference-lab-actions">
+          <label>
+            <span>Metric</span>
+            <select
+              name="reference-capacity-metric"
+              value={metric}
+              onChange={(event) => onMetricChange(event.target.value as CapacityMetric)}
+            >
+              {(Object.entries(capacityMetricLabels) as [CapacityMetric, string][]).map(
+                ([value, label]) => <option key={value} value={value}>{label}</option>,
+              )}
+            </select>
+          </label>
+          <span className="reference-capacity-badge">
+            <ShieldCheck aria-hidden="true" /> Reference Calculated
+          </span>
+          <button type="button" onClick={onClose} aria-label="Close reference capacity lab">
+            <X aria-hidden="true" />
+          </button>
+        </div>
       </header>
       <div className="reference-capacity-boundary" role="note">
         These Pandapower results demonstrate the method on an open model. They are not capacity at
@@ -61,16 +83,16 @@ export function ReferenceCapacityInset({
                 key={result.result_id}
                 type="button"
                 className={selected?.result_id === result.result_id ? "is-selected" : ""}
-                style={{
-                  "--capacity-intensity": intensity,
-                  "--reference-index": index,
-                } as CSSProperties}
+                style={{ "--capacity-intensity": intensity } as CSSProperties}
                 onClick={() => onSelect(result)}
                 aria-label={`Reference bus ${String(index + 1).padStart(2, "0")}, ${capacityMetricLabels[metric]} ${number.format(value)} megawatts`}
               >
                 <i aria-hidden="true" />
                 <b>Bus {String(index + 1).padStart(2, "0")}</b>
                 <span>{number.format(value)} MW</span>
+                {metric === "firm_import_mw" && value === 0 && result.n0_capacity_mw > 0 && (
+                  <em>Not N-1 secure · N-0 {number.format(result.n0_capacity_mw)} MW</em>
+                )}
                 <small translate="no">{result.reference_bus_id}</small>
               </button>
             );
@@ -103,7 +125,7 @@ export function ReferenceCapacityInset({
           </dl>
           <div className="reference-capacity-explanation">
             <Sparkles aria-hidden="true" />
-            <p><strong>What this demonstrates</strong>Graph-traced constraints, hourly physics and flexibility hypotheses on a representative network. The demonstrated radial N‑1 outage removes firm supply.</p>
+            <p><strong>What This Demonstrates</strong>Graph-traced constraints, hourly physics and flexibility hypotheses on a representative network. A 0 MW firm result means the demonstrated outage is not N-1 secure; it does not erase the N-0 envelope.</p>
           </div>
           <button type="button" className="primary-button reference-capacity-explore" onClick={() => onExplore(selected)}>
             Explore Activation Options

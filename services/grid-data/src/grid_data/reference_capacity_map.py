@@ -12,6 +12,7 @@ from typing import Any
 from .benchmark_model import SIMBENCH_LICENSE, SIMBENCH_SOURCE, import_simbench_model
 from .activatable_capacity import ActivationPolicy, calculate_activation_ensemble
 from .graph.contracts import build_projection
+from .graph.analysis import candidate_pathways
 from .graph.provider import configured_topology_provider
 from .network_study import PandapowerProvider
 
@@ -86,16 +87,27 @@ def build_reference_capacity_map_artifact(
         projection, source_bus=model.connection_bus, target_buses=_candidate_buses(model, limit)
     )
     bridge_assets = set(audit.get("bridge_assets", []))
-    contingency_branches = [
-        branch for branch in model.branches if branch["id"] not in bridge_assets
-    ][:3]
-    contingencies = [
-        {"id": f"{branch['id']}-out", "element_type": "line", "element_id": branch["id"]}
-        for branch in contingency_branches
-    ]
+    eligible_branches = {
+        str(branch["id"]): branch
+        for branch in model.branches
+        if branch["id"] not in bridge_assets
+    }
     provider = PandapowerProvider(maximum_capacity_mw=100.0, capacity_tolerance_mw=0.1)
     results = []
     for index, bus_id in enumerate(_candidate_buses(model, limit)):
+        pathway = candidate_pathways(
+            projection, bus_id, [model.connection_bus], k=1
+        )["pathways"]
+        pathway_assets = pathway[0]["asset_ids"] if pathway else []
+        relevant_branches = [
+            eligible_branches[asset_id]
+            for asset_id in pathway_assets
+            if asset_id in eligible_branches
+        ][:3]
+        contingencies = [
+            {"id": f"{branch['id']}-out", "element_type": "line", "element_id": branch["id"]}
+            for branch in relevant_branches
+        ]
         base_model = replace(model, connection_bus=bus_id, contingencies=[])
         secured_model = replace(model, connection_bus=bus_id, contingencies=contingencies)
         n0 = provider.calculate_import_capacity(base_model)
@@ -132,6 +144,8 @@ def build_reference_capacity_map_artifact(
                 "release5_governance": release5,
                 "binding_constraint": n1.values.get("binding_constraint"),
                 "binding_case": n1.values.get("binding_case"),
+                "contingency_ids": [item["id"] for item in contingencies],
+                "contingency_selection": "candidate_upstream_non_bridge_path",
                 "validation_state": "reference_network_calculated",
                 "graph_pathway_available": True,
             }
@@ -155,8 +169,8 @@ def build_reference_capacity_map_artifact(
         },
         "solver": {"name": "pandapower-newton-raphson", "version": results and n1.solver_version},
         "security": {
-            "criterion": "N-1 demonstration",
-            "contingency_ids": [item["id"] for item in contingencies],
+            "criterion": "Candidate-relevant N-1 demonstration",
+            "contingency_selection": "Up to 3 non-bridge line outages on each candidate's traced upstream pathway.",
             "operator_approved_complete_set": False,
         },
         "strategy_assumptions": {

@@ -121,9 +121,11 @@ export const Route = createFileRoute("/power-finder")({
     compare: z.string().max(700).optional().catch(undefined),
     region: z.enum(["DE", "DE-BB"]).optional().catch(undefined),
     mapMode: z.enum(["voltage", "evidence", "capacity"]).optional().catch(undefined),
+    referenceLab: z.enum(["true"]).optional().catch(undefined),
     capacitySource: z.enum(["reference", "private"]).optional().catch(undefined),
     capacityMetric: z
       .enum([
+        "n0_import_mw",
         "firm_import_mw",
         "flexible_import_mw",
         "bess_assisted_import_mw",
@@ -331,7 +333,11 @@ function PowerFinderPage() {
     search.capacityMetric ?? "firm_import_mw",
   );
   const [capacitySource, setCapacitySource] = useState<"reference" | "private">(
-    search.capacitySource ?? "reference",
+    "private",
+  );
+  const [referenceLabOpen, setReferenceLabOpen] = useState(
+    search.referenceLab === "true" ||
+      (search.mapMode === "capacity" && search.capacitySource === "reference"),
   );
   const [capacityViewport, setCapacityViewport] = useState<CalculatedCapacityViewport | null>(null);
   const [referenceCapacity, setReferenceCapacity] = useState<ReferenceCapacityArtifact | null>(
@@ -351,12 +357,16 @@ function PowerFinderPage() {
 
   useEffect(() => {
     setMapMode(search.mapMode ?? "voltage");
-    setCapacitySource(search.capacitySource ?? "reference");
+    setCapacitySource("private");
     setCapacityMetric(search.capacityMetric ?? "firm_import_mw");
-  }, [search.capacityMetric, search.capacitySource, search.mapMode]);
+    setReferenceLabOpen(
+      search.referenceLab === "true" ||
+        (search.mapMode === "capacity" && search.capacitySource === "reference"),
+    );
+  }, [search.capacityMetric, search.capacitySource, search.mapMode, search.referenceLab]);
 
   useEffect(() => {
-    if (mapMode !== "capacity" || capacitySource !== "private") return;
+    if (mapMode !== "capacity") return;
     setCapacityState("loading");
     void loadCalculatedCapacityViewport({
       workspaceId: search.workspaceId,
@@ -372,10 +382,10 @@ function PowerFinderPage() {
         setCapacityViewport(null);
         setCapacityState("error");
       });
-  }, [capacityMetric, capacitySource, collection, mapMode, search.workspaceId]);
+  }, [capacityMetric, collection, mapMode, search.workspaceId]);
 
   useEffect(() => {
-    if (mapMode !== "capacity" || capacitySource !== "reference" || referenceCapacity) return;
+    if (!referenceLabOpen || referenceCapacity) return;
     setCapacityState("loading");
     void loadReferenceCapacityMap()
       .then((artifact) => {
@@ -383,7 +393,7 @@ function PowerFinderPage() {
         setCapacityState("ready");
       })
       .catch(() => setCapacityState("error"));
-  }, [capacitySource, mapMode, referenceCapacity]);
+  }, [referenceLabOpen, referenceCapacity]);
 
   useEffect(() => {
     const saved = loadFinderProject();
@@ -847,68 +857,6 @@ function PowerFinderPage() {
       <main id="main-content" className="power-finder-page">
         <section className="power-finder-sidebar" aria-label="Power Finder controls">
           <div className="finder-rail-sticky">
-            <div className="finder-view-switch" role="group" aria-label="Map view">
-              <button
-                type="button"
-                className={mapMode !== "capacity" ? "is-active" : ""}
-                aria-pressed={mapMode !== "capacity"}
-                onClick={() => {
-                  setMapMode("voltage");
-                  void updateSearch({ mapMode: "voltage" });
-                }}
-              >
-                Grid context
-              </button>
-              <button
-                type="button"
-                className={mapMode === "capacity" ? "is-active" : ""}
-                aria-pressed={mapMode === "capacity"}
-                onClick={() => {
-                  setMapMode("capacity");
-                  void updateSearch({ mapMode: "capacity" });
-                }}
-              >
-                Capacity
-              </button>
-            </div>
-            {mapMode === "capacity" && (
-              <div className="finder-capacity-controls">
-                <label>
-                  <span>Source</span>
-                  <select
-                    name="sticky-capacity-source"
-                    value={capacitySource}
-                    onChange={(event) => {
-                      const value = event.target.value as "reference" | "private";
-                      setCapacitySource(value);
-                      setSelectedReferenceCapacity(null);
-                      void updateSearch({ capacitySource: value, candidate: undefined });
-                    }}
-                  >
-                    <option value="reference">Reference demo</option>
-                    <option value="private">Private reviewed</option>
-                  </select>
-                </label>
-                <label>
-                  <span>Metric</span>
-                  <select
-                    name="sticky-capacity-metric"
-                    value={capacityMetric}
-                    onChange={(event) => {
-                      const value = event.target.value as CapacityMetric;
-                      setCapacityMetric(value);
-                      void updateSearch({ capacityMetric: value });
-                    }}
-                  >
-                    {(Object.entries(capacityMetricLabels) as [CapacityMetric, string][]).map(
-                      ([value, label]) => (
-                        <option key={value} value={value}>{label}</option>
-                      ),
-                    )}
-                  </select>
-                </label>
-              </div>
-            )}
             <div className="finder-project-summary">
               <div>
                 <strong>{project.name}</strong>
@@ -1692,6 +1640,84 @@ function PowerFinderPage() {
                 </label>
               ))}
             </div>
+            <div className="capacity-overlay-control">
+              <label className="capacity-overlay-switch">
+                <span>
+                  <strong>Capacity Overlay</strong>
+                  <small>Show governed capacity on eligible mapped candidates</small>
+                </span>
+                <input
+                  name="capacity-overlay"
+                  type="checkbox"
+                  role="switch"
+                  checked={mapMode === "capacity"}
+                  onChange={(event) => {
+                    const enabled = event.target.checked;
+                    setMapMode(enabled ? "capacity" : "voltage");
+                    setCapacitySource("private");
+                    setSelectedReferenceCapacity(null);
+                    setInteractionNotice(`Capacity overlay ${enabled ? "enabled" : "disabled"}.`);
+                    void updateSearch({
+                      mapMode: enabled ? "capacity" : "voltage",
+                      capacitySource: enabled ? "private" : undefined,
+                    });
+                  }}
+                />
+              </label>
+              {mapMode === "capacity" && (
+                <div className="capacity-overlay-options">
+                  <label>
+                    <span>Source</span>
+                    <select name="capacity-overlay-source" value="private" disabled>
+                      <option value="private">Private Reviewed Results</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>Metric</span>
+                    <select
+                      name="capacity-overlay-metric"
+                      value={capacityMetric === "n0_import_mw" ? "firm_import_mw" : capacityMetric}
+                      onChange={(event) => {
+                        const value = event.target.value as CapacityMetric;
+                        setCapacityMetric(value);
+                        void updateSearch({ capacityMetric: value });
+                      }}
+                    >
+                      {(Object.entries(capacityMetricLabels) as [CapacityMetric, string][])
+                        .filter(([value]) => value !== "n0_import_mw")
+                        .map(([value, label]) => (
+                          <option key={value} value={value}>{label}</option>
+                        ))}
+                    </select>
+                  </label>
+                  <div className="capacity-overlay-empty" role="status" aria-live="polite">
+                    {capacityState === "loading" ? (
+                      <span>Loading governed capacity…</span>
+                    ) : capacityState === "error" ? (
+                      <span>Capacity could not be loaded. Check the workspace and try again.</span>
+                    ) : capacityViewport?.access !== "ready" ? (
+                      <span>Select an authorised workspace with accepted model-bus links and completed studies.</span>
+                    ) : capacityViewport.coverage.calculated === 0 ? (
+                      <span>No eligible calculated results. Unknown candidates remain uncoloured.</span>
+                    ) : (
+                      <span>{capacityViewport.coverage.calculated} calculated · {capacityViewport.coverage.reviewed} reviewed · {capacityViewport.coverage.stale} stale</span>
+                    )}
+                  </div>
+                </div>
+              )}
+              <button
+                type="button"
+                className="reference-lab-link"
+                onClick={() => {
+                  setReferenceLabOpen(true);
+                  setCapacityMetric("n0_import_mw");
+                  void updateSearch({ referenceLab: "true", capacityMetric: "n0_import_mw" });
+                }}
+              >
+                Open Reference Capacity Lab
+                <small>Explore the method on an abstract SimBench network</small>
+              </button>
+            </div>
             {(enabled.line || enabled.industrial_site) &&
               visibleLayerCounts.line + visibleLayerCounts.industrial_site === 0 && (
                 <p className="layer-visibility-note" role="status">
@@ -1863,13 +1889,13 @@ function PowerFinderPage() {
           {!visibleCollection && !error && (
             <div className="power-finder-loading">Loading map context…</div>
           )}
-          {visibleCollection && !(mapMode === "capacity" && capacitySource === "reference") && (
+          {visibleCollection && (
             <PowerFinderMap
               collection={visibleCollection}
               selectedFeature={selected}
               previewFeature={previewFeature}
               mapMode={mapMode}
-              capacityNodes={capacitySource === "private" ? (capacityViewport?.nodes ?? []) : []}
+              capacityNodes={capacityViewport?.nodes ?? []}
               viewportTarget={viewportTarget}
               onSelect={(feature) => {
                 setSelected(feature);
@@ -1930,12 +1956,26 @@ function PowerFinderPage() {
               onVisibleLayerCounts={setVisibleLayerCounts}
             />
           )}
-          {mapMode === "capacity" && capacitySource === "reference" && referenceCapacity && (
+          {referenceLabOpen && referenceCapacity && (
             <ReferenceCapacityInset
               artifact={referenceCapacity}
               metric={capacityMetric}
+              onMetricChange={(metric) => {
+                setCapacityMetric(metric);
+                void updateSearch({ capacityMetric: metric });
+              }}
               selected={selectedReferenceCapacity}
               onSelect={setSelectedReferenceCapacity}
+              onClose={() => {
+                setReferenceLabOpen(false);
+                setSelectedReferenceCapacity(null);
+                if (capacityMetric === "n0_import_mw") setCapacityMetric("firm_import_mw");
+                void updateSearch({
+                  referenceLab: undefined,
+                  capacityMetric: capacityMetric === "n0_import_mw" ? "firm_import_mw" : capacityMetric,
+                  capacitySource: "private",
+                });
+              }}
               onExplore={(result) => {
                 setSelectedReferenceCapacity(result);
                 void updateSearch({ study: "activation", studyTab: "overview" });
@@ -1943,7 +1983,6 @@ function PowerFinderPage() {
             />
           )}
 
-          {!(mapMode === "capacity" && capacitySource === "reference") && (
           <div className="power-finder-legend" aria-label="Map legend">
             <strong>
               {mapMode === "capacity"
@@ -1992,7 +2031,6 @@ function PowerFinderPage() {
               </>
             )}
           </div>
-          )}
 
           {activationOpen && (referenceCandidate || selectedOpportunity) && (
             <Suspense

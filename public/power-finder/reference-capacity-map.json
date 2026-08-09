@@ -1,6 +1,6 @@
 {
   "schema_version": "gridpulse-reference-capacity-map-v1",
-  "generated_at": "2026-08-09T14:54:01.196049+00:00",
+  "generated_at": "2026-08-09T17:32:36.136136+00:00",
   "result_mode": "reference_network_calculated",
   "model": {
     "id": "simbench:1-MV-urban--0-sw",
@@ -17,12 +17,8 @@
     "version": "3.5.4"
   },
   "security": {
-    "criterion": "N-1 demonstration",
-    "contingency_ids": [
-      "line-0-out",
-      "line-1-out",
-      "line-2-out"
-    ],
+    "criterion": "Candidate-relevant N-1 demonstration",
+    "contingency_selection": "Up to 3 non-bridge line outages on each candidate's traced upstream pathway.",
     "operator_approved_complete_set": false
   },
   "strategy_assumptions": {
@@ -323,28 +319,28 @@
     "warning": "Synthetic operator-engagement rehearsal\u2014not an operator response, operating instruction, connection offer, or mapped capacity result.",
     "manifest_sha256": "fb5fddfece182022fcb6408938ddde96f4285107973f93d59fa59ab168c47ed2"
   },
-  "results_sha256": "86362c956c974a85e7acc04454f343fd04a7ac2f02de8d73b918c301628fc2cd",
+  "results_sha256": "06d04930dafd044d31a2b0b8bc0d41831ebab5dc5dc596b8a4a62993b9923d01",
   "results": [
     {
       "result_id": "simbench-ref-01",
       "reference_bus_id": "bus-84",
       "label": "REF 01",
       "n0_capacity_mw": 5.812,
-      "n1_capacity_mw": 0.0,
-      "firm_capacity_mw": 0.0,
+      "n1_capacity_mw": 5.812,
+      "firm_capacity_mw": 5.812,
       "flexible_capacity_mw": 4.66,
       "bess_assisted_capacity_mw": 4.793,
       "staged_initial_capacity_mw": 3.229,
       "eventual_capacity_mw": 5.812,
-      "activatable_capacity_mw": 4.66,
-      "additional_unlocked_mw": 4.66,
+      "activatable_capacity_mw": 5.812,
+      "additional_unlocked_mw": 0.0,
       "activation": {
         "schema_version": "gridpulse-activatable-capacity-v1",
         "requested_capacity_mw": 5.812,
-        "conventional_firm_mw": 0.0,
+        "conventional_firm_mw": 5.812,
         "immediately_energisable_mw": 3.229,
-        "activatable_capacity_mw": 4.66,
-        "additional_unlocked_mw": 4.66,
+        "activatable_capacity_mw": 5.812,
+        "additional_unlocked_mw": 0.0,
         "flexible": {
           "capacity_mw": 4.66,
           "restricted_hours": 131,
@@ -1573,7 +1569,7 @@
           "renewable_case": "base"
         },
         "calculation_boundary": "The electrical ceiling is a Pandapower result; hourly utilisation and operating commitments are representative synthetic conditions.",
-        "result_sha256": "23084e1100a5984ebe38cee993ccaa43c771b9d75f98c8a1b1ab935496de6636"
+        "result_sha256": "e9f80712859989ddfaf6ed02a4a993e19c2171793c30ed02d13ebd739953ab96"
       },
       "ensemble": {
         "schema_version": "gridpulse-activation-ensemble-v1",
@@ -1582,9 +1578,9 @@
         "electrical_ceiling_physics_verified": true,
         "scenario_specific_physics_replays": 0,
         "confidence": {
-          "p10_mw": 4.408,
-          "p50_mw": 4.631,
-          "p90_mw": 4.854,
+          "p10_mw": 5.812,
+          "p50_mw": 5.812,
+          "p90_mw": 5.812,
           "interpretation": "Distribution across representative mocked operating conditions; not statistical operator confidence."
         },
         "dominant_uncertainty": "Synthetic operating conditions are not time-aligned operator telemetry.",
@@ -1595,11 +1591,11 @@
               "demand_case": "low",
               "renewable_case": "low"
             },
-            "activatable_capacity_mw": 4.631,
-            "additional_unlocked_mw": 4.631,
+            "activatable_capacity_mw": 5.812,
+            "additional_unlocked_mw": 0.0,
             "restricted_hours": 131,
             "restricted_energy_mwh": 67.67,
-            "result_sha256": "31c32982e6f3d5331e1d49830c5a0d4456c26cb38e29fe0f59e63fecafb05a6a"
+            "result_sha256": "b66e3dc9f8d1cfb684eed53c774c6c06dae0483b87459b05426844bd9210fd47"
           },
           {
             "scenario": {
@@ -1607,11 +1603,11 @@
               "demand_case": "low",
               "renewable_case": "base"
             },
-            "activatable_capacity_mw": 4.736,
-            "additional_unlocked_mw": 4.736,
+            "activatable_capacity_mw": 5.812,
+            "additional_unlocked_mw": 0.0,
             "restricted_hours": 131,
             "restricted_energy_mwh": 68.064,
-            "result_sha256": "a5f2135bf88be7a7a0e08ebca8579627ec478d027fd62952779ee3a6c3d79ede"
+            "result_sha256": "fbe6fb6733da7e6721721211869e66d33d3143240becb775e96082fed237bea8"
           },
           {
             "scenario": {
@@ -1619,11 +1615,11 @@
               "demand_case": "low",
               "renewable_case": "high"
             },
-            "activatable_capacity_mw": 4.84,
-            "additional_unlocked_mw": 4.84,
+            "activatable_capacity_mw": 5.812,
+            "additional_unlocked_mw": 0.0,
             "restricted_hours": 131,
             "restricted_energy_mwh": 68.404,
-            "result_sha256": "376b0759351ddca0273ebf8756a259eb54529899946adf442d00b07b7f10e6fb"
+            "result_sha256": "4fb709593c3a00692420d27fcdd05fac17c45c9796895ea01419280a06b754f2"
           },
           {
             "scenario": {
@@ -1631,11 +1627,11 @@
               "demand_case": "base",
               "renewable_case": "low"
             },
-            "activatable_capacity_mw": 4.486,
-            "additional_unlocked_mw": 4.486,
+            "activatable_capacity_mw": 5.812,
+            "additional_unlocked_mw": 0.0,
             "restricted_hours": 131,
             "restricted_energy_mwh": 66.944,
-            "result_sha256": "728180b37adf619a0eb20eebe31437f820fb6f43ced7a555ae41517d49765fa0"
+            "result_sha256": "f4f4e5bd9105c2a64de043ca8e65bee5996d2742ee667d68bfa763fa3c2fcb66"
           },
           {
             "scenario": {
@@ -1643,11 +1639,11 @@
               "demand_case": "base",
               "renewable_case": "base"
             },
-            "activatable_capacity_mw": 4.59,
-            "additional_unlocked_mw": 4.59,
+            "activatable_capacity_mw": 5.812,
+            "additional_unlocked_mw": 0.0,
             "restricted_hours": 131,
             "restricted_energy_mwh": 67.475,
-            "result_sha256": "ad472a23c4e6509992491990841338bd68bda601b4cf6bdf97fa13fc8951fd4a"
+            "result_sha256": "cac8a4c88442ddab159368a00f93e8bc131de35f431e12a725491c47f5efb833"
           },
           {
             "scenario": {
@@ -1655,11 +1651,11 @@
               "demand_case": "base",
               "renewable_case": "high"
             },
-            "activatable_capacity_mw": 4.695,
-            "additional_unlocked_mw": 4.695,
+            "activatable_capacity_mw": 5.812,
+            "additional_unlocked_mw": 0.0,
             "restricted_hours": 131,
             "restricted_energy_mwh": 67.918,
-            "result_sha256": "097309e7869bb594e0e56e96e3b5de1b2e364a6be1bb84d79bd7593c8bb450c3"
+            "result_sha256": "b41e711503953f7499163bfbfc507e10cd818ce7336718ad8d0c51b4be1c0573"
           },
           {
             "scenario": {
@@ -1667,11 +1663,11 @@
               "demand_case": "high",
               "renewable_case": "low"
             },
-            "activatable_capacity_mw": 4.282,
-            "additional_unlocked_mw": 4.282,
+            "activatable_capacity_mw": 5.812,
+            "additional_unlocked_mw": 0.0,
             "restricted_hours": 131,
             "restricted_energy_mwh": 65.781,
-            "result_sha256": "153363c472fb13c380c9b0fa447b3d2ceade825240fdeceae5fcc1296bf8ff9d"
+            "result_sha256": "7b70bcf4fb6dc9fe84fb407439fddc2aff7711bb393982b1a27bdcfbde2eb3f0"
           },
           {
             "scenario": {
@@ -1679,11 +1675,11 @@
               "demand_case": "high",
               "renewable_case": "base"
             },
-            "activatable_capacity_mw": 4.387,
-            "additional_unlocked_mw": 4.387,
+            "activatable_capacity_mw": 5.812,
+            "additional_unlocked_mw": 0.0,
             "restricted_hours": 131,
             "restricted_energy_mwh": 66.404,
-            "result_sha256": "1cde7b3e8737e495de0fcf347579de3a4eac398f40bee0335de2203197c838d5"
+            "result_sha256": "fb867a806602ab74b022ef1bbbf8c170f77c4d0d8a0fbe4e1b119c8edd58fdb4"
           },
           {
             "scenario": {
@@ -1691,11 +1687,11 @@
               "demand_case": "high",
               "renewable_case": "high"
             },
-            "activatable_capacity_mw": 4.491,
-            "additional_unlocked_mw": 4.491,
+            "activatable_capacity_mw": 5.812,
+            "additional_unlocked_mw": 0.0,
             "restricted_hours": 131,
             "restricted_energy_mwh": 66.976,
-            "result_sha256": "64b0f4c7969da748c07899f24267558ceb70f898ef86dd14a3d00ba34f2c5ac2"
+            "result_sha256": "eae14ab742041eee59717648b6e82e30923cb9ac8b1904941796406070f6a221"
           },
           {
             "scenario": {
@@ -1703,11 +1699,11 @@
               "demand_case": "low",
               "renewable_case": "low"
             },
-            "activatable_capacity_mw": 4.701,
-            "additional_unlocked_mw": 4.701,
+            "activatable_capacity_mw": 5.812,
+            "additional_unlocked_mw": 0.0,
             "restricted_hours": 131,
             "restricted_energy_mwh": 67.94,
-            "result_sha256": "f4a51d2675ee788f99e891761d2a5b7d314a33653146de8eae7970e53355e352"
+            "result_sha256": "b5f8e55d2a1b220d2f8dbdc2346ba9cdc076f5783421fe88196bc65ff9f602f3"
           },
           {
             "scenario": {
@@ -1715,11 +1711,11 @@
               "demand_case": "low",
               "renewable_case": "base"
             },
-            "activatable_capacity_mw": 4.805,
-            "additional_unlocked_mw": 4.805,
+            "activatable_capacity_mw": 5.812,
+            "additional_unlocked_mw": 0.0,
             "restricted_hours": 131,
             "restricted_energy_mwh": 68.29,
-            "result_sha256": "f7f6fb45e15d4d59bc161dc1ee63f2e775ca883511ade81651c297dbbe61f814"
+            "result_sha256": "271283f7e3bd7abdb267cd493331f99b97d5c1d97dc994debe5290a55a81f17e"
           },
           {
             "scenario": {
@@ -1727,11 +1723,11 @@
               "demand_case": "low",
               "renewable_case": "high"
             },
-            "activatable_capacity_mw": 4.91,
-            "additional_unlocked_mw": 4.91,
+            "activatable_capacity_mw": 5.812,
+            "additional_unlocked_mw": 0.0,
             "restricted_hours": 131,
             "restricted_energy_mwh": 68.615,
-            "result_sha256": "5b9fdde8dee4a9b8738f7d8620447195e0aaa8cb0ee1070507edb540e323d375"
+            "result_sha256": "cb4fa84f7f862d3ac37ebfdd2cb5fccb393ef3b3e45f7b761d555a74c5752f2a"
           },
           {
             "scenario": {
@@ -1739,11 +1735,11 @@
               "demand_case": "base",
               "renewable_case": "low"
             },
-            "activatable_capacity_mw": 4.555,
-            "additional_unlocked_mw": 4.555,
+            "activatable_capacity_mw": 5.812,
+            "additional_unlocked_mw": 0.0,
             "restricted_hours": 131,
             "restricted_energy_mwh": 67.301,
-            "result_sha256": "6890e97987654b278541e182c4c37f0aa3ceb554c03c8288f1abe2cb5acced70"
+            "result_sha256": "73f263c28bcc7538fab6b4487c7e9a97d060d36cb4f3a7a37959b716e3d64b44"
           },
           {
             "scenario": {
@@ -1751,11 +1747,11 @@
               "demand_case": "base",
               "renewable_case": "base"
             },
-            "activatable_capacity_mw": 4.66,
-            "additional_unlocked_mw": 4.66,
+            "activatable_capacity_mw": 5.812,
+            "additional_unlocked_mw": 0.0,
             "restricted_hours": 131,
             "restricted_energy_mwh": 67.786,
-            "result_sha256": "23084e1100a5984ebe38cee993ccaa43c771b9d75f98c8a1b1ab935496de6636"
+            "result_sha256": "e9f80712859989ddfaf6ed02a4a993e19c2171793c30ed02d13ebd739953ab96"
           },
           {
             "scenario": {
@@ -1763,11 +1759,11 @@
               "demand_case": "base",
               "renewable_case": "high"
             },
-            "activatable_capacity_mw": 4.765,
-            "additional_unlocked_mw": 4.765,
+            "activatable_capacity_mw": 5.812,
+            "additional_unlocked_mw": 0.0,
             "restricted_hours": 131,
             "restricted_energy_mwh": 68.158,
-            "result_sha256": "94096c45459ea14a9fe652f59cc42ac0fdca298be6ae15b7aaf85032506cf1a1"
+            "result_sha256": "9bbc7c389f5e78e37470f8d6158d69218410ed22dbd920dcc431e37d2ab41d32"
           },
           {
             "scenario": {
@@ -1775,11 +1771,11 @@
               "demand_case": "high",
               "renewable_case": "low"
             },
-            "activatable_capacity_mw": 4.352,
-            "additional_unlocked_mw": 4.352,
+            "activatable_capacity_mw": 5.812,
+            "additional_unlocked_mw": 0.0,
             "restricted_hours": 131,
             "restricted_energy_mwh": 66.207,
-            "result_sha256": "75f4d504e29a6ab5412f1661b00459eb36d19745e533cd7b0a40308887949cb5"
+            "result_sha256": "b91ecda28666c1d266015baaebbcbd21ecf8bf48b1994f0cd2ba0e97edf3f0d4"
           },
           {
             "scenario": {
@@ -1787,11 +1783,11 @@
               "demand_case": "high",
               "renewable_case": "base"
             },
-            "activatable_capacity_mw": 4.457,
-            "additional_unlocked_mw": 4.457,
+            "activatable_capacity_mw": 5.812,
+            "additional_unlocked_mw": 0.0,
             "restricted_hours": 131,
             "restricted_energy_mwh": 66.787,
-            "result_sha256": "3239e8cd4713e51f805afdd6c2f69057644a614215096e57c1b0417e088f0320"
+            "result_sha256": "ad8e438c4d60b49f36fdbb3d87971cba297c77f0fa83026e08a675f4dfd3071b"
           },
           {
             "scenario": {
@@ -1799,11 +1795,11 @@
               "demand_case": "high",
               "renewable_case": "high"
             },
-            "activatable_capacity_mw": 4.561,
-            "additional_unlocked_mw": 4.561,
+            "activatable_capacity_mw": 5.812,
+            "additional_unlocked_mw": 0.0,
             "restricted_hours": 131,
             "restricted_energy_mwh": 67.33,
-            "result_sha256": "6faf8b8de4eccee6ecc2fc6f72c9cf0d102a9cbb0963a93d2b92c970e50c73cb"
+            "result_sha256": "f114e3095e39f7758ea5a87b6b5fdd6c073ab8f7ce373b4b8a3e842c4520d8eb"
           },
           {
             "scenario": {
@@ -1811,11 +1807,11 @@
               "demand_case": "low",
               "renewable_case": "low"
             },
-            "activatable_capacity_mw": 4.77,
-            "additional_unlocked_mw": 4.77,
+            "activatable_capacity_mw": 5.812,
+            "additional_unlocked_mw": 0.0,
             "restricted_hours": 131,
             "restricted_energy_mwh": 68.177,
-            "result_sha256": "d503fac902b6f69a10ae5ea8895fdf7b478107673e65d5c3b007f8814e0ca3fb"
+            "result_sha256": "db0e312b1f72ee69bd181694d7156394ed5874fb519da07d4291c54b293cde39"
           },
           {
             "scenario": {
@@ -1823,11 +1819,11 @@
               "demand_case": "low",
               "renewable_case": "base"
             },
-            "activatable_capacity_mw": 4.875,
-            "additional_unlocked_mw": 4.875,
+            "activatable_capacity_mw": 5.812,
+            "additional_unlocked_mw": 0.0,
             "restricted_hours": 131,
             "restricted_energy_mwh": 68.517,
-            "result_sha256": "ba1c8c2f17d60d83f9bb200faabe5280eaaff1c18a8f22bc36910fc6baf23f9c"
+            "result_sha256": "6d6c7ade071f7c027185b49df5eeaccbac7e1b2abd93109e4b1cb81796673f53"
           },
           {
             "scenario": {
@@ -1835,11 +1831,11 @@
               "demand_case": "low",
               "renewable_case": "high"
             },
-            "activatable_capacity_mw": 4.98,
-            "additional_unlocked_mw": 4.98,
+            "activatable_capacity_mw": 5.812,
+            "additional_unlocked_mw": 0.0,
             "restricted_hours": 131,
             "restricted_energy_mwh": 68.789,
-            "result_sha256": "b6d01c1f089335f3bb5ec211b1e4d9a15655dc75bb57286b8b7966c499c4ae72"
+            "result_sha256": "aed0e634c24f08db5530dc829e07b54fe477802f1a6d5e354c950e8fc3a8725f"
           },
           {
             "scenario": {
@@ -1847,11 +1843,11 @@
               "demand_case": "base",
               "renewable_case": "low"
             },
-            "activatable_capacity_mw": 4.625,
-            "additional_unlocked_mw": 4.625,
+            "activatable_capacity_mw": 5.812,
+            "additional_unlocked_mw": 0.0,
             "restricted_hours": 131,
             "restricted_energy_mwh": 67.645,
-            "result_sha256": "3de2f08ddfb7aa0ce3b6420ee70b4f6d473278a986ac476428d3fe13dce3aebd"
+            "result_sha256": "bb550d6c72191ce206ba4b6389422e2b173e8af0a457f739d577e0591c11a02e"
           },
           {
             "scenario": {
@@ -1859,11 +1855,11 @@
               "demand_case": "base",
               "renewable_case": "base"
             },
-            "activatable_capacity_mw": 4.73,
-            "additional_unlocked_mw": 4.73,
+            "activatable_capacity_mw": 5.812,
+            "additional_unlocked_mw": 0.0,
             "restricted_hours": 131,
             "restricted_energy_mwh": 68.045,
-            "result_sha256": "0d55eace25cf40a8ca2498610f035612ec2133b698032f9c5c85746fac519578"
+            "result_sha256": "84527b25d44dcbf193ce1cae8f7d14eb3da394069cc2349b57f5fa1c44f48bcb"
           },
           {
             "scenario": {
@@ -1871,11 +1867,11 @@
               "demand_case": "base",
               "renewable_case": "high"
             },
-            "activatable_capacity_mw": 4.834,
-            "additional_unlocked_mw": 4.834,
+            "activatable_capacity_mw": 5.812,
+            "additional_unlocked_mw": 0.0,
             "restricted_hours": 131,
             "restricted_energy_mwh": 68.384,
-            "result_sha256": "51d41195b3ed42a676488885494bfb16a20aafe5be6142c2c6b6d6e98de14c5f"
+            "result_sha256": "60406b62c32bde45c8e9d07a692a7ace5f6316d3b94b67761112eabfd4849287"
           },
           {
             "scenario": {
@@ -1883,11 +1879,11 @@
               "demand_case": "high",
               "renewable_case": "low"
             },
-            "activatable_capacity_mw": 4.422,
-            "additional_unlocked_mw": 4.422,
+            "activatable_capacity_mw": 5.812,
+            "additional_unlocked_mw": 0.0,
             "restricted_hours": 131,
             "restricted_energy_mwh": 66.596,
-            "result_sha256": "037334083792c9e1e356cc04baa6bf0887b6808503e9af760f0021df73978f47"
+            "result_sha256": "e6f5834e37acdab67439b69c0e3b931b2664283c8ab5a9bb11dfb3cfb87adb1a"
           },
           {
             "scenario": {
@@ -1895,11 +1891,11 @@
               "demand_case": "high",
               "renewable_case": "base"
             },
-            "activatable_capacity_mw": 4.526,
-            "additional_unlocked_mw": 4.526,
+            "activatable_capacity_mw": 5.812,
+            "additional_unlocked_mw": 0.0,
             "restricted_hours": 131,
             "restricted_energy_mwh": 67.156,
-            "result_sha256": "3783067d9dd85716345f9827d522c2507c1f756c0d6ea8c852189e41bc24911c"
+            "result_sha256": "0e481f01894582c34fd27f999e509cb433e3df717196333cd75818a7f84ec6af"
           },
           {
             "scenario": {
@@ -1907,14 +1903,14 @@
               "demand_case": "high",
               "renewable_case": "high"
             },
-            "activatable_capacity_mw": 4.631,
-            "additional_unlocked_mw": 4.631,
+            "activatable_capacity_mw": 5.812,
+            "additional_unlocked_mw": 0.0,
             "restricted_hours": 131,
             "restricted_energy_mwh": 67.67,
-            "result_sha256": "97812e587313f291e5c16e71659f63bb34d41f8e6448e4484566af1a5a889472"
+            "result_sha256": "ac2a7a4ccf42f7aded7360aa3d9fb8163a5c60b0fc39511dda5fd88adeae95ee"
           }
         ],
-        "scenario_set_sha256": "377a8f0e4ea69a2800bf5b5c632c5f86a40bc6757c48107206c6bba5df91f228"
+        "scenario_set_sha256": "8b56cccb7e22b479707a4693ce8cf705fdbd2f6652bf120e659b6f4fb373b1f7"
       },
       "release2_governance": {
         "schema_version": "gridpulse-release2-governance-v1",
@@ -2149,8 +2145,10 @@
         "warning": "Synthetic operator-engagement rehearsal\u2014not an operator response, operating instruction, connection offer, or mapped capacity result.",
         "manifest_sha256": "fb5fddfece182022fcb6408938ddde96f4285107973f93d59fa59ab168c47ed2"
       },
-      "binding_constraint": "unsupplied_load_bus",
-      "binding_case": "line-0-out",
+      "binding_constraint": "line_thermal_loading",
+      "binding_case": "base_case",
+      "contingency_ids": [],
+      "contingency_selection": "candidate_upstream_non_bridge_path",
       "validation_state": "reference_network_calculated",
       "graph_pathway_available": true
     },
@@ -3979,7 +3977,13 @@
         "manifest_sha256": "fb5fddfece182022fcb6408938ddde96f4285107973f93d59fa59ab168c47ed2"
       },
       "binding_constraint": "unsupplied_load_bus",
-      "binding_case": "line-0-out",
+      "binding_case": "line-4-out",
+      "contingency_ids": [
+        "line-4-out",
+        "line-8-out",
+        "line-9-out"
+      ],
+      "contingency_selection": "candidate_upstream_non_bridge_path",
       "validation_state": "reference_network_calculated",
       "graph_pathway_available": true
     },
@@ -5808,7 +5812,13 @@
         "manifest_sha256": "fb5fddfece182022fcb6408938ddde96f4285107973f93d59fa59ab168c47ed2"
       },
       "binding_constraint": "unsupplied_load_bus",
-      "binding_case": "line-0-out",
+      "binding_case": "line-32-out",
+      "contingency_ids": [
+        "line-32-out",
+        "line-33-out",
+        "line-34-out"
+      ],
+      "contingency_selection": "candidate_upstream_non_bridge_path",
       "validation_state": "reference_network_calculated",
       "graph_pathway_available": true
     },
@@ -7637,7 +7647,13 @@
         "manifest_sha256": "fb5fddfece182022fcb6408938ddde96f4285107973f93d59fa59ab168c47ed2"
       },
       "binding_constraint": "unsupplied_load_bus",
-      "binding_case": "line-0-out",
+      "binding_case": "line-57-out",
+      "contingency_ids": [
+        "line-57-out",
+        "line-141-out",
+        "line-43-out"
+      ],
+      "contingency_selection": "candidate_upstream_non_bridge_path",
       "validation_state": "reference_network_calculated",
       "graph_pathway_available": true
     },
@@ -9466,7 +9482,13 @@
         "manifest_sha256": "fb5fddfece182022fcb6408938ddde96f4285107973f93d59fa59ab168c47ed2"
       },
       "binding_constraint": "unsupplied_load_bus",
-      "binding_case": "line-0-out",
+      "binding_case": "line-89-out",
+      "contingency_ids": [
+        "line-89-out",
+        "line-88-out",
+        "line-87-out"
+      ],
+      "contingency_selection": "candidate_upstream_non_bridge_path",
       "validation_state": "reference_network_calculated",
       "graph_pathway_available": true
     },
@@ -11295,7 +11317,13 @@
         "manifest_sha256": "fb5fddfece182022fcb6408938ddde96f4285107973f93d59fa59ab168c47ed2"
       },
       "binding_constraint": "unsupplied_load_bus",
-      "binding_case": "line-0-out",
+      "binding_case": "line-103-out",
+      "contingency_ids": [
+        "line-103-out",
+        "line-102-out",
+        "line-101-out"
+      ],
+      "contingency_selection": "candidate_upstream_non_bridge_path",
       "validation_state": "reference_network_calculated",
       "graph_pathway_available": true
     },
@@ -13124,7 +13152,13 @@
         "manifest_sha256": "fb5fddfece182022fcb6408938ddde96f4285107973f93d59fa59ab168c47ed2"
       },
       "binding_constraint": "unsupplied_load_bus",
-      "binding_case": "line-0-out",
+      "binding_case": "line-105-out",
+      "contingency_ids": [
+        "line-105-out",
+        "line-104-out",
+        "line-103-out"
+      ],
+      "contingency_selection": "candidate_upstream_non_bridge_path",
       "validation_state": "reference_network_calculated",
       "graph_pathway_available": true
     },
@@ -14953,7 +14987,13 @@
         "manifest_sha256": "fb5fddfece182022fcb6408938ddde96f4285107973f93d59fa59ab168c47ed2"
       },
       "binding_constraint": "unsupplied_load_bus",
-      "binding_case": "line-0-out",
+      "binding_case": "line-3-out",
+      "contingency_ids": [
+        "line-3-out",
+        "line-8-out",
+        "line-9-out"
+      ],
+      "contingency_selection": "candidate_upstream_non_bridge_path",
       "validation_state": "reference_network_calculated",
       "graph_pathway_available": true
     },
@@ -16782,7 +16822,13 @@
         "manifest_sha256": "fb5fddfece182022fcb6408938ddde96f4285107973f93d59fa59ab168c47ed2"
       },
       "binding_constraint": "unsupplied_load_bus",
-      "binding_case": "line-0-out",
+      "binding_case": "line-7-out",
+      "contingency_ids": [
+        "line-7-out",
+        "line-6-out",
+        "line-5-out"
+      ],
+      "contingency_selection": "candidate_upstream_non_bridge_path",
       "validation_state": "reference_network_calculated",
       "graph_pathway_available": true
     },
@@ -18611,7 +18657,13 @@
         "manifest_sha256": "fb5fddfece182022fcb6408938ddde96f4285107973f93d59fa59ab168c47ed2"
       },
       "binding_constraint": "unsupplied_load_bus",
-      "binding_case": "line-0-out",
+      "binding_case": "line-103-out",
+      "contingency_ids": [
+        "line-139-out",
+        "line-103-out",
+        "line-102-out"
+      ],
+      "contingency_selection": "candidate_upstream_non_bridge_path",
       "validation_state": "reference_network_calculated",
       "graph_pathway_available": true
     },
@@ -20440,7 +20492,13 @@
         "manifest_sha256": "fb5fddfece182022fcb6408938ddde96f4285107973f93d59fa59ab168c47ed2"
       },
       "binding_constraint": "unsupplied_load_bus",
-      "binding_case": "line-0-out",
+      "binding_case": "line-22-out",
+      "contingency_ids": [
+        "line-22-out",
+        "line-23-out",
+        "line-24-out"
+      ],
+      "contingency_selection": "candidate_upstream_non_bridge_path",
       "validation_state": "reference_network_calculated",
       "graph_pathway_available": true
     },
@@ -22269,7 +22327,13 @@
         "manifest_sha256": "fb5fddfece182022fcb6408938ddde96f4285107973f93d59fa59ab168c47ed2"
       },
       "binding_constraint": "unsupplied_load_bus",
-      "binding_case": "line-0-out",
+      "binding_case": "line-7-out",
+      "contingency_ids": [
+        "line-133-out",
+        "line-7-out",
+        "line-6-out"
+      ],
+      "contingency_selection": "candidate_upstream_non_bridge_path",
       "validation_state": "reference_network_calculated",
       "graph_pathway_available": true
     }

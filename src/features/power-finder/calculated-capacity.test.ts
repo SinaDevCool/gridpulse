@@ -29,6 +29,7 @@ const node = {
 
 describe("calculated capacity contract", () => {
   it("keeps strategy metrics separate", () => {
+    expect(capacityValueForMetric(node, "n0_import_mw")).toBe(20);
     expect(capacityValueForMetric(node, "firm_import_mw")).toBe(20);
     expect(capacityValueForMetric(node, "bess_assisted_import_mw")).toBe(42);
   });
@@ -61,6 +62,7 @@ describe("calculated capacity contract", () => {
     expect(referenceCapacityValue(reference as ReferenceCapacityResult, "flexible_import_mw")).toBe(
       6.8,
     );
+    expect(referenceCapacityValue(reference as ReferenceCapacityResult, "n0_import_mw")).toBe(8);
     expect(reference).not.toHaveProperty("publicNodeId");
   });
 });
