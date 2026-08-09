@@ -186,6 +186,14 @@ export function ReferenceCapacityInset({
           Pandapower {artifact.solver.version} · topology{" "}
           {artifact.model.topology_provider.replaceAll("_", " ")}
         </span>
+        {artifact.release2_governance && (
+          <span>
+            Release 2:{" "}
+            {artifact.release2_governance.active_learning.physics_verified_selected_count}/
+            {artifact.release2_governance.active_learning.candidate_count} AI-prioritised cases
+            verified by physics
+          </span>
+        )}
       </footer>
     </section>
   );

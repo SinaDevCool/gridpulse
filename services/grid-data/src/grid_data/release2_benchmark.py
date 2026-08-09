@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -13,7 +14,9 @@ from .pilot_providers import SyntheticPilotDataProvider
 from .release2_pipeline import run_release2
 
 
-def build_release2_benchmark(package_dir: Path, output: Path, model_artifact: Path) -> dict:
+def build_release2_benchmark(
+    package_dir: Path, output: Path, model_artifact: Path, public_output: Path | None = None
+) -> dict:
     bundle = SyntheticPilotDataProvider(package_dir).load()
     builder = NetworkStateBuilder(bundle)
     provider = PandapowerProvider(maximum_capacity_mw=100, capacity_tolerance_mw=1.0)
@@ -102,4 +105,51 @@ def build_release2_benchmark(package_dir: Path, output: Path, model_artifact: Pa
     }
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(report, indent=2, default=str), encoding="utf-8")
+    if public_output:
+        registry = report["updated_model_registry"]
+        public_manifest = {
+            "schema_version": "gridpulse-release2-governance-v1",
+            "release": "Release 2",
+            "validation_class": "synthetic_demonstration",
+            "public_visibility": "governance_summary_only",
+            "capacity_claim": False,
+            "dataset": report["benchmark"],
+            "model": {
+                "algorithm": registry["algorithm"],
+                "training_count": registry["training_count"],
+                "holdout_count": registry["holdout_count"],
+                "unique_capacity_labels": registry["metrics"]["unique_capacity_labels"],
+                "capacity_label_range_mw": registry["metrics"]["capacity_label_range_mw"],
+                "capacity_mae_mw": registry["metrics"]["capacity_mae_mw"],
+                "false_safe_rate": registry["metrics"]["false_safe_rate"],
+                "dataset_hash": registry["dataset_hash"],
+                "approved_use": registry["approved_use"],
+                "prohibited_use": registry["prohibited_use"],
+            },
+            "active_learning": {
+                "candidate_count": report["active_learning_round"]["candidate_count"],
+                "physics_selected_count": report["active_learning_round"]["selected_count"],
+                "mandatory_contingency_count": len(
+                    report["active_learning_round"]["mandatory_contingencies"]
+                ),
+                "physics_verified_selected_count": len(
+                    report["active_learning_round"]["physics_outcomes"]
+                ),
+                "rare_event_verified_count": report["rare_event_search"]["verified_count"],
+                "selected_scenario_hash": report["active_learning_round"]["selected_scenario_hash"],
+            },
+            "promotion": report["promotion"],
+            "stopping": report["stopping"],
+            "artifact": {
+                "sha256": report["artifact"]["artifact_sha256"],
+                "publicly_downloadable": False,
+                "format_disclosed": False,
+            },
+            "warning": report["warning"],
+        }
+        public_manifest["manifest_sha256"] = hashlib.sha256(
+            json.dumps(public_manifest, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+        public_output.parent.mkdir(parents=True, exist_ok=True)
+        public_output.write_text(json.dumps(public_manifest, indent=2), encoding="utf-8")
     return report

@@ -63,6 +63,10 @@ def build_reference_capacity_map_artifact(
     policy = ActivationPolicy(
         **{key: value for key, value in policy_payload.items() if key != "schema_version"}
     )
+    release2_path = repo_root / "public" / "power-finder" / "release2-governance.json"
+    release2 = (
+        json.loads(release2_path.read_text(encoding="utf-8")) if release2_path.is_file() else None
+    )
     model = import_simbench_model(code)
     projection = build_projection(model)
     topology = configured_topology_provider()
@@ -110,6 +114,7 @@ def build_reference_capacity_map_artifact(
                 "additional_unlocked_mw": activation["additional_unlocked_mw"],
                 "activation": activation,
                 "ensemble": ensemble,
+                "release2_governance": release2,
                 "binding_constraint": n1.values.get("binding_constraint"),
                 "binding_case": n1.values.get("binding_case"),
                 "validation_state": "reference_network_calculated",
@@ -155,6 +160,7 @@ def build_reference_capacity_map_artifact(
                 json.dumps(evidence_manifest, sort_keys=True, separators=(",", ":")).encode()
             ).hexdigest(),
         },
+        "release2_governance": release2,
         "results_sha256": hashlib.sha256(canonical.encode()).hexdigest(),
         "results": results,
         "permitted_interpretation": "Calculated capacity on a SimBench reference network.",

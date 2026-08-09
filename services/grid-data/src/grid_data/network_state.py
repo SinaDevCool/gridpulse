@@ -177,7 +177,11 @@ class NetworkStateBuilder:
                     f"Reinforcement {reinforcement_id} has no executable model change."
                 )
 
-        contingencies = copy.deepcopy(model.contingencies)
+        # A scenario is one effective operating state. Do not silently apply the
+        # model's full contingency catalogue to every base state; a specific
+        # outage is activated only when the scenario names it.
+        contingency_catalogue = copy.deepcopy(model.contingencies)
+        contingencies: list[dict[str, Any]] = []
         if scenario.contingency_id and scenario.planned_outage_id:
             raise ValueError("Use a contingency or a planned outage in one state, not both.")
         if scenario.planned_outage_id:
@@ -201,7 +205,9 @@ class NetworkStateBuilder:
             ]
         elif scenario.contingency_id:
             contingencies = [
-                item for item in contingencies if str(item.get("id")) == scenario.contingency_id
+                item
+                for item in contingency_catalogue
+                if str(item.get("id")) == scenario.contingency_id
             ]
             if not contingencies:
                 raise ValueError(f"Unknown contingency {scenario.contingency_id}")

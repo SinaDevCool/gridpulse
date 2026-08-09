@@ -1,0 +1,54 @@
+{
+  "schema_version": "gridpulse-release2-governance-v1",
+  "release": "Release 2",
+  "validation_class": "synthetic_demonstration",
+  "public_visibility": "governance_summary_only",
+  "capacity_claim": false,
+  "dataset": {
+    "dataset_id": "synthetic-brandenburg-pilot",
+    "dataset_sha256": "d0894883c7593d98bdcbdbf378260463009dd4e310ef9c0bf44b2480986d4f60",
+    "validation_class": "synthetic_demonstration",
+    "physics_training_rows": 18,
+    "electrical_model": "synthetic-brandenburg-pilot-network-v1",
+    "operator_data_used": false
+  },
+  "model": {
+    "algorithm": "gradient_boosting",
+    "training_count": 20,
+    "holdout_count": 4,
+    "unique_capacity_labels": 9,
+    "capacity_label_range_mw": 11.0,
+    "capacity_mae_mw": 0.5307,
+    "false_safe_rate": 0.0,
+    "dataset_hash": "62ef041917997e8c7382554ce6d67bab526ff965a7a2f35de1490a683168162e",
+    "approved_use": "scenario prioritisation and explanation before mandatory physics verification",
+    "prohibited_use": "representing surrogate output as available or operator-confirmed grid capacity"
+  },
+  "active_learning": {
+    "candidate_count": 10,
+    "physics_selected_count": 6,
+    "mandatory_contingency_count": 2,
+    "physics_verified_selected_count": 6,
+    "rare_event_verified_count": 6,
+    "selected_scenario_hash": "e6d248126574d07cd8debcf4b3b189b0033dab666e36a14df799aecbabcd48ec"
+  },
+  "promotion": {
+    "decision": "promote",
+    "rollback_required": false,
+    "false_safe_rate": 0.0,
+    "mae_improvement_mw": -0.0336,
+    "reason": "gates_passed"
+  },
+  "stopping": {
+    "stop": true,
+    "reason": "budget_exhausted",
+    "solver_budget_remaining": 0
+  },
+  "artifact": {
+    "sha256": "7b339dceaf3e281b9a15438311ea84e3e6b911bfba903c641fa8173b9ddccf08",
+    "publicly_downloadable": false,
+    "format_disclosed": false
+  },
+  "warning": "Surrogate outputs prioritise physics solves and are never grid-capacity results.",
+  "manifest_sha256": "aa10883bcc502b8d8ae73d5565ec17b23413350bab5f7e09040a8625cadebd77"
+}

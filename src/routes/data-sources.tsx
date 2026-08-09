@@ -570,6 +570,17 @@ function FinderDataSourcesPage() {
                   node-specific, and written confirmation still controls connection terms.
                 </p>
               </article>
+              <article>
+                <Network aria-hidden="true" />
+                <h3>Release 2 AI prioritisation</h3>
+                <p>
+                  A private gradient-boosting surrogate ranks uncertain, boundary and
+                  out-of-distribution cases for active learning. Mandatory contingencies bypass
+                  ranking, every selected result is recalculated by Pandapower, and false-safe,
+                  label-diversity and error gates control promotion. Surrogate predictions are never
+                  displayed as capacity.
+                </p>
+              </article>
             </div>
           </section>
 

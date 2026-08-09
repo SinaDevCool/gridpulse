@@ -285,6 +285,7 @@ export function activationStudySnapshot(
           hours_evaluated: context.referenceCapacity.ensemble.hours_evaluated,
           scenario_range_mw: context.referenceCapacity.ensemble.confidence,
           scenario_set_sha256: context.referenceCapacity.ensemble.scenario_set_sha256,
+          release2_governance: context.referenceCapacity.release2_governance,
           restricted_hours: context.referenceCapacity.activation.flexible.restricted_hours,
           restricted_energy_mwh:
             context.referenceCapacity.activation.flexible.restricted_energy_mwh,

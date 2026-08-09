@@ -714,6 +714,7 @@ function CommercialView({
 
 function EvidenceView({ context }: { context: ActivationStudyContext }) {
   const ensemble = context.referenceCapacity?.ensemble;
+  const release2 = context.referenceCapacity?.release2_governance;
   const checklist = [
     "Confirm the responsible operator and candidate connection point.",
     "Obtain accepted equipment ratings and seasonal operating cases.",
@@ -739,6 +740,30 @@ function EvidenceView({ context }: { context: ActivationStudyContext }) {
         <li>Operator-reviewed or confirmed result</li>
       </ol>
       <dl className="activation-facts">
+        {release2 && (
+          <div>
+            <dt>Release 2 AI role</dt>
+            <dd>
+              {release2.active_learning.physics_verified_selected_count}/
+              {release2.active_learning.candidate_count} prioritised cases verified by physics
+            </dd>
+          </div>
+        )}
+        {release2 && (
+          <div>
+            <dt>Safety gate</dt>
+            <dd>
+              {release2.promotion.decision} · false-safe rate{" "}
+              {release2.model.false_safe_rate.toFixed(3)}
+            </dd>
+          </div>
+        )}
+        {release2 && (
+          <div>
+            <dt>Permitted use</dt>
+            <dd>{release2.model.approved_use}</dd>
+          </div>
+        )}
         {ensemble && (
           <div>
             <dt>Operating scenario set</dt>

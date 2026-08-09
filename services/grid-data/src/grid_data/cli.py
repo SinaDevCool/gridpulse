@@ -127,6 +127,7 @@ def parser() -> argparse.ArgumentParser:
     release2.add_argument("--input", type=Path, required=True)
     release2.add_argument("--output", type=Path, required=True)
     release2.add_argument("--model-artifact", type=Path, required=True)
+    release2.add_argument("--public-output", type=Path)
     release3 = subcommands.add_parser("validate-release3")
     release3.add_argument("--input", type=Path, required=True)
     release3.add_argument("--output", type=Path, required=True)
@@ -312,7 +313,9 @@ def main() -> None:
             f"validation={state.validation_class}."
         )
     elif args.command == "validate-release2":
-        report = build_release2_benchmark(args.input, args.output, args.model_artifact)
+        report = build_release2_benchmark(
+            args.input, args.output, args.model_artifact, args.public_output
+        )
         round_data = report["active_learning_round"]
         print(
             f"Validated Release 2; candidates={round_data['candidate_count']}; "

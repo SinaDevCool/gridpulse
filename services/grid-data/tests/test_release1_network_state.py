@@ -39,6 +39,12 @@ def test_nodal_factors_queue_switching_and_contingency_are_effective(builder):
     assert [item["id"] for item in state.contingencies] == ["synthetic-n-1-line-a-b"]
 
 
+def test_base_state_does_not_activate_the_contingency_catalogue(builder):
+    state = builder.build(ScenarioDefinition("base-state"))
+    assert state.contingencies == []
+    assert len(builder.bundle.network_model.contingencies) == 2
+
+
 def test_reinforcement_battery_and_flexible_load_change_physical_state(builder):
     state = builder.build(
         ScenarioDefinition(

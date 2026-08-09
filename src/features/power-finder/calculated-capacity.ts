@@ -121,6 +121,7 @@ export type ReferenceCapacityResult = {
     dominant_uncertainty: string;
     scenario_set_sha256: string;
   };
+  release2_governance: ReferenceCapacityArtifact["release2_governance"];
   binding_constraint: string | null;
   binding_case: string | null;
   validation_state: "reference_network_calculated";
@@ -154,6 +155,36 @@ export type ReferenceCapacityArtifact = {
     manifest_sha256: string;
     evidence_sha256: string;
   };
+  release2_governance: {
+    schema_version: "gridpulse-release2-governance-v1";
+    release: string;
+    validation_class: "synthetic_demonstration";
+    public_visibility: "governance_summary_only";
+    capacity_claim: false;
+    model: {
+      algorithm: string;
+      training_count: number;
+      holdout_count: number;
+      unique_capacity_labels: number;
+      capacity_label_range_mw: number;
+      capacity_mae_mw: number;
+      false_safe_rate: number;
+      dataset_hash: string;
+      approved_use: string;
+      prohibited_use: string;
+    };
+    active_learning: {
+      candidate_count: number;
+      physics_selected_count: number;
+      mandatory_contingency_count: number;
+      physics_verified_selected_count: number;
+      rare_event_verified_count: number;
+      selected_scenario_hash: string;
+    };
+    promotion: { decision: "promote" | "reject"; reason: string; rollback_required: boolean };
+    manifest_sha256: string;
+    warning: string;
+  } | null;
   results_sha256: string;
   results: ReferenceCapacityResult[];
   permitted_interpretation: string;
@@ -161,7 +192,7 @@ export type ReferenceCapacityArtifact = {
 };
 
 export async function loadReferenceCapacityMap(): Promise<ReferenceCapacityArtifact> {
-  const response = await fetch("/power-finder/reference-capacity-map.json?release=capacity-r1");
+  const response = await fetch("/power-finder/reference-capacity-map.json?release=capacity-r2");
   if (!response.ok) throw new Error(`Reference capacity artifact failed (${response.status}).`);
   const artifact = (await response.json()) as ReferenceCapacityArtifact;
   if (
