@@ -23,7 +23,7 @@ class NationalReleaseTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "checksum mismatch"):
                 verify_pbf(path, "0" * 32)
 
-    def test_aggregate_rejects_duplicate_ids(self) -> None:
+    def test_aggregate_deduplicates_identical_border_records(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             paths = []
@@ -32,7 +32,20 @@ class NationalReleaseTests(unittest.TestCase):
                 path.write_text(json.dumps({"source_record_id": "osm-way-1", "kind": "line"}) + "\n")
                 path.with_suffix(".ndjson.report.json").write_text(json.dumps({"valid": True, "geographic_scope": state, "source_md5": "a" * 32, "records_staged": 1, "counts": {"line": 1}}))
                 paths.append(path)
-            with self.assertRaisesRegex(ValueError, "duplicate source ID"):
+            report = combine_state_releases(paths, root / "national.json")
+            self.assertEqual(report["record_count"], 1)
+            self.assertEqual(report["duplicate_records_deduplicated"], 1)
+
+    def test_aggregate_rejects_conflicting_border_records(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            paths = []
+            for index, state in enumerate(("Berlin", "Brandenburg")):
+                path = root / f"{state}.ndjson"
+                path.write_text(json.dumps({"source_record_id": "osm-way-1", "kind": "line", "name": str(index)}) + "\n")
+                path.with_suffix(".ndjson.report.json").write_text(json.dumps({"valid": True, "geographic_scope": state, "source_md5": "a" * 32, "records_staged": 1, "counts": {"line": 1}}))
+                paths.append(path)
+            with self.assertRaisesRegex(ValueError, "conflicting duplicate source ID"):
                 combine_state_releases(paths, root / "national.json")
 
     def test_copy_files_split_canonical_layers(self) -> None:
@@ -45,6 +58,23 @@ class NationalReleaseTests(unittest.TestCase):
             ]
             source.write_text("".join(json.dumps(record) + "\n" for record in records))
             self.assertEqual(write_copy_files(source, root / "copy"), {"node": 1, "line": 1, "industrial_site": 1})
+
+    def test_copy_files_preserve_unicode_line_separator_inside_json(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "release.ndjson"
+            record = {
+                "kind": "node",
+                "source_record_id": "osm-node-1",
+                "name": "North\u2028South",
+                "operator": None,
+                "voltage_kv": [110],
+                "status": "operational",
+                "geometry": {"type": "Point", "coordinates": [13, 52]},
+                "metadata": {},
+            }
+            source.write_text(json.dumps(record, ensure_ascii=False) + "\n", encoding="utf-8")
+            self.assertEqual(write_copy_files(source, root / "copy"), {"node": 1})
 
 
 if __name__ == "__main__":

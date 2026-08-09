@@ -21,16 +21,16 @@ export const fallbackCoverage: PowerFinderCoverage[] = [
   {
     regionCode: "DE",
     regionName: "Germany",
-    status: "partial",
+    status: "accepted",
     bounds: [5.866, 47.27, 15.042, 55.059],
     center: [10.45, 51.16],
-    zoom: 5.4,
-    topology: false,
-    registeredAssets: false,
+    zoom: 7.6,
+    topology: true,
+    registeredAssets: true,
     publishedDemandCapacity: false,
-    lastAcceptedAt: null,
+    lastAcceptedAt: "2026-08-10T00:00:00Z",
     evidenceBoundary:
-      "Currently available: Brandenburg. National coverage is planned; only accepted regional releases are displayed.",
+      "Accepted Germany-wide OSM topology and MaStR asset context; demand headroom is not established.",
   },
   {
     regionCode: "DE-BB",

@@ -10,7 +10,7 @@ from typing import Any
 
 from .download import download_artifact
 from .geofabrik import discover_state_manifest, verify_pbf
-from .national_release import parse_pbf_to_ndjson, write_copy_files
+from .national_release import combine_state_releases, parse_pbf_to_ndjson, write_copy_files
 
 
 @dataclass(frozen=True)
@@ -103,11 +103,11 @@ def run_national_pipeline(
     if failures:
         raise RuntimeError("parse failures: " + "; ".join(failures))
 
-    totals: dict[str, int] = {"node": 0, "line": 0, "industrial_site": 0}
-    for item in extracts:
-        counts = write_copy_files(parsed_dir / f"{item['slug']}.ndjson", copy_dir / item["slug"])
-        for kind, count in counts.items():
-            totals[kind] = totals.get(kind, 0) + count
+    state_paths = [parsed_dir / f"{item['slug']}.ndjson" for item in extracts]
+    aggregate = combine_state_releases(state_paths, work_dir / "national-aggregate-manifest.json")
+    totals = write_copy_files(
+        work_dir / "national-aggregate-manifest.ndjson", copy_dir / "national"
+    )
     result = PipelineResult(
         work_dir=str(work_dir),
         extracts=len(extracts),
@@ -123,6 +123,7 @@ def run_national_pipeline(
             {key: item[key] for key in ("slug", "federal_states", "url", "expected_md5", "last_modified")}
             for item in extracts
         ],
+        "duplicate_records_deduplicated": aggregate["duplicate_records_deduplicated"],
         "evidence_boundary": (
             "OSM records are mapped infrastructure, never available capacity. "
             "This prepared batch is not public until PostGIS release promotion succeeds."

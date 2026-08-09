@@ -454,7 +454,7 @@ function PowerFinderPage() {
     const controller = new AbortController();
     const timeout = window.setTimeout(() => {
       void loadPowerFinderViewport(bounds, controller.signal, {
-        fallbackAllowed: regionCode === "DE-BB",
+        fallbackAllowed: true,
       })
         .then(({ collection: nextCollection, mode }) => {
           setCollection(nextCollection);
@@ -492,7 +492,7 @@ function PowerFinderPage() {
         north: project.latitude + latitudeRadius,
       },
       controller.signal,
-      { fallbackAllowed: regionCode === "DE-BB" },
+      { fallbackAllowed: true },
     )
       .then(({ collection: siteCollection }) => setRankingCollection(siteCollection))
       .catch(() => {

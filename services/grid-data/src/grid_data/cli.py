@@ -26,6 +26,7 @@ from .p0_foundation import ScenarioDefinition
 from .pilot_acceptance import run_synthetic_pilot_acceptance
 from .pilot_providers import OperatorPilotDataProvider, SyntheticPilotDataProvider
 from .publish import publish_mastr_ndjson
+from .publish_osm import publish_osm_national
 from .reference_capacity_map import build_reference_capacity_map_artifact
 from .release2_benchmark import build_release2_benchmark
 from .release3_benchmark import build_release3_benchmark
@@ -98,6 +99,10 @@ def parser() -> argparse.ArgumentParser:
     national.add_argument("--work-dir", type=Path, required=True)
     national.add_argument("--download-workers", type=int, default=6)
     national.add_argument("--parse-workers", type=int, default=recommended_parse_workers())
+    publish_national = subcommands.add_parser("publish-national-osm")
+    publish_national.add_argument("--input", type=Path, required=True)
+    publish_national.add_argument("--manifest", type=Path, required=True)
+    publish_national.add_argument("--batch-size", type=int, default=250)
     operator_sources = subcommands.add_parser("fetch-operator-evidence")
     operator_sources.add_argument("--output", type=Path, required=True)
     operator_matches = subcommands.add_parser("propose-operator-matches")
@@ -250,6 +255,14 @@ def main() -> None:
         print(f"Prepared {report.records} national OSM records; valid={report.valid}.")
         if not report.valid:
             raise SystemExit(1)
+    elif args.command == "publish-national-osm":
+        report = publish_osm_national(
+            args.input, args.manifest, batch_size=args.batch_size
+        )
+        print(
+            f"Activated national release {report.release_id} with "
+            f"{report.records_published} records."
+        )
     elif args.command == "fetch-operator-evidence":
         report = fetch_operator_sources(args.output)
         print(
