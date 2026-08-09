@@ -14173,3 +14173,40 @@ tbody tr:last-child td {
     height: 32px;
   }
 }
+
+/* Final shortlist containment overrides. */
+.power-finder-candidates button > span:not(.candidate-rank) {
+  min-width: 0;
+  width: 100%;
+}
+.power-finder-candidates .candidate-badges {
+  align-items: flex-start;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  gap: 5px;
+  width: 100%;
+}
+.power-finder-candidates .candidate-badges i {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  padding: 3px 6px;
+  text-align: center;
+  white-space: normal;
+}
+.power-finder-candidates .candidate-badges strong {
+  align-self: center;
+  margin-left: 2px;
+  white-space: nowrap;
+}
+.candidate-outcome > div {
+  min-width: 0;
+}
+.candidate-outcome small {
+  color: #8fa7ba;
+  display: block;
+  font-size: 0.7rem;
+  line-height: 1.45;
+  margin-top: 0.35rem;
+}

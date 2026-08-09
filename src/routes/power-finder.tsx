@@ -689,6 +689,7 @@ function PowerFinderPage() {
   );
   const coordinates = selected ? pointCoordinates(selected) : null;
   const activationOpen =
+    productCapabilities.workspace &&
     integratedActivationStudyEnabled &&
     search.study === "activation" &&
     Boolean(selectedOpportunity);
@@ -1797,10 +1798,18 @@ function PowerFinderPage() {
                     </small>
                     <span className="candidate-badges">
                       <i data-fit={candidate.voltageFit}>
-                        {voltageFitLabels[candidate.voltageFit]}
+                        {candidate.voltageFit === "compatible"
+                          ? "Voltage aligned"
+                          : candidate.voltageFit === "conditional"
+                            ? "Voltage differs"
+                            : "Voltage unknown"}
                       </i>
                       <i data-confidence={candidate.confidence}>
-                        {candidate.confidence} evidence completeness
+                        {candidate.confidence === "high"
+                          ? "High evidence"
+                          : candidate.confidence === "medium"
+                            ? "Medium evidence"
+                            : "Limited evidence"}
                       </i>
                       {candidate.capacityScenario && (
                         <i data-confidence="synthetic">
@@ -2172,11 +2181,9 @@ function PowerFinderPage() {
                         distance
                       </p>
                     )}
-                    {selected.properties.kind === "node" && (
+                    {selected.properties.kind === "node" && selectedCapacity && (
                       <span className="candidate-truth-status">
-                        {selectedCapacity
-                          ? `${capacityMetricLabels[capacityMetric]} · ${selectedCapacity.valueMw ?? "—"} MW · ${selectedCapacity.validationState.replaceAll("_", " ")}`
-                          : "Public-source candidate · capacity not established"}
+                        {`${capacityMetricLabels[capacityMetric]} · ${selectedCapacity.valueMw ?? "—"} MW · ${selectedCapacity.validationState.replaceAll("_", " ")}`}
                       </span>
                     )}
                   </div>
@@ -2335,7 +2342,7 @@ function PowerFinderPage() {
                       <header>
                         <span>
                           <strong>{formatScore(selectedOpportunity.screeningRank)}/100</strong>
-                          <small>project screening match</small>
+                          <small>candidate priority score</small>
                         </span>
                         <b>{selectedOpportunity.siteName}</b>
                       </header>
@@ -2344,14 +2351,18 @@ function PowerFinderPage() {
                         aria-labelledby="candidate-outcome-title"
                       >
                         <div>
-                          <span id="candidate-outcome-title">Screening Fit</span>
+                          <span id="candidate-outcome-title">Shortlist Position</span>
                           <strong>
                             {selectedOpportunity.screeningRank >= 70
-                              ? "Strong public-evidence match"
+                              ? "High-priority candidate"
                               : selectedOpportunity.screeningRank >= 40
-                                ? "Candidate to compare"
-                                : "Limited public evidence"}
+                                ? "Worth comparing"
+                                : "More evidence needed"}
                           </strong>
+                          <small>
+                            Based on mapped voltage, proximity, operator context &amp; evidence
+                            coverage.
+                          </small>
                         </div>
                       </section>
                       <section
@@ -2595,7 +2606,9 @@ function PowerFinderPage() {
                       only.
                     </p>
                   )}
-                  {selectedOpportunity && selected.properties.kind === "node" && (
+                  {productCapabilities.workspace &&
+                    selectedOpportunity &&
+                    selected.properties.kind === "node" && (
                     <button
                       type="button"
                       className="primary-button power-finder-activation-cta"
@@ -2605,7 +2618,7 @@ function PowerFinderPage() {
                     >
                       <Zap aria-hidden="true" /> Assess activation pathways
                     </button>
-                  )}
+                    )}
                 </>
               ))(selectedDetailFeature)
             ) : (

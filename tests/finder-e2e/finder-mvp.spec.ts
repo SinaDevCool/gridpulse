@@ -306,7 +306,7 @@ test("candidate detail prioritises decisions, contains its layout and omits cand
   const detail = page.locator(".power-finder-detail.open");
   await expect(detail).toBeVisible({ timeout: 15_000 });
   await expect(detail.getByText("Selected candidate connection point")).toBeVisible();
-  await expect(detail.getByText("Screening Fit")).toBeVisible();
+  await expect(detail.getByText("Shortlist Position")).toBeVisible();
   await expect(
     detail.getByRole("heading", { name: "Why This Candidate Was Shortlisted" }),
   ).toBeVisible();
