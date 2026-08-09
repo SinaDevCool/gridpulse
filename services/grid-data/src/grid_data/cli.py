@@ -131,6 +131,7 @@ def parser() -> argparse.ArgumentParser:
     release3 = subcommands.add_parser("validate-release3")
     release3.add_argument("--input", type=Path, required=True)
     release3.add_argument("--output", type=Path, required=True)
+    release3.add_argument("--public-output", type=Path)
     acceptance = subcommands.add_parser("validate-synthetic-pilot")
     acceptance.add_argument("--input", type=Path, required=True)
     acceptance.add_argument("--output", type=Path, required=True)
@@ -324,7 +325,7 @@ def main() -> None:
             f"artifact={report['artifact']['artifact_sha256'][:12]}."
         )
     elif args.command == "validate-release3":
-        report = build_release3_benchmark(args.input, args.output)
+        report = build_release3_benchmark(args.input, args.output, args.public_output)
         metrics = report["shadow"]["metrics"]
         print(
             f"Validated Release 3 shadow run; verified={metrics['verified_count']}; "

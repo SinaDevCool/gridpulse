@@ -194,6 +194,13 @@ export function ReferenceCapacityInset({
             verified by physics
           </span>
         )}
+        {artifact.release3_governance && (
+          <span>
+            Release 3: {artifact.release3_governance.shadow.verified_count}/
+            {artifact.release3_governance.shadow.scenario_count} shadow cases verified ·{" "}
+            {artifact.release3_governance.champion_decision.decision.replaceAll("_", " ")}
+          </span>
+        )}
       </footer>
     </section>
   );

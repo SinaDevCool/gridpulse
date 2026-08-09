@@ -161,6 +161,7 @@ test("calculated capacity separates solved reference buses from private mapped c
   await expect(
     page.getByText(/Release 2: 6\/10 AI-prioritised cases verified by physics/),
   ).toBeVisible();
+  await expect(page.getByText(/Release 3: 36\/36 shadow cases verified/)).toBeVisible();
   await expect(page.getByText(/not the OpenStreetMap grid/i)).toBeVisible();
   await expect(page.getByRole("button", { name: /REF 01.*megawatts/i })).toBeVisible();
   await page.getByRole("button", { name: /REF 01.*megawatts/i }).click();
@@ -176,6 +177,8 @@ test("calculated capacity separates solved reference buses from private mapped c
   await page.getByRole("tab", { name: "Evidence" }).click();
   await expect(page.getByText("Release 2 AI role")).toBeVisible();
   await expect(page.getByText(/6\/10 prioritised cases verified by physics/)).toBeVisible();
+  await expect(page.getByText("Release 3 shadow validation")).toBeVisible();
+  await expect(page.getByText(/36\/36 physics verified/)).toBeVisible();
   await page.getByRole("button", { name: /Back to map/i }).click();
   await expect(page.getByText(/radial N‑1 outage removes firm supply/i)).toBeVisible();
   await page.getByLabel("Capacity source").selectOption("private");

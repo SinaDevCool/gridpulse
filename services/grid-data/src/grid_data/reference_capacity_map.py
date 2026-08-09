@@ -67,6 +67,10 @@ def build_reference_capacity_map_artifact(
     release2 = (
         json.loads(release2_path.read_text(encoding="utf-8")) if release2_path.is_file() else None
     )
+    release3_path = repo_root / "public" / "power-finder" / "release3-governance.json"
+    release3 = (
+        json.loads(release3_path.read_text(encoding="utf-8")) if release3_path.is_file() else None
+    )
     model = import_simbench_model(code)
     projection = build_projection(model)
     topology = configured_topology_provider()
@@ -115,6 +119,7 @@ def build_reference_capacity_map_artifact(
                 "activation": activation,
                 "ensemble": ensemble,
                 "release2_governance": release2,
+                "release3_governance": release3,
                 "binding_constraint": n1.values.get("binding_constraint"),
                 "binding_case": n1.values.get("binding_case"),
                 "validation_state": "reference_network_calculated",
@@ -161,6 +166,7 @@ def build_reference_capacity_map_artifact(
             ).hexdigest(),
         },
         "release2_governance": release2,
+        "release3_governance": release3,
         "results_sha256": hashlib.sha256(canonical.encode()).hexdigest(),
         "results": results,
         "permitted_interpretation": "Calculated capacity on a SimBench reference network.",

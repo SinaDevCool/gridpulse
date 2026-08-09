@@ -581,6 +581,17 @@ function FinderDataSourcesPage() {
                   displayed as capacity.
                 </p>
               </article>
+              <article>
+                <ShieldCheck aria-hidden="true" />
+                <h3>Release 3 shadow governance</h3>
+                <p>
+                  Challenger predictions run beside authoritative physics to measure error,
+                  false-safe outcomes, out-of-distribution states, binding accuracy and feature
+                  drift. Internal champion status additionally requires an accepted operator model,
+                  signed training permission and operator review. It still cannot create a capacity
+                  claim.
+                </p>
+              </article>
             </div>
           </section>
 

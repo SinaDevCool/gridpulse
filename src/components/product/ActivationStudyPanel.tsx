@@ -715,6 +715,7 @@ function CommercialView({
 function EvidenceView({ context }: { context: ActivationStudyContext }) {
   const ensemble = context.referenceCapacity?.ensemble;
   const release2 = context.referenceCapacity?.release2_governance;
+  const release3 = context.referenceCapacity?.release3_governance;
   const checklist = [
     "Confirm the responsible operator and candidate connection point.",
     "Obtain accepted equipment ratings and seasonal operating cases.",
@@ -762,6 +763,33 @@ function EvidenceView({ context }: { context: ActivationStudyContext }) {
           <div>
             <dt>Permitted use</dt>
             <dd>{release2.model.approved_use}</dd>
+          </div>
+        )}
+        {release3 && (
+          <div>
+            <dt>Release 3 shadow validation</dt>
+            <dd>
+              {release3.shadow.verified_count}/{release3.shadow.scenario_count} physics verified ·{" "}
+              {release3.shadow.drift_status.replaceAll("_", " ")}
+            </dd>
+          </div>
+        )}
+        {release3 && (
+          <div>
+            <dt>Shadow safety</dt>
+            <dd>
+              MAE {release3.shadow.mae_mw.toFixed(3)} MW · false-safe{" "}
+              {release3.shadow.false_safe_rate.toFixed(3)} · OOD{" "}
+              {release3.shadow.out_of_distribution_rate.toFixed(3)}
+            </dd>
+          </div>
+        )}
+        {release3 && (
+          <div>
+            <dt>Lifecycle decision</dt>
+            <dd>
+              {release3.champion_decision.decision.replaceAll("_", " ")} · operator gates required
+            </dd>
           </div>
         )}
         {ensemble && (
