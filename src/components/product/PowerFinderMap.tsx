@@ -11,6 +11,7 @@ import {
   splitMapCollection,
   type VisibleLayerCounts,
 } from "@/components/product/power-finder-map-data";
+import type { CalculatedCapacityNode } from "@/features/power-finder/calculated-capacity";
 
 const sourceIds = {
   node: "power-finder-nodes",
@@ -24,7 +25,8 @@ type PowerFinderMapProps = {
   collection: PowerFinderCollection;
   selectedFeature?: PowerFinderFeature | null;
   previewFeature?: PowerFinderFeature | null;
-  mapMode: "voltage" | "evidence";
+  mapMode: "voltage" | "evidence" | "capacity";
+  capacityNodes?: CalculatedCapacityNode[];
   viewportTarget?: { center: [number, number]; zoom: number };
   onSelect: (feature: PowerFinderFeature) => void;
   onViewportChange?: (bounds: PowerFinderBounds) => void;
@@ -64,6 +66,7 @@ export function PowerFinderMap({
   selectedFeature,
   previewFeature,
   mapMode,
+  capacityNodes = [],
   viewportTarget,
   onSelect,
   onViewportChange,
@@ -81,6 +84,7 @@ export function PowerFinderMap({
   const onVisibleLayerCountsRef = useRef(onVisibleLayerCounts);
   const selectedFeatureRef = useRef(selectedFeature);
   const previewFeatureRef = useRef(previewFeature);
+  const capacityNodesRef = useRef(capacityNodes);
   onSelectRef.current = onSelect;
   onViewportChangeRef.current = onViewportChange;
   collectionRef.current = collection;
@@ -89,6 +93,27 @@ export function PowerFinderMap({
   onVisibleLayerCountsRef.current = onVisibleLayerCounts;
   selectedFeatureRef.current = selectedFeature;
   previewFeatureRef.current = previewFeature;
+  capacityNodesRef.current = capacityNodes;
+
+  const withCapacity = (value: PowerFinderCollection) => {
+    const byNode = new Map(capacityNodesRef.current.map((result) => [result.publicNodeId, result]));
+    return {
+      ...value,
+      features: value.features.map((feature) => {
+        const result = byNode.get(String(feature.id));
+        return result
+          ? ({
+              ...feature,
+              properties: {
+                ...feature.properties,
+                calculated_capacity_mw: result.valueMw,
+                capacity_validation_state: result.validationState,
+              },
+            } as PowerFinderFeature)
+          : feature;
+      }),
+    };
+  };
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -121,7 +146,7 @@ export function PowerFinderMap({
       mapRef.current = map;
       map.addControl(new NavigationControl({ showCompass: false }), "top-right");
       map.on("load", () => {
-        const split = splitMapCollection(collectionRef.current);
+        const split = splitMapCollection(withCapacity(collectionRef.current));
         map.addSource(sourceIds.node, {
           type: "geojson",
           data: split.nodes,
@@ -462,7 +487,7 @@ export function PowerFinderMap({
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    const split = splitMapCollection(collection);
+    const split = splitMapCollection(withCapacity(collection));
     const updates = [
       [sourceIds.node, split.nodes],
       [sourceIds.line, split.lines],
@@ -474,7 +499,7 @@ export function PowerFinderMap({
       const source = map.getSource(sourceId);
       if (isGeoJsonSource(source)) source.setData(data);
     }
-  }, [collection]);
+  }, [collection, capacityNodes]);
 
   useEffect(() => {
     const source = mapRef.current?.getSource("finder-project-site");
@@ -522,12 +547,54 @@ export function PowerFinderMap({
       "#f59e0b",
       "#64748b",
     ];
+    const capacityColour = [
+      "case",
+      ["==", ["get", "capacity_validation_state"], "stale"],
+      "#f59e0b",
+      ["!", ["has", "calculated_capacity_mw"]],
+      "#475569",
+      [
+        "interpolate",
+        ["linear"],
+        ["number", ["get", "calculated_capacity_mw"], 0],
+        0,
+        "#164e63",
+        20,
+        "#0891b2",
+        50,
+        "#22d3ee",
+        100,
+        "#a5f3fc",
+      ],
+    ];
     map.setPaintProperty(
       "grid-nodes",
       "circle-color",
-      mapMode === "evidence" ? evidenceColour : voltageColour,
+      mapMode === "capacity"
+        ? capacityColour
+        : mapMode === "evidence"
+          ? evidenceColour
+          : voltageColour,
     );
-  }, [mapMode]);
+    map.setPaintProperty("grid-nodes", "circle-radius", mapMode === "capacity" ? 9 : 7);
+    map.setPaintProperty(
+      "grid-nodes",
+      "circle-stroke-color",
+      mapMode === "capacity"
+        ? [
+            "match",
+            ["get", "capacity_validation_state"],
+            "operator_confirmed",
+            "#4ade80",
+            "operator_reviewed",
+            "#ffffff",
+            "stale",
+            "#fbbf24",
+            "#cbd5e1",
+          ]
+        : "#fff7d6",
+    );
+  }, [mapMode, capacityNodes]);
 
   useEffect(() => {
     if (!viewportTarget || !mapRef.current) return;

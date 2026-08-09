@@ -609,6 +609,41 @@ function FinderDataSourcesPage() {
             </div>
           </section>
 
+          <section className="methodology-boundary" aria-labelledby="calculated-map-title">
+            <div>
+              <p className="context-label">Calculated Capacity Map</p>
+              <h2 id="calculated-map-title">MW appears only after topology reconciliation and an electrical solve.</h2>
+              <p>
+                The private Calculated capacity map reuses the Power Finder geography. An accepted
+                candidate-to-model-bus link supplies graph context; a versioned electrical engine
+                then calculates firm, flexible, BESS-assisted and staged results. AI explains and
+                compares those governed outputs but does not invent or calculate MW independently.
+              </p>
+            </div>
+            <div className="methodology-boundary-grid">
+              <article>
+                <h3>Required result lineage</h3>
+                <ul>
+                  <li>Accepted private model and candidate-to-bus reconciliation</li>
+                  <li>Scenario, equipment ratings, operating snapshot and security criterion</li>
+                  <li>Completed solver run with engine, input and dependency hashes</li>
+                  <li>Binding constraint, restricted hours and result validation state</li>
+                  <li>Operator review and validity period where claimed</li>
+                </ul>
+              </article>
+              <article>
+                <h3>Map safeguards</h3>
+                <ul>
+                  <li>Unknown nodes remain grey; unknown never means zero</li>
+                  <li>Synthetic benchmarks never colour public infrastructure</li>
+                  <li>Stale results remain visible but cannot support recommendations</li>
+                  <li>Private results remain workspace-scoped and access-controlled</li>
+                  <li>Calculated capacity is not a connection offer or reservation</li>
+                </ul>
+              </article>
+            </div>
+          </section>
+
           <section className="methodology-boundary" aria-labelledby="finder-boundary-title">
             <div>
               <p className="context-label">Decision Boundary</p>
@@ -619,6 +654,7 @@ function FinderDataSourcesPage() {
                 <h3>Power Finder shows</h3>
                 <ul>
                   <li>Published and mapped infrastructure context</li>
+                  <li>Private node-specific calculated capacity when a governed study is available</li>
                   <li>Indicative proximity and voltage context</li>
                   <li>Registered-asset context where accepted</li>
                   <li>Source provenance and known evidence gaps</li>
@@ -630,7 +666,7 @@ function FinderDataSourcesPage() {
               <article>
                 <h3>Power Finder does not confirm</h3>
                 <ul>
-                  <li>Available grid capacity or a connection point</li>
+                  <li>Public or synthetic capacity at uncalculated nodes</li>
                   <li>Technical or commercial feasibility</li>
                   <li>AC/DC power flow, voltage, fault level, protection or N-1 results</li>
                   <li>Reinforcement cost or connection terms</li>

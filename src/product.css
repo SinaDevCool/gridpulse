@@ -10201,6 +10201,34 @@ tbody tr:last-child td {
   height: 100%;
   width: 100%;
 }
+
+.capacity-coverage-summary {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid rgba(56, 215, 242, 0.28);
+  border-radius: 0.65rem;
+  background: rgba(8, 25, 42, 0.82);
+  color: #cbd5e1;
+}
+
+.capacity-coverage-summary strong { color: #e6fbff; }
+
+.power-finder-legend i.legend-capacity-low,
+.power-finder-legend i.legend-capacity-high,
+.power-finder-legend i.legend-capacity-unknown,
+.power-finder-legend i.legend-capacity-stale {
+  width: 0.72rem;
+  height: 0.72rem;
+  border-radius: 50%;
+  display: inline-block;
+  border: 1px solid #cbd5e1;
+}
+
+.power-finder-legend i.legend-capacity-low { background: #164e63; }
+.power-finder-legend i.legend-capacity-high { background: #a5f3fc; }
+.power-finder-legend i.legend-capacity-unknown { background: #475569; }
+.power-finder-legend i.legend-capacity-stale { background: #f59e0b; }
 .power-finder-loading,
 .power-finder-error {
   align-items: center;

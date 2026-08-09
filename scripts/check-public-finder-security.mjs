@@ -135,6 +135,9 @@ const graphTables = [
   "grid_graph_quality_runs",
   "grid_graph_workspace_policies",
   "grid_candidate_model_bus_links",
+  "network_capacity_study_runs",
+  "node_capacity_results",
+  "capacity_result_constraints",
 ];
 const release2Statuses = {};
 for (const table of release2Tables) {

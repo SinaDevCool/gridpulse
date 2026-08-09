@@ -148,6 +148,17 @@ test("public MVP excludes experimental capacity and network-study outputs", asyn
   expect(scenarioRequests).toHaveLength(0);
 });
 
+test("calculated capacity mode keeps unknown nodes neutral without fabricating MW", async ({ page }) => {
+  await page.goto("/power-finder?lat=52.31&lng=13.36&mw=20&distance=20&mapMode=capacity");
+  await expect(page.getByText(/candidate site-to-node matches/i).first()).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByLabel("Capacity metric")).toBeVisible();
+  await expect(page.getByText(/Sign in to a private workspace with an accepted model/i)).toBeVisible();
+  await expect(page.getByText(/No governed results in this workspace view/i)).toBeVisible();
+  await page.getByLabel("Capacity metric").selectOption("bess_assisted_import_mw");
+  await expect(page.getByLabel("Capacity metric")).toHaveValue("bess_assisted_import_mw");
+  await expect(page.locator(".power-finder-legend strong")).toContainText("BESS-assisted import");
+});
+
 test("static fallback remains honest when the public viewport is unavailable", async ({ page }) => {
   await page.route("**/api/power-finder/viewport?**", (route) =>
     route.fulfill({ status: 503, contentType: "application/json", body: '{"error":"offline"}' }),
