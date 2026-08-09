@@ -4,7 +4,6 @@ import argparse
 from pathlib import Path
 
 from .benchmark_model import build_c1_validation_artifact
-from .reference_capacity_map import build_reference_capacity_map_artifact
 from .c1_publish import publish_c1_artifact
 from .c2_benchmark import build_c2_benchmark_artifact
 from .c2_publish import publish_c2_artifact
@@ -14,6 +13,7 @@ from .fixture import build_fixture
 from .geofabrik import discover_germany_pbf, discover_state_manifest
 from .health import check_source, discover_mastr_export
 from .mastr import parse_mastr_export, stream_mastr_export
+from .national_pipeline import recommended_parse_workers, run_national_pipeline
 from .national_release import combine_state_releases, parse_pbf_to_ndjson, write_copy_files
 from .network_state import NetworkStateBuilder
 from .network_study import PandapowerProvider
@@ -26,6 +26,7 @@ from .p0_foundation import ScenarioDefinition
 from .pilot_acceptance import run_synthetic_pilot_acceptance
 from .pilot_providers import OperatorPilotDataProvider, SyntheticPilotDataProvider
 from .publish import publish_mastr_ndjson
+from .reference_capacity_map import build_reference_capacity_map_artifact
 from .release2_benchmark import build_release2_benchmark
 from .release3_benchmark import build_release3_benchmark
 from .release_audit import audit_release
@@ -93,6 +94,10 @@ def parser() -> argparse.ArgumentParser:
     copy_pbf = subcommands.add_parser("write-osm-copy")
     copy_pbf.add_argument("--input", type=Path, required=True)
     copy_pbf.add_argument("--output-dir", type=Path, required=True)
+    national = subcommands.add_parser("run-national-osm")
+    national.add_argument("--work-dir", type=Path, required=True)
+    national.add_argument("--download-workers", type=int, default=6)
+    national.add_argument("--parse-workers", type=int, default=recommended_parse_workers())
     operator_sources = subcommands.add_parser("fetch-operator-evidence")
     operator_sources.add_argument("--output", type=Path, required=True)
     operator_matches = subcommands.add_parser("propose-operator-matches")
@@ -236,6 +241,15 @@ def main() -> None:
     elif args.command == "write-osm-copy":
         counts = write_copy_files(args.input, args.output_dir)
         print(f"Wrote COPY files: {counts}.")
+    elif args.command == "run-national-osm":
+        report = run_national_pipeline(
+            args.work_dir,
+            download_workers=args.download_workers,
+            parse_workers=args.parse_workers,
+        )
+        print(f"Prepared {report.records} national OSM records; valid={report.valid}.")
+        if not report.valid:
+            raise SystemExit(1)
     elif args.command == "fetch-operator-evidence":
         report = fetch_operator_sources(args.output)
         print(
