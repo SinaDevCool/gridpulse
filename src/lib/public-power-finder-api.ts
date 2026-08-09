@@ -1,4 +1,5 @@
 const PUBLIC_VIEWPORT_PATH = "/api/power-finder/viewport";
+const PUBLIC_TILE_PATTERN = /^\/api\/power-finder\/tile\/(\d+)\/(\d+)\/(\d+)$/;
 const CACHE_SECONDS = 300;
 
 export type PublicFinderEnv = {
@@ -209,5 +210,56 @@ export async function handlePublicPowerFinderRequest(
     return jsonResponse({ error: "Public Finder data is temporarily unavailable." }, 502);
   } finally {
     clearTimeout(timeout);
+  }
+}
+
+export async function handlePublicPowerFinderTileRequest(
+  request: Request,
+  env: PublicFinderEnv,
+) {
+  const match = new URL(request.url).pathname.match(PUBLIC_TILE_PATTERN);
+  if (!match) return null;
+  if (request.method !== "GET") {
+    return jsonResponse({ error: "Method not allowed." }, 405, { allow: "GET" });
+  }
+  const [z, x, y] = match.slice(1).map(Number);
+  if (z < 4 || z > 16 || x < 0 || y < 0 || x >= 2 ** z || y >= 2 ** z) {
+    return jsonResponse({ error: "Invalid tile coordinate." }, 400);
+  }
+  const supabaseUrl = environmentValue(env, "SUPABASE_URL");
+  const publishableKey = environmentValue(env, "SUPABASE_PUBLISHABLE_KEY");
+  if (!supabaseUrl || !publishableKey) {
+    return jsonResponse({ error: "Public Finder data is temporarily unavailable." }, 503);
+  }
+  const headers: Record<string, string> = {
+    apikey: publishableKey,
+    "content-type": "application/json",
+  };
+  if (publishableKey.startsWith("eyJ")) headers.authorization = `Bearer ${publishableKey}`;
+  try {
+    const response = await fetch(`${supabaseUrl}/rest/v1/rpc/power_finder_public_tile`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ z, x, y, include_generation: false, include_storage: false }),
+    });
+    if (!response.ok) return jsonResponse({ error: "Tile origin unavailable." }, 502);
+    const encoded = (await response.json()) as string;
+    if (typeof encoded !== "string" || !encoded.startsWith("\\x")) {
+      return jsonResponse({ error: "Tile origin returned invalid data." }, 502);
+    }
+    const hex = encoded.slice(2);
+    const bytes = new Uint8Array(hex.length / 2);
+    for (let index = 0; index < hex.length; index += 2) {
+      bytes[index / 2] = Number.parseInt(hex.slice(index, index + 2), 16);
+    }
+    return new Response(bytes, {
+      headers: {
+        "content-type": "application/vnd.mapbox-vector-tile",
+        "cache-control": "public, max-age=300, s-maxage=86400, stale-if-error=604800",
+        "x-content-type-options": "nosniff",
+      },
+    });
+  } catch {
+    return jsonResponse({ error: "Public Finder tile is temporarily unavailable." }, 502);
   }
 }

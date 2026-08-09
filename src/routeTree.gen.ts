@@ -32,6 +32,7 @@ import { Route as AssessmentsIdRouteImport } from './routes/assessments.$id'
 import { Route as ApiPowerFinderViewportRouteImport } from './routes/api.power-finder.viewport'
 import { Route as ApiPowerFinderStudyRouteImport } from './routes/api.power-finder.study'
 import { Route as ApiPowerFinderScenarioRouteImport } from './routes/api.power-finder.scenario'
+import { Route as ApiPowerFinderTileZXYRouteImport } from './routes/api.power-finder.tile.$z.$x.$y'
 
 const ValidationCaseRoute = ValidationCaseRouteImport.update({
   id: '/validation-case',
@@ -148,6 +149,11 @@ const ApiPowerFinderScenarioRoute = ApiPowerFinderScenarioRouteImport.update({
   path: '/api/power-finder/scenario',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPowerFinderTileZXYRoute = ApiPowerFinderTileZXYRouteImport.update({
+  id: '/api/power-finder/tile/$z/$x/$y',
+  path: '/api/power-finder/tile/$z/$x/$y',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -173,6 +179,7 @@ export interface FileRoutesByFullPath {
   '/api/power-finder/scenario': typeof ApiPowerFinderScenarioRoute
   '/api/power-finder/study': typeof ApiPowerFinderStudyRoute
   '/api/power-finder/viewport': typeof ApiPowerFinderViewportRoute
+  '/api/power-finder/tile/$z/$x/$y': typeof ApiPowerFinderTileZXYRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -198,6 +205,7 @@ export interface FileRoutesByTo {
   '/api/power-finder/scenario': typeof ApiPowerFinderScenarioRoute
   '/api/power-finder/study': typeof ApiPowerFinderStudyRoute
   '/api/power-finder/viewport': typeof ApiPowerFinderViewportRoute
+  '/api/power-finder/tile/$z/$x/$y': typeof ApiPowerFinderTileZXYRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -224,6 +232,7 @@ export interface FileRoutesById {
   '/api/power-finder/scenario': typeof ApiPowerFinderScenarioRoute
   '/api/power-finder/study': typeof ApiPowerFinderStudyRoute
   '/api/power-finder/viewport': typeof ApiPowerFinderViewportRoute
+  '/api/power-finder/tile/$z/$x/$y': typeof ApiPowerFinderTileZXYRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -251,6 +260,7 @@ export interface FileRouteTypes {
     | '/api/power-finder/scenario'
     | '/api/power-finder/study'
     | '/api/power-finder/viewport'
+    | '/api/power-finder/tile/$z/$x/$y'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -276,6 +286,7 @@ export interface FileRouteTypes {
     | '/api/power-finder/scenario'
     | '/api/power-finder/study'
     | '/api/power-finder/viewport'
+    | '/api/power-finder/tile/$z/$x/$y'
   id:
     | '__root__'
     | '/'
@@ -301,6 +312,7 @@ export interface FileRouteTypes {
     | '/api/power-finder/scenario'
     | '/api/power-finder/study'
     | '/api/power-finder/viewport'
+    | '/api/power-finder/tile/$z/$x/$y'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -327,6 +339,7 @@ export interface RootRouteChildren {
   ApiPowerFinderScenarioRoute: typeof ApiPowerFinderScenarioRoute
   ApiPowerFinderStudyRoute: typeof ApiPowerFinderStudyRoute
   ApiPowerFinderViewportRoute: typeof ApiPowerFinderViewportRoute
+  ApiPowerFinderTileZXYRoute: typeof ApiPowerFinderTileZXYRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -492,6 +505,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPowerFinderScenarioRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/power-finder/tile/$z/$x/$y': {
+      id: '/api/power-finder/tile/$z/$x/$y'
+      path: '/api/power-finder/tile/$z/$x/$y'
+      fullPath: '/api/power-finder/tile/$z/$x/$y'
+      preLoaderRoute: typeof ApiPowerFinderTileZXYRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -519,6 +539,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPowerFinderScenarioRoute: ApiPowerFinderScenarioRoute,
   ApiPowerFinderStudyRoute: ApiPowerFinderStudyRoute,
   ApiPowerFinderViewportRoute: ApiPowerFinderViewportRoute,
+  ApiPowerFinderTileZXYRoute: ApiPowerFinderTileZXYRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

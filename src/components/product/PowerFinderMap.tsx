@@ -204,6 +204,12 @@ export function PowerFinderMap({
           clusterMaxZoom: 12,
           clusterRadius: 34,
         });
+        map.addSource("power-finder-national-tiles", {
+          type: "vector",
+          tiles: [`${window.location.origin}/api/power-finder/tile/{z}/{x}/{y}`],
+          minzoom: 4,
+          maxzoom: 10,
+        });
         map.addSource("finder-project-site", {
           type: "geojson",
           data: {
@@ -239,6 +245,44 @@ export function PowerFinderMap({
           },
         });
         map.addLayer({
+          id: "national-grid-lines",
+          type: "line",
+          source: "power-finder-national-tiles",
+          "source-layer": "power_finder",
+          minzoom: 4,
+          maxzoom: 8,
+          filter: ["==", ["get", "kind"], "line"],
+          layout: { visibility: split.lines.features.length ? "visible" : "none" },
+          paint: {
+            "line-color": [
+              "case",
+              ["in", "380", ["to-string", ["get", "voltage_kv"]]],
+              "#c084fc",
+              ["in", "220", ["to-string", ["get", "voltage_kv"]]],
+              "#60a5fa",
+              "#7dd3fc",
+            ],
+            "line-width": ["interpolate", ["linear"], ["zoom"], 4, 0.7, 8, 1.8],
+            "line-opacity": 0.82,
+          },
+        });
+        map.addLayer({
+          id: "national-grid-nodes",
+          type: "circle",
+          source: "power-finder-national-tiles",
+          "source-layer": "power_finder",
+          minzoom: 7,
+          maxzoom: 8,
+          filter: ["==", ["get", "kind"], "node"],
+          layout: { visibility: split.nodes.features.length ? "visible" : "none" },
+          paint: {
+            "circle-radius": ["interpolate", ["linear"], ["zoom"], 5, 2, 8, 5],
+            "circle-color": "#f59e0b",
+            "circle-stroke-color": "#fff7d6",
+            "circle-stroke-width": 1,
+          },
+        });
+        map.addLayer({
           id: "industrial-sites",
           type: "fill",
           source: sourceIds.industrial_site,
@@ -252,6 +296,7 @@ export function PowerFinderMap({
           id: "grid-lines",
           type: "line",
           source: sourceIds.line,
+          minzoom: 8,
           paint: {
             "line-color": [
               "step",
@@ -284,6 +329,7 @@ export function PowerFinderMap({
           id: "node-clusters",
           type: "circle",
           source: sourceIds.node,
+          minzoom: 8,
           filter: ["has", "point_count"],
           paint: {
             "circle-radius": ["step", ["get", "point_count"], 15, 25, 19, 100, 24],
@@ -304,6 +350,7 @@ export function PowerFinderMap({
           id: "node-cluster-count",
           type: "symbol",
           source: sourceIds.node,
+          minzoom: 8,
           filter: ["has", "point_count"],
           layout: {
             "text-field": ["get", "point_count_abbreviated"],
@@ -315,6 +362,7 @@ export function PowerFinderMap({
           id: "grid-nodes",
           type: "circle",
           source: sourceIds.node,
+          minzoom: 8,
           filter: ["!", ["has", "point_count"]],
           paint: {
             "circle-radius": 7,
@@ -531,6 +579,20 @@ export function PowerFinderMap({
     for (const [sourceId, data] of updates) {
       const source = map.getSource(sourceId);
       if (isGeoJsonSource(source)) source.setData(data);
+    }
+    if (map.getLayer("national-grid-lines")) {
+      map.setLayoutProperty(
+        "national-grid-lines",
+        "visibility",
+        split.lines.features.length ? "visible" : "none",
+      );
+    }
+    if (map.getLayer("national-grid-nodes")) {
+      map.setLayoutProperty(
+        "national-grid-nodes",
+        "visibility",
+        split.nodes.features.length ? "visible" : "none",
+      );
     }
   }, [collection, capacityNodes, capacityMetric, requiredCapacityMw]);
 
