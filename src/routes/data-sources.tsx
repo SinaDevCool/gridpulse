@@ -617,8 +617,9 @@ function FinderDataSourcesPage() {
               </h2>
               <p>
                 The Calculated capacity view has two deliberately separate sources. Its reference
-                lab runs Pandapower on the open SimBench network and uses the topology graph to
-                expose traceable pathways; its results stay in a labelled inset and never colour
+                lab runs Pandapower on the open SimBench network and uses the configured topology
+                provider—Neo4j GDS when configured, with the deterministic graph fallback for
+                reproducible public builds—to expose traceable pathways; its results stay in a labelled inset and never colour
                 OpenStreetMap infrastructure. The private source reuses Power Finder geography. An
                 accepted candidate-to-model-bus link supplies graph context; a versioned electrical
                 engine then calculates firm, flexible, BESS-assisted and staged results. AI explains

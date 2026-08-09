@@ -11,7 +11,7 @@ from typing import Any
 
 from .benchmark_model import SIMBENCH_LICENSE, SIMBENCH_SOURCE, import_simbench_model
 from .graph.contracts import build_projection
-from .graph.provider import InMemoryTopologyProvider
+from .graph.provider import configured_topology_provider
 from .network_study import PandapowerProvider
 
 
@@ -31,7 +31,7 @@ def build_reference_capacity_map_artifact(
 ) -> dict[str, Any]:
     model = import_simbench_model(code)
     projection = build_projection(model)
-    topology = InMemoryTopologyProvider()
+    topology = configured_topology_provider()
     audit, _ = topology.inspect(
         projection, source_bus=model.connection_bus, target_buses=_candidate_buses(model, limit)
     )
