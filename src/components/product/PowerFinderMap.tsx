@@ -12,6 +12,8 @@ import {
   type VisibleLayerCounts,
 } from "@/components/product/power-finder-map-data";
 import type { CalculatedCapacityNode } from "@/features/power-finder/calculated-capacity";
+import { classifyCapacityOpportunity } from "@/features/power-finder/capacity-opportunity";
+import type { CapacityMetric } from "@/features/power-finder/calculated-capacity";
 
 const sourceIds = {
   node: "power-finder-nodes",
@@ -27,6 +29,8 @@ type PowerFinderMapProps = {
   previewFeature?: PowerFinderFeature | null;
   mapMode: "voltage" | "evidence" | "capacity";
   capacityNodes?: CalculatedCapacityNode[];
+  capacityMetric?: CapacityMetric;
+  requiredCapacityMw?: number;
   viewportTarget?: { center: [number, number]; zoom: number };
   onSelect: (feature: PowerFinderFeature) => void;
   onViewportChange?: (bounds: PowerFinderBounds) => void;
@@ -67,6 +71,8 @@ export function PowerFinderMap({
   previewFeature,
   mapMode,
   capacityNodes = [],
+  capacityMetric = "firm_import_mw",
+  requiredCapacityMw = 1,
   viewportTarget,
   onSelect,
   onViewportChange,
@@ -101,6 +107,7 @@ export function PowerFinderMap({
       ...value,
       features: value.features.map((feature) => {
         const result = byNode.get(String(feature.id));
+        const opportunity = classifyCapacityOpportunity(result, capacityMetric, requiredCapacityMw);
         return result
           ? ({
               ...feature,
@@ -108,6 +115,8 @@ export function PowerFinderMap({
                 ...feature.properties,
                 ...(result.valueMw === null ? {} : { calculated_capacity_mw: result.valueMw }),
                 capacity_validation_state: result.validationState,
+                capacity_fit: opportunity.fit,
+                capacity_ratio: opportunity.coverageRatio ?? 0,
               },
             } as PowerFinderFeature)
           : feature;
@@ -499,7 +508,7 @@ export function PowerFinderMap({
       const source = map.getSource(sourceId);
       if (isGeoJsonSource(source)) source.setData(data);
     }
-  }, [collection, capacityNodes]);
+  }, [collection, capacityNodes, capacityMetric, requiredCapacityMw]);
 
   useEffect(() => {
     const source = mapRef.current?.getSource("finder-project-site");
@@ -547,36 +556,18 @@ export function PowerFinderMap({
       "#f59e0b",
       "#64748b",
     ];
-    const capacityValues = capacityNodes
-      .map((result) => result.valueMw)
-      .filter((value): value is number => value !== null)
-      .sort((left, right) => left - right);
-    const quantile = (fraction: number, fallback: number) =>
-      capacityValues.length >= 5
-        ? capacityValues[Math.floor((capacityValues.length - 1) * fraction)]
-        : fallback;
-    const capacityQ1 = quantile(0.33, 20);
-    const capacityQ2 = Math.max(capacityQ1 + 0.001, quantile(0.66, 50));
-    const capacityQ3 = Math.max(capacityQ2 + 0.001, quantile(1, 100));
     const capacityColour = [
-      "case",
-      ["==", ["get", "capacity_validation_state"], "stale"],
+      "match",
+      ["get", "capacity_fit"],
+      "meets",
+      "#67e8f9",
+      "activation",
+      "#818cf8",
+      "below",
+      "#1e526a",
+      "stale",
       "#f59e0b",
-      ["!", ["has", "calculated_capacity_mw"]],
       "#475569",
-      [
-        "interpolate",
-        ["linear"],
-        ["number", ["get", "calculated_capacity_mw"], 0],
-        0,
-        "#164e63",
-        capacityQ1,
-        "#0891b2",
-        capacityQ2,
-        "#22d3ee",
-        capacityQ3,
-        "#a5f3fc",
-      ],
     ];
     map.setPaintProperty(
       "grid-nodes",
@@ -593,19 +584,22 @@ export function PowerFinderMap({
       "circle-stroke-color",
       mapMode === "capacity"
         ? [
-            "match",
-            ["get", "capacity_validation_state"],
-            "operator_confirmed",
-            "#4ade80",
-            "operator_reviewed",
-            "#ffffff",
-            "stale",
+            "case",
+            ["==", ["get", "capacity_fit"], "activation"],
+            "#c4b5fd",
+            ["==", ["get", "capacity_fit"], "below"],
+            "#47738a",
+            ["==", ["get", "capacity_fit"], "stale"],
             "#fbbf24",
+            ["==", ["get", "capacity_validation_state"], "operator_confirmed"],
+            "#4ade80",
+            ["==", ["get", "capacity_validation_state"], "operator_reviewed"],
+            "#ffffff",
             "#cbd5e1",
           ]
         : "#fff7d6",
     );
-  }, [mapMode, capacityNodes]);
+  }, [mapMode, capacityNodes, capacityMetric, requiredCapacityMw]);
 
   useEffect(() => {
     if (!viewportTarget || !mapRef.current) return;

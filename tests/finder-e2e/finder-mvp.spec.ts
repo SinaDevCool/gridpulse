@@ -160,16 +160,17 @@ test("calculated capacity separates solved reference buses from private mapped c
   await expect(page.getByText(/candidate site-to-node matches/i).first()).toBeVisible({
     timeout: 15_000,
   });
-  await page.getByText("Map Layers", { exact: true }).click();
-  const overlay = page.getByRole("switch", { name: /Capacity Overlay/i });
+  const overlay = page.getByRole("switch", { name: /Capacity opportunities/i });
   await expect(overlay).toBeChecked();
   const metric = page.locator('select[name="capacity-overlay-metric"]');
-  const source = page.locator('select[name="capacity-overlay-source"]');
   await expect(metric).toBeVisible();
-  await expect(source).toHaveValue("private");
+  await expect(page.locator('input[name="required-capacity-range"]')).toHaveValue("20");
+  await expect(page.getByText(/Private reviewed results.*no coverage/i)).toBeVisible();
   await page.getByRole("button", { name: /Open Reference Capacity Lab/i }).click();
   await expect(page.getByText("Reference Capacity Lab", { exact: true })).toBeVisible();
-  await expect(page.locator('select[name="reference-capacity-metric"]')).toHaveValue("n0_import_mw");
+  await expect(page.locator('select[name="reference-capacity-metric"]')).toHaveValue(
+    "n0_import_mw",
+  );
   await expect(page.getByText(/not capacity at a mapped public node/i)).toBeVisible();
   await expect(page.getByRole("button", { name: /Reference bus 01.*megawatts/i })).toBeVisible();
   await page.getByRole("button", { name: /Reference bus 01.*megawatts/i }).click();
@@ -198,9 +199,7 @@ test("calculated capacity separates solved reference buses from private mapped c
   await expect(page.getByText("Control authority")).toBeVisible();
   await page.getByRole("button", { name: /Back to map/i }).click();
   await expect(page.getByText(/0 MW firm result means.*not N-1 secure/i)).toBeVisible();
-  await expect(
-    page.getByText(/Sign in to a private workspace with an accepted model/i),
-  ).toBeVisible();
+  await expect(page.getByText(/No reviewed capacity results cover this map/i)).toBeVisible();
   await expect(page.getByText(/No governed results in this workspace view/i)).toBeVisible();
   await metric.selectOption("bess_assisted_import_mw");
   await expect(metric).toHaveValue("bess_assisted_import_mw");

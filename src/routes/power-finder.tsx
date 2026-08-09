@@ -95,6 +95,10 @@ import {
   type ReferenceCapacityArtifact,
   type ReferenceCapacityResult,
 } from "@/features/power-finder/calculated-capacity";
+import {
+  classifyCapacityOpportunity,
+  summariseCapacityOpportunities,
+} from "@/features/power-finder/capacity-opportunity";
 
 const safeNumber = (minimum: number, maximum: number) =>
   z.coerce.number().min(minimum).max(maximum).optional().catch(undefined);
@@ -134,6 +138,18 @@ export const Route = createFileRoute("/power-finder")({
       ])
       .optional()
       .catch(undefined),
+    referenceMetric: z
+      .enum([
+        "n0_import_mw",
+        "firm_import_mw",
+        "flexible_import_mw",
+        "bess_assisted_import_mw",
+        "staged_initial_import_mw",
+        "eventual_import_mw",
+      ])
+      .optional()
+      .catch(undefined),
+    requiredMw: safeNumber(0.1, 1000),
     workspaceId: z.string().uuid().optional().catch(undefined),
     study: z.enum(["activation"]).optional().catch(undefined),
     studyTab: z
@@ -332,9 +348,13 @@ function PowerFinderPage() {
   const [capacityMetric, setCapacityMetric] = useState<CapacityMetric>(
     search.capacityMetric ?? "firm_import_mw",
   );
-  const [capacitySource, setCapacitySource] = useState<"reference" | "private">(
-    "private",
+  const [referenceMetric, setReferenceMetric] = useState<CapacityMetric>(
+    search.referenceMetric ?? "n0_import_mw",
   );
+  const [requiredCapacityMw, setRequiredCapacityMw] = useState(
+    search.requiredMw ?? project.importMw,
+  );
+  const [capacitySource, setCapacitySource] = useState<"reference" | "private">("private");
   const [referenceLabOpen, setReferenceLabOpen] = useState(
     search.referenceLab === "true" ||
       (search.mapMode === "capacity" && search.capacitySource === "reference"),
@@ -359,11 +379,21 @@ function PowerFinderPage() {
     setMapMode(search.mapMode ?? "voltage");
     setCapacitySource("private");
     setCapacityMetric(search.capacityMetric ?? "firm_import_mw");
+    setReferenceMetric(search.referenceMetric ?? "n0_import_mw");
+    setRequiredCapacityMw(search.requiredMw ?? project.importMw);
     setReferenceLabOpen(
       search.referenceLab === "true" ||
         (search.mapMode === "capacity" && search.capacitySource === "reference"),
     );
-  }, [search.capacityMetric, search.capacitySource, search.mapMode, search.referenceLab]);
+  }, [
+    search.capacityMetric,
+    search.capacitySource,
+    search.mapMode,
+    search.referenceLab,
+    search.referenceMetric,
+    search.requiredMw,
+    project.importMw,
+  ]);
 
   useEffect(() => {
     if (mapMode !== "capacity") return;
@@ -571,6 +601,26 @@ function PowerFinderPage() {
       return matchesQuery && matchesVoltage && matchesOperator && Boolean(node);
     });
     return items.sort((left, right) => {
+      if (mapMode === "capacity") {
+        const byNode = new Map(
+          (capacityViewport?.nodes ?? []).map((node) => [node.publicNodeId, node]),
+        );
+        const order = { meets: 0, activation: 1, below: 2, stale: 3, unknown: 4 } as const;
+        const leftFit = classifyCapacityOpportunity(
+          byNode.get(left.nodeId),
+          capacityMetric,
+          requiredCapacityMw,
+        );
+        const rightFit = classifyCapacityOpportunity(
+          byNode.get(right.nodeId),
+          capacityMetric,
+          requiredCapacityMw,
+        );
+        const fitDifference = order[leftFit.fit] - order[rightFit.fit];
+        if (fitDifference) return fitDifference;
+        const marginDifference = (rightFit.marginMw ?? -Infinity) - (leftFit.marginMw ?? -Infinity);
+        if (marginDifference) return marginDifference;
+      }
       if (candidateSort === "name") {
         return (
           left.siteName.localeCompare(right.siteName) || left.nodeName.localeCompare(right.nodeName)
@@ -581,7 +631,29 @@ function PowerFinderPage() {
       }
       return right.screeningRank - left.screeningRank;
     });
-  }, [candidateSort, collection, minimumVoltage, operator, query, ranking, rankingCollection]);
+  }, [
+    candidateSort,
+    capacityMetric,
+    capacityViewport,
+    collection,
+    mapMode,
+    minimumVoltage,
+    operator,
+    query,
+    ranking,
+    rankingCollection,
+    requiredCapacityMw,
+  ]);
+  const capacitySummary = useMemo(
+    () =>
+      summariseCapacityOpportunities(
+        capacityViewport?.nodes ?? [],
+        capacityMetric,
+        requiredCapacityMw,
+        collection?.features.filter((feature) => feature.properties.kind === "node").length ?? 0,
+      ),
+    [capacityMetric, capacityViewport, collection, requiredCapacityMw],
+  );
   const selectedOpportunity =
     (selectedOpportunitySnapshot?.nodeId === String(selected?.id)
       ? selectedOpportunitySnapshot
@@ -861,7 +933,8 @@ function PowerFinderPage() {
               <div>
                 <strong>{project.name}</strong>
                 <span>
-                  {formatMw(project.importMw)} import · {project.preferredVoltageKv ?? "Any"} kV · {project.maxDistanceKm} km
+                  {formatMw(project.importMw)} import · {project.preferredVoltageKv ?? "Any"} kV ·{" "}
+                  {project.maxDistanceKm} km
                 </span>
               </div>
               <button
@@ -1401,62 +1474,6 @@ function PowerFinderPage() {
                   ))}
                 </select>
               </label>
-              {false && <label>
-                <span>Map insight</span>
-                <select
-                  name="map-insight"
-                  value={mapMode}
-                  onChange={(event) => {
-                    const value = event.target.value as "voltage" | "evidence" | "capacity";
-                    setMapMode(value);
-                    void updateSearch({ mapMode: value });
-                  }}
-                >
-                  <option value="voltage">Public evidence · voltage</option>
-                  <option value="evidence">Public evidence · authority</option>
-                  <option value="capacity">Calculated capacity</option>
-                </select>
-              </label>}
-              {false && mapMode === "capacity" && (
-                <>
-                  <label>
-                    <span>Capacity source</span>
-                    <select
-                      name="capacity-source"
-                      value={capacitySource}
-                      onChange={(event) => {
-                        const value = event.target.value as "reference" | "private";
-                        setCapacitySource(value);
-                        setSelectedReferenceCapacity(null);
-                        void updateSearch({ capacitySource: value, candidate: undefined });
-                      }}
-                    >
-                      <option value="reference">Reference network demonstration</option>
-                      <option value="private">Private operator model</option>
-                    </select>
-                  </label>
-                  <label>
-                    <span>Capacity metric</span>
-                    <select
-                      name="capacity-metric"
-                      value={capacityMetric}
-                      onChange={(event) => {
-                        const value = event.target.value as CapacityMetric;
-                        setCapacityMetric(value);
-                        void updateSearch({ capacityMetric: value });
-                      }}
-                    >
-                      {(Object.entries(capacityMetricLabels) as [CapacityMetric, string][]).map(
-                        ([value, label]) => (
-                          <option key={value} value={value}>
-                            {label}
-                          </option>
-                        ),
-                      )}
-                    </select>
-                  </label>
-                </>
-              )}
               <label>
                 <span>Maximum distance</span>
                 <select
@@ -1597,6 +1614,152 @@ function PowerFinderPage() {
             {interactionNotice}
           </p>
 
+          <section
+            className="capacity-opportunity-card"
+            aria-labelledby="capacity-opportunity-title"
+          >
+            <label className="capacity-overlay-switch">
+              <span>
+                <strong id="capacity-opportunity-title">Capacity opportunities</strong>
+                <small>Compare governed results with your required power</small>
+              </span>
+              <input
+                name="capacity-overlay"
+                type="checkbox"
+                role="switch"
+                checked={mapMode === "capacity"}
+                onChange={(event) => {
+                  const isEnabled = event.target.checked;
+                  setMapMode(isEnabled ? "capacity" : "voltage");
+                  setCapacitySource("private");
+                  setSelectedReferenceCapacity(null);
+                  setInteractionNotice(
+                    `Capacity opportunities ${isEnabled ? "enabled" : "disabled"}.`,
+                  );
+                  void updateSearch({
+                    mapMode: isEnabled ? "capacity" : "voltage",
+                    capacitySource: isEnabled ? "private" : undefined,
+                  });
+                }}
+              />
+            </label>
+            {mapMode === "capacity" && (
+              <div className="capacity-opportunity-controls">
+                <div className="capacity-required-heading">
+                  <label htmlFor="required-capacity-range">Required power</label>
+                  <span>
+                    {requiredCapacityMw.toLocaleString("en-GB", { maximumFractionDigits: 1 })} MW
+                  </span>
+                </div>
+                <input
+                  id="required-capacity-range"
+                  name="required-capacity-range"
+                  type="range"
+                  min={1}
+                  max={Math.min(1000, Math.max(100, Math.ceil((project.importMw * 3) / 25) * 25))}
+                  step={1}
+                  value={requiredCapacityMw}
+                  aria-valuetext={`${requiredCapacityMw} megawatts required power`}
+                  onChange={(event) => setRequiredCapacityMw(Number(event.target.value))}
+                  onPointerUp={(event) =>
+                    void updateSearch({ requiredMw: Number(event.currentTarget.value) })
+                  }
+                  onKeyUp={(event) =>
+                    void updateSearch({ requiredMw: Number(event.currentTarget.value) })
+                  }
+                />
+                <div className="capacity-control-row">
+                  <label>
+                    <span>Exact MW</span>
+                    <input
+                      type="number"
+                      min={0.1}
+                      max={1000}
+                      step={0.1}
+                      value={requiredCapacityMw}
+                      onChange={(event) => {
+                        const value = Math.min(
+                          1000,
+                          Math.max(0.1, Number(event.target.value) || 0.1),
+                        );
+                        setRequiredCapacityMw(value);
+                        void updateSearch({ requiredMw: value });
+                      }}
+                    />
+                  </label>
+                  <label>
+                    <span>Capacity basis</span>
+                    <select
+                      name="capacity-overlay-metric"
+                      value={capacityMetric === "n0_import_mw" ? "firm_import_mw" : capacityMetric}
+                      onChange={(event) => {
+                        const value = event.target.value as CapacityMetric;
+                        setCapacityMetric(value);
+                        void updateSearch({ capacityMetric: value });
+                      }}
+                    >
+                      {(Object.entries(capacityMetricLabels) as [CapacityMetric, string][])
+                        .filter(([value]) => value !== "n0_import_mw")
+                        .map(([value, label]) => (
+                          <option key={value} value={value}>
+                            {label}
+                          </option>
+                        ))}
+                    </select>
+                  </label>
+                </div>
+                {Math.abs(requiredCapacityMw - project.importMw) > 0.01 && (
+                  <button
+                    type="button"
+                    className="capacity-reset-demand"
+                    onClick={() => {
+                      setRequiredCapacityMw(project.importMw);
+                      void updateSearch({ requiredMw: undefined });
+                    }}
+                  >
+                    Use project demand · {project.importMw} MW
+                  </button>
+                )}
+                <p className="capacity-data-basis">
+                  <ShieldCheck aria-hidden="true" /> Private reviewed results ·{" "}
+                  {capacityViewport?.access === "ready" ? "workspace connected" : "no coverage"}
+                </p>
+                <div className="capacity-fit-summary" role="status" aria-live="polite">
+                  <span>
+                    <b>{capacitySummary.meets}</b> meet
+                  </span>
+                  <span>
+                    <b>{capacitySummary.activation}</b> activation paths
+                  </span>
+                  <span>
+                    <b>{capacitySummary.unknown}</b> not calculated
+                  </span>
+                </div>
+                {capacityState === "error" && (
+                  <p className="capacity-overlay-empty">Capacity results could not be loaded.</p>
+                )}
+                {capacityState !== "error" &&
+                  capacitySummary.meets === 0 &&
+                  capacitySummary.activation === 0 && (
+                    <p className="capacity-overlay-empty">
+                      No reviewed capacity results cover this map. Unknown is not zero.
+                    </p>
+                  )}
+              </div>
+            )}
+            <button
+              type="button"
+              className="reference-lab-link"
+              onClick={() => {
+                setReferenceLabOpen(true);
+                void updateSearch({ referenceLab: "true", referenceMetric });
+              }}
+            >
+              Open Reference Capacity Lab
+              <small>Explore the method on an abstract SimBench network</small>
+            </button>
+          </section>
+
           <details className="finder-layers-menu" suppressHydrationWarning>
             <summary>Map Layers</summary>
             <div className="power-finder-layer-list">
@@ -1639,84 +1802,6 @@ function PowerFinderPage() {
                   </small>
                 </label>
               ))}
-            </div>
-            <div className="capacity-overlay-control">
-              <label className="capacity-overlay-switch">
-                <span>
-                  <strong>Capacity Overlay</strong>
-                  <small>Show governed capacity on eligible mapped candidates</small>
-                </span>
-                <input
-                  name="capacity-overlay"
-                  type="checkbox"
-                  role="switch"
-                  checked={mapMode === "capacity"}
-                  onChange={(event) => {
-                    const enabled = event.target.checked;
-                    setMapMode(enabled ? "capacity" : "voltage");
-                    setCapacitySource("private");
-                    setSelectedReferenceCapacity(null);
-                    setInteractionNotice(`Capacity overlay ${enabled ? "enabled" : "disabled"}.`);
-                    void updateSearch({
-                      mapMode: enabled ? "capacity" : "voltage",
-                      capacitySource: enabled ? "private" : undefined,
-                    });
-                  }}
-                />
-              </label>
-              {mapMode === "capacity" && (
-                <div className="capacity-overlay-options">
-                  <label>
-                    <span>Source</span>
-                    <select name="capacity-overlay-source" value="private" disabled>
-                      <option value="private">Private Reviewed Results</option>
-                    </select>
-                  </label>
-                  <label>
-                    <span>Metric</span>
-                    <select
-                      name="capacity-overlay-metric"
-                      value={capacityMetric === "n0_import_mw" ? "firm_import_mw" : capacityMetric}
-                      onChange={(event) => {
-                        const value = event.target.value as CapacityMetric;
-                        setCapacityMetric(value);
-                        void updateSearch({ capacityMetric: value });
-                      }}
-                    >
-                      {(Object.entries(capacityMetricLabels) as [CapacityMetric, string][])
-                        .filter(([value]) => value !== "n0_import_mw")
-                        .map(([value, label]) => (
-                          <option key={value} value={value}>{label}</option>
-                        ))}
-                    </select>
-                  </label>
-                  <div className="capacity-overlay-empty" role="status" aria-live="polite">
-                    {capacityState === "loading" ? (
-                      <span>Loading governed capacity…</span>
-                    ) : capacityState === "error" ? (
-                      <span>Capacity could not be loaded. Check the workspace and try again.</span>
-                    ) : capacityViewport?.access !== "ready" ? (
-                      <span>Select an authorised workspace with accepted model-bus links and completed studies.</span>
-                    ) : capacityViewport.coverage.calculated === 0 ? (
-                      <span>No eligible calculated results. Unknown candidates remain uncoloured.</span>
-                    ) : (
-                      <span>{capacityViewport.coverage.calculated} calculated · {capacityViewport.coverage.reviewed} reviewed · {capacityViewport.coverage.stale} stale</span>
-                    )}
-                  </div>
-                </div>
-              )}
-              <button
-                type="button"
-                className="reference-lab-link"
-                onClick={() => {
-                  setReferenceLabOpen(true);
-                  setCapacityMetric("n0_import_mw");
-                  void updateSearch({ referenceLab: "true", capacityMetric: "n0_import_mw" });
-                }}
-              >
-                Open Reference Capacity Lab
-                <small>Explore the method on an abstract SimBench network</small>
-              </button>
             </div>
             {(enabled.line || enabled.industrial_site) &&
               visibleLayerCounts.line + visibleLayerCounts.industrial_site === 0 && (
@@ -1776,79 +1861,103 @@ function PowerFinderPage() {
                   No candidate connection points are within {maxDistanceKm} km in this view.
                 </p>
               )}
-            {candidates.map((candidate, index) => (
-              <button
-                type="button"
-                key={candidate.id}
-                data-candidate-id={candidate.id}
-                className={selectedOpportunity?.id === candidate.id ? "active" : ""}
-                aria-pressed={selectedOpportunity?.id === candidate.id}
-                onClick={() => {
-                  const node =
-                    opportunityNode(candidate, rankingCollection) ??
-                    opportunityNode(candidate, collection);
-                  const detailNode =
-                    node ??
-                    ({
-                      type: "Feature",
-                      id: candidate.nodeId,
-                      geometry: {
-                        type: "Point",
-                        coordinates: [project.longitude ?? 0, project.latitude ?? 0],
-                      },
-                      properties: {
-                        kind: "node",
-                        name: candidate.nodeName,
-                        operator: candidate.operator ?? undefined,
-                        voltage_kv: candidate.voltageKv,
-                        max_voltage_kv: Math.max(0, ...candidate.voltageKv),
-                        evidence_class: "open_mapping",
-                        capacity_state: "not_established",
-                      },
-                    } satisfies PowerFinderFeature);
-                  setSelectedOpportunitySnapshot(candidate);
-                  setSelected(detailNode);
-                  setInteractionNotice(
-                    `${candidate.nodeName} selected and highlighted on the map.`,
-                  );
-                  void updateSearch({ candidate: candidate.id }).then(() => {
+            {candidates.map((candidate, index) => {
+              const capacityNode = capacityViewport?.nodes.find(
+                (node) => node.publicNodeId === candidate.nodeId,
+              );
+              const capacityFit = classifyCapacityOpportunity(
+                capacityNode,
+                capacityMetric,
+                requiredCapacityMw,
+              );
+              return (
+                <button
+                  type="button"
+                  key={candidate.id}
+                  data-candidate-id={candidate.id}
+                  className={selectedOpportunity?.id === candidate.id ? "active" : ""}
+                  aria-pressed={selectedOpportunity?.id === candidate.id}
+                  onClick={() => {
+                    const node =
+                      opportunityNode(candidate, rankingCollection) ??
+                      opportunityNode(candidate, collection);
+                    const detailNode =
+                      node ??
+                      ({
+                        type: "Feature",
+                        id: candidate.nodeId,
+                        geometry: {
+                          type: "Point",
+                          coordinates: [project.longitude ?? 0, project.latitude ?? 0],
+                        },
+                        properties: {
+                          kind: "node",
+                          name: candidate.nodeName,
+                          operator: candidate.operator ?? undefined,
+                          voltage_kv: candidate.voltageKv,
+                          max_voltage_kv: Math.max(0, ...candidate.voltageKv),
+                          evidence_class: "open_mapping",
+                          capacity_state: "not_established",
+                        },
+                      } satisfies PowerFinderFeature);
                     setSelectedOpportunitySnapshot(candidate);
                     setSelected(detailNode);
-                  });
-                }}
-                onMouseEnter={() => setPreviewCandidateId(candidate.id)}
-                onMouseLeave={() => setPreviewCandidateId(null)}
-                onFocus={() => setPreviewCandidateId(candidate.id)}
-                onBlur={() => setPreviewCandidateId(null)}
-                aria-label={`Show ${candidate.nodeName} on map, ${formatScore(candidate.screeningRank)}/100`}
-              >
-                <span className="candidate-rank">{index + 1}</span>
-                <span>
-                  <b>{candidate.siteName}</b>
-                  <small>
-                    {candidate.nodeName} · {distanceFormatter.format(candidate.distanceKm)} km
-                  </small>
-                  <span className="candidate-badges">
-                    <i data-fit={candidate.voltageFit}>{voltageFitLabels[candidate.voltageFit]}</i>
-                    <i data-confidence={candidate.confidence}>
-                      {candidate.confidence} evidence completeness
-                    </i>
-                    {candidate.capacityScenario && (
-                      <i data-confidence="synthetic">
-                        demo import {formatMw(candidate.capacityScenario.firmImportEnvelopeMw)}
+                    setInteractionNotice(
+                      `${candidate.nodeName} selected and highlighted on the map.`,
+                    );
+                    void updateSearch({ candidate: candidate.id }).then(() => {
+                      setSelectedOpportunitySnapshot(candidate);
+                      setSelected(detailNode);
+                    });
+                  }}
+                  onMouseEnter={() => setPreviewCandidateId(candidate.id)}
+                  onMouseLeave={() => setPreviewCandidateId(null)}
+                  onFocus={() => setPreviewCandidateId(candidate.id)}
+                  onBlur={() => setPreviewCandidateId(null)}
+                  aria-label={`Show ${candidate.nodeName} on map, ${formatScore(candidate.screeningRank)}/100`}
+                >
+                  <span className="candidate-rank">{index + 1}</span>
+                  <span>
+                    <b>{candidate.siteName}</b>
+                    <small>
+                      {candidate.nodeName} · {distanceFormatter.format(candidate.distanceKm)} km
+                    </small>
+                    <span className="candidate-badges">
+                      <i data-fit={candidate.voltageFit}>
+                        {voltageFitLabels[candidate.voltageFit]}
                       </i>
-                    )}
-                    {candidate.networkScenario && (
-                      <i data-confidence="synthetic">
-                        synthetic security{" "}
-                        {formatMw(candidate.networkScenario.selectedSecurityLimitMw)}
+                      <i data-confidence={candidate.confidence}>
+                        {candidate.confidence} evidence completeness
                       </i>
+                      {candidate.capacityScenario && (
+                        <i data-confidence="synthetic">
+                          demo import {formatMw(candidate.capacityScenario.firmImportEnvelopeMw)}
+                        </i>
+                      )}
+                      {candidate.networkScenario && (
+                        <i data-confidence="synthetic">
+                          synthetic security{" "}
+                          {formatMw(candidate.networkScenario.selectedSecurityLimitMw)}
+                        </i>
+                      )}
+                      <strong>{formatScore(candidate.screeningRank)}/100</strong>
+                    </span>
+                    {mapMode === "capacity" && (
+                      <span className={`candidate-capacity-fit is-${capacityFit.fit}`}>
+                        {capacityFit.fit === "meets" &&
+                          `${capacityFit.valueMw?.toLocaleString("en-GB", { maximumFractionDigits: 1 })} MW · meets ${requiredCapacityMw} MW`}
+                        {capacityFit.fit === "activation" &&
+                          `${capacityFit.valueMw?.toLocaleString("en-GB", { maximumFractionDigits: 1 })} MW firm · ${capacityFit.alternative} pathway`}
+                        {capacityFit.fit === "below" &&
+                          `${capacityFit.valueMw?.toLocaleString("en-GB", { maximumFractionDigits: 1 })} MW · below requirement`}
+                        {capacityFit.fit === "stale" && "Recalculation required"}
+                        {capacityFit.fit === "unknown" && "Capacity not calculated"}
+                      </span>
                     )}
-                    <strong>{formatScore(candidate.screeningRank)}/100</strong>
                   </span>
-                </span>
-              </button>
-            ))}
+                </button>
+              );
+            })}
             {ranking && project.latitude != null && project.longitude != null && (
               <>
                 <details className="finder-ranking-method">
@@ -1896,6 +2005,8 @@ function PowerFinderPage() {
               previewFeature={previewFeature}
               mapMode={mapMode}
               capacityNodes={capacityViewport?.nodes ?? []}
+              capacityMetric={capacityMetric}
+              requiredCapacityMw={requiredCapacityMw}
               viewportTarget={viewportTarget}
               onSelect={(feature) => {
                 setSelected(feature);
@@ -1959,20 +2070,18 @@ function PowerFinderPage() {
           {referenceLabOpen && referenceCapacity && (
             <ReferenceCapacityInset
               artifact={referenceCapacity}
-              metric={capacityMetric}
+              metric={referenceMetric}
               onMetricChange={(metric) => {
-                setCapacityMetric(metric);
-                void updateSearch({ capacityMetric: metric });
+                setReferenceMetric(metric);
+                void updateSearch({ referenceMetric: metric });
               }}
               selected={selectedReferenceCapacity}
               onSelect={setSelectedReferenceCapacity}
               onClose={() => {
                 setReferenceLabOpen(false);
                 setSelectedReferenceCapacity(null);
-                if (capacityMetric === "n0_import_mw") setCapacityMetric("firm_import_mw");
                 void updateSearch({
                   referenceLab: undefined,
-                  capacityMetric: capacityMetric === "n0_import_mw" ? "firm_import_mw" : capacityMetric,
                   capacitySource: "private",
                 });
               }}

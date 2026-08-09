@@ -102,6 +102,135 @@
   border-top: 1px solid #20364a;
 }
 
+.capacity-opportunity-card {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 10px;
+  padding: 12px;
+  border: 1px solid #29465d;
+  border-radius: 10px;
+  background: #091a29;
+}
+
+.capacity-opportunity-controls {
+  display: grid;
+  gap: 9px;
+}
+.capacity-required-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.capacity-required-heading label {
+  color: #bcd0df;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.capacity-required-heading span {
+  color: #73ddf8;
+  font-size: 0.8rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.capacity-opportunity-controls input[type="range"] {
+  width: 100%;
+  accent-color: #46c9ef;
+  cursor: pointer;
+}
+.capacity-control-row {
+  display: grid;
+  grid-template-columns: minmax(72px, 0.65fr) minmax(0, 1.35fr);
+  gap: 8px;
+}
+.capacity-control-row label {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.capacity-control-row label > span {
+  color: #7f96aa;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.capacity-control-row input,
+.capacity-control-row select {
+  width: 100%;
+  min-width: 0;
+  height: 34px;
+  padding: 0 8px;
+  border: 1px solid #31526c;
+  border-radius: 7px;
+  color: #dff7ff;
+  background: #0d2031;
+  font-variant-numeric: tabular-nums;
+}
+.capacity-reset-demand {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  color: #79dfff;
+  background: transparent;
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+.capacity-data-basis {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  color: #8da4b8;
+  font-size: 0.7rem;
+}
+.capacity-data-basis svg {
+  width: 14px;
+  height: 14px;
+  color: #46c9ef;
+}
+.capacity-fit-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+}
+.capacity-fit-summary span {
+  padding: 6px;
+  border: 1px solid #203d52;
+  border-radius: 6px;
+  color: #8da4b8;
+  background: #071522;
+  font-size: 0.63rem;
+  text-align: center;
+}
+.capacity-fit-summary b {
+  display: block;
+  color: #e6f8ff;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+.candidate-capacity-fit {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+.candidate-capacity-fit.is-meets {
+  color: #67e8f9;
+}
+.candidate-capacity-fit.is-activation {
+  color: #c4b5fd;
+}
+.candidate-capacity-fit.is-below {
+  color: #7ba5bb;
+}
+.candidate-capacity-fit.is-stale {
+  color: #fbbf24;
+}
+.candidate-capacity-fit.is-unknown {
+  color: #91a5b8;
+}
+
 .capacity-overlay-switch {
   display: flex;
   align-items: center;
@@ -142,7 +271,9 @@
   border-radius: 50%;
   background: #7890a4;
   content: "";
-  transition: transform 160ms ease, background-color 160ms ease;
+  transition:
+    transform 160ms ease,
+    background-color 160ms ease;
 }
 
 .capacity-overlay-switch input:checked {
@@ -342,9 +473,7 @@
   max-height: none;
   border: 0;
   border-radius: 0;
-  background:
-    radial-gradient(circle at 50% 45%, rgb(35 112 145 / 20%), transparent 38%),
-    #050d17;
+  background: radial-gradient(circle at 50% 45%, rgb(35 112 145 / 20%), transparent 38%), #050d17;
   overflow: hidden;
 }
 
@@ -526,6 +655,9 @@
 .finder-view-switch button:focus-visible,
 .capacity-overlay-switch input:focus-visible,
 .capacity-overlay-options select:focus-visible,
+.capacity-opportunity-controls input:focus-visible,
+.capacity-opportunity-controls select:focus-visible,
+.capacity-reset-demand:focus-visible,
 .reference-lab-link:focus-visible,
 .reference-lab-actions select:focus-visible,
 .reference-lab-actions button:focus-visible,
@@ -13347,11 +13479,24 @@ tbody tr:last-child td {
 
 /* Power Finder desktop redesign: keep last so legacy release CSS cannot override it. */
 @media (min-width: 761px) {
-  .power-finder-page { grid-template-columns: clamp(300px, 23vw, 340px) minmax(0, 1fr); overflow: hidden; }
-  .power-finder-sidebar { padding: 0 14px 18px; overflow-x: hidden; }
-  .power-finder-sidebar > .power-finder-boundary { display: none; }
-  .power-finder-sidebar > header { display: block; padding: 2px 0 10px; }
-  .power-finder-sidebar > header p { display: none; }
+  .power-finder-page {
+    grid-template-columns: clamp(300px, 23vw, 340px) minmax(0, 1fr);
+    overflow: hidden;
+  }
+  .power-finder-sidebar {
+    padding: 0 14px 18px;
+    overflow-x: hidden;
+  }
+  .power-finder-sidebar > .power-finder-boundary {
+    display: none;
+  }
+  .power-finder-sidebar > header {
+    display: block;
+    padding: 2px 0 10px;
+  }
+  .power-finder-sidebar > header p {
+    display: none;
+  }
   .power-finder-sidebar > header h1 {
     margin: 0;
     color: #dbeefa;
@@ -13359,9 +13504,19 @@ tbody tr:last-child td {
     line-height: 1.3;
     text-wrap: balance;
   }
-  .finder-rail-sticky { position: sticky; top: 0; z-index: 20; }
-  .power-finder-candidates > header { position: sticky; top: 166px; z-index: 10; }
-  .power-finder-candidates > header small { color: #91a7b9; }
+  .finder-rail-sticky {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+  .power-finder-candidates > header {
+    position: sticky;
+    top: 166px;
+    z-index: 10;
+  }
+  .power-finder-candidates > header small {
+    color: #91a7b9;
+  }
   .reference-capacity-inset {
     position: absolute;
     inset: 0;
@@ -13389,8 +13544,21 @@ tbody tr:last-child td {
     max-height: calc(100% - 104px);
     overflow-y: auto;
   }
-  .activation-study-panel { z-index: 30; width: min(640px, calc(100% - 32px)); max-width: 640px; overflow: hidden; }
-  .activation-study-tabs { display: grid; grid-template-columns: repeat(3, 1fr); }
-  .activation-study-actions { display: grid; grid-template-columns: 1fr 1fr; }
-  .activation-evidence-ladder { overflow: visible; }
+  .activation-study-panel {
+    z-index: 30;
+    width: min(640px, calc(100% - 32px));
+    max-width: 640px;
+    overflow: hidden;
+  }
+  .activation-study-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .activation-study-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .activation-evidence-ladder {
+    overflow: visible;
+  }
 }

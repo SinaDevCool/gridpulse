@@ -662,8 +662,10 @@ function FinderDataSourcesPage() {
               </h2>
               <p>
                 Power Finder keeps the geographic map visible and adds governed private capacity
-                as an optional Map Layers overlay. Its separate reference lab runs Pandapower on
-                the open SimBench network and uses the configured topology
+                through the Capacity Opportunities control. Required power and capacity-basis
+                controls classify, filter and reorder existing governed results; they do not run a
+                new electrical calculation or create missing MW. Its separate reference lab runs
+                Pandapower on the open SimBench network and uses the configured topology
                 provider—Neo4j GDS when configured, with the deterministic graph fallback for
                 reproducible public builds—to expose traceable pathways; its results stay in a
                 labelled inset and never colour OpenStreetMap infrastructure. The private source
@@ -704,6 +706,9 @@ function FinderDataSourcesPage() {
                 <h3>Map safeguards</h3>
                 <ul>
                   <li>Unknown nodes remain grey; unknown never means zero</li>
+                  <li>
+                    The required-power threshold compares results; it is not a capacity calculation
+                  </li>
                   <li>Synthetic benchmarks never colour public infrastructure</li>
                   <li>
                     Reference MW is shown only against anonymous buses in the separate Reference
