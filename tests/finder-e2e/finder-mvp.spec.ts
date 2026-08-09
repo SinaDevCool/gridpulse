@@ -148,11 +148,25 @@ test("public MVP excludes experimental capacity and network-study outputs", asyn
   expect(scenarioRequests).toHaveLength(0);
 });
 
-test("calculated capacity mode keeps unknown nodes neutral without fabricating MW", async ({ page }) => {
+test("calculated capacity separates solved reference buses from private mapped capacity", async ({
+  page,
+}) => {
   await page.goto("/power-finder?lat=52.31&lng=13.36&mw=20&distance=20&mapMode=capacity");
-  await expect(page.getByText(/candidate site-to-node matches/i).first()).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText(/candidate site-to-node matches/i).first()).toBeVisible({
+    timeout: 15_000,
+  });
   await expect(page.getByLabel("Capacity metric")).toBeVisible();
-  await expect(page.getByText(/Sign in to a private workspace with an accepted model/i)).toBeVisible();
+  await expect(page.getByLabel("Capacity source")).toHaveValue("reference");
+  await expect(page.getByText("Reference capacity lab")).toBeVisible();
+  await expect(page.getByText(/not the OpenStreetMap grid/i)).toBeVisible();
+  await expect(page.getByRole("button", { name: /REF 01.*megawatts/i })).toBeVisible();
+  await page.getByRole("button", { name: /REF 01.*megawatts/i }).click();
+  await expect(page.getByText("N-0 calculated")).toBeVisible();
+  await expect(page.getByText(/radial N‑1 outage removes firm supply/i)).toBeVisible();
+  await page.getByLabel("Capacity source").selectOption("private");
+  await expect(
+    page.getByText(/Sign in to a private workspace with an accepted model/i),
+  ).toBeVisible();
   await expect(page.getByText(/No governed results in this workspace view/i)).toBeVisible();
   await page.getByLabel("Capacity metric").selectOption("bess_assisted_import_mw");
   await expect(page.getByLabel("Capacity metric")).toHaveValue("bess_assisted_import_mw");

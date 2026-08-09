@@ -10197,6 +10197,169 @@ tbody tr:last-child td {
   min-width: 0;
   position: relative;
 }
+
+.reference-capacity-inset {
+  position: absolute;
+  z-index: 8;
+  inset: 18px 18px auto auto;
+  width: min(720px, calc(100% - 36px));
+  max-height: calc(100% - 36px);
+  overflow: auto;
+  border: 1px solid #23506a;
+  border-radius: 16px;
+  background: rgb(5 18 32 / 96%);
+  box-shadow: 0 24px 70px rgb(0 0 0 / 55%);
+  color: #dcecf5;
+}
+
+.reference-capacity-inset > header,
+.reference-capacity-inset > footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+}
+.reference-capacity-inset > header {
+  border-bottom: 1px solid #1e4056;
+}
+.reference-capacity-inset > header > div,
+.reference-capacity-inset > header span,
+.reference-capacity-inset > footer span {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.reference-capacity-inset > header svg,
+.reference-capacity-inset > footer svg {
+  width: 18px;
+  color: #49c9ed;
+}
+.reference-capacity-inset > header small {
+  display: block;
+  color: #8da8b8;
+  margin-top: 2px;
+}
+.reference-capacity-badge {
+  border: 1px solid #b88a09;
+  border-radius: 999px;
+  padding: 6px 10px;
+  color: #f6c945;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.reference-capacity-boundary {
+  margin: 14px 16px;
+  padding: 10px 12px;
+  border-left: 3px solid #f0b90b;
+  background: #172436;
+  color: #f5d76e;
+  font-size: 13px;
+}
+.reference-capacity-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 9px;
+  padding: 0 16px 16px;
+}
+.reference-capacity-grid button {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 8px;
+  align-items: center;
+  min-height: 70px;
+  padding: 10px;
+  border: 1px solid #24445a;
+  border-radius: 10px;
+  background: #0b1c2e;
+  color: #dcecf5;
+  text-align: left;
+  cursor: pointer;
+}
+.reference-capacity-grid button:hover,
+.reference-capacity-grid button.is-selected {
+  border-color: #55d5f5;
+  background: #112b40;
+}
+.reference-capacity-grid button i {
+  grid-row: 1 / 4;
+  width: 13px;
+  height: 48px;
+  border-radius: 8px;
+  background: rgb(35 211 238 / var(--capacity-intensity));
+  box-shadow: 0 0 15px rgb(35 211 238 / 45%);
+}
+.reference-capacity-grid button span {
+  color: #5ee1ff;
+  font-weight: 700;
+}
+.reference-capacity-grid button small {
+  color: #7f9aaa;
+}
+.reference-capacity-detail {
+  margin: 0 16px 14px;
+  padding: 14px;
+  border: 1px solid #2a5a74;
+  border-radius: 12px;
+  background: #091624;
+}
+.reference-capacity-detail-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.reference-capacity-detail-heading button {
+  border: 0;
+  background: transparent;
+  color: #b8cad4;
+  font-size: 24px;
+  cursor: pointer;
+}
+.reference-capacity-detail dl {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 12px 0;
+}
+.reference-capacity-detail dl div {
+  padding: 9px;
+  border: 1px solid #1b394e;
+  border-radius: 8px;
+}
+.reference-capacity-detail dt {
+  color: #849eae;
+  font-size: 11px;
+}
+.reference-capacity-detail dd {
+  margin: 3px 0 0;
+  font-weight: 700;
+}
+.reference-capacity-explanation {
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  background: #10283a;
+  color: #bcd2df;
+}
+.reference-capacity-explanation svg {
+  width: 18px;
+  flex: 0 0 auto;
+  color: #64dcf5;
+}
+.reference-capacity-explanation p {
+  margin: 0;
+  font-size: 12px;
+}
+.reference-capacity-explanation strong {
+  display: block;
+  color: #e7f8ff;
+  margin-bottom: 3px;
+}
+.reference-capacity-inset > footer {
+  border-top: 1px solid #1e4056;
+  color: #829dad;
+  font-size: 11px;
+}
 .power-finder-map {
   height: 100%;
   width: 100%;
@@ -10212,7 +10375,9 @@ tbody tr:last-child td {
   color: #cbd5e1;
 }
 
-.capacity-coverage-summary strong { color: #e6fbff; }
+.capacity-coverage-summary strong {
+  color: #e6fbff;
+}
 
 .power-finder-legend i.legend-capacity-low,
 .power-finder-legend i.legend-capacity-high,
@@ -10225,10 +10390,18 @@ tbody tr:last-child td {
   border: 1px solid #cbd5e1;
 }
 
-.power-finder-legend i.legend-capacity-low { background: #164e63; }
-.power-finder-legend i.legend-capacity-high { background: #a5f3fc; }
-.power-finder-legend i.legend-capacity-unknown { background: #475569; }
-.power-finder-legend i.legend-capacity-stale { background: #f59e0b; }
+.power-finder-legend i.legend-capacity-low {
+  background: #164e63;
+}
+.power-finder-legend i.legend-capacity-high {
+  background: #a5f3fc;
+}
+.power-finder-legend i.legend-capacity-unknown {
+  background: #475569;
+}
+.power-finder-legend i.legend-capacity-stale {
+  background: #f59e0b;
+}
 .power-finder-loading,
 .power-finder-error {
   align-items: center;

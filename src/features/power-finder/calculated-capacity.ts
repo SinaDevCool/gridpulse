@@ -52,6 +52,73 @@ export type CalculatedCapacityViewport = {
   evidenceBoundary: string;
 };
 
+export type ReferenceCapacityResult = {
+  result_id: string;
+  reference_bus_id: string;
+  label: string;
+  n0_capacity_mw: number;
+  n1_capacity_mw: number;
+  firm_capacity_mw: number;
+  flexible_capacity_mw: number;
+  bess_assisted_capacity_mw: number;
+  staged_initial_capacity_mw: number;
+  eventual_capacity_mw: number;
+  binding_constraint: string | null;
+  binding_case: string | null;
+  validation_state: "reference_network_calculated";
+  graph_pathway_available: boolean;
+};
+
+export type ReferenceCapacityArtifact = {
+  schema_version: "gridpulse-reference-capacity-map-v1";
+  generated_at: string;
+  result_mode: "reference_network_calculated";
+  model: {
+    id: string;
+    version: string;
+    code: string;
+    source_url: string;
+    licence: string;
+    model_sha256: string;
+    graph_projection_sha256: string;
+    topology_provider: string;
+  };
+  solver: { name: string; version: string };
+  security: {
+    criterion: string;
+    contingency_ids: string[];
+    operator_approved_complete_set: boolean;
+  };
+  strategy_assumptions: Record<string, string>;
+  results_sha256: string;
+  results: ReferenceCapacityResult[];
+  permitted_interpretation: string;
+  prohibited_interpretation: string;
+};
+
+export async function loadReferenceCapacityMap(): Promise<ReferenceCapacityArtifact> {
+  const response = await fetch("/power-finder/reference-capacity-map.json");
+  if (!response.ok) throw new Error(`Reference capacity artifact failed (${response.status}).`);
+  const artifact = (await response.json()) as ReferenceCapacityArtifact;
+  if (
+    artifact.schema_version !== "gridpulse-reference-capacity-map-v1" ||
+    artifact.result_mode !== "reference_network_calculated"
+  ) {
+    throw new Error("Unsupported reference capacity artifact.");
+  }
+  return artifact;
+}
+
+export function referenceCapacityValue(result: ReferenceCapacityResult, metric: CapacityMetric) {
+  return {
+    firm_import_mw: result.firm_capacity_mw,
+    flexible_import_mw: result.flexible_capacity_mw,
+    bess_assisted_import_mw: result.bess_assisted_capacity_mw,
+    staged_initial_import_mw: result.staged_initial_capacity_mw,
+    eventual_import_mw: result.eventual_capacity_mw,
+  }[metric];
+}
+
 export const capacityMetricLabels: Record<CapacityMetric, string> = {
   firm_import_mw: "Firm import",
   flexible_import_mw: "Flexible import",
@@ -114,8 +181,8 @@ export async function loadCalculatedCapacityViewport(input: {
 export function isCurrentCalculatedCapacity(node?: CalculatedCapacityNode | null) {
   return Boolean(
     node &&
-      node.valueMw !== null &&
-      ["calculated", "operator_reviewed", "operator_confirmed"].includes(node.validationState),
+    node.valueMw !== null &&
+    ["calculated", "operator_reviewed", "operator_confirmed"].includes(node.validationState),
   );
 }
 

@@ -4,6 +4,7 @@ import argparse
 from pathlib import Path
 
 from .benchmark_model import build_c1_validation_artifact
+from .reference_capacity_map import build_reference_capacity_map_artifact
 from .c1_publish import publish_c1_artifact
 from .c2_benchmark import build_c2_benchmark_artifact
 from .c2_publish import publish_c2_artifact
@@ -94,6 +95,10 @@ def parser() -> argparse.ArgumentParser:
     c1 = subcommands.add_parser("validate-c1-benchmark")
     c1.add_argument("--code", default="1-MV-urban--0-sw")
     c1.add_argument("--output", type=Path, required=True)
+    reference_capacity = subcommands.add_parser("validate-reference-capacity-map")
+    reference_capacity.add_argument("--code", default="1-MV-urban--0-sw")
+    reference_capacity.add_argument("--limit", type=int, default=12)
+    reference_capacity.add_argument("--output", type=Path, required=True)
     publish_c1 = subcommands.add_parser("publish-c1-benchmark")
     publish_c1.add_argument("--input", type=Path, required=True)
     cgmes = subcommands.add_parser("import-cgmes")
@@ -228,6 +233,14 @@ def main() -> None:
         print(
             f"Validated {report['model_id']} with pandapower; "
             f"benchmark import boundary={capacity['values']['firm_import_capacity_mw']} MW."
+        )
+    elif args.command == "validate-reference-capacity-map":
+        if args.limit < 1:
+            raise SystemExit("Reference capacity result limit must be at least one.")
+        report = build_reference_capacity_map_artifact(args.output, args.code, args.limit)
+        print(
+            f"Calculated {len(report['results'])} governed reference-network capacity results; "
+            f"sha256={report['results_sha256'][:12]}."
         )
     elif args.command == "publish-c1-benchmark":
         report = publish_c1_artifact(args.input)

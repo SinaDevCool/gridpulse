@@ -579,8 +579,8 @@ function FinderDataSourcesPage() {
               <p>
                 Inside an authorised operator workspace, GridPulse projects a versioned electrical
                 model into Neo4j to inspect connectivity, alternative pathways, bridge assets,
-                shared upstream dependencies and scenario relevance. The graph proposes and
-                explains the study space; a verified electrical solver remains authoritative.
+                shared upstream dependencies and scenario relevance. The graph proposes and explains
+                the study space; a verified electrical solver remains authoritative.
               </p>
             </div>
             <div className="methodology-boundary-grid">
@@ -612,18 +612,28 @@ function FinderDataSourcesPage() {
           <section className="methodology-boundary" aria-labelledby="calculated-map-title">
             <div>
               <p className="context-label">Calculated Capacity Map</p>
-              <h2 id="calculated-map-title">MW appears only after topology reconciliation and an electrical solve.</h2>
+              <h2 id="calculated-map-title">
+                MW appears only after topology reconciliation and an electrical solve.
+              </h2>
               <p>
-                The private Calculated capacity map reuses the Power Finder geography. An accepted
-                candidate-to-model-bus link supplies graph context; a versioned electrical engine
-                then calculates firm, flexible, BESS-assisted and staged results. AI explains and
-                compares those governed outputs but does not invent or calculate MW independently.
+                The Calculated capacity view has two deliberately separate sources. Its reference
+                lab runs Pandapower on the open SimBench network and uses the topology graph to
+                expose traceable pathways; its results stay in a labelled inset and never colour
+                OpenStreetMap infrastructure. The private source reuses Power Finder geography. An
+                accepted candidate-to-model-bus link supplies graph context; a versioned electrical
+                engine then calculates firm, flexible, BESS-assisted and staged results. AI explains
+                and compares those governed outputs but does not invent or calculate MW
+                independently.
               </p>
             </div>
             <div className="methodology-boundary-grid">
               <article>
                 <h3>Required result lineage</h3>
                 <ul>
+                  <li>
+                    Reference: SimBench model/version, ODbL attribution, graph projection hash and
+                    solver hash
+                  </li>
                   <li>Accepted private model and candidate-to-bus reconciliation</li>
                   <li>Scenario, equipment ratings, operating snapshot and security criterion</li>
                   <li>Completed solver run with engine, input and dependency hashes</li>
@@ -636,6 +646,10 @@ function FinderDataSourcesPage() {
                 <ul>
                   <li>Unknown nodes remain grey; unknown never means zero</li>
                   <li>Synthetic benchmarks never colour public infrastructure</li>
+                  <li>
+                    Reference MW is shown only against anonymous REF buses in a separate network
+                    inset
+                  </li>
                   <li>Stale results remain visible but cannot support recommendations</li>
                   <li>Private results remain workspace-scoped and access-controlled</li>
                   <li>Calculated capacity is not a connection offer or reservation</li>
@@ -654,7 +668,9 @@ function FinderDataSourcesPage() {
                 <h3>Power Finder shows</h3>
                 <ul>
                   <li>Published and mapped infrastructure context</li>
-                  <li>Private node-specific calculated capacity when a governed study is available</li>
+                  <li>
+                    Private node-specific calculated capacity when a governed study is available
+                  </li>
                   <li>Indicative proximity and voltage context</li>
                   <li>Registered-asset context where accepted</li>
                   <li>Source provenance and known evidence gaps</li>

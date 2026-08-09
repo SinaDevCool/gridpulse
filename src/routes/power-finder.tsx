@@ -17,6 +17,7 @@ import { lazy, Suspense, useEffect, useMemo, useState, type ChangeEvent } from "
 import { z } from "zod";
 import { AppShell } from "@/components/product/AppShell";
 import { PowerFinderMap } from "@/components/product/PowerFinderMap";
+import { ReferenceCapacityInset } from "@/components/product/ReferenceCapacityInset";
 import type { ActivationStudyTab } from "@/components/product/ActivationStudyPanel";
 import type { VisibleLayerCounts } from "@/components/product/power-finder-map-data";
 import { integratedActivationStudyEnabled, productCapabilities } from "@/config/product-mode";
@@ -88,8 +89,11 @@ import {
 import {
   capacityMetricLabels,
   loadCalculatedCapacityViewport,
+  loadReferenceCapacityMap,
   type CalculatedCapacityViewport,
   type CapacityMetric,
+  type ReferenceCapacityArtifact,
+  type ReferenceCapacityResult,
 } from "@/features/power-finder/calculated-capacity";
 
 const safeNumber = (minimum: number, maximum: number) =>
@@ -117,6 +121,7 @@ export const Route = createFileRoute("/power-finder")({
     compare: z.string().max(700).optional().catch(undefined),
     region: z.enum(["DE", "DE-BB"]).optional().catch(undefined),
     mapMode: z.enum(["voltage", "evidence", "capacity"]).optional().catch(undefined),
+    capacitySource: z.enum(["reference", "private"]).optional().catch(undefined),
     capacityMetric: z
       .enum([
         "firm_import_mw",
@@ -326,8 +331,18 @@ function PowerFinderPage() {
   const [capacityMetric, setCapacityMetric] = useState<CapacityMetric>(
     search.capacityMetric ?? "firm_import_mw",
   );
+  const [capacitySource, setCapacitySource] = useState<"reference" | "private">(
+    search.capacitySource ?? "reference",
+  );
   const [capacityViewport, setCapacityViewport] = useState<CalculatedCapacityViewport | null>(null);
-  const [capacityState, setCapacityState] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [referenceCapacity, setReferenceCapacity] = useState<ReferenceCapacityArtifact | null>(
+    null,
+  );
+  const [selectedReferenceCapacity, setSelectedReferenceCapacity] =
+    useState<ReferenceCapacityResult | null>(null);
+  const [capacityState, setCapacityState] = useState<"idle" | "loading" | "ready" | "error">(
+    "idle",
+  );
   const activeCoverage =
     coverage.find((item) => item.regionCode === regionCode) ?? fallbackCoverage[1];
   const viewportTarget = useMemo(
@@ -336,7 +351,7 @@ function PowerFinderPage() {
   );
 
   useEffect(() => {
-    if (mapMode !== "capacity") return;
+    if (mapMode !== "capacity" || capacitySource !== "private") return;
     setCapacityState("loading");
     void loadCalculatedCapacityViewport({
       workspaceId: search.workspaceId,
@@ -352,7 +367,18 @@ function PowerFinderPage() {
         setCapacityViewport(null);
         setCapacityState("error");
       });
-  }, [capacityMetric, collection, mapMode, search.workspaceId]);
+  }, [capacityMetric, capacitySource, collection, mapMode, search.workspaceId]);
+
+  useEffect(() => {
+    if (mapMode !== "capacity" || capacitySource !== "reference" || referenceCapacity) return;
+    setCapacityState("loading");
+    void loadReferenceCapacityMap()
+      .then((artifact) => {
+        setReferenceCapacity(artifact);
+        setCapacityState("ready");
+      })
+      .catch(() => setCapacityState("error"));
+  }, [capacitySource, mapMode, referenceCapacity]);
 
   useEffect(() => {
     const saved = loadFinderProject();
@@ -574,9 +600,9 @@ function PowerFinderPage() {
         })
       : null);
   const selectedCapacity = selectedDetailFeature
-    ? capacityViewport?.nodes.find(
+    ? (capacityViewport?.nodes.find(
         (result) => result.publicNodeId === String(selectedDetailFeature.id),
-      ) ?? null
+      ) ?? null)
     : null;
   const selectedNodePathways = selected
     ? candidates.filter((candidate) => candidate.nodeId === String(selected.id))
@@ -611,7 +637,9 @@ function PowerFinderPage() {
   );
   const coordinates = selected ? pointCoordinates(selected) : null;
   const activationOpen =
-    integratedActivationStudyEnabled && search.study === "activation" && Boolean(selectedOpportunity);
+    integratedActivationStudyEnabled &&
+    search.study === "activation" &&
+    Boolean(selectedOpportunity);
   const activationTab: ActivationStudyTab =
     search.studyTab === "geographic" ? "overview" : (search.studyTab ?? "overview");
   const startPrivateAssessment = async (studyInput?: {
@@ -1301,22 +1329,44 @@ function PowerFinderPage() {
                 </select>
               </label>
               {mapMode === "capacity" && (
-                <label>
-                  <span>Capacity metric</span>
-                  <select
-                    name="capacity-metric"
-                    value={capacityMetric}
-                    onChange={(event) => {
-                      const value = event.target.value as CapacityMetric;
-                      setCapacityMetric(value);
-                      replaceLocalSearchValue("capacityMetric", value);
-                    }}
-                  >
-                    {(Object.entries(capacityMetricLabels) as [CapacityMetric, string][]).map(
-                      ([value, label]) => <option key={value} value={value}>{label}</option>,
-                    )}
-                  </select>
-                </label>
+                <>
+                  <label>
+                    <span>Capacity source</span>
+                    <select
+                      name="capacity-source"
+                      value={capacitySource}
+                      onChange={(event) => {
+                        const value = event.target.value as "reference" | "private";
+                        setCapacitySource(value);
+                        setSelectedReferenceCapacity(null);
+                        replaceLocalSearchValue("capacitySource", value);
+                      }}
+                    >
+                      <option value="reference">Reference network demonstration</option>
+                      <option value="private">Private operator model</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>Capacity metric</span>
+                    <select
+                      name="capacity-metric"
+                      value={capacityMetric}
+                      onChange={(event) => {
+                        const value = event.target.value as CapacityMetric;
+                        setCapacityMetric(value);
+                        replaceLocalSearchValue("capacityMetric", value);
+                      }}
+                    >
+                      {(Object.entries(capacityMetricLabels) as [CapacityMetric, string][]).map(
+                        ([value, label]) => (
+                          <option key={value} value={value}>
+                            {label}
+                          </option>
+                        ),
+                      )}
+                    </select>
+                  </label>
+                </>
               )}
               <label>
                 <span>Maximum distance</span>
@@ -1383,10 +1433,14 @@ function PowerFinderPage() {
             </div>
             <p className="candidate-boundary" role="status">
               {mapMode === "capacity"
-                ? capacityViewport?.evidenceBoundary ??
-                  "Loading governed capacity coverage. Unknown nodes will remain visible and are never treated as zero."
+                ? capacitySource === "reference"
+                  ? (referenceCapacity?.prohibited_interpretation ??
+                    "Loading the governed SimBench reference calculation.")
+                  : (capacityViewport?.evidenceBoundary ??
+                    "Loading governed private capacity coverage. Unknown nodes remain unknown, never zero.")
                 : activeCoverage.evidenceBoundary}
-              {mapMode !== "capacity" && activeCoverage.status !== "accepted" &&
+              {mapMode !== "capacity" &&
+                activeCoverage.status !== "accepted" &&
                 " This view may be empty until an accepted release is promoted."}
             </p>
             {mapMode === "capacity" && (
@@ -1396,11 +1450,21 @@ function PowerFinderPage() {
                   <span>Loading private calculated coverage…</span>
                 ) : capacityState === "error" ? (
                   <span>Calculated results could not be loaded.</span>
+                ) : capacitySource === "reference" && referenceCapacity ? (
+                  <span>
+                    {referenceCapacity.results.length} solved reference buses · Pandapower{" "}
+                    {referenceCapacity.solver.version} · topology graph reconciled
+                  </span>
                 ) : capacityViewport?.access !== "ready" ? (
-                  <span>Sign in to a private workspace with an accepted model to view calculated MW.</span>
+                  <span>
+                    Sign in to a private workspace with an accepted model to view calculated MW.
+                  </span>
                 ) : (
                   <span>
-                    {capacityViewport.coverage.calculated} calculated · {capacityViewport.coverage.reviewed} reviewed · {capacityViewport.coverage.stale} stale · {capacityViewport.coverage.unknown} unknown
+                    {capacityViewport.coverage.calculated} calculated ·{" "}
+                    {capacityViewport.coverage.reviewed} reviewed ·{" "}
+                    {capacityViewport.coverage.stale} stale · {capacityViewport.coverage.unknown}{" "}
+                    unknown
                   </span>
                 )}
               </div>
@@ -1664,7 +1728,7 @@ function PowerFinderPage() {
               selectedFeature={selected}
               previewFeature={previewFeature}
               mapMode={mapMode}
-              capacityNodes={capacityViewport?.nodes ?? []}
+              capacityNodes={capacitySource === "private" ? (capacityViewport?.nodes ?? []) : []}
               viewportTarget={viewportTarget}
               onSelect={(feature) => {
                 setSelected(feature);
@@ -1725,6 +1789,14 @@ function PowerFinderPage() {
               onVisibleLayerCounts={setVisibleLayerCounts}
             />
           )}
+          {mapMode === "capacity" && capacitySource === "reference" && referenceCapacity && (
+            <ReferenceCapacityInset
+              artifact={referenceCapacity}
+              metric={capacityMetric}
+              selected={selectedReferenceCapacity}
+              onSelect={setSelectedReferenceCapacity}
+            />
+          )}
 
           <div className="power-finder-legend" aria-label="Map legend">
             <strong>
@@ -1736,10 +1808,18 @@ function PowerFinderPage() {
             </strong>
             {mapMode === "capacity" ? (
               <>
-                <span><i className="legend-capacity-low" /> Lower calculated MW</span>
-                <span><i className="legend-capacity-high" /> Higher calculated MW</span>
-                <span><i className="legend-capacity-unknown" /> Not calculated · unknown</span>
-                <span><i className="legend-capacity-stale" /> Stale · recalculate</span>
+                <span>
+                  <i className="legend-capacity-low" /> Lower calculated MW
+                </span>
+                <span>
+                  <i className="legend-capacity-high" /> Higher calculated MW
+                </span>
+                <span>
+                  <i className="legend-capacity-unknown" /> Not calculated · unknown
+                </span>
+                <span>
+                  <i className="legend-capacity-stale" /> Stale · recalculate
+                </span>
                 <small>
                   {capacityViewport?.nodes[0]
                     ? `${capacityViewport.nodes[0].scenarioLabel} · ${capacityViewport.nodes[0].modelVersion}`
@@ -1748,21 +1828,21 @@ function PowerFinderPage() {
               </>
             ) : (
               <>
-            <span>
-              <i className="legend-node" /> Candidate grid node
-            </span>
-            <span>
-              <i className="legend-line" /> Mapped corridor
-            </span>
-            <span>
-              <i className="legend-site" /> Industrial land
-            </span>
-            <span>
-              <i className="legend-generation" /> Registered generation
-            </span>
-            <span>
-              <i className="legend-storage" /> Registered storage
-            </span>
+                <span>
+                  <i className="legend-node" /> Candidate grid node
+                </span>
+                <span>
+                  <i className="legend-line" /> Mapped corridor
+                </span>
+                <span>
+                  <i className="legend-site" /> Industrial land
+                </span>
+                <span>
+                  <i className="legend-generation" /> Registered generation
+                </span>
+                <span>
+                  <i className="legend-storage" /> Registered storage
+                </span>
               </>
             )}
           </div>
@@ -1972,24 +2052,54 @@ function PowerFinderPage() {
                     </p>
                   )}
                   {selectedCapacity && (
-                    <section className="finder-panel-card finder-panel-card--study" aria-label="Calculated capacity result">
+                    <section
+                      className="finder-panel-card finder-panel-card--study"
+                      aria-label="Calculated capacity result"
+                    >
                       <header>
                         <span>Calculated capacity</span>
                         <b>{selectedCapacity.validationState.replaceAll("_", " ")}</b>
                       </header>
                       <p>
-                        Node-specific electrical result for model {selectedCapacity.modelVersion}, {selectedCapacity.scenarioLabel}, {selectedCapacity.securityCase.replace("_", "-").toUpperCase()}.
+                        Node-specific electrical result for model {selectedCapacity.modelVersion},{" "}
+                        {selectedCapacity.scenarioLabel},{" "}
+                        {selectedCapacity.securityCase.replace("_", "-").toUpperCase()}.
                       </p>
                       <dl>
-                        <div><dt>Firm import</dt><dd>{selectedCapacity.firmCapacityMw ?? "—"} MW</dd></div>
-                        <div><dt>Flexible import</dt><dd>{selectedCapacity.flexibleCapacityMw ?? "—"} MW</dd></div>
-                        <div><dt>BESS-assisted</dt><dd>{selectedCapacity.bessAssistedCapacityMw ?? "—"} MW</dd></div>
-                        <div><dt>Staged initial / eventual</dt><dd>{selectedCapacity.stagedInitialCapacityMw ?? "—"} / {selectedCapacity.eventualCapacityMw ?? "—"} MW</dd></div>
-                        <div><dt>Restricted hours</dt><dd>{selectedCapacity.restrictedHours ?? "—"} h/year</dd></div>
-                        <div><dt>Binding constraint</dt><dd>{selectedCapacity.bindingCategory?.replaceAll("_", " ") ?? "Not recorded"}</dd></div>
+                        <div>
+                          <dt>Firm import</dt>
+                          <dd>{selectedCapacity.firmCapacityMw ?? "—"} MW</dd>
+                        </div>
+                        <div>
+                          <dt>Flexible import</dt>
+                          <dd>{selectedCapacity.flexibleCapacityMw ?? "—"} MW</dd>
+                        </div>
+                        <div>
+                          <dt>BESS-assisted</dt>
+                          <dd>{selectedCapacity.bessAssistedCapacityMw ?? "—"} MW</dd>
+                        </div>
+                        <div>
+                          <dt>Staged initial / eventual</dt>
+                          <dd>
+                            {selectedCapacity.stagedInitialCapacityMw ?? "—"} /{" "}
+                            {selectedCapacity.eventualCapacityMw ?? "—"} MW
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>Restricted hours</dt>
+                          <dd>{selectedCapacity.restrictedHours ?? "—"} h/year</dd>
+                        </div>
+                        <div>
+                          <dt>Binding constraint</dt>
+                          <dd>
+                            {selectedCapacity.bindingCategory?.replaceAll("_", " ") ??
+                              "Not recorded"}
+                          </dd>
+                        </div>
                       </dl>
                       <small>
-                        Calculated {new Date(selectedCapacity.calculatedAt).toLocaleString()} · not a connection offer or capacity reservation.
+                        Calculated {new Date(selectedCapacity.calculatedAt).toLocaleString()} · not
+                        a connection offer or capacity reservation.
                       </small>
                     </section>
                   )}
@@ -2048,7 +2158,9 @@ function PowerFinderPage() {
                         <ul>
                           {!selectedCapacity && <li>Available import and export capacity</li>}
                           {selectedCapacity && selectedCapacity.validationState === "stale" && (
-                            <li>Current capacity until the changed model dependencies are recalculated</li>
+                            <li>
+                              Current capacity until the changed model dependencies are recalculated
+                            </li>
                           )}
                           <li>Technically suitable connection point and route</li>
                           <li>Required reinforcement and connection cost</li>
