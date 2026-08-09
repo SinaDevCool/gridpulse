@@ -1,0 +1,130 @@
+{
+  "schema_version": "gridpulse-german-synthetic-pilot-acceptance-v1",
+  "generated_at": "2026-08-09T00:44:19.557791+00:00",
+  "watermark": "Synthetic German operator pilot \u2014 not actual or operator-confirmed grid capacity.",
+  "dataset": {
+    "id": "synthetic-brandenburg-pilot",
+    "version": "1.0.0",
+    "sha256": "fcb5288b66656cd3dba3d0d6c8491bc9509d361fbe17583b4c3eb2e2a056b494",
+    "validation_class": "synthetic_demonstration",
+    "provenance": {
+      "evidence_class": "synthetic",
+      "validation_class": "synthetic_demonstration",
+      "is_synthetic": true,
+      "source_id": "synthetic-bb-pilot-v1",
+      "source_url": "synthetic://synthetic-bb-pilot-v1",
+      "source_published_at": null,
+      "model_version": "synthetic-bb-pilot-network-v1",
+      "replacement_contract": "operator_pilot_data_v1",
+      "license": "GridPulse internal synthetic fixture",
+      "artifact_sha256": null,
+      "evidence_origin": "synthetic_fixture"
+    }
+  },
+  "phase_gates": {
+    "p0_truth_contract": true,
+    "p1_benchmark_model": true,
+    "p2_open_data_contract": true,
+    "p3_mock_operator_package": true,
+    "p4_synthetic_scada": true,
+    "p5_permutation_contract": true,
+    "p6_neo4j_provider_contract": true,
+    "p7_physics_reference_contract": true,
+    "p8_ai_authority_boundary": true,
+    "p9_rare_event_physics_verification": true,
+    "p10_capacity_output_separation": true,
+    "p11_flexibility_priority_contract": true,
+    "p12_desktop_truth_ui": true,
+    "p13_reduction_qualified": true,
+    "p14_reproducible_report": true,
+    "p15_operator_replacement_rehearsed": true
+  },
+  "all_repository_gates_passed": true,
+  "reduction_benchmark": {
+    "schema_version": "gridpulse-reduction-qualification-v1",
+    "full_case_count": 8,
+    "selected_case_count": 4,
+    "compute_reduction": 0.5,
+    "infeasible_recall": 1.0,
+    "constraint_recall": 1.0,
+    "false_safe_rate": 0,
+    "accepted_for_reduced_search": true,
+    "qualification_study_sha256": "9f97c10ac654f2d4f5ad6673feb471889a6c1c015e1e56a874e315789e7fca4a",
+    "capacity_claim": false
+  },
+  "replacement_readiness": {
+    "schema_version": "gridpulse-operator-replacement-readiness-v1",
+    "provider_contract": "operator_pilot_data_v1",
+    "current_origin": "synthetic_fixture",
+    "synthetic_pilot_complete": true,
+    "operator_replacement": {
+      "network_model": {
+        "synthetic_value_present": true,
+        "operator_value_present": false,
+        "required_for_operator_confirmation": true
+      },
+      "equipment_ratings": {
+        "synthetic_value_present": true,
+        "operator_value_present": false,
+        "required_for_operator_confirmation": true
+      },
+      "switching_states": {
+        "synthetic_value_present": true,
+        "operator_value_present": false,
+        "required_for_operator_confirmation": true
+      },
+      "contingencies": {
+        "synthetic_value_present": true,
+        "operator_value_present": false,
+        "required_for_operator_confirmation": true
+      },
+      "measurements": {
+        "synthetic_value_present": true,
+        "operator_value_present": false,
+        "required_for_operator_confirmation": true
+      },
+      "connection_queue": {
+        "synthetic_value_present": true,
+        "operator_value_present": false,
+        "required_for_operator_confirmation": true
+      },
+      "reinforcements": {
+        "synthetic_value_present": true,
+        "operator_value_present": false,
+        "required_for_operator_confirmation": true
+      },
+      "planned_outages": {
+        "synthetic_value_present": true,
+        "operator_value_present": false,
+        "required_for_operator_confirmation": true
+      },
+      "security_criteria": {
+        "synthetic_value_present": true,
+        "operator_value_present": false,
+        "required_for_operator_confirmation": true
+      },
+      "data_use_agreement": {
+        "synthetic_value_present": false,
+        "operator_value_present": false,
+        "required_for_operator_confirmation": true
+      },
+      "capacity_representation_permission": {
+        "synthetic_value_present": false,
+        "operator_value_present": false,
+        "required_for_operator_confirmation": true
+      }
+    },
+    "operator_confirmed": false,
+    "capacity_claim": false
+  },
+  "capacity_claim": false,
+  "operator_confirmed": false,
+  "display_as_capacity": false,
+  "external_gates": [
+    "operator network and ratings package",
+    "operator SCADA reconciliation",
+    "operator security criteria",
+    "signed data-use and capacity-representation permission"
+  ],
+  "report_sha256": "427b5ed59b9c29f1e0e5eee10a4f2ff08360e315df0f230d99c1207ff75a02d3"
+}

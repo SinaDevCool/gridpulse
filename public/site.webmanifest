@@ -1,7 +1,7 @@
 {
-  "name": "GridPulse",
-  "short_name": "GridPulse",
-  "description": "Grid connection intelligence for BESS, data centres and large electrical loads in Germany.",
+  "name": "GridPulse Power Finder",
+  "short_name": "Power Finder",
+  "description": "Public-source German grid and industrial-site screening. No account required.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#07131f",

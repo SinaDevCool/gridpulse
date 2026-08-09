@@ -1,0 +1,100 @@
+import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  handlePublicPowerFinderRequest,
+  parsePublicViewportRequest,
+} from "./public-power-finder-api";
+
+const viewportUrl =
+  "https://gridpulseinsights.com/api/power-finder/viewport?west=12.9&south=52.1&east=13.8&north=52.7";
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
+
+describe("public Power Finder API", () => {
+  it("accepts only a bounded Brandenburg viewport", () => {
+    expect(parsePublicViewportRequest(new URL(viewportUrl))).toMatchObject({
+      west: 12.9,
+      includeGeneration: true,
+      includeStorage: true,
+    });
+    expect(() =>
+      parsePublicViewportRequest(
+        new URL(
+          "https://gridpulseinsights.com/api/power-finder/viewport?west=-20&south=0&east=20&north=60",
+        ),
+      ),
+    ).toThrow(/outside the accepted Brandenburg coverage/);
+  });
+
+  it("rejects unsupported methods and invalid parameters without contacting the database", async () => {
+    const origin = vi.fn();
+    vi.stubGlobal("fetch", origin);
+    const methodResponse = await handlePublicPowerFinderRequest(
+      new Request(viewportUrl, { method: "POST" }),
+      {},
+    );
+    const invalidResponse = await handlePublicPowerFinderRequest(
+      new Request(
+        "https://gridpulseinsights.com/api/power-finder/viewport?west=x&south=52&east=13&north=53",
+      ),
+      {},
+    );
+    expect(methodResponse?.status).toBe(405);
+    expect(invalidResponse?.status).toBe(400);
+    expect(origin).not.toHaveBeenCalled();
+  });
+
+  it("calls only the allowlisted RPC with clamped feature limits", async () => {
+    const origin = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          type: "FeatureCollection",
+          metadata: { record_count: 0 },
+          features: [],
+        }),
+        { status: 200 },
+      ),
+    );
+    vi.stubGlobal("fetch", origin);
+    const response = await handlePublicPowerFinderRequest(new Request(viewportUrl), {
+      SUPABASE_URL: "https://example.supabase.co",
+      SUPABASE_PUBLISHABLE_KEY: "sb_publishable_test",
+    });
+    expect(response?.status).toBe(200);
+    expect(origin).toHaveBeenCalledOnce();
+    const [url, options] = origin.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("https://example.supabase.co/rest/v1/rpc/power_finder_public_viewport");
+    expect(JSON.parse(String(options.body))).toMatchObject({
+      max_features: 2500,
+      include_generation: true,
+      include_storage: true,
+    });
+    expect(options.headers).not.toHaveProperty("service_role");
+    expect(response?.headers.get("cache-control")).toContain("s-maxage=300");
+  });
+
+  it("returns a controlled error when the public origin is unavailable", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("denied", { status: 403 })));
+    const response = await handlePublicPowerFinderRequest(new Request(viewportUrl), {
+      SUPABASE_URL: "https://example.supabase.co",
+      SUPABASE_PUBLISHABLE_KEY: "sb_publishable_test",
+    });
+    expect(response?.status).toBe(502);
+    await expect(response?.json()).resolves.toEqual({
+      error: "Public Finder data is temporarily unavailable.",
+    });
+  });
+
+  it("enforces the optional edge rate limiter before the database call", async () => {
+    const origin = vi.fn();
+    vi.stubGlobal("fetch", origin);
+    const response = await handlePublicPowerFinderRequest(new Request(viewportUrl), {
+      PUBLIC_FINDER_RATE_LIMITER: { limit: vi.fn().mockResolvedValue({ success: false }) },
+    });
+    expect(response?.status).toBe(429);
+    expect(response?.headers.get("retry-after")).toBe("60");
+    expect(origin).not.toHaveBeenCalled();
+  });
+});

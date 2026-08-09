@@ -49,7 +49,9 @@ def publish_operator_health(
             ),
             None,
         )
-        source_id = matching["source"]["source_id"] if matching else _source_id(error["endpoint_key"])
+        source_id = (
+            matching["source"]["source_id"] if matching else _source_id(error["endpoint_key"])
+        )
         client.request(
             "POST",
             "/rpc/record_operator_source_check",
@@ -70,6 +72,6 @@ def publish_operator_health(
 
 
 def _source_id(endpoint_key: str) -> str:
-    if endpoint_key.startswith("generation") or endpoint_key.startswith("high-voltage"):
+    if endpoint_key.startswith(("generation", "high-voltage")):
         return "edis-netzanschluss-public-2026"
     return "50hertz-netzanschluss-2026"

@@ -18,6 +18,7 @@ export type PowerFinderProperties = {
   name: string;
   operator?: string;
   voltage_kv?: number[];
+  voltage_evidence_status?: "accepted" | "ambiguous" | "implausible" | "missing";
   max_voltage_kv?: number;
   status?: string;
   evidence_class: PowerFinderEvidenceClass;
@@ -34,6 +35,7 @@ export type PowerFinderProperties = {
   band_max_mw?: number;
   confidence_grade?: string;
   capacity_published_at?: string;
+  source_published_at?: string;
   source_url?: string;
   site_kind?: string;
   area_ha?: number;
@@ -65,6 +67,8 @@ export type PowerFinderCollection = Omit<
     freshness: string;
     artifact_sha256: string;
     record_count: number;
+    available_kinds?: PowerFinderKind[];
+    kind_counts?: Partial<Record<PowerFinderKind, number>>;
     evidence_boundary: string;
   };
   features: PowerFinderFeature[];

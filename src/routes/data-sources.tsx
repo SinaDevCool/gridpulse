@@ -10,9 +10,11 @@ import {
   FileCheck2,
   Map,
   MessageSquareText,
+  Network,
   ShieldCheck,
 } from "lucide-react";
 import { PublicCTA, PublicLayout, PublicPageHero } from "@/components/public/PublicLayout";
+import { isFinderMvp } from "@/config/product-mode";
 import { germanGridEvidenceGaps, germanGridSources } from "@/lib/german-grid-sources";
 
 export const Route = createFileRoute("/data-sources")({
@@ -127,6 +129,8 @@ const authorityGroups = [
 ] as const;
 
 function DataSourcesPage() {
+  if (isFinderMvp()) return <FinderDataSourcesPage />;
+
   return (
     <PublicLayout>
       <main id="main-content" className="section-page public-methodology-page">
@@ -354,6 +358,137 @@ function DataSourcesPage() {
           description="Follow an illustrative connection case, then apply the same structure to one real project."
           primaryLabel="Start With a Real Project"
           secondaryLabel="Explore the Product Tour"
+        />
+      </main>
+    </PublicLayout>
+  );
+}
+
+function FinderDataSourcesPage() {
+  return (
+    <PublicLayout>
+      <main id="main-content" className="section-page public-methodology-page">
+        <PublicPageHero
+          eyebrow="Power Finder Data & Methodology"
+          title="See what the map supports—and what it cannot establish."
+          description="Power Finder combines accepted public mapping with transparent screening rules. Representative electrical and hourly benchmarks validate the methodology separately; they are never presented as results for a named map node."
+        >
+          <Link to="/power-finder" className="public-button public-button-primary">
+            Open Power Finder <ArrowRight aria-hidden="true" />
+          </Link>
+        </PublicPageHero>
+
+        <div className="public-page-content">
+          <section className="methodology-outcomes" aria-labelledby="finder-method-title">
+            <p className="context-label">What The MVP Delivers</p>
+            <h2 id="finder-method-title">
+              Transparent evidence for deciding where to investigate.
+            </h2>
+            <div>
+              <article>
+                <Map aria-hidden="true" />
+                <h3>Mapped infrastructure</h3>
+                <p>
+                  Accepted regional releases show mapped nodes, corridors, industrial sites, and
+                  registered assets.
+                </p>
+              </article>
+              <article>
+                <Calculator aria-hidden="true" />
+                <h3>Comparable screening context</h3>
+                <p>
+                  Distance, mapped voltage, operator context, and evidence completeness help compare
+                  starting points.
+                </p>
+              </article>
+              <article>
+                <Database aria-hidden="true" />
+                <h3>Traceable sources</h3>
+                <p>
+                  Source, licence, retrieval date, and evidence limitations remain visible with the
+                  mapped data.
+                </p>
+              </article>
+              <article>
+                <Calculator aria-hidden="true" />
+                <h3>Public Data Confidence</h3>
+                <p>
+                  Field-level statuses distinguish confirmed, corroborated, mapped, inferred and
+                  unknown evidence without presenting data completeness as a probability.
+                </p>
+              </article>
+              <article id="electrical-models">
+                <Network aria-hidden="true" />
+                <h3>Electrical model boundary</h3>
+                <p>
+                  SimBench validates solver workflows on representative German networks. A named
+                  node receives electrical results only after a reviewed operator model is linked.
+                </p>
+              </article>
+              <article id="hourly-scenarios">
+                <Calculator aria-hidden="true" />
+                <h3>Hourly scenario boundary</h3>
+                <p>
+                  SMARD, DWD and MaStR can inform benchmark operating cases. They do not establish
+                  an hourly connection envelope for a mapped substation without operator data.
+                </p>
+              </article>
+            </div>
+          </section>
+
+          <section className="methodology-boundary" aria-labelledby="finder-boundary-title">
+            <div>
+              <p className="context-label">Decision Boundary</p>
+              <h2 id="finder-boundary-title">Screen with the map. Confirm with the operator.</h2>
+            </div>
+            <div className="methodology-boundary-grid">
+              <article>
+                <h3>Power Finder shows</h3>
+                <ul>
+                  <li>Published and mapped infrastructure context</li>
+                  <li>Indicative proximity and voltage context</li>
+                  <li>Registered-asset context where accepted</li>
+                  <li>Source provenance and known evidence gaps</li>
+                  <li>Field-level public data confidence with visible evidence classes</li>
+                  <li>Investigation priority based on evidence, voltage context and proximity</li>
+                  <li>Applicable German rule families and operator-confirmation questions</li>
+                </ul>
+              </article>
+              <article>
+                <h3>Power Finder does not confirm</h3>
+                <ul>
+                  <li>Available grid capacity or a connection point</li>
+                  <li>Technical or commercial feasibility</li>
+                  <li>AC/DC power flow, voltage, fault level, protection or N-1 results</li>
+                  <li>Reinforcement cost or connection terms</li>
+                  <li>Approval or energisation timing</li>
+                  <li>Actual equipment ratings, loading, N-1 security or connection queue</li>
+                </ul>
+              </article>
+            </div>
+          </section>
+
+          <section className="authority-section" aria-labelledby="finder-sources-title">
+            <p className="context-label">Source Classes</p>
+            <h2 id="finder-sources-title">Public evidence has limits.</h2>
+            <div className="authority-grid">
+              {authorityGroups.slice(0, 4).map(({ icon: Icon, ...item }) => (
+                <article key={item.title}>
+                  <Icon aria-hidden="true" />
+                  <h3>{item.title}</h3>
+                  <strong>{item.examples}</strong>
+                  <p>{item.use}</p>
+                  <small>{item.limit}</small>
+                </article>
+              ))}
+            </div>
+          </section>
+        </div>
+
+        <PublicCTA
+          eyebrow="Power Finder MVP"
+          title="Explore the current screening release."
+          description="Review mapped infrastructure and evidence for Brandenburg."
         />
       </main>
     </PublicLayout>

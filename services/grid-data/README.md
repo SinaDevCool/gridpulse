@@ -1,7 +1,17 @@
 # GridPulse grid-data service
 
+The internal P0–P4 permutation, ensemble, surrogate and active-learning pipeline is documented in `../../docs/POWER-FINDER-P0-P4.md`. It remains synthetic or operator-model-unvalidated until the validation ladder is completed.
+
 This package is the ingestion boundary for public geospatial screening data. It does not
 calculate or confirm connection capacity.
+
+Release C1 also contains a separate, validation-classed electrical study boundary. It can run
+real AC power flow on explicit SimBench or CGMES parameters, but benchmark and unreviewed-model
+results are never promoted to confirmed location capacity.
+
+Release C2 adds versioned SMARD and DWD hourly ingestion, MaStR aggregation, multiple weather-year
+operating cases and AC-derived P10/P50/P90 envelopes. Public data remains contextual and benchmark
+results remain `synthetic_demonstration` until a reviewed operator model is linked.
 
 The service includes a deterministic synthetic fixture for isolated tests and a bounded
 OpenStreetMap connector for real substations, lines, cables, and industrial land.
@@ -51,6 +61,14 @@ python -m grid_data.cli validate-operator-import `
   --output D:\grid-data\operator-record-validation.json
 python -m grid_data.cli publish-operator-health `
   --input D:\grid-data\operator-evidence-health.json
+python -m grid_data.cli validate-c1-benchmark `
+  --output ../../public/power-finder/c1-benchmark-validation.json
+python -m grid_data.cli publish-c1-benchmark `
+  --input ../../public/power-finder/c1-benchmark-validation.json
+python -m grid_data.cli validate-c2-benchmark `
+  --output ../../public/power-finder/c2-hourly-benchmark.json
+python -m grid_data.cli publish-c2-benchmark `
+  --input ../../public/power-finder/c2-hourly-benchmark.json
 ```
 
 Run these commands from `services/grid-data` with `PYTHONPATH=src`, or install the package:
@@ -91,3 +109,8 @@ python -m pip install -e .
 Cloudflare R2 is the preferred immutable artifact store, but the account must have R2 enabled
 before the archive can be uploaded. The database stores its checksum and release history
 independently, so lack of R2 never relaxes validation or evidence boundaries.
+
+Release 3 adds private surrogate shadow validation, drift monitoring, explainability, and a
+fail-closed champion ledger. Run `npm run grid:validate:r3` from the repository root. Synthetic
+benchmarks must remain challengers; only the protected operator-review workflow may approve an
+internal scenario-prioritisation champion, and it never creates a capacity claim.

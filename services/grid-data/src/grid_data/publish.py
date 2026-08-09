@@ -5,10 +5,11 @@ import os
 import urllib.error
 import urllib.parse
 import urllib.request
+from collections.abc import Iterator
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -110,9 +111,7 @@ def _asset_rows(path: Path, release_id: str, artifact_id: str) -> Iterator[dict[
                 "metadata": {
                     "evidence_class": "official_regulatory",
                     "capacity_state": "registered_asset_context",
-                    "source_url": (
-                        "https://www.marktstammdatenregister.de/MaStR/Datendownload"
-                    ),
+                    "source_url": ("https://www.marktstammdatenregister.de/MaStR/Datendownload"),
                 },
             }
 

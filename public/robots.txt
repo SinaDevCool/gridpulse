@@ -5,7 +5,11 @@ Disallow: /portfolio
 Disallow: /assessments
 Disallow: /evidence
 Disallow: /reports
-Disallow: /data-sources
 Disallow: /pilot-requests
+Disallow: /pilot
+Disallow: /service
+Disallow: /demo
+Disallow: /operator-review
+Disallow: /submission-package
 
 Sitemap: https://gridpulseinsights.com/sitemap.xml

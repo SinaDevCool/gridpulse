@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "../integrations/supabase/client";
 
 export type AnalyticsJobStatus = "queued" | "running" | "succeeded" | "failed" | "cancelled";
 
@@ -13,6 +13,12 @@ export interface AnalyticsJob {
   created_at: string;
   started_at: string | null;
   completed_at: string | null;
+  attempt_count: number;
+  lease_owner: string | null;
+  lease_expires_at: string | null;
+  heartbeat_at: string | null;
+  checkpoint_payload: Record<string, unknown>;
+  cancellation_requested: boolean;
 }
 
 interface JobAccepted {
@@ -53,4 +59,16 @@ export function startOperatorSourceHealthJob(): Promise<JobAccepted> {
 
 export function loadAnalyticsJob(jobId: string): Promise<AnalyticsJob> {
   return authenticatedRequest<AnalyticsJob>(`/v1/jobs/${encodeURIComponent(jobId)}`);
+}
+
+export function cancelAnalyticsJob(jobId: string): Promise<AnalyticsJob> {
+  return authenticatedRequest<AnalyticsJob>(`/v1/jobs/${encodeURIComponent(jobId)}/cancel`, {
+    method: "POST",
+  });
+}
+
+export function safeAnalyticsError(job: AnalyticsJob): string | null {
+  if (job.status !== "failed") return null;
+  return job.error ? "The study could not complete. Review quarantined cases or retry." :
+    "The study could not complete.";
 }

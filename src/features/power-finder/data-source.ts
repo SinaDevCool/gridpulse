@@ -3,6 +3,8 @@ import {
   parsePowerFinderCollection,
   type PowerFinderCollection,
 } from "@/features/power-finder/fixture-data";
+import { isFinderMvp } from "@/config/product-mode";
+import { toPublicPowerFinderCollection } from "./public-data";
 
 export type PowerFinderBounds = {
   west: number;
@@ -13,18 +15,47 @@ export type PowerFinderBounds = {
 
 const FALLBACK_URL = "/power-finder/brandenburg-osm.json";
 
+export type PowerFinderDataMode = "database" | "public_database" | "published_artifact";
+
 async function loadFallback(signal?: AbortSignal): Promise<PowerFinderCollection> {
   const response = await fetch(FALLBACK_URL, { signal });
   if (!response.ok) throw new Error(`Power Finder fallback returned ${response.status}.`);
-  return parsePowerFinderCollection(await response.json());
+  return toPublicPowerFinderCollection(parsePowerFinderCollection(await response.json()));
+}
+
+async function loadPublicViewport(bounds: PowerFinderBounds, signal?: AbortSignal) {
+  const query = new URLSearchParams({
+    west: String(bounds.west),
+    south: String(bounds.south),
+    east: String(bounds.east),
+    north: String(bounds.north),
+    generation: "true",
+    storage: "true",
+  });
+  const response = await fetch(`/api/power-finder/viewport?${query}`, { signal });
+  if (!response.ok) throw new Error(`Public Finder API returned ${response.status}.`);
+  return toPublicPowerFinderCollection(parsePowerFinderCollection(await response.json()));
 }
 
 export async function loadPowerFinderViewport(
   bounds: PowerFinderBounds,
   signal?: AbortSignal,
   options: { fallbackAllowed?: boolean } = {},
-): Promise<{ collection: PowerFinderCollection; mode: "database" | "published_artifact" }> {
+): Promise<{ collection: PowerFinderCollection; mode: PowerFinderDataMode }> {
   if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+  if (isFinderMvp()) {
+    if (options.fallbackAllowed === false) {
+      throw new Error(
+        "No accepted national release is available yet. Select Brandenburg to inspect the public release.",
+      );
+    }
+    try {
+      return { collection: await loadPublicViewport(bounds, signal), mode: "public_database" };
+    } catch (error) {
+      if (signal?.aborted) throw error;
+      return { collection: await loadFallback(signal), mode: "published_artifact" };
+    }
+  }
   try {
     const { data, error } = await supabase.rpc("power_finder_viewport", {
       west: bounds.west,
@@ -35,7 +66,10 @@ export async function loadPowerFinderViewport(
     });
     if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
     if (error) throw error;
-    return { collection: parsePowerFinderCollection(data), mode: "database" };
+    return {
+      collection: toPublicPowerFinderCollection(parsePowerFinderCollection(data)),
+      mode: "database",
+    };
   } catch (error) {
     if (signal?.aborted) throw error;
     if (options.fallbackAllowed === false) {

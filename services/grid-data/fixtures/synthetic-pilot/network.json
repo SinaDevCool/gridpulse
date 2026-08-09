@@ -1,0 +1,32 @@
+{
+  "buses": [
+    {"id": "synthetic-hv", "name": "Synthetic Brandenburg HV source", "vn_kv": 110},
+    {"id": "synthetic-mv-a", "name": "Synthetic pilot MV bus A", "vn_kv": 20},
+    {"id": "synthetic-mv-b", "name": "Synthetic candidate MV bus", "vn_kv": 20}
+  ],
+  "branches": [
+    {"id": "synthetic-line-a-b", "from_bus": "synthetic-mv-a", "to_bus": "synthetic-mv-b", "length_km": 8.5, "r_ohm_per_km": 0.12, "x_ohm_per_km": 0.11, "c_nf_per_km": 210, "max_i_ka": 0.72, "max_loading_percent": 100}
+  ],
+  "transformers": [
+    {"id": "synthetic-trafo-1", "hv_bus": "synthetic-hv", "lv_bus": "synthetic-mv-a", "sn_mva": 63, "vn_hv_kv": 110, "vn_lv_kv": 20, "vk_percent": 12, "vkr_percent": 0.35, "max_loading_percent": 100}
+  ],
+  "loads": [
+    {"id": "synthetic-existing-load-a", "bus": "synthetic-mv-a", "p_mw": 18, "q_mvar": 3.6},
+    {"id": "synthetic-existing-load-b", "bus": "synthetic-mv-b", "p_mw": 12, "q_mvar": 2.4, "flexible_mw": 4}
+  ],
+  "generators": [
+    {"id": "synthetic-external-grid", "bus": "synthetic-hv", "kind": "external_grid", "slack": true, "vm_pu": 1.0},
+    {"id": "synthetic-solar-b", "bus": "synthetic-mv-b", "kind": "solar", "p_mw": 4, "q_mvar": 0},
+    {"id": "synthetic-battery-b", "bus": "synthetic-mv-b", "kind": "battery", "p_mw": 0, "max_p_mw": 10, "q_mvar": 0}
+  ],
+  "switches": [
+    {"id": "synthetic-switch-line-a", "bus": "synthetic-mv-a", "element_type": "line", "element_id": "synthetic-line-a-b", "closed": true}
+  ],
+  "contingencies": [
+    {"id": "synthetic-n-1-trafo-1", "element_type": "transformer", "element_id": "synthetic-trafo-1"},
+    {"id": "synthetic-n-1-line-a-b", "element_type": "line", "element_id": "synthetic-line-a-b"}
+  ],
+  "connection_bus": "synthetic-mv-b",
+  "study_year": 2028,
+  "model_id": "synthetic-brandenburg-pilot-network-v1"
+}

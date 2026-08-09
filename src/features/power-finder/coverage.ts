@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { isFinderMvp } from "@/config/product-mode";
 
 export type CoverageStatus = "accepted" | "partial" | "planned" | "unavailable";
 
@@ -29,7 +30,7 @@ export const fallbackCoverage: PowerFinderCoverage[] = [
     publishedDemandCapacity: false,
     lastAcceptedAt: null,
     evidenceBoundary:
-      "National coverage is planned; only accepted regional releases are displayed.",
+      "Currently available: Brandenburg. National coverage is planned; only accepted regional releases are displayed.",
   },
   {
     regionCode: "DE-BB",
@@ -48,6 +49,7 @@ export const fallbackCoverage: PowerFinderCoverage[] = [
 ];
 
 export async function loadPowerFinderCoverage(): Promise<PowerFinderCoverage[]> {
+  if (isFinderMvp()) return fallbackCoverage;
   const { data, error } = await supabase.rpc("power_finder_coverage");
   if (error || !Array.isArray(data)) return fallbackCoverage;
   return data.map((row) => ({

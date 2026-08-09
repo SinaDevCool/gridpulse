@@ -9,7 +9,6 @@ from pathlib import Path
 from grid_data.mastr import parse_mastr_export, stream_mastr_export
 from grid_data.sql_export import write_mastr_sql
 
-
 FIXTURE = Path(__file__).parent / "fixtures" / "mastr-sample.xml"
 
 
@@ -64,8 +63,7 @@ class MastrConnectorTests(unittest.TestCase):
                 federal_state="Brandenburg",
             )
             records = [
-                json.loads(line)
-                for line in output_path.read_text(encoding="utf-8").splitlines()
+                json.loads(line) for line in output_path.read_text(encoding="utf-8").splitlines()
             ]
             validation = json.loads(
                 output_path.with_suffix(".ndjson.report.json").read_text(encoding="utf-8")

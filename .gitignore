@@ -34,8 +34,17 @@ playwright-report/
 # Python geospatial service
 __pycache__/
 *.py[cod]
+*.egg-info/
 .pytest_cache/
 .ruff_cache/
+
+# Local Worker diagnostics
+*.cpuprofile
+
+# Private Release 2 model and benchmark artifacts (never ship in the public bundle)
+output/models/
+output/release2-private-benchmark.json
+output/release3-private-shadow.json
 
 # Editor directories and files
 .claude/

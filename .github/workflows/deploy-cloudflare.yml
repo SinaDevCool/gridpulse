@@ -13,6 +13,7 @@ jobs:
     env:
       GRIDPULSE_BUILD_SHA: ${{ github.sha }}
       GRIDPULSE_BUILD_ENV: production
+      GRIDPULSE_PRODUCT_MODE: finder
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -23,13 +24,16 @@ jobs:
       - run: npm run check:encoding
       - run: npm run typecheck
       - run: npm run test
+      - run: npm run grid:test
+      - run: npm run grid:audit:release
       - run: npm run build
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
       - run: npx playwright install --with-deps chromium
-      - run: npm run test:e2e
+      - run: npm run test:e2e:finder
         env:
+          GRIDPULSE_PRODUCT_MODE: finder
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
       - run: npx wrangler deploy --dry-run

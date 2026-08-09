@@ -5,6 +5,13 @@ import type {
   PowerFinderFeature,
 } from "./fixture-data";
 import { scoreFeature } from "./screening-score";
+import type { CapacityScenarioResult } from "./capacity-scenario";
+import type { ReleaseBNetworkResult } from "./release-b-network";
+import { publicScreeningProvenance, type CalculationProvenance } from "./calculation-provenance";
+import {
+  RANKING_MODEL_VERSION,
+  weightedInvestigationPriority,
+} from "./ranking-config";
 
 export type VoltageFit = "compatible" | "conditional" | "unknown";
 export type CandidateConfidence = "high" | "medium" | "low";
@@ -23,10 +30,21 @@ export type CandidateOpportunity = {
   screeningRank: number;
   voltageFit: VoltageFit;
   confidence: CandidateConfidence;
+  rankComponents?: {
+    evidenceReadiness: number;
+    mappedVoltageRelevance: number;
+    proximity: number;
+    operatorAttribution: number;
+    sourceFreshness: number;
+  };
+  provenance?: CalculationProvenance;
+  sourcePublishedAt?: string | null;
   missingEvidence: string[];
   constraints: string[];
   calculationVersion: string;
   source: "database" | "published_artifact";
+  capacityScenario?: CapacityScenarioResult;
+  networkScenario?: ReleaseBNetworkResult;
 };
 
 export type RankedCandidateResult = {
@@ -61,14 +79,101 @@ const evidenceWeights: Record<PowerFinderEvidenceClass, number> = {
 };
 
 export const candidateEvidenceBoundary =
-  "Ranks proximity, voltage context, and evidence completeness. It does not estimate available capacity, connection probability, cost, or delivery date.";
+  "Investigation priority ranks public-source evidence, mapped-voltage relevance, proximity, operator attribution and source freshness. It does not establish technical compatibility, available capacity, connection probability, cost, or delivery date.";
 
-export function requiredVoltageFit(requiredImportMw: number, voltageKv: number[]): VoltageFit {
+export const voltageFitLabels: Record<VoltageFit, string> = {
+  compatible: "mapped voltage matches selected search context",
+  conditional: "mapped voltage differs from selected search context",
+  unknown: "mapped voltage unknown",
+};
+
+export function highestRankedOpportunityForNode(
+  candidates: CandidateOpportunity[],
+  nodeId: string,
+) {
+  return candidates
+    .filter((candidate) => candidate.nodeId === nodeId)
+    .sort(
+      (left, right) =>
+        right.screeningRank - left.screeningRank || left.distanceKm - right.distanceKm,
+    )[0];
+}
+
+export function mappedVoltageRelevance(
+  preferredVoltageKv: number | null,
+  voltageKv: number[],
+): VoltageFit {
   const maximum = Math.max(0, ...voltageKv);
   if (maximum === 0) return "unknown";
-  if (requiredImportMw >= 100 && maximum < 220) return "conditional";
-  if (requiredImportMw >= 20 && maximum < 110) return "conditional";
+  if (preferredVoltageKv && !voltageKv.includes(preferredVoltageKv)) return "conditional";
   return "compatible";
+}
+
+export const requiredVoltageFit = (_requiredImportMw: number, voltageKv: number[]) =>
+  mappedVoltageRelevance(null, voltageKv);
+
+export function applyPreferredVoltageContext(
+  candidates: CandidateOpportunity[],
+  preferredVoltageKv: number | null,
+) {
+  return candidates
+    .map((candidate) => {
+      const voltageFit = mappedVoltageRelevance(preferredVoltageKv, candidate.voltageKv);
+      const components = candidate.rankComponents;
+      if (!components) return { ...candidate, voltageFit };
+      const mappedVoltageRelevanceScore =
+        voltageFit === "compatible" ? 100 : voltageFit === "conditional" ? 55 : 30;
+      const rankComponents = {
+        ...components,
+        mappedVoltageRelevance: mappedVoltageRelevanceScore,
+      };
+      const screeningRank = round1(weightedInvestigationPriority(rankComponents));
+      return { ...candidate, voltageFit, rankComponents, screeningRank };
+    })
+    .sort(
+      (left, right) =>
+        right.screeningRank - left.screeningRank || left.distanceKm - right.distanceKm,
+    );
+}
+
+function investigationPriority(input: {
+  evidenceReadiness: number;
+  voltageKnown: boolean;
+  distanceKm: number;
+  operatorKnown: boolean;
+  publishedAt?: string | null;
+}) {
+  const rankComponents = {
+    evidenceReadiness: round1(input.evidenceReadiness),
+    mappedVoltageRelevance: input.voltageKnown ? 100 : 30,
+    proximity: round1(100 / (1 + input.distanceKm / 10)),
+    operatorAttribution: input.operatorKnown ? 100 : 40,
+    sourceFreshness: sourceFreshnessScore(input.publishedAt),
+  };
+  const score = round1(weightedInvestigationPriority(rankComponents));
+  return { score, rankComponents };
+}
+
+export function sourceFreshnessScore(publishedAt?: string | null, now = new Date()): number {
+  if (!publishedAt) return 30;
+  const published = new Date(publishedAt);
+  if (Number.isNaN(published.getTime())) return 30;
+  const ageDays = Math.max(0, (now.getTime() - published.getTime()) / 86_400_000);
+  if (ageDays <= 31) return 100;
+  if (ageDays <= 93) return 85;
+  if (ageDays <= 183) return 70;
+  if (ageDays <= 366) return 55;
+  if (ageDays <= 730) return 40;
+  return 25;
+}
+
+function usableVoltage(feature: PowerFinderFeature) {
+  const values = ["ambiguous", "implausible"].includes(
+    feature.properties.voltage_evidence_status ?? "accepted",
+  )
+    ? []
+    : (feature.properties.voltage_kv ?? []);
+  return values.filter((voltage) => Number.isFinite(voltage) && voltage > 0 && voltage <= 500);
 }
 
 export function parseDatabaseRanking(
@@ -104,7 +209,9 @@ export function parseDatabaseRanking(
       siteName: row.site_name,
       nodeName: row.node_name,
       operator: row.operator_name,
-      voltageKv: row.voltage_kv ?? [],
+      voltageKv: (row.voltage_kv ?? []).filter(
+        (voltage) => Number.isFinite(voltage) && voltage > 0 && voltage <= 500,
+      ),
       distanceKm,
       contextScore: row.context_score,
       evidenceScore: row.evidence_score,
@@ -151,9 +258,10 @@ export function rankPublishedCandidates(
       const screeningRank = round1(
         contextScore * 0.45 + evidenceScore * 0.35 + distanceScore * 0.2,
       );
-      const voltageFit = requiredVoltageFit(requiredImportMw, node.properties.voltage_kv ?? []);
+      const voltageValues = usableVoltage(node);
+      const voltageFit = requiredVoltageFit(requiredImportMw, voltageValues);
       const missingEvidence = [
-        ...(node.properties.voltage_kv?.length ? [] : ["voltage"]),
+        ...(voltageValues.length ? [] : ["voltage"]),
         ...(node.properties.operator ? [] : ["responsible operator"]),
         "available demand capacity",
         "connection feasibility",
@@ -167,15 +275,17 @@ export function rankPublishedCandidates(
           siteName: site.properties.name,
           nodeName: node.properties.name,
           operator: node.properties.operator ?? null,
-          voltageKv: node.properties.voltage_kv ?? [],
+          voltageKv: voltageValues,
           distanceKm: round1(distanceKm),
           contextScore,
           evidenceScore,
           screeningRank,
           voltageFit,
           missingEvidence,
-          calculationVersion: "artifact-site-node-context-v1",
+          calculationVersion: RANKING_MODEL_VERSION,
           source: "published_artifact",
+          sourcePublishedAt:
+            node.properties.source_published_at ?? collection.metadata.published_at,
         }),
       );
     }
@@ -184,7 +294,7 @@ export function rankPublishedCandidates(
   return {
     requiredImportMw,
     maxDistanceKm,
-    calculationVersion: "artifact-site-node-context-v1",
+    calculationVersion: RANKING_MODEL_VERSION,
     evidenceBoundary: candidateEvidenceBoundary,
     candidates: candidates
       .sort(
@@ -195,18 +305,93 @@ export function rankPublishedCandidates(
   };
 }
 
+export function rankCandidatesForLocation(
+  collection: PowerFinderCollection,
+  longitude: number,
+  latitude: number,
+  requiredImportMw: number,
+  maxDistanceKm: number,
+  siteName = "Custom project site",
+  resultLimit = 25,
+): RankedCandidateResult {
+  const sitePosition: Position = [longitude, latitude];
+  const candidates = collection.features
+    .filter((feature) => feature.properties.kind === "node")
+    .flatMap((node) => {
+      const nodePosition = geometryCentre(node.geometry);
+      if (!nodePosition) return [];
+      const distanceKm = haversineKm(sitePosition, nodePosition);
+      if (distanceKm > maxDistanceKm) return [];
+      const score = scoreFeature(node);
+      const contextScore = score?.total ?? 0;
+      const evidenceScore = evidenceWeights[node.properties.evidence_class];
+      const distanceScore = Math.max(0, 100 - distanceKm * 5);
+      const voltageValues = usableVoltage(node);
+      const voltageFit = requiredVoltageFit(requiredImportMw, voltageValues);
+      const missingEvidence = [
+        ...(voltageValues.length ? [] : ["voltage"]),
+        ...(node.properties.operator ? [] : ["responsible operator"]),
+        "available import capacity",
+        "available export capacity",
+        "connection feasibility",
+        "connection cost",
+        "delivery date",
+      ];
+      return [
+        createOpportunity({
+          id: `custom:${node.id}`,
+          siteId: "custom-site",
+          nodeId: String(node.id),
+          siteName,
+          nodeName: node.properties.name,
+          operator: node.properties.operator ?? null,
+          voltageKv: voltageValues,
+          distanceKm: round1(distanceKm),
+          contextScore,
+          evidenceScore,
+          screeningRank: round1(contextScore * 0.45 + evidenceScore * 0.35 + distanceScore * 0.2),
+          voltageFit,
+          missingEvidence,
+          calculationVersion: RANKING_MODEL_VERSION,
+          source: "published_artifact",
+          sourcePublishedAt:
+            node.properties.source_published_at ?? collection.metadata.published_at,
+        }),
+      ];
+    })
+    .sort(
+      (left, right) =>
+        right.screeningRank - left.screeningRank || left.distanceKm - right.distanceKm,
+    )
+    .slice(0, resultLimit);
+
+  return {
+    requiredImportMw,
+    maxDistanceKm,
+    calculationVersion: RANKING_MODEL_VERSION,
+    evidenceBoundary: candidateEvidenceBoundary,
+    candidates,
+  };
+}
+
 function createOpportunity(
   value: Omit<CandidateOpportunity, "confidence" | "constraints">,
 ): CandidateOpportunity {
   const constraints = [
     ...(value.voltageFit === "conditional"
-      ? ["Mapped voltage is below the indicative level for this load."]
+      ? ["Mapped voltage differs from the selected search context."]
       : value.voltageFit === "unknown"
-        ? ["Voltage compatibility is not established."]
+        ? ["Mapped voltage is not established."]
         : []),
     ...(value.operator ? [] : ["Responsible network operator requires confirmation."]),
     ...(value.missingEvidence.includes("available demand capacity")
       ? ["No published demand-capacity evidence is attached."]
+      : []),
+    "Mapped voltage alone does not establish a viable connection.",
+    ...(/bahn|rail|gleichrichter|unterwerk/i.test(`${value.nodeName} ${value.operator ?? ""}`)
+      ? [
+          "This appears to be specialised or railway infrastructure; public-grid suitability requires confirmation.",
+        ]
       : []),
   ];
   const confidence: CandidateConfidence =
@@ -215,7 +400,21 @@ function createOpportunity(
       : value.evidenceScore >= 35 && value.missingEvidence.length <= 5
         ? "medium"
         : "low";
-  return { ...value, confidence, constraints };
+  const priority = investigationPriority({
+    evidenceReadiness: value.contextScore,
+    voltageKnown: value.voltageKv.length > 0,
+    distanceKm: value.distanceKm,
+    operatorKnown: Boolean(value.operator),
+    publishedAt: value.sourcePublishedAt,
+  });
+  return {
+    ...value,
+    screeningRank: priority.score,
+    rankComponents: priority.rankComponents,
+    provenance: publicScreeningProvenance([value.nodeId, value.siteId]),
+    confidence,
+    constraints,
+  };
 }
 
 function geometryCentre(geometry: Geometry): Position | null {

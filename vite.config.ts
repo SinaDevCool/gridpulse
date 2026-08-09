@@ -16,7 +16,7 @@ function buildRevision() {
   }
 }
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [
     cloudflare({ viteEnvironment: { name: "ssr" } }),
     tailwindcss(),
@@ -26,7 +26,10 @@ export default defineConfig({
   define: {
     __GRIDPULSE_BUILD_SHA__: JSON.stringify(buildRevision()),
     __GRIDPULSE_BUILD_ENV__: JSON.stringify(process.env.GRIDPULSE_BUILD_ENV ?? "production"),
+    __GRIDPULSE_PRODUCT_MODE__: JSON.stringify(
+      process.env.GRIDPULSE_PRODUCT_MODE ?? (mode === "e2e" ? "full" : "finder"),
+    ),
   },
   resolve: { tsconfigPaths: true },
   server: { host: "127.0.0.1", port: 3000 },
-});
+}));

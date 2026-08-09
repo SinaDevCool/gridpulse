@@ -1,8 +1,10 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { ArrowRight, Menu, X } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useContext, useState, type ReactNode } from "react";
 import { trackEvent } from "@/lib/analytics";
-import { useAuth } from "@/context/useAuth";
+import { AuthContext } from "@/context/auth-context-core";
+import { isFinderMvp } from "@/config/product-mode";
+import { FinderShell } from "@/components/product/FinderShell";
 
 const publicNavigation = [
   { label: "How It Works", to: "/", hash: "how-it-works" },
@@ -20,7 +22,8 @@ export function PublicBrand() {
 }
 
 export function PublicLayout({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const user = useContext(AuthContext)?.user ?? null;
+  if (isFinderMvp()) return <FinderShell>{children}</FinderShell>;
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
   const onPilotPage = location.pathname === "/pilot";
@@ -84,7 +87,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
 }
 
 export function PublicFooter() {
-  const { user } = useAuth();
+  const user = useContext(AuthContext)?.user ?? null;
   return (
     <footer className="public-footer">
       <div className="public-container public-footer-grid">
@@ -159,6 +162,23 @@ export function PublicCTA({
   secondaryTo?: "/pilot" | "/service" | "/demo" | "/data-sources";
   secondaryHash?: string;
 }) {
+  if (isFinderMvp()) {
+    return (
+      <section className="public-final-cta">
+        <p className="public-eyebrow">Power Finder MVP</p>
+        <h2>Explore the current screening release.</h2>
+        <p>
+          Review mapped infrastructure and source evidence for Brandenburg. Findings are screening
+          context and require network-operator confirmation.
+        </p>
+        <div className="public-actions">
+          <Link to="/power-finder" className="public-button public-button-primary">
+            Open Power Finder <ArrowRight aria-hidden="true" />
+          </Link>
+        </div>
+      </section>
+    );
+  }
   return (
     <section className="public-final-cta">
       <p className="public-eyebrow">{eyebrow}</p>

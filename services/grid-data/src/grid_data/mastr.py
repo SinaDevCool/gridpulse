@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import hashlib
 import json
-import xml.etree.ElementTree as ElementTree
 import zipfile
+from collections.abc import Iterator
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Iterator
-
+from typing import Any
+from xml.etree import ElementTree
 
 SOURCE_ID = "bnetza-mastr-full-export-v1"
 CONNECTOR_VERSION = "mastr-full-export-v1"
@@ -111,7 +111,9 @@ def _status(value: str | None) -> str:
 
 
 def _asset_type(member_name: str, fields: dict[str, str]) -> str:
-    text = f"{member_name} {fields.get('EinheitTyp', '')} {fields.get('Technologie', '')}".casefold()
+    text = (
+        f"{member_name} {fields.get('EinheitTyp', '')} {fields.get('Technologie', '')}".casefold()
+    )
     if "speicher" in text:
         return "storage"
     if "verbrauch" in text:
@@ -256,7 +258,9 @@ def parse_mastr_export(
         "assets": assets,
     }
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    output_path.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
     return MastrReport(len(assets), skipped, source_sha256, tuple(warnings))
 
 

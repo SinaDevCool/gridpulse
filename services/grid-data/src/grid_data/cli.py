@@ -3,17 +3,30 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from .benchmark_model import build_c1_validation_artifact
+from .c1_publish import publish_c1_artifact
+from .c2_benchmark import build_c2_benchmark_artifact
+from .c2_publish import publish_c2_artifact
+from .cgmes_import import import_cgmes_model
 from .download import download_artifact
 from .fixture import build_fixture
 from .geofabrik import discover_germany_pbf
 from .health import check_source, discover_mastr_export
 from .mastr import parse_mastr_export, stream_mastr_export
-from .osm import build_osm_artifact
+from .network_state import NetworkStateBuilder
+from .network_study import PandapowerProvider
 from .operator_evidence import fetch_operator_sources
-from .operator_import import validate_operator_import_file
 from .operator_health_publish import publish_operator_health
+from .operator_import import validate_operator_import_file
 from .operator_matching import write_match_proposals
+from .osm import build_osm_artifact
+from .p0_foundation import ScenarioDefinition
+from .pilot_acceptance import run_synthetic_pilot_acceptance
+from .pilot_providers import OperatorPilotDataProvider, SyntheticPilotDataProvider
 from .publish import publish_mastr_ndjson
+from .release2_benchmark import build_release2_benchmark
+from .release3_benchmark import build_release3_benchmark
+from .release_audit import audit_release
 from .sql_export import write_ingestion_sql, write_mastr_sql
 
 
@@ -75,6 +88,46 @@ def parser() -> argparse.ArgumentParser:
     operator_import.add_argument("--output", type=Path, required=True)
     publish_health = subcommands.add_parser("publish-operator-health")
     publish_health.add_argument("--input", type=Path, required=True)
+    release_audit = subcommands.add_parser("audit-release")
+    release_audit.add_argument("--input", type=Path, required=True)
+    release_audit.add_argument("--output", type=Path, required=True)
+    c1 = subcommands.add_parser("validate-c1-benchmark")
+    c1.add_argument("--code", default="1-MV-urban--0-sw")
+    c1.add_argument("--output", type=Path, required=True)
+    publish_c1 = subcommands.add_parser("publish-c1-benchmark")
+    publish_c1.add_argument("--input", type=Path, required=True)
+    cgmes = subcommands.add_parser("import-cgmes")
+    cgmes.add_argument("--input", type=Path, action="append", required=True)
+    cgmes.add_argument("--output-model", type=Path, required=True)
+    cgmes.add_argument("--output-manifest", type=Path, required=True)
+    cgmes.add_argument("--model-key", required=True)
+    cgmes.add_argument("--model-version", required=True)
+    cgmes.add_argument("--source-url", required=True)
+    cgmes.add_argument("--licence", required=True)
+    cgmes.add_argument("--cgmes-version", choices=["2.4.15", "3.0"], default="3.0")
+    c2 = subcommands.add_parser("validate-c2-benchmark")
+    c2.add_argument("--output", type=Path, required=True)
+    c2.add_argument("--weather-year", type=int, action="append")
+    c2.add_argument("--target-year", type=int, default=2028)
+    c2.add_argument("--requested-import-mw", type=float, default=10.0)
+    c2.add_argument("--code", default="1-MV-urban--0-sw")
+    publish_c2 = subcommands.add_parser("publish-c2-benchmark")
+    publish_c2.add_argument("--input", type=Path, required=True)
+    pilot = subcommands.add_parser("validate-pilot-package")
+    pilot.add_argument("--input", type=Path, required=True)
+    pilot.add_argument("--kind", choices=["synthetic", "operator"], required=True)
+    release1 = subcommands.add_parser("validate-release1")
+    release1.add_argument("--input", type=Path, required=True)
+    release2 = subcommands.add_parser("validate-release2")
+    release2.add_argument("--input", type=Path, required=True)
+    release2.add_argument("--output", type=Path, required=True)
+    release2.add_argument("--model-artifact", type=Path, required=True)
+    release3 = subcommands.add_parser("validate-release3")
+    release3.add_argument("--input", type=Path, required=True)
+    release3.add_argument("--output", type=Path, required=True)
+    acceptance = subcommands.add_parser("validate-synthetic-pilot")
+    acceptance.add_argument("--input", type=Path, required=True)
+    acceptance.add_argument("--output", type=Path, required=True)
     return command
 
 
@@ -82,7 +135,9 @@ def main() -> None:
     args = parser().parse_args()
     if args.command == "build-fixture":
         report = build_fixture(args.input, args.output)
-        print(f"Published {report.feature_count} validated fixture features ({report.sha256[:12]}).")
+        print(
+            f"Published {report.feature_count} validated fixture features ({report.sha256[:12]})."
+        )
     elif args.command == "fetch-osm":
         report = build_osm_artifact(
             args.output,
@@ -114,8 +169,7 @@ def main() -> None:
     elif args.command == "download":
         report = download_artifact(args.url, args.output)
         print(
-            f"Downloaded {report.bytes_downloaded} bytes to {report.path}; "
-            f"sha256={report.sha256}."
+            f"Downloaded {report.bytes_downloaded} bytes to {report.path}; sha256={report.sha256}."
         )
     elif args.command == "stream-mastr":
         report = stream_mastr_export(
@@ -129,22 +183,13 @@ def main() -> None:
         )
     elif args.command == "publish-mastr":
         report = publish_mastr_ndjson(args.input, batch_size=args.batch_size)
-        print(
-            f"Activated release {report.release_id} with "
-            f"{report.records_published} assets."
-        )
+        print(f"Activated release {report.release_id} with {report.records_published} assets.")
     elif args.command == "check-source":
         report = check_source(args.url, args.output)
-        print(
-            f"Source returned HTTP {report['status']} with "
-            f"{report['content_length']} bytes."
-        )
+        print(f"Source returned HTTP {report['status']} with {report['content_length']} bytes.")
     elif args.command == "check-mastr":
         report = discover_mastr_export(args.output)
-        print(
-            f"Current MaStR export is {report['url']} "
-            f"({report['content_length']} bytes)."
-        )
+        print(f"Current MaStR export is {report['url']} ({report['content_length']} bytes).")
     elif args.command == "check-geofabrik":
         report = discover_germany_pbf(args.output)
         print(
@@ -162,14 +207,123 @@ def main() -> None:
         print(f"Wrote {report['proposal_count']} human-review match proposals.")
     elif args.command == "validate-operator-import":
         report = validate_operator_import_file(args.input, args.output)
-        print(
-            f"Validated {report['record_count']} operator records; valid={report['valid']}."
-        )
+        print(f"Validated {report['record_count']} operator records; valid={report['valid']}.")
     elif args.command == "publish-operator-health":
         report = publish_operator_health(args.input)
         print(
             f"Published {report['published']} source checks; "
             f"{report['failed']} endpoint failures recorded."
+        )
+    elif args.command == "audit-release":
+        report = audit_release(args.input, args.output)
+        print(
+            f"Audited {report['feature_count']} features; valid={report['valid']}; "
+            f"sha256={report['sha256'][:12]}."
+        )
+        if not report["valid"]:
+            raise SystemExit(1)
+    elif args.command == "validate-c1-benchmark":
+        report = build_c1_validation_artifact(args.output, args.code)
+        capacity = next(item for item in report["results"] if item["study_type"] == "capacity")
+        print(
+            f"Validated {report['model_id']} with pandapower; "
+            f"benchmark import boundary={capacity['values']['firm_import_capacity_mw']} MW."
+        )
+    elif args.command == "publish-c1-benchmark":
+        report = publish_c1_artifact(args.input)
+        print(f"Published C1 model {report['model_version_id']} and {report['runs']} study runs.")
+    elif args.command == "import-cgmes":
+        report = import_cgmes_model(
+            args.input,
+            args.output_model,
+            args.output_manifest,
+            model_key=args.model_key,
+            model_version=args.model_version,
+            source_url=args.source_url,
+            licence=args.licence,
+            cgmes_version=args.cgmes_version,
+        )
+        print(
+            f"Imported {report['model_key']} with {report['element_counts']['buses']} buses; "
+            "validation class remains operator_model_unvalidated."
+        )
+    elif args.command == "validate-c2-benchmark":
+        report = build_c2_benchmark_artifact(
+            args.output,
+            weather_years=tuple(args.weather_year or (2023, 2024, 2025)),
+            target_year=args.target_year,
+            requested_import_mw=args.requested_import_mw,
+            code=args.code,
+        )
+        print(
+            f"Validated {report['envelope']['hour_count']} C2 hourly cases; "
+            f"P10/P50/P90={report['envelope']['p10_capacity_mw']}/"
+            f"{report['envelope']['p50_capacity_mw']}/"
+            f"{report['envelope']['p90_capacity_mw']} MW."
+        )
+    elif args.command == "publish-c2-benchmark":
+        report = publish_c2_artifact(args.input)
+        print(f"Published C2 ensemble {report['ensemble_id']}.")
+    elif args.command == "validate-pilot-package":
+        provider = (
+            SyntheticPilotDataProvider(args.input)
+            if args.kind == "synthetic"
+            else OperatorPilotDataProvider(args.input)
+        )
+        bundle = provider.load()
+        print(
+            f"Validated {bundle.manifest.dataset_id}@{bundle.manifest.dataset_version}; "
+            f"observations={len(bundle.observations)}; sha256={bundle.dataset_hash}."
+        )
+    elif args.command == "validate-release1":
+        bundle = SyntheticPilotDataProvider(args.input).load()
+        builder = NetworkStateBuilder(bundle)
+        scenario = ScenarioDefinition(
+            scenario_id="release1-acceptance",
+            demand_factor=1.1,
+            renewable_factor=0.6,
+            queue_project_ids=("synthetic-queue-001",),
+            reinforcement_ids=("synthetic-reinforcement-trafo-2",),
+            battery_dispatch_mw=4,
+            flexible_load_reduction_mw=2,
+            weather_year=2025,
+            hour_of_year=8759,
+        )
+        state = builder.build(scenario)
+        result = PandapowerProvider().run_base_case(state)
+        if not result.converged:
+            raise SystemExit("Release 1 acceptance state did not converge.")
+        print(
+            f"Validated Release 1 state {scenario.input_hash[:12]}; "
+            f"loads={len(state.loads)}; transformers={len(state.transformers)}; "
+            f"validation={state.validation_class}."
+        )
+    elif args.command == "validate-release2":
+        report = build_release2_benchmark(args.input, args.output, args.model_artifact)
+        round_data = report["active_learning_round"]
+        print(
+            f"Validated Release 2; candidates={round_data['candidate_count']}; "
+            f"physics_selected={round_data['selected_count']}; "
+            f"promotion={report['promotion']['decision']}; "
+            f"artifact={report['artifact']['artifact_sha256'][:12]}."
+        )
+    elif args.command == "validate-release3":
+        report = build_release3_benchmark(args.input, args.output)
+        metrics = report["shadow"]["metrics"]
+        print(
+            f"Validated Release 3 shadow run; verified={metrics['verified_count']}; "
+            f"coverage={metrics['physics_coverage']}; "
+            f"decision={report['champion_decision']['decision']}."
+        )
+    elif args.command == "validate-synthetic-pilot":
+        bundle = SyntheticPilotDataProvider(args.input).load()
+        report = run_synthetic_pilot_acceptance(bundle, args.output)
+        if not report["all_repository_gates_passed"]:
+            raise SystemExit("Synthetic pilot acceptance gates did not pass.")
+        reduction = report["reduction_benchmark"]
+        print(
+            f"Validated all synthetic pilot phases; reduction={reduction['compute_reduction']}; "
+            f"report={report['report_sha256'][:12]}."
         )
 
 

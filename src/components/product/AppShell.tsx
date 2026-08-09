@@ -6,6 +6,8 @@ import { useAuth } from "@/context/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { lifecycleStageForLocation } from "@/features/grid-connection/product-lifecycle";
 import { ProductTruthNotice } from "./ProductTruthNotice";
+import { productCapabilities } from "@/config/product-mode";
+import { FinderShell } from "./FinderShell";
 
 const navigation = [
   { label: "Portfolio", to: "/portfolio" },
@@ -121,6 +123,7 @@ export function AppShell({
   children: ReactNode;
   requireAuth?: boolean;
 }) {
+  if (!productCapabilities.workspace) return <FinderShell>{children}</FinderShell>;
   return (
     <div className="product-shell">
       <AppHeader />

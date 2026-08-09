@@ -28,6 +28,9 @@ import { Route as PilotCaseIdRouteImport } from './routes/pilot-case.$id'
 import { Route as OperatorReviewIdRouteImport } from './routes/operator-review.$id'
 import { Route as AssessmentsNewRouteImport } from './routes/assessments.new'
 import { Route as AssessmentsIdRouteImport } from './routes/assessments.$id'
+import { Route as ApiPowerFinderViewportRouteImport } from './routes/api.power-finder.viewport'
+import { Route as ApiPowerFinderStudyRouteImport } from './routes/api.power-finder.study'
+import { Route as ApiPowerFinderScenarioRouteImport } from './routes/api.power-finder.scenario'
 
 const ValidationCaseRoute = ValidationCaseRouteImport.update({
   id: '/validation-case',
@@ -124,6 +127,21 @@ const AssessmentsIdRoute = AssessmentsIdRouteImport.update({
   path: '/assessments/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPowerFinderViewportRoute = ApiPowerFinderViewportRouteImport.update({
+  id: '/api/power-finder/viewport',
+  path: '/api/power-finder/viewport',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPowerFinderStudyRoute = ApiPowerFinderStudyRouteImport.update({
+  id: '/api/power-finder/study',
+  path: '/api/power-finder/study',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPowerFinderScenarioRoute = ApiPowerFinderScenarioRouteImport.update({
+  id: '/api/power-finder/scenario',
+  path: '/api/power-finder/scenario',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -145,6 +163,9 @@ export interface FileRoutesByFullPath {
   '/operator-review/$id': typeof OperatorReviewIdRoute
   '/pilot-case/$id': typeof PilotCaseIdRoute
   '/submission-package/$id': typeof SubmissionPackageIdRoute
+  '/api/power-finder/scenario': typeof ApiPowerFinderScenarioRoute
+  '/api/power-finder/study': typeof ApiPowerFinderStudyRoute
+  '/api/power-finder/viewport': typeof ApiPowerFinderViewportRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -166,6 +187,9 @@ export interface FileRoutesByTo {
   '/operator-review/$id': typeof OperatorReviewIdRoute
   '/pilot-case/$id': typeof PilotCaseIdRoute
   '/submission-package/$id': typeof SubmissionPackageIdRoute
+  '/api/power-finder/scenario': typeof ApiPowerFinderScenarioRoute
+  '/api/power-finder/study': typeof ApiPowerFinderStudyRoute
+  '/api/power-finder/viewport': typeof ApiPowerFinderViewportRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -188,6 +212,9 @@ export interface FileRoutesById {
   '/operator-review/$id': typeof OperatorReviewIdRoute
   '/pilot-case/$id': typeof PilotCaseIdRoute
   '/submission-package/$id': typeof SubmissionPackageIdRoute
+  '/api/power-finder/scenario': typeof ApiPowerFinderScenarioRoute
+  '/api/power-finder/study': typeof ApiPowerFinderStudyRoute
+  '/api/power-finder/viewport': typeof ApiPowerFinderViewportRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -211,6 +238,9 @@ export interface FileRouteTypes {
     | '/operator-review/$id'
     | '/pilot-case/$id'
     | '/submission-package/$id'
+    | '/api/power-finder/scenario'
+    | '/api/power-finder/study'
+    | '/api/power-finder/viewport'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -232,6 +262,9 @@ export interface FileRouteTypes {
     | '/operator-review/$id'
     | '/pilot-case/$id'
     | '/submission-package/$id'
+    | '/api/power-finder/scenario'
+    | '/api/power-finder/study'
+    | '/api/power-finder/viewport'
   id:
     | '__root__'
     | '/'
@@ -253,6 +286,9 @@ export interface FileRouteTypes {
     | '/operator-review/$id'
     | '/pilot-case/$id'
     | '/submission-package/$id'
+    | '/api/power-finder/scenario'
+    | '/api/power-finder/study'
+    | '/api/power-finder/viewport'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -275,6 +311,9 @@ export interface RootRouteChildren {
   OperatorReviewIdRoute: typeof OperatorReviewIdRoute
   PilotCaseIdRoute: typeof PilotCaseIdRoute
   SubmissionPackageIdRoute: typeof SubmissionPackageIdRoute
+  ApiPowerFinderScenarioRoute: typeof ApiPowerFinderScenarioRoute
+  ApiPowerFinderStudyRoute: typeof ApiPowerFinderStudyRoute
+  ApiPowerFinderViewportRoute: typeof ApiPowerFinderViewportRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -412,6 +451,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AssessmentsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/power-finder/viewport': {
+      id: '/api/power-finder/viewport'
+      path: '/api/power-finder/viewport'
+      fullPath: '/api/power-finder/viewport'
+      preLoaderRoute: typeof ApiPowerFinderViewportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/power-finder/study': {
+      id: '/api/power-finder/study'
+      path: '/api/power-finder/study'
+      fullPath: '/api/power-finder/study'
+      preLoaderRoute: typeof ApiPowerFinderStudyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/power-finder/scenario': {
+      id: '/api/power-finder/scenario'
+      path: '/api/power-finder/scenario'
+      fullPath: '/api/power-finder/scenario'
+      preLoaderRoute: typeof ApiPowerFinderScenarioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -435,6 +495,9 @@ const rootRouteChildren: RootRouteChildren = {
   OperatorReviewIdRoute: OperatorReviewIdRoute,
   PilotCaseIdRoute: PilotCaseIdRoute,
   SubmissionPackageIdRoute: SubmissionPackageIdRoute,
+  ApiPowerFinderScenarioRoute: ApiPowerFinderScenarioRoute,
+  ApiPowerFinderStudyRoute: ApiPowerFinderStudyRoute,
+  ApiPowerFinderViewportRoute: ApiPowerFinderViewportRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

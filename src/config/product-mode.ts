@@ -1,0 +1,44 @@
+export type ProductMode = "finder" | "connect" | "full";
+
+function parseProductMode(value: string): ProductMode {
+  return value === "connect" || value === "full" ? value : "finder";
+}
+
+export const productMode = parseProductMode(__GRIDPULSE_PRODUCT_MODE__);
+
+export function capabilitiesForMode(mode: ProductMode) {
+  return {
+    finder: true,
+    authentication: mode !== "finder",
+    workspace: mode !== "finder",
+    connect: mode === "connect" || mode === "full",
+    operate: mode === "full",
+    pilotIntake: mode !== "finder",
+  } as const;
+}
+
+export const productCapabilities = capabilitiesForMode(productMode);
+
+export const publicFinderExperimentalModels =
+  import.meta.env.VITE_PUBLIC_FINDER_EXPERIMENTAL_MODE === "true";
+
+export const privateGraphUiEnabled =
+  productCapabilities.workspace && import.meta.env.VITE_PRIVATE_GRAPH_UI !== "false";
+
+export const finderContactEmail = "sina.khedmati@outlook.de";
+
+const finderRoutes = new Set(["/", "/power-finder", "/data-sources"]);
+
+export function isRouteEnabledForMode(pathname: string, mode: ProductMode): boolean {
+  if (mode !== "finder") return true;
+  const normalized = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
+  return finderRoutes.has(normalized);
+}
+
+export function isRouteEnabled(pathname: string): boolean {
+  return isRouteEnabledForMode(pathname, productMode);
+}
+
+export function isFinderMvp(): boolean {
+  return productMode === "finder";
+}
