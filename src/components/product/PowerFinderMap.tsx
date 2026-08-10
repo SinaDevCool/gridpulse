@@ -225,7 +225,7 @@ export function PowerFinderMap({
         map.addSource("power-finder-national-tiles", {
           type: "vector",
           tiles: [
-            `${window.location.origin}/api/power-finder/tile/{z}/{x}/{y}?release=20260810-indexed-voltage-tiles`,
+            `${window.location.origin}/api/power-finder/tile/{z}/{x}/{y}?content=grid&generation=false&storage=false`,
           ],
           minzoom: 4,
           // Overzoom the cached national z8 tile immediately. Finer distribution
@@ -235,7 +235,7 @@ export function PowerFinderMap({
         map.addSource("power-finder-registry-tiles", {
           type: "vector",
           tiles: [
-            `${window.location.origin}/api/power-finder/tile/{z}/{x}/{y}?release=20260810-national-mastr-points`,
+            `${window.location.origin}/api/power-finder/tile/{z}/{x}/{y}?content=registry`,
           ],
           minzoom: 8,
           // Request finer registry tiles so dense exact-location assets do not

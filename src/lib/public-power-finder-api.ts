@@ -227,6 +227,9 @@ export async function handlePublicPowerFinderTileRequest(
     return jsonResponse({ error: "Method not allowed." }, 405, { allow: "GET" });
   }
   const [z, x, y] = match.slice(1).map(Number);
+  const registryOnly = requestUrl.searchParams.get("content") === "registry";
+  const includeGeneration = requestUrl.searchParams.get("generation") !== "false";
+  const includeStorage = requestUrl.searchParams.get("storage") !== "false";
   if (z < 4 || z > 16 || x < 0 || y < 0 || x >= 2 ** z || y >= 2 ** z) {
     return jsonResponse({ error: "Invalid tile coordinate." }, 400);
   }
@@ -237,6 +240,9 @@ export async function handlePublicPowerFinderTileRequest(
   }
   const cacheUrl = new URL(requestUrl.pathname, requestUrl.origin);
   cacheUrl.searchParams.set("release", TILE_CACHE_RELEASE);
+  cacheUrl.searchParams.set("content", registryOnly ? "registry" : "grid");
+  cacheUrl.searchParams.set("generation", String(includeGeneration));
+  cacheUrl.searchParams.set("storage", String(includeStorage));
   const cacheRequest = new Request(cacheUrl, { method: "GET" });
   const cache =
     typeof caches === "undefined" ? null : (caches as CacheStorage & { default: Cache }).default;
@@ -255,10 +261,13 @@ export async function handlePublicPowerFinderTileRequest(
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 25_000);
   try {
-    const response = await fetch(`${supabaseUrl}/rest/v1/rpc/power_finder_public_tile`, {
+    const rpc = registryOnly
+      ? "power_finder_public_registry_tile"
+      : "power_finder_public_tile";
+    const response = await fetch(`${supabaseUrl}/rest/v1/rpc/${rpc}`, {
       method: "POST",
       headers,
-      body: JSON.stringify({ z, x, y, include_generation: true, include_storage: true }),
+      body: JSON.stringify({ z, x, y, include_generation: includeGeneration, include_storage: includeStorage }),
       signal: controller.signal,
     });
     if (!response.ok) return jsonResponse({ error: "Tile origin unavailable." }, 502);
