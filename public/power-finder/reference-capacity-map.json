@@ -1,6 +1,6 @@
 {
   "schema_version": "gridpulse-reference-capacity-map-v1",
-  "generated_at": "2026-08-10T12:56:46.503596+00:00",
+  "generated_at": "2026-08-10T14:44:44.846835+00:00",
   "result_mode": "reference_network_calculated",
   "model": {
     "id": "simbench:1-MV-urban--0-sw",
@@ -168,10 +168,11 @@
     "capacity_claim": false,
     "dataset": {
       "dataset_id": "synthetic-brandenburg-pilot",
-      "dataset_sha256": "d0894883c7593d98bdcbdbf378260463009dd4e310ef9c0bf44b2480986d4f60",
+      "dataset_sha256": "f1c3c4a9ff118084b8b82e159136b0d5f93167a342d51ce2a4ee53eb1dc9ce47",
       "validation_class": "synthetic_demonstration",
       "operator_data_used": false,
-      "expected_decision": "retain_challenger"
+      "expected_decision": "retain_challenger",
+      "reproducibility_command": "npm run grid:validate:r3"
     },
     "shadow": {
       "scenario_count": 36,
@@ -184,6 +185,7 @@
       "out_of_distribution_rate": 0.0,
       "binding_accuracy": 1.0,
       "mandatory_contingency_coverage": 1.0,
+      "unverified_scenario_count": 0,
       "drift_status": "stable",
       "model_dataset_hash": "842bb1677a7e24d44ecc1dcf91c38074a20d88953742f044f640748824a5df20"
     },
@@ -226,8 +228,24 @@
       "operator_review": true
     },
     "private_observations_published": false,
+    "private_predictions_published": false,
+    "report_sha256": "bbd7f774440d4d063e6bf73e7ffc36b82592cc451f0711a1ea428730653b50e8",
+    "reproducibility": {
+      "command": "npm run grid:validate:r3",
+      "random_state": 41,
+      "split_method": "scenario_prefix_holdout",
+      "training_scenario_hash": "062613160460f6b865ba9b5a7473ec2e7d0380ded9bce61d2ef08498ec73c4bb",
+      "holdout_scenario_hash": "57892c903d19f166cbbf2eadaa5e8dfd128fe732f08450a735778e834fab9a91",
+      "shadow_scenario_hash": "ad1fa0c58067a4ccb4604f44c2e08290eda68f0ce05a96dc547ca074264a063b"
+    },
+    "public_capacity_boundary": {
+      "surrogate_applied_to_public_capacity": false,
+      "map_values_remain_physics_results": true,
+      "operator_confirmation_created": false,
+      "status": "private_shadow_validation_only"
+    },
     "warning": "Shadow predictions are internal diagnostics; physics and operator review remain authoritative.",
-    "manifest_sha256": "2562efa1a80e6979d5268a62b292809bfd80c017bfdc26f8767af4acf1557cc6"
+    "manifest_sha256": "6a8d2fd78f0a6e8611dd6efa2fac4a32b9ee9528cbad30a5e68f6c8b907fcc20"
   },
   "release4_governance": {
     "schema_version": "gridpulse-release4-governance-v1",
@@ -339,7 +357,7 @@
     "warning": "Synthetic operator-engagement rehearsal\u2014not an operator response, operating instruction, connection offer, or mapped capacity result.",
     "manifest_sha256": "fb5fddfece182022fcb6408938ddde96f4285107973f93d59fa59ab168c47ed2"
   },
-  "results_sha256": "d83cf561761f8ff364c4fcb7dfe818a380ea257c2aaf745d112fae36e4ddc86b",
+  "results_sha256": "032cf0f74150789a4c97cb7db5d51b140ee2b421efde5691120989a275c49dd6",
   "results": [
     {
       "result_id": "simbench-ref-01",
@@ -2014,10 +2032,11 @@
         "capacity_claim": false,
         "dataset": {
           "dataset_id": "synthetic-brandenburg-pilot",
-          "dataset_sha256": "d0894883c7593d98bdcbdbf378260463009dd4e310ef9c0bf44b2480986d4f60",
+          "dataset_sha256": "f1c3c4a9ff118084b8b82e159136b0d5f93167a342d51ce2a4ee53eb1dc9ce47",
           "validation_class": "synthetic_demonstration",
           "operator_data_used": false,
-          "expected_decision": "retain_challenger"
+          "expected_decision": "retain_challenger",
+          "reproducibility_command": "npm run grid:validate:r3"
         },
         "shadow": {
           "scenario_count": 36,
@@ -2030,6 +2049,7 @@
           "out_of_distribution_rate": 0.0,
           "binding_accuracy": 1.0,
           "mandatory_contingency_coverage": 1.0,
+          "unverified_scenario_count": 0,
           "drift_status": "stable",
           "model_dataset_hash": "842bb1677a7e24d44ecc1dcf91c38074a20d88953742f044f640748824a5df20"
         },
@@ -2072,8 +2092,24 @@
           "operator_review": true
         },
         "private_observations_published": false,
+        "private_predictions_published": false,
+        "report_sha256": "bbd7f774440d4d063e6bf73e7ffc36b82592cc451f0711a1ea428730653b50e8",
+        "reproducibility": {
+          "command": "npm run grid:validate:r3",
+          "random_state": 41,
+          "split_method": "scenario_prefix_holdout",
+          "training_scenario_hash": "062613160460f6b865ba9b5a7473ec2e7d0380ded9bce61d2ef08498ec73c4bb",
+          "holdout_scenario_hash": "57892c903d19f166cbbf2eadaa5e8dfd128fe732f08450a735778e834fab9a91",
+          "shadow_scenario_hash": "ad1fa0c58067a4ccb4604f44c2e08290eda68f0ce05a96dc547ca074264a063b"
+        },
+        "public_capacity_boundary": {
+          "surrogate_applied_to_public_capacity": false,
+          "map_values_remain_physics_results": true,
+          "operator_confirmation_created": false,
+          "status": "private_shadow_validation_only"
+        },
         "warning": "Shadow predictions are internal diagnostics; physics and operator review remain authoritative.",
-        "manifest_sha256": "2562efa1a80e6979d5268a62b292809bfd80c017bfdc26f8767af4acf1557cc6"
+        "manifest_sha256": "6a8d2fd78f0a6e8611dd6efa2fac4a32b9ee9528cbad30a5e68f6c8b907fcc20"
       },
       "release4_governance": {
         "schema_version": "gridpulse-release4-governance-v1",
@@ -3865,10 +3901,11 @@
         "capacity_claim": false,
         "dataset": {
           "dataset_id": "synthetic-brandenburg-pilot",
-          "dataset_sha256": "d0894883c7593d98bdcbdbf378260463009dd4e310ef9c0bf44b2480986d4f60",
+          "dataset_sha256": "f1c3c4a9ff118084b8b82e159136b0d5f93167a342d51ce2a4ee53eb1dc9ce47",
           "validation_class": "synthetic_demonstration",
           "operator_data_used": false,
-          "expected_decision": "retain_challenger"
+          "expected_decision": "retain_challenger",
+          "reproducibility_command": "npm run grid:validate:r3"
         },
         "shadow": {
           "scenario_count": 36,
@@ -3881,6 +3918,7 @@
           "out_of_distribution_rate": 0.0,
           "binding_accuracy": 1.0,
           "mandatory_contingency_coverage": 1.0,
+          "unverified_scenario_count": 0,
           "drift_status": "stable",
           "model_dataset_hash": "842bb1677a7e24d44ecc1dcf91c38074a20d88953742f044f640748824a5df20"
         },
@@ -3923,8 +3961,24 @@
           "operator_review": true
         },
         "private_observations_published": false,
+        "private_predictions_published": false,
+        "report_sha256": "bbd7f774440d4d063e6bf73e7ffc36b82592cc451f0711a1ea428730653b50e8",
+        "reproducibility": {
+          "command": "npm run grid:validate:r3",
+          "random_state": 41,
+          "split_method": "scenario_prefix_holdout",
+          "training_scenario_hash": "062613160460f6b865ba9b5a7473ec2e7d0380ded9bce61d2ef08498ec73c4bb",
+          "holdout_scenario_hash": "57892c903d19f166cbbf2eadaa5e8dfd128fe732f08450a735778e834fab9a91",
+          "shadow_scenario_hash": "ad1fa0c58067a4ccb4604f44c2e08290eda68f0ce05a96dc547ca074264a063b"
+        },
+        "public_capacity_boundary": {
+          "surrogate_applied_to_public_capacity": false,
+          "map_values_remain_physics_results": true,
+          "operator_confirmation_created": false,
+          "status": "private_shadow_validation_only"
+        },
         "warning": "Shadow predictions are internal diagnostics; physics and operator review remain authoritative.",
-        "manifest_sha256": "2562efa1a80e6979d5268a62b292809bfd80c017bfdc26f8767af4acf1557cc6"
+        "manifest_sha256": "6a8d2fd78f0a6e8611dd6efa2fac4a32b9ee9528cbad30a5e68f6c8b907fcc20"
       },
       "release4_governance": {
         "schema_version": "gridpulse-release4-governance-v1",
@@ -5720,10 +5774,11 @@
         "capacity_claim": false,
         "dataset": {
           "dataset_id": "synthetic-brandenburg-pilot",
-          "dataset_sha256": "d0894883c7593d98bdcbdbf378260463009dd4e310ef9c0bf44b2480986d4f60",
+          "dataset_sha256": "f1c3c4a9ff118084b8b82e159136b0d5f93167a342d51ce2a4ee53eb1dc9ce47",
           "validation_class": "synthetic_demonstration",
           "operator_data_used": false,
-          "expected_decision": "retain_challenger"
+          "expected_decision": "retain_challenger",
+          "reproducibility_command": "npm run grid:validate:r3"
         },
         "shadow": {
           "scenario_count": 36,
@@ -5736,6 +5791,7 @@
           "out_of_distribution_rate": 0.0,
           "binding_accuracy": 1.0,
           "mandatory_contingency_coverage": 1.0,
+          "unverified_scenario_count": 0,
           "drift_status": "stable",
           "model_dataset_hash": "842bb1677a7e24d44ecc1dcf91c38074a20d88953742f044f640748824a5df20"
         },
@@ -5778,8 +5834,24 @@
           "operator_review": true
         },
         "private_observations_published": false,
+        "private_predictions_published": false,
+        "report_sha256": "bbd7f774440d4d063e6bf73e7ffc36b82592cc451f0711a1ea428730653b50e8",
+        "reproducibility": {
+          "command": "npm run grid:validate:r3",
+          "random_state": 41,
+          "split_method": "scenario_prefix_holdout",
+          "training_scenario_hash": "062613160460f6b865ba9b5a7473ec2e7d0380ded9bce61d2ef08498ec73c4bb",
+          "holdout_scenario_hash": "57892c903d19f166cbbf2eadaa5e8dfd128fe732f08450a735778e834fab9a91",
+          "shadow_scenario_hash": "ad1fa0c58067a4ccb4604f44c2e08290eda68f0ce05a96dc547ca074264a063b"
+        },
+        "public_capacity_boundary": {
+          "surrogate_applied_to_public_capacity": false,
+          "map_values_remain_physics_results": true,
+          "operator_confirmation_created": false,
+          "status": "private_shadow_validation_only"
+        },
         "warning": "Shadow predictions are internal diagnostics; physics and operator review remain authoritative.",
-        "manifest_sha256": "2562efa1a80e6979d5268a62b292809bfd80c017bfdc26f8767af4acf1557cc6"
+        "manifest_sha256": "6a8d2fd78f0a6e8611dd6efa2fac4a32b9ee9528cbad30a5e68f6c8b907fcc20"
       },
       "release4_governance": {
         "schema_version": "gridpulse-release4-governance-v1",
@@ -7575,10 +7647,11 @@
         "capacity_claim": false,
         "dataset": {
           "dataset_id": "synthetic-brandenburg-pilot",
-          "dataset_sha256": "d0894883c7593d98bdcbdbf378260463009dd4e310ef9c0bf44b2480986d4f60",
+          "dataset_sha256": "f1c3c4a9ff118084b8b82e159136b0d5f93167a342d51ce2a4ee53eb1dc9ce47",
           "validation_class": "synthetic_demonstration",
           "operator_data_used": false,
-          "expected_decision": "retain_challenger"
+          "expected_decision": "retain_challenger",
+          "reproducibility_command": "npm run grid:validate:r3"
         },
         "shadow": {
           "scenario_count": 36,
@@ -7591,6 +7664,7 @@
           "out_of_distribution_rate": 0.0,
           "binding_accuracy": 1.0,
           "mandatory_contingency_coverage": 1.0,
+          "unverified_scenario_count": 0,
           "drift_status": "stable",
           "model_dataset_hash": "842bb1677a7e24d44ecc1dcf91c38074a20d88953742f044f640748824a5df20"
         },
@@ -7633,8 +7707,24 @@
           "operator_review": true
         },
         "private_observations_published": false,
+        "private_predictions_published": false,
+        "report_sha256": "bbd7f774440d4d063e6bf73e7ffc36b82592cc451f0711a1ea428730653b50e8",
+        "reproducibility": {
+          "command": "npm run grid:validate:r3",
+          "random_state": 41,
+          "split_method": "scenario_prefix_holdout",
+          "training_scenario_hash": "062613160460f6b865ba9b5a7473ec2e7d0380ded9bce61d2ef08498ec73c4bb",
+          "holdout_scenario_hash": "57892c903d19f166cbbf2eadaa5e8dfd128fe732f08450a735778e834fab9a91",
+          "shadow_scenario_hash": "ad1fa0c58067a4ccb4604f44c2e08290eda68f0ce05a96dc547ca074264a063b"
+        },
+        "public_capacity_boundary": {
+          "surrogate_applied_to_public_capacity": false,
+          "map_values_remain_physics_results": true,
+          "operator_confirmation_created": false,
+          "status": "private_shadow_validation_only"
+        },
         "warning": "Shadow predictions are internal diagnostics; physics and operator review remain authoritative.",
-        "manifest_sha256": "2562efa1a80e6979d5268a62b292809bfd80c017bfdc26f8767af4acf1557cc6"
+        "manifest_sha256": "6a8d2fd78f0a6e8611dd6efa2fac4a32b9ee9528cbad30a5e68f6c8b907fcc20"
       },
       "release4_governance": {
         "schema_version": "gridpulse-release4-governance-v1",
@@ -9430,10 +9520,11 @@
         "capacity_claim": false,
         "dataset": {
           "dataset_id": "synthetic-brandenburg-pilot",
-          "dataset_sha256": "d0894883c7593d98bdcbdbf378260463009dd4e310ef9c0bf44b2480986d4f60",
+          "dataset_sha256": "f1c3c4a9ff118084b8b82e159136b0d5f93167a342d51ce2a4ee53eb1dc9ce47",
           "validation_class": "synthetic_demonstration",
           "operator_data_used": false,
-          "expected_decision": "retain_challenger"
+          "expected_decision": "retain_challenger",
+          "reproducibility_command": "npm run grid:validate:r3"
         },
         "shadow": {
           "scenario_count": 36,
@@ -9446,6 +9537,7 @@
           "out_of_distribution_rate": 0.0,
           "binding_accuracy": 1.0,
           "mandatory_contingency_coverage": 1.0,
+          "unverified_scenario_count": 0,
           "drift_status": "stable",
           "model_dataset_hash": "842bb1677a7e24d44ecc1dcf91c38074a20d88953742f044f640748824a5df20"
         },
@@ -9488,8 +9580,24 @@
           "operator_review": true
         },
         "private_observations_published": false,
+        "private_predictions_published": false,
+        "report_sha256": "bbd7f774440d4d063e6bf73e7ffc36b82592cc451f0711a1ea428730653b50e8",
+        "reproducibility": {
+          "command": "npm run grid:validate:r3",
+          "random_state": 41,
+          "split_method": "scenario_prefix_holdout",
+          "training_scenario_hash": "062613160460f6b865ba9b5a7473ec2e7d0380ded9bce61d2ef08498ec73c4bb",
+          "holdout_scenario_hash": "57892c903d19f166cbbf2eadaa5e8dfd128fe732f08450a735778e834fab9a91",
+          "shadow_scenario_hash": "ad1fa0c58067a4ccb4604f44c2e08290eda68f0ce05a96dc547ca074264a063b"
+        },
+        "public_capacity_boundary": {
+          "surrogate_applied_to_public_capacity": false,
+          "map_values_remain_physics_results": true,
+          "operator_confirmation_created": false,
+          "status": "private_shadow_validation_only"
+        },
         "warning": "Shadow predictions are internal diagnostics; physics and operator review remain authoritative.",
-        "manifest_sha256": "2562efa1a80e6979d5268a62b292809bfd80c017bfdc26f8767af4acf1557cc6"
+        "manifest_sha256": "6a8d2fd78f0a6e8611dd6efa2fac4a32b9ee9528cbad30a5e68f6c8b907fcc20"
       },
       "release4_governance": {
         "schema_version": "gridpulse-release4-governance-v1",
@@ -11285,10 +11393,11 @@
         "capacity_claim": false,
         "dataset": {
           "dataset_id": "synthetic-brandenburg-pilot",
-          "dataset_sha256": "d0894883c7593d98bdcbdbf378260463009dd4e310ef9c0bf44b2480986d4f60",
+          "dataset_sha256": "f1c3c4a9ff118084b8b82e159136b0d5f93167a342d51ce2a4ee53eb1dc9ce47",
           "validation_class": "synthetic_demonstration",
           "operator_data_used": false,
-          "expected_decision": "retain_challenger"
+          "expected_decision": "retain_challenger",
+          "reproducibility_command": "npm run grid:validate:r3"
         },
         "shadow": {
           "scenario_count": 36,
@@ -11301,6 +11410,7 @@
           "out_of_distribution_rate": 0.0,
           "binding_accuracy": 1.0,
           "mandatory_contingency_coverage": 1.0,
+          "unverified_scenario_count": 0,
           "drift_status": "stable",
           "model_dataset_hash": "842bb1677a7e24d44ecc1dcf91c38074a20d88953742f044f640748824a5df20"
         },
@@ -11343,8 +11453,24 @@
           "operator_review": true
         },
         "private_observations_published": false,
+        "private_predictions_published": false,
+        "report_sha256": "bbd7f774440d4d063e6bf73e7ffc36b82592cc451f0711a1ea428730653b50e8",
+        "reproducibility": {
+          "command": "npm run grid:validate:r3",
+          "random_state": 41,
+          "split_method": "scenario_prefix_holdout",
+          "training_scenario_hash": "062613160460f6b865ba9b5a7473ec2e7d0380ded9bce61d2ef08498ec73c4bb",
+          "holdout_scenario_hash": "57892c903d19f166cbbf2eadaa5e8dfd128fe732f08450a735778e834fab9a91",
+          "shadow_scenario_hash": "ad1fa0c58067a4ccb4604f44c2e08290eda68f0ce05a96dc547ca074264a063b"
+        },
+        "public_capacity_boundary": {
+          "surrogate_applied_to_public_capacity": false,
+          "map_values_remain_physics_results": true,
+          "operator_confirmation_created": false,
+          "status": "private_shadow_validation_only"
+        },
         "warning": "Shadow predictions are internal diagnostics; physics and operator review remain authoritative.",
-        "manifest_sha256": "2562efa1a80e6979d5268a62b292809bfd80c017bfdc26f8767af4acf1557cc6"
+        "manifest_sha256": "6a8d2fd78f0a6e8611dd6efa2fac4a32b9ee9528cbad30a5e68f6c8b907fcc20"
       },
       "release4_governance": {
         "schema_version": "gridpulse-release4-governance-v1",
@@ -13140,10 +13266,11 @@
         "capacity_claim": false,
         "dataset": {
           "dataset_id": "synthetic-brandenburg-pilot",
-          "dataset_sha256": "d0894883c7593d98bdcbdbf378260463009dd4e310ef9c0bf44b2480986d4f60",
+          "dataset_sha256": "f1c3c4a9ff118084b8b82e159136b0d5f93167a342d51ce2a4ee53eb1dc9ce47",
           "validation_class": "synthetic_demonstration",
           "operator_data_used": false,
-          "expected_decision": "retain_challenger"
+          "expected_decision": "retain_challenger",
+          "reproducibility_command": "npm run grid:validate:r3"
         },
         "shadow": {
           "scenario_count": 36,
@@ -13156,6 +13283,7 @@
           "out_of_distribution_rate": 0.0,
           "binding_accuracy": 1.0,
           "mandatory_contingency_coverage": 1.0,
+          "unverified_scenario_count": 0,
           "drift_status": "stable",
           "model_dataset_hash": "842bb1677a7e24d44ecc1dcf91c38074a20d88953742f044f640748824a5df20"
         },
@@ -13198,8 +13326,24 @@
           "operator_review": true
         },
         "private_observations_published": false,
+        "private_predictions_published": false,
+        "report_sha256": "bbd7f774440d4d063e6bf73e7ffc36b82592cc451f0711a1ea428730653b50e8",
+        "reproducibility": {
+          "command": "npm run grid:validate:r3",
+          "random_state": 41,
+          "split_method": "scenario_prefix_holdout",
+          "training_scenario_hash": "062613160460f6b865ba9b5a7473ec2e7d0380ded9bce61d2ef08498ec73c4bb",
+          "holdout_scenario_hash": "57892c903d19f166cbbf2eadaa5e8dfd128fe732f08450a735778e834fab9a91",
+          "shadow_scenario_hash": "ad1fa0c58067a4ccb4604f44c2e08290eda68f0ce05a96dc547ca074264a063b"
+        },
+        "public_capacity_boundary": {
+          "surrogate_applied_to_public_capacity": false,
+          "map_values_remain_physics_results": true,
+          "operator_confirmation_created": false,
+          "status": "private_shadow_validation_only"
+        },
         "warning": "Shadow predictions are internal diagnostics; physics and operator review remain authoritative.",
-        "manifest_sha256": "2562efa1a80e6979d5268a62b292809bfd80c017bfdc26f8767af4acf1557cc6"
+        "manifest_sha256": "6a8d2fd78f0a6e8611dd6efa2fac4a32b9ee9528cbad30a5e68f6c8b907fcc20"
       },
       "release4_governance": {
         "schema_version": "gridpulse-release4-governance-v1",
@@ -14995,10 +15139,11 @@
         "capacity_claim": false,
         "dataset": {
           "dataset_id": "synthetic-brandenburg-pilot",
-          "dataset_sha256": "d0894883c7593d98bdcbdbf378260463009dd4e310ef9c0bf44b2480986d4f60",
+          "dataset_sha256": "f1c3c4a9ff118084b8b82e159136b0d5f93167a342d51ce2a4ee53eb1dc9ce47",
           "validation_class": "synthetic_demonstration",
           "operator_data_used": false,
-          "expected_decision": "retain_challenger"
+          "expected_decision": "retain_challenger",
+          "reproducibility_command": "npm run grid:validate:r3"
         },
         "shadow": {
           "scenario_count": 36,
@@ -15011,6 +15156,7 @@
           "out_of_distribution_rate": 0.0,
           "binding_accuracy": 1.0,
           "mandatory_contingency_coverage": 1.0,
+          "unverified_scenario_count": 0,
           "drift_status": "stable",
           "model_dataset_hash": "842bb1677a7e24d44ecc1dcf91c38074a20d88953742f044f640748824a5df20"
         },
@@ -15053,8 +15199,24 @@
           "operator_review": true
         },
         "private_observations_published": false,
+        "private_predictions_published": false,
+        "report_sha256": "bbd7f774440d4d063e6bf73e7ffc36b82592cc451f0711a1ea428730653b50e8",
+        "reproducibility": {
+          "command": "npm run grid:validate:r3",
+          "random_state": 41,
+          "split_method": "scenario_prefix_holdout",
+          "training_scenario_hash": "062613160460f6b865ba9b5a7473ec2e7d0380ded9bce61d2ef08498ec73c4bb",
+          "holdout_scenario_hash": "57892c903d19f166cbbf2eadaa5e8dfd128fe732f08450a735778e834fab9a91",
+          "shadow_scenario_hash": "ad1fa0c58067a4ccb4604f44c2e08290eda68f0ce05a96dc547ca074264a063b"
+        },
+        "public_capacity_boundary": {
+          "surrogate_applied_to_public_capacity": false,
+          "map_values_remain_physics_results": true,
+          "operator_confirmation_created": false,
+          "status": "private_shadow_validation_only"
+        },
         "warning": "Shadow predictions are internal diagnostics; physics and operator review remain authoritative.",
-        "manifest_sha256": "2562efa1a80e6979d5268a62b292809bfd80c017bfdc26f8767af4acf1557cc6"
+        "manifest_sha256": "6a8d2fd78f0a6e8611dd6efa2fac4a32b9ee9528cbad30a5e68f6c8b907fcc20"
       },
       "release4_governance": {
         "schema_version": "gridpulse-release4-governance-v1",
@@ -16850,10 +17012,11 @@
         "capacity_claim": false,
         "dataset": {
           "dataset_id": "synthetic-brandenburg-pilot",
-          "dataset_sha256": "d0894883c7593d98bdcbdbf378260463009dd4e310ef9c0bf44b2480986d4f60",
+          "dataset_sha256": "f1c3c4a9ff118084b8b82e159136b0d5f93167a342d51ce2a4ee53eb1dc9ce47",
           "validation_class": "synthetic_demonstration",
           "operator_data_used": false,
-          "expected_decision": "retain_challenger"
+          "expected_decision": "retain_challenger",
+          "reproducibility_command": "npm run grid:validate:r3"
         },
         "shadow": {
           "scenario_count": 36,
@@ -16866,6 +17029,7 @@
           "out_of_distribution_rate": 0.0,
           "binding_accuracy": 1.0,
           "mandatory_contingency_coverage": 1.0,
+          "unverified_scenario_count": 0,
           "drift_status": "stable",
           "model_dataset_hash": "842bb1677a7e24d44ecc1dcf91c38074a20d88953742f044f640748824a5df20"
         },
@@ -16908,8 +17072,24 @@
           "operator_review": true
         },
         "private_observations_published": false,
+        "private_predictions_published": false,
+        "report_sha256": "bbd7f774440d4d063e6bf73e7ffc36b82592cc451f0711a1ea428730653b50e8",
+        "reproducibility": {
+          "command": "npm run grid:validate:r3",
+          "random_state": 41,
+          "split_method": "scenario_prefix_holdout",
+          "training_scenario_hash": "062613160460f6b865ba9b5a7473ec2e7d0380ded9bce61d2ef08498ec73c4bb",
+          "holdout_scenario_hash": "57892c903d19f166cbbf2eadaa5e8dfd128fe732f08450a735778e834fab9a91",
+          "shadow_scenario_hash": "ad1fa0c58067a4ccb4604f44c2e08290eda68f0ce05a96dc547ca074264a063b"
+        },
+        "public_capacity_boundary": {
+          "surrogate_applied_to_public_capacity": false,
+          "map_values_remain_physics_results": true,
+          "operator_confirmation_created": false,
+          "status": "private_shadow_validation_only"
+        },
         "warning": "Shadow predictions are internal diagnostics; physics and operator review remain authoritative.",
-        "manifest_sha256": "2562efa1a80e6979d5268a62b292809bfd80c017bfdc26f8767af4acf1557cc6"
+        "manifest_sha256": "6a8d2fd78f0a6e8611dd6efa2fac4a32b9ee9528cbad30a5e68f6c8b907fcc20"
       },
       "release4_governance": {
         "schema_version": "gridpulse-release4-governance-v1",
@@ -18705,10 +18885,11 @@
         "capacity_claim": false,
         "dataset": {
           "dataset_id": "synthetic-brandenburg-pilot",
-          "dataset_sha256": "d0894883c7593d98bdcbdbf378260463009dd4e310ef9c0bf44b2480986d4f60",
+          "dataset_sha256": "f1c3c4a9ff118084b8b82e159136b0d5f93167a342d51ce2a4ee53eb1dc9ce47",
           "validation_class": "synthetic_demonstration",
           "operator_data_used": false,
-          "expected_decision": "retain_challenger"
+          "expected_decision": "retain_challenger",
+          "reproducibility_command": "npm run grid:validate:r3"
         },
         "shadow": {
           "scenario_count": 36,
@@ -18721,6 +18902,7 @@
           "out_of_distribution_rate": 0.0,
           "binding_accuracy": 1.0,
           "mandatory_contingency_coverage": 1.0,
+          "unverified_scenario_count": 0,
           "drift_status": "stable",
           "model_dataset_hash": "842bb1677a7e24d44ecc1dcf91c38074a20d88953742f044f640748824a5df20"
         },
@@ -18763,8 +18945,24 @@
           "operator_review": true
         },
         "private_observations_published": false,
+        "private_predictions_published": false,
+        "report_sha256": "bbd7f774440d4d063e6bf73e7ffc36b82592cc451f0711a1ea428730653b50e8",
+        "reproducibility": {
+          "command": "npm run grid:validate:r3",
+          "random_state": 41,
+          "split_method": "scenario_prefix_holdout",
+          "training_scenario_hash": "062613160460f6b865ba9b5a7473ec2e7d0380ded9bce61d2ef08498ec73c4bb",
+          "holdout_scenario_hash": "57892c903d19f166cbbf2eadaa5e8dfd128fe732f08450a735778e834fab9a91",
+          "shadow_scenario_hash": "ad1fa0c58067a4ccb4604f44c2e08290eda68f0ce05a96dc547ca074264a063b"
+        },
+        "public_capacity_boundary": {
+          "surrogate_applied_to_public_capacity": false,
+          "map_values_remain_physics_results": true,
+          "operator_confirmation_created": false,
+          "status": "private_shadow_validation_only"
+        },
         "warning": "Shadow predictions are internal diagnostics; physics and operator review remain authoritative.",
-        "manifest_sha256": "2562efa1a80e6979d5268a62b292809bfd80c017bfdc26f8767af4acf1557cc6"
+        "manifest_sha256": "6a8d2fd78f0a6e8611dd6efa2fac4a32b9ee9528cbad30a5e68f6c8b907fcc20"
       },
       "release4_governance": {
         "schema_version": "gridpulse-release4-governance-v1",
@@ -20560,10 +20758,11 @@
         "capacity_claim": false,
         "dataset": {
           "dataset_id": "synthetic-brandenburg-pilot",
-          "dataset_sha256": "d0894883c7593d98bdcbdbf378260463009dd4e310ef9c0bf44b2480986d4f60",
+          "dataset_sha256": "f1c3c4a9ff118084b8b82e159136b0d5f93167a342d51ce2a4ee53eb1dc9ce47",
           "validation_class": "synthetic_demonstration",
           "operator_data_used": false,
-          "expected_decision": "retain_challenger"
+          "expected_decision": "retain_challenger",
+          "reproducibility_command": "npm run grid:validate:r3"
         },
         "shadow": {
           "scenario_count": 36,
@@ -20576,6 +20775,7 @@
           "out_of_distribution_rate": 0.0,
           "binding_accuracy": 1.0,
           "mandatory_contingency_coverage": 1.0,
+          "unverified_scenario_count": 0,
           "drift_status": "stable",
           "model_dataset_hash": "842bb1677a7e24d44ecc1dcf91c38074a20d88953742f044f640748824a5df20"
         },
@@ -20618,8 +20818,24 @@
           "operator_review": true
         },
         "private_observations_published": false,
+        "private_predictions_published": false,
+        "report_sha256": "bbd7f774440d4d063e6bf73e7ffc36b82592cc451f0711a1ea428730653b50e8",
+        "reproducibility": {
+          "command": "npm run grid:validate:r3",
+          "random_state": 41,
+          "split_method": "scenario_prefix_holdout",
+          "training_scenario_hash": "062613160460f6b865ba9b5a7473ec2e7d0380ded9bce61d2ef08498ec73c4bb",
+          "holdout_scenario_hash": "57892c903d19f166cbbf2eadaa5e8dfd128fe732f08450a735778e834fab9a91",
+          "shadow_scenario_hash": "ad1fa0c58067a4ccb4604f44c2e08290eda68f0ce05a96dc547ca074264a063b"
+        },
+        "public_capacity_boundary": {
+          "surrogate_applied_to_public_capacity": false,
+          "map_values_remain_physics_results": true,
+          "operator_confirmation_created": false,
+          "status": "private_shadow_validation_only"
+        },
         "warning": "Shadow predictions are internal diagnostics; physics and operator review remain authoritative.",
-        "manifest_sha256": "2562efa1a80e6979d5268a62b292809bfd80c017bfdc26f8767af4acf1557cc6"
+        "manifest_sha256": "6a8d2fd78f0a6e8611dd6efa2fac4a32b9ee9528cbad30a5e68f6c8b907fcc20"
       },
       "release4_governance": {
         "schema_version": "gridpulse-release4-governance-v1",
@@ -22415,10 +22631,11 @@
         "capacity_claim": false,
         "dataset": {
           "dataset_id": "synthetic-brandenburg-pilot",
-          "dataset_sha256": "d0894883c7593d98bdcbdbf378260463009dd4e310ef9c0bf44b2480986d4f60",
+          "dataset_sha256": "f1c3c4a9ff118084b8b82e159136b0d5f93167a342d51ce2a4ee53eb1dc9ce47",
           "validation_class": "synthetic_demonstration",
           "operator_data_used": false,
-          "expected_decision": "retain_challenger"
+          "expected_decision": "retain_challenger",
+          "reproducibility_command": "npm run grid:validate:r3"
         },
         "shadow": {
           "scenario_count": 36,
@@ -22431,6 +22648,7 @@
           "out_of_distribution_rate": 0.0,
           "binding_accuracy": 1.0,
           "mandatory_contingency_coverage": 1.0,
+          "unverified_scenario_count": 0,
           "drift_status": "stable",
           "model_dataset_hash": "842bb1677a7e24d44ecc1dcf91c38074a20d88953742f044f640748824a5df20"
         },
@@ -22473,8 +22691,24 @@
           "operator_review": true
         },
         "private_observations_published": false,
+        "private_predictions_published": false,
+        "report_sha256": "bbd7f774440d4d063e6bf73e7ffc36b82592cc451f0711a1ea428730653b50e8",
+        "reproducibility": {
+          "command": "npm run grid:validate:r3",
+          "random_state": 41,
+          "split_method": "scenario_prefix_holdout",
+          "training_scenario_hash": "062613160460f6b865ba9b5a7473ec2e7d0380ded9bce61d2ef08498ec73c4bb",
+          "holdout_scenario_hash": "57892c903d19f166cbbf2eadaa5e8dfd128fe732f08450a735778e834fab9a91",
+          "shadow_scenario_hash": "ad1fa0c58067a4ccb4604f44c2e08290eda68f0ce05a96dc547ca074264a063b"
+        },
+        "public_capacity_boundary": {
+          "surrogate_applied_to_public_capacity": false,
+          "map_values_remain_physics_results": true,
+          "operator_confirmation_created": false,
+          "status": "private_shadow_validation_only"
+        },
         "warning": "Shadow predictions are internal diagnostics; physics and operator review remain authoritative.",
-        "manifest_sha256": "2562efa1a80e6979d5268a62b292809bfd80c017bfdc26f8767af4acf1557cc6"
+        "manifest_sha256": "6a8d2fd78f0a6e8611dd6efa2fac4a32b9ee9528cbad30a5e68f6c8b907fcc20"
       },
       "release4_governance": {
         "schema_version": "gridpulse-release4-governance-v1",

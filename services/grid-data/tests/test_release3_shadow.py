@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import unittest
+from dataclasses import replace
 
 from grid_data.p0_foundation import PhysicsOutcome, ScenarioDefinition
 from grid_data.p3_surrogate import train_surrogates
@@ -88,6 +89,49 @@ class Release3ShadowTests(unittest.TestCase):
             "accepted_connections_mw": 0, "reinforcement_delay_years": 0}])
         self.assertEqual(report["status"], "drift_detected")
         self.assertIn("demand_factor", report["drifted_features"])
+
+    def test_shadow_set_must_be_independent_from_training(self) -> None:
+        training = [outcome(i, prefix="holdout" if i >= 12 else "train")[1] for i in range(15)]
+        duplicated = ScenarioDefinition(scenario_id=training[0].scenario_id)
+        with self.assertRaisesRegex(ValueError, "independent"):
+            run_release3(
+                training_outcomes=training,
+                shadow_scenarios=[duplicated],
+                solve_shadow=lambda _: [],
+                requested_import_mw=50,
+                mandatory_contingencies=set(),
+                operator_reviewed=False,
+                operator_training_authorized=False,
+            )
+
+    def test_mandatory_contingencies_must_exist_in_shadow_set(self) -> None:
+        training = [outcome(i, prefix="holdout" if i >= 12 else "train")[1] for i in range(15)]
+        scenario = outcome(20, prefix="shadow")[0]
+        with self.assertRaisesRegex(ValueError, "Mandatory contingencies"):
+            run_release3(
+                training_outcomes=training,
+                shadow_scenarios=[scenario],
+                solve_shadow=lambda _: [],
+                requested_import_mw=50,
+                mandatory_contingencies={"n-1-required"},
+                operator_reviewed=False,
+                operator_training_authorized=False,
+            )
+
+    def test_physics_outcome_identity_and_hash_are_fail_closed(self) -> None:
+        training = [outcome(i, prefix="holdout" if i >= 12 else "train")[1] for i in range(15)]
+        scenario, result = outcome(20, prefix="shadow")
+        result = replace(result, input_hash="0" * 64)
+        with self.assertRaisesRegex(ValueError, "hash mismatch"):
+            run_release3(
+                training_outcomes=training,
+                shadow_scenarios=[scenario],
+                solve_shadow=lambda _: [result],
+                requested_import_mw=50,
+                mandatory_contingencies=set(),
+                operator_reviewed=False,
+                operator_training_authorized=False,
+            )
 
 
 if __name__ == "__main__":

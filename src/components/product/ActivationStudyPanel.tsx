@@ -884,6 +884,15 @@ function EvidenceView({ context }: { context: ActivationStudyContext }) {
               </dd>
             </div>
           )}
+          {release3 && (
+            <div>
+              <dt>Release 3 map authority</dt>
+              <dd>
+                Shadow predictions are private and never colour the map · displayed values remain
+                physics results
+              </dd>
+            </div>
+          )}
           {ensemble && (
             <div>
               <dt>Operating scenario set</dt>

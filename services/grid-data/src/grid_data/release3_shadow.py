@@ -64,6 +64,13 @@ def evaluate_shadow_run(
 ) -> dict[str, Any]:
     if requested_import_mw <= 0:
         raise ValueError("Shadow validation requires positive requested import.")
+    outcome_ids = [item.scenario_id for item in outcomes]
+    if len(outcome_ids) != len(set(outcome_ids)):
+        raise ValueError("Shadow outcomes must have unique scenario identities.")
+    scenario_ids = {item.scenario_id for item in scenarios}
+    unknown = sorted(set(outcome_ids) - scenario_ids)
+    if unknown:
+        raise ValueError("Shadow outcomes contain unknown scenarios: " + ", ".join(unknown))
     by_scenario = {item.scenario_id: item for item in outcomes if item.physics_verified}
     rows = []
     errors = []
@@ -109,7 +116,7 @@ def evaluate_shadow_run(
     if not rows:
         raise ValueError("Shadow run contains no matched physics-verified outcomes.")
     ordered_errors = sorted(abs(item) for item in errors)
-    p95_index = min(len(ordered_errors) - 1, int(0.95 * len(ordered_errors)))
+    p95_index = min(len(ordered_errors) - 1, max(0, int(0.95 * len(ordered_errors) + 0.999999) - 1))
     required = set(mandatory_contingencies)
     coverage = len(rows) / len(scenarios) if scenarios else 0
     metrics = {
@@ -129,6 +136,10 @@ def evaluate_shadow_run(
         else 1.0,
         "binding_distribution": dict(
             Counter(item["verified_binding_constraint"] or "unknown" for item in rows)
+        ),
+        "unverified_scenario_count": len(scenarios) - len(rows),
+        "unverified_scenario_hashes": sorted(
+            scenario.input_hash for scenario in scenarios if scenario.scenario_id not in by_scenario
         ),
     }
     drift = assess_feature_drift(bundle.registry["feature_bounds"], current_features)

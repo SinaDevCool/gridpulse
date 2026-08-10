@@ -336,6 +336,11 @@ class AnalyticsApiTests(unittest.TestCase):
             json={**payload, "operator_reviewed": True},
         )
         self.assertEqual(rejected.status_code, 422)
+        workspace_spoof = self.client.post(
+            "/v1/jobs/release3-shadow-validation",
+            json={**payload, "workspace_id": "00000000-0000-0000-0000-000000000001"},
+        )
+        self.assertEqual(workspace_spoof.status_code, 422)
 
     def test_graph_guided_study_reuses_private_job_boundary(self) -> None:
         response = self.client.post("/v1/jobs/graph-guided-study", json={

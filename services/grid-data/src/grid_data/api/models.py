@@ -5,7 +5,7 @@ from enum import Enum
 from typing import Any, Literal
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class JobStatus(str, Enum):
@@ -131,6 +131,8 @@ class P0P4PermutationRequest(C1NetworkStudyRequest):
 
 
 class Release3ShadowValidationRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     network_model: dict[str, Any]
     training_scenarios: list[dict[str, Any]] = Field(min_length=10, max_length=100_000)
     shadow_scenarios: list[dict[str, Any]] = Field(min_length=1, max_length=100_000)
@@ -152,7 +154,7 @@ class GraphGuidedStudyRequest(BaseModel):
     reduction_policy: dict[str, Any] | None = None
 
     @model_validator(mode="after")
-    def promoted_studies_require_workspace(self) -> "GraphGuidedStudyRequest":
+    def promoted_studies_require_workspace(self) -> GraphGuidedStudyRequest:
         if self.validation_mode == "promoted" and self.workspace_id is None:
             raise ValueError("Promoted graph studies require an authorised workspace_id.")
         return self

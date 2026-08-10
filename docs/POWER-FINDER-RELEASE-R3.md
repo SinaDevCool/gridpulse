@@ -7,6 +7,8 @@ not publish surrogate MW values and does not create operator-confirmed capacity.
 
 - Independent shadow scenarios are solved with the physics provider and paired with internal
   surrogate predictions.
+- Training and shadow identities and hashes must be unique and disjoint. Solver output is rejected
+  when it contains an unknown scenario, a mismatched input hash, or a different validation class.
 - Shadow metrics include physics coverage, MAE, P95 error, bias, false-safe rate, OOD rate,
   binding-constraint accuracy, and mandatory-contingency coverage.
 - Feature drift compares current cases with immutable training bounds. Drift fails promotion.
@@ -17,9 +19,12 @@ not publish surrogate MW values and does not create operator-confirmed capacity.
   operator review or training permission.
 - Private Supabase ledgers store shadow runs, observations, and immutable champion history. RLS is
   enabled and anonymous/authenticated table access is revoked.
+- A protected reviewer-only function binds an unlinked run to a real operator-pilot workspace.
+  Direct API callers cannot nominate a workspace or self-attest review or training permission.
 - Database promotion requires a linked operator workspace, a reviewed/confirmed model review, an
-  operator-reviewer role, signed data-use permission explicitly allowing model training, an
-  operator-reconciled/reviewed validation class, and all technical gates.
+  operator-reviewer role, a passed reconciliation referenced by that review, current signed data-use
+  permission explicitly allowing model training, an operator-reconciled/reviewed validation class,
+  and all technical gates.
 - Approval permits internal scenario prioritisation only. It never confirms connection capacity.
 
 ## Run the acceptance benchmark
@@ -30,6 +35,8 @@ npm run grid:validate:r3
 
 The bundled benchmark is deliberately synthetic. Its expected result is `retain_challenger`,
 which proves that synthetic evidence cannot cross the operator-governance boundary.
+The public artifact contains only aggregate governance metrics, reproducibility hashes and the map
+authority boundary. Private predictions and observations are not published.
 
 ## Private API
 

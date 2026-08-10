@@ -231,6 +231,7 @@ export type ReferenceCapacityArtifact = {
       selected_scenario_hash: string;
       physics_coverage: number;
       mandatory_contingency_coverage: number;
+      unverified_scenario_count: number;
       unverified_selected_count: number;
     };
     promotion: {
@@ -285,6 +286,22 @@ export type ReferenceCapacityArtifact = {
       capacity_claim: false;
     };
     private_observations_published: false;
+    private_predictions_published: false;
+    report_sha256: string;
+    reproducibility: {
+      command: string;
+      random_state: number;
+      split_method: string;
+      training_scenario_hash: string;
+      holdout_scenario_hash: string;
+      shadow_scenario_hash: string;
+    };
+    public_capacity_boundary: {
+      surrogate_applied_to_public_capacity: false;
+      map_values_remain_physics_results: true;
+      operator_confirmation_created: false;
+      status: string;
+    };
     manifest_sha256: string;
     warning: string;
   } | null;

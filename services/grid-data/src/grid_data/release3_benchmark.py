@@ -79,6 +79,7 @@ def build_release3_benchmark(
         "validation_class": "synthetic_demonstration",
         "operator_data_used": False,
         "expected_decision": "retain_challenger",
+        "reproducibility_command": "npm run grid:validate:r3",
     }
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(report, indent=2, default=str), encoding="utf-8")
@@ -103,6 +104,7 @@ def build_release3_benchmark(
                 "out_of_distribution_rate": metrics["out_of_distribution_rate"],
                 "binding_accuracy": metrics["binding_accuracy"],
                 "mandatory_contingency_coverage": metrics["mandatory_contingency_coverage"],
+                "unverified_scenario_count": metrics["unverified_scenario_count"],
                 "drift_status": report["shadow"]["drift"]["status"],
                 "model_dataset_hash": report["shadow"]["model_dataset_hash"],
             },
@@ -113,6 +115,31 @@ def build_release3_benchmark(
                 "operator_review": True,
             },
             "private_observations_published": False,
+            "private_predictions_published": False,
+            "report_sha256": report["report_sha256"],
+            "reproducibility": {
+                "command": "npm run grid:validate:r3",
+                "random_state": report["model_registry"]["random_state"],
+                "split_method": report["model_registry"]["split_method"],
+                "training_scenario_hash": report["model_registry"][
+                    "training_scenario_hash"
+                ],
+                "holdout_scenario_hash": report["model_registry"][
+                    "holdout_scenario_hash"
+                ],
+                "shadow_scenario_hash": hashlib.sha256(
+                    json.dumps(
+                        sorted(item.input_hash for item in shadow),
+                        separators=(",", ":"),
+                    ).encode()
+                ).hexdigest(),
+            },
+            "public_capacity_boundary": {
+                "surrogate_applied_to_public_capacity": False,
+                "map_values_remain_physics_results": True,
+                "operator_confirmation_created": False,
+                "status": "private_shadow_validation_only",
+            },
             "warning": report["warning"],
         }
         public_manifest["manifest_sha256"] = hashlib.sha256(
