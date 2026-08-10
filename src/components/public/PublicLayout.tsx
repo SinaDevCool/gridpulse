@@ -168,7 +168,7 @@ export function PublicCTA({
         <p className="public-eyebrow">Power Finder MVP</p>
         <h2>Explore the current screening release.</h2>
         <p>
-          Review mapped infrastructure and source evidence for Brandenburg. Findings are screening
+          Review Germany-wide mapped grid context and source evidence. Findings are screening
           context and require network-operator confirmation.
         </p>
         <div className="public-actions">

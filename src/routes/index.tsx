@@ -116,11 +116,12 @@ function FinderLandingPage() {
               <div className="landing-section-heading landing-section-heading-split">
                 <div>
                   <p className="landing-eyebrow">Current MVP coverage</p>
-                  <h2 id="coverage-title">Start with the accepted Brandenburg release.</h2>
+                  <h2 id="coverage-title">Explore Germany-wide grid context.</h2>
                 </div>
                 <p>
-                  The MVP displays accepted OpenStreetMap topology and registered asset context.
-                  National coverage is planned and is not implied by the current release.
+                  Review accepted OpenStreetMap grid infrastructure and industrial land across
+                  Germany. Registered assets appear only where exact published locations are
+                  available.
                 </p>
               </div>
               <aside className="landing-trust-note">
@@ -134,7 +135,7 @@ function FinderLandingPage() {
               </aside>
               <div className="landing-centered-action">
                 <Link to="/power-finder" className="landing-button landing-button-primary">
-                  Explore Brandenburg <ArrowRight aria-hidden="true" />
+                  Explore Germany <ArrowRight aria-hidden="true" />
                 </Link>
               </div>
             </div>
