@@ -1,7 +1,13 @@
 import "maplibre-gl/dist/maplibre-gl.css";
 
 import { useEffect, useRef } from "react";
-import type { GeoJSONSource, Map as MapLibreMap, MapLayerMouseEvent, Source } from "maplibre-gl";
+import type {
+  ExpressionSpecification,
+  GeoJSONSource,
+  Map as MapLibreMap,
+  MapLayerMouseEvent,
+  Source,
+} from "maplibre-gl";
 import type {
   PowerFinderCollection,
   PowerFinderFeature,
@@ -12,7 +18,10 @@ import {
   type VisibleLayerCounts,
 } from "@/components/product/power-finder-map-data";
 import type { CalculatedCapacityNode } from "@/features/power-finder/calculated-capacity";
-import { classifyCapacityOpportunity } from "@/features/power-finder/capacity-opportunity";
+import {
+  classifyCapacityOpportunity,
+  createIllustrativeCapacityNodes,
+} from "@/features/power-finder/capacity-opportunity";
 import {
   voltageColorExpression,
   voltageWidthExpression,
@@ -26,6 +35,33 @@ const sourceIds = {
   generation_asset: "power-finder-generation-assets",
   storage_asset: "power-finder-storage-assets",
 } as const;
+
+const generationColour: ExpressionSpecification = [
+  "match", ["get", "generation_group"],
+  "solar", "#facc15",
+  "wind", "#38bdf8",
+  "biomass", "#22c55e",
+  "hydro", "#06b6d4",
+  "geothermal", "#f97316",
+  "gas", "#a78bfa",
+  "fossil_other", "#ef4444",
+  "nuclear", "#f472b6",
+  "#94a3b8",
+];
+const localGenerationColour: ExpressionSpecification = [
+  "match", ["get", "technology"],
+  "Solare Strahlungsenergie", "#facc15",
+  "Solarthermie", "#facc15",
+  "Wind", "#38bdf8",
+  "Biomasse", "#22c55e",
+  "Wasser", "#06b6d4",
+  "Geothermie", "#f97316",
+  "Erdgas", "#a78bfa",
+  "andere Gase", "#a78bfa",
+  "Grubengas", "#a78bfa",
+  "Kernenergie", "#f472b6",
+  "#ef4444",
+];
 
 type PowerFinderMapProps = {
   collection: PowerFinderCollection;
@@ -224,6 +260,7 @@ export function PowerFinderMap({
         });
         map.addSource("power-finder-national-tiles", {
           type: "vector",
+          promoteId: "id",
           tiles: [
             `${window.location.origin}/api/power-finder/tile/{z}/{x}/{y}?content=grid&generation=false&storage=false`,
           ],
@@ -362,7 +399,7 @@ export function PowerFinderMap({
           layout: { visibility: enabledLayers.generation_asset ? "visible" : "none" },
           paint: {
             "circle-radius": ["interpolate", ["linear"], ["zoom"], 6, 0.35, 9, 1.1],
-            "circle-color": "#22c55e",
+            "circle-color": generationColour,
             "circle-opacity": ["interpolate", ["linear"], ["zoom"], 6, 0.2, 9, 0.55],
             "circle-stroke-width": 0,
           },
@@ -378,7 +415,7 @@ export function PowerFinderMap({
           layout: { visibility: enabledLayers.generation_asset ? "visible" : "none" },
           paint: {
             "circle-radius": ["interpolate", ["linear"], ["zoom"], 6, 2, 9, 4],
-            "circle-color": "#22c55e",
+            "circle-color": generationColour,
             "circle-stroke-color": "#dcfce7",
             "circle-stroke-width": 1,
           },
@@ -479,7 +516,7 @@ export function PowerFinderMap({
           filter: ["has", "point_count"],
           paint: {
             "circle-radius": ["step", ["get", "point_count"], 12, 20, 16, 100, 20],
-            "circle-color": "#22c55e",
+            "circle-color": localGenerationColour,
             "circle-stroke-color": "#dcfce7",
             "circle-stroke-width": 2,
           },
@@ -500,7 +537,7 @@ export function PowerFinderMap({
           filter: ["!", ["has", "point_count"]],
           paint: {
             "circle-radius": 4,
-            "circle-color": "#22c55e",
+            "circle-color": localGenerationColour,
             "circle-stroke-color": "#dcfce7",
             "circle-stroke-width": 1,
           },
@@ -770,21 +807,12 @@ export function PowerFinderMap({
       "#f59e0b",
       "#475569",
     ];
-    // National vector-tile nodes do not carry private study results. Mirror the
-    // deterministic public demo formula from capacity-opportunity.ts so the
-    // required-MW control also responds on the nationwide layer.
-    const nationalDemoFirmMw = [
-      "+",
-      8,
-      ["%", ["abs", ["to-number", ["get", "id"], 0]], 113],
-    ];
     const nationalCapacityColour = [
-      "case",
-      [">=", nationalDemoFirmMw, requiredCapacityMw],
-      "#67e8f9",
-      [">=", ["+", nationalDemoFirmMw, 18], requiredCapacityMw],
-      "#818cf8",
-      "#1e526a",
+      "match", ["feature-state", "capacity_fit"],
+      "meets", "#67e8f9",
+      "activation", "#818cf8",
+      "below", "#1e526a",
+      "#475569",
     ];
     const voltageClusterColour = [
       "step",
@@ -887,6 +915,32 @@ export function PowerFinderMap({
           ]
         : "#fff7d6",
     );
+    const updateNationalCapacityStates = () => {
+      if (mapMode !== "capacity" || !map.getSource("power-finder-national-tiles")) return;
+      const ids = Array.from(
+        new Set(
+          map
+            .querySourceFeatures("power-finder-national-tiles", {
+              sourceLayer: "power_finder",
+              filter: ["==", ["get", "kind"], "node"],
+            })
+            .map((feature) => String(feature.id ?? feature.properties?.id ?? ""))
+            .filter(Boolean),
+        ),
+      );
+      for (const node of createIllustrativeCapacityNodes(ids)) {
+        const result = classifyCapacityOpportunity(node, capacityMetric, requiredCapacityMw);
+        map.setFeatureState(
+          { source: "power-finder-national-tiles", sourceLayer: "power_finder", id: node.publicNodeId },
+          { capacity_fit: result.fit, capacity_mw: result.valueMw },
+        );
+      }
+    };
+    updateNationalCapacityStates();
+    map.on("idle", updateNationalCapacityStates);
+    return () => {
+      map.off("idle", updateNationalCapacityStates);
+    };
   }, [mapMode, capacityNodes, capacityMetric, requiredCapacityMw]);
 
   useEffect(() => {

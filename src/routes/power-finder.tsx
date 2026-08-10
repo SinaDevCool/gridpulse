@@ -563,11 +563,34 @@ function PowerFinderPage() {
     () => operators.filter((item) => item.type === "TSO"),
     [operators],
   );
-  const distributionOperators = useMemo(
-    () => operators.filter((item) => item.type === "DSO / other"),
-    [operators],
-  );
+  const contextualOperatorNames = useMemo(() => {
+    if (regionCode === "DE" && minimumVoltage === 0) return null;
+    const names = new Set<string>();
+    for (const feature of collection?.features ?? []) {
+      if (feature.properties.kind !== "node" && feature.properties.kind !== "line") continue;
+      const voltage = Math.max(0, ...(feature.properties.voltage_kv ?? []));
+      if (minimumVoltage > 0 && voltage < minimumVoltage) continue;
+      const name = canonicalOperatorName(feature.properties.operator);
+      if (name) names.add(name);
+    }
+    return names.size ? names : null;
+  }, [collection, minimumVoltage, regionCode]);
+  const distributionOperators = useMemo(() => {
+    const all = operators.filter((item) => item.type === "DSO / other");
+    return contextualOperatorNames
+      ? all.filter((item) => contextualOperatorNames.has(item.name))
+      : all;
+  }, [contextualOperatorNames, operators]);
   const selectedOperatorType = operators.find((item) => item.name === operator)?.type;
+  useEffect(() => {
+    if (
+      operator !== "all" &&
+      selectedOperatorType === "DSO / other" &&
+      !distributionOperators.some((item) => item.name === operator)
+    ) {
+      void updateSearch({ operator: undefined, candidate: undefined, compare: undefined });
+    }
+  }, [distributionOperators, operator, selectedOperatorType]);
 
   const illustrativeCapacityNodes = useMemo(
     () =>
@@ -597,16 +620,7 @@ function PowerFinderPage() {
       const matchesVoltage = minimumVoltage === 0 || maximumVoltage >= minimumVoltage;
       const matchesOperator =
         operator === "all" || canonicalOperatorName(candidate.operator) === operator;
-      const coordinates = node ? pointCoordinates(node) : null;
-      const [west, south, east, north] = activeCoverage.bounds;
-      const matchesRegion =
-        regionCode === "DE" ||
-        Boolean(
-          coordinates &&
-            coordinates[0] >= west && coordinates[0] <= east &&
-            coordinates[1] >= south && coordinates[1] <= north,
-        );
-      return matchesQuery && matchesVoltage && matchesOperator && matchesRegion && Boolean(node);
+      return matchesQuery && matchesVoltage && matchesOperator && Boolean(node);
     });
     return items.sort((left, right) => {
       if (mapMode === "capacity") {
@@ -641,7 +655,6 @@ function PowerFinderPage() {
     candidateSort,
     capacityMetric,
     activeCapacityNodes,
-    activeCoverage.bounds,
     collection,
     mapMode,
     minimumVoltage,
@@ -649,7 +662,6 @@ function PowerFinderPage() {
     query,
     ranking,
     rankingCollection,
-    regionCode,
     requiredCapacityMw,
   ]);
   const capacitySummary = useMemo(
@@ -2024,6 +2036,11 @@ function PowerFinderPage() {
                   : null
               }
               onSitePlacement={([longitude, latitude]) => {
+                const containingRegion = coverage.find((item) => {
+                  if (item.regionCode === "DE") return false;
+                  const [west, south, east, north] = item.bounds;
+                  return longitude >= west && longitude <= east && latitude >= south && latitude <= north;
+                });
                 updateProject({ longitude, latitude });
                 setNumericDrafts((current) => ({
                   ...current,
@@ -2041,6 +2058,7 @@ function PowerFinderPage() {
                 void updateSearch({
                   lng: longitude,
                   lat: latitude,
+                  region: containingRegion?.regionCode as typeof regionCode | undefined,
                   candidate: undefined,
                   compare: undefined,
                 });
@@ -2096,7 +2114,25 @@ function PowerFinderPage() {
                   <i className="legend-site" /> Industrial land
                 </span>
                 <span>
-                  <i className="legend-generation" /> Registered generation · exact public points
+                  <i className="legend-generation" style={{ background: "#facc15" }} /> Solar
+                </span>
+                <span>
+                  <i className="legend-generation" style={{ background: "#38bdf8" }} /> Wind
+                </span>
+                <span>
+                  <i className="legend-generation" style={{ background: "#22c55e" }} /> Biomass
+                </span>
+                <span>
+                  <i className="legend-generation" style={{ background: "#06b6d4" }} /> Hydro
+                </span>
+                <span>
+                  <i className="legend-generation" style={{ background: "#a78bfa" }} /> Gas
+                </span>
+                <span>
+                  <i className="legend-generation" style={{ background: "#ef4444" }} /> Coal, oil &amp; other fossil
+                </span>
+                <span>
+                  <i className="legend-generation" style={{ background: "#94a3b8" }} /> Other / unknown
                 </span>
                 <span>
                   <i className="legend-storage" /> Registered storage
