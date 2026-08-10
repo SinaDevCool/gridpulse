@@ -9,6 +9,8 @@ import {
   ExternalLink,
   MapPin,
   Network,
+  PanelLeftClose,
+  PanelLeftOpen,
   Search,
   ShieldCheck,
   Zap,
@@ -300,6 +302,7 @@ function PowerFinderPage() {
     Boolean(search.projectType || search.exportMw || search.batteryMw || search.batteryMwh),
   );
   const [secondaryControlsOpen, setSecondaryControlsOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const commitNumber = (
     field: FinderNumericField,
     raw: string,
@@ -853,7 +856,10 @@ function PowerFinderPage() {
 
   return (
     <AppShell>
-      <main id="main-content" className="power-finder-page">
+      <main
+        id="main-content"
+        className={`power-finder-page ${sidebarOpen ? "" : "is-sidebar-collapsed"}`}
+      >
         <section className="power-finder-sidebar" aria-label="Power Finder controls">
           <div className="finder-rail-sticky">
             <div className="finder-project-summary">
@@ -1892,6 +1898,19 @@ function PowerFinderPage() {
         </section>
 
         <section className="power-finder-stage">
+          <button
+            type="button"
+            className="power-finder-sidebar-toggle"
+            aria-label={sidebarOpen ? "Hide map controls" : "Show map controls"}
+            aria-expanded={sidebarOpen}
+            onClick={() => {
+              setSidebarOpen((current) => !current);
+              window.setTimeout(() => window.dispatchEvent(new Event("resize")), 200);
+            }}
+          >
+            {sidebarOpen ? <PanelLeftClose aria-hidden="true" /> : <PanelLeftOpen aria-hidden="true" />}
+            <span>{sidebarOpen ? "Hide panel" : "Show panel"}</span>
+          </button>
           {error && <div className="power-finder-error">{error}</div>}
           {!visibleCollection && !error && (
             <div className="power-finder-loading">Loading map context…</div>

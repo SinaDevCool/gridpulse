@@ -11656,6 +11656,70 @@ tbody tr:last-child td {
   width: min(460px, calc(100% - 32px));
   z-index: 2;
 }
+.power-finder-detail:not(.open) {
+  display: none;
+}
+
+.power-finder-page,
+.power-finder-sidebar {
+  transition: grid-template-columns 180ms ease, opacity 140ms ease;
+}
+
+.power-finder-page.is-sidebar-collapsed {
+  grid-template-columns: 0 minmax(0, 1fr);
+}
+
+.power-finder-page.is-sidebar-collapsed .power-finder-sidebar {
+  visibility: hidden;
+  overflow: hidden;
+  padding: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.power-finder-sidebar-toggle {
+  position: absolute;
+  z-index: 4;
+  top: 16px;
+  left: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 7px 10px;
+  border: 1px solid #2b465c;
+  border-radius: 8px;
+  color: #dff7ff;
+  background: rgb(7 21 37 / 94%);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 30%);
+  font: 700 0.7rem/1 "Geist", sans-serif;
+  cursor: pointer;
+}
+
+.power-finder-sidebar-toggle:hover {
+  border-color: #55c8eb;
+  background: #102b3d;
+}
+
+.power-finder-sidebar-toggle:focus-visible {
+  outline: 2px solid #67ddfa;
+  outline-offset: 2px;
+}
+
+.power-finder-sidebar-toggle svg {
+  width: 17px;
+  height: 17px;
+}
+
+@media (max-width: 760px) {
+  .power-finder-page.is-sidebar-collapsed {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .power-finder-sidebar-toggle span {
+    display: none;
+  }
+}
 .power-finder-detail h2 {
   color: #f8fafc;
   font:
