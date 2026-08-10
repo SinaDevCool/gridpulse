@@ -65,11 +65,20 @@ function publishVisibleLayerCounts(
   callback: ((counts: VisibleLayerCounts) => void) | undefined,
 ) {
   callback?.({
+    node:
+      renderedFeatureCount(map, "national-grid-nodes") + renderedFeatureCount(map, "grid-nodes"),
     line:
       renderedFeatureCount(map, "national-grid-lines") + renderedFeatureCount(map, "grid-lines"),
     industrial_site:
       renderedFeatureCount(map, "national-industrial-sites") +
       renderedFeatureCount(map, "industrial-sites"),
+    generation_asset:
+      renderedFeatureCount(map, "national-generation-overview") +
+      renderedFeatureCount(map, "national-generation-assets") +
+      renderedFeatureCount(map, "generation-assets"),
+    storage_asset:
+      renderedFeatureCount(map, "national-storage-assets") +
+      renderedFeatureCount(map, "storage-assets"),
   });
 }
 
@@ -277,15 +286,27 @@ export function PowerFinderMap({
           type: "circle",
           source: "power-finder-national-tiles",
           "source-layer": "power_finder",
-          minzoom: 8.5,
+          minzoom: 4,
           maxzoom: 24,
           filter: ["==", ["get", "kind"], "node"],
           layout: { visibility: enabledLayers.node ? "visible" : "none" },
           paint: {
-            "circle-radius": ["interpolate", ["linear"], ["zoom"], 8.5, 1.2, 11, 4.5],
+            "circle-radius": [
+              "interpolate",
+              ["linear"],
+              ["zoom"],
+              4,
+              1,
+              7,
+              1.6,
+              8.5,
+              2.5,
+              11,
+              4.5,
+            ],
             "circle-color": voltageColorExpression(),
             "circle-stroke-color": "#fff7d6",
-            "circle-stroke-width": 1,
+            "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 4, 0.4, 9, 1],
           },
         });
         map.addLayer({
@@ -313,11 +334,11 @@ export function PowerFinderMap({
           filter: ["==", ["get", "kind"], "industrial_site"],
           layout: { visibility: enabledLayers.industrial_site ? "visible" : "none" },
           paint: {
-            "circle-radius": ["interpolate", ["linear"], ["zoom"], 8, 1.4, 10, 4],
-            "circle-color": "#17c3b2",
+            "circle-radius": ["interpolate", ["linear"], ["zoom"], 8, 2.2, 10, 5],
+            "circle-color": "rgba(7, 17, 31, 0.75)",
             "circle-stroke-color": "#99f6e4",
-            "circle-stroke-width": 1,
-            "circle-opacity": 0.78,
+            "circle-stroke-width": 1.5,
+            "circle-opacity": 0.95,
           },
         });
         map.addLayer({
@@ -676,6 +697,7 @@ export function PowerFinderMap({
     for (const [layer, visible] of Object.entries(nationalLayers)) {
       if (map.getLayer(layer)) map.setLayoutProperty(layer, "visibility", visible ? "visible" : "none");
     }
+    map.once("idle", () => publishVisibleLayerCounts(map, onVisibleLayerCountsRef.current));
   }, [enabledLayers]);
 
   useEffect(() => {

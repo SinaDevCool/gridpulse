@@ -1,8 +1,11 @@
 import type { PowerFinderCollection, PowerFinderKind } from "@/features/power-finder/fixture-data";
 
 export type VisibleLayerCounts = {
+  node: number;
   line: number;
   industrial_site: number;
+  generation_asset: number;
+  storage_asset: number;
 };
 
 export function splitMapCollection(collection: PowerFinderCollection) {

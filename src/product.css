@@ -11622,8 +11622,10 @@ tbody tr:last-child td {
   height: 0 !important;
 }
 .legend-site {
-  background: rgba(23, 195, 178, 0.3);
-  border: 1px solid #5eead4;
+  background: rgba(7, 17, 31, 0.75);
+  border: 2px solid #99f6e4;
+  border-radius: 50%;
+  width: 9px !important;
 }
 .legend-generation,
 .legend-storage {

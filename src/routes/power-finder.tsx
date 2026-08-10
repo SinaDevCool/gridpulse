@@ -288,8 +288,11 @@ function PowerFinderPage() {
   const [interactionNotice, setInteractionNotice] = useState("");
   const [previewCandidateId, setPreviewCandidateId] = useState<string | null>(null);
   const [visibleLayerCounts, setVisibleLayerCounts] = useState<VisibleLayerCounts>({
+    node: 0,
     line: 0,
     industrial_site: 0,
+    generation_asset: 0,
+    storage_asset: 0,
   });
   const [reportPreparing, setReportPreparing] = useState(false);
   const [comparisonOpen, setComparisonOpen] = useState(false);
@@ -1669,12 +1672,11 @@ function PowerFinderPage() {
                       const total = collection.features.filter(
                         (feature) => feature.properties.kind === kind,
                       ).length;
+                      const visible = visibleLayerCounts[kind];
+                      if (visible > 0) return `${visible} visible`;
                       const availability = layerAvailability(collection, kind);
                       if (!availability.available) return "0 in current detail view";
                       if (total === 0) return "0 in view";
-                      if (kind === "line" || kind === "industrial_site") {
-                        return `${visibleLayerCounts[kind]} visible · ${total} total`;
-                      }
                       if (kind === "generation_asset" || kind === "storage_asset") {
                         return `${total} in view`;
                       }
@@ -1686,10 +1688,9 @@ function PowerFinderPage() {
             </div>
             {(enabled.generation_asset || enabled.storage_asset) && (
               <p className="layer-visibility-note">
-                Registered generation is a partial exact-coordinate release concentrated in
-                north-eastern Germany, not a national density or capacity surface. Assets are
-                plotted only where MaStR publishes an exact mapped coordinate; regional-only
-                records are not placed at invented locations.
+                Registered generation and storage currently use the accepted Brandenburg MaStR
+                release, not national coverage. If this view shows zero, no exact published asset
+                coordinate is available here; records are never placed at invented locations.
               </p>
             )}
             {(enabled.line || enabled.industrial_site) &&
