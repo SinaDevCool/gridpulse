@@ -749,11 +749,17 @@ function EvidenceView({ context }: { context: ActivationStudyContext }) {
         </div>
         <div>
           <dt>Network Model</dt>
-          <dd>{context.registeredStudy?.node_study.model?.key ?? "Representative reference model"}</dd>
+          <dd>
+            {context.registeredStudy?.node_study.model?.key ?? "Representative reference model"}
+          </dd>
         </div>
         <div>
           <dt>Operator Review</dt>
-          <dd>{context.mode === "operator_confirmed" ? "Confirmed within declared scope" : "Not reviewed"}</dd>
+          <dd>
+            {context.mode === "operator_confirmed"
+              ? "Confirmed within declared scope"
+              : "Not reviewed"}
+          </dd>
         </div>
         <div>
           <dt>Next Evidence Gate</dt>
@@ -762,165 +768,177 @@ function EvidenceView({ context }: { context: ActivationStudyContext }) {
       </dl>
       <details className="activation-technical-audit">
         <summary>Technical Audit &amp; Model Governance</summary>
-      <dl className="activation-facts">
-        {release2 && (
+        <dl className="activation-facts">
+          {release2 && (
+            <div>
+              <dt>Release 2 AI role</dt>
+              <dd>
+                {release2.active_learning.physics_verified_selected_count}/
+                {release2.active_learning.physics_selected_count} selected cases verified by physics
+              </dd>
+            </div>
+          )}
+          {release2 && (
+            <div>
+              <dt>Safety gate</dt>
+              <dd>
+                {release2.promotion.decision} · false-safe rate{" "}
+                {release2.model.false_safe_rate.toFixed(3)} · mandatory N-1 coverage{" "}
+                {(release2.active_learning.mandatory_contingency_coverage * 100).toFixed(0)}%
+              </dd>
+            </div>
+          )}
+          {release2 && (
+            <div>
+              <dt>Public map boundary</dt>
+              <dd>
+                Surrogate routing is not applied to map capacity; Berlin values remain physics
+                results from{" "}
+                {release2.berlin_release1_boundary.release1_model_version ?? "Release 1"}
+              </dd>
+            </div>
+          )}
+          {release2 && (
+            <div>
+              <dt>Permitted use</dt>
+              <dd>{release2.model.approved_use}</dd>
+            </div>
+          )}
+          {release3 && (
+            <div>
+              <dt>Release 3 shadow validation</dt>
+              <dd>
+                {release3.shadow.verified_count}/{release3.shadow.scenario_count} physics verified ·{" "}
+                {release3.shadow.drift_status.replaceAll("_", " ")}
+              </dd>
+            </div>
+          )}
+          {release4 && (
+            <div>
+              <dt>Release 4 operator-pilot readiness</dt>
+              <dd>
+                {release4.repository_acceptance.passed_gate_count}/
+                {release4.repository_acceptance.total_gate_count} repository gates passed · operator
+                inputs {release4.operator_replacement.operator_field_count}/
+                {release4.operator_replacement.required_field_count}
+              </dd>
+            </div>
+          )}
+          {release5 && (
+            <div>
+              <dt>Release 5 operator evidence control</dt>
+              <dd>
+                {Object.values(release5.gates).filter(Boolean).length}/
+                {Object.keys(release5.gates).length} gates passed · reviewed extraction and conflict
+                preservation
+              </dd>
+            </div>
+          )}
+          {release5 && (
+            <div>
+              <dt>Restriction rehearsal</dt>
+              <dd>
+                {release5.benchmark.restriction_rehearsal.delivered_reduction_mw.toFixed(1)} MW of{" "}
+                {release5.benchmark.restriction_rehearsal.required_reduction_mw.toFixed(1)} MW ·
+                residual {release5.benchmark.restriction_rehearsal.residual_mw.toFixed(1)} MW
+              </dd>
+            </div>
+          )}
+          {release5 && (
+            <div>
+              <dt>Control authority</dt>
+              <dd>No automatic dispatch · no operator confirmation · no mapped capacity claim</dd>
+            </div>
+          )}
+          {release4 && (
+            <div>
+              <dt>Neo4j and physics boundary</dt>
+              <dd>
+                {release4.graph_and_physics.selected_case_count}/
+                {release4.graph_and_physics.full_case_count} graph-prioritised cases replayed ·
+                false-safe {release4.graph_and_physics.false_safe_rate.toFixed(3)}
+              </dd>
+            </div>
+          )}
+          {release4 && (
+            <div>
+              <dt>Promotion state</dt>
+              <dd>Not operator confirmed · synthetic results remain hidden from mapped capacity</dd>
+            </div>
+          )}
+          {release3 && (
+            <div>
+              <dt>Shadow safety</dt>
+              <dd>
+                MAE {release3.shadow.mae_mw.toFixed(3)} MW · false-safe{" "}
+                {release3.shadow.false_safe_rate.toFixed(3)} · OOD{" "}
+                {release3.shadow.out_of_distribution_rate.toFixed(3)}
+              </dd>
+            </div>
+          )}
+          {release3 && (
+            <div>
+              <dt>Lifecycle decision</dt>
+              <dd>
+                {release3.champion_decision.decision.replaceAll("_", " ")} · operator gates required
+              </dd>
+            </div>
+          )}
+          {ensemble && (
+            <div>
+              <dt>Operating scenario set</dt>
+              <dd>
+                {ensemble.scenario_count} mocked cases / {ensemble.hours_evaluated.toLocaleString()}{" "}
+                evaluated hours
+              </dd>
+            </div>
+          )}
+          {ensemble && (
+            <div>
+              <dt>Scenario-specific physics replays</dt>
+              <dd>
+                {ensemble.scenario_specific_physics_replays}; the shared ceiling is
+                physics-calculated
+              </dd>
+            </div>
+          )}
+          {ensemble && (
+            <div>
+              <dt>Dominant uncertainty</dt>
+              <dd>{ensemble.dominant_uncertainty}</dd>
+            </div>
+          )}
+          {ensemble && (
+            <div>
+              <dt>Scenario evidence hash</dt>
+              <dd>{ensemble.scenario_set_sha256.slice(0, 16)}…</dd>
+            </div>
+          )}
           <div>
-            <dt>Release 2 AI role</dt>
-            <dd>
-              {release2.active_learning.physics_verified_selected_count}/
-              {release2.active_learning.candidate_count} prioritised cases verified by physics
-            </dd>
+            <dt>Validation class</dt>
+            <dd>{validationClassLabel(context.validationClass)}</dd>
           </div>
-        )}
-        {release2 && (
           <div>
-            <dt>Safety gate</dt>
-            <dd>
-              {release2.promotion.decision} · false-safe rate{" "}
-              {release2.model.false_safe_rate.toFixed(3)}
-            </dd>
+            <dt>Public calculation</dt>
+            <dd>{context.candidate.calculationVersion}</dd>
           </div>
-        )}
-        {release2 && (
           <div>
-            <dt>Permitted use</dt>
-            <dd>{release2.model.approved_use}</dd>
+            <dt>Hourly scenario</dt>
+            <dd>{context.capacityScenario?.scenarioVersion ?? "Unavailable"}</dd>
           </div>
-        )}
-        {release3 && (
           <div>
-            <dt>Release 3 shadow validation</dt>
-            <dd>
-              {release3.shadow.verified_count}/{release3.shadow.scenario_count} physics verified ·{" "}
-              {release3.shadow.drift_status.replaceAll("_", " ")}
-            </dd>
+            <dt>Reference network</dt>
+            <dd>{context.networkScenario?.networkVersion ?? "Unavailable"}</dd>
           </div>
-        )}
-        {release4 && (
           <div>
-            <dt>Release 4 operator-pilot readiness</dt>
-            <dd>
-              {release4.repository_acceptance.passed_gate_count}/
-              {release4.repository_acceptance.total_gate_count} repository gates passed · operator
-              inputs {release4.operator_replacement.operator_field_count}/
-              {release4.operator_replacement.required_field_count}
-            </dd>
+            <dt>Registered model</dt>
+            <dd>{context.registeredStudy?.node_study.model?.key ?? "No node-linked model"}</dd>
           </div>
-        )}
-        {release5 && (
           <div>
-            <dt>Release 5 operator evidence control</dt>
-            <dd>
-              {Object.values(release5.gates).filter(Boolean).length}/
-              {Object.keys(release5.gates).length} gates passed · reviewed extraction and conflict
-              preservation
-            </dd>
+            <dt>Operator confirmed</dt>
+            <dd>{context.mode === "operator_confirmed" ? "Yes, within declared scope" : "No"}</dd>
           </div>
-        )}
-        {release5 && (
-          <div>
-            <dt>Restriction rehearsal</dt>
-            <dd>
-              {release5.benchmark.restriction_rehearsal.delivered_reduction_mw.toFixed(1)} MW of{" "}
-              {release5.benchmark.restriction_rehearsal.required_reduction_mw.toFixed(1)} MW ·
-              residual {release5.benchmark.restriction_rehearsal.residual_mw.toFixed(1)} MW
-            </dd>
-          </div>
-        )}
-        {release5 && (
-          <div>
-            <dt>Control authority</dt>
-            <dd>No automatic dispatch · no operator confirmation · no mapped capacity claim</dd>
-          </div>
-        )}
-        {release4 && (
-          <div>
-            <dt>Neo4j and physics boundary</dt>
-            <dd>
-              {release4.graph_and_physics.selected_case_count}/
-              {release4.graph_and_physics.full_case_count} graph-prioritised cases replayed ·
-              false-safe {release4.graph_and_physics.false_safe_rate.toFixed(3)}
-            </dd>
-          </div>
-        )}
-        {release4 && (
-          <div>
-            <dt>Promotion state</dt>
-            <dd>Not operator confirmed · synthetic results remain hidden from mapped capacity</dd>
-          </div>
-        )}
-        {release3 && (
-          <div>
-            <dt>Shadow safety</dt>
-            <dd>
-              MAE {release3.shadow.mae_mw.toFixed(3)} MW · false-safe{" "}
-              {release3.shadow.false_safe_rate.toFixed(3)} · OOD{" "}
-              {release3.shadow.out_of_distribution_rate.toFixed(3)}
-            </dd>
-          </div>
-        )}
-        {release3 && (
-          <div>
-            <dt>Lifecycle decision</dt>
-            <dd>
-              {release3.champion_decision.decision.replaceAll("_", " ")} · operator gates required
-            </dd>
-          </div>
-        )}
-        {ensemble && (
-          <div>
-            <dt>Operating scenario set</dt>
-            <dd>
-              {ensemble.scenario_count} mocked cases / {ensemble.hours_evaluated.toLocaleString()}{" "}
-              evaluated hours
-            </dd>
-          </div>
-        )}
-        {ensemble && (
-          <div>
-            <dt>Scenario-specific physics replays</dt>
-            <dd>
-              {ensemble.scenario_specific_physics_replays}; the shared ceiling is physics-calculated
-            </dd>
-          </div>
-        )}
-        {ensemble && (
-          <div>
-            <dt>Dominant uncertainty</dt>
-            <dd>{ensemble.dominant_uncertainty}</dd>
-          </div>
-        )}
-        {ensemble && (
-          <div>
-            <dt>Scenario evidence hash</dt>
-            <dd>{ensemble.scenario_set_sha256.slice(0, 16)}…</dd>
-          </div>
-        )}
-        <div>
-          <dt>Validation class</dt>
-          <dd>{validationClassLabel(context.validationClass)}</dd>
-        </div>
-        <div>
-          <dt>Public calculation</dt>
-          <dd>{context.candidate.calculationVersion}</dd>
-        </div>
-        <div>
-          <dt>Hourly scenario</dt>
-          <dd>{context.capacityScenario?.scenarioVersion ?? "Unavailable"}</dd>
-        </div>
-        <div>
-          <dt>Reference network</dt>
-          <dd>{context.networkScenario?.networkVersion ?? "Unavailable"}</dd>
-        </div>
-        <div>
-          <dt>Registered model</dt>
-          <dd>{context.registeredStudy?.node_study.model?.key ?? "No node-linked model"}</dd>
-        </div>
-        <div>
-          <dt>Operator confirmed</dt>
-          <dd>{context.mode === "operator_confirmed" ? "Yes, within declared scope" : "No"}</dd>
-        </div>
-      </dl>
+        </dl>
       </details>
       <h3>Required validation actions</h3>
       <ul>

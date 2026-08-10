@@ -38,6 +38,17 @@ def select_batch(
     mandatory_contingencies: set[str] | None = None,
 ) -> list[ScenarioDefinition]:
     mandatory_contingencies = mandatory_contingencies or set()
+    available_contingencies = {
+        item.scenario.contingency_id
+        for item in candidates
+        if item.scenario.contingency_id is not None
+    }
+    missing_mandatory = sorted(mandatory_contingencies - available_contingencies)
+    if missing_mandatory:
+        raise ValueError(
+            "Mandatory contingencies are missing from the candidate pool: "
+            + ", ".join(missing_mandatory)
+        )
     selected: list[ScenarioDefinition] = []
     selected_hashes: set[str] = set()
     for contingency in sorted(mandatory_contingencies):
@@ -112,6 +123,8 @@ def promotion_decision(
     new_metrics: dict,
     false_safe_limit: float,
     minimum_mae_improvement_mw: float = 0,
+    physics_coverage: float = 1.0,
+    mandatory_contingency_coverage: float = 1.0,
 ) -> dict:
     false_safe = float(new_metrics.get("false_safe_rate", 1))
     improvement = float(prior_metrics.get("capacity_mae_mw", 0)) - float(
@@ -121,14 +134,15 @@ def promotion_decision(
         int(new_metrics.get("unique_capacity_labels", 0)) >= 3
         and float(new_metrics.get("capacity_label_range_mw", 0)) > 0
     )
-    promote = (
-        false_safe <= false_safe_limit and improvement >= minimum_mae_improvement_mw and diverse
-    )
+    complete_physics = physics_coverage == 1.0 and mandatory_contingency_coverage == 1.0
+    promote = false_safe <= false_safe_limit and improvement >= minimum_mae_improvement_mw and diverse and complete_physics
     reason = (
         "gates_passed"
         if promote
         else "insufficient_label_diversity"
         if not diverse
+        else "incomplete_physics_verification"
+        if not complete_physics
         else "safety_or_quality_gate_failed"
     )
     return {
@@ -136,6 +150,8 @@ def promotion_decision(
         "rollback_required": not promote,
         "false_safe_rate": false_safe,
         "mae_improvement_mw": round(improvement, 4),
+        "physics_coverage": round(physics_coverage, 6),
+        "mandatory_contingency_coverage": round(mandatory_contingency_coverage, 6),
         "reason": reason,
     }
 

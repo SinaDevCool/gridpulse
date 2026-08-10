@@ -229,8 +229,32 @@ export type ReferenceCapacityArtifact = {
       physics_verified_selected_count: number;
       rare_event_verified_count: number;
       selected_scenario_hash: string;
+      physics_coverage: number;
+      mandatory_contingency_coverage: number;
+      unverified_selected_count: number;
     };
-    promotion: { decision: "promote" | "reject"; reason: string; rollback_required: boolean };
+    promotion: {
+      decision: "promote" | "reject";
+      reason: string;
+      rollback_required: boolean;
+      physics_coverage: number;
+      mandatory_contingency_coverage: number;
+    };
+    berlin_release1_boundary: {
+      release1_model_version: string | null;
+      release1_model_sha256: string | null;
+      release1_results_sha256: string | null;
+      surrogate_applied_to_public_capacity: false;
+      map_values_remain_physics_results: true;
+      status: string;
+    };
+    reproducibility: {
+      command: string;
+      random_state: number;
+      split_method: string;
+      training_scenario_hash: string;
+      holdout_scenario_hash: string;
+    };
     manifest_sha256: string;
     warning: string;
   } | null;

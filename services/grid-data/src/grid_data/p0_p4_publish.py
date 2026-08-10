@@ -222,6 +222,13 @@ def publish_pipeline_result(
                 "acquisition_configuration": {
                     "version": "release2-acquisition-v1",
                     "selected_scenario_hash": round_data["selected_scenario_hash"],
+                    "physics_coverage": round_data["physics_coverage"],
+                    "mandatory_contingency_coverage": round_data[
+                        "mandatory_contingency_coverage"
+                    ],
+                    "unverified_selected_scenario_hashes": round_data[
+                        "unverified_selected_scenario_hashes"
+                    ],
                 },
                 "prior_metrics": release2["initial_model_registry"]["metrics"],
                 "new_metrics": release2["updated_model_registry"]["metrics"],

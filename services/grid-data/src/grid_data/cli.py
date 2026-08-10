@@ -392,6 +392,8 @@ def main() -> None:
         print(
             f"Validated Release 2; candidates={round_data['candidate_count']}; "
             f"physics_selected={round_data['selected_count']}; "
+            f"physics_coverage={round_data['physics_coverage']:.0%}; "
+            f"mandatory_coverage={round_data['mandatory_contingency_coverage']:.0%}; "
             f"promotion={report['promotion']['decision']}; "
             f"artifact={report['artifact']['artifact_sha256'][:12]}."
         )

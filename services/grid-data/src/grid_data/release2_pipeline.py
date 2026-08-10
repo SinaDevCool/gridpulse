@@ -54,6 +54,11 @@ def run_release2(
         raise ValueError("Release 2 requires positive demand, batch size and solver budget.")
     if not candidate_scenarios:
         raise ValueError("Release 2 requires an unsolved candidate scenario pool.")
+    candidate_hashes = [item.input_hash for item in candidate_scenarios]
+    if len(candidate_hashes) != len(set(candidate_hashes)):
+        raise ValueError("Release 2 candidate scenarios must be unique by canonical input hash.")
+    if len(mandatory_contingencies) > solver_budget:
+        raise ValueError("Solver budget cannot be smaller than the mandatory contingency set.")
     bundle = train_surrogates(initial_outcomes)
     predictions = []
     candidate_rows = []
@@ -91,6 +96,19 @@ def run_release2(
         row["selected_for_physics"] = row["scenario_sha256"] in selected_hashes
     verified = solve_batch(selected)
     verified = [item for item in verified if item.physics_verified]
+    verified_by_hash = {item.input_hash: item for item in verified}
+    unexpected_hashes = sorted(set(verified_by_hash) - selected_hashes)
+    if unexpected_hashes:
+        raise ValueError("Physics solver returned outcomes outside the selected Release 2 batch.")
+    verified_hashes = set(verified_by_hash) & selected_hashes
+    physics_coverage = len(verified_hashes) / len(selected) if selected else 0.0
+    mandatory_selected = {
+        item.input_hash for item in selected if item.contingency_id in mandatory_contingencies
+    }
+    mandatory_verified = mandatory_selected & verified_hashes
+    mandatory_coverage = (
+        len(mandatory_verified) / len(mandatory_selected) if mandatory_selected else 1.0
+    )
     combined = initial_outcomes + verified
     updated = train_surrogates(combined)
     promotion = promotion_decision(
@@ -98,6 +116,8 @@ def run_release2(
         new_metrics=updated.registry["metrics"],
         false_safe_limit=false_safe_limit,
         minimum_mae_improvement_mw=-0.25,
+        physics_coverage=physics_coverage,
+        mandatory_contingency_coverage=mandatory_coverage,
     )
     rare_budget = max(0, min(16, solver_budget - len(selected)))
     rare = (
@@ -143,6 +163,9 @@ def run_release2(
             "selected_scenario_hash": canonical_hash(sorted(selected_hashes)),
             "predictions": candidate_rows,
             "physics_outcomes": [asdict(item) for item in verified],
+            "physics_coverage": round(physics_coverage, 6),
+            "mandatory_contingency_coverage": round(mandatory_coverage, 6),
+            "unverified_selected_scenario_hashes": sorted(selected_hashes - verified_hashes),
             "new_constraints": sorted(str(item) for item in new_constraints),
         },
         "rare_event_search": rare,

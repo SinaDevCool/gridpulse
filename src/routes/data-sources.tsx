@@ -502,12 +502,46 @@ function FinderDataSourcesPage() {
               </article>
             </div>
           </section>
+
+          <section className="finder-methodology-value" aria-labelledby="finder-release2-title">
+            <div>
+              <p className="context-label">Release 2 Governance</p>
+              <h2 id="finder-release2-title">
+                AI prioritises studies. Physics remains authoritative.
+              </h2>
+              <p>
+                Release 2 uses a private surrogate to route uncertain and boundary cases into the
+                solver faster. Mandatory N-1 cases cannot be skipped, and promotion requires full
+                physics coverage of the selected batch.
+              </p>
+            </div>
+            <div className="finder-methodology-cards">
+              <article>
+                <Network aria-hidden="true" />
+                <h3>Routing only</h3>
+                <p>Surrogate predictions are never published or displayed as grid capacity.</p>
+              </article>
+              <article>
+                <ShieldCheck aria-hidden="true" />
+                <h3>Fail-closed gates</h3>
+                <p>Missing contingencies or incomplete physics verification block promotion.</p>
+              </article>
+              <article>
+                <Calculator aria-hidden="true" />
+                <h3>Berlin boundary</h3>
+                <p>
+                  The public Berlin colours remain Release 1 physics results; Release 2 does not
+                  alter them.
+                </p>
+              </article>
+            </div>
+          </section>
         </div>
 
         <PublicCTA
           eyebrow="Start With the Map"
           title="Build a focused connection shortlist."
-          description="Explore the current Brandenburg screening release and compare candidate connection points."
+          description="Explore the Germany-wide screening map and compare candidate connection points."
         />
       </main>
     </PublicLayout>
@@ -727,8 +761,10 @@ function LegacyFinderDataSourcesPage() {
                   A private gradient-boosting surrogate ranks uncertain, boundary and
                   out-of-distribution cases for active learning. Mandatory contingencies bypass
                   ranking, every selected result is recalculated by Pandapower, and false-safe,
-                  label-diversity and error gates control promotion. Surrogate predictions are never
-                  displayed as capacity.
+                  label-diversity, complete selected-batch physics coverage and mandatory N-1
+                  coverage gates control promotion. This routing engine is validated on a separate
+                  synthetic fixture and is not applied to Berlin map values. Surrogate predictions
+                  are never displayed as capacity.
                 </p>
               </article>
               <article>

@@ -26,10 +26,12 @@ solver and network operator.
   disagreement and out-of-distribution distance.
 - Mandatory N-1 cases are selected before learned priorities and cannot be displaced by the batch
   ranking.
+- A missing mandatory contingency fails the round before training or selection can continue.
 - Selected cases return to `NetworkStudyProvider`; only verified outcomes can extend training.
 - A bounded deterministic stress search seeks the lowest verified capacity case.
-- Promotion requires the false-safe gate, acceptable holdout error and non-degenerate capacity
-  labels. A failed gate records rejection and rollback.
+- Promotion requires the false-safe gate, acceptable holdout error, non-degenerate capacity
+  labels, complete selected-batch physics coverage and complete mandatory-contingency coverage. A
+  failed gate records rejection and rollback.
 - The stopping rule requires budget exhaustion or stable uncertainty/boundaries with no newly
   discovered binding constraint.
 
@@ -46,9 +48,18 @@ displayable capacity.
 npm run grid:validate:r2
 ```
 
-The benchmark uses the explicitly synthetic pilot package and the pandapower boundary. It writes
-only to `output/`; no Release 2 model or prediction is shipped in the public web bundle. A rejected
-promotion is a valid safety outcome when the synthetic labels lack sufficient diversity.
+The benchmark uses the explicitly synthetic pilot package and the pandapower boundary. Its private
+report and trusted model artifact are written only to `output/`. The public bundle receives only a
+hash-bound governance summary; no Release 2 model or candidate prediction is shipped. A rejected
+promotion is a valid safety outcome when any safety, coverage or diversity gate fails.
+
+## Berlin Release 1 boundary
+
+Release 2 is validated on a separate synthetic operator-replacement fixture. It is not used to
+calculate or colour the Berlin capacity pocket. The public governance manifest binds to the Berlin
+Release 1 model and result hashes and states that map values remain physics results. Applying the
+surrogate to Berlin requires a dedicated physics-labelled scenario dataset and a new governed
+release; it cannot be inferred from the acceptance benchmark.
 
 ## Operator replacement boundary
 

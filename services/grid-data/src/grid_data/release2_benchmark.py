@@ -107,6 +107,13 @@ def build_release2_benchmark(
     output.write_text(json.dumps(report, indent=2, default=str), encoding="utf-8")
     if public_output:
         registry = report["updated_model_registry"]
+        repo_root = Path(__file__).resolve().parents[4]
+        berlin_release_path = repo_root / "public" / "power-finder" / "berlin-synthetic-capacity.json"
+        berlin_release = (
+            json.loads(berlin_release_path.read_text(encoding="utf-8"))
+            if berlin_release_path.is_file()
+            else None
+        )
         public_manifest = {
             "schema_version": "gridpulse-release2-governance-v1",
             "release": "Release 2",
@@ -137,6 +144,13 @@ def build_release2_benchmark(
                 ),
                 "rare_event_verified_count": report["rare_event_search"]["verified_count"],
                 "selected_scenario_hash": report["active_learning_round"]["selected_scenario_hash"],
+                "physics_coverage": report["active_learning_round"]["physics_coverage"],
+                "mandatory_contingency_coverage": report["active_learning_round"][
+                    "mandatory_contingency_coverage"
+                ],
+                "unverified_selected_count": len(
+                    report["active_learning_round"]["unverified_selected_scenario_hashes"]
+                ),
             },
             "promotion": report["promotion"],
             "stopping": report["stopping"],
@@ -144,6 +158,27 @@ def build_release2_benchmark(
                 "sha256": report["artifact"]["artifact_sha256"],
                 "publicly_downloadable": False,
                 "format_disclosed": False,
+            },
+            "berlin_release1_boundary": {
+                "release1_model_version": berlin_release["model"]["version"]
+                if berlin_release
+                else None,
+                "release1_model_sha256": berlin_release["model"]["model_sha256"]
+                if berlin_release
+                else None,
+                "release1_results_sha256": berlin_release["results_sha256"]
+                if berlin_release
+                else None,
+                "surrogate_applied_to_public_capacity": False,
+                "map_values_remain_physics_results": True,
+                "status": "routing_engine_validated_on_separate_synthetic_fixture",
+            },
+            "reproducibility": {
+                "command": "npm run grid:validate:r2",
+                "random_state": registry["random_state"],
+                "split_method": registry["split_method"],
+                "training_scenario_hash": registry["training_scenario_hash"],
+                "holdout_scenario_hash": registry["holdout_scenario_hash"],
             },
             "warning": report["warning"],
         }

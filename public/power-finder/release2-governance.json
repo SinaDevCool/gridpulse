@@ -6,7 +6,7 @@
   "capacity_claim": false,
   "dataset": {
     "dataset_id": "synthetic-brandenburg-pilot",
-    "dataset_sha256": "d0894883c7593d98bdcbdbf378260463009dd4e310ef9c0bf44b2480986d4f60",
+    "dataset_sha256": "f1c3c4a9ff118084b8b82e159136b0d5f93167a342d51ce2a4ee53eb1dc9ce47",
     "validation_class": "synthetic_demonstration",
     "physics_training_rows": 18,
     "electrical_model": "synthetic-brandenburg-pilot-network-v1",
@@ -30,13 +30,18 @@
     "mandatory_contingency_count": 2,
     "physics_verified_selected_count": 6,
     "rare_event_verified_count": 6,
-    "selected_scenario_hash": "e6d248126574d07cd8debcf4b3b189b0033dab666e36a14df799aecbabcd48ec"
+    "selected_scenario_hash": "e6d248126574d07cd8debcf4b3b189b0033dab666e36a14df799aecbabcd48ec",
+    "physics_coverage": 1.0,
+    "mandatory_contingency_coverage": 1.0,
+    "unverified_selected_count": 0
   },
   "promotion": {
     "decision": "promote",
     "rollback_required": false,
     "false_safe_rate": 0.0,
     "mae_improvement_mw": -0.0336,
+    "physics_coverage": 1.0,
+    "mandatory_contingency_coverage": 1.0,
     "reason": "gates_passed"
   },
   "stopping": {
@@ -49,6 +54,21 @@
     "publicly_downloadable": false,
     "format_disclosed": false
   },
+  "berlin_release1_boundary": {
+    "release1_model_version": "berlin-synthetic-release1-v1",
+    "release1_model_sha256": "e2f68ddb15c158b6f0f5e31e437a78d7a5d6ea6efdffed0a5221532ee21049f3",
+    "release1_results_sha256": "365fb5833a6c339a7f30ef157a3800c4b57da34330615cd25b84e98918fe49e2",
+    "surrogate_applied_to_public_capacity": false,
+    "map_values_remain_physics_results": true,
+    "status": "routing_engine_validated_on_separate_synthetic_fixture"
+  },
+  "reproducibility": {
+    "command": "npm run grid:validate:r2",
+    "random_state": 41,
+    "split_method": "scenario_prefix_holdout",
+    "training_scenario_hash": "020ca6e770145fec9913a63525997840be9ce00deffd9b580e4ad1b5158eb266",
+    "holdout_scenario_hash": "38f37eea6748649683433a50158bfd88b0b76626aed491fe7010959130024a3f"
+  },
   "warning": "Surrogate outputs prioritise physics solves and are never grid-capacity results.",
-  "manifest_sha256": "aa10883bcc502b8d8ae73d5565ec17b23413350bab5f7e09040a8625cadebd77"
+  "manifest_sha256": "4f28a89ef8c5cb845e6074d81305da87ce549e3f25ac270573488f898e683581"
 }

@@ -1,6 +1,6 @@
 {
   "schema_version": "gridpulse-reference-capacity-map-v1",
-  "generated_at": "2026-08-09T17:32:36.136136+00:00",
+  "generated_at": "2026-08-10T12:56:46.503596+00:00",
   "result_mode": "reference_network_calculated",
   "model": {
     "id": "simbench:1-MV-urban--0-sw",
@@ -46,16 +46,16 @@
         "artifact_sha256": null
       },
       "file_hashes": {
-        "network.json": "72c83f1bcaf497efa1c15d78bc13da070e96037cabc36867f71126574fac0f0f",
+        "network.json": "62a320d7913da4fe7f3c3ad9936d710f57b4d2d1634f82a32d84842ca1aecf9d",
         "observations.json": "4a370055ea645d3c8f5c0da21167f5d3e6b1225906d0dcf256e97f92989fd741",
-        "queue.json": "9fec7d16108465c3f036e4274e94d29c64e0c98d04ec56859f59d179299fe660",
-        "reinforcements.json": "f88897131712d33acad1950ca4927b422057456634e9acefb04bac1634477a00",
-        "contingencies.json": "f11e1379254508c6e280e6695b7be15630120e8b7ac6fbbd07e06d5738af4d13",
+        "queue.json": "dc810a32450363bdd5e5546704ca9b3de336b63cc80552d386eadd44eb366073",
+        "reinforcements.json": "16882e565dc67ae109a6afda871830acc98d2cc95f187c5436a2dea182cc71b6",
+        "contingencies.json": "b630a3a6d5ca8e90e5dc9fd4da2b470f23ab8fde4c0bf607838d4c143db84bbd",
         "security-criteria.json": "b040054b8c22ade8856e90c2fa7ee6168abf2f4c970b7af202eecc60f725e356",
-        "switching-states.json": "78644a73a7a90815cc61cb8c55dd041b995d8c8a352ed2a74fda440ea3e65a02",
+        "switching-states.json": "0edb4d98ee2a439d12a6fa1b79a06ad6111c308ff07b262c38350d90a92de3c6",
         "planned-outages.json": "c65ab1c6173c6820cef19b6ec2fc230cf78110ad801b237f72bb303eb1e34462",
-        "customer-profiles.json": "188698f885a7ced0f0d748fd03fb143c15e7da6b74b42324db36793ec6155c13",
-        "flexibility-assets.json": "2e7dcca8d0ddcf33abd2dd50c4e691664bc495e217799df726340ca5f2f108ab",
+        "customer-profiles.json": "503b4596e579e596abf4a616f088683bac9d7811bdd3b18108adbbef20bb418f",
+        "flexibility-assets.json": "b1ae390ea58bf6daf68056db79f44f14e65b45c8bf596bea1594b0c662825d9f",
         "activation-policy.json": "b229a5ee13c451eb52b0fa11b2237e11c0fff4f55c060a6987acc2c72c87374d"
       },
       "created_at": "2026-08-08T00:00:00Z",
@@ -83,7 +83,7 @@
         "accepted_by_operator": false
       }
     },
-    "manifest_sha256": "a31bc0c1eb57fc0b5ab8e5f11143d9dcbfd8a590bee55c36ba00cfc6b5d0f3fc",
+    "manifest_sha256": "7373f2ae156012eb2f1b33b8917f673ad754cb6f56c32092e2ca315d09fd3429",
     "evidence_sha256": "cde237b65f8354929b492bc56457d2bb2db95a19c27be86abe0805f752f44156"
   },
   "release2_governance": {
@@ -94,7 +94,7 @@
     "capacity_claim": false,
     "dataset": {
       "dataset_id": "synthetic-brandenburg-pilot",
-      "dataset_sha256": "d0894883c7593d98bdcbdbf378260463009dd4e310ef9c0bf44b2480986d4f60",
+      "dataset_sha256": "f1c3c4a9ff118084b8b82e159136b0d5f93167a342d51ce2a4ee53eb1dc9ce47",
       "validation_class": "synthetic_demonstration",
       "physics_training_rows": 18,
       "electrical_model": "synthetic-brandenburg-pilot-network-v1",
@@ -118,13 +118,18 @@
       "mandatory_contingency_count": 2,
       "physics_verified_selected_count": 6,
       "rare_event_verified_count": 6,
-      "selected_scenario_hash": "e6d248126574d07cd8debcf4b3b189b0033dab666e36a14df799aecbabcd48ec"
+      "selected_scenario_hash": "e6d248126574d07cd8debcf4b3b189b0033dab666e36a14df799aecbabcd48ec",
+      "physics_coverage": 1.0,
+      "mandatory_contingency_coverage": 1.0,
+      "unverified_selected_count": 0
     },
     "promotion": {
       "decision": "promote",
       "rollback_required": false,
       "false_safe_rate": 0.0,
       "mae_improvement_mw": -0.0336,
+      "physics_coverage": 1.0,
+      "mandatory_contingency_coverage": 1.0,
       "reason": "gates_passed"
     },
     "stopping": {
@@ -137,8 +142,23 @@
       "publicly_downloadable": false,
       "format_disclosed": false
     },
+    "berlin_release1_boundary": {
+      "release1_model_version": "berlin-synthetic-release1-v1",
+      "release1_model_sha256": "e2f68ddb15c158b6f0f5e31e437a78d7a5d6ea6efdffed0a5221532ee21049f3",
+      "release1_results_sha256": "365fb5833a6c339a7f30ef157a3800c4b57da34330615cd25b84e98918fe49e2",
+      "surrogate_applied_to_public_capacity": false,
+      "map_values_remain_physics_results": true,
+      "status": "routing_engine_validated_on_separate_synthetic_fixture"
+    },
+    "reproducibility": {
+      "command": "npm run grid:validate:r2",
+      "random_state": 41,
+      "split_method": "scenario_prefix_holdout",
+      "training_scenario_hash": "020ca6e770145fec9913a63525997840be9ce00deffd9b580e4ad1b5158eb266",
+      "holdout_scenario_hash": "38f37eea6748649683433a50158bfd88b0b76626aed491fe7010959130024a3f"
+    },
     "warning": "Surrogate outputs prioritise physics solves and are never grid-capacity results.",
-    "manifest_sha256": "aa10883bcc502b8d8ae73d5565ec17b23413350bab5f7e09040a8625cadebd77"
+    "manifest_sha256": "4f28a89ef8c5cb845e6074d81305da87ce549e3f25ac270573488f898e683581"
   },
   "release3_governance": {
     "schema_version": "gridpulse-release3-governance-v1",
@@ -319,7 +339,7 @@
     "warning": "Synthetic operator-engagement rehearsal\u2014not an operator response, operating instruction, connection offer, or mapped capacity result.",
     "manifest_sha256": "fb5fddfece182022fcb6408938ddde96f4285107973f93d59fa59ab168c47ed2"
   },
-  "results_sha256": "06d04930dafd044d31a2b0b8bc0d41831ebab5dc5dc596b8a4a62993b9923d01",
+  "results_sha256": "d83cf561761f8ff364c4fcb7dfe818a380ea257c2aaf745d112fae36e4ddc86b",
   "results": [
     {
       "result_id": "simbench-ref-01",
@@ -1920,7 +1940,7 @@
         "capacity_claim": false,
         "dataset": {
           "dataset_id": "synthetic-brandenburg-pilot",
-          "dataset_sha256": "d0894883c7593d98bdcbdbf378260463009dd4e310ef9c0bf44b2480986d4f60",
+          "dataset_sha256": "f1c3c4a9ff118084b8b82e159136b0d5f93167a342d51ce2a4ee53eb1dc9ce47",
           "validation_class": "synthetic_demonstration",
           "physics_training_rows": 18,
           "electrical_model": "synthetic-brandenburg-pilot-network-v1",
@@ -1944,13 +1964,18 @@
           "mandatory_contingency_count": 2,
           "physics_verified_selected_count": 6,
           "rare_event_verified_count": 6,
-          "selected_scenario_hash": "e6d248126574d07cd8debcf4b3b189b0033dab666e36a14df799aecbabcd48ec"
+          "selected_scenario_hash": "e6d248126574d07cd8debcf4b3b189b0033dab666e36a14df799aecbabcd48ec",
+          "physics_coverage": 1.0,
+          "mandatory_contingency_coverage": 1.0,
+          "unverified_selected_count": 0
         },
         "promotion": {
           "decision": "promote",
           "rollback_required": false,
           "false_safe_rate": 0.0,
           "mae_improvement_mw": -0.0336,
+          "physics_coverage": 1.0,
+          "mandatory_contingency_coverage": 1.0,
           "reason": "gates_passed"
         },
         "stopping": {
@@ -1963,8 +1988,23 @@
           "publicly_downloadable": false,
           "format_disclosed": false
         },
+        "berlin_release1_boundary": {
+          "release1_model_version": "berlin-synthetic-release1-v1",
+          "release1_model_sha256": "e2f68ddb15c158b6f0f5e31e437a78d7a5d6ea6efdffed0a5221532ee21049f3",
+          "release1_results_sha256": "365fb5833a6c339a7f30ef157a3800c4b57da34330615cd25b84e98918fe49e2",
+          "surrogate_applied_to_public_capacity": false,
+          "map_values_remain_physics_results": true,
+          "status": "routing_engine_validated_on_separate_synthetic_fixture"
+        },
+        "reproducibility": {
+          "command": "npm run grid:validate:r2",
+          "random_state": 41,
+          "split_method": "scenario_prefix_holdout",
+          "training_scenario_hash": "020ca6e770145fec9913a63525997840be9ce00deffd9b580e4ad1b5158eb266",
+          "holdout_scenario_hash": "38f37eea6748649683433a50158bfd88b0b76626aed491fe7010959130024a3f"
+        },
         "warning": "Surrogate outputs prioritise physics solves and are never grid-capacity results.",
-        "manifest_sha256": "aa10883bcc502b8d8ae73d5565ec17b23413350bab5f7e09040a8625cadebd77"
+        "manifest_sha256": "4f28a89ef8c5cb845e6074d81305da87ce549e3f25ac270573488f898e683581"
       },
       "release3_governance": {
         "schema_version": "gridpulse-release3-governance-v1",
@@ -3751,7 +3791,7 @@
         "capacity_claim": false,
         "dataset": {
           "dataset_id": "synthetic-brandenburg-pilot",
-          "dataset_sha256": "d0894883c7593d98bdcbdbf378260463009dd4e310ef9c0bf44b2480986d4f60",
+          "dataset_sha256": "f1c3c4a9ff118084b8b82e159136b0d5f93167a342d51ce2a4ee53eb1dc9ce47",
           "validation_class": "synthetic_demonstration",
           "physics_training_rows": 18,
           "electrical_model": "synthetic-brandenburg-pilot-network-v1",
@@ -3775,13 +3815,18 @@
           "mandatory_contingency_count": 2,
           "physics_verified_selected_count": 6,
           "rare_event_verified_count": 6,
-          "selected_scenario_hash": "e6d248126574d07cd8debcf4b3b189b0033dab666e36a14df799aecbabcd48ec"
+          "selected_scenario_hash": "e6d248126574d07cd8debcf4b3b189b0033dab666e36a14df799aecbabcd48ec",
+          "physics_coverage": 1.0,
+          "mandatory_contingency_coverage": 1.0,
+          "unverified_selected_count": 0
         },
         "promotion": {
           "decision": "promote",
           "rollback_required": false,
           "false_safe_rate": 0.0,
           "mae_improvement_mw": -0.0336,
+          "physics_coverage": 1.0,
+          "mandatory_contingency_coverage": 1.0,
           "reason": "gates_passed"
         },
         "stopping": {
@@ -3794,8 +3839,23 @@
           "publicly_downloadable": false,
           "format_disclosed": false
         },
+        "berlin_release1_boundary": {
+          "release1_model_version": "berlin-synthetic-release1-v1",
+          "release1_model_sha256": "e2f68ddb15c158b6f0f5e31e437a78d7a5d6ea6efdffed0a5221532ee21049f3",
+          "release1_results_sha256": "365fb5833a6c339a7f30ef157a3800c4b57da34330615cd25b84e98918fe49e2",
+          "surrogate_applied_to_public_capacity": false,
+          "map_values_remain_physics_results": true,
+          "status": "routing_engine_validated_on_separate_synthetic_fixture"
+        },
+        "reproducibility": {
+          "command": "npm run grid:validate:r2",
+          "random_state": 41,
+          "split_method": "scenario_prefix_holdout",
+          "training_scenario_hash": "020ca6e770145fec9913a63525997840be9ce00deffd9b580e4ad1b5158eb266",
+          "holdout_scenario_hash": "38f37eea6748649683433a50158bfd88b0b76626aed491fe7010959130024a3f"
+        },
         "warning": "Surrogate outputs prioritise physics solves and are never grid-capacity results.",
-        "manifest_sha256": "aa10883bcc502b8d8ae73d5565ec17b23413350bab5f7e09040a8625cadebd77"
+        "manifest_sha256": "4f28a89ef8c5cb845e6074d81305da87ce549e3f25ac270573488f898e683581"
       },
       "release3_governance": {
         "schema_version": "gridpulse-release3-governance-v1",
@@ -5586,7 +5646,7 @@
         "capacity_claim": false,
         "dataset": {
           "dataset_id": "synthetic-brandenburg-pilot",
-          "dataset_sha256": "d0894883c7593d98bdcbdbf378260463009dd4e310ef9c0bf44b2480986d4f60",
+          "dataset_sha256": "f1c3c4a9ff118084b8b82e159136b0d5f93167a342d51ce2a4ee53eb1dc9ce47",
           "validation_class": "synthetic_demonstration",
           "physics_training_rows": 18,
           "electrical_model": "synthetic-brandenburg-pilot-network-v1",
@@ -5610,13 +5670,18 @@
           "mandatory_contingency_count": 2,
           "physics_verified_selected_count": 6,
           "rare_event_verified_count": 6,
-          "selected_scenario_hash": "e6d248126574d07cd8debcf4b3b189b0033dab666e36a14df799aecbabcd48ec"
+          "selected_scenario_hash": "e6d248126574d07cd8debcf4b3b189b0033dab666e36a14df799aecbabcd48ec",
+          "physics_coverage": 1.0,
+          "mandatory_contingency_coverage": 1.0,
+          "unverified_selected_count": 0
         },
         "promotion": {
           "decision": "promote",
           "rollback_required": false,
           "false_safe_rate": 0.0,
           "mae_improvement_mw": -0.0336,
+          "physics_coverage": 1.0,
+          "mandatory_contingency_coverage": 1.0,
           "reason": "gates_passed"
         },
         "stopping": {
@@ -5629,8 +5694,23 @@
           "publicly_downloadable": false,
           "format_disclosed": false
         },
+        "berlin_release1_boundary": {
+          "release1_model_version": "berlin-synthetic-release1-v1",
+          "release1_model_sha256": "e2f68ddb15c158b6f0f5e31e437a78d7a5d6ea6efdffed0a5221532ee21049f3",
+          "release1_results_sha256": "365fb5833a6c339a7f30ef157a3800c4b57da34330615cd25b84e98918fe49e2",
+          "surrogate_applied_to_public_capacity": false,
+          "map_values_remain_physics_results": true,
+          "status": "routing_engine_validated_on_separate_synthetic_fixture"
+        },
+        "reproducibility": {
+          "command": "npm run grid:validate:r2",
+          "random_state": 41,
+          "split_method": "scenario_prefix_holdout",
+          "training_scenario_hash": "020ca6e770145fec9913a63525997840be9ce00deffd9b580e4ad1b5158eb266",
+          "holdout_scenario_hash": "38f37eea6748649683433a50158bfd88b0b76626aed491fe7010959130024a3f"
+        },
         "warning": "Surrogate outputs prioritise physics solves and are never grid-capacity results.",
-        "manifest_sha256": "aa10883bcc502b8d8ae73d5565ec17b23413350bab5f7e09040a8625cadebd77"
+        "manifest_sha256": "4f28a89ef8c5cb845e6074d81305da87ce549e3f25ac270573488f898e683581"
       },
       "release3_governance": {
         "schema_version": "gridpulse-release3-governance-v1",
@@ -7421,7 +7501,7 @@
         "capacity_claim": false,
         "dataset": {
           "dataset_id": "synthetic-brandenburg-pilot",
-          "dataset_sha256": "d0894883c7593d98bdcbdbf378260463009dd4e310ef9c0bf44b2480986d4f60",
+          "dataset_sha256": "f1c3c4a9ff118084b8b82e159136b0d5f93167a342d51ce2a4ee53eb1dc9ce47",
           "validation_class": "synthetic_demonstration",
           "physics_training_rows": 18,
           "electrical_model": "synthetic-brandenburg-pilot-network-v1",
@@ -7445,13 +7525,18 @@
           "mandatory_contingency_count": 2,
           "physics_verified_selected_count": 6,
           "rare_event_verified_count": 6,
-          "selected_scenario_hash": "e6d248126574d07cd8debcf4b3b189b0033dab666e36a14df799aecbabcd48ec"
+          "selected_scenario_hash": "e6d248126574d07cd8debcf4b3b189b0033dab666e36a14df799aecbabcd48ec",
+          "physics_coverage": 1.0,
+          "mandatory_contingency_coverage": 1.0,
+          "unverified_selected_count": 0
         },
         "promotion": {
           "decision": "promote",
           "rollback_required": false,
           "false_safe_rate": 0.0,
           "mae_improvement_mw": -0.0336,
+          "physics_coverage": 1.0,
+          "mandatory_contingency_coverage": 1.0,
           "reason": "gates_passed"
         },
         "stopping": {
@@ -7464,8 +7549,23 @@
           "publicly_downloadable": false,
           "format_disclosed": false
         },
+        "berlin_release1_boundary": {
+          "release1_model_version": "berlin-synthetic-release1-v1",
+          "release1_model_sha256": "e2f68ddb15c158b6f0f5e31e437a78d7a5d6ea6efdffed0a5221532ee21049f3",
+          "release1_results_sha256": "365fb5833a6c339a7f30ef157a3800c4b57da34330615cd25b84e98918fe49e2",
+          "surrogate_applied_to_public_capacity": false,
+          "map_values_remain_physics_results": true,
+          "status": "routing_engine_validated_on_separate_synthetic_fixture"
+        },
+        "reproducibility": {
+          "command": "npm run grid:validate:r2",
+          "random_state": 41,
+          "split_method": "scenario_prefix_holdout",
+          "training_scenario_hash": "020ca6e770145fec9913a63525997840be9ce00deffd9b580e4ad1b5158eb266",
+          "holdout_scenario_hash": "38f37eea6748649683433a50158bfd88b0b76626aed491fe7010959130024a3f"
+        },
         "warning": "Surrogate outputs prioritise physics solves and are never grid-capacity results.",
-        "manifest_sha256": "aa10883bcc502b8d8ae73d5565ec17b23413350bab5f7e09040a8625cadebd77"
+        "manifest_sha256": "4f28a89ef8c5cb845e6074d81305da87ce549e3f25ac270573488f898e683581"
       },
       "release3_governance": {
         "schema_version": "gridpulse-release3-governance-v1",
@@ -9256,7 +9356,7 @@
         "capacity_claim": false,
         "dataset": {
           "dataset_id": "synthetic-brandenburg-pilot",
-          "dataset_sha256": "d0894883c7593d98bdcbdbf378260463009dd4e310ef9c0bf44b2480986d4f60",
+          "dataset_sha256": "f1c3c4a9ff118084b8b82e159136b0d5f93167a342d51ce2a4ee53eb1dc9ce47",
           "validation_class": "synthetic_demonstration",
           "physics_training_rows": 18,
           "electrical_model": "synthetic-brandenburg-pilot-network-v1",
@@ -9280,13 +9380,18 @@
           "mandatory_contingency_count": 2,
           "physics_verified_selected_count": 6,
           "rare_event_verified_count": 6,
-          "selected_scenario_hash": "e6d248126574d07cd8debcf4b3b189b0033dab666e36a14df799aecbabcd48ec"
+          "selected_scenario_hash": "e6d248126574d07cd8debcf4b3b189b0033dab666e36a14df799aecbabcd48ec",
+          "physics_coverage": 1.0,
+          "mandatory_contingency_coverage": 1.0,
+          "unverified_selected_count": 0
         },
         "promotion": {
           "decision": "promote",
           "rollback_required": false,
           "false_safe_rate": 0.0,
           "mae_improvement_mw": -0.0336,
+          "physics_coverage": 1.0,
+          "mandatory_contingency_coverage": 1.0,
           "reason": "gates_passed"
         },
         "stopping": {
@@ -9299,8 +9404,23 @@
           "publicly_downloadable": false,
           "format_disclosed": false
         },
+        "berlin_release1_boundary": {
+          "release1_model_version": "berlin-synthetic-release1-v1",
+          "release1_model_sha256": "e2f68ddb15c158b6f0f5e31e437a78d7a5d6ea6efdffed0a5221532ee21049f3",
+          "release1_results_sha256": "365fb5833a6c339a7f30ef157a3800c4b57da34330615cd25b84e98918fe49e2",
+          "surrogate_applied_to_public_capacity": false,
+          "map_values_remain_physics_results": true,
+          "status": "routing_engine_validated_on_separate_synthetic_fixture"
+        },
+        "reproducibility": {
+          "command": "npm run grid:validate:r2",
+          "random_state": 41,
+          "split_method": "scenario_prefix_holdout",
+          "training_scenario_hash": "020ca6e770145fec9913a63525997840be9ce00deffd9b580e4ad1b5158eb266",
+          "holdout_scenario_hash": "38f37eea6748649683433a50158bfd88b0b76626aed491fe7010959130024a3f"
+        },
         "warning": "Surrogate outputs prioritise physics solves and are never grid-capacity results.",
-        "manifest_sha256": "aa10883bcc502b8d8ae73d5565ec17b23413350bab5f7e09040a8625cadebd77"
+        "manifest_sha256": "4f28a89ef8c5cb845e6074d81305da87ce549e3f25ac270573488f898e683581"
       },
       "release3_governance": {
         "schema_version": "gridpulse-release3-governance-v1",
@@ -11091,7 +11211,7 @@
         "capacity_claim": false,
         "dataset": {
           "dataset_id": "synthetic-brandenburg-pilot",
-          "dataset_sha256": "d0894883c7593d98bdcbdbf378260463009dd4e310ef9c0bf44b2480986d4f60",
+          "dataset_sha256": "f1c3c4a9ff118084b8b82e159136b0d5f93167a342d51ce2a4ee53eb1dc9ce47",
           "validation_class": "synthetic_demonstration",
           "physics_training_rows": 18,
           "electrical_model": "synthetic-brandenburg-pilot-network-v1",
@@ -11115,13 +11235,18 @@
           "mandatory_contingency_count": 2,
           "physics_verified_selected_count": 6,
           "rare_event_verified_count": 6,
-          "selected_scenario_hash": "e6d248126574d07cd8debcf4b3b189b0033dab666e36a14df799aecbabcd48ec"
+          "selected_scenario_hash": "e6d248126574d07cd8debcf4b3b189b0033dab666e36a14df799aecbabcd48ec",
+          "physics_coverage": 1.0,
+          "mandatory_contingency_coverage": 1.0,
+          "unverified_selected_count": 0
         },
         "promotion": {
           "decision": "promote",
           "rollback_required": false,
           "false_safe_rate": 0.0,
           "mae_improvement_mw": -0.0336,
+          "physics_coverage": 1.0,
+          "mandatory_contingency_coverage": 1.0,
           "reason": "gates_passed"
         },
         "stopping": {
@@ -11134,8 +11259,23 @@
           "publicly_downloadable": false,
           "format_disclosed": false
         },
+        "berlin_release1_boundary": {
+          "release1_model_version": "berlin-synthetic-release1-v1",
+          "release1_model_sha256": "e2f68ddb15c158b6f0f5e31e437a78d7a5d6ea6efdffed0a5221532ee21049f3",
+          "release1_results_sha256": "365fb5833a6c339a7f30ef157a3800c4b57da34330615cd25b84e98918fe49e2",
+          "surrogate_applied_to_public_capacity": false,
+          "map_values_remain_physics_results": true,
+          "status": "routing_engine_validated_on_separate_synthetic_fixture"
+        },
+        "reproducibility": {
+          "command": "npm run grid:validate:r2",
+          "random_state": 41,
+          "split_method": "scenario_prefix_holdout",
+          "training_scenario_hash": "020ca6e770145fec9913a63525997840be9ce00deffd9b580e4ad1b5158eb266",
+          "holdout_scenario_hash": "38f37eea6748649683433a50158bfd88b0b76626aed491fe7010959130024a3f"
+        },
         "warning": "Surrogate outputs prioritise physics solves and are never grid-capacity results.",
-        "manifest_sha256": "aa10883bcc502b8d8ae73d5565ec17b23413350bab5f7e09040a8625cadebd77"
+        "manifest_sha256": "4f28a89ef8c5cb845e6074d81305da87ce549e3f25ac270573488f898e683581"
       },
       "release3_governance": {
         "schema_version": "gridpulse-release3-governance-v1",
@@ -12926,7 +13066,7 @@
         "capacity_claim": false,
         "dataset": {
           "dataset_id": "synthetic-brandenburg-pilot",
-          "dataset_sha256": "d0894883c7593d98bdcbdbf378260463009dd4e310ef9c0bf44b2480986d4f60",
+          "dataset_sha256": "f1c3c4a9ff118084b8b82e159136b0d5f93167a342d51ce2a4ee53eb1dc9ce47",
           "validation_class": "synthetic_demonstration",
           "physics_training_rows": 18,
           "electrical_model": "synthetic-brandenburg-pilot-network-v1",
@@ -12950,13 +13090,18 @@
           "mandatory_contingency_count": 2,
           "physics_verified_selected_count": 6,
           "rare_event_verified_count": 6,
-          "selected_scenario_hash": "e6d248126574d07cd8debcf4b3b189b0033dab666e36a14df799aecbabcd48ec"
+          "selected_scenario_hash": "e6d248126574d07cd8debcf4b3b189b0033dab666e36a14df799aecbabcd48ec",
+          "physics_coverage": 1.0,
+          "mandatory_contingency_coverage": 1.0,
+          "unverified_selected_count": 0
         },
         "promotion": {
           "decision": "promote",
           "rollback_required": false,
           "false_safe_rate": 0.0,
           "mae_improvement_mw": -0.0336,
+          "physics_coverage": 1.0,
+          "mandatory_contingency_coverage": 1.0,
           "reason": "gates_passed"
         },
         "stopping": {
@@ -12969,8 +13114,23 @@
           "publicly_downloadable": false,
           "format_disclosed": false
         },
+        "berlin_release1_boundary": {
+          "release1_model_version": "berlin-synthetic-release1-v1",
+          "release1_model_sha256": "e2f68ddb15c158b6f0f5e31e437a78d7a5d6ea6efdffed0a5221532ee21049f3",
+          "release1_results_sha256": "365fb5833a6c339a7f30ef157a3800c4b57da34330615cd25b84e98918fe49e2",
+          "surrogate_applied_to_public_capacity": false,
+          "map_values_remain_physics_results": true,
+          "status": "routing_engine_validated_on_separate_synthetic_fixture"
+        },
+        "reproducibility": {
+          "command": "npm run grid:validate:r2",
+          "random_state": 41,
+          "split_method": "scenario_prefix_holdout",
+          "training_scenario_hash": "020ca6e770145fec9913a63525997840be9ce00deffd9b580e4ad1b5158eb266",
+          "holdout_scenario_hash": "38f37eea6748649683433a50158bfd88b0b76626aed491fe7010959130024a3f"
+        },
         "warning": "Surrogate outputs prioritise physics solves and are never grid-capacity results.",
-        "manifest_sha256": "aa10883bcc502b8d8ae73d5565ec17b23413350bab5f7e09040a8625cadebd77"
+        "manifest_sha256": "4f28a89ef8c5cb845e6074d81305da87ce549e3f25ac270573488f898e683581"
       },
       "release3_governance": {
         "schema_version": "gridpulse-release3-governance-v1",
@@ -14761,7 +14921,7 @@
         "capacity_claim": false,
         "dataset": {
           "dataset_id": "synthetic-brandenburg-pilot",
-          "dataset_sha256": "d0894883c7593d98bdcbdbf378260463009dd4e310ef9c0bf44b2480986d4f60",
+          "dataset_sha256": "f1c3c4a9ff118084b8b82e159136b0d5f93167a342d51ce2a4ee53eb1dc9ce47",
           "validation_class": "synthetic_demonstration",
           "physics_training_rows": 18,
           "electrical_model": "synthetic-brandenburg-pilot-network-v1",
@@ -14785,13 +14945,18 @@
           "mandatory_contingency_count": 2,
           "physics_verified_selected_count": 6,
           "rare_event_verified_count": 6,
-          "selected_scenario_hash": "e6d248126574d07cd8debcf4b3b189b0033dab666e36a14df799aecbabcd48ec"
+          "selected_scenario_hash": "e6d248126574d07cd8debcf4b3b189b0033dab666e36a14df799aecbabcd48ec",
+          "physics_coverage": 1.0,
+          "mandatory_contingency_coverage": 1.0,
+          "unverified_selected_count": 0
         },
         "promotion": {
           "decision": "promote",
           "rollback_required": false,
           "false_safe_rate": 0.0,
           "mae_improvement_mw": -0.0336,
+          "physics_coverage": 1.0,
+          "mandatory_contingency_coverage": 1.0,
           "reason": "gates_passed"
         },
         "stopping": {
@@ -14804,8 +14969,23 @@
           "publicly_downloadable": false,
           "format_disclosed": false
         },
+        "berlin_release1_boundary": {
+          "release1_model_version": "berlin-synthetic-release1-v1",
+          "release1_model_sha256": "e2f68ddb15c158b6f0f5e31e437a78d7a5d6ea6efdffed0a5221532ee21049f3",
+          "release1_results_sha256": "365fb5833a6c339a7f30ef157a3800c4b57da34330615cd25b84e98918fe49e2",
+          "surrogate_applied_to_public_capacity": false,
+          "map_values_remain_physics_results": true,
+          "status": "routing_engine_validated_on_separate_synthetic_fixture"
+        },
+        "reproducibility": {
+          "command": "npm run grid:validate:r2",
+          "random_state": 41,
+          "split_method": "scenario_prefix_holdout",
+          "training_scenario_hash": "020ca6e770145fec9913a63525997840be9ce00deffd9b580e4ad1b5158eb266",
+          "holdout_scenario_hash": "38f37eea6748649683433a50158bfd88b0b76626aed491fe7010959130024a3f"
+        },
         "warning": "Surrogate outputs prioritise physics solves and are never grid-capacity results.",
-        "manifest_sha256": "aa10883bcc502b8d8ae73d5565ec17b23413350bab5f7e09040a8625cadebd77"
+        "manifest_sha256": "4f28a89ef8c5cb845e6074d81305da87ce549e3f25ac270573488f898e683581"
       },
       "release3_governance": {
         "schema_version": "gridpulse-release3-governance-v1",
@@ -16596,7 +16776,7 @@
         "capacity_claim": false,
         "dataset": {
           "dataset_id": "synthetic-brandenburg-pilot",
-          "dataset_sha256": "d0894883c7593d98bdcbdbf378260463009dd4e310ef9c0bf44b2480986d4f60",
+          "dataset_sha256": "f1c3c4a9ff118084b8b82e159136b0d5f93167a342d51ce2a4ee53eb1dc9ce47",
           "validation_class": "synthetic_demonstration",
           "physics_training_rows": 18,
           "electrical_model": "synthetic-brandenburg-pilot-network-v1",
@@ -16620,13 +16800,18 @@
           "mandatory_contingency_count": 2,
           "physics_verified_selected_count": 6,
           "rare_event_verified_count": 6,
-          "selected_scenario_hash": "e6d248126574d07cd8debcf4b3b189b0033dab666e36a14df799aecbabcd48ec"
+          "selected_scenario_hash": "e6d248126574d07cd8debcf4b3b189b0033dab666e36a14df799aecbabcd48ec",
+          "physics_coverage": 1.0,
+          "mandatory_contingency_coverage": 1.0,
+          "unverified_selected_count": 0
         },
         "promotion": {
           "decision": "promote",
           "rollback_required": false,
           "false_safe_rate": 0.0,
           "mae_improvement_mw": -0.0336,
+          "physics_coverage": 1.0,
+          "mandatory_contingency_coverage": 1.0,
           "reason": "gates_passed"
         },
         "stopping": {
@@ -16639,8 +16824,23 @@
           "publicly_downloadable": false,
           "format_disclosed": false
         },
+        "berlin_release1_boundary": {
+          "release1_model_version": "berlin-synthetic-release1-v1",
+          "release1_model_sha256": "e2f68ddb15c158b6f0f5e31e437a78d7a5d6ea6efdffed0a5221532ee21049f3",
+          "release1_results_sha256": "365fb5833a6c339a7f30ef157a3800c4b57da34330615cd25b84e98918fe49e2",
+          "surrogate_applied_to_public_capacity": false,
+          "map_values_remain_physics_results": true,
+          "status": "routing_engine_validated_on_separate_synthetic_fixture"
+        },
+        "reproducibility": {
+          "command": "npm run grid:validate:r2",
+          "random_state": 41,
+          "split_method": "scenario_prefix_holdout",
+          "training_scenario_hash": "020ca6e770145fec9913a63525997840be9ce00deffd9b580e4ad1b5158eb266",
+          "holdout_scenario_hash": "38f37eea6748649683433a50158bfd88b0b76626aed491fe7010959130024a3f"
+        },
         "warning": "Surrogate outputs prioritise physics solves and are never grid-capacity results.",
-        "manifest_sha256": "aa10883bcc502b8d8ae73d5565ec17b23413350bab5f7e09040a8625cadebd77"
+        "manifest_sha256": "4f28a89ef8c5cb845e6074d81305da87ce549e3f25ac270573488f898e683581"
       },
       "release3_governance": {
         "schema_version": "gridpulse-release3-governance-v1",
@@ -18431,7 +18631,7 @@
         "capacity_claim": false,
         "dataset": {
           "dataset_id": "synthetic-brandenburg-pilot",
-          "dataset_sha256": "d0894883c7593d98bdcbdbf378260463009dd4e310ef9c0bf44b2480986d4f60",
+          "dataset_sha256": "f1c3c4a9ff118084b8b82e159136b0d5f93167a342d51ce2a4ee53eb1dc9ce47",
           "validation_class": "synthetic_demonstration",
           "physics_training_rows": 18,
           "electrical_model": "synthetic-brandenburg-pilot-network-v1",
@@ -18455,13 +18655,18 @@
           "mandatory_contingency_count": 2,
           "physics_verified_selected_count": 6,
           "rare_event_verified_count": 6,
-          "selected_scenario_hash": "e6d248126574d07cd8debcf4b3b189b0033dab666e36a14df799aecbabcd48ec"
+          "selected_scenario_hash": "e6d248126574d07cd8debcf4b3b189b0033dab666e36a14df799aecbabcd48ec",
+          "physics_coverage": 1.0,
+          "mandatory_contingency_coverage": 1.0,
+          "unverified_selected_count": 0
         },
         "promotion": {
           "decision": "promote",
           "rollback_required": false,
           "false_safe_rate": 0.0,
           "mae_improvement_mw": -0.0336,
+          "physics_coverage": 1.0,
+          "mandatory_contingency_coverage": 1.0,
           "reason": "gates_passed"
         },
         "stopping": {
@@ -18474,8 +18679,23 @@
           "publicly_downloadable": false,
           "format_disclosed": false
         },
+        "berlin_release1_boundary": {
+          "release1_model_version": "berlin-synthetic-release1-v1",
+          "release1_model_sha256": "e2f68ddb15c158b6f0f5e31e437a78d7a5d6ea6efdffed0a5221532ee21049f3",
+          "release1_results_sha256": "365fb5833a6c339a7f30ef157a3800c4b57da34330615cd25b84e98918fe49e2",
+          "surrogate_applied_to_public_capacity": false,
+          "map_values_remain_physics_results": true,
+          "status": "routing_engine_validated_on_separate_synthetic_fixture"
+        },
+        "reproducibility": {
+          "command": "npm run grid:validate:r2",
+          "random_state": 41,
+          "split_method": "scenario_prefix_holdout",
+          "training_scenario_hash": "020ca6e770145fec9913a63525997840be9ce00deffd9b580e4ad1b5158eb266",
+          "holdout_scenario_hash": "38f37eea6748649683433a50158bfd88b0b76626aed491fe7010959130024a3f"
+        },
         "warning": "Surrogate outputs prioritise physics solves and are never grid-capacity results.",
-        "manifest_sha256": "aa10883bcc502b8d8ae73d5565ec17b23413350bab5f7e09040a8625cadebd77"
+        "manifest_sha256": "4f28a89ef8c5cb845e6074d81305da87ce549e3f25ac270573488f898e683581"
       },
       "release3_governance": {
         "schema_version": "gridpulse-release3-governance-v1",
@@ -20266,7 +20486,7 @@
         "capacity_claim": false,
         "dataset": {
           "dataset_id": "synthetic-brandenburg-pilot",
-          "dataset_sha256": "d0894883c7593d98bdcbdbf378260463009dd4e310ef9c0bf44b2480986d4f60",
+          "dataset_sha256": "f1c3c4a9ff118084b8b82e159136b0d5f93167a342d51ce2a4ee53eb1dc9ce47",
           "validation_class": "synthetic_demonstration",
           "physics_training_rows": 18,
           "electrical_model": "synthetic-brandenburg-pilot-network-v1",
@@ -20290,13 +20510,18 @@
           "mandatory_contingency_count": 2,
           "physics_verified_selected_count": 6,
           "rare_event_verified_count": 6,
-          "selected_scenario_hash": "e6d248126574d07cd8debcf4b3b189b0033dab666e36a14df799aecbabcd48ec"
+          "selected_scenario_hash": "e6d248126574d07cd8debcf4b3b189b0033dab666e36a14df799aecbabcd48ec",
+          "physics_coverage": 1.0,
+          "mandatory_contingency_coverage": 1.0,
+          "unverified_selected_count": 0
         },
         "promotion": {
           "decision": "promote",
           "rollback_required": false,
           "false_safe_rate": 0.0,
           "mae_improvement_mw": -0.0336,
+          "physics_coverage": 1.0,
+          "mandatory_contingency_coverage": 1.0,
           "reason": "gates_passed"
         },
         "stopping": {
@@ -20309,8 +20534,23 @@
           "publicly_downloadable": false,
           "format_disclosed": false
         },
+        "berlin_release1_boundary": {
+          "release1_model_version": "berlin-synthetic-release1-v1",
+          "release1_model_sha256": "e2f68ddb15c158b6f0f5e31e437a78d7a5d6ea6efdffed0a5221532ee21049f3",
+          "release1_results_sha256": "365fb5833a6c339a7f30ef157a3800c4b57da34330615cd25b84e98918fe49e2",
+          "surrogate_applied_to_public_capacity": false,
+          "map_values_remain_physics_results": true,
+          "status": "routing_engine_validated_on_separate_synthetic_fixture"
+        },
+        "reproducibility": {
+          "command": "npm run grid:validate:r2",
+          "random_state": 41,
+          "split_method": "scenario_prefix_holdout",
+          "training_scenario_hash": "020ca6e770145fec9913a63525997840be9ce00deffd9b580e4ad1b5158eb266",
+          "holdout_scenario_hash": "38f37eea6748649683433a50158bfd88b0b76626aed491fe7010959130024a3f"
+        },
         "warning": "Surrogate outputs prioritise physics solves and are never grid-capacity results.",
-        "manifest_sha256": "aa10883bcc502b8d8ae73d5565ec17b23413350bab5f7e09040a8625cadebd77"
+        "manifest_sha256": "4f28a89ef8c5cb845e6074d81305da87ce549e3f25ac270573488f898e683581"
       },
       "release3_governance": {
         "schema_version": "gridpulse-release3-governance-v1",
@@ -22101,7 +22341,7 @@
         "capacity_claim": false,
         "dataset": {
           "dataset_id": "synthetic-brandenburg-pilot",
-          "dataset_sha256": "d0894883c7593d98bdcbdbf378260463009dd4e310ef9c0bf44b2480986d4f60",
+          "dataset_sha256": "f1c3c4a9ff118084b8b82e159136b0d5f93167a342d51ce2a4ee53eb1dc9ce47",
           "validation_class": "synthetic_demonstration",
           "physics_training_rows": 18,
           "electrical_model": "synthetic-brandenburg-pilot-network-v1",
@@ -22125,13 +22365,18 @@
           "mandatory_contingency_count": 2,
           "physics_verified_selected_count": 6,
           "rare_event_verified_count": 6,
-          "selected_scenario_hash": "e6d248126574d07cd8debcf4b3b189b0033dab666e36a14df799aecbabcd48ec"
+          "selected_scenario_hash": "e6d248126574d07cd8debcf4b3b189b0033dab666e36a14df799aecbabcd48ec",
+          "physics_coverage": 1.0,
+          "mandatory_contingency_coverage": 1.0,
+          "unverified_selected_count": 0
         },
         "promotion": {
           "decision": "promote",
           "rollback_required": false,
           "false_safe_rate": 0.0,
           "mae_improvement_mw": -0.0336,
+          "physics_coverage": 1.0,
+          "mandatory_contingency_coverage": 1.0,
           "reason": "gates_passed"
         },
         "stopping": {
@@ -22144,8 +22389,23 @@
           "publicly_downloadable": false,
           "format_disclosed": false
         },
+        "berlin_release1_boundary": {
+          "release1_model_version": "berlin-synthetic-release1-v1",
+          "release1_model_sha256": "e2f68ddb15c158b6f0f5e31e437a78d7a5d6ea6efdffed0a5221532ee21049f3",
+          "release1_results_sha256": "365fb5833a6c339a7f30ef157a3800c4b57da34330615cd25b84e98918fe49e2",
+          "surrogate_applied_to_public_capacity": false,
+          "map_values_remain_physics_results": true,
+          "status": "routing_engine_validated_on_separate_synthetic_fixture"
+        },
+        "reproducibility": {
+          "command": "npm run grid:validate:r2",
+          "random_state": 41,
+          "split_method": "scenario_prefix_holdout",
+          "training_scenario_hash": "020ca6e770145fec9913a63525997840be9ce00deffd9b580e4ad1b5158eb266",
+          "holdout_scenario_hash": "38f37eea6748649683433a50158bfd88b0b76626aed491fe7010959130024a3f"
+        },
         "warning": "Surrogate outputs prioritise physics solves and are never grid-capacity results.",
-        "manifest_sha256": "aa10883bcc502b8d8ae73d5565ec17b23413350bab5f7e09040a8625cadebd77"
+        "manifest_sha256": "4f28a89ef8c5cb845e6074d81305da87ce549e3f25ac270573488f898e683581"
       },
       "release3_governance": {
         "schema_version": "gridpulse-release3-governance-v1",

@@ -1730,6 +1730,12 @@ function PowerFinderPage() {
                     ? "Berlin calculation pocket · real locations, synthetic electrical model"
                     : `Private reviewed results · ${capacityViewport?.access === "ready" ? "workspace connected" : "no coverage"}`}
                 </p>
+                {capacitySource === "berlin_synthetic" && (
+                  <p className="capacity-overlay-empty">
+                    Release 2 AI routing does not colour these nodes. Every displayed Berlin value
+                    remains a Release 1 physics result.
+                  </p>
+                )}
                 <p className="capacity-overlay-empty">
                   Move Required power to reclassify calculated nodes immediately: cyan meets the
                   threshold, dark blue is below it, and grey is outside this calculation pocket.

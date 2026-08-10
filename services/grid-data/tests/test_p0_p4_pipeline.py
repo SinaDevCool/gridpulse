@@ -212,6 +212,34 @@ class PipelineTests(unittest.TestCase):
             )["stop"]
         )
 
+    def test_p4_fails_closed_when_mandatory_contingency_is_absent(self):
+        candidates = [
+            CandidatePrediction(ScenarioDefinition("normal"), 50, 2, False, 0.2)
+        ]
+        with self.assertRaisesRegex(ValueError, "missing from the candidate pool"):
+            select_batch(
+                candidates,
+                requested_import_mw=52,
+                batch_size=1,
+                mandatory_contingencies={"required-n-1"},
+            )
+
+    def test_p4_rejects_promotion_without_complete_physics_coverage(self):
+        decision = promotion_decision(
+            prior_metrics={"capacity_mae_mw": 5},
+            new_metrics={
+                "capacity_mae_mw": 4,
+                "false_safe_rate": 0,
+                "unique_capacity_labels": 4,
+                "capacity_label_range_mw": 10,
+            },
+            false_safe_limit=0.05,
+            physics_coverage=0.75,
+            mandatory_contingency_coverage=1.0,
+        )
+        self.assertEqual("reject", decision["decision"])
+        self.assertEqual("incomplete_physics_verification", decision["reason"])
+
     def test_p3_trains_only_on_verified_physics_and_never_displays_prediction_as_capacity(self):
         rows = []
         for index in range(30):
@@ -333,6 +361,10 @@ class PipelineTests(unittest.TestCase):
             )
             self.assertTrue((Path(directory) / "model.joblib").is_file())
         self.assertIn("mandatory", report["active_learning_round"]["selected_scenario_ids"])
+        self.assertEqual(1.0, report["active_learning_round"]["physics_coverage"])
+        self.assertEqual(
+            1.0, report["active_learning_round"]["mandatory_contingency_coverage"]
+        )
         self.assertFalse(report["capacity_claim"])
         self.assertTrue(
             all(
