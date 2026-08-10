@@ -5850,6 +5850,72 @@
   }
 }
 
+/* Power Finder filter clarity and capacity-threshold feedback. */
+.power-finder-filter-grid .power-finder-filter-wide {
+  grid-column: 1 / -1;
+}
+
+.power-finder-filter-grid label > small {
+  overflow-wrap: anywhere;
+  color: #a9bdcb;
+  font-size: 0.62rem;
+  line-height: 1.35;
+}
+
+.power-finder-filter-grid select {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.operator-hierarchy-boundary {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 2px 3px 4px;
+  color: #7891a4;
+  font-size: 0.61rem;
+  line-height: 1.4;
+}
+
+.capacity-threshold-key {
+  display: grid;
+  gap: 5px;
+  padding: 7px 8px;
+  border: 1px solid #203d52;
+  border-radius: 7px;
+  background: #071522;
+}
+
+.capacity-threshold-key span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #a9bdcb;
+  font-size: 0.63rem;
+}
+
+.capacity-threshold-key i,
+.power-finder-legend i.legend-capacity-activation {
+  width: 0.72rem;
+  height: 0.72rem;
+  flex: 0 0 auto;
+  border: 1px solid #dbeafe;
+  border-radius: 50%;
+}
+
+.capacity-threshold-key i.is-meets {
+  background: #67e8f9;
+}
+
+.capacity-threshold-key i.is-activation,
+.power-finder-legend i.legend-capacity-activation {
+  background: #818cf8;
+}
+
+.capacity-threshold-key i.is-below {
+  background: #1e526a;
+}
+
 .activation-layout {
   display: grid;
   grid-template-columns: minmax(340px, 0.8fr) minmax(0, 1.2fr);

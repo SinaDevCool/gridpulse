@@ -843,6 +843,18 @@ export function PowerFinderMap({
             ? voltageColour
             : "#fff7d6",
       );
+      map.setPaintProperty(
+        "national-grid-nodes",
+        "circle-radius",
+        mapMode === "capacity"
+          ? 5
+          : ["interpolate", ["linear"], ["zoom"], 4, 1, 7, 1.6, 8.5, 2.5, 11, 4.5, 14, 6],
+      );
+      map.setPaintProperty(
+        "national-grid-nodes",
+        "circle-opacity",
+        mapMode === "capacity" ? 0.92 : 0.88,
+      );
     }
     map.setPaintProperty("grid-nodes", "circle-radius", mapMode === "capacity" ? 9 : 7);
     map.setPaintProperty(

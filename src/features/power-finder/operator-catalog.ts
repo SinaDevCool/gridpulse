@@ -17,7 +17,7 @@ export async function loadGridOperatorCatalog(): Promise<GridOperatorOption[]> {
     const previous = merged.get(name);
     merged.set(name, {
       name,
-      type: item.type,
+      type: previous?.type === "TSO" || item.type === "TSO" ? "TSO" : "DSO / other",
       featureCount: (previous?.featureCount ?? 0) + Number(item.featureCount ?? 0),
     });
   }

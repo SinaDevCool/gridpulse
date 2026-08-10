@@ -559,6 +559,15 @@ function PowerFinderPage() {
       ).sort((left, right) => left.localeCompare(right))
       .map((name) => ({ name, type: "DSO / other" as const, featureCount: 0 }));
   }, [collection, operatorCatalog]);
+  const transmissionOperators = useMemo(
+    () => operators.filter((item) => item.type === "TSO"),
+    [operators],
+  );
+  const distributionOperators = useMemo(
+    () => operators.filter((item) => item.type === "DSO / other"),
+    [operators],
+  );
+  const selectedOperatorType = operators.find((item) => item.name === operator)?.type;
 
   const illustrativeCapacityNodes = useMemo(
     () =>
@@ -1401,7 +1410,7 @@ function PowerFinderPage() {
               className="power-finder-filter-grid"
               hidden={!secondaryControlsOpen}
             >
-              <label>
+              <label className="power-finder-filter-wide">
                 <span>Region</span>
                 <select
                   name="region"
@@ -1422,6 +1431,7 @@ function PowerFinderPage() {
                     </option>
                   ))}
                 </select>
+                <small>{activeCoverage.regionName}</small>
               </label>
               <label>
                 <span>Maximum distance</span>
@@ -1464,11 +1474,11 @@ function PowerFinderPage() {
                   <option value={380}>380+ kV</option>
                 </select>
               </label>
-              <label>
-                <span>Operator</span>
+              <label className="power-finder-filter-wide">
+                <span>Transmission operator (TSO)</span>
                 <select
-                  name="operator"
-                  value={operator}
+                  name="transmission-operator"
+                  value={selectedOperatorType === "TSO" ? operator : "all"}
                   onChange={(event) =>
                     void updateSearch({
                       operator: event.target.value === "all" ? undefined : event.target.value,
@@ -1477,21 +1487,37 @@ function PowerFinderPage() {
                     })
                   }
                 >
-                  <option value="all">All operators</option>
-                  {(["TSO", "DSO / other"] as const).map((type) => {
-                    const matching = operators.filter((item) => item.type === type);
-                    return matching.length ? (
-                      <optgroup key={type} label={type}>
-                        {matching.map((item) => (
-                          <option key={item.name} value={item.name}>
-                            {item.name}
-                          </option>
-                        ))}
-                      </optgroup>
-                    ) : null;
-                  })}
+                  <option value="all">All transmission operators</option>
+                  {transmissionOperators.map((item) => (
+                    <option key={item.name} value={item.name}>{item.name}</option>
+                  ))}
                 </select>
+                {selectedOperatorType === "TSO" && <small>{operator}</small>}
               </label>
+              <label className="power-finder-filter-wide">
+                <span>Distribution operator (DSO / other)</span>
+                <select
+                  name="distribution-operator"
+                  value={selectedOperatorType === "DSO / other" ? operator : "all"}
+                  onChange={(event) =>
+                    void updateSearch({
+                      operator: event.target.value === "all" ? undefined : event.target.value,
+                      candidate: undefined,
+                      compare: undefined,
+                    })
+                  }
+                >
+                  <option value="all">All distribution operators</option>
+                  {distributionOperators.map((item) => (
+                    <option key={item.name} value={item.name}>{item.name}</option>
+                  ))}
+                </select>
+                {selectedOperatorType === "DSO / other" && <small>{operator}</small>}
+              </label>
+              <p className="operator-hierarchy-boundary power-finder-filter-wide">
+                TSO control-area assignment for each DSO is not established in the accepted map
+                source, so DSO names are not placed under an invented TSO parent.
+              </p>
             </div>
             {mapMode !== "capacity" && (
               <p className="candidate-boundary" role="status">
@@ -1653,10 +1679,14 @@ function PowerFinderPage() {
                     : `Private reviewed results · ${capacityViewport?.access === "ready" ? "workspace connected" : "no coverage"}`}
                 </p>
                 <p className="capacity-overlay-empty">
-                  Required MW updates calculated or illustrative results in the loaded detail
-                  viewport. National OSM nodes remain grey because public operator headroom is not
-                  established.
+                  Move Required power to reclassify grid nodes: cyan meets the threshold, purple
+                  indicates an illustrative activation pathway, and dark blue is below it.
                 </p>
+                <div className="capacity-threshold-key" aria-label="Capacity map colour key">
+                  <span><i className="is-meets" />Meets {requiredCapacityMw} MW</span>
+                  <span><i className="is-activation" />Activation pathway</span>
+                  <span><i className="is-below" />Below requirement</span>
+                </div>
                 <div className="capacity-fit-summary" role="status" aria-live="polite">
                   <span>
                     <b>{capacitySummary.meets}</b> meet
@@ -2029,13 +2059,13 @@ function PowerFinderPage() {
             {mapMode === "capacity" ? (
               <>
                 <span>
-                  <i className="legend-capacity-low" /> Lower calculated MW
+                  <i className="legend-capacity-high" /> Meets {requiredCapacityMw} MW
                 </span>
                 <span>
-                  <i className="legend-capacity-high" /> Higher calculated MW
+                  <i className="legend-capacity-activation" /> Illustrative activation pathway
                 </span>
                 <span>
-                  <i className="legend-capacity-unknown" /> Not calculated · unknown
+                  <i className="legend-capacity-low" /> Below {requiredCapacityMw} MW
                 </span>
                 <span>
                   <i className="legend-capacity-stale" /> Stale · recalculate
