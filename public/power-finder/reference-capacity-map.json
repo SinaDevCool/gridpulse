@@ -1,6 +1,6 @@
 {
   "schema_version": "gridpulse-reference-capacity-map-v1",
-  "generated_at": "2026-08-10T15:10:02.609100+00:00",
+  "generated_at": "2026-08-10T15:40:23.367351+00:00",
   "result_mode": "reference_network_calculated",
   "model": {
     "id": "simbench:1-MV-urban--0-sw",
@@ -323,8 +323,11 @@
       "source_review_warning_present": true,
       "discrepancy_preserved": true,
       "confirmed_field_preserved": true,
+      "validity_scope_extracted": true,
       "restriction_response_rehearsed": true,
-      "residual_exposure_visible": true
+      "residual_exposure_visible": true,
+      "no_automatic_dispatch": true,
+      "no_capacity_or_confirmation_claim": true
     },
     "all_repository_gates_passed": true,
     "benchmark": {
@@ -333,6 +336,8 @@
         "export_limit_mw": 0,
         "flexibility_mode": "dynamic",
         "notice_minutes": 15,
+        "valid_from": "2026-09-01",
+        "valid_to": "2027-08-31",
         "study_requirement_count": 1,
         "signal_count": 1
       },
@@ -367,10 +372,23 @@
     ],
     "public_visibility": "governance_summary_only",
     "private_operator_data_published": false,
+    "private_extracted_text_published": false,
+    "private_document_identifiers_published": false,
+    "reproducibility": {
+      "command": "npm run grid:validate:r5",
+      "benchmark_input_sha256": "9fd24545a1085c3176bd7a3f3135c298d34bd1522eba98db0b62e40ab6d08fc1"
+    },
+    "public_capacity_boundary": {
+      "operator_evidence_applied_to_public_map": false,
+      "reference_map_values_unchanged": true,
+      "operator_confirmation_created": false,
+      "automatic_dispatch_authorized": false,
+      "status": "synthetic_operator_evidence_rehearsal_only"
+    },
     "warning": "Synthetic operator-engagement rehearsal\u2014not an operator response, operating instruction, connection offer, or mapped capacity result.",
-    "manifest_sha256": "fb5fddfece182022fcb6408938ddde96f4285107973f93d59fa59ab168c47ed2"
+    "manifest_sha256": "00b57b85d89f971b93400654df58b3fdfd3bb746321bca5df041a424c8a16c9a"
   },
-  "results_sha256": "52cac1fca286b0af1b3651aa995d96c90e63286f7582e313ef476c4aeed87537",
+  "results_sha256": "d80868f7eb4c410e666bb45bb9d9aa74a68831911b79a22f6f3a0c03c0325890",
   "results": [
     {
       "result_id": "simbench-ref-01",
@@ -2200,8 +2218,11 @@
           "source_review_warning_present": true,
           "discrepancy_preserved": true,
           "confirmed_field_preserved": true,
+          "validity_scope_extracted": true,
           "restriction_response_rehearsed": true,
-          "residual_exposure_visible": true
+          "residual_exposure_visible": true,
+          "no_automatic_dispatch": true,
+          "no_capacity_or_confirmation_claim": true
         },
         "all_repository_gates_passed": true,
         "benchmark": {
@@ -2210,6 +2231,8 @@
             "export_limit_mw": 0,
             "flexibility_mode": "dynamic",
             "notice_minutes": 15,
+            "valid_from": "2026-09-01",
+            "valid_to": "2027-08-31",
             "study_requirement_count": 1,
             "signal_count": 1
           },
@@ -2244,8 +2267,21 @@
         ],
         "public_visibility": "governance_summary_only",
         "private_operator_data_published": false,
+        "private_extracted_text_published": false,
+        "private_document_identifiers_published": false,
+        "reproducibility": {
+          "command": "npm run grid:validate:r5",
+          "benchmark_input_sha256": "9fd24545a1085c3176bd7a3f3135c298d34bd1522eba98db0b62e40ab6d08fc1"
+        },
+        "public_capacity_boundary": {
+          "operator_evidence_applied_to_public_map": false,
+          "reference_map_values_unchanged": true,
+          "operator_confirmation_created": false,
+          "automatic_dispatch_authorized": false,
+          "status": "synthetic_operator_evidence_rehearsal_only"
+        },
         "warning": "Synthetic operator-engagement rehearsal\u2014not an operator response, operating instruction, connection offer, or mapped capacity result.",
-        "manifest_sha256": "fb5fddfece182022fcb6408938ddde96f4285107973f93d59fa59ab168c47ed2"
+        "manifest_sha256": "00b57b85d89f971b93400654df58b3fdfd3bb746321bca5df041a424c8a16c9a"
       },
       "binding_constraint": "line_thermal_loading",
       "binding_case": "base_case",
@@ -4082,8 +4118,11 @@
           "source_review_warning_present": true,
           "discrepancy_preserved": true,
           "confirmed_field_preserved": true,
+          "validity_scope_extracted": true,
           "restriction_response_rehearsed": true,
-          "residual_exposure_visible": true
+          "residual_exposure_visible": true,
+          "no_automatic_dispatch": true,
+          "no_capacity_or_confirmation_claim": true
         },
         "all_repository_gates_passed": true,
         "benchmark": {
@@ -4092,6 +4131,8 @@
             "export_limit_mw": 0,
             "flexibility_mode": "dynamic",
             "notice_minutes": 15,
+            "valid_from": "2026-09-01",
+            "valid_to": "2027-08-31",
             "study_requirement_count": 1,
             "signal_count": 1
           },
@@ -4126,8 +4167,21 @@
         ],
         "public_visibility": "governance_summary_only",
         "private_operator_data_published": false,
+        "private_extracted_text_published": false,
+        "private_document_identifiers_published": false,
+        "reproducibility": {
+          "command": "npm run grid:validate:r5",
+          "benchmark_input_sha256": "9fd24545a1085c3176bd7a3f3135c298d34bd1522eba98db0b62e40ab6d08fc1"
+        },
+        "public_capacity_boundary": {
+          "operator_evidence_applied_to_public_map": false,
+          "reference_map_values_unchanged": true,
+          "operator_confirmation_created": false,
+          "automatic_dispatch_authorized": false,
+          "status": "synthetic_operator_evidence_rehearsal_only"
+        },
         "warning": "Synthetic operator-engagement rehearsal\u2014not an operator response, operating instruction, connection offer, or mapped capacity result.",
-        "manifest_sha256": "fb5fddfece182022fcb6408938ddde96f4285107973f93d59fa59ab168c47ed2"
+        "manifest_sha256": "00b57b85d89f971b93400654df58b3fdfd3bb746321bca5df041a424c8a16c9a"
       },
       "binding_constraint": "unsupplied_load_bus",
       "binding_case": "line-4-out",
@@ -5968,8 +6022,11 @@
           "source_review_warning_present": true,
           "discrepancy_preserved": true,
           "confirmed_field_preserved": true,
+          "validity_scope_extracted": true,
           "restriction_response_rehearsed": true,
-          "residual_exposure_visible": true
+          "residual_exposure_visible": true,
+          "no_automatic_dispatch": true,
+          "no_capacity_or_confirmation_claim": true
         },
         "all_repository_gates_passed": true,
         "benchmark": {
@@ -5978,6 +6035,8 @@
             "export_limit_mw": 0,
             "flexibility_mode": "dynamic",
             "notice_minutes": 15,
+            "valid_from": "2026-09-01",
+            "valid_to": "2027-08-31",
             "study_requirement_count": 1,
             "signal_count": 1
           },
@@ -6012,8 +6071,21 @@
         ],
         "public_visibility": "governance_summary_only",
         "private_operator_data_published": false,
+        "private_extracted_text_published": false,
+        "private_document_identifiers_published": false,
+        "reproducibility": {
+          "command": "npm run grid:validate:r5",
+          "benchmark_input_sha256": "9fd24545a1085c3176bd7a3f3135c298d34bd1522eba98db0b62e40ab6d08fc1"
+        },
+        "public_capacity_boundary": {
+          "operator_evidence_applied_to_public_map": false,
+          "reference_map_values_unchanged": true,
+          "operator_confirmation_created": false,
+          "automatic_dispatch_authorized": false,
+          "status": "synthetic_operator_evidence_rehearsal_only"
+        },
         "warning": "Synthetic operator-engagement rehearsal\u2014not an operator response, operating instruction, connection offer, or mapped capacity result.",
-        "manifest_sha256": "fb5fddfece182022fcb6408938ddde96f4285107973f93d59fa59ab168c47ed2"
+        "manifest_sha256": "00b57b85d89f971b93400654df58b3fdfd3bb746321bca5df041a424c8a16c9a"
       },
       "binding_constraint": "unsupplied_load_bus",
       "binding_case": "line-32-out",
@@ -7854,8 +7926,11 @@
           "source_review_warning_present": true,
           "discrepancy_preserved": true,
           "confirmed_field_preserved": true,
+          "validity_scope_extracted": true,
           "restriction_response_rehearsed": true,
-          "residual_exposure_visible": true
+          "residual_exposure_visible": true,
+          "no_automatic_dispatch": true,
+          "no_capacity_or_confirmation_claim": true
         },
         "all_repository_gates_passed": true,
         "benchmark": {
@@ -7864,6 +7939,8 @@
             "export_limit_mw": 0,
             "flexibility_mode": "dynamic",
             "notice_minutes": 15,
+            "valid_from": "2026-09-01",
+            "valid_to": "2027-08-31",
             "study_requirement_count": 1,
             "signal_count": 1
           },
@@ -7898,8 +7975,21 @@
         ],
         "public_visibility": "governance_summary_only",
         "private_operator_data_published": false,
+        "private_extracted_text_published": false,
+        "private_document_identifiers_published": false,
+        "reproducibility": {
+          "command": "npm run grid:validate:r5",
+          "benchmark_input_sha256": "9fd24545a1085c3176bd7a3f3135c298d34bd1522eba98db0b62e40ab6d08fc1"
+        },
+        "public_capacity_boundary": {
+          "operator_evidence_applied_to_public_map": false,
+          "reference_map_values_unchanged": true,
+          "operator_confirmation_created": false,
+          "automatic_dispatch_authorized": false,
+          "status": "synthetic_operator_evidence_rehearsal_only"
+        },
         "warning": "Synthetic operator-engagement rehearsal\u2014not an operator response, operating instruction, connection offer, or mapped capacity result.",
-        "manifest_sha256": "fb5fddfece182022fcb6408938ddde96f4285107973f93d59fa59ab168c47ed2"
+        "manifest_sha256": "00b57b85d89f971b93400654df58b3fdfd3bb746321bca5df041a424c8a16c9a"
       },
       "binding_constraint": "unsupplied_load_bus",
       "binding_case": "line-57-out",
@@ -9740,8 +9830,11 @@
           "source_review_warning_present": true,
           "discrepancy_preserved": true,
           "confirmed_field_preserved": true,
+          "validity_scope_extracted": true,
           "restriction_response_rehearsed": true,
-          "residual_exposure_visible": true
+          "residual_exposure_visible": true,
+          "no_automatic_dispatch": true,
+          "no_capacity_or_confirmation_claim": true
         },
         "all_repository_gates_passed": true,
         "benchmark": {
@@ -9750,6 +9843,8 @@
             "export_limit_mw": 0,
             "flexibility_mode": "dynamic",
             "notice_minutes": 15,
+            "valid_from": "2026-09-01",
+            "valid_to": "2027-08-31",
             "study_requirement_count": 1,
             "signal_count": 1
           },
@@ -9784,8 +9879,21 @@
         ],
         "public_visibility": "governance_summary_only",
         "private_operator_data_published": false,
+        "private_extracted_text_published": false,
+        "private_document_identifiers_published": false,
+        "reproducibility": {
+          "command": "npm run grid:validate:r5",
+          "benchmark_input_sha256": "9fd24545a1085c3176bd7a3f3135c298d34bd1522eba98db0b62e40ab6d08fc1"
+        },
+        "public_capacity_boundary": {
+          "operator_evidence_applied_to_public_map": false,
+          "reference_map_values_unchanged": true,
+          "operator_confirmation_created": false,
+          "automatic_dispatch_authorized": false,
+          "status": "synthetic_operator_evidence_rehearsal_only"
+        },
         "warning": "Synthetic operator-engagement rehearsal\u2014not an operator response, operating instruction, connection offer, or mapped capacity result.",
-        "manifest_sha256": "fb5fddfece182022fcb6408938ddde96f4285107973f93d59fa59ab168c47ed2"
+        "manifest_sha256": "00b57b85d89f971b93400654df58b3fdfd3bb746321bca5df041a424c8a16c9a"
       },
       "binding_constraint": "unsupplied_load_bus",
       "binding_case": "line-89-out",
@@ -11626,8 +11734,11 @@
           "source_review_warning_present": true,
           "discrepancy_preserved": true,
           "confirmed_field_preserved": true,
+          "validity_scope_extracted": true,
           "restriction_response_rehearsed": true,
-          "residual_exposure_visible": true
+          "residual_exposure_visible": true,
+          "no_automatic_dispatch": true,
+          "no_capacity_or_confirmation_claim": true
         },
         "all_repository_gates_passed": true,
         "benchmark": {
@@ -11636,6 +11747,8 @@
             "export_limit_mw": 0,
             "flexibility_mode": "dynamic",
             "notice_minutes": 15,
+            "valid_from": "2026-09-01",
+            "valid_to": "2027-08-31",
             "study_requirement_count": 1,
             "signal_count": 1
           },
@@ -11670,8 +11783,21 @@
         ],
         "public_visibility": "governance_summary_only",
         "private_operator_data_published": false,
+        "private_extracted_text_published": false,
+        "private_document_identifiers_published": false,
+        "reproducibility": {
+          "command": "npm run grid:validate:r5",
+          "benchmark_input_sha256": "9fd24545a1085c3176bd7a3f3135c298d34bd1522eba98db0b62e40ab6d08fc1"
+        },
+        "public_capacity_boundary": {
+          "operator_evidence_applied_to_public_map": false,
+          "reference_map_values_unchanged": true,
+          "operator_confirmation_created": false,
+          "automatic_dispatch_authorized": false,
+          "status": "synthetic_operator_evidence_rehearsal_only"
+        },
         "warning": "Synthetic operator-engagement rehearsal\u2014not an operator response, operating instruction, connection offer, or mapped capacity result.",
-        "manifest_sha256": "fb5fddfece182022fcb6408938ddde96f4285107973f93d59fa59ab168c47ed2"
+        "manifest_sha256": "00b57b85d89f971b93400654df58b3fdfd3bb746321bca5df041a424c8a16c9a"
       },
       "binding_constraint": "unsupplied_load_bus",
       "binding_case": "line-103-out",
@@ -13512,8 +13638,11 @@
           "source_review_warning_present": true,
           "discrepancy_preserved": true,
           "confirmed_field_preserved": true,
+          "validity_scope_extracted": true,
           "restriction_response_rehearsed": true,
-          "residual_exposure_visible": true
+          "residual_exposure_visible": true,
+          "no_automatic_dispatch": true,
+          "no_capacity_or_confirmation_claim": true
         },
         "all_repository_gates_passed": true,
         "benchmark": {
@@ -13522,6 +13651,8 @@
             "export_limit_mw": 0,
             "flexibility_mode": "dynamic",
             "notice_minutes": 15,
+            "valid_from": "2026-09-01",
+            "valid_to": "2027-08-31",
             "study_requirement_count": 1,
             "signal_count": 1
           },
@@ -13556,8 +13687,21 @@
         ],
         "public_visibility": "governance_summary_only",
         "private_operator_data_published": false,
+        "private_extracted_text_published": false,
+        "private_document_identifiers_published": false,
+        "reproducibility": {
+          "command": "npm run grid:validate:r5",
+          "benchmark_input_sha256": "9fd24545a1085c3176bd7a3f3135c298d34bd1522eba98db0b62e40ab6d08fc1"
+        },
+        "public_capacity_boundary": {
+          "operator_evidence_applied_to_public_map": false,
+          "reference_map_values_unchanged": true,
+          "operator_confirmation_created": false,
+          "automatic_dispatch_authorized": false,
+          "status": "synthetic_operator_evidence_rehearsal_only"
+        },
         "warning": "Synthetic operator-engagement rehearsal\u2014not an operator response, operating instruction, connection offer, or mapped capacity result.",
-        "manifest_sha256": "fb5fddfece182022fcb6408938ddde96f4285107973f93d59fa59ab168c47ed2"
+        "manifest_sha256": "00b57b85d89f971b93400654df58b3fdfd3bb746321bca5df041a424c8a16c9a"
       },
       "binding_constraint": "unsupplied_load_bus",
       "binding_case": "line-105-out",
@@ -15398,8 +15542,11 @@
           "source_review_warning_present": true,
           "discrepancy_preserved": true,
           "confirmed_field_preserved": true,
+          "validity_scope_extracted": true,
           "restriction_response_rehearsed": true,
-          "residual_exposure_visible": true
+          "residual_exposure_visible": true,
+          "no_automatic_dispatch": true,
+          "no_capacity_or_confirmation_claim": true
         },
         "all_repository_gates_passed": true,
         "benchmark": {
@@ -15408,6 +15555,8 @@
             "export_limit_mw": 0,
             "flexibility_mode": "dynamic",
             "notice_minutes": 15,
+            "valid_from": "2026-09-01",
+            "valid_to": "2027-08-31",
             "study_requirement_count": 1,
             "signal_count": 1
           },
@@ -15442,8 +15591,21 @@
         ],
         "public_visibility": "governance_summary_only",
         "private_operator_data_published": false,
+        "private_extracted_text_published": false,
+        "private_document_identifiers_published": false,
+        "reproducibility": {
+          "command": "npm run grid:validate:r5",
+          "benchmark_input_sha256": "9fd24545a1085c3176bd7a3f3135c298d34bd1522eba98db0b62e40ab6d08fc1"
+        },
+        "public_capacity_boundary": {
+          "operator_evidence_applied_to_public_map": false,
+          "reference_map_values_unchanged": true,
+          "operator_confirmation_created": false,
+          "automatic_dispatch_authorized": false,
+          "status": "synthetic_operator_evidence_rehearsal_only"
+        },
         "warning": "Synthetic operator-engagement rehearsal\u2014not an operator response, operating instruction, connection offer, or mapped capacity result.",
-        "manifest_sha256": "fb5fddfece182022fcb6408938ddde96f4285107973f93d59fa59ab168c47ed2"
+        "manifest_sha256": "00b57b85d89f971b93400654df58b3fdfd3bb746321bca5df041a424c8a16c9a"
       },
       "binding_constraint": "unsupplied_load_bus",
       "binding_case": "line-3-out",
@@ -17284,8 +17446,11 @@
           "source_review_warning_present": true,
           "discrepancy_preserved": true,
           "confirmed_field_preserved": true,
+          "validity_scope_extracted": true,
           "restriction_response_rehearsed": true,
-          "residual_exposure_visible": true
+          "residual_exposure_visible": true,
+          "no_automatic_dispatch": true,
+          "no_capacity_or_confirmation_claim": true
         },
         "all_repository_gates_passed": true,
         "benchmark": {
@@ -17294,6 +17459,8 @@
             "export_limit_mw": 0,
             "flexibility_mode": "dynamic",
             "notice_minutes": 15,
+            "valid_from": "2026-09-01",
+            "valid_to": "2027-08-31",
             "study_requirement_count": 1,
             "signal_count": 1
           },
@@ -17328,8 +17495,21 @@
         ],
         "public_visibility": "governance_summary_only",
         "private_operator_data_published": false,
+        "private_extracted_text_published": false,
+        "private_document_identifiers_published": false,
+        "reproducibility": {
+          "command": "npm run grid:validate:r5",
+          "benchmark_input_sha256": "9fd24545a1085c3176bd7a3f3135c298d34bd1522eba98db0b62e40ab6d08fc1"
+        },
+        "public_capacity_boundary": {
+          "operator_evidence_applied_to_public_map": false,
+          "reference_map_values_unchanged": true,
+          "operator_confirmation_created": false,
+          "automatic_dispatch_authorized": false,
+          "status": "synthetic_operator_evidence_rehearsal_only"
+        },
         "warning": "Synthetic operator-engagement rehearsal\u2014not an operator response, operating instruction, connection offer, or mapped capacity result.",
-        "manifest_sha256": "fb5fddfece182022fcb6408938ddde96f4285107973f93d59fa59ab168c47ed2"
+        "manifest_sha256": "00b57b85d89f971b93400654df58b3fdfd3bb746321bca5df041a424c8a16c9a"
       },
       "binding_constraint": "unsupplied_load_bus",
       "binding_case": "line-7-out",
@@ -19170,8 +19350,11 @@
           "source_review_warning_present": true,
           "discrepancy_preserved": true,
           "confirmed_field_preserved": true,
+          "validity_scope_extracted": true,
           "restriction_response_rehearsed": true,
-          "residual_exposure_visible": true
+          "residual_exposure_visible": true,
+          "no_automatic_dispatch": true,
+          "no_capacity_or_confirmation_claim": true
         },
         "all_repository_gates_passed": true,
         "benchmark": {
@@ -19180,6 +19363,8 @@
             "export_limit_mw": 0,
             "flexibility_mode": "dynamic",
             "notice_minutes": 15,
+            "valid_from": "2026-09-01",
+            "valid_to": "2027-08-31",
             "study_requirement_count": 1,
             "signal_count": 1
           },
@@ -19214,8 +19399,21 @@
         ],
         "public_visibility": "governance_summary_only",
         "private_operator_data_published": false,
+        "private_extracted_text_published": false,
+        "private_document_identifiers_published": false,
+        "reproducibility": {
+          "command": "npm run grid:validate:r5",
+          "benchmark_input_sha256": "9fd24545a1085c3176bd7a3f3135c298d34bd1522eba98db0b62e40ab6d08fc1"
+        },
+        "public_capacity_boundary": {
+          "operator_evidence_applied_to_public_map": false,
+          "reference_map_values_unchanged": true,
+          "operator_confirmation_created": false,
+          "automatic_dispatch_authorized": false,
+          "status": "synthetic_operator_evidence_rehearsal_only"
+        },
         "warning": "Synthetic operator-engagement rehearsal\u2014not an operator response, operating instruction, connection offer, or mapped capacity result.",
-        "manifest_sha256": "fb5fddfece182022fcb6408938ddde96f4285107973f93d59fa59ab168c47ed2"
+        "manifest_sha256": "00b57b85d89f971b93400654df58b3fdfd3bb746321bca5df041a424c8a16c9a"
       },
       "binding_constraint": "unsupplied_load_bus",
       "binding_case": "line-103-out",
@@ -21056,8 +21254,11 @@
           "source_review_warning_present": true,
           "discrepancy_preserved": true,
           "confirmed_field_preserved": true,
+          "validity_scope_extracted": true,
           "restriction_response_rehearsed": true,
-          "residual_exposure_visible": true
+          "residual_exposure_visible": true,
+          "no_automatic_dispatch": true,
+          "no_capacity_or_confirmation_claim": true
         },
         "all_repository_gates_passed": true,
         "benchmark": {
@@ -21066,6 +21267,8 @@
             "export_limit_mw": 0,
             "flexibility_mode": "dynamic",
             "notice_minutes": 15,
+            "valid_from": "2026-09-01",
+            "valid_to": "2027-08-31",
             "study_requirement_count": 1,
             "signal_count": 1
           },
@@ -21100,8 +21303,21 @@
         ],
         "public_visibility": "governance_summary_only",
         "private_operator_data_published": false,
+        "private_extracted_text_published": false,
+        "private_document_identifiers_published": false,
+        "reproducibility": {
+          "command": "npm run grid:validate:r5",
+          "benchmark_input_sha256": "9fd24545a1085c3176bd7a3f3135c298d34bd1522eba98db0b62e40ab6d08fc1"
+        },
+        "public_capacity_boundary": {
+          "operator_evidence_applied_to_public_map": false,
+          "reference_map_values_unchanged": true,
+          "operator_confirmation_created": false,
+          "automatic_dispatch_authorized": false,
+          "status": "synthetic_operator_evidence_rehearsal_only"
+        },
         "warning": "Synthetic operator-engagement rehearsal\u2014not an operator response, operating instruction, connection offer, or mapped capacity result.",
-        "manifest_sha256": "fb5fddfece182022fcb6408938ddde96f4285107973f93d59fa59ab168c47ed2"
+        "manifest_sha256": "00b57b85d89f971b93400654df58b3fdfd3bb746321bca5df041a424c8a16c9a"
       },
       "binding_constraint": "unsupplied_load_bus",
       "binding_case": "line-22-out",
@@ -22942,8 +23158,11 @@
           "source_review_warning_present": true,
           "discrepancy_preserved": true,
           "confirmed_field_preserved": true,
+          "validity_scope_extracted": true,
           "restriction_response_rehearsed": true,
-          "residual_exposure_visible": true
+          "residual_exposure_visible": true,
+          "no_automatic_dispatch": true,
+          "no_capacity_or_confirmation_claim": true
         },
         "all_repository_gates_passed": true,
         "benchmark": {
@@ -22952,6 +23171,8 @@
             "export_limit_mw": 0,
             "flexibility_mode": "dynamic",
             "notice_minutes": 15,
+            "valid_from": "2026-09-01",
+            "valid_to": "2027-08-31",
             "study_requirement_count": 1,
             "signal_count": 1
           },
@@ -22986,8 +23207,21 @@
         ],
         "public_visibility": "governance_summary_only",
         "private_operator_data_published": false,
+        "private_extracted_text_published": false,
+        "private_document_identifiers_published": false,
+        "reproducibility": {
+          "command": "npm run grid:validate:r5",
+          "benchmark_input_sha256": "9fd24545a1085c3176bd7a3f3135c298d34bd1522eba98db0b62e40ab6d08fc1"
+        },
+        "public_capacity_boundary": {
+          "operator_evidence_applied_to_public_map": false,
+          "reference_map_values_unchanged": true,
+          "operator_confirmation_created": false,
+          "automatic_dispatch_authorized": false,
+          "status": "synthetic_operator_evidence_rehearsal_only"
+        },
         "warning": "Synthetic operator-engagement rehearsal\u2014not an operator response, operating instruction, connection offer, or mapped capacity result.",
-        "manifest_sha256": "fb5fddfece182022fcb6408938ddde96f4285107973f93d59fa59ab168c47ed2"
+        "manifest_sha256": "00b57b85d89f971b93400654df58b3fdfd3bb746321bca5df041a424c8a16c9a"
       },
       "binding_constraint": "unsupplied_load_bus",
       "binding_case": "line-7-out",

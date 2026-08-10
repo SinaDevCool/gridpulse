@@ -8,8 +8,11 @@
     "source_review_warning_present": true,
     "discrepancy_preserved": true,
     "confirmed_field_preserved": true,
+    "validity_scope_extracted": true,
     "restriction_response_rehearsed": true,
-    "residual_exposure_visible": true
+    "residual_exposure_visible": true,
+    "no_automatic_dispatch": true,
+    "no_capacity_or_confirmation_claim": true
   },
   "all_repository_gates_passed": true,
   "benchmark": {
@@ -18,6 +21,8 @@
       "export_limit_mw": 0,
       "flexibility_mode": "dynamic",
       "notice_minutes": 15,
+      "valid_from": "2026-09-01",
+      "valid_to": "2027-08-31",
       "study_requirement_count": 1,
       "signal_count": 1
     },
@@ -52,6 +57,19 @@
   ],
   "public_visibility": "governance_summary_only",
   "private_operator_data_published": false,
+  "private_extracted_text_published": false,
+  "private_document_identifiers_published": false,
+  "reproducibility": {
+    "command": "npm run grid:validate:r5",
+    "benchmark_input_sha256": "9fd24545a1085c3176bd7a3f3135c298d34bd1522eba98db0b62e40ab6d08fc1"
+  },
+  "public_capacity_boundary": {
+    "operator_evidence_applied_to_public_map": false,
+    "reference_map_values_unchanged": true,
+    "operator_confirmation_created": false,
+    "automatic_dispatch_authorized": false,
+    "status": "synthetic_operator_evidence_rehearsal_only"
+  },
   "warning": "Synthetic operator-engagement rehearsal—not an operator response, operating instruction, connection offer, or mapped capacity result.",
-  "manifest_sha256": "fb5fddfece182022fcb6408938ddde96f4285107973f93d59fa59ab168c47ed2"
+  "manifest_sha256": "00b57b85d89f971b93400654df58b3fdfd3bb746321bca5df041a424c8a16c9a"
 }

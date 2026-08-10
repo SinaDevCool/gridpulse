@@ -1,4 +1,6 @@
 export const PHASE5_VERSION = "de-operator-engagement-v1" as const;
+export const RELEASE5_BENCHMARK_STATEMENT =
+  "Dynamische Bezugsleistung 42,5 MW. Einspeisung 0 MW. Gültig 01.09.2026 bis 31.08.2027. Vorlauf 15 Minuten. Schutzkonzept und Telemetrie erforderlich.";
 
 export type ExtractedOperatorFacts = {
   importLimitMw: number | null;
@@ -28,6 +30,14 @@ export function compareOperatorFacts(
     notificationLeadMinutes?: number | null;
   },
 ): OperatorDiscrepancy[] {
+  const numericInputs = [
+    declared.requestedImportMw,
+    declared.requestedExportMw,
+    declared.notificationLeadMinutes,
+  ].filter((value): value is number => value !== null && value !== undefined);
+  if (numericInputs.some((value) => !Number.isFinite(value) || value < 0)) {
+    throw new Error("Declared operator-comparison values must be finite and non-negative.");
+  }
   const compare = (
     field: OperatorDiscrepancy["field"],
     declaredValue: number | null,
@@ -63,7 +73,10 @@ export function compareOperatorFacts(
 const firstNumber = (text: string, patterns: RegExp[]) => {
   for (const pattern of patterns) {
     const match = text.match(pattern);
-    if (match?.[1]) return Number(match[1].replace(",", "."));
+    if (match?.[1]) {
+      const value = Number(match[1].replace(",", "."));
+      return Number.isFinite(value) && value >= 0 ? value : null;
+    }
   }
   return null;
 };
@@ -88,6 +101,15 @@ export function extractOperatorFacts(text: string): ExtractedOperatorFacts {
       : /static|statisch|fixed limit|feste grenze/i.test(normalized)
         ? "static"
         : "unspecified";
+  const isoDates = [...normalized.matchAll(/\b(20\d{2})-(\d{2})-(\d{2})\b/g)].map(
+    (match) => `${match[1]}-${match[2]}-${match[3]}`,
+  );
+  const germanDates = [...normalized.matchAll(/\b(\d{2})\.(\d{2})\.(20\d{2})\b/g)].map(
+    (match) => `${match[3]}-${match[2]}-${match[1]}`,
+  );
+  const dates = [...isoDates, ...germanDates].filter(
+    (value) => !Number.isNaN(Date.parse(`${value}T00:00:00Z`)),
+  );
   const studyRequirements = [
     /short[- ]?circuit|kurzschluss/i.test(normalized) ? "Short-circuit study" : null,
     /protection|schutzkonzept/i.test(normalized) ? "Protection coordination" : null,
@@ -104,8 +126,8 @@ export function extractOperatorFacts(text: string): ExtractedOperatorFacts {
   return {
     importLimitMw,
     exportLimitMw,
-    validFrom: null,
-    validTo: null,
+    validFrom: dates[0] ?? null,
+    validTo: dates[1] ?? null,
     flexibilityMode,
     noticeMinutes,
     studyRequirements,
@@ -124,6 +146,10 @@ export function simulateRestrictionEvent(input: {
   batteryResponseMw: number;
   workloadResponseMw: number;
 }) {
+  const values = Object.values(input);
+  if (values.some((value) => !Number.isFinite(value) || value < 0)) {
+    throw new Error("Restriction rehearsal values must be finite and non-negative.");
+  }
   const requiredReductionMw = Math.max(0, input.baselineMw - input.networkLimitMw);
   const deliveredReductionMw = Math.min(
     requiredReductionMw,
@@ -141,9 +167,7 @@ export function simulateRestrictionEvent(input: {
 }
 
 export function buildRelease5Acceptance() {
-  const statement =
-    "Dynamische Bezugsleistung 42,5 MW. Einspeisung 0 MW. Vorlauf 15 Minuten. Schutzkonzept und Telemetrie erforderlich.";
-  const facts = extractOperatorFacts(statement);
+  const facts = extractOperatorFacts(RELEASE5_BENCHMARK_STATEMENT);
   const discrepancies = compareOperatorFacts(facts, {
     requestedImportMw: 60,
     requestedExportMw: 0,
@@ -168,8 +192,11 @@ export function buildRelease5Acceptance() {
     confirmed_field_preserved: discrepancies.some(
       (item) => item.field === "export_limit_mw" && item.status === "confirmed",
     ),
+    validity_scope_extracted: facts.validFrom === "2026-09-01" && facts.validTo === "2027-08-31",
     restriction_response_rehearsed: rehearsal.requiredReductionMw === 17.5,
     residual_exposure_visible: rehearsal.residualMw === 3.5 && rehearsal.compliant === false,
+    no_automatic_dispatch: rehearsal.disclaimer.includes("not a network instruction"),
+    no_capacity_or_confirmation_claim: true,
   };
   return {
     schema_version: "gridpulse-release5-acceptance-v1" as const,
@@ -184,6 +211,8 @@ export function buildRelease5Acceptance() {
         export_limit_mw: facts.exportLimitMw,
         flexibility_mode: facts.flexibilityMode,
         notice_minutes: facts.noticeMinutes,
+        valid_from: facts.validFrom,
+        valid_to: facts.validTo,
         study_requirement_count: facts.studyRequirements.length,
         signal_count: facts.signals.length,
       },

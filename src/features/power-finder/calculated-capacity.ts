@@ -367,6 +367,8 @@ export type ReferenceCapacityArtifact = {
         export_limit_mw: number;
         flexibility_mode: string;
         notice_minutes: number;
+        valid_from: string | null;
+        valid_to: string | null;
         study_requirement_count: number;
         signal_count: number;
       };
@@ -391,6 +393,19 @@ export type ReferenceCapacityArtifact = {
     external_gates: string[];
     public_visibility: "governance_summary_only";
     private_operator_data_published: false;
+    private_extracted_text_published: false;
+    private_document_identifiers_published: false;
+    reproducibility: {
+      command: string;
+      benchmark_input_sha256: string;
+    };
+    public_capacity_boundary: {
+      operator_evidence_applied_to_public_map: false;
+      reference_map_values_unchanged: true;
+      operator_confirmation_created: false;
+      automatic_dispatch_authorized: false;
+      status: string;
+    };
     warning: string;
     manifest_sha256: string;
   } | null;

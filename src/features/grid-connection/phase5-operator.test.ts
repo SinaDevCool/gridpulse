@@ -18,6 +18,30 @@ describe("Phase 5 operator engagement", () => {
     expect(result.warnings[0]).toContain("draft only");
   });
 
+  it("extracts validity scope without treating it as confirmed", () => {
+    const result = extractOperatorFacts("Gültig 01.09.2026 bis 31.08.2027. Maximum import 42 MW.");
+    expect(result.validFrom).toBe("2026-09-01");
+    expect(result.validTo).toBe("2027-08-31");
+    expect(result.warnings[0]).toContain("draft only");
+  });
+
+  it("rejects invalid restriction and declaration values", () => {
+    expect(() =>
+      simulateRestrictionEvent({
+        baselineMw: Number.NaN,
+        networkLimitMw: 20,
+        batteryResponseMw: 1,
+        workloadResponseMw: 1,
+      }),
+    ).toThrow("finite and non-negative");
+    expect(() =>
+      compareOperatorFacts(extractOperatorFacts("Import 10 MW"), {
+        requestedImportMw: -1,
+        requestedExportMw: 0,
+      }),
+    ).toThrow("finite and non-negative");
+  });
+
   it("reports residual exposure in a restriction rehearsal", () => {
     expect(
       simulateRestrictionEvent({

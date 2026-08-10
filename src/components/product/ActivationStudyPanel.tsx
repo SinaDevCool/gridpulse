@@ -850,6 +850,15 @@ function EvidenceView({ context }: { context: ActivationStudyContext }) {
               <dd>No automatic dispatch · no operator confirmation · no mapped capacity claim</dd>
             </div>
           )}
+          {release5 && (
+            <div>
+              <dt>Release 5 map authority</dt>
+              <dd>
+                Reviewed operator evidence stays project-private and does not alter public map
+                values
+              </dd>
+            </div>
+          )}
           {release4 && (
             <div>
               <dt>Neo4j and physics boundary</dt>

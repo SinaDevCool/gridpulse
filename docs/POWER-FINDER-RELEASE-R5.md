@@ -14,11 +14,19 @@ interpret a synthetic statement as an operator response and cannot create mapped
 - Restriction events calculate required, delivered and residual response as non-operational
   rehearsals. They do not issue telemetry, BMS, EMS or workload-control commands.
 - Authenticated grid-expert approval requires the source document and content hash before the
-  existing private workflow can create an operator-proposed envelope.
+  private workflow can atomically create an operator-proposed envelope.
+- Ordinary editors can create and revise draft/reviewed evidence, but RLS prevents them from setting
+  `operator_confirmed` or directly creating `operator_proposed`/`agreed` envelopes. The protected
+  approval function verifies the exact operator-source document ID and SHA-256, preserved declared
+  values and discrepancies, valid non-negative limits and the authenticated grid-expert role.
+- Validity dates are extracted as reviewable drafts and carried into the proposed envelope only after
+  approval. Invalid numeric inputs and invalid validity windows fail closed.
 - The public governance artifact contains benchmark summaries only. Correspondence text, document
   identifiers, reviewer identity and private project records are excluded.
 - Every reference-network result carries the Release 5 governance checksum for export lineage, but
   Release 5 does not change its MW values or promote it onto the OpenStreetMap grid.
+- Public reproducibility includes the acceptance command and benchmark-input hash; raw text, document
+  identifiers, reviewer identity and project records remain private.
 
 ## Run the acceptance benchmark
 
