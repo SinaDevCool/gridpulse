@@ -332,6 +332,37 @@ function PowerFinderPage() {
   );
   const [secondaryControlsOpen, setSecondaryControlsOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mapNavigationTarget, setMapNavigationTarget] = useState<
+    | { requestId: number; kind: "point"; center: [number, number]; zoom?: number }
+    | {
+        requestId: number;
+        kind: "bounds";
+        bounds: [number, number, number, number];
+        maxZoom?: number;
+      }
+    | undefined
+  >();
+  const navigateMapToPoint = (center: [number, number]) =>
+    setMapNavigationTarget({ requestId: Date.now(), kind: "point", center, zoom: 11 });
+  const navigateMapToOperator = (operatorName: string) => {
+    if (operatorName === "all") return;
+    const selectedOperator = operators.find((item) => item.name === operatorName);
+    if (!selectedOperator?.bounds) {
+      setInteractionNotice(
+        `${operatorName} was selected, but its mapped geographic extent is not available yet.`,
+      );
+      return;
+    }
+    setMapNavigationTarget({
+      requestId: Date.now(),
+      kind: "bounds",
+      bounds: selectedOperator.bounds,
+      maxZoom: selectedOperator.type === "TSO" ? 7.5 : 10,
+    });
+    setInteractionNotice(
+      `Map fitted to the mapped ${selectedOperator.type} extent for ${operatorName}.`,
+    );
+  };
   const commitNumber = (
     field: FinderNumericField,
     raw: string,
@@ -593,7 +624,7 @@ function PowerFinderPage() {
       ),
     )
       .sort((left, right) => left.localeCompare(right))
-      .map((name) => ({ name, type: "DSO / other" as const, featureCount: 0 }));
+      .map((name) => ({ name, type: "DSO / other" as const, featureCount: 0, bounds: null }));
   }, [collection, operatorCatalog]);
   const transmissionOperators = useMemo(
     () => operators.filter((item) => item.type === "TSO"),
@@ -1521,13 +1552,15 @@ function PowerFinderPage() {
                 <select
                   name="transmission-operator"
                   value={selectedOperatorType === "TSO" ? operator : "all"}
-                  onChange={(event) =>
+                  onChange={(event) => {
+                    const operatorName = event.target.value;
+                    navigateMapToOperator(operatorName);
                     void updateSearch({
-                      operator: event.target.value === "all" ? undefined : event.target.value,
+                      operator: operatorName === "all" ? undefined : operatorName,
                       candidate: undefined,
                       compare: undefined,
-                    })
-                  }
+                    });
+                  }}
                 >
                   <option value="all">All transmission operators</option>
                   {transmissionOperators.map((item) => (
@@ -1543,13 +1576,15 @@ function PowerFinderPage() {
                 <select
                   name="distribution-operator"
                   value={selectedOperatorType === "DSO / other" ? operator : "all"}
-                  onChange={(event) =>
+                  onChange={(event) => {
+                    const operatorName = event.target.value;
+                    navigateMapToOperator(operatorName);
                     void updateSearch({
-                      operator: event.target.value === "all" ? undefined : event.target.value,
+                      operator: operatorName === "all" ? undefined : operatorName,
                       candidate: undefined,
                       compare: undefined,
-                    })
-                  }
+                    });
+                  }}
                 >
                   <option value="all">All distribution operators</option>
                   {distributionOperators.map((item) => (
@@ -1933,6 +1968,9 @@ function PowerFinderPage() {
                       } satisfies PowerFinderFeature);
                     setSelectedOpportunitySnapshot(candidate);
                     setSelected(detailNode);
+                    if (detailNode.geometry.type === "Point") {
+                      navigateMapToPoint(detailNode.geometry.coordinates as [number, number]);
+                    }
                     setInteractionNotice(
                       `${candidate.nodeName} selected and highlighted on the map.`,
                     );
@@ -2068,6 +2106,7 @@ function PowerFinderPage() {
               capacityMetric={capacityMetric}
               requiredCapacityMw={requiredCapacityMw}
               viewportTarget={viewportTarget}
+              navigationTarget={mapNavigationTarget}
               onSelect={(feature) => {
                 setSelected(feature);
                 if (feature.properties.kind === "node") {

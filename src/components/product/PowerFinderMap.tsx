@@ -92,6 +92,14 @@ type PowerFinderMapProps = {
   requiredCapacityMw?: number;
   capacityCoverage?: FeatureCollection<Polygon> | null;
   viewportTarget?: { center: [number, number]; zoom: number };
+  navigationTarget?:
+    | { requestId: number; kind: "point"; center: [number, number]; zoom?: number }
+    | {
+        requestId: number;
+        kind: "bounds";
+        bounds: [number, number, number, number];
+        maxZoom?: number;
+      };
   onSelect: (feature: PowerFinderFeature) => void;
   onViewportChange?: (bounds: PowerFinderBounds) => void;
   projectSite?: [number, number] | null;
@@ -178,6 +186,7 @@ export function PowerFinderMap({
   requiredCapacityMw = 1,
   capacityCoverage = null,
   viewportTarget,
+  navigationTarget,
   onSelect,
   onViewportChange,
   projectSite,
@@ -1010,6 +1019,33 @@ export function PowerFinderMap({
       duration: 700,
     });
   }, [viewportTarget]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!navigationTarget || !map) return;
+    if (navigationTarget.kind === "point") {
+      map.flyTo({
+        center: navigationTarget.center,
+        zoom: Math.max(map.getZoom(), navigationTarget.zoom ?? 11),
+        duration: 750,
+        essential: true,
+      });
+      return;
+    }
+    const [west, south, east, north] = navigationTarget.bounds;
+    map.fitBounds(
+      [
+        [west, south],
+        [east, north],
+      ],
+      {
+        padding: { top: 90, right: 110, bottom: 90, left: 110 },
+        maxZoom: navigationTarget.maxZoom ?? 9.5,
+        duration: 850,
+        essential: true,
+      },
+    );
+  }, [navigationTarget]);
 
   useEffect(() => {
     const source = mapRef.current?.getSource("finder-selected-candidate");
