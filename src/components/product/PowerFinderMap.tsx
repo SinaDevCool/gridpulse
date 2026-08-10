@@ -321,8 +321,8 @@ export function PowerFinderMap({
           },
         });
         map.addLayer({
-          id: "national-generation-density",
-          type: "heatmap",
+          id: "national-generation-overview",
+          type: "circle",
           source: "power-finder-national-tiles",
           "source-layer": "power_finder",
           minzoom: 6,
@@ -330,23 +330,10 @@ export function PowerFinderMap({
           filter: ["==", ["get", "kind"], "generation_asset"],
           layout: { visibility: enabledLayers.generation_asset ? "visible" : "none" },
           paint: {
-            "heatmap-weight": 0.65,
-            "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 6, 0.35, 9, 0.8],
-            "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 6, 9, 9, 16],
-            "heatmap-opacity": 0.72,
-            "heatmap-color": [
-              "interpolate",
-              ["linear"],
-              ["heatmap-density"],
-              0,
-              "rgba(34,197,94,0)",
-              0.35,
-              "rgba(34,197,94,0.35)",
-              0.7,
-              "#4ade80",
-              1,
-              "#dcfce7",
-            ],
+            "circle-radius": ["interpolate", ["linear"], ["zoom"], 6, 0.8, 9, 2.2],
+            "circle-color": "#22c55e",
+            "circle-opacity": 0.48,
+            "circle-stroke-width": 0,
           },
         });
         map.addLayer({
@@ -652,11 +639,8 @@ export function PowerFinderMap({
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    const split = splitMapCollection(
-      withCapacityResults(collection, capacityNodes, capacityMetric, requiredCapacityMw),
-    );
+    const split = splitMapCollection(collection);
     const updates = [
-      [sourceIds.node, split.nodes],
       [sourceIds.line, split.lines],
       [sourceIds.industrial_site, split.industrialSites],
       [sourceIds.generation_asset, split.generationAssets],
@@ -666,19 +650,33 @@ export function PowerFinderMap({
       const source = map.getSource(sourceId);
       if (isGeoJsonSource(source)) source.setData(data);
     }
+  }, [collection]);
+
+  useEffect(() => {
+    const source = mapRef.current?.getSource(sourceIds.node);
+    if (!isGeoJsonSource(source)) return;
+    const split = splitMapCollection(
+      withCapacityResults(collection, capacityNodes, capacityMetric, requiredCapacityMw),
+    );
+    source.setData(split.nodes);
+  }, [collection, capacityNodes, capacityMetric, requiredCapacityMw]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
     const nationalLayers = {
       "national-grid-lines": enabledLayers.line,
       "national-grid-nodes": enabledLayers.node,
       "national-industrial-sites": enabledLayers.industrial_site,
       "national-industrial-overview": enabledLayers.industrial_site,
-      "national-generation-density": enabledLayers.generation_asset,
+      "national-generation-overview": enabledLayers.generation_asset,
       "national-generation-assets": enabledLayers.generation_asset,
       "national-storage-assets": enabledLayers.storage_asset,
     } as const;
     for (const [layer, visible] of Object.entries(nationalLayers)) {
       if (map.getLayer(layer)) map.setLayoutProperty(layer, "visibility", visible ? "visible" : "none");
     }
-  }, [collection, capacityNodes, capacityMetric, requiredCapacityMw, enabledLayers]);
+  }, [enabledLayers]);
 
   useEffect(() => {
     const source = mapRef.current?.getSource("finder-project-site");

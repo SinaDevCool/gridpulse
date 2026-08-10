@@ -176,7 +176,7 @@ const kindLabels: Record<PowerFinderKind, string> = {
   node: "Grid nodes",
   line: "Mapped grid corridors",
   industrial_site: "Industrial sites",
-  generation_asset: "Registered generation",
+  generation_asset: "Registered generation · partial exact locations",
   storage_asset: "Registered storage",
 };
 const initialBounds: PowerFinderBounds = {
@@ -1686,8 +1686,10 @@ function PowerFinderPage() {
             </div>
             {(enabled.generation_asset || enabled.storage_asset) && (
               <p className="layer-visibility-note">
-                Registered assets are plotted only where MaStR publishes an exact mapped coordinate.
-                Regional-only registry records are intentionally not placed at invented locations.
+                Registered generation is a partial exact-coordinate release concentrated in
+                north-eastern Germany, not a national density or capacity surface. Assets are
+                plotted only where MaStR publishes an exact mapped coordinate; regional-only
+                records are not placed at invented locations.
               </p>
             )}
             {(enabled.line || enabled.industrial_site) &&
@@ -2011,7 +2013,7 @@ function PowerFinderPage() {
                   <i className="legend-site" /> Industrial land
                 </span>
                 <span>
-                  <i className="legend-generation" /> Registered generation
+                  <i className="legend-generation" /> Registered generation · partial exact points
                 </span>
                 <span>
                   <i className="legend-storage" /> Registered storage
