@@ -86,13 +86,14 @@ import {
 } from "@/features/power-finder/activation-study";
 import {
   capacityMetricLabels,
+  loadBerlinSyntheticCapacity,
   loadCalculatedCapacityViewport,
+  type BerlinSyntheticCapacityArtifact,
   type CalculatedCapacityViewport,
   type CapacityMetric,
 } from "@/features/power-finder/calculated-capacity";
 import {
   classifyCapacityOpportunity,
-  createIllustrativeCapacityNodes,
   summariseCapacityOpportunities,
 } from "@/features/power-finder/capacity-opportunity";
 
@@ -121,13 +122,31 @@ export const Route = createFileRoute("/power-finder")({
     compare: z.string().max(700).optional().catch(undefined),
     region: z
       .enum([
-        "DE", "DE-BB", "DE-BW", "DE-BY", "DE-BE", "DE-HB", "DE-HH", "DE-HE",
-        "DE-MV", "DE-NI", "DE-NW", "DE-RP", "DE-SL", "DE-SN", "DE-ST", "DE-SH", "DE-TH",
+        "DE",
+        "DE-BB",
+        "DE-BW",
+        "DE-BY",
+        "DE-BE",
+        "DE-HB",
+        "DE-HH",
+        "DE-HE",
+        "DE-MV",
+        "DE-NI",
+        "DE-NW",
+        "DE-RP",
+        "DE-SL",
+        "DE-SN",
+        "DE-ST",
+        "DE-SH",
+        "DE-TH",
       ])
       .optional()
       .catch(undefined),
     mapMode: z.enum(["voltage", "evidence", "capacity"]).optional().catch(undefined),
-    capacitySource: z.enum(["reference", "private", "demo"]).optional().catch(undefined),
+    capacitySource: z
+      .enum(["reference", "private", "demo", "berlin_synthetic"])
+      .optional()
+      .catch(undefined),
     capacityMetric: z
       .enum([
         "n0_import_mw",
@@ -344,10 +363,13 @@ function PowerFinderPage() {
   const [requiredCapacityMw, setRequiredCapacityMw] = useState(
     search.requiredMw ?? project.importMw,
   );
-  const [capacitySource, setCapacitySource] = useState<"reference" | "private" | "demo">(
-    search.capacitySource === "private" && search.workspaceId ? "private" : "demo",
+  const [capacitySource, setCapacitySource] = useState<"private" | "berlin_synthetic">(
+    search.capacitySource === "private" && search.workspaceId ? "private" : "berlin_synthetic",
   );
   const [capacityViewport, setCapacityViewport] = useState<CalculatedCapacityViewport | null>(null);
+  const [berlinCapacity, setBerlinCapacity] = useState<BerlinSyntheticCapacityArtifact | null>(
+    null,
+  );
   const [capacityState, setCapacityState] = useState<"idle" | "loading" | "ready" | "error">(
     "idle",
   );
@@ -359,13 +381,15 @@ function PowerFinderPage() {
   );
 
   useEffect(() => {
-    void loadGridOperatorCatalog().then(setOperatorCatalog).catch(() => setOperatorCatalog([]));
+    void loadGridOperatorCatalog()
+      .then(setOperatorCatalog)
+      .catch(() => setOperatorCatalog([]));
   }, []);
 
   useEffect(() => {
     setMapMode(search.mapMode ?? "voltage");
     setCapacitySource(
-      search.capacitySource === "private" && search.workspaceId ? "private" : "demo",
+      search.capacitySource === "private" && search.workspaceId ? "private" : "berlin_synthetic",
     );
     setCapacityMetric(search.capacityMetric ?? "firm_import_mw");
     setRequiredCapacityMw(search.requiredMw ?? project.importMw);
@@ -379,11 +403,22 @@ function PowerFinderPage() {
   ]);
 
   useEffect(() => {
-    if (mapMode !== "capacity" || capacitySource === "demo") {
-      if (capacitySource === "demo") setCapacityState("ready");
+    if (mapMode !== "capacity") {
       return;
     }
     setCapacityState("loading");
+    if (capacitySource === "berlin_synthetic") {
+      void loadBerlinSyntheticCapacity()
+        .then((result) => {
+          setBerlinCapacity(result);
+          setCapacityState("ready");
+        })
+        .catch(() => {
+          setBerlinCapacity(null);
+          setCapacityState("error");
+        });
+      return;
+    }
     void loadCalculatedCapacityViewport({
       workspaceId: search.workspaceId,
       metric: capacityMetric,
@@ -551,12 +586,13 @@ function PowerFinderPage() {
   const operators = useMemo(() => {
     if (operatorCatalog.length) return operatorCatalog;
     return Array.from(
-        new Set(
-          collection?.features
-            .map((feature) => canonicalOperatorName(feature.properties.operator))
-            .filter((value): value is string => Boolean(value)) ?? [],
-        ),
-      ).sort((left, right) => left.localeCompare(right))
+      new Set(
+        collection?.features
+          .map((feature) => canonicalOperatorName(feature.properties.operator))
+          .filter((value): value is string => Boolean(value)) ?? [],
+      ),
+    )
+      .sort((left, right) => left.localeCompare(right))
       .map((name) => ({ name, type: "DSO / other" as const, featureCount: 0 }));
   }, [collection, operatorCatalog]);
   const transmissionOperators = useMemo(
@@ -592,18 +628,12 @@ function PowerFinderPage() {
     }
   }, [distributionOperators, operator, selectedOperatorType]);
 
-  const illustrativeCapacityNodes = useMemo(
-    () =>
-      createIllustrativeCapacityNodes(
-        collection?.features
-          .filter((feature) => feature.properties.kind === "node")
-          .map((feature) => String(feature.id)) ?? [],
-      ),
-    [collection],
-  );
   const activeCapacityNodes = useMemo(
-    () => (capacitySource === "demo" ? illustrativeCapacityNodes : (capacityViewport?.nodes ?? [])),
-    [capacitySource, capacityViewport?.nodes, illustrativeCapacityNodes],
+    () =>
+      capacitySource === "berlin_synthetic"
+        ? (berlinCapacity?.results ?? [])
+        : (capacityViewport?.nodes ?? []),
+    [berlinCapacity?.results, capacitySource, capacityViewport?.nodes],
   );
 
   const candidates = useMemo(() => {
@@ -1501,7 +1531,9 @@ function PowerFinderPage() {
                 >
                   <option value="all">All transmission operators</option>
                   {transmissionOperators.map((item) => (
-                    <option key={item.name} value={item.name}>{item.name}</option>
+                    <option key={item.name} value={item.name}>
+                      {item.name}
+                    </option>
                   ))}
                 </select>
                 {selectedOperatorType === "TSO" && <small>{operator}</small>}
@@ -1521,7 +1553,9 @@ function PowerFinderPage() {
                 >
                   <option value="all">All distribution operators</option>
                   {distributionOperators.map((item) => (
-                    <option key={item.name} value={item.name}>{item.name}</option>
+                    <option key={item.name} value={item.name}>
+                      {item.name}
+                    </option>
                   ))}
                 </select>
                 {selectedOperatorType === "DSO / other" && <small>{operator}</small>}
@@ -1592,7 +1626,7 @@ function PowerFinderPage() {
                 onChange={(event) => {
                   const isEnabled = event.target.checked;
                   setMapMode(isEnabled ? "capacity" : "voltage");
-                  const nextSource = search.workspaceId ? "private" : "demo";
+                  const nextSource = search.workspaceId ? "private" : "berlin_synthetic";
                   setCapacitySource(nextSource);
                   setInteractionNotice(
                     `Capacity opportunities ${isEnabled ? "enabled" : "disabled"}.`,
@@ -1607,7 +1641,9 @@ function PowerFinderPage() {
             {mapMode === "capacity" && (
               <div className="capacity-opportunity-controls">
                 <p className="capacity-source-status">
-                  {capacitySource === "demo" ? "Illustrative capacity screen" : "Reviewed capacity"}
+                  {capacitySource === "berlin_synthetic"
+                    ? "Berlin synthetic calculation"
+                    : "Reviewed private calculation"}
                 </p>
                 <div className="capacity-required-heading">
                   <label htmlFor="required-capacity-range">Required power</label>
@@ -1655,7 +1691,7 @@ function PowerFinderPage() {
                     <span>Capacity basis</span>
                     <select
                       name="capacity-overlay-metric"
-                      value={capacityMetric === "n0_import_mw" ? "firm_import_mw" : capacityMetric}
+                      value={capacityMetric}
                       onChange={(event) => {
                         const value = event.target.value as CapacityMetric;
                         setCapacityMetric(value);
@@ -1663,7 +1699,11 @@ function PowerFinderPage() {
                       }}
                     >
                       {(Object.entries(capacityMetricLabels) as [CapacityMetric, string][])
-                        .filter(([value]) => value !== "n0_import_mw")
+                        .filter(([value]) =>
+                          capacitySource === "berlin_synthetic"
+                            ? value === "n0_import_mw" || value === "firm_import_mw"
+                            : true,
+                        )
                         .map(([value, label]) => (
                           <option key={value} value={value}>
                             {label}
@@ -1686,31 +1726,45 @@ function PowerFinderPage() {
                 )}
                 <p className="capacity-data-basis">
                   <ShieldCheck aria-hidden="true" />
-                  {capacitySource === "demo"
-                    ? "Illustrative values · not real grid capacity"
+                  {capacitySource === "berlin_synthetic"
+                    ? "Berlin calculation pocket · real locations, synthetic electrical model"
                     : `Private reviewed results · ${capacityViewport?.access === "ready" ? "workspace connected" : "no coverage"}`}
                 </p>
                 <p className="capacity-overlay-empty">
-                  Move Required power to reclassify grid nodes: cyan meets the threshold, purple
-                  indicates an illustrative activation pathway, and dark blue is below it.
+                  Move Required power to reclassify calculated nodes immediately: cyan meets the
+                  threshold, dark blue is below it, and grey is outside this calculation pocket.
                 </p>
                 <div className="capacity-threshold-key" aria-label="Capacity map colour key">
-                  <span><i className="is-meets" />Meets {requiredCapacityMw} MW</span>
-                  <span><i className="is-activation" />Activation pathway</span>
-                  <span><i className="is-below" />Below requirement</span>
+                  <span>
+                    <i className="is-meets" />
+                    Meets {requiredCapacityMw} MW
+                  </span>
+                  <span>
+                    <i className="is-activation" />
+                    Activation pathway
+                  </span>
+                  <span>
+                    <i className="is-below" />
+                    Below requirement
+                  </span>
                 </div>
                 <div className="capacity-fit-summary" role="status" aria-live="polite">
                   <span>
                     <b>{capacitySummary.meets}</b> meet
                   </span>
+                  {capacitySource === "private" && (
+                    <span>
+                      <b>{capacitySummary.activation}</b> activation paths
+                    </span>
+                  )}
                   <span>
-                    <b>{capacitySummary.activation}</b> activation paths
+                    <b>{capacitySummary.below}</b> below
                   </span>
                   <span>
                     <b>{capacitySummary.unknown}</b> not calculated
                   </span>
                 </div>
-                {capacitySource === "private" && capacityState === "error" && (
+                {capacityState === "error" && (
                   <p className="capacity-overlay-empty">Capacity results could not be loaded.</p>
                 )}
                 {capacitySource === "private" &&
@@ -1770,8 +1824,8 @@ function PowerFinderPage() {
             {(enabled.generation_asset || enabled.storage_asset) && (
               <p className="layer-visibility-note">
                 Registered generation and storage show exact public coordinates from the accepted
-                nationwide MaStR release. Zoom in for individual assets. If this view shows zero,
-                no exact published coordinate is available here; locations are never invented.
+                nationwide MaStR release. Zoom in for individual assets. If this view shows zero, no
+                exact published coordinate is available here; locations are never invented.
               </p>
             )}
             {(enabled.line || enabled.industrial_site) &&
@@ -1983,7 +2037,11 @@ function PowerFinderPage() {
               window.setTimeout(() => window.dispatchEvent(new Event("resize")), 200);
             }}
           >
-            {sidebarOpen ? <PanelLeftClose aria-hidden="true" /> : <PanelLeftOpen aria-hidden="true" />}
+            {sidebarOpen ? (
+              <PanelLeftClose aria-hidden="true" />
+            ) : (
+              <PanelLeftOpen aria-hidden="true" />
+            )}
             <span>{sidebarOpen ? "Hide panel" : "Show panel"}</span>
           </button>
           {error && <div className="power-finder-error">{error}</div>}
@@ -1998,6 +2056,9 @@ function PowerFinderPage() {
               previewFeature={previewFeature}
               mapMode={mapMode}
               capacityNodes={activeCapacityNodes}
+              capacityCoverage={
+                capacitySource === "berlin_synthetic" ? (berlinCapacity?.coverage ?? null) : null
+              }
               capacityMetric={capacityMetric}
               requiredCapacityMw={requiredCapacityMw}
               viewportTarget={viewportTarget}
@@ -2039,7 +2100,9 @@ function PowerFinderPage() {
                 const containingRegion = coverage.find((item) => {
                   if (item.regionCode === "DE") return false;
                   const [west, south, east, north] = item.bounds;
-                  return longitude >= west && longitude <= east && latitude >= south && latitude <= north;
+                  return (
+                    longitude >= west && longitude <= east && latitude >= south && latitude <= north
+                  );
                 });
                 updateProject({ longitude, latitude });
                 setNumericDrafts((current) => ({
@@ -2080,7 +2143,7 @@ function PowerFinderPage() {
                   <i className="legend-capacity-high" /> Meets {requiredCapacityMw} MW
                 </span>
                 <span>
-                  <i className="legend-capacity-activation" /> Illustrative activation pathway
+                  <i className="legend-capacity-activation" /> Alternative pathway
                 </span>
                 <span>
                   <i className="legend-capacity-low" /> Below {requiredCapacityMw} MW
@@ -2089,8 +2152,8 @@ function PowerFinderPage() {
                   <i className="legend-capacity-stale" /> Stale · recalculate
                 </span>
                 <small>
-                  {capacitySource === "demo"
-                    ? "Illustrative demo · synthetic values, not grid capacity"
+                  {capacitySource === "berlin_synthetic"
+                    ? "Berlin pocket · real mapped nodes, synthetic 110 kV model; not operator headroom"
                     : capacityViewport?.nodes[0]
                       ? `${capacityViewport.nodes[0].scenarioLabel} · ${capacityViewport.nodes[0].modelVersion}`
                       : "No reviewed results in this workspace view"}
@@ -2129,10 +2192,12 @@ function PowerFinderPage() {
                   <i className="legend-generation" style={{ background: "#a78bfa" }} /> Gas
                 </span>
                 <span>
-                  <i className="legend-generation" style={{ background: "#ef4444" }} /> Coal, oil &amp; other fossil
+                  <i className="legend-generation" style={{ background: "#ef4444" }} /> Coal, oil
+                  &amp; other fossil
                 </span>
                 <span>
-                  <i className="legend-generation" style={{ background: "#94a3b8" }} /> Other / unknown
+                  <i className="legend-generation" style={{ background: "#94a3b8" }} /> Other /
+                  unknown
                 </span>
                 <span>
                   <i className="legend-storage" /> Registered storage
@@ -2750,15 +2815,15 @@ function PowerFinderPage() {
                   {productCapabilities.workspace &&
                     selectedOpportunity &&
                     selected.properties.kind === "node" && (
-                    <button
-                      type="button"
-                      className="primary-button power-finder-activation-cta"
-                      onClick={() =>
-                        void updateSearch({ study: "activation", studyTab: "overview" })
-                      }
-                    >
-                      <Zap aria-hidden="true" /> Assess activation pathways
-                    </button>
+                      <button
+                        type="button"
+                        className="primary-button power-finder-activation-cta"
+                        onClick={() =>
+                          void updateSearch({ study: "activation", studyTab: "overview" })
+                        }
+                      >
+                        <Zap aria-hidden="true" /> Assess activation pathways
+                      </button>
                     )}
                 </>
               ))(selectedDetailFeature)

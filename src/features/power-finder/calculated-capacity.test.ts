@@ -13,6 +13,7 @@ const node = {
   candidateId: "c1",
   modelBusId: "b1",
   firmCapacityMw: 20,
+  n0CapacityMw: 28,
   flexibleCapacityMw: 35,
   bessAssistedCapacityMw: 42,
   stagedInitialCapacityMw: 15,
@@ -29,7 +30,7 @@ const node = {
 
 describe("calculated capacity contract", () => {
   it("keeps strategy metrics separate", () => {
-    expect(capacityValueForMetric(node, "n0_import_mw")).toBe(20);
+    expect(capacityValueForMetric(node, "n0_import_mw")).toBe(28);
     expect(capacityValueForMetric(node, "firm_import_mw")).toBe(20);
     expect(capacityValueForMetric(node, "bess_assisted_import_mw")).toBe(42);
   });

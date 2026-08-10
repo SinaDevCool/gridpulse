@@ -1,6 +1,7 @@
 import "maplibre-gl/dist/maplibre-gl.css";
 
 import { useEffect, useRef } from "react";
+import type { FeatureCollection, Polygon } from "geojson";
 import type {
   ExpressionSpecification,
   GeoJSONSource,
@@ -18,10 +19,7 @@ import {
   type VisibleLayerCounts,
 } from "@/components/product/power-finder-map-data";
 import type { CalculatedCapacityNode } from "@/features/power-finder/calculated-capacity";
-import {
-  classifyCapacityOpportunity,
-  createIllustrativeCapacityNodes,
-} from "@/features/power-finder/capacity-opportunity";
+import { classifyCapacityOpportunity } from "@/features/power-finder/capacity-opportunity";
 import {
   voltageColorExpression,
   voltageWidthExpression,
@@ -37,29 +35,49 @@ const sourceIds = {
 } as const;
 
 const generationColour: ExpressionSpecification = [
-  "match", ["get", "generation_group"],
-  "solar", "#facc15",
-  "wind", "#38bdf8",
-  "biomass", "#22c55e",
-  "hydro", "#06b6d4",
-  "geothermal", "#f97316",
-  "gas", "#a78bfa",
-  "fossil_other", "#ef4444",
-  "nuclear", "#f472b6",
+  "match",
+  ["get", "generation_group"],
+  "solar",
+  "#facc15",
+  "wind",
+  "#38bdf8",
+  "biomass",
+  "#22c55e",
+  "hydro",
+  "#06b6d4",
+  "geothermal",
+  "#f97316",
+  "gas",
+  "#a78bfa",
+  "fossil_other",
+  "#ef4444",
+  "nuclear",
+  "#f472b6",
   "#94a3b8",
 ];
 const localGenerationColour: ExpressionSpecification = [
-  "match", ["get", "technology"],
-  "Solare Strahlungsenergie", "#facc15",
-  "Solarthermie", "#facc15",
-  "Wind", "#38bdf8",
-  "Biomasse", "#22c55e",
-  "Wasser", "#06b6d4",
-  "Geothermie", "#f97316",
-  "Erdgas", "#a78bfa",
-  "andere Gase", "#a78bfa",
-  "Grubengas", "#a78bfa",
-  "Kernenergie", "#f472b6",
+  "match",
+  ["get", "technology"],
+  "Solare Strahlungsenergie",
+  "#facc15",
+  "Solarthermie",
+  "#facc15",
+  "Wind",
+  "#38bdf8",
+  "Biomasse",
+  "#22c55e",
+  "Wasser",
+  "#06b6d4",
+  "Geothermie",
+  "#f97316",
+  "Erdgas",
+  "#a78bfa",
+  "andere Gase",
+  "#a78bfa",
+  "Grubengas",
+  "#a78bfa",
+  "Kernenergie",
+  "#f472b6",
   "#ef4444",
 ];
 
@@ -72,6 +90,7 @@ type PowerFinderMapProps = {
   capacityNodes?: CalculatedCapacityNode[];
   capacityMetric?: CapacityMetric;
   requiredCapacityMw?: number;
+  capacityCoverage?: FeatureCollection<Polygon> | null;
   viewportTarget?: { center: [number, number]; zoom: number };
   onSelect: (feature: PowerFinderFeature) => void;
   onViewportChange?: (bounds: PowerFinderBounds) => void;
@@ -157,6 +176,7 @@ export function PowerFinderMap({
   capacityNodes = [],
   capacityMetric = "firm_import_mw",
   requiredCapacityMw = 1,
+  capacityCoverage = null,
   viewportTarget,
   onSelect,
   onViewportChange,
@@ -177,6 +197,7 @@ export function PowerFinderMap({
   const capacityNodesRef = useRef(capacityNodes);
   const capacityMetricRef = useRef(capacityMetric);
   const requiredCapacityMwRef = useRef(requiredCapacityMw);
+  const capacityCoverageRef = useRef(capacityCoverage);
   onSelectRef.current = onSelect;
   onViewportChangeRef.current = onViewportChange;
   collectionRef.current = collection;
@@ -188,6 +209,7 @@ export function PowerFinderMap({
   capacityNodesRef.current = capacityNodes;
   capacityMetricRef.current = capacityMetric;
   requiredCapacityMwRef.current = requiredCapacityMw;
+  capacityCoverageRef.current = capacityCoverage;
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -258,6 +280,10 @@ export function PowerFinderMap({
           clusterMaxZoom: 12,
           clusterRadius: 34,
         });
+        map.addSource("berlin-capacity-coverage", {
+          type: "geojson",
+          data: capacityCoverageRef.current ?? { type: "FeatureCollection", features: [] },
+        });
         map.addSource("power-finder-national-tiles", {
           type: "vector",
           promoteId: "id",
@@ -271,9 +297,7 @@ export function PowerFinderMap({
         });
         map.addSource("power-finder-registry-tiles", {
           type: "vector",
-          tiles: [
-            `${window.location.origin}/api/power-finder/tile/{z}/{x}/{y}?content=registry`,
-          ],
+          tiles: [`${window.location.origin}/api/power-finder/tile/{z}/{x}/{y}?content=registry`],
           minzoom: 8,
           // Request finer registry tiles so dense exact-location assets do not
           // remain packed into an overzoomed country-scale z8 tile.
@@ -300,6 +324,25 @@ export function PowerFinderMap({
           data: {
             type: "FeatureCollection",
             features: highlighted?.geometry.type === "Point" ? [highlighted] : [],
+          },
+        });
+        map.addLayer({
+          id: "berlin-capacity-coverage-fill",
+          type: "fill",
+          source: "berlin-capacity-coverage",
+          layout: { visibility: "none" },
+          paint: { "fill-color": "#38bdf8", "fill-opacity": 0.055 },
+        });
+        map.addLayer({
+          id: "berlin-capacity-coverage-line",
+          type: "line",
+          source: "berlin-capacity-coverage",
+          layout: { visibility: "none" },
+          paint: {
+            "line-color": "#38bdf8",
+            "line-width": 2,
+            "line-dasharray": [3, 2],
+            "line-opacity": 0.9,
           },
         });
         map.addLayer({
@@ -338,19 +381,7 @@ export function PowerFinderMap({
           filter: ["==", ["get", "kind"], "node"],
           layout: { visibility: enabledLayers.node ? "visible" : "none" },
           paint: {
-            "circle-radius": [
-              "interpolate",
-              ["linear"],
-              ["zoom"],
-              4,
-              1,
-              7,
-              1.6,
-              8.5,
-              2.5,
-              11,
-              4.5,
-            ],
+            "circle-radius": ["interpolate", ["linear"], ["zoom"], 4, 1, 7, 1.6, 8.5, 2.5, 11, 4.5],
             "circle-color": "#f59e0b",
             "circle-stroke-color": voltageColorExpression(),
             "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 4, 0.4, 9, 1],
@@ -525,7 +556,11 @@ export function PowerFinderMap({
           id: "generation-cluster-count",
           type: "symbol",
           source: sourceIds.generation_asset,
-          layout: { visibility: "none", "text-field": ["get", "point_count_abbreviated"], "text-size": 10 },
+          layout: {
+            visibility: "none",
+            "text-field": ["get", "point_count_abbreviated"],
+            "text-size": 10,
+          },
           filter: ["has", "point_count"],
           paint: { "text-color": "#052e16" },
         });
@@ -559,7 +594,11 @@ export function PowerFinderMap({
           id: "storage-cluster-count",
           type: "symbol",
           source: sourceIds.storage_asset,
-          layout: { visibility: "none", "text-field": ["get", "point_count_abbreviated"], "text-size": 10 },
+          layout: {
+            visibility: "none",
+            "text-field": ["get", "point_count_abbreviated"],
+            "text-size": 10,
+          },
           filter: ["has", "point_count"],
           paint: { "text-color": "#2e1065" },
         });
@@ -744,6 +783,23 @@ export function PowerFinderMap({
 
   useEffect(() => {
     const map = mapRef.current;
+    const source = map?.getSource("berlin-capacity-coverage");
+    if (isGeoJsonSource(source)) {
+      source.setData(capacityCoverage ?? { type: "FeatureCollection", features: [] });
+    }
+    for (const layer of ["berlin-capacity-coverage-fill", "berlin-capacity-coverage-line"]) {
+      if (map?.getLayer(layer)) {
+        map.setLayoutProperty(
+          layer,
+          "visibility",
+          mapMode === "capacity" && capacityCoverage ? "visible" : "none",
+        );
+      }
+    }
+  }, [capacityCoverage, mapMode]);
+
+  useEffect(() => {
+    const map = mapRef.current;
     if (!map) return;
     const nationalLayers = {
       "national-grid-lines": enabledLayers.line,
@@ -755,7 +811,8 @@ export function PowerFinderMap({
       "national-storage-assets": enabledLayers.storage_asset,
     } as const;
     for (const [layer, visible] of Object.entries(nationalLayers)) {
-      if (map.getLayer(layer)) map.setLayoutProperty(layer, "visibility", visible ? "visible" : "none");
+      if (map.getLayer(layer))
+        map.setLayoutProperty(layer, "visibility", visible ? "visible" : "none");
     }
     map.once("idle", () => publishVisibleLayerCounts(map, onVisibleLayerCountsRef.current));
   }, [enabledLayers]);
@@ -808,10 +865,14 @@ export function PowerFinderMap({
       "#475569",
     ];
     const nationalCapacityColour = [
-      "match", ["feature-state", "capacity_fit"],
-      "meets", "#67e8f9",
-      "activation", "#818cf8",
-      "below", "#1e526a",
+      "match",
+      ["feature-state", "capacity_fit"],
+      "meets",
+      "#67e8f9",
+      "activation",
+      "#818cf8",
+      "below",
+      "#1e526a",
       "#475569",
     ];
     const voltageClusterColour = [
@@ -865,11 +926,7 @@ export function PowerFinderMap({
       map.setPaintProperty(
         "national-grid-nodes",
         "circle-stroke-color",
-        mapMode === "capacity"
-          ? "#cbd5e1"
-          : mapMode === "voltage"
-            ? voltageColour
-            : "#fff7d6",
+        mapMode === "capacity" ? "#cbd5e1" : mapMode === "voltage" ? voltageColour : "#fff7d6",
       );
       map.setPaintProperty(
         "national-grid-nodes",
@@ -928,10 +985,12 @@ export function PowerFinderMap({
             .filter(Boolean),
         ),
       );
-      for (const node of createIllustrativeCapacityNodes(ids)) {
+      const byNode = new Map(capacityNodes.map((node) => [node.publicNodeId, node]));
+      for (const id of ids) {
+        const node = byNode.get(id);
         const result = classifyCapacityOpportunity(node, capacityMetric, requiredCapacityMw);
         map.setFeatureState(
-          { source: "power-finder-national-tiles", sourceLayer: "power_finder", id: node.publicNodeId },
+          { source: "power-finder-national-tiles", sourceLayer: "power_finder", id },
           { capacity_fit: result.fit, capacity_mw: result.valueMw },
         );
       }

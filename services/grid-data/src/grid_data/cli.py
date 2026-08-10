@@ -4,6 +4,7 @@ import argparse
 from pathlib import Path
 
 from .benchmark_model import build_c1_validation_artifact
+from .berlin_synthetic_capacity import build_berlin_synthetic_capacity_artifact
 from .c1_publish import publish_c1_artifact
 from .c2_benchmark import build_c2_benchmark_artifact
 from .c2_publish import publish_c2_artifact
@@ -124,6 +125,8 @@ def parser() -> argparse.ArgumentParser:
     reference_capacity.add_argument("--code", default="1-MV-urban--0-sw")
     reference_capacity.add_argument("--limit", type=int, default=12)
     reference_capacity.add_argument("--output", type=Path, required=True)
+    berlin_capacity = subcommands.add_parser("build-berlin-synthetic-capacity")
+    berlin_capacity.add_argument("--output", type=Path, required=True)
     publish_c1 = subcommands.add_parser("publish-c1-benchmark")
     publish_c1.add_argument("--input", type=Path, required=True)
     cgmes = subcommands.add_parser("import-cgmes")
@@ -304,6 +307,12 @@ def main() -> None:
         report = build_reference_capacity_map_artifact(args.output, args.code, args.limit)
         print(
             f"Calculated {len(report['results'])} governed reference-network capacity results; "
+            f"sha256={report['results_sha256'][:12]}."
+        )
+    elif args.command == "build-berlin-synthetic-capacity":
+        report = build_berlin_synthetic_capacity_artifact(args.output)
+        print(
+            f"Calculated {len(report['results'])} Berlin synthetic N-0/N-1 results; "
             f"sha256={report['results_sha256'][:12]}."
         )
     elif args.command == "publish-c1-benchmark":

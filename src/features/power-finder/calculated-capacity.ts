@@ -1,4 +1,5 @@
 import { supabase } from "../../integrations/supabase/client";
+import type { FeatureCollection, Polygon } from "geojson";
 
 export type CapacityMetric =
   | "n0_import_mw"
@@ -22,6 +23,7 @@ export type CalculatedCapacityNode = {
   candidateId: string;
   modelBusId: string;
   valueMw: number | null;
+  n0CapacityMw?: number | null;
   firmCapacityMw: number | null;
   flexibleCapacityMw: number | null;
   bessAssistedCapacityMw: number | null;
@@ -36,6 +38,49 @@ export type CalculatedCapacityNode = {
   scenarioLabel: string;
   securityCase: "n_0" | "n_1";
 };
+
+export type BerlinSyntheticCapacityArtifact = {
+  schema_version: "gridpulse-berlin-synthetic-capacity-v1";
+  generated_at: string;
+  result_mode: "synthetic_geographic_demonstration";
+  model: {
+    id: string;
+    version: string;
+    model_sha256: string;
+    solver: string;
+    solver_version: string;
+    node_count: number;
+    branch_count: number;
+    contingency_count: number;
+  };
+  coverage: FeatureCollection<Polygon>;
+  assumptions: Record<string, string>;
+  results: Array<
+    CalculatedCapacityNode & {
+      bindingCase: string;
+      evidenceClass: "synthetic_geographic_demonstration";
+      geographicTruth: "real_geography_synthetic_electrical_model";
+    }
+  >;
+  results_sha256: string;
+  permitted_interpretation: string;
+  prohibited_interpretation: string;
+};
+
+export async function loadBerlinSyntheticCapacity(): Promise<BerlinSyntheticCapacityArtifact> {
+  const response = await fetch("/power-finder/berlin-synthetic-capacity.json?release=berlin-r1-v1");
+  if (!response.ok) throw new Error(`Berlin synthetic capacity failed (${response.status}).`);
+  const artifact = (await response.json()) as BerlinSyntheticCapacityArtifact;
+  if (
+    artifact.schema_version !== "gridpulse-berlin-synthetic-capacity-v1" ||
+    artifact.result_mode !== "synthetic_geographic_demonstration" ||
+    artifact.results.length < 10 ||
+    artifact.coverage.features.length !== 1
+  ) {
+    throw new Error("Unsupported Berlin synthetic capacity artifact.");
+  }
+  return artifact;
+}
 
 export type CapacityCoverage = {
   mapped: number;
@@ -339,7 +384,7 @@ export function capacityValueForMetric(
   metric: CapacityMetric,
 ) {
   return {
-    n0_import_mw: node.firmCapacityMw,
+    n0_import_mw: node.n0CapacityMw ?? null,
     firm_import_mw: node.firmCapacityMw,
     flexible_import_mw: node.flexibleCapacityMw,
     bess_assisted_import_mw: node.bessAssistedCapacityMw,
