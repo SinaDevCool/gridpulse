@@ -770,6 +770,22 @@ export function PowerFinderMap({
       "#f59e0b",
       "#475569",
     ];
+    // National vector-tile nodes do not carry private study results. Mirror the
+    // deterministic public demo formula from capacity-opportunity.ts so the
+    // required-MW control also responds on the nationwide layer.
+    const nationalDemoFirmMw = [
+      "+",
+      8,
+      ["%", ["abs", ["to-number", ["get", "id"], 0]], 113],
+    ];
+    const nationalCapacityColour = [
+      "case",
+      [">=", nationalDemoFirmMw, requiredCapacityMw],
+      "#67e8f9",
+      [">=", ["+", nationalDemoFirmMw, 18], requiredCapacityMw],
+      "#818cf8",
+      "#1e526a",
+    ];
     const voltageClusterColour = [
       "step",
       ["get", "point_count"],
@@ -813,7 +829,7 @@ export function PowerFinderMap({
         "national-grid-nodes",
         "circle-color",
         mapMode === "capacity"
-          ? "#475569"
+          ? nationalCapacityColour
           : mapMode === "evidence"
             ? "#f59e0b"
             : "#f59e0b",

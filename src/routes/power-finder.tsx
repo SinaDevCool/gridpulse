@@ -77,6 +77,10 @@ import {
 import { loadC1Study, type C1StudyPayload } from "@/features/power-finder/c1-study";
 import { canonicalOperatorName } from "@/features/power-finder/operator-normalization";
 import {
+  loadGridOperatorCatalog,
+  type GridOperatorOption,
+} from "@/features/power-finder/operator-catalog";
+import {
   activationStudySnapshot,
   createActivationStudyContext,
 } from "@/features/power-finder/activation-study";
@@ -115,7 +119,13 @@ export const Route = createFileRoute("/power-finder")({
     distance: safeNumber(1, 100),
     candidate: z.string().max(200).optional().catch(undefined),
     compare: z.string().max(700).optional().catch(undefined),
-    region: z.enum(["DE", "DE-BB"]).optional().catch(undefined),
+    region: z
+      .enum([
+        "DE", "DE-BB", "DE-BW", "DE-BY", "DE-BE", "DE-HB", "DE-HH", "DE-HE",
+        "DE-MV", "DE-NI", "DE-NW", "DE-RP", "DE-SL", "DE-SN", "DE-ST", "DE-SH", "DE-TH",
+      ])
+      .optional()
+      .catch(undefined),
     mapMode: z.enum(["voltage", "evidence", "capacity"]).optional().catch(undefined),
     capacitySource: z.enum(["reference", "private", "demo"]).optional().catch(undefined),
     capacityMetric: z
@@ -323,6 +333,7 @@ function PowerFinderPage() {
   const [rankingCollection, setRankingCollection] = useState<PowerFinderCollection | null>(null);
   const [rankingState, setRankingState] = useState<"loading" | "ready" | "error">("loading");
   const [coverage, setCoverage] = useState<PowerFinderCoverage[]>(fallbackCoverage);
+  const [operatorCatalog, setOperatorCatalog] = useState<GridOperatorOption[]>([]);
   const regionCode = search.region ?? "DE";
   const [mapMode, setMapMode] = useState<"voltage" | "evidence" | "capacity">(
     search.mapMode ?? "voltage",
@@ -346,6 +357,10 @@ function PowerFinderPage() {
     () => ({ center: activeCoverage.center, zoom: activeCoverage.zoom }),
     [activeCoverage.center, activeCoverage.zoom],
   );
+
+  useEffect(() => {
+    void loadGridOperatorCatalog().then(setOperatorCatalog).catch(() => setOperatorCatalog([]));
+  }, []);
 
   useEffect(() => {
     setMapMode(search.mapMode ?? "voltage");
@@ -533,17 +548,17 @@ function PowerFinderPage() {
     };
   }, [collection, enabled, minimumVoltage, operator, query]);
 
-  const operators = useMemo(
-    () =>
-      Array.from(
+  const operators = useMemo(() => {
+    if (operatorCatalog.length) return operatorCatalog;
+    return Array.from(
         new Set(
           collection?.features
             .map((feature) => canonicalOperatorName(feature.properties.operator))
             .filter((value): value is string => Boolean(value)) ?? [],
         ),
-      ).sort((left, right) => left.localeCompare(right)),
-    [collection],
-  );
+      ).sort((left, right) => left.localeCompare(right))
+      .map((name) => ({ name, type: "DSO / other" as const, featureCount: 0 }));
+  }, [collection, operatorCatalog]);
 
   const illustrativeCapacityNodes = useMemo(
     () =>
@@ -573,7 +588,16 @@ function PowerFinderPage() {
       const matchesVoltage = minimumVoltage === 0 || maximumVoltage >= minimumVoltage;
       const matchesOperator =
         operator === "all" || canonicalOperatorName(candidate.operator) === operator;
-      return matchesQuery && matchesVoltage && matchesOperator && Boolean(node);
+      const coordinates = node ? pointCoordinates(node) : null;
+      const [west, south, east, north] = activeCoverage.bounds;
+      const matchesRegion =
+        regionCode === "DE" ||
+        Boolean(
+          coordinates &&
+            coordinates[0] >= west && coordinates[0] <= east &&
+            coordinates[1] >= south && coordinates[1] <= north,
+        );
+      return matchesQuery && matchesVoltage && matchesOperator && matchesRegion && Boolean(node);
     });
     return items.sort((left, right) => {
       if (mapMode === "capacity") {
@@ -608,6 +632,7 @@ function PowerFinderPage() {
     candidateSort,
     capacityMetric,
     activeCapacityNodes,
+    activeCoverage.bounds,
     collection,
     mapMode,
     minimumVoltage,
@@ -615,6 +640,7 @@ function PowerFinderPage() {
     query,
     ranking,
     rankingCollection,
+    regionCode,
     requiredCapacityMw,
   ]);
   const capacitySummary = useMemo(
@@ -1382,7 +1408,7 @@ function PowerFinderPage() {
                   value={regionCode}
                   onChange={(event) =>
                     void updateSearch({
-                      region: event.target.value as "DE" | "DE-BB",
+                      region: event.target.value as typeof regionCode,
                       candidate: undefined,
                       compare: undefined,
                     })
@@ -1452,11 +1478,18 @@ function PowerFinderPage() {
                   }
                 >
                   <option value="all">All operators</option>
-                  {operators.map((item) => (
-                    <option key={item} value={item}>
-                      {item}
-                    </option>
-                  ))}
+                  {(["TSO", "DSO / other"] as const).map((type) => {
+                    const matching = operators.filter((item) => item.type === type);
+                    return matching.length ? (
+                      <optgroup key={type} label={type}>
+                        {matching.map((item) => (
+                          <option key={item.name} value={item.name}>
+                            {item.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ) : null;
+                  })}
                 </select>
               </label>
             </div>
