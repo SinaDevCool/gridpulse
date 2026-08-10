@@ -866,6 +866,15 @@ function EvidenceView({ context }: { context: ActivationStudyContext }) {
               <dd>Not operator confirmed · synthetic results remain hidden from mapped capacity</dd>
             </div>
           )}
+          {release4 && (
+            <div>
+              <dt>Release 4 map authority</dt>
+              <dd>
+                Graph results remain private and do not colour public capacity · operator inputs 0/
+                {release4.operator_replacement.required_field_count}
+              </dd>
+            </div>
+          )}
           {release3 && (
             <div>
               <dt>Shadow safety</dt>

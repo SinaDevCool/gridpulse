@@ -50,7 +50,20 @@ def test_synthetic_package_is_replacement_ready_but_never_operator_confirmed(tmp
     assert readiness["operator_confirmed"] is False
     report = build_acceptance_report(
         bundle,
-        reduction={"accepted_for_reduced_search": True},
+        reduction={
+            "accepted_for_reduced_search": True,
+            "full_case_count": 10,
+            "selected_case_count": 6,
+            "topology_provider_contract_exercised": True,
+            "physics_verified_case_count": 16,
+            "physics_expected_case_count": 16,
+            "mandatory_recall": 1,
+            "capacity_claim": False,
+            "display_as_capacity": False,
+            "public_governance_contract": True,
+            "scenario_set_sha256": "a" * 64,
+            "qualification_study_sha256": "b" * 64,
+        },
         output=tmp_path / "acceptance.json",
     )
     assert report["all_repository_gates_passed"] is True
@@ -62,4 +75,6 @@ def test_synthetic_package_is_replacement_ready_but_never_operator_confirmed(tmp
     assert public["graph_and_physics"]["neo4j_provider_contract_exercised"] is True
     assert public["operator_replacement"]["operator_field_count"] == 0
     assert public["private_operator_data_published"] is False
+    assert public["private_physics_outcomes_published"] is False
+    assert public["public_capacity_boundary"]["graph_results_applied_to_public_capacity"] is False
     assert "observations" not in public

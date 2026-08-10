@@ -1,3 +1,4 @@
+from grid_data.graph.contracts import build_projection
 from grid_data.graph.pipeline import run_graph_guided_study
 from grid_data.graph.provider import InMemoryTopologyProvider
 from grid_data.network_study import NetworkModelInput, StudyResult
@@ -131,8 +132,22 @@ def test_promoted_reduction_does_not_repeat_full_enumeration():
             "accepted_for_reduced_search": True,
             "mandatory_recall": 1,
             "false_safe_rate": 0,
+            "projection_sha256": build_projection(model()).projection_sha256,
+            "validation_sha256": "a" * 64,
         },
     )
     assert provider.calls == 2
     assert report["validation_against_full_set"]["full_physics_executed_this_run"] is False
     assert report["validation_against_full_set"]["policy_validation_reused"] is True
+
+
+def test_duplicate_scenarios_fail_closed() -> None:
+    duplicated = [ScenarioDefinition(scenario_id="same"), ScenarioDefinition(scenario_id="same")]
+    import pytest
+
+    with pytest.raises(ValueError, match="unique"):
+        run_graph_guided_study(
+            model=model(), scenarios=duplicated, source_bus="a", target_buses=["b"],
+            mandatory_contingencies=set(), budget=1,
+            provider=DeterministicStudyProvider(), topology_provider=InMemoryTopologyProvider(),
+        )

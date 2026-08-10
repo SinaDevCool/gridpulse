@@ -352,6 +352,20 @@ class AnalyticsApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 202)
         job = self.client.get(f"/v1/jobs/{response.json()['job_id']}").json()
         self.assertFalse(job["result_payload"]["capacity_claim"])
+        spoofed = self.client.post("/v1/jobs/graph-guided-study", json={
+            "workspace_id": "00000000-0000-0000-0000-000000000001",
+            "network_model": {"model_id": "synthetic"},
+            "scenarios": [{"scenario_id": "normal"}],
+            "source_bus": "a", "target_buses": ["b"], "solver_budget": 1,
+        })
+        self.assertEqual(spoofed.status_code, 422)
+        promoted = self.client.post("/v1/jobs/graph-guided-study", json={
+            "network_model": {"model_id": "synthetic"},
+            "scenarios": [{"scenario_id": "normal"}],
+            "source_bus": "a", "target_buses": ["b"], "solver_budget": 1,
+            "validation_mode": "promoted",
+        })
+        self.assertEqual(promoted.status_code, 422)
 
 
 if __name__ == "__main__":

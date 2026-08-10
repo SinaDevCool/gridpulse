@@ -1,11 +1,11 @@
 {
   "schema_version": "gridpulse-german-synthetic-pilot-acceptance-v1",
-  "generated_at": "2026-08-09T14:32:15.984212+00:00",
+  "generated_at": "2026-08-10T15:01:54.833361+00:00",
   "watermark": "Synthetic German operator pilot \u2014 not actual or operator-confirmed grid capacity.",
   "dataset": {
     "id": "synthetic-brandenburg-pilot",
     "version": "1.0.0",
-    "sha256": "d0894883c7593d98bdcbdbf378260463009dd4e310ef9c0bf44b2480986d4f60",
+    "sha256": "f1c3c4a9ff118084b8b82e159136b0d5f93167a342d51ce2a4ee53eb1dc9ce47",
     "validation_class": "synthetic_demonstration",
     "provenance": {
       "evidence_class": "synthetic",
@@ -42,14 +42,21 @@
   "all_repository_gates_passed": true,
   "reduction_benchmark": {
     "schema_version": "gridpulse-reduction-qualification-v1",
-    "full_case_count": 8,
-    "selected_case_count": 4,
-    "compute_reduction": 0.5,
+    "full_case_count": 10,
+    "selected_case_count": 6,
+    "compute_reduction": 0.4,
     "infeasible_recall": 1.0,
     "constraint_recall": 1.0,
     "false_safe_rate": 0,
+    "mandatory_recall": 1.0,
     "accepted_for_reduced_search": true,
-    "qualification_study_sha256": "9f97c10ac654f2d4f5ad6673feb471889a6c1c015e1e56a874e315789e7fca4a",
+    "qualification_study_sha256": "e7f5fdf3ae93ba07a1bf60c01c05024122be5c39c61e52cee81518959d83fced",
+    "scenario_set_sha256": "03fb1db8754f8a4ff3aeb4342757a058ac25f04d95abbb324cad17c49eeb4aff",
+    "topology_provider_contract_exercised": true,
+    "physics_verified_case_count": 16,
+    "physics_expected_case_count": 16,
+    "display_as_capacity": false,
+    "public_governance_contract": true,
     "capacity_claim": false
   },
   "replacement_readiness": {
@@ -126,5 +133,10 @@
     "operator security criteria",
     "signed data-use and capacity-representation permission"
   ],
-  "report_sha256": "f7aec312aa1b295910da45437939f2cf804c8475df10a3f515006e9e0e684c5f"
+  "reproducibility": {
+    "command": "npm run grid:validate:synthetic-pilot",
+    "scenario_set_sha256": "03fb1db8754f8a4ff3aeb4342757a058ac25f04d95abbb324cad17c49eeb4aff",
+    "qualification_study_sha256": "e7f5fdf3ae93ba07a1bf60c01c05024122be5c39c61e52cee81518959d83fced"
+  },
+  "report_sha256": "62d4222155e83b5f57b1abc76f9c3d3e04e2c07e70c59079a8f88f5fb96bec83"
 }

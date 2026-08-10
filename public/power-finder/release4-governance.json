@@ -15,9 +15,9 @@
   "graph_and_physics": {
     "neo4j_provider_contract_exercised": true,
     "physics_reference_contract_exercised": true,
-    "selected_case_count": 4,
-    "full_case_count": 8,
-    "compute_reduction": 0.5,
+    "selected_case_count": 6,
+    "full_case_count": 10,
+    "compute_reduction": 0.4,
     "infeasible_recall": 1.0,
     "constraint_recall": 1.0,
     "false_safe_rate": 0,
@@ -48,6 +48,19 @@
     ]
   },
   "private_operator_data_published": false,
+  "private_physics_outcomes_published": false,
+  "report_sha256": "62d4222155e83b5f57b1abc76f9c3d3e04e2c07e70c59079a8f88f5fb96bec83",
+  "reproducibility": {
+    "command": "npm run grid:validate:synthetic-pilot",
+    "scenario_set_sha256": "03fb1db8754f8a4ff3aeb4342757a058ac25f04d95abbb324cad17c49eeb4aff",
+    "qualification_study_sha256": "e7f5fdf3ae93ba07a1bf60c01c05024122be5c39c61e52cee81518959d83fced"
+  },
+  "public_capacity_boundary": {
+    "graph_results_applied_to_public_capacity": false,
+    "map_values_remain_physics_results": true,
+    "operator_confirmation_created": false,
+    "status": "synthetic_operator_replacement_rehearsal_only"
+  },
   "warning": "Synthetic German operator pilot \u2014 not actual or operator-confirmed grid capacity.",
-  "manifest_sha256": "0dda6bcb769d943e192c159c194c4a76a04f04c7cfc387cb92bcfde75d27b2de"
+  "manifest_sha256": "5cbf6a1181b253e47826cf18ba8919529a4d5bc5c75c8e10f842652867a1f6be"
 }

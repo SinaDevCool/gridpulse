@@ -16,7 +16,8 @@ def publish_graph_study(*, job: Any, report: dict[str, Any]) -> dict[str, Any]:
         {
             "analytics_job_id": str(job.id),
             "owner_id": str(job.owner_id),
-            "workspace_id": job.input_payload.get("workspace_id"),
+            # Workspace linkage is a separate reviewer-authorised database action.
+            "workspace_id": None,
             "model_id": report["projection"]["model_id"],
             "model_version": report["projection"]["model_version"],
             "projection_sha256": report["projection"]["projection_sha256"],

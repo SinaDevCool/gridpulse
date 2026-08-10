@@ -143,14 +143,27 @@ def build_acceptance_report(
         in {"synthetic_fixture", "open_benchmark"},
         "p3_mock_operator_package": readiness["synthetic_pilot_complete"],
         "p4_synthetic_scada": bool(bundle.observations),
-        "p5_permutation_contract": True,
-        "p6_neo4j_provider_contract": True,
-        "p7_physics_reference_contract": True,
-        "p8_ai_authority_boundary": True,
-        "p9_rare_event_physics_verification": True,
-        "p10_capacity_output_separation": True,
-        "p11_flexibility_priority_contract": True,
-        "p12_desktop_truth_ui": True,
+        "p5_permutation_contract": bool(reduction and reduction.get("full_case_count", 0) > 0),
+        "p6_neo4j_provider_contract": bool(
+            reduction and reduction.get("topology_provider_contract_exercised")
+        ),
+        "p7_physics_reference_contract": bool(
+            reduction and reduction.get("physics_verified_case_count")
+            == reduction.get("physics_expected_case_count")
+        ),
+        "p8_ai_authority_boundary": bool(
+            reduction and reduction.get("capacity_claim") is False
+        ),
+        "p9_rare_event_physics_verification": bool(
+            reduction and reduction.get("mandatory_recall") == 1
+        ),
+        "p10_capacity_output_separation": bool(
+            reduction and reduction.get("display_as_capacity") is False
+        ),
+        "p11_flexibility_priority_contract": bundle.security_criteria is not None,
+        "p12_desktop_truth_ui": bool(
+            reduction and reduction.get("public_governance_contract")
+        ),
         "p13_reduction_qualified": bool(reduction and reduction.get("accepted_for_reduced_search")),
         "p14_reproducible_report": True,
         "p15_operator_replacement_rehearsed": readiness["synthetic_pilot_complete"],
@@ -179,6 +192,13 @@ def build_acceptance_report(
             "operator security criteria",
             "signed data-use and capacity-representation permission",
         ],
+        "reproducibility": {
+            "command": "npm run grid:validate:synthetic-pilot",
+            "scenario_set_sha256": reduction.get("scenario_set_sha256") if reduction else None,
+            "qualification_study_sha256": reduction.get("qualification_study_sha256")
+            if reduction
+            else None,
+        },
     }
     report["report_sha256"] = hashlib.sha256(
         json.dumps(report, sort_keys=True, default=str).encode()
@@ -245,6 +265,15 @@ def build_public_release4_governance(report: dict[str, Any]) -> dict[str, Any]:
             "external_gates": report["external_gates"],
         },
         "private_operator_data_published": False,
+        "private_physics_outcomes_published": False,
+        "report_sha256": report["report_sha256"],
+        "reproducibility": report["reproducibility"],
+        "public_capacity_boundary": {
+            "graph_results_applied_to_public_capacity": False,
+            "map_values_remain_physics_results": True,
+            "operator_confirmation_created": False,
+            "status": "synthetic_operator_replacement_rehearsal_only",
+        },
         "warning": report["watermark"],
     }
     manifest["manifest_sha256"] = hashlib.sha256(
@@ -257,7 +286,7 @@ def run_synthetic_pilot_acceptance(
     bundle: PilotDataBundle, output: Path, public_output: Path | None = None
 ) -> dict[str, Any]:
     """Execute a bounded real-physics qualification and write the cross-phase report."""
-    scenarios = [
+    base_scenarios = [
         ScenarioDefinition(
             scenario_id=f"mock:de-pilot-01:qualification:{index}",
             demand_factor=demand,
@@ -277,13 +306,26 @@ def run_synthetic_pilot_acceptance(
             )
         )
     ]
+    contingency_ids = [str(item["id"]) for item in bundle.network_model.contingencies]
+    contingency_scenarios = [
+        ScenarioDefinition(
+            scenario_id=f"mock:de-pilot-01:mandatory:{contingency_id}",
+            demand_factor=1.25,
+            renewable_factor=0.2,
+            contingency_id=contingency_id,
+            source_kind="synthetic_benchmark",
+        )
+        for contingency_id in contingency_ids
+    ]
+    scenarios = base_scenarios + contingency_scenarios
+    mandatory_contingencies = set(contingency_ids)
     graph_report = run_graph_guided_study(
         model=bundle.network_model,
         scenarios=scenarios,
         source_bus=str(bundle.network_model.generators[0]["bus"]),
         target_buses=[bundle.network_model.connection_bus],
-        mandatory_contingencies=set(),
-        budget=4,
+        mandatory_contingencies=mandatory_contingencies,
+        budget=max(6, len(mandatory_contingencies)),
         provider=PandapowerProvider(maximum_capacity_mw=100, capacity_tolerance_mw=1),
         topology_provider=InMemoryTopologyProvider(),
     )
@@ -298,8 +340,21 @@ def run_synthetic_pilot_acceptance(
         "infeasible_recall": validation["infeasible_recall"],
         "constraint_recall": validation["constraint_recall"],
         "false_safe_rate": 0 if not validation["missed_infeasible_scenarios"] else 1,
+        "mandatory_recall": validation["mandatory_recall"],
         "accepted_for_reduced_search": validation["accepted_for_search_reduction"],
         "qualification_study_sha256": graph_report["study_sha256"],
+        "scenario_set_sha256": hashlib.sha256(
+            json.dumps(
+                sorted(item.input_hash for item in scenarios), separators=(",", ":")
+            ).encode()
+        ).hexdigest(),
+        "topology_provider_contract_exercised": bool(graph_report["topology_provider"]),
+        "physics_verified_case_count": validation["selected_case_count"]
+        + validation["full_case_count"],
+        "physics_expected_case_count": validation["selected_candidate_count"]
+        + validation["full_candidate_count"],
+        "display_as_capacity": False,
+        "public_governance_contract": True,
         "capacity_claim": False,
     }
     report = build_acceptance_report(bundle, reduction=reduction, output=output)

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import asdict
 from typing import Any, TypedDict
 
@@ -41,6 +42,16 @@ def run_graph_guided_study(
     validation_mode: str = "qualification",
     reduction_policy: dict[str, Any] | None = None,
 ) -> GraphGuidedStudyResult:
+    if not scenarios:
+        raise ValueError("Graph-guided studies require at least one scenario.")
+    scenario_ids = [row.scenario_id for row in scenarios]
+    scenario_hashes = [row.input_hash for row in scenarios]
+    if len(scenario_ids) != len(set(scenario_ids)) or len(scenario_hashes) != len(
+        set(scenario_hashes)
+    ):
+        raise ValueError("Graph-guided scenarios must have unique identities and hashes.")
+    if budget <= 0 or budget > len(scenarios):
+        raise ValueError("Solver budget must be within the submitted scenario count.")
     if validation_mode not in {"qualification", "promoted"}:
         raise ValueError("validation_mode must be qualification or promoted.")
     if validation_mode == "promoted":
@@ -50,6 +61,9 @@ def run_graph_guided_study(
             and float(policy.get("mandatory_recall", 0)) == 1
             and float(policy.get("false_safe_rate", 1)) == 0
             and policy.get("model_version") == model.model_version
+            and policy.get("projection_sha256") == build_projection(model).projection_sha256
+            and isinstance(policy.get("validation_sha256"), str)
+            and re.fullmatch(r"[a-f0-9]{64}", policy["validation_sha256"])
         ):
             raise ValueError("Promoted reduction requires a zero-false-safe policy for this model.")
     projection = build_projection(model)
@@ -76,6 +90,8 @@ def run_graph_guided_study(
     solver = provider or PandapowerProvider()
     selected_result = execute_permutations(model, selected, solver)
     selected_outcomes = [PhysicsOutcome(**row) for row in selected_result["outcomes"]]
+    if {row.scenario_id for row in selected_outcomes} - selected_ids:
+        raise ValueError("Physics returned outcomes outside the selected graph-guided set.")
     if validation_mode == "qualification":
         full_result = execute_permutations(model, scenarios, solver)
         full_outcomes = [PhysicsOutcome(**row) for row in full_result["outcomes"]]
@@ -104,6 +120,12 @@ def run_graph_guided_study(
     validation = {
         "full_case_count": len(full_outcomes),
         "selected_case_count": len(selected_outcomes),
+        "full_candidate_count": len(scenarios) if validation_mode == "qualification" else 0,
+        "selected_candidate_count": len(selected),
+        "full_physics_coverage": round(len(full_outcomes) / len(scenarios), 6)
+        if validation_mode == "qualification"
+        else None,
+        "selected_physics_coverage": round(len(selected_outcomes) / len(selected), 6),
         **recall,
         "selected_solver_failures": selected_result["quarantine"],
         "full_set_solver_failures": full_failures,

@@ -34,12 +34,22 @@ def validate_reduction(
         if not full_infeasible
         else len(full_infeasible & selected_infeasible) / len(full_infeasible)
     )
+    false_safe_rate = (
+        0.0
+        if not full_infeasible
+        else len(full_infeasible - selected_infeasible) / len(full_infeasible)
+    )
     constraint_recall = (
         1.0
         if not full_constraints
         else len(full_constraints & selected_constraints) / len(full_constraints)
     )
     missing_mandatory = mandatory_scenario_ids - selected_ids
+    mandatory_recall = (
+        1.0
+        if not mandatory_scenario_ids
+        else len(mandatory_scenario_ids & selected_ids) / len(mandatory_scenario_ids)
+    )
     accepted = (
         infeasible_recall >= policy.minimum_infeasible_recall
         and constraint_recall >= policy.minimum_constraint_recall
@@ -47,10 +57,12 @@ def validate_reduction(
     )
     payload = {
         "infeasible_recall": round(infeasible_recall, 6),
+        "false_safe_rate": round(false_safe_rate, 6),
         "constraint_recall": round(constraint_recall, 6),
         "missed_infeasible_scenarios": sorted(full_infeasible - selected_infeasible),
         "missed_binding_constraints": sorted(full_constraints - selected_constraints),
         "missing_mandatory_scenarios": sorted(missing_mandatory),
+        "mandatory_recall": round(mandatory_recall, 6),
         "accepted_for_search_reduction": accepted,
     }
     return {**payload, "validation_sha256": canonical_hash(payload), "capacity_claim": False}

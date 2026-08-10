@@ -338,6 +338,19 @@ export type ReferenceCapacityArtifact = {
       external_gates: string[];
     };
     private_operator_data_published: false;
+    private_physics_outcomes_published: false;
+    report_sha256: string;
+    reproducibility: {
+      command: string;
+      scenario_set_sha256: string;
+      qualification_study_sha256: string;
+    };
+    public_capacity_boundary: {
+      graph_results_applied_to_public_capacity: false;
+      map_values_remain_physics_results: true;
+      operator_confirmation_created: false;
+      status: string;
+    };
     warning: string;
     manifest_sha256: string;
   } | null;

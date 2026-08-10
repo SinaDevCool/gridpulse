@@ -46,10 +46,15 @@ shown only inside an authorised site assessment.
 
 ## Data flow
 
-1. A graph-guided study is submitted with an authorised `workspace_id`.
-2. The Python study service publishes topology results and provenance against that workspace.
-3. Supabase returns a sanitised, site-scoped view to an authenticated assessment user.
-4. React renders an explicit state and never infers capacity from topology.
+1. A graph-guided qualification is submitted without a workspace binding; caller-supplied workspace
+   IDs and promoted-mode policies are rejected at the public analytics boundary.
+2. The Python study service publishes an unlinked, private topology result and provenance record.
+3. An operator reviewer uses the protected database workflow to attach the study to a real pilot
+   workspace with current topology-processing permission.
+4. Promotion additionally requires a passed reconciliation, linked operator review, complete
+   mandatory/constraint recall and zero false-safe outcomes.
+5. Supabase returns a sanitised, site-scoped view to an authenticated assessment user.
+6. React renders an explicit state and never infers capacity from topology.
 
 Existing studies without a workspace association intentionally remain invisible. They must be republished or
 linked through an approved migration rather than guessed from geographic proximity.

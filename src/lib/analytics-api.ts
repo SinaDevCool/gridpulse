@@ -27,15 +27,13 @@ interface JobAccepted {
 }
 
 export type GraphGuidedStudyRequest = {
-  workspace_id?: string;
   network_model: Record<string, unknown>;
   scenarios: Array<Record<string, unknown>>;
   source_bus: string;
   target_buses: string[];
   mandatory_contingencies?: string[];
   solver_budget: number;
-  validation_mode?: "qualification" | "promoted";
-  reduction_policy?: Record<string, unknown>;
+  validation_mode?: "qualification";
 };
 
 function analyticsBaseUrl(): string {
@@ -70,9 +68,6 @@ export function startOperatorSourceHealthJob(): Promise<JobAccepted> {
 }
 
 export function startGraphGuidedStudy(input: GraphGuidedStudyRequest): Promise<JobAccepted> {
-  if (input.validation_mode === "promoted" && !input.workspace_id) {
-    return Promise.reject(new Error("Promoted graph studies require an authorised workspace"));
-  }
   return authenticatedRequest<JobAccepted>("/v1/jobs/graph-guided-study", {
     method: "POST",
     body: JSON.stringify(input),
