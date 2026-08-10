@@ -80,6 +80,7 @@ import {
   loadGridOperatorCatalog,
   type GridOperatorOption,
 } from "@/features/power-finder/operator-catalog";
+import { operatorBoundsIntersect } from "@/features/power-finder/operator-map-navigation";
 import {
   activationStudySnapshot,
   createActivationStudyContext,
@@ -115,6 +116,8 @@ export const Route = createFileRoute("/power-finder")({
       .optional()
       .catch(undefined),
     operator: z.string().max(160).optional().catch(undefined),
+    tso: z.string().max(160).optional().catch(undefined),
+    dso: z.string().max(160).optional().catch(undefined),
     sort: z.enum(["context", "voltage", "name"]).optional().catch(undefined),
     mw: safeNumber(0.1, 1000),
     distance: safeNumber(1, 100),
@@ -266,7 +269,9 @@ function PowerFinderPage() {
   const [dataMode, setDataMode] = useState<PowerFinderDataMode | null>(null);
   const query = search.q ?? "";
   const minimumVoltage = search.voltage ?? 0;
-  const operator = search.operator ?? "all";
+  const legacyOperator = search.operator ?? "all";
+  const selectedTso = search.tso ?? "all";
+  const selectedDso = search.dso ?? "all";
   const candidateSort: CandidateSort = search.sort ?? "context";
   const requiredImportMw = project.importMw;
   const maxDistanceKm = project.maxDistanceKm;
@@ -603,8 +608,17 @@ function PowerFinderPage() {
         feature.id.toLocaleLowerCase().includes(normalizedQuery);
       const matchesVoltage =
         properties.kind !== "node" || minimumVoltage === 0 || voltage >= minimumVoltage;
+      const canonicalOperator = canonicalOperatorName(properties.operator);
+      const operatorContext = operatorCatalog.find((item) => item.name === canonicalOperator);
+      const matchesTso =
+        selectedTso === "all" ||
+        canonicalOperator === selectedTso ||
+        operatorContext?.tsoNames.includes(selectedTso);
+      const matchesDso = selectedDso === "all" || canonicalOperator === selectedDso;
       const matchesOperator =
-        operator === "all" || canonicalOperatorName(properties.operator) === operator;
+        selectedTso !== "all" && selectedDso !== "all"
+          ? canonicalOperator === selectedTso || canonicalOperator === selectedDso
+          : matchesTso && matchesDso;
       return enabled[properties.kind] && matchesQuery && matchesVoltage && matchesOperator;
     });
     return {
@@ -612,7 +626,7 @@ function PowerFinderPage() {
       features,
       metadata: { ...collection.metadata, record_count: features.length },
     };
-  }, [collection, enabled, minimumVoltage, operator, query]);
+  }, [collection, enabled, minimumVoltage, operatorCatalog, query, selectedDso, selectedTso]);
 
   const operators = useMemo(() => {
     if (operatorCatalog.length) return operatorCatalog;
@@ -624,40 +638,69 @@ function PowerFinderPage() {
       ),
     )
       .sort((left, right) => left.localeCompare(right))
-      .map((name) => ({ name, type: "DSO / other" as const, featureCount: 0, bounds: null }));
+      .map((name) => ({
+        name,
+        type: "DSO / other" as const,
+        featureCount: 0,
+        bounds: null,
+        tsoNames: [],
+      }));
   }, [collection, operatorCatalog]);
-  const transmissionOperators = useMemo(
-    () => operators.filter((item) => item.type === "TSO"),
-    [operators],
+  const regionalOperators = useMemo(
+    () =>
+      operators.filter(
+        (item) => !item.bounds || operatorBoundsIntersect(item.bounds, activeCoverage.bounds),
+      ),
+    [activeCoverage.bounds, operators],
   );
-  const contextualOperatorNames = useMemo(() => {
-    if (regionCode === "DE" && minimumVoltage === 0) return null;
-    const names = new Set<string>();
-    for (const feature of collection?.features ?? []) {
-      if (feature.properties.kind !== "node" && feature.properties.kind !== "line") continue;
-      const voltage = Math.max(0, ...(feature.properties.voltage_kv ?? []));
-      if (minimumVoltage > 0 && voltage < minimumVoltage) continue;
-      const name = canonicalOperatorName(feature.properties.operator);
-      if (name) names.add(name);
-    }
-    return names.size ? names : null;
-  }, [collection, minimumVoltage, regionCode]);
+  const transmissionOperators = useMemo(
+    () => regionalOperators.filter((item) => item.type === "TSO"),
+    [regionalOperators],
+  );
   const distributionOperators = useMemo(() => {
-    const all = operators.filter((item) => item.type === "DSO / other");
-    return contextualOperatorNames
-      ? all.filter((item) => contextualOperatorNames.has(item.name))
-      : all;
-  }, [contextualOperatorNames, operators]);
-  const selectedOperatorType = operators.find((item) => item.name === operator)?.type;
+    const regional = regionalOperators.filter((item) => item.type === "DSO / other");
+    return selectedTso !== "all"
+      ? regional.filter((item) => item.tsoNames.includes(selectedTso))
+      : regional;
+  }, [regionalOperators, selectedTso]);
   useEffect(() => {
-    if (
-      operator !== "all" &&
-      selectedOperatorType === "DSO / other" &&
-      !distributionOperators.some((item) => item.name === operator)
-    ) {
-      void updateSearch({ operator: undefined, candidate: undefined, compare: undefined });
+    const tsoAvailable = transmissionOperators.some((item) => item.name === selectedTso);
+    const dsoAvailable = distributionOperators.some((item) => item.name === selectedDso);
+    if (selectedTso !== "all" && !tsoAvailable) {
+      void updateSearch({
+        tso: undefined,
+        dso: undefined,
+        candidate: undefined,
+        compare: undefined,
+      });
+    } else if (selectedDso !== "all" && !dsoAvailable) {
+      void updateSearch({ dso: undefined, candidate: undefined, compare: undefined });
     }
-  }, [distributionOperators, operator, selectedOperatorType]);
+    // updateSearch is a render-local router helper; availability changes are the intended trigger.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [distributionOperators, selectedDso, selectedTso, transmissionOperators]);
+
+  useEffect(() => {
+    if (selectedDso !== "all" && operators.some((item) => item.name === selectedDso)) {
+      navigateMapToOperator(selectedDso);
+    } else if (selectedTso !== "all" && operators.some((item) => item.name === selectedTso)) {
+      navigateMapToOperator(selectedTso);
+    }
+    // URL selection and late catalog hydration should both focus the accepted mapped extent.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [operators, selectedDso, selectedTso]);
+
+  useEffect(() => {
+    if (legacyOperator === "all" || !operators.length) return;
+    const legacyType = operators.find((item) => item.name === legacyOperator)?.type;
+    void updateSearch({
+      operator: undefined,
+      tso: legacyType === "TSO" ? legacyOperator : undefined,
+      dso: legacyType === "DSO / other" ? legacyOperator : undefined,
+    });
+    // One-time compatibility migration for shared links from the previous filter contract.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [legacyOperator, operators]);
 
   const activeCapacityNodes = useMemo(
     () =>
@@ -679,8 +722,15 @@ function PowerFinderPage() {
         candidate.nodeName.toLocaleLowerCase().includes(normalizedQuery) ||
         candidate.operator?.toLocaleLowerCase().includes(normalizedQuery);
       const matchesVoltage = minimumVoltage === 0 || maximumVoltage >= minimumVoltage;
+      const canonicalCandidateOperator = canonicalOperatorName(candidate.operator);
+      const operatorContext = operatorCatalog.find(
+        (item) => item.name === canonicalCandidateOperator,
+      );
       const matchesOperator =
-        operator === "all" || canonicalOperatorName(candidate.operator) === operator;
+        (selectedDso === "all" || canonicalCandidateOperator === selectedDso) &&
+        (selectedTso === "all" ||
+          canonicalCandidateOperator === selectedTso ||
+          operatorContext?.tsoNames.includes(selectedTso));
       return matchesQuery && matchesVoltage && matchesOperator && Boolean(node);
     });
     return items.sort((left, right) => {
@@ -719,11 +769,13 @@ function PowerFinderPage() {
     collection,
     mapMode,
     minimumVoltage,
-    operator,
+    operatorCatalog,
     query,
     ranking,
     rankingCollection,
     requiredCapacityMw,
+    selectedDso,
+    selectedTso,
   ]);
   const capacitySummary = useMemo(
     () =>
@@ -1551,12 +1603,13 @@ function PowerFinderPage() {
                 <span>Transmission operator (TSO)</span>
                 <select
                   name="transmission-operator"
-                  value={selectedOperatorType === "TSO" ? operator : "all"}
+                  value={selectedTso}
                   onChange={(event) => {
                     const operatorName = event.target.value;
-                    navigateMapToOperator(operatorName);
                     void updateSearch({
-                      operator: operatorName === "all" ? undefined : operatorName,
+                      operator: undefined,
+                      tso: operatorName === "all" ? undefined : operatorName,
+                      dso: undefined,
                       candidate: undefined,
                       compare: undefined,
                     });
@@ -1569,18 +1622,18 @@ function PowerFinderPage() {
                     </option>
                   ))}
                 </select>
-                {selectedOperatorType === "TSO" && <small>{operator}</small>}
+                {selectedTso !== "all" && <small>{selectedTso}</small>}
               </label>
               <label className="power-finder-filter-wide">
                 <span>Distribution operator (DSO / other)</span>
                 <select
                   name="distribution-operator"
-                  value={selectedOperatorType === "DSO / other" ? operator : "all"}
+                  value={selectedDso}
                   onChange={(event) => {
                     const operatorName = event.target.value;
-                    navigateMapToOperator(operatorName);
                     void updateSearch({
-                      operator: operatorName === "all" ? undefined : operatorName,
+                      operator: undefined,
+                      dso: operatorName === "all" ? undefined : operatorName,
                       candidate: undefined,
                       compare: undefined,
                     });
@@ -1593,11 +1646,12 @@ function PowerFinderPage() {
                     </option>
                   ))}
                 </select>
-                {selectedOperatorType === "DSO / other" && <small>{operator}</small>}
+                {selectedDso !== "all" && <small>{selectedDso}</small>}
               </label>
               <p className="operator-hierarchy-boundary power-finder-filter-wide">
-                TSO control-area assignment for each DSO is not established in the accepted map
-                source, so DSO names are not placed under an invented TSO parent.
+                Region options intersect accepted mapped assets. DSO choices under a TSO use nearest
+                mapped transmission context; this is a screening relationship, not an
+                operator-confirmed control-area assignment.
               </p>
             </div>
             {mapMode !== "capacity" && (
@@ -1733,17 +1787,20 @@ function PowerFinderPage() {
                         void updateSearch({ capacityMetric: value });
                       }}
                     >
-                      {(Object.entries(capacityMetricLabels) as [CapacityMetric, string][])
-                        .filter(([value]) =>
-                          capacitySource === "berlin_synthetic"
-                            ? value === "n0_import_mw" || value === "firm_import_mw"
-                            : true,
-                        )
-                        .map(([value, label]) => (
-                          <option key={value} value={value}>
-                            {label}
-                          </option>
-                        ))}
+                      {(Object.entries(capacityMetricLabels) as [CapacityMetric, string][]).map(
+                        ([value, label]) => {
+                          const unavailableInSynthetic =
+                            capacitySource === "berlin_synthetic" &&
+                            value !== "n0_import_mw" &&
+                            value !== "firm_import_mw";
+                          return (
+                            <option key={value} value={value} disabled={unavailableInSynthetic}>
+                              {label}
+                              {unavailableInSynthetic ? " · private study required" : ""}
+                            </option>
+                          );
+                        },
+                      )}
                     </select>
                   </label>
                 </div>

@@ -11263,11 +11263,22 @@ tbody tr:last-child td {
 .power-finder-candidates {
   display: grid;
   gap: 6px;
+  max-height: min(62vh, 680px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 3px;
+  scrollbar-gutter: stable;
 }
 .power-finder-candidates > header {
   align-items: end;
+  background: #071525;
+  border-bottom: 1px solid #20364a;
   display: flex;
   justify-content: space-between;
+  padding: 9px 0 8px;
+  position: sticky;
+  top: 0;
+  z-index: 11;
 }
 .power-finder-candidates > header h2 {
   margin-bottom: 3px;
@@ -11728,7 +11739,9 @@ tbody tr:last-child td {
 
 .power-finder-page,
 .power-finder-sidebar {
-  transition: grid-template-columns 180ms ease, opacity 140ms ease;
+  transition:
+    grid-template-columns 180ms ease,
+    opacity 140ms ease;
 }
 
 .power-finder-page.is-sidebar-collapsed {
@@ -11758,7 +11771,9 @@ tbody tr:last-child td {
   color: #dff7ff;
   background: rgb(7 21 37 / 94%);
   box-shadow: 0 8px 24px rgb(0 0 0 / 30%);
-  font: 700 0.7rem/1 "Geist", sans-serif;
+  font:
+    700 0.7rem/1 "Geist",
+    sans-serif;
   cursor: pointer;
 }
 
@@ -14281,6 +14296,7 @@ tbody tr:last-child td {
     gap: 8px;
     align-items: stretch;
     padding-bottom: 9px;
+    top: 0;
   }
 
   .power-finder-candidates > header > span {

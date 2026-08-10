@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mergeOperatorBounds } from "./operator-map-navigation";
+import { mergeOperatorBounds, operatorBoundsIntersect } from "./operator-map-navigation";
 
 describe("operator map extents", () => {
   it("merges aliases into one complete geographic extent", () => {
@@ -9,5 +9,10 @@ describe("operator map extents", () => {
   it("preserves a known extent when an alias has no mapped geometry", () => {
     expect(mergeOperatorBounds([8, 50, 10, 52], null)).toEqual([8, 50, 10, 52]);
     expect(mergeOperatorBounds(null, [8, 50, 10, 52])).toEqual([8, 50, 10, 52]);
+  });
+
+  it("detects regional intersection including shared boundaries", () => {
+    expect(operatorBoundsIntersect([6, 48, 10, 52], [9, 51, 12, 54])).toBe(true);
+    expect(operatorBoundsIntersect([6, 48, 8, 50], [9, 51, 12, 54])).toBe(false);
   });
 });
