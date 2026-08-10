@@ -41,6 +41,17 @@ export type PowerFinderProperties = {
   area_ha?: number;
   planning_status?: string;
   technology?: string;
+  generation_group?:
+    | "solar"
+    | "wind"
+    | "biomass"
+    | "hydro"
+    | "geothermal"
+    | "nuclear"
+    | "gas"
+    | "fossil_other"
+    | "other"
+    | "storage";
   net_capacity_mw?: number;
   storage_energy_mwh?: number;
   generation_mw_20km?: number;

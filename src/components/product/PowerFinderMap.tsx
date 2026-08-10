@@ -57,7 +57,23 @@ const generationColour: ExpressionSpecification = [
 ];
 const localGenerationColour: ExpressionSpecification = [
   "match",
-  ["get", "technology"],
+  ["coalesce", ["get", "generation_group"], ["get", "technology"]],
+  "solar",
+  "#facc15",
+  "wind",
+  "#38bdf8",
+  "biomass",
+  "#22c55e",
+  "hydro",
+  "#06b6d4",
+  "geothermal",
+  "#f97316",
+  "nuclear",
+  "#f472b6",
+  "gas",
+  "#a78bfa",
+  "fossil_other",
+  "#ef4444",
   "Solare Strahlungsenergie",
   "#facc15",
   "Solarthermie",
@@ -78,7 +94,7 @@ const localGenerationColour: ExpressionSpecification = [
   "#a78bfa",
   "Kernenergie",
   "#f472b6",
-  "#ef4444",
+  "#94a3b8",
 ];
 
 type PowerFinderMapProps = {
@@ -438,10 +454,11 @@ export function PowerFinderMap({
           filter: ["==", ["get", "kind"], "generation_asset"],
           layout: { visibility: enabledLayers.generation_asset ? "visible" : "none" },
           paint: {
-            "circle-radius": ["interpolate", ["linear"], ["zoom"], 6, 0.35, 9, 1.1],
+            "circle-radius": ["interpolate", ["linear"], ["zoom"], 6, 1.35, 9, 3.2],
             "circle-color": generationColour,
-            "circle-opacity": ["interpolate", ["linear"], ["zoom"], 6, 0.2, 9, 0.55],
-            "circle-stroke-width": 0,
+            "circle-opacity": ["interpolate", ["linear"], ["zoom"], 6, 0.72, 9, 0.9],
+            "circle-stroke-color": "rgba(255, 255, 255, 0.7)",
+            "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 6, 0.25, 9, 0.7],
           },
         });
         map.addLayer({
@@ -454,10 +471,10 @@ export function PowerFinderMap({
           filter: ["==", ["get", "kind"], "generation_asset"],
           layout: { visibility: enabledLayers.generation_asset ? "visible" : "none" },
           paint: {
-            "circle-radius": ["interpolate", ["linear"], ["zoom"], 6, 2, 9, 4],
+            "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 4.5, 13, 7],
             "circle-color": generationColour,
-            "circle-stroke-color": "#dcfce7",
-            "circle-stroke-width": 1,
+            "circle-stroke-color": "#ffffff",
+            "circle-stroke-width": 1.25,
           },
         });
         map.addLayer({

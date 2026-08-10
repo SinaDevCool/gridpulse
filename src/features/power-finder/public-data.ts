@@ -24,6 +24,7 @@ const publicPropertyKeys = [
   "area_ha",
   "planning_status",
   "technology",
+  "generation_group",
   "net_capacity_mw",
   "storage_energy_mwh",
   "generation_mw_20km",

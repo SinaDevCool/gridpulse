@@ -710,9 +710,9 @@ function PowerFinderPage() {
     [berlinCapacity?.results, capacitySource, capacityViewport?.nodes],
   );
 
-  const candidates = useMemo(() => {
+  const candidateSelection = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase();
-    const items = (ranking?.candidates ?? []).filter((candidate) => {
+    const baseItems = (ranking?.candidates ?? []).filter((candidate) => {
       const node =
         opportunityNode(candidate, rankingCollection) ?? opportunityNode(candidate, collection);
       const maximumVoltage = Math.max(0, ...candidate.voltageKv);
@@ -723,17 +723,25 @@ function PowerFinderPage() {
         candidate.operator?.toLocaleLowerCase().includes(normalizedQuery);
       const matchesVoltage = minimumVoltage === 0 || maximumVoltage >= minimumVoltage;
       const canonicalCandidateOperator = canonicalOperatorName(candidate.operator);
-      const operatorContext = operatorCatalog.find(
-        (item) => item.name === canonicalCandidateOperator,
-      );
-      const matchesOperator =
-        (selectedDso === "all" || canonicalCandidateOperator === selectedDso) &&
-        (selectedTso === "all" ||
-          canonicalCandidateOperator === selectedTso ||
-          operatorContext?.tsoNames.includes(selectedTso));
-      return matchesQuery && matchesVoltage && matchesOperator && Boolean(node);
+      const matchesDso = selectedDso === "all" || canonicalCandidateOperator === selectedDso;
+      return matchesQuery && matchesVoltage && matchesDso && Boolean(node);
     });
-    return items.sort((left, right) => {
+    const tsoItems =
+      selectedTso === "all"
+        ? baseItems
+        : baseItems.filter((candidate) => {
+            const canonicalCandidateOperator = canonicalOperatorName(candidate.operator);
+            const operatorContext = operatorCatalog.find(
+              (item) => item.name === canonicalCandidateOperator,
+            );
+            return (
+              canonicalCandidateOperator === selectedTso ||
+              operatorContext?.tsoNames.includes(selectedTso)
+            );
+          });
+    const tsoFallback = selectedTso !== "all" && tsoItems.length === 0 && baseItems.length > 0;
+    const items = tsoFallback ? baseItems : tsoItems;
+    items.sort((left, right) => {
       if (mapMode === "capacity") {
         const byNode = new Map(activeCapacityNodes.map((node) => [node.publicNodeId, node]));
         const order = { meets: 0, activation: 1, below: 2, stale: 3, unknown: 4 } as const;
@@ -762,6 +770,7 @@ function PowerFinderPage() {
       }
       return right.screeningRank - left.screeningRank;
     });
+    return { items, tsoFallback };
   }, [
     candidateSort,
     capacityMetric,
@@ -777,6 +786,7 @@ function PowerFinderPage() {
     selectedDso,
     selectedTso,
   ]);
+  const candidates = candidateSelection.items;
   const capacitySummary = useMemo(
     () =>
       summariseCapacityOpportunities(
@@ -1976,6 +1986,13 @@ function PowerFinderPage() {
                 Candidate ranking is unavailable. Change the map view or try again.
               </p>
             )}
+            {candidateSelection.tsoFallback && (
+              <p className="candidate-boundary" role="status">
+                No nearby candidate has a confirmed {selectedTso} relationship. Showing valid
+                distance, voltage and DSO matches; verify the TSO with the operator before relying
+                on it.
+              </p>
+            )}
             {project.latitude != null &&
               project.longitude != null &&
               rankingState === "ready" &&
@@ -2289,6 +2306,13 @@ function PowerFinderPage() {
                 </span>
                 <span>
                   <i className="legend-generation" style={{ background: "#06b6d4" }} /> Hydro
+                </span>
+                <span>
+                  <i className="legend-generation" style={{ background: "#f97316" }} />
+                  Geothermal
+                </span>
+                <span>
+                  <i className="legend-generation" style={{ background: "#f472b6" }} /> Nuclear
                 </span>
                 <span>
                   <i className="legend-generation" style={{ background: "#a78bfa" }} /> Gas
