@@ -72,6 +72,7 @@ def parser() -> argparse.ArgumentParser:
     mastr_stream.add_argument("--input", type=Path, required=True)
     mastr_stream.add_argument("--output", type=Path, required=True)
     mastr_stream.add_argument("--federal-state")
+    mastr_stream.add_argument("--exact-map-points-only", action="store_true")
     publish_mastr = subcommands.add_parser("publish-mastr")
     publish_mastr.add_argument("--input", type=Path, required=True)
     publish_mastr.add_argument("--batch-size", type=int, default=500)
@@ -208,6 +209,7 @@ def main() -> None:
             args.input,
             args.output,
             federal_state=args.federal_state,
+            exact_map_points_only=args.exact_map_points_only,
         )
         print(
             f"Streamed {report.asset_count} MaStR assets; "

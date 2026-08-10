@@ -76,6 +76,26 @@ class MastrConnectorTests(unittest.TestCase):
             self.assertTrue(validation["valid"])
             self.assertEqual(validation["asset_count"], 2)
 
+    def test_national_map_stream_keeps_only_exact_generation_and_storage(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            archive_path = Path(directory) / "mastr.zip"
+            output_path = Path(directory) / "assets.ndjson"
+            with zipfile.ZipFile(archive_path, "w") as archive:
+                archive.write(FIXTURE, "EinheitenSolar.xml")
+
+            report = stream_mastr_export(
+                archive_path,
+                output_path,
+                exact_map_points_only=True,
+            )
+            records = [
+                json.loads(line) for line in output_path.read_text(encoding="utf-8").splitlines()
+            ]
+
+            self.assertEqual(report.asset_count, 2)
+            self.assertTrue(records[0]["exact_map_points_only"])
+            self.assertTrue(all(record.get("longitude") for record in records[1:]))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -176,7 +176,7 @@ const kindLabels: Record<PowerFinderKind, string> = {
   node: "Grid nodes",
   line: "Mapped grid corridors",
   industrial_site: "Industrial sites",
-  generation_asset: "Registered generation · partial exact locations",
+  generation_asset: "Registered generation · exact public locations",
   storage_asset: "Registered storage",
 };
 const initialBounds: PowerFinderBounds = {
@@ -320,7 +320,7 @@ function PowerFinderPage() {
   const [rankingCollection, setRankingCollection] = useState<PowerFinderCollection | null>(null);
   const [rankingState, setRankingState] = useState<"loading" | "ready" | "error">("loading");
   const [coverage, setCoverage] = useState<PowerFinderCoverage[]>(fallbackCoverage);
-  const regionCode = search.region ?? "DE-BB";
+  const regionCode = search.region ?? "DE";
   const [mapMode, setMapMode] = useState<"voltage" | "evidence" | "capacity">(
     search.mapMode ?? "voltage",
   );
@@ -1688,9 +1688,9 @@ function PowerFinderPage() {
             </div>
             {(enabled.generation_asset || enabled.storage_asset) && (
               <p className="layer-visibility-note">
-                Registered generation and storage currently use the accepted Brandenburg MaStR
-                release, not national coverage. If this view shows zero, no exact published asset
-                coordinate is available here; records are never placed at invented locations.
+                Registered generation and storage show exact public coordinates from the accepted
+                nationwide MaStR release. Zoom in for individual assets. If this view shows zero,
+                no exact published coordinate is available here; locations are never invented.
               </p>
             )}
             {(enabled.line || enabled.industrial_site) &&
@@ -1999,7 +1999,7 @@ function PowerFinderPage() {
             ) : (
               <>
                 <span>
-                  <i className="legend-node" /> Grid node (same voltage colours)
+                  <i className="legend-node" /> Grid node · orange marker, voltage outline
                 </span>
                 {GRID_VOLTAGE_CLASSES.map((voltageClass) => (
                   <span key={voltageClass.id}>
@@ -2014,7 +2014,7 @@ function PowerFinderPage() {
                   <i className="legend-site" /> Industrial land
                 </span>
                 <span>
-                  <i className="legend-generation" /> Registered generation · partial exact points
+                  <i className="legend-generation" /> Registered generation · exact public points
                 </span>
                 <span>
                   <i className="legend-storage" /> Registered storage

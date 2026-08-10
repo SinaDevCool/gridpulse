@@ -211,11 +211,12 @@ def publish_mastr_ndjson(
             prefer="resolution=merge-duplicates",
         )
         published += len(batch)
-        client.request(
-            "PATCH",
-            f"/grid_ingestion_runs?id=eq.{urllib.parse.quote(run['id'])}",
-            {"records_staged": published},
-        )
+        if published % (batch_size * 10) == 0 or published == report["asset_count"]:
+            client.request(
+                "PATCH",
+                f"/grid_ingestion_runs?id=eq.{urllib.parse.quote(run['id'])}",
+                {"records_staged": published},
+            )
 
     valid = published == report["asset_count"]
     validation = {**report, "valid": valid, "published_count": published}
@@ -250,11 +251,16 @@ def publish_mastr_ndjson(
     )
     offset = 0
     while offset < 10_000:
-        refreshed = client.request(
-            "POST",
-            "/rpc/refresh_grid_node_asset_context_batch",
-            {"p_offset": offset, "p_limit": 25},
-        )
+        try:
+            refreshed = client.request(
+                "POST",
+                "/rpc/refresh_grid_node_asset_context_batch",
+                {"p_offset": offset, "p_limit": 25},
+            )
+        except RuntimeError:
+            # Spatial context is derived and resumable. A timeout here must not
+            # misreport an already reconciled and atomically activated release.
+            break
         if not refreshed:
             break
         offset += 25

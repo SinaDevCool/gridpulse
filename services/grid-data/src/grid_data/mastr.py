@@ -269,6 +269,7 @@ def stream_mastr_export(
     output_path: Path,
     *,
     federal_state: str | None = None,
+    exact_map_points_only: bool = False,
 ) -> MastrReport:
     """Write newline-delimited records without retaining the full export in memory."""
     source_hash = hashlib.sha256()
@@ -288,6 +289,7 @@ def stream_mastr_export(
         "source_url": "https://www.marktstammdatenregister.de/MaStR/Datendownload",
         "licence": "Datenlizenz Deutschland – Namensnennung – Version 2.0",
         "geographic_scope": federal_state or "Germany",
+        "exact_map_points_only": exact_map_points_only,
         "source_sha256": source_sha256,
         "connector_version": CONNECTOR_VERSION,
         "parser_version": PARSER_VERSION,
@@ -327,6 +329,11 @@ def stream_mastr_export(
                         warnings.extend(asset_warnings)
                         if asset["latitude"] is None or asset["longitude"] is None:
                             skipped += 1
+                            if exact_map_points_only:
+                                continue
+                        if exact_map_points_only and asset["asset_type"] == "consumption":
+                            skipped += 1
+                            continue
                         output.write(
                             json.dumps(
                                 {"record_type": "asset", **asset},

@@ -232,6 +232,16 @@ export function PowerFinderMap({
           // detail is supplied by the bounded viewport GeoJSON source as it arrives.
           maxzoom: 8,
         });
+        map.addSource("power-finder-registry-tiles", {
+          type: "vector",
+          tiles: [
+            `${window.location.origin}/api/power-finder/tile/{z}/{x}/{y}?release=20260810-national-mastr-points`,
+          ],
+          minzoom: 8,
+          // Request finer registry tiles so dense exact-location assets do not
+          // remain packed into an overzoomed country-scale z8 tile.
+          maxzoom: 10,
+        });
         map.addSource("finder-project-site", {
           type: "geojson",
           data: {
@@ -304,8 +314,8 @@ export function PowerFinderMap({
               11,
               4.5,
             ],
-            "circle-color": voltageColorExpression(),
-            "circle-stroke-color": "#fff7d6",
+            "circle-color": "#f59e0b",
+            "circle-stroke-color": voltageColorExpression(),
             "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 4, 0.4, 9, 1],
           },
         });
@@ -344,23 +354,23 @@ export function PowerFinderMap({
         map.addLayer({
           id: "national-generation-overview",
           type: "circle",
-          source: "power-finder-national-tiles",
+          source: "power-finder-registry-tiles",
           "source-layer": "power_finder",
           minzoom: 6,
           maxzoom: 9,
           filter: ["==", ["get", "kind"], "generation_asset"],
           layout: { visibility: enabledLayers.generation_asset ? "visible" : "none" },
           paint: {
-            "circle-radius": ["interpolate", ["linear"], ["zoom"], 6, 0.8, 9, 2.2],
+            "circle-radius": ["interpolate", ["linear"], ["zoom"], 6, 0.35, 9, 1.1],
             "circle-color": "#22c55e",
-            "circle-opacity": 0.48,
+            "circle-opacity": ["interpolate", ["linear"], ["zoom"], 6, 0.2, 9, 0.55],
             "circle-stroke-width": 0,
           },
         });
         map.addLayer({
           id: "national-generation-assets",
           type: "circle",
-          source: "power-finder-national-tiles",
+          source: "power-finder-registry-tiles",
           "source-layer": "power_finder",
           minzoom: 9,
           maxzoom: 24,
@@ -376,7 +386,7 @@ export function PowerFinderMap({
         map.addLayer({
           id: "national-storage-assets",
           type: "circle",
-          source: "power-finder-national-tiles",
+          source: "power-finder-registry-tiles",
           "source-layer": "power_finder",
           minzoom: 6,
           maxzoom: 24,
@@ -570,7 +580,8 @@ export function PowerFinderMap({
         });
 
         const selectFeature = (event: MapLayerMouseEvent) => {
-          const id = event.features?.[0]?.id;
+          const rendered = event.features?.[0];
+          const id = rendered?.id ?? rendered?.properties?.id;
           const feature = collectionRef.current.features.find(
             (item) => String(item.id) === String(id),
           );
@@ -582,6 +593,12 @@ export function PowerFinderMap({
           "grid-lines",
           "generation-assets",
           "storage-assets",
+          "national-grid-nodes",
+          "national-industrial-sites",
+          "national-industrial-overview",
+          "national-generation-overview",
+          "national-generation-assets",
+          "national-storage-assets",
         ]) {
           map.on("click", layer, selectFeature);
           map.on("mouseenter", layer, () => {
@@ -626,6 +643,12 @@ export function PowerFinderMap({
               "node-clusters",
               "generation-clusters",
               "storage-clusters",
+              "national-grid-nodes",
+              "national-industrial-sites",
+              "national-industrial-overview",
+              "national-generation-overview",
+              "national-generation-assets",
+              "national-storage-assets",
             ],
           });
           if (!interactive.length) {
@@ -793,12 +816,16 @@ export function PowerFinderMap({
           ? "#475569"
           : mapMode === "evidence"
             ? "#f59e0b"
-            : voltageColour,
+            : "#f59e0b",
       );
       map.setPaintProperty(
         "national-grid-nodes",
         "circle-stroke-color",
-        mapMode === "capacity" ? "#cbd5e1" : "#fff7d6",
+        mapMode === "capacity"
+          ? "#cbd5e1"
+          : mapMode === "voltage"
+            ? voltageColour
+            : "#fff7d6",
       );
     }
     map.setPaintProperty("grid-nodes", "circle-radius", mapMode === "capacity" ? 9 : 7);
