@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   handlePublicPowerFinderRequest,
+  handlePublicPowerFinderTileRequest,
   parsePublicViewportRequest,
 } from "./public-power-finder-api";
 
@@ -101,6 +102,24 @@ describe("public Power Finder API", () => {
     });
     expect(response?.status).toBe(429);
     expect(response?.headers.get("retry-after")).toBe("60");
+    expect(origin).not.toHaveBeenCalled();
+  });
+
+  it("serves a warmed vector tile without contacting the database", async () => {
+    const origin = vi.fn();
+    const cachedTile = new Response(new Uint8Array([1, 2, 3]), {
+      headers: { "content-type": "application/vnd.mapbox-vector-tile" },
+    });
+    vi.stubGlobal("fetch", origin);
+    vi.stubGlobal("caches", {
+      default: { match: vi.fn().mockResolvedValue(cachedTile), put: vi.fn() },
+    });
+    const response = await handlePublicPowerFinderTileRequest(
+      new Request("https://gridpulseinsights.com/api/power-finder/tile/8/137/84"),
+      { SUPABASE_URL: "https://example.supabase.co", SUPABASE_PUBLISHABLE_KEY: "test" },
+    );
+    expect(response?.status).toBe(200);
+    expect(response?.headers.get("x-gridpulse-cache")).toBe("HIT");
     expect(origin).not.toHaveBeenCalled();
   });
 });

@@ -1,6 +1,8 @@
 const PUBLIC_VIEWPORT_PATH = "/api/power-finder/viewport";
 const PUBLIC_TILE_PATTERN = /^\/api\/power-finder\/tile\/(\d+)\/(\d+)\/(\d+)$/;
 const CACHE_SECONDS = 300;
+const TILE_CACHE_RELEASE = "20260810-indexed-voltage-tiles";
+const TILE_EDGE_CACHE_SECONDS = 2_592_000;
 
 export type PublicFinderEnv = {
   SUPABASE_URL?: string;
@@ -216,8 +218,10 @@ export async function handlePublicPowerFinderRequest(
 export async function handlePublicPowerFinderTileRequest(
   request: Request,
   env: PublicFinderEnv,
+  context: ExecutionContextLike = {},
 ) {
-  const match = new URL(request.url).pathname.match(PUBLIC_TILE_PATTERN);
+  const requestUrl = new URL(request.url);
+  const match = requestUrl.pathname.match(PUBLIC_TILE_PATTERN);
   if (!match) return null;
   if (request.method !== "GET") {
     return jsonResponse({ error: "Method not allowed." }, 405, { allow: "GET" });
@@ -231,16 +235,31 @@ export async function handlePublicPowerFinderTileRequest(
   if (!supabaseUrl || !publishableKey) {
     return jsonResponse({ error: "Public Finder data is temporarily unavailable." }, 503);
   }
+  const cacheUrl = new URL(requestUrl.pathname, requestUrl.origin);
+  cacheUrl.searchParams.set("release", TILE_CACHE_RELEASE);
+  const cacheRequest = new Request(cacheUrl, { method: "GET" });
+  const cache =
+    typeof caches === "undefined" ? null : (caches as CacheStorage & { default: Cache }).default;
+  const cached = await cache?.match(cacheRequest);
+  if (cached) {
+    const headers = new Headers(cached.headers);
+    headers.set("x-gridpulse-cache", "HIT");
+    return new Response(cached.body, { status: cached.status, headers });
+  }
   const headers: Record<string, string> = {
     apikey: publishableKey,
     "content-type": "application/json",
   };
   if (publishableKey.startsWith("eyJ")) headers.authorization = `Bearer ${publishableKey}`;
+  const startedAt = Date.now();
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 25_000);
   try {
     const response = await fetch(`${supabaseUrl}/rest/v1/rpc/power_finder_public_tile`, {
       method: "POST",
       headers,
       body: JSON.stringify({ z, x, y, include_generation: true, include_storage: true }),
+      signal: controller.signal,
     });
     if (!response.ok) return jsonResponse({ error: "Tile origin unavailable." }, 502);
     const encoded = (await response.json()) as string;
@@ -252,14 +271,24 @@ export async function handlePublicPowerFinderTileRequest(
     for (let index = 0; index < hex.length; index += 2) {
       bytes[index / 2] = Number.parseInt(hex.slice(index, index + 2), 16);
     }
-    return new Response(bytes, {
+    const publicResponse = new Response(bytes, {
       headers: {
         "content-type": "application/vnd.mapbox-vector-tile",
-        "cache-control": "public, max-age=300, s-maxage=86400, stale-if-error=604800",
+        "cache-control": `public, max-age=3600, s-maxage=${TILE_EDGE_CACHE_SECONDS}, stale-if-error=604800`,
         "x-content-type-options": "nosniff",
+        "x-gridpulse-cache": "MISS",
+        "server-timing": `tile-origin;dur=${Date.now() - startedAt}`,
       },
     });
+    if (cache) {
+      const cacheWrite = cache.put(cacheRequest, publicResponse.clone());
+      if (context.waitUntil) context.waitUntil(cacheWrite);
+      else await cacheWrite;
+    }
+    return publicResponse;
   } catch {
     return jsonResponse({ error: "Public Finder tile is temporarily unavailable." }, 502);
+  } finally {
+    clearTimeout(timeout);
   }
 }

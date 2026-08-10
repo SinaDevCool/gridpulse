@@ -216,10 +216,12 @@ export function PowerFinderMap({
         map.addSource("power-finder-national-tiles", {
           type: "vector",
           tiles: [
-            `${window.location.origin}/api/power-finder/tile/{z}/{x}/{y}?release=20260810-voltage-classes-2`,
+            `${window.location.origin}/api/power-finder/tile/{z}/{x}/{y}?release=20260810-indexed-voltage-tiles`,
           ],
           minzoom: 4,
-          maxzoom: 10,
+          // Overzoom the cached national z8 tile immediately. Finer distribution
+          // detail is supplied by the bounded viewport GeoJSON source as it arrives.
+          maxzoom: 8,
         });
         map.addSource("finder-project-site", {
           type: "geojson",
