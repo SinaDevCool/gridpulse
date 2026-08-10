@@ -11617,6 +11617,10 @@ tbody tr:last-child td {
 .legend-line {
   border-top: 2px solid #60a5fa;
 }
+.legend-voltage-line {
+  border-top: 3px solid;
+  height: 0 !important;
+}
 .legend-site {
   background: rgba(23, 195, 178, 0.3);
   border: 1px solid #5eead4;

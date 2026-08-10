@@ -27,6 +27,7 @@ import {
   type PowerFinderFeature,
   type PowerFinderKind,
 } from "@/features/power-finder/fixture-data";
+import { GRID_VOLTAGE_CLASSES } from "@/features/power-finder/voltage-style";
 import { layerAvailability } from "@/features/power-finder/layer-availability";
 import {
   loadPowerFinderViewport,
@@ -173,7 +174,7 @@ export const Route = createFileRoute("/power-finder")({
 
 const kindLabels: Record<PowerFinderKind, string> = {
   node: "Grid nodes",
-  line: "Grid lines",
+  line: "Mapped grid corridors",
   industrial_site: "Industrial sites",
   generation_asset: "Registered generation",
   storage_asset: "Registered storage",
@@ -1995,11 +1996,17 @@ function PowerFinderPage() {
             ) : (
               <>
                 <span>
-                  <i className="legend-node" /> Candidate grid node
+                  <i className="legend-node" /> Grid node (same voltage colours)
                 </span>
-                <span>
-                  <i className="legend-line" /> Mapped corridor
-                </span>
+                {GRID_VOLTAGE_CLASSES.map((voltageClass) => (
+                  <span key={voltageClass.id}>
+                    <i
+                      className="legend-voltage-line"
+                      style={{ borderColor: voltageClass.color }}
+                    />
+                    {voltageClass.label}
+                  </span>
+                ))}
                 <span>
                   <i className="legend-site" /> Industrial land
                 </span>

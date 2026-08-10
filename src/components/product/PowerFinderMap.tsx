@@ -13,6 +13,10 @@ import {
 } from "@/components/product/power-finder-map-data";
 import type { CalculatedCapacityNode } from "@/features/power-finder/calculated-capacity";
 import { classifyCapacityOpportunity } from "@/features/power-finder/capacity-opportunity";
+import {
+  voltageColorExpression,
+  voltageWidthExpression,
+} from "@/features/power-finder/voltage-style";
 import type { CapacityMetric } from "@/features/power-finder/calculated-capacity";
 
 const sourceIds = {
@@ -212,7 +216,7 @@ export function PowerFinderMap({
         map.addSource("power-finder-national-tiles", {
           type: "vector",
           tiles: [
-            `${window.location.origin}/api/power-finder/tile/{z}/{x}/{y}?release=20260810-progressive-3`,
+            `${window.location.origin}/api/power-finder/tile/{z}/{x}/{y}?release=20260810-voltage-classes-2`,
           ],
           minzoom: 4,
           maxzoom: 10,
@@ -261,15 +265,8 @@ export function PowerFinderMap({
           filter: ["==", ["get", "kind"], "line"],
           layout: { visibility: enabledLayers.line ? "visible" : "none" },
           paint: {
-            "line-color": [
-              "case",
-              ["in", "380", ["to-string", ["get", "voltage_kv"]]],
-              "#c084fc",
-              ["in", "220", ["to-string", ["get", "voltage_kv"]]],
-              "#60a5fa",
-              "#7dd3fc",
-            ],
-            "line-width": ["interpolate", ["linear"], ["zoom"], 4, 0.7, 8, 1.8],
+            "line-color": voltageColorExpression(),
+            "line-width": voltageWidthExpression(),
             "line-opacity": 0.82,
           },
         });
@@ -284,7 +281,7 @@ export function PowerFinderMap({
           layout: { visibility: enabledLayers.node ? "visible" : "none" },
           paint: {
             "circle-radius": ["interpolate", ["linear"], ["zoom"], 8.5, 1.2, 11, 4.5],
-            "circle-color": "#f59e0b",
+            "circle-color": voltageColorExpression(),
             "circle-stroke-color": "#fff7d6",
             "circle-stroke-width": 1,
           },
@@ -400,30 +397,8 @@ export function PowerFinderMap({
           minzoom: 8,
           layout: { visibility: "none" },
           paint: {
-            "line-color": [
-              "step",
-              ["number", ["get", "max_voltage_kv"], 0],
-              "#64748b",
-              20,
-              "#2dd4bf",
-              110,
-              "#7dd3fc",
-              220,
-              "#60a5fa",
-              380,
-              "#c084fc",
-            ],
-            "line-width": [
-              "step",
-              ["number", ["get", "max_voltage_kv"], 0],
-              1.2,
-              110,
-              1.8,
-              220,
-              2.4,
-              380,
-              3,
-            ],
+            "line-color": voltageColorExpression(),
+            "line-width": voltageWidthExpression(),
             "line-opacity": 0.85,
           },
         });
@@ -723,19 +698,7 @@ export function PowerFinderMap({
   useEffect(() => {
     const map = mapRef.current;
     if (!map?.getLayer("grid-nodes")) return;
-    const voltageColour = [
-      "step",
-      ["number", ["get", "max_voltage_kv"], 0],
-      "#64748b",
-      20,
-      "#2dd4bf",
-      110,
-      "#f59e0b",
-      220,
-      "#f97316",
-      380,
-      "#ef4444",
-    ];
+    const voltageColour = voltageColorExpression();
     const evidenceColour = [
       "match",
       ["get", "evidence_class"],
@@ -804,7 +767,11 @@ export function PowerFinderMap({
       map.setPaintProperty(
         "national-grid-nodes",
         "circle-color",
-        mapMode === "capacity" ? "#475569" : "#f59e0b",
+        mapMode === "capacity"
+          ? "#475569"
+          : mapMode === "evidence"
+            ? "#f59e0b"
+            : voltageColour,
       );
       map.setPaintProperty(
         "national-grid-nodes",
