@@ -17493,13 +17493,11 @@ tbody tr:last-child td {
 
 /* Client-focused Power Finder decision rails */
 .finder-project-summary {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-items: stretch;
+  display: block;
+  padding: 14px;
 }
 .finder-project-summary > div {
-  grid-column: 1 / -1;
-  padding-bottom: 4px;
+  padding-bottom: 0;
 }
 .finder-project-summary > div > small {
   color: #67d9f3;
@@ -17508,12 +17506,58 @@ tbody tr:last-child td {
   letter-spacing: 0.09em;
   text-transform: uppercase;
 }
-.finder-project-summary button {
+.finder-project-summary .finder-project-actions {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  margin-top: 12px;
+  border-top: 1px solid rgb(148 163 184 / 16%);
+  padding-top: 12px;
+}
+.finder-project-summary .finder-project-actions button {
   min-width: 0;
+  min-height: 40px;
   white-space: normal;
 }
-.finder-project-summary .primary-button {
+.finder-project-summary .finder-project-actions .primary-button {
   grid-column: 1 / -1;
+}
+.finder-screening-controls {
+  margin: 10px 12px;
+  border: 1px solid #1a3a4d;
+  border-radius: 9px;
+  overflow: hidden;
+  background: #081622;
+}
+.finder-screening-controls .finder-project-panel,
+.finder-screening-controls .power-finder-filter-panel {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+}
+.finder-screening-controls .power-finder-filter-panel {
+  border-top: 1px solid rgb(148 163 184 / 16%);
+}
+.candidate-fit-summary {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1px 6px;
+  margin-top: 7px;
+  color: #8ea9b8;
+  font-size: 0.66rem;
+  line-height: 1.2;
+}
+.candidate-fit-summary strong {
+  color: #78def4;
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+.candidate-fit-summary > span {
+  align-self: center;
+}
+.candidate-fit-summary > small {
+  grid-column: 1 / -1;
+  color: #e9c96c;
 }
 .finder-return-to-workspace {
   grid-column: 1 / -1;
@@ -17618,8 +17662,7 @@ tbody tr:last-child td {
   .finder-project-summary {
     grid-template-columns: 1fr 1fr;
   }
-  .finder-project-summary .primary-button,
-  .finder-project-summary > button:last-of-type {
+  .finder-project-summary .finder-project-actions .primary-button {
     grid-column: 1 / -1;
   }
   .candidate-site-impact > dl > div {

@@ -10,10 +10,9 @@ test("Finder exploration and local property portfolio are anonymous", async ({ p
   await expect(page.getByRole("link", { name: "Discuss a site" })).toHaveCount(0);
   await expect(page.getByText(/Sign in|Sign up|Create account/i)).toHaveCount(0);
   await expect(page.getByText(/^Screening only\./i)).toHaveCount(0);
-  await expect(page.getByText(/demand headroom is not established/i).first()).toBeVisible();
+  await expect(page.getByText(/demand headroom is not established/i)).toHaveCount(0);
   await expect(page.getByText("No declared site yet")).toBeVisible();
-  await page.getByText(/Operator questions & report/i).click();
-  await expect(page.getByRole("button", { name: /Download screening report/i })).toBeDisabled();
+  await expect(page.getByText(/Operator questions & report/i)).toHaveCount(0);
   await expect(page.getByRole("button", { name: /Show .* on map, .*\/100/ })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /Create pipeline site/i })).toBeDisabled();
   expect(requests.some((url) => /\/auth\/v1\/(token|signup)/.test(url))).toBe(false);
@@ -73,7 +72,6 @@ test("a Finder project saves locally, survives navigation, and opens a dossier",
   await expect(page.getByText(/candidate site-to-node matches/i).first()).toBeVisible({
     timeout: 15_000,
   });
-  await page.getByText(/Operator questions & report/i).click();
   const save = page.getByRole("button", { name: /Create pipeline site|Shortlist for/i });
   await expect(save).toBeEnabled();
   await save.click();
@@ -182,19 +180,12 @@ test("account-free MVP keeps a custom site inside the data-centre workflow", asy
   });
   await page.getByLabel("Site opportunity").fill("Brandenburg data-centre screen");
   await expect(page.getByLabel("Site opportunity")).toHaveValue("Brandenburg data-centre screen");
-  await page.getByText(/Operator questions & report/i).click();
-  await expect(page.getByText(/Confirm the operator, connection point/i)).toBeVisible();
-  await expect(page.getByRole("button", { name: /Download screening report/i })).toBeEnabled();
+  await expect(page.getByText(/Operator questions & report/i)).toHaveCount(0);
   await expect
     .poll(() => page.evaluate(() => localStorage.getItem("gridpulse-finder-active-project")))
     .toContain("Brandenburg data-centre screen");
   await page.reload();
   await expect(page.getByLabel("Site opportunity")).toHaveValue("Brandenburg data-centre screen");
-  await page.getByText(/Operator questions & report/i).click();
-  const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: /Download screening report/i }).click();
-  const download = await downloadPromise;
-  expect(download.suggestedFilename()).toMatch(/finder-screening\.pdf$/);
 });
 
 test("unsafe coordinates are handled inline and malformed URLs do not crash", async ({ page }) => {

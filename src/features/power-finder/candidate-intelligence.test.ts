@@ -6,6 +6,7 @@ import {
   rankPublishedCandidates,
   requiredVoltageFit,
   mappedVoltageRelevance,
+  assetSpecificityScore,
   sourceFreshnessScore,
 } from "./candidate-intelligence";
 import type { PowerFinderCollection } from "./fixture-data";
@@ -81,6 +82,11 @@ describe("Power Finder candidate intelligence", () => {
     expect(sourceFreshnessScore("2026-08-01T00:00:00Z", now)).toBe(100);
     expect(sourceFreshnessScore("2025-08-01T00:00:00Z", now)).toBe(40);
     expect(sourceFreshnessScore(null, now)).toBe(30);
+  });
+  it("rewards attributable named grid assets without treating generic nodes as equivalent", () => {
+    expect(assetSpecificityScore("Umspannwerk Kladlow", true)).toBe(100);
+    expect(assetSpecificityScore("Mapped node 123", false)).toBe(20);
+    expect(assetSpecificityScore("Bahn Unterwerk", true)).toBe(50);
   });
   it("does not infer voltage compatibility from requested demand", () => {
     expect(requiredVoltageFit(100, [110])).toBe("compatible");

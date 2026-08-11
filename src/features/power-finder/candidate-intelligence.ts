@@ -39,6 +39,7 @@ export type CandidateOpportunity = {
     mappedVoltageRelevance: number;
     proximity: number;
     operatorAttribution: number;
+    assetSpecificity: number;
     sourceFreshness: number;
   };
   provenance?: CalculationProvenance;
@@ -83,7 +84,7 @@ const evidenceWeights: Record<PowerFinderEvidenceClass, number> = {
 };
 
 export const candidateEvidenceBoundary =
-  "Investigation priority ranks public-source evidence, mapped-voltage relevance, proximity, operator attribution and source freshness. It does not establish technical compatibility, available capacity, connection probability, cost, or delivery date.";
+  "Investigation fit ranks proximity (30%), mapped-voltage relevance (25%), operator attribution (15%), asset specificity (15%), evidence readiness (10%) and source freshness (5%). It does not establish technical compatibility, available capacity, connection probability, cost, or delivery date.";
 
 export const voltageFitLabels: Record<VoltageFit, string> = {
   compatible: "mapped voltage matches selected search context",
@@ -149,6 +150,7 @@ function investigationPriority(input: {
   voltageKnown: boolean;
   distanceKm: number;
   operatorKnown: boolean;
+  nodeName: string;
   publishedAt?: string | null;
 }) {
   const rankComponents = {
@@ -156,10 +158,20 @@ function investigationPriority(input: {
     mappedVoltageRelevance: input.voltageKnown ? 100 : 30,
     proximity: round1(100 / (1 + input.distanceKm / 10)),
     operatorAttribution: input.operatorKnown ? 100 : 40,
+    assetSpecificity: assetSpecificityScore(input.nodeName, input.operatorKnown),
     sourceFreshness: sourceFreshnessScore(input.publishedAt),
   };
   const score = round1(weightedInvestigationPriority(rankComponents));
   return { score, rankComponents };
+}
+
+export function assetSpecificityScore(nodeName: string, operatorKnown: boolean): number {
+  const normalised = nodeName.trim().toLowerCase();
+  if (!normalised || /^(mapped )?(node|substation)(\s+\d+)?$/.test(normalised)) {
+    return operatorKnown ? 45 : 20;
+  }
+  if (/bahn|rail|gleichrichter|unterwerk/.test(normalised)) return operatorKnown ? 50 : 30;
+  return operatorKnown ? 100 : 70;
 }
 
 export function sourceFreshnessScore(publishedAt?: string | null, now = new Date()): number {
@@ -413,6 +425,7 @@ function createOpportunity(
     voltageKnown: value.voltageKv.length > 0,
     distanceKm: value.distanceKm,
     operatorKnown: Boolean(value.operator),
+    nodeName: value.nodeName,
     publishedAt: value.sourcePublishedAt,
   });
   return {

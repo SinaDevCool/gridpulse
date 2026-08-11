@@ -1,31 +1,33 @@
 import type { FinderProjectType } from "./finder-project";
 
-export const RANKING_MODEL_VERSION = "public-investigation-priority-v3";
+export const RANKING_MODEL_VERSION = "data-centre-investigation-fit-v4";
 
 export type RankingDimension =
   | "evidenceReadiness"
   | "mappedVoltageRelevance"
   | "proximity"
   | "operatorAttribution"
+  | "assetSpecificity"
   | "sourceFreshness";
 
 export type RankingWeights = Record<RankingDimension, number>;
 
 export const baseRankingWeights: RankingWeights = {
-  evidenceReadiness: 0.3,
+  evidenceReadiness: 0.1,
   mappedVoltageRelevance: 0.25,
-  proximity: 0.25,
-  operatorAttribution: 0.1,
-  sourceFreshness: 0.1,
+  proximity: 0.3,
+  operatorAttribution: 0.15,
+  assetSpecificity: 0.15,
+  sourceFreshness: 0.05,
 };
 
 export const projectRankingProfiles: Record<FinderProjectType, RankingWeights> = {
-  data_centre: { ...baseRankingWeights, mappedVoltageRelevance: 0.3, proximity: 0.2 },
+  data_centre: baseRankingWeights,
   industrial_load: baseRankingWeights,
-  battery_storage: { ...baseRankingWeights, evidenceReadiness: 0.25, mappedVoltageRelevance: 0.3 },
-  co_location: { ...baseRankingWeights, evidenceReadiness: 0.25, mappedVoltageRelevance: 0.3 },
-  electrolyser: { ...baseRankingWeights, mappedVoltageRelevance: 0.3, proximity: 0.2 },
-  charging_hub: { ...baseRankingWeights, proximity: 0.3, evidenceReadiness: 0.25 },
+  battery_storage: baseRankingWeights,
+  co_location: baseRankingWeights,
+  electrolyser: baseRankingWeights,
+  charging_hub: baseRankingWeights,
 };
 
 export function validateRankingWeights(weights: RankingWeights) {
