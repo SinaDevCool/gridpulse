@@ -37,6 +37,9 @@ const finderRoutes = new Set([
   "/operations",
   "/synthetic-network-study",
   "/data-sources",
+  "/data-centres",
+  "/energy-storage",
+  "/hydrogen-industry",
 ]);
 
 const finderApiRoutes = new Set([

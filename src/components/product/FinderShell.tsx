@@ -7,12 +7,18 @@ export function FinderShell({ children }: { children: ReactNode }) {
   const landingPage = pathname === "/";
   const workspacePage = pathname.startsWith("/activation") || pathname.startsWith("/operations");
   const methodologyPage = pathname === "/data-sources";
+  const marketingPage =
+    landingPage ||
+    methodologyPage ||
+    pathname === "/data-centres" ||
+    pathname === "/energy-storage" ||
+    pathname === "/hydrogen-industry";
   return (
     <div
       className={`product-shell product-shell--focused finder-shell${landingPage ? " finder-shell--landing" : ""}${workspacePage ? " finder-shell--workspace" : ""}${methodologyPage ? " finder-shell--methodology" : ""}`}
     >
       <ProductHeader />
-      {landingPage ? null : <ProductStageNavigation />}
+      {marketingPage ? null : <ProductStageNavigation />}
       {children}
       <footer className="product-footer">
         <span>Screening, activation planning &amp; operational simulation.</span>

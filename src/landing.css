@@ -153,8 +153,7 @@
 .landing-hero {
   align-items: center;
   background:
-    radial-gradient(circle at 70% 45%, rgba(25, 57, 70, 0.34), transparent 38%),
-    var(--landing-bg);
+    radial-gradient(circle at 70% 45%, rgba(25, 57, 70, 0.34), transparent 38%), var(--landing-bg);
   display: flex;
   min-height: clamp(680px, 68vh, 880px);
   overflow: hidden;
@@ -1334,5 +1333,220 @@
   .landing-page *::after {
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* Sector marketing pages */
+.sector-page {
+  min-height: 100vh;
+}
+.sector-hero {
+  padding-block: clamp(88px, 11vw, 148px) clamp(72px, 9vw, 112px);
+  background:
+    radial-gradient(circle at 76% 30%, rgba(41, 154, 183, 0.17), transparent 34%),
+    linear-gradient(130deg, #05080f 45%, #081621);
+  border-bottom: 1px solid var(--landing-line);
+}
+.sector-hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
+  align-items: end;
+  gap: clamp(56px, 8vw, 120px);
+}
+.sector-hero-copy h1 {
+  max-width: 910px;
+  font-size: clamp(48px, 5.8vw, 88px);
+  line-height: 0.98;
+}
+.sector-hero-copy > p:not(.landing-eyebrow) {
+  max-width: 700px;
+  margin: 28px 0 34px;
+  color: #b4c3cb;
+  font-size: 18px;
+  line-height: 1.7;
+}
+.sector-decision-card {
+  padding: 28px;
+  border: 1px solid #294554;
+  background: rgba(7, 20, 30, 0.88);
+}
+.sector-decision-card > span {
+  color: var(--landing-cyan);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.sector-decision-card > strong {
+  display: block;
+  margin-top: 18px;
+  font-size: 20px;
+  line-height: 1.4;
+  text-wrap: balance;
+}
+.sector-decision-card ol {
+  display: grid;
+  gap: 0;
+  margin: 28px 0 0;
+  padding: 0;
+  border-top: 1px solid var(--landing-line);
+  list-style: none;
+}
+.sector-decision-card li {
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--landing-line);
+  color: #99acb7;
+  font-size: 12px;
+}
+.sector-decision-card li svg {
+  width: 18px;
+  color: var(--landing-cyan);
+}
+.sector-decision-card li b {
+  display: block;
+  margin-bottom: 3px;
+  color: #eef7fa;
+  font-size: 13px;
+}
+.sector-proof {
+  background: #071019;
+  border-bottom: 1px solid var(--landing-line);
+}
+.sector-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.sector-metrics > div {
+  display: grid;
+  gap: 7px;
+  padding: 30px 34px;
+  border-left: 1px solid var(--landing-line);
+}
+.sector-metrics > div:last-child {
+  border-right: 1px solid var(--landing-line);
+}
+.sector-metrics strong {
+  color: var(--landing-cyan);
+  font-size: 25px;
+  font-variant-numeric: tabular-nums;
+}
+.sector-metrics span {
+  color: #8095a1;
+  font-size: 11px;
+}
+.sector-question-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border: 1px solid var(--landing-line);
+}
+.sector-question-grid article {
+  min-width: 0;
+  min-height: 270px;
+  padding: 30px;
+  border-right: 1px solid var(--landing-line);
+}
+.sector-question-grid article:last-child {
+  border-right: 0;
+}
+.sector-question-grid article > span {
+  color: var(--landing-cyan);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+}
+.sector-question-grid h3 {
+  margin-top: 62px;
+  font-size: 21px;
+}
+.sector-question-grid p {
+  margin-top: 16px;
+  color: var(--landing-muted);
+  font-size: 14px;
+  line-height: 1.65;
+}
+.sector-strategy {
+  background: #071019;
+}
+.sector-strategy-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 80px;
+}
+.sector-strategy-grid h2 {
+  font-size: clamp(38px, 4vw, 58px);
+  line-height: 1.05;
+}
+.sector-strategy-grid > div:last-child > p {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 13px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--landing-line);
+  color: #c3d0d6;
+  line-height: 1.55;
+}
+.sector-strategy-grid > div:last-child > p svg {
+  width: 17px;
+  color: var(--landing-cyan);
+}
+.sector-strategy-grid aside {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: 14px;
+  margin-top: 28px;
+  padding: 20px;
+  border: 1px solid #5c4c23;
+  color: #aab8bf;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.sector-strategy-grid aside svg {
+  width: 19px;
+  color: var(--landing-amber);
+}
+@media (max-width: 860px) {
+  .sector-hero-grid,
+  .sector-strategy-grid {
+    grid-template-columns: 1fr;
+    gap: 44px;
+  }
+  .sector-question-grid {
+    grid-template-columns: 1fr;
+  }
+  .sector-question-grid article {
+    min-height: 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--landing-line);
+  }
+  .sector-question-grid article:last-child {
+    border-bottom: 0;
+  }
+  .sector-question-grid h3 {
+    margin-top: 30px;
+  }
+}
+@media (max-width: 560px) {
+  .sector-hero {
+    padding-block: 70px 64px;
+  }
+  .sector-hero-copy h1 {
+    font-size: clamp(42px, 12vw, 58px);
+  }
+  .sector-hero-copy > p:not(.landing-eyebrow) {
+    font-size: 16px;
+  }
+  .sector-hero-copy .landing-button {
+    width: 100%;
+  }
+  .sector-metrics {
+    grid-template-columns: 1fr;
+  }
+  .sector-metrics > div,
+  .sector-metrics > div:last-child {
+    border-right: 1px solid var(--landing-line);
+    border-bottom: 1px solid var(--landing-line);
   }
 }

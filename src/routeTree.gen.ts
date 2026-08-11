@@ -19,10 +19,13 @@ import { Route as PilotRequestsRouteImport } from './routes/pilot-requests'
 import { Route as PilotReadyRouteImport } from './routes/pilot-ready'
 import { Route as PilotRouteImport } from './routes/pilot'
 import { Route as OperationsRouteImport } from './routes/operations'
+import { Route as HydrogenIndustryRouteImport } from './routes/hydrogen-industry'
 import { Route as EvidenceReviewRouteImport } from './routes/evidence-review'
 import { Route as EvidenceRouteImport } from './routes/evidence'
+import { Route as EnergyStorageRouteImport } from './routes/energy-storage'
 import { Route as DemoRouteImport } from './routes/demo'
 import { Route as DataSourcesRouteImport } from './routes/data-sources'
+import { Route as DataCentresRouteImport } from './routes/data-centres'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ActivationRouteImport } from './routes/activation'
 import { Route as IndexRouteImport } from './routes/index'
@@ -88,6 +91,11 @@ const OperationsRoute = OperationsRouteImport.update({
   path: '/operations',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HydrogenIndustryRoute = HydrogenIndustryRouteImport.update({
+  id: '/hydrogen-industry',
+  path: '/hydrogen-industry',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EvidenceReviewRoute = EvidenceReviewRouteImport.update({
   id: '/evidence-review',
   path: '/evidence-review',
@@ -98,6 +106,11 @@ const EvidenceRoute = EvidenceRouteImport.update({
   path: '/evidence',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EnergyStorageRoute = EnergyStorageRouteImport.update({
+  id: '/energy-storage',
+  path: '/energy-storage',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DemoRoute = DemoRouteImport.update({
   id: '/demo',
   path: '/demo',
@@ -106,6 +119,11 @@ const DemoRoute = DemoRouteImport.update({
 const DataSourcesRoute = DataSourcesRouteImport.update({
   id: '/data-sources',
   path: '/data-sources',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DataCentresRoute = DataCentresRouteImport.update({
+  id: '/data-centres',
+  path: '/data-centres',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -183,10 +201,13 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/activation': typeof ActivationRouteWithChildren
   '/auth': typeof AuthRoute
+  '/data-centres': typeof DataCentresRoute
   '/data-sources': typeof DataSourcesRoute
   '/demo': typeof DemoRoute
+  '/energy-storage': typeof EnergyStorageRoute
   '/evidence': typeof EvidenceRoute
   '/evidence-review': typeof EvidenceReviewRoute
+  '/hydrogen-industry': typeof HydrogenIndustryRoute
   '/operations': typeof OperationsRouteWithChildren
   '/pilot': typeof PilotRoute
   '/pilot-ready': typeof PilotReadyRoute
@@ -213,10 +234,13 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/activation': typeof ActivationRouteWithChildren
   '/auth': typeof AuthRoute
+  '/data-centres': typeof DataCentresRoute
   '/data-sources': typeof DataSourcesRoute
   '/demo': typeof DemoRoute
+  '/energy-storage': typeof EnergyStorageRoute
   '/evidence': typeof EvidenceRoute
   '/evidence-review': typeof EvidenceReviewRoute
+  '/hydrogen-industry': typeof HydrogenIndustryRoute
   '/operations': typeof OperationsRouteWithChildren
   '/pilot': typeof PilotRoute
   '/pilot-ready': typeof PilotReadyRoute
@@ -244,10 +268,13 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/activation': typeof ActivationRouteWithChildren
   '/auth': typeof AuthRoute
+  '/data-centres': typeof DataCentresRoute
   '/data-sources': typeof DataSourcesRoute
   '/demo': typeof DemoRoute
+  '/energy-storage': typeof EnergyStorageRoute
   '/evidence': typeof EvidenceRoute
   '/evidence-review': typeof EvidenceReviewRoute
+  '/hydrogen-industry': typeof HydrogenIndustryRoute
   '/operations': typeof OperationsRouteWithChildren
   '/pilot': typeof PilotRoute
   '/pilot-ready': typeof PilotReadyRoute
@@ -276,10 +303,13 @@ export interface FileRouteTypes {
     | '/'
     | '/activation'
     | '/auth'
+    | '/data-centres'
     | '/data-sources'
     | '/demo'
+    | '/energy-storage'
     | '/evidence'
     | '/evidence-review'
+    | '/hydrogen-industry'
     | '/operations'
     | '/pilot'
     | '/pilot-ready'
@@ -306,10 +336,13 @@ export interface FileRouteTypes {
     | '/'
     | '/activation'
     | '/auth'
+    | '/data-centres'
     | '/data-sources'
     | '/demo'
+    | '/energy-storage'
     | '/evidence'
     | '/evidence-review'
+    | '/hydrogen-industry'
     | '/operations'
     | '/pilot'
     | '/pilot-ready'
@@ -336,10 +369,13 @@ export interface FileRouteTypes {
     | '/'
     | '/activation'
     | '/auth'
+    | '/data-centres'
     | '/data-sources'
     | '/demo'
+    | '/energy-storage'
     | '/evidence'
     | '/evidence-review'
+    | '/hydrogen-industry'
     | '/operations'
     | '/pilot'
     | '/pilot-ready'
@@ -367,10 +403,13 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ActivationRoute: typeof ActivationRouteWithChildren
   AuthRoute: typeof AuthRoute
+  DataCentresRoute: typeof DataCentresRoute
   DataSourcesRoute: typeof DataSourcesRoute
   DemoRoute: typeof DemoRoute
+  EnergyStorageRoute: typeof EnergyStorageRoute
   EvidenceRoute: typeof EvidenceRoute
   EvidenceReviewRoute: typeof EvidenceReviewRoute
+  HydrogenIndustryRoute: typeof HydrogenIndustryRoute
   OperationsRoute: typeof OperationsRouteWithChildren
   PilotRoute: typeof PilotRoute
   PilotReadyRoute: typeof PilotReadyRoute
@@ -464,6 +503,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OperationsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/hydrogen-industry': {
+      id: '/hydrogen-industry'
+      path: '/hydrogen-industry'
+      fullPath: '/hydrogen-industry'
+      preLoaderRoute: typeof HydrogenIndustryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/evidence-review': {
       id: '/evidence-review'
       path: '/evidence-review'
@@ -478,6 +524,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EvidenceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/energy-storage': {
+      id: '/energy-storage'
+      path: '/energy-storage'
+      fullPath: '/energy-storage'
+      preLoaderRoute: typeof EnergyStorageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/demo': {
       id: '/demo'
       path: '/demo'
@@ -490,6 +543,13 @@ declare module '@tanstack/react-router' {
       path: '/data-sources'
       fullPath: '/data-sources'
       preLoaderRoute: typeof DataSourcesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/data-centres': {
+      id: '/data-centres'
+      path: '/data-centres'
+      fullPath: '/data-centres'
+      preLoaderRoute: typeof DataCentresRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -621,10 +681,13 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ActivationRoute: ActivationRouteWithChildren,
   AuthRoute: AuthRoute,
+  DataCentresRoute: DataCentresRoute,
   DataSourcesRoute: DataSourcesRoute,
   DemoRoute: DemoRoute,
+  EnergyStorageRoute: EnergyStorageRoute,
   EvidenceRoute: EvidenceRoute,
   EvidenceReviewRoute: EvidenceReviewRoute,
+  HydrogenIndustryRoute: HydrogenIndustryRoute,
   OperationsRoute: OperationsRouteWithChildren,
   PilotRoute: PilotRoute,
   PilotReadyRoute: PilotReadyRoute,

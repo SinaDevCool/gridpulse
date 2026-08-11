@@ -76,12 +76,9 @@ function FinderLandingPage() {
                 <Link to="/power-finder" className="landing-button landing-button-primary">
                   Open Grid Workspace <ArrowRight aria-hidden="true" />
                 </Link>
-                <Link to="/data-sources" className="landing-button landing-button-secondary">
-                  Review the data
-                </Link>
               </div>
               <p className="landing-audience">
-                For data centres, storage, charging, hydrogen and industrial projects evaluating
+                Built for data centres, energy storage, hydrogen and industrial projects evaluating
                 where to investigate a grid connection.
               </p>
             </div>

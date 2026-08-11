@@ -23,17 +23,35 @@ test("Finder MVP is public and contains no account entry points", async ({ page 
   expect(requests.some((url) => url.includes("/rest/v1/rpc/"))).toBe(false);
 });
 
-test("Finder landing and methodology are the only public product pages", async ({ page }) => {
+test("Finder landing, sector pages and methodology form the public product site", async ({
+  page,
+}) => {
   await page.goto("/");
   await expect(
     page.getByRole("heading", { name: /Find stronger grid connection candidates/i }),
   ).toBeVisible();
-  await expect(page.getByRole("link", { name: /Open Power Finder/i })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Open Grid Workspace/i })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Review the data" })).toHaveCount(0);
+  const solutions = page.getByRole("navigation", { name: "Solutions navigation" });
+  await expect(solutions.getByRole("link", { name: "Data Centres" })).toBeVisible();
+  await expect(solutions.getByRole("link", { name: "Energy Storage" })).toBeVisible();
+  await expect(solutions.getByRole("link", { name: "Hydrogen & Industry" })).toBeVisible();
+  await expect(solutions.getByRole("link", { name: "Methodology" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Discuss a site" })).toHaveCount(0);
+
+  for (const [pathname, heading] of [
+    ["/data-centres", /Make power availability a site-selection decision/i],
+    ["/energy-storage", /Find where storage can strengthen/i],
+    ["/hydrogen-industry", /Turn flexible demand into a more credible route/i],
+  ] as const) {
+    await page.goto(pathname);
+    await expect(page.getByRole("heading", { level: 1, name: heading })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Screen a Project" })).toBeVisible();
+  }
 
   await page.goto("/data-sources");
   await expect(page.getByRole("heading", { level: 1 })).toContainText(
-    "Evidence you can screen with",
+    "See how a mapped node becomes an activation envelope",
   );
   await expect(page.getByRole("heading", { name: "What Powers the Shortlist" })).toHaveCount(0);
   await expect(page.getByText("What Powers the Shortlist", { exact: true })).toBeVisible();

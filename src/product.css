@@ -15139,6 +15139,52 @@ tbody tr:last-child td {
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
+.product-marketing-navigation {
+  display: flex;
+  align-items: stretch;
+  align-self: stretch;
+  gap: 4px;
+}
+.product-marketing-navigation a {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding-inline: 14px;
+  color: #8da2af;
+  font-size: 0.72rem;
+  font-weight: 650;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.product-marketing-navigation a:not(.product-marketing-cta)::after {
+  position: absolute;
+  right: 14px;
+  bottom: 0;
+  left: 14px;
+  height: 2px;
+  background: transparent;
+  content: "";
+}
+.product-marketing-navigation a:hover,
+.product-marketing-navigation a:focus-visible,
+.product-marketing-navigation a.active {
+  color: #f0f8fb;
+}
+.product-marketing-navigation a.active::after {
+  background: #35dff1;
+}
+.product-marketing-navigation .product-marketing-cta {
+  align-self: center;
+  min-height: 36px;
+  margin-left: 10px;
+  background: #35dff1;
+  color: #041015;
+}
+.product-marketing-navigation .product-marketing-cta:hover,
+.product-marketing-navigation .product-marketing-cta:focus-visible {
+  background: #8decf7;
+  color: #041015;
+}
 .product-stage-navigation {
   position: sticky;
   top: 58px;
@@ -15387,6 +15433,33 @@ tbody tr:last-child td {
 @media (max-width: 760px) {
   .product-header-label {
     display: none;
+  }
+  .product-header--minimal:has(.product-marketing-navigation) {
+    height: auto;
+    min-height: 58px;
+    align-items: stretch;
+    padding: 0 16px;
+    flex-direction: column;
+  }
+  .product-header--minimal:has(.product-marketing-navigation) > .brand {
+    min-height: 52px;
+    align-self: flex-start;
+  }
+  .product-marketing-navigation {
+    width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .product-marketing-navigation::-webkit-scrollbar {
+    display: none;
+  }
+  .product-marketing-navigation a {
+    min-height: 44px;
+    padding-inline: 12px;
+  }
+  .product-marketing-navigation .product-marketing-cta {
+    min-height: 34px;
+    margin-left: 6px;
   }
   .product-stage-navigation > div {
     width: 100%;
