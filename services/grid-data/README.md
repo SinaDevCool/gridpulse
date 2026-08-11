@@ -78,6 +78,16 @@ python -m grid_data.cli publish-operator-health `
   --input D:\grid-data\operator-evidence-health.json
 python -m grid_data.cli validate-c1-benchmark `
   --output ../../public/power-finder/c1-benchmark-validation.json
+python -m grid_data.cli validate-benchmark-a `
+  --output ../../output/benchmark-a.json
+python -m grid_data.cli validate-benchmark-b `
+  --output ../../output/benchmark-b.json
+python -m grid_data.cli validate-benchmark-c `
+  --output ../../output/benchmark-c.json
+python -m grid_data.cli validate-benchmark-d `
+  --output ../../output/benchmark-d.json
+python -m grid_data.cli validate-benchmark-e `
+  --output ../../output/benchmark-e.json
 python -m grid_data.cli publish-c1-benchmark `
   --input ../../public/power-finder/c1-benchmark-validation.json
 python -m grid_data.cli validate-c2-benchmark `
@@ -85,6 +95,26 @@ python -m grid_data.cli validate-c2-benchmark `
 python -m grid_data.cli publish-c2-benchmark `
   --input ../../public/power-finder/c2-hourly-benchmark.json
 ```
+
+`validate-benchmark-a` is the reproducible open-network solver-consistency gate described in
+`../../docs/BENCHMARK-A.md`. Its result is validation evidence only; it is never published as
+location capacity.
+
+`validate-benchmark-b` is the independent-solver gate described in `../../docs/BENCHMARK-B.md`.
+It compares pandapower Newton–Raphson with standalone PYPOWER fast-decoupled XB while retaining the
+same model conversion and capacity search. It is also validation evidence, never location capacity.
+
+`validate-benchmark-c` is the operator-reference reconciliation gate described in
+`../../docs/BENCHMARK-C.md`. Without supplied operator evidence it runs only the bundled synthetic
+rehearsal and must report `operator_validation_passed=false`.
+
+`validate-benchmark-d` is the capacity-outcome backtest described in `../../docs/BENCHMARK-D.md`.
+It gives unsafe capacity overstatement a zero-tolerance acceptance gate and requires signed,
+operator-approved outcomes before setting `operator_outcome_validation_passed=true`.
+
+`validate-benchmark-e` is the prospective holdout protocol described in
+`../../docs/BENCHMARK-E.md`. It rejects prediction/outcome time leakage and requires uncertainty
+calibration plus a one-sided confidence bound on the unsafe-overstatement rate.
 
 Run these commands from `services/grid-data` with `PYTHONPATH=src`, or install the package:
 

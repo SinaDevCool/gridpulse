@@ -9,11 +9,29 @@ import {
   calculateRepresentativeCommercialValue,
   createActivationStudyContext,
 } from "./activation-study";
+import {
+  capacityMetricLabels,
+  type CalculatedCapacityNode,
+  type CapacityMetric,
+} from "./calculated-capacity";
+import { classifyCapacityOpportunity } from "./capacity-opportunity";
+
+export type FinderReportCapacityContext = {
+  enabled: boolean;
+  metric: CapacityMetric;
+  requiredMw: number;
+  nodes: CalculatedCapacityNode[];
+  evidenceBoundary: string;
+};
 
 const clean = (value: unknown) => String(value ?? "Not established").replace(/[^ -~]/g, "-");
 const reportDate = new Intl.DateTimeFormat("en-GB", { dateStyle: "long" });
 const number = new Intl.NumberFormat("en-GB", { maximumFractionDigits: 1 });
-const money = new Intl.NumberFormat("en-GB", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
+const money = new Intl.NumberFormat("en-GB", {
+  style: "currency",
+  currency: "EUR",
+  maximumFractionDigits: 0,
+});
 
 const ink = [18, 36, 49] as const;
 const muted = [92, 112, 126] as const;
@@ -26,6 +44,7 @@ export async function buildFinderReport(
   project: FinderProject,
   candidates: CandidateOpportunity[],
   collection: PowerFinderCollection,
+  capacity?: FinderReportCapacityContext,
 ) {
   const { jsPDF } = await import("jspdf");
   const pdf = new jsPDF({ unit: "mm", format: "a4", compress: true });
@@ -94,7 +113,7 @@ export async function buildFinderReport(
     const height = 13 + lines.length * 4;
     ensure(height + 4);
     const colour = tone === "warning" ? amber : cyan;
-    const fill = tone === "warning" ? [255, 247, 232] as const : pale;
+    const fill = tone === "warning" ? ([255, 247, 232] as const) : pale;
     pdf.setFillColor(fill[0], fill[1], fill[2]);
     pdf.setDrawColor(colour[0], colour[1], colour[2]);
     pdf.roundedRect(margin, y, contentWidth, height, 2, 2, "FD");
@@ -114,7 +133,9 @@ export async function buildFinderReport(
     const width = (contentWidth - gap * (columns - 1)) / columns;
     for (let index = 0; index < items.length; index += columns) {
       const row = items.slice(index, index + columns);
-      const wrapped = row.map(([, value]) => pdf.splitTextToSize(clean(value), width - 10) as string[]);
+      const wrapped = row.map(
+        ([, value]) => pdf.splitTextToSize(clean(value), width - 10) as string[],
+      );
       const height = Math.max(18, ...wrapped.map((lines) => 10 + lines.length * 4));
       ensure(height + 3);
       row.forEach(([label], column) => {
@@ -176,8 +197,16 @@ export async function buildFinderReport(
   pdf.setFontSize(9.5);
   pdf.setTextColor(154, 187, 201);
   pdf.text(`Prepared ${reportDate.format(new Date())}`, 22, 141);
-  pdf.text(`${finderProjectTypes[project.type].label} - ${number.format(project.importMw)} MW import`, 22, 149);
-  pdf.text(`${candidates.length} investigation-priority candidate${candidates.length === 1 ? "" : "s"}`, 22, 157);
+  pdf.text(
+    `${finderProjectTypes[project.type].label} - ${number.format(project.importMw)} MW import`,
+    22,
+    149,
+  );
+  pdf.text(
+    `${candidates.length} investigation-priority candidate${candidates.length === 1 ? "" : "s"}`,
+    22,
+    157,
+  );
   pdf.setFillColor(17, 42, 57);
   pdf.roundedRect(22, 228, 166, 34, 3, 3, "F");
   pdf.setFont("helvetica", "bold");
@@ -187,21 +216,38 @@ export async function buildFinderReport(
   pdf.setFont("helvetica", "normal");
   pdf.setFontSize(9);
   pdf.setTextColor(229, 240, 244);
-  pdf.text(pdf.splitTextToSize("Public-source context for investigation prioritisation. Not a connection offer, capacity reservation, feasibility decision or delivery commitment.", 148), 30, 247);
+  pdf.text(
+    pdf.splitTextToSize(
+      "Public-source context for investigation prioritisation. Not a connection offer, capacity reservation, feasibility decision or delivery commitment.",
+      148,
+    ),
+    30,
+    247,
+  );
 
   pdf.addPage();
   pageHeader();
   y = 24;
 
-  title("Executive summary", "A concise decision view of the declared demand, shortlist and evidence gaps.");
+  title(
+    "Executive summary",
+    "A concise decision view of the declared demand, shortlist and evidence gaps.",
+  );
   keyValueGrid([
     ["Requested import", `${number.format(project.importMw)} MW`],
     ["Search radius", `${number.format(project.maxDistanceKm)} km`],
     ["Candidates reviewed", candidates.length],
     ["Data freshness", collection.metadata.freshness],
   ]);
-  callout("What this report supports", "Prioritising mapped connection points for operator engagement using proximity, voltage context and evidence readiness.");
-  callout("What remains unknown", "Available or reserved capacity, feasibility, reinforcement scope, cost and energisation timing require confirmation by the responsible network operator.", "warning");
+  callout(
+    "What this report supports",
+    "Prioritising mapped connection points for operator engagement using proximity, voltage context and evidence readiness.",
+  );
+  callout(
+    "What remains unknown",
+    "Available or reserved capacity, feasibility, reinforcement scope, cost and energisation timing require confirmation by the responsible network operator.",
+    "warning",
+  );
 
   subsection("Shortlist at a glance");
   if (!candidates.length) paragraph("No candidates were selected for comparison.");
@@ -218,15 +264,30 @@ export async function buildFinderReport(
     pdf.setTextColor(...muted);
     pdf.text(`${number.format(candidate.distanceKm)} km`, 142, y + 1);
     pdf.text(`${number.format(candidate.screeningRank)}/100`, 190, y + 1, { align: "right" });
-    pdf.text(`${clean(voltageFitLabels[candidate.voltageFit])} - ${clean(candidate.confidence)} evidence`, margin + 4, y + 7);
+    pdf.text(
+      `${clean(voltageFitLabels[candidate.voltageFit])} - ${clean(candidate.confidence)} evidence`,
+      margin + 4,
+      y + 7,
+    );
     y += 17;
   });
 
-  title("1. Declared project", "Inputs supplied by the user and used to define the screening context.");
+  title(
+    "1. Declared project",
+    "Inputs supplied by the user and used to define the screening context.",
+  );
   keyValueGrid([
     ["Project type", finderProjectTypes[project.type].label],
-    ["Location", project.latitude == null ? "Not placed" : `${project.latitude.toFixed(5)}, ${project.longitude?.toFixed(5)}`],
-    ["Requested / ultimate import", `${number.format(project.importMw)} / ${number.format(project.ultimateImportMw)} MW`],
+    [
+      "Location",
+      project.latitude == null
+        ? "Not placed"
+        : `${project.latitude.toFixed(5)}, ${project.longitude?.toFixed(5)}`,
+    ],
+    [
+      "Requested / ultimate import",
+      `${number.format(project.importMw)} / ${number.format(project.ultimateImportMw)} MW`,
+    ],
     ["Minimum firm supply", `${number.format(project.minimumFirmMw)} MW`],
     ["Flexible load", `${number.format(project.flexibleLoadMw)} MW`],
     ["Requested export", `${number.format(project.exportMw)} MW`],
@@ -235,26 +296,73 @@ export async function buildFinderReport(
     ["Load shape", project.loadProfile.replaceAll("_", " ")],
     ["Annual consumption", `${number.format(project.annualConsumptionGwh)} GWh`],
     ["On-site generation", `${number.format(project.onsiteGenerationMw)} MW`],
-    ["Battery", project.batteryPowerMw ? `${number.format(project.batteryPowerMw)} MW / ${number.format(project.batteryEnergyMwh)} MWh` : "None declared"],
+    [
+      "Battery",
+      project.batteryPowerMw
+        ? `${number.format(project.batteryPowerMw)} MW / ${number.format(project.batteryEnergyMwh)} MWh`
+        : "None declared",
+    ],
   ]);
 
   candidates.forEach((candidate, index) => {
     const candidateTitle = `2.${index + 1} Candidate - ${candidate.nodeName}`;
     newPage(candidateTitle);
-    title(candidateTitle, "Mapped facts, screening interpretation and representative activation pathways.");
+    title(
+      candidateTitle,
+      "Mapped facts, screening interpretation and representative activation pathways.",
+    );
     keyValueGrid([
       ["Investigation priority", `${number.format(candidate.screeningRank)}/100`],
       ["Distance", `${number.format(candidate.distanceKm)} km`],
       ["Voltage fit", voltageFitLabels[candidate.voltageFit]],
       ["Evidence readiness", candidate.confidence],
       ["Operator", candidate.operator ?? "Confirmation required"],
-      ["Mapped voltage", candidate.voltageKv.length ? `${candidate.voltageKv.join(" / ")} kV` : "Not mapped"],
+      [
+        "Mapped voltage",
+        candidate.voltageKv.length ? `${candidate.voltageKv.join(" / ")} kV` : "Not mapped",
+      ],
     ]);
-    callout("Interpretation", "The score ranks investigation context. It does not estimate connection probability or available capacity.", "warning");
+    callout(
+      "Interpretation",
+      "The score ranks investigation context. It does not estimate connection probability or available capacity.",
+      "warning",
+    );
+
+    if (capacity?.enabled) {
+      const capacityNode = capacity.nodes.find((node) => node.publicNodeId === candidate.nodeId);
+      const opportunity = classifyCapacityOpportunity(
+        capacityNode,
+        capacity.metric,
+        capacity.requiredMw,
+      );
+      subsection("Capacity-opportunity snapshot");
+      keyValueGrid([
+        ["Required import", `${number.format(capacity.requiredMw)} MW`],
+        ["Selected metric", capacityMetricLabels[capacity.metric]],
+        [
+          "Calculated value",
+          opportunity.valueMw == null
+            ? "Not displayable"
+            : `${number.format(opportunity.valueMw)} MW`,
+        ],
+        ["Classification", opportunity.fit.replaceAll("_", " ")],
+        ["Validation state", capacityNode?.validationState?.replaceAll("_", " ") ?? "unknown"],
+        [
+          "Model / scenario",
+          capacityNode
+            ? `${capacityNode.modelVersion} / ${capacityNode.scenarioLabel}`
+            : "No calculated node result",
+        ],
+      ]);
+      callout("Capacity evidence boundary", capacity.evidenceBoundary, "warning");
+    }
 
     subsection("Method & provenance");
     keyValueGrid([
-      ["Calculation class", calculationClassLabels[candidate.provenance?.calculationClass ?? "heuristic"]],
+      [
+        "Calculation class",
+        calculationClassLabels[candidate.provenance?.calculationClass ?? "heuristic"],
+      ],
       ["Method version", candidate.provenance?.methodVersion ?? candidate.calculationVersion],
     ]);
 
@@ -265,7 +373,10 @@ export async function buildFinderReport(
       keyValueGrid([
         ["Leading pathway", recommended.title],
         ["Strategy", activationStatusLabel(recommended.operationalStatus)],
-        ["Initial / eventual", `${number.format(recommended.initialImportMw)} / ${number.format(recommended.eventualImportMw)} MW`],
+        [
+          "Initial / eventual",
+          `${number.format(recommended.initialImportMw)} / ${number.format(recommended.eventualImportMw)} MW`,
+        ],
         ["Demand served", `${recommended.analysis?.demandServedPercent ?? "Unavailable"}%`],
         ["Restricted hours", recommended.analysis?.restrictedHours ?? "Unavailable"],
         ["Residual energy", `${recommended.analysis?.residualUnservedMwh ?? "Unavailable"} MWh`],
@@ -275,38 +386,69 @@ export async function buildFinderReport(
 
     const commercial = calculateRepresentativeCommercialValue(activation);
     subsection("Commercial sensitivity - representative only");
-    keyValueGrid([
-      ["Low", money.format(commercial.lowIndicativeValueEur)],
-      ["Base", money.format(commercial.netIndicativeValueEur)],
-      ["High", money.format(commercial.highIndicativeValueEur)],
-    ], 3);
+    keyValueGrid(
+      [
+        ["Low", money.format(commercial.lowIndicativeValueEur)],
+        ["Base", money.format(commercial.netIndicativeValueEur)],
+        ["High", money.format(commercial.highIndicativeValueEur)],
+      ],
+      3,
+    );
     paragraph(commercial.boundary);
 
     if (candidate.capacityScenario || candidate.networkScenario) {
-      callout("Experimental modelling", "The following values are synthetic demonstration assumptions. They are not measured or operator-confirmed capacity at this node.", "warning");
-      if (candidate.capacityScenario) keyValueGrid([
-        ["Firm demonstration", `${number.format(candidate.capacityScenario.firmImportEnvelopeMw)} MW`],
-        ["Flexible demonstration", `${number.format(candidate.capacityScenario.flexibleImportEnvelopeMw)} MW`],
-        ["Assumed constraint", candidate.capacityScenario.limitingComponent],
-        ["Model", `${candidate.capacityScenario.scenarioVersion} / ${candidate.capacityScenario.modelVersion}`],
-      ]);
-      if (candidate.networkScenario) keyValueGrid([
-        ["Base / outage case", `${number.format(candidate.networkScenario.n0TransferLimitMw)} / ${number.format(candidate.networkScenario.n1TransferLimitMw)} MW`],
-        ["Selected demonstration", `${number.format(candidate.networkScenario.selectedSecurityLimitMw)} MW`],
-        ["Binding assumption", candidate.networkScenario.bindingConstraint],
-        ["Reference network", candidate.networkScenario.networkVersion],
-      ]);
+      callout(
+        "Experimental modelling",
+        "The following values are synthetic demonstration assumptions. They are not measured or operator-confirmed capacity at this node.",
+        "warning",
+      );
+      if (candidate.capacityScenario)
+        keyValueGrid([
+          [
+            "Firm demonstration",
+            `${number.format(candidate.capacityScenario.firmImportEnvelopeMw)} MW`,
+          ],
+          [
+            "Flexible demonstration",
+            `${number.format(candidate.capacityScenario.flexibleImportEnvelopeMw)} MW`,
+          ],
+          ["Assumed constraint", candidate.capacityScenario.limitingComponent],
+          [
+            "Model",
+            `${candidate.capacityScenario.scenarioVersion} / ${candidate.capacityScenario.modelVersion}`,
+          ],
+        ]);
+      if (candidate.networkScenario)
+        keyValueGrid([
+          [
+            "Base / outage case",
+            `${number.format(candidate.networkScenario.n0TransferLimitMw)} / ${number.format(candidate.networkScenario.n1TransferLimitMw)} MW`,
+          ],
+          [
+            "Selected demonstration",
+            `${number.format(candidate.networkScenario.selectedSecurityLimitMw)} MW`,
+          ],
+          ["Binding assumption", candidate.networkScenario.bindingConstraint],
+          ["Reference network", candidate.networkScenario.networkVersion],
+        ]);
     }
 
     subsection("Evidence gaps & applicable references");
-    paragraph(candidate.missingEvidence.length ? candidate.missingEvidence.join("; ") : "No additional gaps recorded.");
+    paragraph(
+      candidate.missingEvidence.length
+        ? candidate.missingEvidence.join("; ")
+        : "No additional gaps recorded.",
+    );
     ruleReferencesForVoltage(candidate.voltageKv).forEach((rule) => {
       paragraph(`${rule.title}: ${rule.publicSummary} ${rule.url}`);
     });
   });
 
   newPage("3. Questions for the network operator");
-  title("3. Questions for the network operator", "Use these questions to structure the first evidence request and avoid treating mapped context as a connection decision.");
+  title(
+    "3. Questions for the network operator",
+    "Use these questions to structure the first evidence request and avoid treating mapped context as a connection decision.",
+  );
   projectOperatorQuestions(project).forEach((question, index) => {
     const lines = pdf.splitTextToSize(clean(question), contentWidth - 15) as string[];
     ensure(lines.length * 4.4 + 9);
@@ -334,9 +476,18 @@ export async function buildFinderReport(
   paragraph(collection.metadata.attribution);
   subsection("Evidence boundary");
   paragraph(collection.metadata.evidence_boundary);
-  callout("Capacity boundary", "This public report does not calculate available, reserved or connectable capacity. Representative Activation Study values remain separate from operator-model or operator-confirmed results.", "warning");
-  callout("Decision authority", "The responsible network operator controls feasibility, connection point, restrictions, reinforcement, cost and timing.");
-  paragraph("Generated locally in the browser. Customer-declared inputs are not operator evidence.");
+  callout(
+    "Capacity boundary",
+    "This public report does not calculate available, reserved or connectable capacity. Representative Activation Study values remain separate from operator-model or operator-confirmed results.",
+    "warning",
+  );
+  callout(
+    "Decision authority",
+    "The responsible network operator controls feasibility, connection point, restrictions, reinforcement, cost and timing.",
+  );
+  paragraph(
+    "Generated locally in the browser. Customer-declared inputs are not operator evidence.",
+  );
 
   footer();
   return pdf;
@@ -346,7 +497,8 @@ export async function downloadFinderReport(
   project: FinderProject,
   candidates: CandidateOpportunity[],
   collection: PowerFinderCollection,
+  capacity?: FinderReportCapacityContext,
 ) {
-  const pdf: JsPdfDocument = await buildFinderReport(project, candidates, collection);
+  const pdf: JsPdfDocument = await buildFinderReport(project, candidates, collection, capacity);
   pdf.save(`${clean(project.name).replace(/\s+/g, "-").toLowerCase()}-finder-screening.pdf`);
 }

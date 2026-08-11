@@ -18,17 +18,21 @@ import { Route as PortfolioRouteImport } from './routes/portfolio'
 import { Route as PilotRequestsRouteImport } from './routes/pilot-requests'
 import { Route as PilotReadyRouteImport } from './routes/pilot-ready'
 import { Route as PilotRouteImport } from './routes/pilot'
+import { Route as OperationsRouteImport } from './routes/operations'
 import { Route as EvidenceReviewRouteImport } from './routes/evidence-review'
 import { Route as EvidenceRouteImport } from './routes/evidence'
 import { Route as DemoRouteImport } from './routes/demo'
 import { Route as DataSourcesRouteImport } from './routes/data-sources'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as ActivationRouteImport } from './routes/activation'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SubmissionPackageIdRouteImport } from './routes/submission-package.$id'
 import { Route as PilotCaseIdRouteImport } from './routes/pilot-case.$id'
 import { Route as OperatorReviewIdRouteImport } from './routes/operator-review.$id'
+import { Route as OperationsIdRouteImport } from './routes/operations.$id'
 import { Route as AssessmentsNewRouteImport } from './routes/assessments.new'
 import { Route as AssessmentsIdRouteImport } from './routes/assessments.$id'
+import { Route as ActivationIdRouteImport } from './routes/activation.$id'
 import { Route as ApiPowerFinderViewportRouteImport } from './routes/api.power-finder.viewport'
 import { Route as ApiPowerFinderStudyRouteImport } from './routes/api.power-finder.study'
 import { Route as ApiPowerFinderScenarioRouteImport } from './routes/api.power-finder.scenario'
@@ -79,6 +83,11 @@ const PilotRoute = PilotRouteImport.update({
   path: '/pilot',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OperationsRoute = OperationsRouteImport.update({
+  id: '/operations',
+  path: '/operations',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EvidenceReviewRoute = EvidenceReviewRouteImport.update({
   id: '/evidence-review',
   path: '/evidence-review',
@@ -104,6 +113,11 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ActivationRoute = ActivationRouteImport.update({
+  id: '/activation',
+  path: '/activation',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -124,6 +138,11 @@ const OperatorReviewIdRoute = OperatorReviewIdRouteImport.update({
   path: '/operator-review/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OperationsIdRoute = OperationsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => OperationsRoute,
+} as any)
 const AssessmentsNewRoute = AssessmentsNewRouteImport.update({
   id: '/assessments/new',
   path: '/assessments/new',
@@ -133,6 +152,11 @@ const AssessmentsIdRoute = AssessmentsIdRouteImport.update({
   id: '/assessments/$id',
   path: '/assessments/$id',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ActivationIdRoute = ActivationIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ActivationRoute,
 } as any)
 const ApiPowerFinderViewportRoute = ApiPowerFinderViewportRouteImport.update({
   id: '/api/power-finder/viewport',
@@ -157,11 +181,13 @@ const ApiPowerFinderTileZXYRoute = ApiPowerFinderTileZXYRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/activation': typeof ActivationRouteWithChildren
   '/auth': typeof AuthRoute
   '/data-sources': typeof DataSourcesRoute
   '/demo': typeof DemoRoute
   '/evidence': typeof EvidenceRoute
   '/evidence-review': typeof EvidenceReviewRoute
+  '/operations': typeof OperationsRouteWithChildren
   '/pilot': typeof PilotRoute
   '/pilot-ready': typeof PilotReadyRoute
   '/pilot-requests': typeof PilotRequestsRoute
@@ -171,8 +197,10 @@ export interface FileRoutesByFullPath {
   '/service': typeof ServiceRoute
   '/synthetic-network-study': typeof SyntheticNetworkStudyRoute
   '/validation-case': typeof ValidationCaseRoute
+  '/activation/$id': typeof ActivationIdRoute
   '/assessments/$id': typeof AssessmentsIdRoute
   '/assessments/new': typeof AssessmentsNewRoute
+  '/operations/$id': typeof OperationsIdRoute
   '/operator-review/$id': typeof OperatorReviewIdRoute
   '/pilot-case/$id': typeof PilotCaseIdRoute
   '/submission-package/$id': typeof SubmissionPackageIdRoute
@@ -183,11 +211,13 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/activation': typeof ActivationRouteWithChildren
   '/auth': typeof AuthRoute
   '/data-sources': typeof DataSourcesRoute
   '/demo': typeof DemoRoute
   '/evidence': typeof EvidenceRoute
   '/evidence-review': typeof EvidenceReviewRoute
+  '/operations': typeof OperationsRouteWithChildren
   '/pilot': typeof PilotRoute
   '/pilot-ready': typeof PilotReadyRoute
   '/pilot-requests': typeof PilotRequestsRoute
@@ -197,8 +227,10 @@ export interface FileRoutesByTo {
   '/service': typeof ServiceRoute
   '/synthetic-network-study': typeof SyntheticNetworkStudyRoute
   '/validation-case': typeof ValidationCaseRoute
+  '/activation/$id': typeof ActivationIdRoute
   '/assessments/$id': typeof AssessmentsIdRoute
   '/assessments/new': typeof AssessmentsNewRoute
+  '/operations/$id': typeof OperationsIdRoute
   '/operator-review/$id': typeof OperatorReviewIdRoute
   '/pilot-case/$id': typeof PilotCaseIdRoute
   '/submission-package/$id': typeof SubmissionPackageIdRoute
@@ -210,11 +242,13 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/activation': typeof ActivationRouteWithChildren
   '/auth': typeof AuthRoute
   '/data-sources': typeof DataSourcesRoute
   '/demo': typeof DemoRoute
   '/evidence': typeof EvidenceRoute
   '/evidence-review': typeof EvidenceReviewRoute
+  '/operations': typeof OperationsRouteWithChildren
   '/pilot': typeof PilotRoute
   '/pilot-ready': typeof PilotReadyRoute
   '/pilot-requests': typeof PilotRequestsRoute
@@ -224,8 +258,10 @@ export interface FileRoutesById {
   '/service': typeof ServiceRoute
   '/synthetic-network-study': typeof SyntheticNetworkStudyRoute
   '/validation-case': typeof ValidationCaseRoute
+  '/activation/$id': typeof ActivationIdRoute
   '/assessments/$id': typeof AssessmentsIdRoute
   '/assessments/new': typeof AssessmentsNewRoute
+  '/operations/$id': typeof OperationsIdRoute
   '/operator-review/$id': typeof OperatorReviewIdRoute
   '/pilot-case/$id': typeof PilotCaseIdRoute
   '/submission-package/$id': typeof SubmissionPackageIdRoute
@@ -238,11 +274,13 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/activation'
     | '/auth'
     | '/data-sources'
     | '/demo'
     | '/evidence'
     | '/evidence-review'
+    | '/operations'
     | '/pilot'
     | '/pilot-ready'
     | '/pilot-requests'
@@ -252,8 +290,10 @@ export interface FileRouteTypes {
     | '/service'
     | '/synthetic-network-study'
     | '/validation-case'
+    | '/activation/$id'
     | '/assessments/$id'
     | '/assessments/new'
+    | '/operations/$id'
     | '/operator-review/$id'
     | '/pilot-case/$id'
     | '/submission-package/$id'
@@ -264,11 +304,13 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/activation'
     | '/auth'
     | '/data-sources'
     | '/demo'
     | '/evidence'
     | '/evidence-review'
+    | '/operations'
     | '/pilot'
     | '/pilot-ready'
     | '/pilot-requests'
@@ -278,8 +320,10 @@ export interface FileRouteTypes {
     | '/service'
     | '/synthetic-network-study'
     | '/validation-case'
+    | '/activation/$id'
     | '/assessments/$id'
     | '/assessments/new'
+    | '/operations/$id'
     | '/operator-review/$id'
     | '/pilot-case/$id'
     | '/submission-package/$id'
@@ -290,11 +334,13 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/activation'
     | '/auth'
     | '/data-sources'
     | '/demo'
     | '/evidence'
     | '/evidence-review'
+    | '/operations'
     | '/pilot'
     | '/pilot-ready'
     | '/pilot-requests'
@@ -304,8 +350,10 @@ export interface FileRouteTypes {
     | '/service'
     | '/synthetic-network-study'
     | '/validation-case'
+    | '/activation/$id'
     | '/assessments/$id'
     | '/assessments/new'
+    | '/operations/$id'
     | '/operator-review/$id'
     | '/pilot-case/$id'
     | '/submission-package/$id'
@@ -317,11 +365,13 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ActivationRoute: typeof ActivationRouteWithChildren
   AuthRoute: typeof AuthRoute
   DataSourcesRoute: typeof DataSourcesRoute
   DemoRoute: typeof DemoRoute
   EvidenceRoute: typeof EvidenceRoute
   EvidenceReviewRoute: typeof EvidenceReviewRoute
+  OperationsRoute: typeof OperationsRouteWithChildren
   PilotRoute: typeof PilotRoute
   PilotReadyRoute: typeof PilotReadyRoute
   PilotRequestsRoute: typeof PilotRequestsRoute
@@ -407,6 +457,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PilotRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/operations': {
+      id: '/operations'
+      path: '/operations'
+      fullPath: '/operations'
+      preLoaderRoute: typeof OperationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/evidence-review': {
       id: '/evidence-review'
       path: '/evidence-review'
@@ -442,6 +499,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/activation': {
+      id: '/activation'
+      path: '/activation'
+      fullPath: '/activation'
+      preLoaderRoute: typeof ActivationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -470,6 +534,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OperatorReviewIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/operations/$id': {
+      id: '/operations/$id'
+      path: '/$id'
+      fullPath: '/operations/$id'
+      preLoaderRoute: typeof OperationsIdRouteImport
+      parentRoute: typeof OperationsRoute
+    }
     '/assessments/new': {
       id: '/assessments/new'
       path: '/assessments/new'
@@ -483,6 +554,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/assessments/$id'
       preLoaderRoute: typeof AssessmentsIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/activation/$id': {
+      id: '/activation/$id'
+      path: '/$id'
+      fullPath: '/activation/$id'
+      preLoaderRoute: typeof ActivationIdRouteImport
+      parentRoute: typeof ActivationRoute
     }
     '/api/power-finder/viewport': {
       id: '/api/power-finder/viewport'
@@ -515,13 +593,39 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface ActivationRouteChildren {
+  ActivationIdRoute: typeof ActivationIdRoute
+}
+
+const ActivationRouteChildren: ActivationRouteChildren = {
+  ActivationIdRoute: ActivationIdRoute,
+}
+
+const ActivationRouteWithChildren = ActivationRoute._addFileChildren(
+  ActivationRouteChildren,
+)
+
+interface OperationsRouteChildren {
+  OperationsIdRoute: typeof OperationsIdRoute
+}
+
+const OperationsRouteChildren: OperationsRouteChildren = {
+  OperationsIdRoute: OperationsIdRoute,
+}
+
+const OperationsRouteWithChildren = OperationsRoute._addFileChildren(
+  OperationsRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ActivationRoute: ActivationRouteWithChildren,
   AuthRoute: AuthRoute,
   DataSourcesRoute: DataSourcesRoute,
   DemoRoute: DemoRoute,
   EvidenceRoute: EvidenceRoute,
   EvidenceReviewRoute: EvidenceReviewRoute,
+  OperationsRoute: OperationsRouteWithChildren,
   PilotRoute: PilotRoute,
   PilotReadyRoute: PilotReadyRoute,
   PilotRequestsRoute: PilotRequestsRoute,

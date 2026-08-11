@@ -423,11 +423,18 @@ function PowerFinderPage() {
   }, []);
 
   useEffect(() => {
+    const privateCapacitySelected =
+      search.capacitySource === "private" && Boolean(search.workspaceId);
+    const requestedMetric = search.capacityMetric ?? "firm_import_mw";
+    const safeMetric =
+      privateCapacitySelected ||
+      requestedMetric === "n0_import_mw" ||
+      requestedMetric === "firm_import_mw"
+        ? requestedMetric
+        : "firm_import_mw";
     setMapMode(search.mapMode ?? "voltage");
-    setCapacitySource(
-      search.capacitySource === "private" && search.workspaceId ? "private" : "berlin_synthetic",
-    );
-    setCapacityMetric(search.capacityMetric ?? "firm_import_mw");
+    setCapacitySource(privateCapacitySelected ? "private" : "berlin_synthetic");
+    setCapacityMetric(safeMetric);
     setRequiredCapacityMw(search.requiredMw ?? project.importMw);
   }, [
     search.capacityMetric,
@@ -830,10 +837,15 @@ function PowerFinderPage() {
         })
       : null);
   const selectedCapacity = selectedDetailFeature
-    ? (capacityViewport?.nodes.find(
+    ? (activeCapacityNodes.find(
         (result) => result.publicNodeId === String(selectedDetailFeature.id),
       ) ?? null)
     : null;
+  const selectedCapacityOpportunity = classifyCapacityOpportunity(
+    selectedCapacity,
+    capacityMetric,
+    requiredCapacityMw,
+  );
   const selectedNodePathways = selected
     ? candidates.filter((candidate) => candidate.nodeId === String(selected.id))
     : [];
@@ -1692,7 +1704,17 @@ function PowerFinderPage() {
                 setReportPreparing(true);
                 setInteractionNotice("Preparing screening report…");
                 try {
-                  await downloadFinderReport(project, comparedCandidates, collection);
+                  await downloadFinderReport(project, comparedCandidates, collection, {
+                    enabled: mapMode === "capacity",
+                    metric: capacityMetric,
+                    requiredMw: requiredCapacityMw,
+                    nodes: activeCapacityNodes,
+                    evidenceBoundary:
+                      capacitySource === "berlin_synthetic"
+                        ? "Real mapped geography, synthetic electrical model. Not operator headroom, a reservation, or a connection offer."
+                        : (capacityViewport?.evidenceBoundary ??
+                          "Private results require an authorised workspace and completed electrical study."),
+                  });
                   setInteractionNotice("Screening report downloaded.");
                 } finally {
                   setReportPreparing(false);
@@ -2515,7 +2537,9 @@ function PowerFinderPage() {
                     )}
                     {selected.properties.kind === "node" && selectedCapacity && (
                       <span className="candidate-truth-status">
-                        {`${capacityMetricLabels[capacityMetric]} · ${selectedCapacity.valueMw ?? "—"} MW · ${selectedCapacity.validationState.replaceAll("_", " ")}`}
+                        {selectedCapacityOpportunity.valueMw == null
+                          ? `${capacityMetricLabels[capacityMetric]} · ${selectedCapacityOpportunity.fit === "stale" ? "recalculation required" : "not calculated"}`
+                          : `${capacityMetricLabels[capacityMetric]} · ${selectedCapacityOpportunity.valueMw} MW · ${selectedCapacity.validationState.replaceAll("_", " ")}`}
                       </span>
                     )}
                   </div>
@@ -2525,58 +2549,60 @@ function PowerFinderPage() {
                       highest-ranked match is selected from the current list.
                     </p>
                   )}
-                  {selectedCapacity && (
-                    <section
-                      className="finder-panel-card finder-panel-card--study"
-                      aria-label="Calculated capacity result"
-                    >
-                      <header>
-                        <span>Calculated capacity</span>
-                        <b>{selectedCapacity.validationState.replaceAll("_", " ")}</b>
-                      </header>
-                      <p>
-                        Node-specific electrical result for model {selectedCapacity.modelVersion},{" "}
-                        {selectedCapacity.scenarioLabel},{" "}
-                        {selectedCapacity.securityCase.replace("_", "-").toUpperCase()}.
-                      </p>
-                      <dl>
-                        <div>
-                          <dt>Firm import</dt>
-                          <dd>{selectedCapacity.firmCapacityMw ?? "—"} MW</dd>
-                        </div>
-                        <div>
-                          <dt>Flexible import</dt>
-                          <dd>{selectedCapacity.flexibleCapacityMw ?? "—"} MW</dd>
-                        </div>
-                        <div>
-                          <dt>BESS-assisted</dt>
-                          <dd>{selectedCapacity.bessAssistedCapacityMw ?? "—"} MW</dd>
-                        </div>
-                        <div>
-                          <dt>Staged initial / eventual</dt>
-                          <dd>
-                            {selectedCapacity.stagedInitialCapacityMw ?? "—"} /{" "}
-                            {selectedCapacity.eventualCapacityMw ?? "—"} MW
-                          </dd>
-                        </div>
-                        <div>
-                          <dt>Restricted hours</dt>
-                          <dd>{selectedCapacity.restrictedHours ?? "—"} h/year</dd>
-                        </div>
-                        <div>
-                          <dt>Binding constraint</dt>
-                          <dd>
-                            {selectedCapacity.bindingCategory?.replaceAll("_", " ") ??
-                              "Not recorded"}
-                          </dd>
-                        </div>
-                      </dl>
-                      <small>
-                        Calculated {new Date(selectedCapacity.calculatedAt).toLocaleString()} · not
-                        a connection offer or capacity reservation.
-                      </small>
-                    </section>
-                  )}
+                  {selectedCapacity &&
+                    selectedCapacityOpportunity.fit !== "stale" &&
+                    selectedCapacity.validationState !== "failed" && (
+                      <section
+                        className="finder-panel-card finder-panel-card--study"
+                        aria-label="Calculated capacity result"
+                      >
+                        <header>
+                          <span>Calculated capacity</span>
+                          <b>{selectedCapacity.validationState.replaceAll("_", " ")}</b>
+                        </header>
+                        <p>
+                          Node-specific electrical result for model {selectedCapacity.modelVersion},{" "}
+                          {selectedCapacity.scenarioLabel},{" "}
+                          {selectedCapacity.securityCase.replace("_", "-").toUpperCase()}.
+                        </p>
+                        <dl>
+                          <div>
+                            <dt>Firm import</dt>
+                            <dd>{selectedCapacity.firmCapacityMw ?? "—"} MW</dd>
+                          </div>
+                          <div>
+                            <dt>Flexible import</dt>
+                            <dd>{selectedCapacity.flexibleCapacityMw ?? "—"} MW</dd>
+                          </div>
+                          <div>
+                            <dt>BESS-assisted</dt>
+                            <dd>{selectedCapacity.bessAssistedCapacityMw ?? "—"} MW</dd>
+                          </div>
+                          <div>
+                            <dt>Staged initial / eventual</dt>
+                            <dd>
+                              {selectedCapacity.stagedInitialCapacityMw ?? "—"} /{" "}
+                              {selectedCapacity.eventualCapacityMw ?? "—"} MW
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>Restricted hours</dt>
+                            <dd>{selectedCapacity.restrictedHours ?? "—"} h/year</dd>
+                          </div>
+                          <div>
+                            <dt>Binding constraint</dt>
+                            <dd>
+                              {selectedCapacity.bindingCategory?.replaceAll("_", " ") ??
+                                "Not recorded"}
+                            </dd>
+                          </div>
+                        </dl>
+                        <small>
+                          Calculated {new Date(selectedCapacity.calculatedAt).toLocaleString()} ·
+                          not a connection offer or capacity reservation.
+                        </small>
+                      </section>
+                    )}
                   {selected.properties.kind === "node" ? (
                     <>
                       <section

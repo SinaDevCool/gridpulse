@@ -181,6 +181,7 @@ def build_berlin_synthetic_capacity_artifact(output: Path) -> dict[str, Any]:
         maximum_capacity_mw=300.0,
         capacity_tolerance_mw=0.25,
         maximum_loading_percent=100.0,
+        incremental_load_power_factor=0.96,
     )
     results = []
     # The external-grid/slack bus has an unbounded upstream source in this synthetic model.
@@ -193,6 +194,7 @@ def build_berlin_synthetic_capacity_artifact(output: Path) -> dict[str, Any]:
         n0_mw = float(n0.values["firm_import_capacity_mw"])
         n1_mw = float(secured.values["firm_import_capacity_mw"])
         n0_is_lower_bound = str(n0.values.get("binding_constraint")) == "search_ceiling"
+        firm_is_lower_bound = bool(secured.values.get("capacity_is_lower_bound"))
         binding_case = str(secured.values.get("binding_case") or "unknown")
         binding_constraint = str(secured.values.get("binding_constraint") or "unknown")
         result_id = f"berlin-synthetic-r1-{index:02d}"
@@ -206,7 +208,7 @@ def build_berlin_synthetic_capacity_artifact(output: Path) -> dict[str, Any]:
                 "valueMw": n1_mw,
                 # A search-ceiling hit is only a lower bound, not an exact envelope.
                 "n0CapacityMw": None if n0_is_lower_bound else n0_mw,
-                "firmCapacityMw": n1_mw,
+                "firmCapacityMw": None if firm_is_lower_bound else n1_mw,
                 "flexibleCapacityMw": None,
                 "bessAssistedCapacityMw": None,
                 "stagedInitialCapacityMw": None,
@@ -249,6 +251,7 @@ def build_berlin_synthetic_capacity_artifact(output: Path) -> dict[str, Any]:
             "topology": "Real mapped node anchors; synthetic meshed ring and nearest-neighbour chords.",
             "line_catalogue": "Synthetic 110 kV cable: r=0.075 ohm/km, x=0.31 ohm/km, c=11 nF/km, max_i=0.82 kA.",
             "operating_state": "Synthetic winter peak with 0.96 power factor and 7-17 MW base load per bus.",
+            "incremental_customer_load": "Synthetic import is modeled at 0.96 power factor; no customer-specific reactive-power study is implied.",
             "security": "Every synthetic line is evaluated as an individual N-1 outage.",
         },
         "results": results,

@@ -90,6 +90,23 @@ class NetworkStudyProviderTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "provenance"):
             provider.run_base_case(replace(self.parameterised_model(), provenance={}))
 
+    def test_invalid_intact_base_case_fails_closed(self):
+        provider = PandapowerProvider(maximum_capacity_mw=20)
+        model = replace(self.parameterised_model(), branches=[])
+        with self.assertRaisesRegex(ValueError, "Intact base case is infeasible"):
+            provider.calculate_import_capacity(model)
+
+    def test_search_ceiling_is_marked_as_lower_bound(self):
+        provider = PandapowerProvider(maximum_capacity_mw=1, capacity_tolerance_mw=0.05)
+        result = provider.calculate_import_capacity(self.parameterised_model())
+        self.assertTrue(result.values["capacity_is_lower_bound"])
+        self.assertEqual(result.values["binding_constraint"], "search_ceiling")
+
+    def test_incremental_load_power_factor_is_recorded(self):
+        provider = PandapowerProvider(maximum_capacity_mw=20, incremental_load_power_factor=0.96)
+        result = provider.calculate_import_capacity(self.parameterised_model())
+        self.assertEqual(result.values["incremental_load_power_factor"], 0.96)
+
 
 if __name__ == "__main__":
     unittest.main()

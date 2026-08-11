@@ -1,0 +1,106 @@
+{
+  "schema_version": "gridpulse-benchmark-a-v1",
+  "generated_at": "2026-08-10T21:29:30.534158+00:00",
+  "purpose": "AC base-state, nodal import-capacity and bounded N-1 consistency benchmark",
+  "validation_class": "open_benchmark",
+  "capacity_claim": false,
+  "reference_method": {
+    "engine": "pandapower",
+    "algorithm": "iwamoto_nr",
+    "independence": "alternate_algorithm_same_engine",
+    "external_solver_validated": false,
+    "limitation": "Does not replace future PowerModels.jl or MATPOWER cross-engine validation."
+  },
+  "thresholds": {
+    "n0_capacity_absolute_error_mw": 0.1,
+    "firm_capacity_absolute_error_mw": 0.1,
+    "base_voltage_absolute_error_pu": 0.0001,
+    "binding_case_match_required": true,
+    "binding_constraint_match_required": true
+  },
+  "settings": {
+    "simbench_codes": [
+      "1-MV-urban--0-sw",
+      "1-MV-rural--0-sw"
+    ],
+    "contingency_limit_per_model": 2,
+    "capacity_tolerance_mw": 0.1,
+    "maximum_capacity_mw": 25.0,
+    "incremental_load_power_factor": 0.96
+  },
+  "model_sha256": {
+    "1-MV-urban--0-sw": "4b272d72249cd72ed92bcd09d61c582610b02c7b613b6b0950dad310107d96be",
+    "1-MV-rural--0-sw": "f8bf4c9dece539d911bb94c5e65163e8d0193e2cd698680a530c0f6cee77f447"
+  },
+  "cases": [
+    {
+      "model_id": "simbench:1-MV-urban--0-sw",
+      "connection_bus": "bus-84",
+      "contingency_count": 2,
+      "production": {
+        "algorithm": "newton_raphson",
+        "n0_import_mw": 0.938,
+        "firm_import_mw": 0.0,
+        "binding_case": "benchmark-line-0-out",
+        "binding_constraint": "unsupplied_load_bus",
+        "base_minimum_voltage_pu": 0.96616,
+        "base_maximum_voltage_pu": 1.025
+      },
+      "reference": {
+        "algorithm": "iwamoto_newton_raphson",
+        "n0_import_mw": 0.938,
+        "firm_import_mw": 0.0,
+        "binding_case": "benchmark-line-0-out",
+        "binding_constraint": "unsupplied_load_bus",
+        "base_minimum_voltage_pu": 0.96616,
+        "base_maximum_voltage_pu": 1.025
+      },
+      "metrics": {
+        "n0_absolute_capacity_error_mw": 0.0,
+        "firm_absolute_capacity_error_mw": 0.0,
+        "maximum_base_voltage_error_pu": 0.0,
+        "binding_case_match": true,
+        "binding_constraint_match": true
+      },
+      "passed": true
+    },
+    {
+      "model_id": "simbench:1-MV-rural--0-sw",
+      "connection_bus": "bus-54",
+      "contingency_count": 2,
+      "production": {
+        "algorithm": "newton_raphson",
+        "n0_import_mw": 4.625,
+        "firm_import_mw": 0.0,
+        "binding_case": "benchmark-line-0-out",
+        "binding_constraint": "unsupplied_load_bus",
+        "base_minimum_voltage_pu": 1.00302,
+        "base_maximum_voltage_pu": 1.04462
+      },
+      "reference": {
+        "algorithm": "iwamoto_newton_raphson",
+        "n0_import_mw": 4.625,
+        "firm_import_mw": 0.0,
+        "binding_case": "benchmark-line-0-out",
+        "binding_constraint": "unsupplied_load_bus",
+        "base_minimum_voltage_pu": 1.00302,
+        "base_maximum_voltage_pu": 1.04462
+      },
+      "metrics": {
+        "n0_absolute_capacity_error_mw": 0.0,
+        "firm_absolute_capacity_error_mw": 0.0,
+        "maximum_base_voltage_error_pu": 0.0,
+        "binding_case_match": true,
+        "binding_constraint_match": true
+      },
+      "passed": true
+    }
+  ],
+  "summary": {
+    "case_count": 2,
+    "passed_count": 2,
+    "failed_count": 0,
+    "all_passed": true
+  },
+  "benchmark_sha256": "44be1a85151f82c98df7cb45a4438e8eb106db46dadd4c7e295bc74629e98aa8"
+}

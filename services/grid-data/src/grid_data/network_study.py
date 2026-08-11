@@ -106,6 +106,7 @@ class PandapowerProvider:
         maximum_loading_percent: float = 100.0,
         capacity_tolerance_mw: float = 0.1,
         maximum_capacity_mw: float = 2_000.0,
+        incremental_load_power_factor: float = 1.0,
     ) -> None:
         try:
             import pandapower as pp  # type: ignore[import-not-found]
@@ -118,6 +119,9 @@ class PandapowerProvider:
         self._max_loading = maximum_loading_percent
         self._tolerance = capacity_tolerance_mw
         self._maximum_capacity = maximum_capacity_mw
+        if not 0 < incremental_load_power_factor <= 1:
+            raise ValueError("Incremental load power factor must be in (0, 1].")
+        self._incremental_load_power_factor = incremental_load_power_factor
 
     @staticmethod
     def _status(model: NetworkModelInput) -> Literal["validated_result", "demonstration"]:
@@ -301,9 +305,19 @@ class PandapowerProvider:
         }
         if supplied_load_buses != active_load_buses:
             violations.append("unsupplied_load_bus")
-        if voltages and min(voltages) < self._vmin:
+        bus_voltage_violations = []
+        for bus_index, voltage in net.res_bus.vm_pu.items():
+            if not math.isfinite(float(voltage)):
+                continue
+            minimum = max(self._vmin, float(net.bus.at[bus_index, "min_vm_pu"]))
+            maximum = min(self._vmax, float(net.bus.at[bus_index, "max_vm_pu"]))
+            if float(voltage) < minimum:
+                bus_voltage_violations.append("minimum_bus_voltage")
+            if float(voltage) > maximum:
+                bus_voltage_violations.append("maximum_bus_voltage")
+        if "minimum_bus_voltage" in bus_voltage_violations:
             violations.append("minimum_bus_voltage")
-        if voltages and max(voltages) > self._vmax:
+        if "maximum_bus_voltage" in bus_voltage_violations:
             violations.append("maximum_bus_voltage")
         if line_loadings and max(line_loadings) > self._max_loading:
             violations.append("line_thermal_loading")
@@ -390,11 +404,25 @@ class PandapowerProvider:
         candidate_index = self._pp.create_load(
             net, bus=connection_bus, p_mw=0.0, q_mvar=0.0, name="gridpulse-candidate"
         )
+        reactive_ratio = math.tan(math.acos(self._incremental_load_power_factor))
 
         def feasible(import_mw: float):
             net.load.at[candidate_index, "p_mw"] = import_mw
+            net.load.at[candidate_index, "q_mvar"] = import_mw * reactive_ratio
             result = self._solve(net)
             return bool(result.get("passes")), result
+
+        base_passes, base_result = feasible(0.0)
+        if not base_passes:
+            if contingency is None:
+                reason = (base_result.get("violations") or [base_result.get("error", "unknown")])[0]
+                raise ValueError(f"Intact base case is infeasible: {reason}")
+            failed = base_result.get("violations") or ["non_convergence"]
+            return 0.0, {
+                **base_result,
+                "binding_constraint": failed[0],
+                "capacity_is_lower_bound": False,
+            }
 
         lower, upper = 0.0, 1.0
         failed_result: dict[str, Any] = {}
@@ -407,7 +435,11 @@ class PandapowerProvider:
             if lower == upper:
                 break
         if upper == self._maximum_capacity and feasible(upper)[0]:
-            return upper, {"binding_constraint": "search_ceiling", **self._solve(net)}
+            return upper, {
+                "binding_constraint": "search_ceiling",
+                "capacity_is_lower_bound": True,
+                **self._solve(net),
+            }
         while upper - lower > self._tolerance:
             midpoint = (lower + upper) / 2
             passes, result = feasible(midpoint)
@@ -423,6 +455,7 @@ class PandapowerProvider:
         return round(lower, 3), {
             **boundary,
             "binding_constraint": failed[0] if failed else "numerical_boundary",
+            "capacity_is_lower_bound": False,
         }
 
     def calculate_import_capacity(self, model: NetworkModelInput) -> StudyResult:
@@ -444,10 +477,12 @@ class PandapowerProvider:
             "firm_import_capacity_mw": firm_capacity,
             "binding_case": binding_case,
             "binding_constraint": binding.get("binding_constraint"),
+            "capacity_is_lower_bound": bool(binding.get("capacity_is_lower_bound")),
             "contingencies": contingency_results,
             "search_tolerance_mw": self._tolerance,
             "voltage_limits_pu": [self._vmin, self._vmax],
             "thermal_limit_percent": self._max_loading,
+            "incremental_load_power_factor": self._incremental_load_power_factor,
         }
         return self._result(model, "capacity", values)
 

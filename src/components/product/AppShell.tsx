@@ -12,6 +12,8 @@ import { FinderShell } from "./FinderShell";
 const navigation = [
   { label: "Portfolio", to: "/portfolio" },
   { label: "Power Finder", to: "/power-finder" },
+  { label: "Activation", to: "/activation" },
+  { label: "Operations", to: "/operations" },
   { label: "Evidence", to: "/evidence" },
   { label: "Reports", to: "/reports" },
   { label: "Methodology", to: "/data-sources" },

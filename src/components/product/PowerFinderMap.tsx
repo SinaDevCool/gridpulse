@@ -178,7 +178,9 @@ function withCapacityResults(
             ...feature,
             properties: {
               ...feature.properties,
-              ...(result.valueMw === null ? {} : { calculated_capacity_mw: result.valueMw }),
+              ...(opportunity.valueMw === null
+                ? {}
+                : { calculated_capacity_mw: opportunity.valueMw }),
               capacity_validation_state: result.validationState,
               capacity_fit: opportunity.fit,
               capacity_ratio: opportunity.coverageRatio ?? 0,

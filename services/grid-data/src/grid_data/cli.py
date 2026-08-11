@@ -3,8 +3,16 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from .benchmark_a import build_benchmark_a_artifact
+from .benchmark_b import build_benchmark_b_artifact
+from .benchmark_c import build_benchmark_c_artifact
+from .benchmark_d import build_benchmark_d_artifact
+from .benchmark_e import build_benchmark_e_artifact
 from .benchmark_model import build_c1_validation_artifact
 from .berlin_synthetic_capacity import build_berlin_synthetic_capacity_artifact
+from .fifty_hertz_synthetic_capacity import build_fifty_hertz_synthetic_capacity_artifact
+from .fifty_hertz_regional_screening import build_regional_screening_artifact
+from .fifty_hertz_preapplication import build_preapplication_package
 from .c1_publish import publish_c1_artifact
 from .c2_benchmark import build_c2_benchmark_artifact
 from .c2_publish import publish_c2_artifact
@@ -121,12 +129,63 @@ def parser() -> argparse.ArgumentParser:
     c1 = subcommands.add_parser("validate-c1-benchmark")
     c1.add_argument("--code", default="1-MV-urban--0-sw")
     c1.add_argument("--output", type=Path, required=True)
+    benchmark_a = subcommands.add_parser("validate-benchmark-a")
+    benchmark_a.add_argument("--code", action="append")
+    benchmark_a.add_argument("--contingency-limit", type=int, default=2)
+    benchmark_a.add_argument("--tolerance-mw", type=float, default=0.1)
+    benchmark_a.add_argument("--maximum-capacity-mw", type=float, default=25.0)
+    benchmark_a.add_argument("--output", type=Path, required=True)
+    benchmark_b = subcommands.add_parser("validate-benchmark-b")
+    benchmark_b.add_argument("--code", action="append")
+    benchmark_b.add_argument("--contingency-limit", type=int, default=2)
+    benchmark_b.add_argument("--tolerance-mw", type=float, default=0.1)
+    benchmark_b.add_argument("--voltage-tolerance-pu", type=float, default=1e-4)
+    benchmark_b.add_argument("--loading-tolerance-percent", type=float, default=0.1)
+    benchmark_b.add_argument("--maximum-capacity-mw", type=float, default=25.0)
+    benchmark_b.add_argument("--output", type=Path, required=True)
+    benchmark_c = subcommands.add_parser("validate-benchmark-c")
+    benchmark_c.add_argument("--observed", type=Path)
+    benchmark_c.add_argument("--simulated", type=Path)
+    benchmark_c.add_argument("--evidence", type=Path)
+    benchmark_c.add_argument("--trusted-public-key", type=Path)
+    benchmark_c.add_argument("--minimum-observations", type=int, default=4)
+    benchmark_c.add_argument("--minimum-coverage", type=float, default=0.95)
+    benchmark_c.add_argument("--output", type=Path, required=True)
+    benchmark_d = subcommands.add_parser("validate-benchmark-d")
+    benchmark_d.add_argument("--predictions", type=Path)
+    benchmark_d.add_argument("--references", type=Path)
+    benchmark_d.add_argument("--evidence", type=Path)
+    benchmark_d.add_argument("--trusted-public-key", type=Path)
+    benchmark_d.add_argument("--minimum-cases", type=int, default=4)
+    benchmark_d.add_argument("--minimum-coverage", type=float, default=0.95)
+    benchmark_d.add_argument("--output", type=Path, required=True)
+    benchmark_e = subcommands.add_parser("validate-benchmark-e")
+    benchmark_e.add_argument("--predictions", type=Path)
+    benchmark_e.add_argument("--outcomes", type=Path)
+    benchmark_e.add_argument("--evidence", type=Path)
+    benchmark_e.add_argument("--trusted-public-key", type=Path)
+    benchmark_e.add_argument("--minimum-cases", type=int, default=20)
+    benchmark_e.add_argument("--minimum-sites", type=int, default=4)
+    benchmark_e.add_argument("--minimum-strata", type=int, default=4)
+    benchmark_e.add_argument("--output", type=Path, required=True)
     reference_capacity = subcommands.add_parser("validate-reference-capacity-map")
     reference_capacity.add_argument("--code", default="1-MV-urban--0-sw")
     reference_capacity.add_argument("--limit", type=int, default=12)
     reference_capacity.add_argument("--output", type=Path, required=True)
     berlin_capacity = subcommands.add_parser("build-berlin-synthetic-capacity")
     berlin_capacity.add_argument("--output", type=Path, required=True)
+    fifty_hertz_capacity = subcommands.add_parser("build-50hertz-synthetic-capacity")
+    fifty_hertz_capacity.add_argument("--output", type=Path, required=True)
+    fifty_hertz_regional = subcommands.add_parser("build-50hertz-regional-screening")
+    fifty_hertz_regional.add_argument("--source", type=Path, required=True)
+    fifty_hertz_regional.add_argument("--output", type=Path, required=True)
+    fifty_hertz_regional.add_argument("--limit", type=int, default=30)
+    fifty_hertz_package = subcommands.add_parser("build-50hertz-preapplication")
+    fifty_hertz_package.add_argument("--regional", type=Path, required=True)
+    fifty_hertz_package.add_argument("--output", type=Path, required=True)
+    fifty_hertz_package.add_argument("--request", type=Path, required=True)
+    fifty_hertz_package.add_argument("--requested-mw", type=float, default=500.0)
+    fifty_hertz_package.add_argument("--target-year", type=int, default=2030)
     publish_c1 = subcommands.add_parser("publish-c1-benchmark")
     publish_c1.add_argument("--input", type=Path, required=True)
     cgmes = subcommands.add_parser("import-cgmes")
@@ -309,11 +368,120 @@ def main() -> None:
             f"Calculated {len(report['results'])} governed reference-network capacity results; "
             f"sha256={report['results_sha256'][:12]}."
         )
+    elif args.command == "validate-benchmark-a":
+        options = {"output": args.output}
+        if args.code:
+            options["codes"] = tuple(args.code)
+        report = build_benchmark_a_artifact(
+            **options,
+            contingency_limit=args.contingency_limit,
+            tolerance_mw=args.tolerance_mw,
+            maximum_capacity_mw=args.maximum_capacity_mw,
+        )
+        print(
+            f"Benchmark A: {report['summary']['passed_count']}/{report['summary']['case_count']} "
+            f"cases passed; sha256={report['benchmark_sha256'][:12]}."
+        )
+        if not report["summary"]["all_passed"]:
+            raise SystemExit(1)
+    elif args.command == "validate-benchmark-b":
+        options = {"output": args.output}
+        if args.code:
+            options["codes"] = tuple(args.code)
+        report = build_benchmark_b_artifact(
+            **options,
+            contingency_limit=args.contingency_limit,
+            tolerance_mw=args.tolerance_mw,
+            voltage_tolerance_pu=args.voltage_tolerance_pu,
+            loading_tolerance_percent=args.loading_tolerance_percent,
+            maximum_capacity_mw=args.maximum_capacity_mw,
+        )
+        print(
+            f"Benchmark B: {report['summary']['passed_count']}/{report['summary']['case_count']} "
+            f"cases passed; sha256={report['benchmark_sha256'][:12]}."
+        )
+        if not report["summary"]["all_passed"]:
+            raise SystemExit(1)
+    elif args.command == "validate-benchmark-c":
+        report = build_benchmark_c_artifact(
+            args.output,
+            observed_path=args.observed,
+            simulated_path=args.simulated,
+            evidence_path=args.evidence,
+            trusted_public_key_path=args.trusted_public_key,
+            minimum_observations=args.minimum_observations,
+            minimum_coverage=args.minimum_coverage,
+        )
+        print(
+            f"Benchmark C: numerical={'passed' if report['numerical_reconciliation_passed'] else 'failed'}; "
+            f"operator-validation={'passed' if report['operator_validation_passed'] else 'not-passed'}; "
+            f"sha256={report['benchmark_sha256'][:12]}."
+        )
+        if not report["benchmark_execution_passed"]:
+            raise SystemExit(1)
+    elif args.command == "validate-benchmark-d":
+        report = build_benchmark_d_artifact(
+            args.output,
+            predictions_path=args.predictions,
+            references_path=args.references,
+            evidence_path=args.evidence,
+            trusted_public_key_path=args.trusted_public_key,
+            minimum_cases=args.minimum_cases,
+            minimum_coverage=args.minimum_coverage,
+        )
+        print(
+            f"Benchmark D: numerical={'passed' if report['numerical_outcome_backtest_passed'] else 'failed'}; "
+            f"operator-outcomes={'passed' if report['operator_outcome_validation_passed'] else 'not-passed'}; "
+            f"sha256={report['benchmark_sha256'][:12]}."
+        )
+        if not report["benchmark_execution_passed"]:
+            raise SystemExit(1)
+    elif args.command == "validate-benchmark-e":
+        report = build_benchmark_e_artifact(
+            args.output,
+            predictions_path=args.predictions,
+            outcomes_path=args.outcomes,
+            evidence_path=args.evidence,
+            trusted_public_key_path=args.trusted_public_key,
+            minimum_cases=args.minimum_cases,
+            minimum_sites=args.minimum_sites,
+            minimum_strata=args.minimum_strata,
+        )
+        print(
+            f"Benchmark E: prospective={'passed' if report['prospective_numerical_validation_passed'] else 'failed'}; "
+            f"operator-validation={'passed' if report['operator_prospective_validation_passed'] else 'not-passed'}; "
+            f"sha256={report['benchmark_sha256'][:12]}."
+        )
+        if not report["benchmark_execution_passed"]:
+            raise SystemExit(1)
     elif args.command == "build-berlin-synthetic-capacity":
         report = build_berlin_synthetic_capacity_artifact(args.output)
         print(
             f"Calculated {len(report['results'])} Berlin synthetic N-0/N-1 results; "
             f"sha256={report['results_sha256'][:12]}."
+        )
+    elif args.command == "build-50hertz-synthetic-capacity":
+        report = build_fifty_hertz_synthetic_capacity_artifact(args.output)
+        leader = report["results"][0]
+        print(
+            f"Calculated {len(report['results'])} 50Hertz-focused synthetic yard results; "
+            f"screen-first={leader['location']} ({leader['n1_firm_proxy_mw']} MW proxy)."
+        )
+    elif args.command == "build-50hertz-regional-screening":
+        report = build_regional_screening_artifact(args.source, args.output, limit=args.limit)
+        leader = report["results"][0]
+        print(
+            f"Ranked {len(report['results'])} synthetic 50Hertz-area opportunities; "
+            f"screen-first={leader['location']} (P10={leader['firm_proxy']['p10_mw']} MW)."
+        )
+    elif args.command == "build-50hertz-preapplication":
+        report = build_preapplication_package(
+            args.regional, args.output, args.request,
+            requested_mw=args.requested_mw, target_year=args.target_year,
+        )
+        print(
+            f"Prepared {report['summary']['site_count']} frozen site dossiers; "
+            f"P10 passes={report['summary']['passes_p10_count']}; operator outcomes=0."
         )
     elif args.command == "publish-c1-benchmark":
         report = publish_c1_artifact(args.input)
