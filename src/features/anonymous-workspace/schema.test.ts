@@ -26,9 +26,12 @@ describe("anonymous workspace schema migration", () => {
       createdAt: now,
       updatedAt: now,
     });
-    expect(migrated.schemaVersion).toBe(2);
+    expect(migrated.schemaVersion).toBe(3);
     expect(migrated.decisionStatus).toBe("unreviewed");
     expect(migrated.preferredCandidateId).toBeNull();
+    expect(migrated.qualification).toHaveLength(11);
+    expect(migrated.evidenceRegister).toEqual([]);
+    expect(migrated.operatorEngagement?.enquiryStatus).toBe("not_started");
     expect(migrated.project.importMw).toBe(100);
   });
 });

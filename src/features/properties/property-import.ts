@@ -5,6 +5,12 @@ export const propertyImportHeaders = [
   "external_property_id",
   "site_label",
   "municipality",
+  "address",
+  "federal_state",
+  "cadastral_reference",
+  "site_area_hectares",
+  "developable_area_hectares",
+  "minimum_viable_load_mw",
   "latitude",
   "longitude",
   "property_type",
@@ -26,6 +32,12 @@ export type PropertyImportValue = {
   externalPropertyId: string | null;
   siteLabel: string | null;
   municipality: string | null;
+  address: string | null;
+  federalState: string | null;
+  cadastralReference: string | null;
+  siteAreaHectares: number | null;
+  developableAreaHectares: number | null;
+  minimumViableLoadMw: number | null;
   latitude: number | null;
   longitude: number | null;
   boundary: GeoJSON.Polygon | GeoJSON.MultiPolygon | null;
@@ -137,6 +149,14 @@ function valueFromRecord(
     externalPropertyId: nullableText(record.external_property_id),
     siteLabel: nullableText(record.site_label ?? record.address_label),
     municipality: nullableText(record.municipality ?? record.city),
+    address: nullableText(record.address ?? record.site_label),
+    federalState: nullableText(record.federal_state ?? record.state),
+    cadastralReference: nullableText(record.cadastral_reference ?? record.cadastre),
+    siteAreaHectares: nullableNumber(record.site_area_hectares ?? record.site_area_ha),
+    developableAreaHectares: nullableNumber(
+      record.developable_area_hectares ?? record.developable_area_ha,
+    ),
+    minimumViableLoadMw: nullableNumber(record.minimum_viable_load_mw),
     latitude: nullableNumber(record.latitude ?? point?.[1]),
     longitude: nullableNumber(record.longitude ?? point?.[0]),
     boundary,
@@ -181,6 +201,9 @@ function validate(value: PropertyImportValue): string[] {
     ["Required IT load", value.requiredItLoadMw],
     ["Required total site load", value.requiredTotalSiteLoadMw],
     ["Export requirement", value.exportRequirementMw],
+    ["Site area", value.siteAreaHectares],
+    ["Developable area", value.developableAreaHectares],
+    ["Minimum viable load", value.minimumViableLoadMw],
   ] as const) {
     if (number != null && (!Number.isFinite(number) || number < 0))
       errors.push(`${label} must be a non-negative number or blank.`);
@@ -247,5 +270,5 @@ export async function parsePropertyImport(file: File): Promise<PropertyImportRow
 }
 
 export function propertyImportTemplateCsv() {
-  return `${propertyImportHeaders.join(",")}\nExample property,EXT-001,Berlin DC Campus,Berlin,52.5200,13.4050,data_centre,brownfield,40,55,0,2030,site_selection,optioned,confidential,Example client,owner@example.com,Replace this row\n`;
+  return `${propertyImportHeaders.join(",")}\nExample property,EXT-001,Berlin DC Campus,Berlin,Example Strasse 1,Berlin,123-45,12.4,9.8,30,52.5200,13.4050,data_centre,brownfield,40,55,0,2030,site_selection,optioned,confidential,Example client,owner@example.com,Replace this row\n`;
 }

@@ -7,8 +7,14 @@ import {
   exportAnonymousWorkspace,
   listAnonymousProperties,
   subscribeAnonymousWorkspace,
+  getWorkspaceSettings,
+  saveWorkspaceSettings,
 } from "@/features/anonymous-workspace/repository";
 import type { AnonymousProperty } from "@/features/anonymous-workspace/schema";
+import {
+  defaultWorkspaceSettings,
+  type AnonymousWorkspaceSettings,
+} from "@/features/anonymous-workspace/schema";
 import {
   anonymousPropertyToDecisionRow,
   projectAnonymousProperty,
@@ -32,6 +38,7 @@ export const Route = createFileRoute("/reports")({
     risk: z.enum(["all", "blocked", "deadline", "operator_confirmed"]).optional(),
     sort: z.enum(["urgency", "evidence", "mw", "name"]).optional(),
     decision: z.enum(["all", "unreviewed", "advance", "hold", "reject"]).optional(),
+    view: z.enum(["priority", "qualification", "operator", "decisions"]).optional(),
   }),
   head: () => ({
     meta: [
@@ -57,6 +64,9 @@ function exportable(property: AnonymousProperty): ExportableProperty {
     planning_status: "not_assessed",
     land_status: property.landControlStatus,
     assessment_status: property.decisionStatus,
+    qualification_readiness: summary.qualificationReadiness,
+    operator_engagement_status: summary.operatorEngagementStage,
+    critical_blockers: summary.criticalBlockers,
     boundary: property.boundary,
   };
 }
@@ -227,6 +237,7 @@ function DecisionCentre() {
               Workspace Backup
             </button>
           </section>
+          <WorkspaceBranding />
           <p className="rail-boundary">
             <ShieldAlert aria-hidden="true" /> Portfolio exposure aggregates requirements and
             evidence maturity—not available grid capacity or connection probability.
@@ -251,6 +262,23 @@ function DecisionCentre() {
               </button>
             ) : null}
           </header>
+          <nav className="decision-view-switcher" aria-label="Decision Centre view">
+            {(["priority", "qualification", "operator", "decisions"] as const).map((view) => (
+              <button
+                key={view}
+                className={(search.view ?? "priority") === view ? "active" : ""}
+                onClick={() => patchSearch({ view })}
+              >
+                {view === "priority"
+                  ? "Priority queue"
+                  : view === "qualification"
+                    ? "Qualification matrix"
+                    : view === "operator"
+                      ? "Operator pipeline"
+                      : "Decision register"}
+              </button>
+            ))}
+          </nav>
           {loading ? (
             <div className="decision-empty" role="status">
               <div className="loading-spinner" /> Loading decision intelligence…
@@ -285,71 +313,87 @@ function DecisionCentre() {
                 <Kpi label="Operator Identified" value={operatorIdentified} />
                 <Kpi label="Validated Evidence" value={validated} tone="positive" />
               </section>
-              <section className="decision-priority-section">
-                <header>
-                  <div>
-                    <p className="context-label">Decision Work Queue</p>
-                    <h2>Priority Sites</h2>
-                  </div>
-                  <span>{intelligence.rows.length} shown</span>
-                </header>
-                {intelligence.rows.length ? (
-                  <div className="decision-priority-list">
-                    {intelligence.rows.map((row) => {
-                      const summary = summaries.find((site) => site.id === row.site_id)!;
-                      return (
-                        <article key={row.site_id} data-severity={row.risk.severity}>
-                          <div>
-                            <span className={`decision-chip is-${summary.decisionStatus}`}>
-                              {summary.decisionStatus}
-                            </span>
-                            <h3>{row.site_name}</h3>
-                            <p>
-                              {summary.locationLabel} · {summary.projectType.replaceAll("_", " ")}
-                            </p>
-                          </div>
-                          <dl>
-                            <div>
-                              <dt>Required</dt>
-                              <dd>{number.format(row.requested_import_mw)} MW</dd>
-                            </div>
-                            <div>
-                              <dt>Preferred Candidate</dt>
-                              <dd>{summary.preferredCandidate?.nodeName ?? "Not shortlisted"}</dd>
-                            </div>
-                            <div>
-                              <dt>Operator</dt>
-                              <dd>{row.operator_name ?? "Unconfirmed"}</dd>
-                            </div>
-                            <div>
-                              <dt>Evidence</dt>
-                              <dd>
-                                {row.evidence_score ? `${row.evidence_score}/100` : "Unknown"}
-                              </dd>
-                            </div>
-                          </dl>
-                          <p className="priority-blocker">
-                            <b>Primary blocker</b>
-                            {row.missing_evidence[0] ?? "No open evidence blocker"}
-                          </p>
-                          <p className="priority-next">
-                            <b>Next</b>
-                            {summary.nextAction}
-                          </p>
-                          <Link to="/capacity-dossiers/$id" params={{ id: row.site_id }}>
-                            Open Decision Record <ArrowRight aria-hidden="true" />
-                          </Link>
-                        </article>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="decision-empty compact">
-                    <h3>No Sites Match This Scope</h3>
-                    <p>Choose another decision, evidence, or operator filter.</p>
-                  </div>
-                )}
-              </section>
+              {(search.view ?? "priority") === "qualification" ? (
+                <QualificationPortfolio summaries={summaries} />
+              ) : null}
+              {(search.view ?? "priority") === "operator" ? (
+                <OperatorPipeline summaries={summaries} />
+              ) : null}
+              {(search.view ?? "priority") === "decisions" ? (
+                <DecisionRegister summaries={summaries} />
+              ) : null}
+              {(search.view ?? "priority") === "priority" ? (
+                <>
+                  <section className="decision-priority-section">
+                    <header>
+                      <div>
+                        <p className="context-label">Decision Work Queue</p>
+                        <h2>Priority Sites</h2>
+                      </div>
+                      <span>{intelligence.rows.length} shown</span>
+                    </header>
+                    {intelligence.rows.length ? (
+                      <div className="decision-priority-list">
+                        {intelligence.rows.map((row) => {
+                          const summary = summaries.find((site) => site.id === row.site_id)!;
+                          return (
+                            <article key={row.site_id} data-severity={row.risk.severity}>
+                              <div>
+                                <span className={`decision-chip is-${summary.decisionStatus}`}>
+                                  {summary.decisionStatus}
+                                </span>
+                                <h3>{row.site_name}</h3>
+                                <p>
+                                  {summary.locationLabel} ·{" "}
+                                  {summary.projectType.replaceAll("_", " ")}
+                                </p>
+                              </div>
+                              <dl>
+                                <div>
+                                  <dt>Required</dt>
+                                  <dd>{number.format(row.requested_import_mw)} MW</dd>
+                                </div>
+                                <div>
+                                  <dt>Preferred Candidate</dt>
+                                  <dd>
+                                    {summary.preferredCandidate?.nodeName ?? "Not shortlisted"}
+                                  </dd>
+                                </div>
+                                <div>
+                                  <dt>Operator</dt>
+                                  <dd>{row.operator_name ?? "Unconfirmed"}</dd>
+                                </div>
+                                <div>
+                                  <dt>Evidence</dt>
+                                  <dd>
+                                    {row.evidence_score ? `${row.evidence_score}/100` : "Unknown"}
+                                  </dd>
+                                </div>
+                              </dl>
+                              <p className="priority-blocker">
+                                <b>Primary blocker</b>
+                                {row.missing_evidence[0] ?? "No open evidence blocker"}
+                              </p>
+                              <p className="priority-next">
+                                <b>Next</b>
+                                {summary.nextAction}
+                              </p>
+                              <Link to="/capacity-dossiers/$id" params={{ id: row.site_id }}>
+                                Open Decision Record <ArrowRight aria-hidden="true" />
+                              </Link>
+                            </article>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="decision-empty compact">
+                        <h3>No Sites Match This Scope</h3>
+                        <p>Choose another decision, evidence, or operator filter.</p>
+                      </div>
+                    )}
+                  </section>
+                </>
+              ) : null}
               <section className="operator-exposure-section">
                 <header>
                   <div>
@@ -422,6 +466,199 @@ function DecisionCentre() {
         </section>
       </main>
     </AppShell>
+  );
+}
+
+function WorkspaceBranding() {
+  const [settings, setSettings] = useState<AnonymousWorkspaceSettings>(defaultWorkspaceSettings);
+  useEffect(() => {
+    void getWorkspaceSettings().then(setSettings);
+  }, []);
+  return (
+    <details className="rail-section workspace-data-menu">
+      <summary>Report branding</summary>
+      <form
+        onSubmit={async (event) => {
+          event.preventDefault();
+          await saveWorkspaceSettings(settings);
+        }}
+      >
+        <label>
+          Organisation
+          <input
+            value={settings.organisationName}
+            onChange={(event) => setSettings({ ...settings, organisationName: event.target.value })}
+          />
+        </label>
+        <label>
+          Prepared for
+          <input
+            value={settings.preparedFor}
+            onChange={(event) => setSettings({ ...settings, preparedFor: event.target.value })}
+          />
+        </label>
+        <label>
+          Classification
+          <input
+            value={settings.confidentialityLabel}
+            onChange={(event) =>
+              setSettings({ ...settings, confidentialityLabel: event.target.value })
+            }
+          />
+        </label>
+        <label>
+          Report footer
+          <textarea
+            rows={3}
+            value={settings.reportFooter}
+            onChange={(event) => setSettings({ ...settings, reportFooter: event.target.value })}
+          />
+        </label>
+        <button type="submit">Save branding</button>
+      </form>
+    </details>
+  );
+}
+
+const matrixKeys = ["land", "planning", "grid", "fibre", "environment", "municipality"] as const;
+function QualificationPortfolio({
+  summaries,
+}: {
+  summaries: ReturnType<typeof projectAnonymousProperty>[];
+}) {
+  return (
+    <section className="portfolio-matrix-section">
+      <header>
+        <div>
+          <p className="context-label">Development readiness</p>
+          <h2>Qualification matrix</h2>
+        </div>
+      </header>
+      <div className="portfolio-matrix">
+        <div className="matrix-head">
+          <b>Site</b>
+          {matrixKeys.map((key) => (
+            <b key={key}>{key}</b>
+          ))}
+        </div>
+        {summaries.map((site) => (
+          <Link
+            key={site.id}
+            to="/portfolio/$id"
+            params={{ id: site.id }}
+            search={{ tab: "qualification" }}
+          >
+            <strong>
+              {site.name}
+              <small>{site.qualificationReadiness}% ready</small>
+            </strong>
+            {matrixKeys.map((key) => {
+              const dimension = site.property.qualification?.find((item) => item.key === key);
+              return (
+                <span
+                  key={key}
+                  className={`matrix-status status-${dimension?.status ?? "unknown"}`}
+                  title={`${key}: ${dimension?.status ?? "unknown"}`}
+                >
+                  {dimension?.status ?? "unknown"}
+                </span>
+              );
+            })}
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function OperatorPipeline({
+  summaries,
+}: {
+  summaries: ReturnType<typeof projectAnonymousProperty>[];
+}) {
+  const stages = [
+    "not_started",
+    "preparing",
+    "submitted",
+    "acknowledged",
+    "response_received",
+    "closed",
+  ];
+  return (
+    <section className="operator-pipeline-section">
+      <header>
+        <div>
+          <p className="context-label">Operator engagement</p>
+          <h2>Enquiry pipeline</h2>
+        </div>
+      </header>
+      <div className="operator-pipeline">
+        {stages.map((stage) => (
+          <section key={stage}>
+            <h3>{stage.replaceAll("_", " ")}</h3>
+            {summaries
+              .filter((site) => site.operatorEngagementStage === stage)
+              .map((site) => (
+                <Link
+                  key={site.id}
+                  to="/portfolio/$id"
+                  params={{ id: site.id }}
+                  search={{ tab: "evidence" }}
+                >
+                  <b>{site.name}</b>
+                  <span>{site.operator ?? "Operator unconfirmed"}</span>
+                  <small>
+                    {site.requiredMw} MW ·{" "}
+                    {site.evidenceExpiringSoon
+                      ? `${site.evidenceExpiringSoon} expiring`
+                      : "No expiry alert"}
+                  </small>
+                </Link>
+              ))}
+          </section>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function DecisionRegister({
+  summaries,
+}: {
+  summaries: ReturnType<typeof projectAnonymousProperty>[];
+}) {
+  return (
+    <section className="decision-register-section">
+      <header>
+        <div>
+          <p className="context-label">Recommendation history</p>
+          <h2>Decision register</h2>
+        </div>
+      </header>
+      <div>
+        {[...summaries]
+          .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt))
+          .map((site) => (
+            <article key={site.id}>
+              <span>
+                {new Intl.DateTimeFormat("en-GB", { dateStyle: "medium" }).format(
+                  new Date(site.updatedAt),
+                )}
+              </span>
+              <div>
+                <b>{site.name}</b>
+                <p>{site.property.decisionRationale ?? "No rationale recorded"}</p>
+              </div>
+              <span className={`decision-chip is-${site.decisionStatus}`}>
+                {site.decisionStatus}
+              </span>
+              <Link to="/capacity-dossiers/$id" params={{ id: site.id }}>
+                Open record
+              </Link>
+            </article>
+          ))}
+      </div>
+    </section>
   );
 }
 

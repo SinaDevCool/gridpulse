@@ -26,6 +26,7 @@ test("Site Pipeline and Decision Centre have no serious or critical violations",
     timeout: 15_000,
   });
   await page.getByRole("button", { name: /Save to Properties/i }).click();
+  await expect(page.getByRole("button", { name: /Saved locally/i })).toBeDisabled();
   for (const path of ["/portfolio", "/reports"]) {
     await page.goto(path);
     await expect(page.locator("main")).toBeVisible();
@@ -37,4 +38,14 @@ test("Site Pipeline and Decision Centre have no serious or critical violations",
     );
     expect(blocking, `${path}: ${JSON.stringify(blocking, null, 2)}`).toEqual([]);
   }
+  await page.goto("/portfolio");
+  await page.getByRole("button", { name: /Untitled screening project/i }).click();
+  await page.getByRole("link", { name: "Site Workspace" }).click();
+  const siteResult = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+    .analyze();
+  expect(
+    siteResult.violations.filter((item) => item.impact === "serious" || item.impact === "critical"),
+    JSON.stringify(siteResult.violations, null, 2),
+  ).toEqual([]);
 });

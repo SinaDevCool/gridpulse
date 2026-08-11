@@ -1,6 +1,7 @@
 import type { DecisionPortfolioRow } from "../grid-connection/portfolio-intelligence";
 import type { AnonymousCandidateSnapshot, AnonymousProperty } from "./schema";
 import { localCapacityState, localEvidenceGaps } from "./local-evidence-state";
+import { deriveQualification, operatorReadiness } from "./data-centre-qualification";
 
 export type AnonymousSiteStage =
   | "draft"
@@ -24,6 +25,12 @@ export type AnonymousSiteSummary = {
   blockers: string[];
   nextAction: string;
   operator: string | null;
+  qualificationReadiness: number;
+  criticalBlockers: number;
+  unknownDimensions: number;
+  operatorEngagementStage: string;
+  evidenceExpiringSoon: number;
+  decisionPackageReadiness: number;
   updatedAt: string;
   property: AnonymousProperty;
 };
@@ -41,6 +48,8 @@ export function preferredCandidate(property: AnonymousProperty) {
 
 export function projectAnonymousProperty(property: AnonymousProperty): AnonymousSiteSummary {
   const candidate = preferredCandidate(property);
+  const qualification = deriveQualification(property);
+  const operatorQualification = operatorReadiness(property);
   const capacityState = localCapacityState(property.evidence);
   const blockers = [
     ...(property.name === "Untitled screening project"
@@ -51,13 +60,19 @@ export function projectAnonymousProperty(property: AnonymousProperty): Anonymous
     ...(candidate?.missingEvidence ?? []),
     ...localEvidenceGaps(property.evidence),
     ...(property.landControlStatus === "unknown" ? ["Land control status is unknown"] : []),
+    ...qualification.criticalBlockers.map(
+      (item) => `${item.key.replaceAll("_", " ")} qualification is ${item.status}`,
+    ),
+    ...qualification.unsupported.map(
+      (item) => `${item.key.replaceAll("_", " ")} finding lacks accepted evidence`,
+    ),
   ];
   const uniqueBlockers = Array.from(new Set(blockers));
   let stage: AnonymousSiteStage = "draft";
   if (property.project.latitude != null && property.project.longitude != null) stage = "screening";
   if (candidate) stage = "shortlisted";
   if (candidate && property.evidence) stage = "evidence_review";
-  if (candidate && capacityState === "validated" && property.decisionStatus !== "unreviewed")
+  if (candidate && qualification.decisionReady && property.decisionStatus !== "unreviewed")
     stage = "decision_ready";
   const nextAction =
     property.name === "Untitled screening project"
@@ -90,6 +105,19 @@ export function projectAnonymousProperty(property: AnonymousProperty): Anonymous
     blockers: uniqueBlockers,
     nextAction,
     operator: candidate?.operator ?? null,
+    qualificationReadiness: qualification.readiness,
+    criticalBlockers: qualification.criticalBlockers.length,
+    unknownDimensions: qualification.unknown.length,
+    operatorEngagementStage: property.operatorEngagement?.enquiryStatus ?? "not_started",
+    evidenceExpiringSoon: (property.evidenceRegister ?? []).filter(
+      (item) =>
+        item.validTo &&
+        Date.parse(item.validTo) >= Date.now() &&
+        Date.parse(item.validTo) <= Date.now() + 30 * 86400000,
+    ).length,
+    decisionPackageReadiness: Math.round(
+      (qualification.readiness + operatorQualification.score) / 2,
+    ),
     updatedAt: property.updatedAt,
     property,
   };

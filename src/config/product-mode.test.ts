@@ -23,6 +23,7 @@ describe("Finder MVP route boundary", () => {
     expect(isRouteEnabled("/api/synthetic-network-study")).toBe(false);
     expect(isRouteEnabled("/auth")).toBe(false);
     expect(isRouteEnabled("/portfolio")).toBe(true);
+    expect(isRouteEnabled("/portfolio/00000000-0000-4000-8000-000000000000")).toBe(true);
     expect(isRouteEnabled("/reports")).toBe(true);
     expect(isRouteEnabled("/capacity-dossiers/00000000-0000-4000-8000-000000000000")).toBe(true);
     expect(isRouteEnabled("/assessments/new")).toBe(false);

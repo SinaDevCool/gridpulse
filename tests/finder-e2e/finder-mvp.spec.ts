@@ -82,9 +82,45 @@ test("a Finder project saves locally, survives navigation, and opens a dossier",
   await expect(page.getByRole("heading", { name: "Site Pipeline" })).toBeVisible();
   await expect(page.getByText("Untitled screening project").first()).toBeVisible();
   await page.getByRole("button", { name: /Untitled screening project/i }).click();
-  await page.getByRole("link", { name: "Decision Record" }).click();
+  await page.getByRole("link", { name: "Site Workspace" }).click();
+  await expect(page.getByRole("heading", { name: "Opportunity overview" })).toBeVisible();
+  await page.getByRole("button", { name: "decision", exact: true }).click();
+  await page.getByRole("link", { name: /Open client decision record/i }).click();
   await expect(page.getByRole("heading", { name: "Untitled screening project" })).toBeVisible();
   await expect(page.getByText(/Capacity metrics are withheld/i)).toBeVisible();
+});
+
+test("anonymous site workspace qualifies a site and records operator evidence", async ({
+  page,
+}) => {
+  await page.goto("/power-finder?lat=52.52&lng=13.405&mw=80&projectType=data_centre");
+  await expect(page.getByText(/candidate site-to-node matches/i).first()).toBeVisible({
+    timeout: 15_000,
+  });
+  await page.getByRole("button", { name: /Save to Properties/i }).click();
+  await expect(page.getByRole("button", { name: /Saved locally/i })).toBeDisabled();
+  await page.goto("/portfolio");
+  await page.getByRole("button", { name: /Untitled screening project/i }).click();
+  await page.getByRole("link", { name: "Site Workspace" }).click();
+  await page.getByLabel("Site name").fill("Bremen Data Centre Campus");
+  await page.getByLabel("Municipality").fill("Bremen");
+  await page.getByLabel("Site area (ha)").fill("12.5");
+  await page.getByRole("button", { name: /Save site brief/i }).click();
+  await page.getByRole("button", { name: /Evidence & operator/i }).click();
+  await page.getByRole("textbox", { name: "Operator", exact: true }).fill("Example Netz GmbH");
+  await page.getByLabel("Enquiry status").selectOption("submitted");
+  await page.getByLabel("Enquiry reference").fill("NVP-2026-001");
+  await page.getByRole("button", { name: /Save operator engagement/i }).click();
+  await page.getByPlaceholder("Evidence title").fill("Operator acknowledgement");
+  await page
+    .getByPlaceholder("Claim supported by this evidence")
+    .fill("The operator acknowledged receipt of the enquiry.");
+  await page.getByLabel("Category").selectOption("operator");
+  await page.getByRole("button", { name: /Add evidence/i }).click();
+  await expect(page.getByText("Operator acknowledgement")).toBeVisible();
+  await page.getByRole("link", { name: /Decision Centre Review evidence/i }).click();
+  await page.getByRole("button", { name: "Operator pipeline" }).click();
+  await expect(page.getByText("Bremen Data Centre Campus").first()).toBeVisible();
 });
 
 test("Site Pipeline decisions flow into Decision Centre", async ({ page }) => {
@@ -117,6 +153,7 @@ test("Site Pipeline remains usable without horizontal page overflow on mobile", 
     timeout: 15_000,
   });
   await page.getByRole("button", { name: /Save to Properties/i }).click();
+  await expect(page.getByRole("button", { name: /Saved locally/i })).toBeDisabled();
   await page.goto("/portfolio");
   await expect(page.getByRole("heading", { name: "Site Pipeline" })).toBeVisible();
   await expect(page.getByRole("button", { name: /Untitled screening project/i })).toBeVisible();

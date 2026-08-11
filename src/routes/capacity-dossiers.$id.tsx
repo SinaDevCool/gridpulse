@@ -2,15 +2,22 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Download, ShieldAlert } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/product/AppShell";
-import { getAnonymousProperty } from "@/features/anonymous-workspace/repository";
+import {
+  getAnonymousProperty,
+  getWorkspaceSettings,
+} from "@/features/anonymous-workspace/repository";
 import type { AnonymousProperty } from "@/features/anonymous-workspace/schema";
 import { projectAnonymousProperty } from "@/features/anonymous-workspace/portfolio-projection";
 import { buildLocalCapacityDossier } from "@/features/properties/local-dossier";
 import {
   capacityValue,
-  downloadPropertyDossierPdf,
   type CapacityDossierProjection,
 } from "@/features/properties/capacity-dossier";
+import { downloadClientDecisionPackage } from "@/features/properties/decision-package";
+import {
+  deriveQualification,
+  qualificationLabels,
+} from "@/features/anonymous-workspace/data-centre-qualification";
 
 export const Route = createFileRoute("/capacity-dossiers/$id")({
   head: () => ({
@@ -85,7 +92,9 @@ function DecisionRecord({
         <button
           type="button"
           className="primary-button"
-          onClick={() => downloadPropertyDossierPdf(data)}
+          onClick={async () =>
+            downloadClientDecisionPackage(property, data, await getWorkspaceSettings())
+          }
         >
           <Download aria-hidden="true" /> Download Record
         </button>
@@ -139,6 +148,24 @@ function DecisionRecord({
           label="BESS-Assisted"
           value={capacityValue(data.dossier.bess_assisted_capacity_mw)}
         />
+      </section>
+      <section className="record-qualification-section">
+        <p className="context-label">Data-centre development</p>
+        <h2>Site qualification</h2>
+        <div>
+          {deriveQualification(property).dimensions.map((item) => (
+            <article key={item.key} className={`status-${item.status}`}>
+              <span>{qualificationLabels[item.key]}</span>
+              <strong>{item.status}</strong>
+              <p>{item.summary ?? "No finding recorded"}</p>
+              <small>
+                {item.unsupported
+                  ? "Accepted evidence missing"
+                  : `${item.acceptedEvidence} accepted evidence item(s)`}
+              </small>
+            </article>
+          ))}
+        </div>
       </section>
       <div className="record-grid">
         <section>
@@ -216,6 +243,13 @@ function DecisionRecord({
         </section>
       </div>
       <section className="record-evidence-grid">
+        <List
+          title="Evidence Register"
+          items={(property.evidenceRegister ?? []).map(
+            (item) =>
+              `${item.title}: ${item.claim} [${item.evidenceClass}; ${item.validationStatus}]`,
+          )}
+        />
         <List title="Unresolved Evidence" items={data.dossier.unresolved_evidence} />
         <List title="Operator Questions" items={data.dossier.operator_questions} />
         <List title="Assumptions" items={data.dossier.assumptions} />

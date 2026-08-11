@@ -26,7 +26,8 @@ export function buildLocalCapacityDossier(property: AnonymousProperty): Capacity
     },
     property_readiness: {
       land_control_status: property.landControlStatus,
-      planning_status: "not_assessed",
+      planning_status:
+        property.qualification?.find((item) => item.key === "planning")?.status ?? "unknown",
       development_phase: property.developmentPhase,
     },
     dossier: {

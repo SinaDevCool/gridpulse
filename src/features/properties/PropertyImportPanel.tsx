@@ -32,6 +32,7 @@ export function PropertyImportPanel({
   const [fileName, setFileName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [conflict, setConflict] = useState<"skip" | "replace" | "merge">("skip");
   const invalid = rows.filter((row) => row.errors.length > 0).length;
 
   async function selectFile(file: File | undefined) {
@@ -61,7 +62,7 @@ export function PropertyImportPanel({
       const extension = fileName.split(".").pop()?.toLowerCase() ?? "csv";
       const result = await importAnonymousProperties(
         rows.map(({ value }) => propertyFromImport(value, extension)),
-        "skip",
+        conflict,
       );
       toast.success(
         `${result.imported} ${result.imported === 1 ? "property" : "properties"} imported${result.skipped ? `; ${result.skipped} existing IDs skipped` : ""}`,
@@ -165,6 +166,17 @@ export function PropertyImportPanel({
             </table>
           </div>
           <div className="property-import-actions">
+            <label>
+              Existing matches
+              <select
+                value={conflict}
+                onChange={(event) => setConflict(event.target.value as typeof conflict)}
+              >
+                <option value="skip">Skip existing</option>
+                <option value="merge">Keep existing and fill gaps</option>
+                <option value="replace">Replace existing</option>
+              </select>
+            </label>
             <button
               type="button"
               className="secondary-button"

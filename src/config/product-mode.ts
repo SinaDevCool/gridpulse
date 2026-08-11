@@ -56,6 +56,7 @@ export function isRouteEnabledForMode(pathname: string, mode: ProductMode): bool
   return (
     finderRoutes.has(normalized) ||
     finderApiRoutes.has(normalized) ||
+    normalized.startsWith("/portfolio/") ||
     normalized.startsWith("/capacity-dossiers/")
   );
 }

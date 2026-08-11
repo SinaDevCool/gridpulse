@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   ArrowRight,
   Database,
@@ -83,6 +83,12 @@ const stageLabel: Record<AnonymousSiteStage, string> = {
 };
 
 function SitePipeline() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  if (pathname.startsWith("/portfolio/")) return <Outlet />;
+  return <SitePipelineIndex />;
+}
+
+function SitePipelineIndex() {
   const navigate = useNavigate();
   const search = Route.useSearch();
   const restoreInput = useRef<HTMLInputElement>(null);
@@ -250,6 +256,17 @@ function SitePipeline() {
                 }
               >
                 <Download aria-hidden="true" /> Export Backup
+              </button>
+              <button
+                type="button"
+                onClick={async () =>
+                  downloadJson(
+                    await exportAnonymousWorkspace(true),
+                    "gridpulse-complete-portable-workspace.json",
+                  )
+                }
+              >
+                <Download aria-hidden="true" /> Complete Backup + Documents
               </button>
               <button type="button" onClick={() => restoreInput.current?.click()}>
                 <FileUp aria-hidden="true" /> Restore Backup
@@ -596,8 +613,8 @@ function SiteDetail({
         >
           Open in Finder
         </Link>
-        <Link to="/capacity-dossiers/$id" params={{ id: site.id }}>
-          Decision Record
+        <Link to="/portfolio/$id" params={{ id: site.id }} search={{ tab: "overview" }}>
+          Site Workspace
         </Link>
         <button
           type="button"
