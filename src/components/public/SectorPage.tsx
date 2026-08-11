@@ -46,13 +46,13 @@ export function SectorPage({ content }: { content: SectorContent }) {
                   <li>
                     <Network aria-hidden="true" />
                     <span>
-                      <b>Shape</b> Flexible envelope
+                      <b>Qualify</b> Grid evidence
                     </span>
                   </li>
                   <li>
                     <Zap aria-hidden="true" />
                     <span>
-                      <b>Operate</b> Within limits
+                      <b>Decide</b> Next investment
                     </span>
                   </li>
                 </ol>
@@ -98,9 +98,9 @@ export function SectorPage({ content }: { content: SectorContent }) {
           <section className="landing-section sector-strategy" aria-labelledby="strategy-title">
             <div className="landing-container sector-strategy-grid">
               <div>
-                <p className="landing-eyebrow">From Capacity to Control</p>
+                <p className="landing-eyebrow">From Screening to Decision</p>
                 <h2 id="strategy-title">
-                  Carry one selected grid asset through activation and operations.
+                  Turn a candidate property into an operator-ready grid decision.
                 </h2>
               </div>
               <div>

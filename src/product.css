@@ -838,9 +838,10 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.finder-project-summary strong { color: #f4f8fb; }
 
 .finder-project-summary span {
-  color: #8da4b8;
+  color: #b7c5d1;
   font-size: 0.72rem;
   font-variant-numeric: tabular-nums;
 }
@@ -11731,7 +11732,7 @@ tbody tr:last-child td {
   right: 16px;
   top: 16px;
   width: min(460px, calc(100% - 32px));
-  z-index: 2;
+  z-index: 50;
 }
 .power-finder-detail:not(.open) {
   display: none;
@@ -11814,7 +11815,7 @@ tbody tr:last-child td {
   padding: 18px 38px 14px 4px;
   position: sticky;
   top: -18px;
-  z-index: 3;
+  z-index: 1;
 }
 .detail-sticky-header > p {
   color: #94a3b8;
@@ -12327,9 +12328,11 @@ tbody tr:last-child td {
   position: absolute;
   right: 12px;
   top: 10px;
-  z-index: 5;
+  z-index: 30;
   touch-action: manipulation;
 }
+.product-footer > span { color: #475467; }
+.product-footer > b { color: #344054; }
 .power-finder-detail .primary-button {
   justify-content: center;
   margin-top: 5px;
@@ -12808,6 +12811,19 @@ tbody tr:last-child td {
   .snapshot-form > * {
     grid-column: 1;
   }
+}
+.portfolio-view-tabs { display: flex; gap: .5rem; margin: 0 0 1rem; }
+.portfolio-view-tabs button { min-height: 44px; padding: .65rem 1rem; border-radius: .6rem; }
+.dossier-boundary { display: flex; gap: .75rem; margin: 1rem 0; padding: 1rem; border: 1px solid rgb(125 211 252 / 35%); border-radius: .75rem; background: rgb(2 132 199 / 8%); }
+.dossier-boundary svg { flex: 0 0 auto; }
+.dossier-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .75rem; margin: 1rem 0; font-variant-numeric: tabular-nums; }
+.dossier-definition-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+.dossier-definition-list div { padding: .75rem; border-bottom: 1px solid rgb(148 163 184 / 18%); }
+.dossier-definition-list dt { color: #94a3b8; }
+.dossier-evidence-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-top: 1rem; }
+@media (max-width: 760px) {
+  .portfolio-view-tabs { overflow-x: auto; }
+  .dossier-metrics, .dossier-definition-list, .dossier-evidence-grid { grid-template-columns: 1fr; }
 }
 .candidate-attach-form {
   display: flex;
@@ -15819,4 +15835,22 @@ tbody tr:last-child td {
   .envelope-history header span {
     display: none;
   }
+}
+/* Property intake uses the existing workspace visual language while keeping the preview dense. */
+.property-import-panel { margin-bottom: 1.5rem; }
+.property-import-panel .workspace-card-heading,
+.property-import-actions,
+.property-import-summary { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.property-import-dropzone { display: grid; grid-template-columns: auto 1fr; gap: .25rem .75rem; align-items: center; padding: 1rem; border: 1px dashed var(--border); border-radius: .75rem; cursor: pointer; }
+.property-import-dropzone svg { grid-row: 1 / 3; }
+.property-import-dropzone input { grid-column: 1 / -1; margin-top: .5rem; }
+.property-import-summary { margin: 1rem 0 .5rem; }
+.property-import-preview { width: 100%; font-variant-numeric: tabular-nums; }
+.property-import-preview td { vertical-align: top; }
+.property-import-preview ul { margin: 0; padding-left: 1rem; color: var(--danger); }
+.property-import-actions { justify-content: flex-end; margin-top: 1rem; }
+@media (max-width: 720px) {
+  .property-import-panel .workspace-card-heading { align-items: flex-start; flex-direction: column; }
+  .portfolio-table-wrap { overflow-x: auto; }
+  .property-import-preview { min-width: 760px; }
 }

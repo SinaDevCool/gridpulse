@@ -33,6 +33,7 @@ import { Route as SubmissionPackageIdRouteImport } from './routes/submission-pac
 import { Route as PilotCaseIdRouteImport } from './routes/pilot-case.$id'
 import { Route as OperatorReviewIdRouteImport } from './routes/operator-review.$id'
 import { Route as OperationsIdRouteImport } from './routes/operations.$id'
+import { Route as CapacityDossiersIdRouteImport } from './routes/capacity-dossiers.$id'
 import { Route as AssessmentsNewRouteImport } from './routes/assessments.new'
 import { Route as AssessmentsIdRouteImport } from './routes/assessments.$id'
 import { Route as ActivationIdRouteImport } from './routes/activation.$id'
@@ -161,6 +162,11 @@ const OperationsIdRoute = OperationsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => OperationsRoute,
 } as any)
+const CapacityDossiersIdRoute = CapacityDossiersIdRouteImport.update({
+  id: '/capacity-dossiers/$id',
+  path: '/capacity-dossiers/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AssessmentsNewRoute = AssessmentsNewRouteImport.update({
   id: '/assessments/new',
   path: '/assessments/new',
@@ -221,6 +227,7 @@ export interface FileRoutesByFullPath {
   '/activation/$id': typeof ActivationIdRoute
   '/assessments/$id': typeof AssessmentsIdRoute
   '/assessments/new': typeof AssessmentsNewRoute
+  '/capacity-dossiers/$id': typeof CapacityDossiersIdRoute
   '/operations/$id': typeof OperationsIdRoute
   '/operator-review/$id': typeof OperatorReviewIdRoute
   '/pilot-case/$id': typeof PilotCaseIdRoute
@@ -254,6 +261,7 @@ export interface FileRoutesByTo {
   '/activation/$id': typeof ActivationIdRoute
   '/assessments/$id': typeof AssessmentsIdRoute
   '/assessments/new': typeof AssessmentsNewRoute
+  '/capacity-dossiers/$id': typeof CapacityDossiersIdRoute
   '/operations/$id': typeof OperationsIdRoute
   '/operator-review/$id': typeof OperatorReviewIdRoute
   '/pilot-case/$id': typeof PilotCaseIdRoute
@@ -288,6 +296,7 @@ export interface FileRoutesById {
   '/activation/$id': typeof ActivationIdRoute
   '/assessments/$id': typeof AssessmentsIdRoute
   '/assessments/new': typeof AssessmentsNewRoute
+  '/capacity-dossiers/$id': typeof CapacityDossiersIdRoute
   '/operations/$id': typeof OperationsIdRoute
   '/operator-review/$id': typeof OperatorReviewIdRoute
   '/pilot-case/$id': typeof PilotCaseIdRoute
@@ -323,6 +332,7 @@ export interface FileRouteTypes {
     | '/activation/$id'
     | '/assessments/$id'
     | '/assessments/new'
+    | '/capacity-dossiers/$id'
     | '/operations/$id'
     | '/operator-review/$id'
     | '/pilot-case/$id'
@@ -356,6 +366,7 @@ export interface FileRouteTypes {
     | '/activation/$id'
     | '/assessments/$id'
     | '/assessments/new'
+    | '/capacity-dossiers/$id'
     | '/operations/$id'
     | '/operator-review/$id'
     | '/pilot-case/$id'
@@ -389,6 +400,7 @@ export interface FileRouteTypes {
     | '/activation/$id'
     | '/assessments/$id'
     | '/assessments/new'
+    | '/capacity-dossiers/$id'
     | '/operations/$id'
     | '/operator-review/$id'
     | '/pilot-case/$id'
@@ -422,6 +434,7 @@ export interface RootRouteChildren {
   ValidationCaseRoute: typeof ValidationCaseRoute
   AssessmentsIdRoute: typeof AssessmentsIdRoute
   AssessmentsNewRoute: typeof AssessmentsNewRoute
+  CapacityDossiersIdRoute: typeof CapacityDossiersIdRoute
   OperatorReviewIdRoute: typeof OperatorReviewIdRoute
   PilotCaseIdRoute: typeof PilotCaseIdRoute
   SubmissionPackageIdRoute: typeof SubmissionPackageIdRoute
@@ -601,6 +614,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OperationsIdRouteImport
       parentRoute: typeof OperationsRoute
     }
+    '/capacity-dossiers/$id': {
+      id: '/capacity-dossiers/$id'
+      path: '/capacity-dossiers/$id'
+      fullPath: '/capacity-dossiers/$id'
+      preLoaderRoute: typeof CapacityDossiersIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/assessments/new': {
       id: '/assessments/new'
       path: '/assessments/new'
@@ -700,6 +720,7 @@ const rootRouteChildren: RootRouteChildren = {
   ValidationCaseRoute: ValidationCaseRoute,
   AssessmentsIdRoute: AssessmentsIdRoute,
   AssessmentsNewRoute: AssessmentsNewRoute,
+  CapacityDossiersIdRoute: CapacityDossiersIdRoute,
   OperatorReviewIdRoute: OperatorReviewIdRoute,
   PilotCaseIdRoute: PilotCaseIdRoute,
   SubmissionPackageIdRoute: SubmissionPackageIdRoute,

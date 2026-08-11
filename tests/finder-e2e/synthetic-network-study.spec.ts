@@ -8,7 +8,7 @@ test("legacy synthetic-study links preserve inputs and move into Power Finder", 
     "/synthetic-network-study?project=data_centre&mw=20&exportMw=0&batteryMw=10&batteryMwh=30",
   );
   await expect(page).toHaveURL(/\/power-finder/);
-  await expect(page).toHaveURL(/study=activation/);
+  await expect(page).not.toHaveURL(/study=activation/);
   await expect(page.getByRole("heading", { name: /connection context/i })).toBeVisible();
   await expect(page.getByRole("link", { name: "Synthetic Study" })).toHaveCount(0);
 });

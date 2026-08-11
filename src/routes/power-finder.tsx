@@ -63,6 +63,8 @@ import {
   type FinderProjectType,
 } from "@/features/power-finder/finder-project";
 import { loadFinderProject, saveFinderProject } from "@/features/power-finder/project-store";
+import { saveFinderProjectToPortfolio } from "@/features/power-finder/property-handoff";
+import { useAuth } from "@/context/useAuth";
 import { downloadFinderReport } from "@/features/power-finder/finder-report";
 import {
   addComparisonCandidate,
@@ -233,6 +235,7 @@ function formatMw(value: number) {
 }
 
 function PowerFinderPage() {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const search = Route.useSearch();
   const [collection, setCollection] = useState<PowerFinderCollection | null>(null);
@@ -277,6 +280,9 @@ function PowerFinderPage() {
   const maxDistanceKm = project.maxDistanceKm;
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [shortlistId, setShortlistId] = useState<string | null>(null);
+  const [propertySaveStatus, setPropertySaveStatus] = useState<
+    "idle" | "saving" | "saved" | "error"
+  >("idle");
   const [operatorEvidence, setOperatorEvidence] = useState<OperatorEvidenceResult | null>(null);
   const [operatorEvidenceState, setOperatorEvidenceState] = useState<
     "idle" | "loading" | "ready" | "unavailable"
@@ -1724,6 +1730,32 @@ function PowerFinderPage() {
               <Download aria-hidden="true" />
               <span>{reportPreparing ? "Preparing report…" : "Download screening report"}</span>
             </button>
+            {user ? (
+              <button
+                type="button"
+                className="primary-button"
+                disabled={propertySaveStatus === "saving" || propertySaveStatus === "saved" || project.latitude == null || project.longitude == null}
+                onClick={async () => {
+                  setPropertySaveStatus("saving");
+                  try {
+                    const candidatesToSave = comparedCandidates.length ? comparedCandidates : selectedOpportunity ? [selectedOpportunity] : [];
+                    await saveFinderProjectToPortfolio(project, candidatesToSave);
+                    setPropertySaveStatus("saved");
+                    setInteractionNotice("Property saved to your private portfolio.");
+                  } catch (reason) {
+                    setPropertySaveStatus("error");
+                    setInteractionNotice(reason instanceof Error ? reason.message : "The property could not be saved.");
+                  }
+                }}
+              >
+                <BookmarkPlus aria-hidden="true" />
+                {propertySaveStatus === "saving" ? "Saving property…" : propertySaveStatus === "saved" ? "Saved to property portfolio" : propertySaveStatus === "error" ? "Try saving property again" : "Save to property portfolio"}
+              </button>
+            ) : (
+              <Link to="/auth" search={{ redirect: "/power-finder" }} className="primary-button">
+                <BookmarkPlus aria-hidden="true" /> Save to Property Portfolio
+              </Link>
+            )}
           </details>
 
           <p className="sr-only" role="status" aria-live="polite">

@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, ArrowRight, BarChart3, BellRing, FileText } from "lucide-react";
+import { AlertTriangle, ArrowRight, BarChart3, BellRing, Download, FileText } from "lucide-react";
 import { AppShell, PageHeading } from "@/components/product/AppShell";
 import { useAuth } from "@/context/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +12,8 @@ import type {
   PortfolioRiskFilter,
   PortfolioSort,
 } from "@/features/grid-connection/portfolio-intelligence";
+import { downloadPortfolioComparisonPdf } from "@/features/properties/capacity-dossier";
+import { downloadPropertyCsv, downloadPropertyGeoJson, downloadPropertyXlsx } from "@/features/properties/property-export";
 
 export const Route = createFileRoute("/reports")({
   validateSearch: z.object({
@@ -155,6 +157,7 @@ function ReportsPage() {
           eyebrow="Decision intelligence"
           title="Management portfolio and pilot learning"
           description="Track decision exposure, operator progress and consent-controlled evidence of GridPulse customer value."
+          action={data ? <button type="button" className="primary-button" onClick={() => downloadPortfolioComparisonPdf(data.projects.map(({ site }) => site))}><Download aria-hidden="true" /> Download Portfolio Comparison</button> : undefined}
         />
         {query.isLoading ? (
           <div className="portfolio-state">
@@ -170,6 +173,10 @@ function ReportsPage() {
         ) : null}
         {data ? (
           <>
+            <section className="workspace-card report-export-actions" aria-labelledby="portfolio-export-title">
+              <div><h2 id="portfolio-export-title">Property Data Exchange</h2><p>Export the governed property shortlist for DVLP or another source system. These files do not assert available capacity.</p></div>
+              <div className="property-import-actions"><button type="button" className="secondary-button" onClick={() => downloadPropertyCsv(data.projects.map(({ site }) => site))}>Export CSV</button><button type="button" className="secondary-button" onClick={() => void downloadPropertyXlsx(data.projects.map(({ site }) => site))}>Export XLSX</button><button type="button" className="secondary-button" onClick={() => downloadPropertyGeoJson(data.projects.map(({ site }) => site))}>Export GeoJSON</button></div>
+            </section>
             <section className="management-kpi-grid">
               {metrics.map(([label, value, suffix]) => (
                 <article key={label}>
@@ -327,6 +334,9 @@ function ReportsPage() {
                     </span>
                     <Link to="/assessments/$id" params={{ id: site.id }}>
                       Open assessment <ArrowRight />
+                    </Link>
+                    <Link to="/capacity-dossiers/$id" params={{ id: site.id }}>
+                      Capacity dossier <ArrowRight />
                     </Link>
                   </article>
                 ))}

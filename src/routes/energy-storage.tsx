@@ -18,7 +18,7 @@ export const Route = createFileRoute("/energy-storage")({
 const content = {
   eyebrow: "Grid Intelligence for Energy Storage",
   title: "Find where storage can strengthen the connection case—not just occupy it.",
-  lead: "Screen both import and export conditions, identify binding grid pathways and carry a selected battery strategy into activation and operational monitoring.",
+  lead: "Screen both import and export requirements, identify plausible grid pathways and carry selected candidates into governed technical investigation.",
   decision:
     "Choose a node and operating profile that respects both charging and discharging constraints.",
   projectType: "battery_storage",
@@ -44,6 +44,6 @@ const content = {
   strategy: [
     "Compare import and export headroom independently.",
     "Preserve the binding contingency with every capacity result.",
-    "Monitor the frozen envelope and simulated restriction response together.",
+    "Preserve conditional assumptions and required operator questions in the dossier.",
   ],
 } as const;

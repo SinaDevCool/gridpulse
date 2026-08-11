@@ -20,6 +20,7 @@ import {
 } from "@/features/grid-connection/portfolio-model";
 import { supabase } from "@/integrations/supabase/client";
 import { ConnectionDecisionBoard } from "@/features/grid-connection/ConnectionDecisionBoard";
+import { PropertyImportPanel } from "@/features/properties/PropertyImportPanel";
 
 const stages: Array<{ value: PortfolioStage; label: string }> = [
   { value: "all", label: "All" },
@@ -31,6 +32,7 @@ const stages: Array<{ value: PortfolioStage; label: string }> = [
 ];
 export const Route = createFileRoute("/portfolio")({
   validateSearch: z.object({
+    view: z.enum(["qualification", "delivery"]).optional(),
     q: z.string().max(160).optional(),
     stage: z
       .enum([
@@ -73,6 +75,7 @@ function Portfolio() {
   const navigate = useNavigate();
   const search = Route.useSearch();
   const query = search.q ?? "";
+  const view = search.view ?? "qualification";
   const stage = search.stage ?? "all";
   const sort = search.sort ?? "priority";
   const expanded = search.expanded ?? "";
@@ -170,15 +173,22 @@ function Portfolio() {
     <AppShell requireAuth>
       <main id="main-content" className="section-page portfolio-page">
         <PageHeading
-          eyebrow="Connection decision workspace"
-          title="Connection projects"
-          description="Prioritise evidence gaps, operator engagement and decisions across the German connection portfolio. Public context and customer inputs are not statements of available grid capacity."
+          eyebrow="Property & grid decision workspace"
+          title="Property portfolio"
+          description="Compare property readiness and grid evidence before deciding where deeper technical and commercial work is justified. Public context is not available grid capacity."
           action={
             <Link to="/assessments/new" className="primary-button">
               <Plus size={15} aria-hidden="true" /> New project
             </Link>
           }
         />
+
+        <nav className="portfolio-view-tabs" aria-label="Portfolio view">
+          <button type="button" aria-pressed={view === "qualification"} className={view === "qualification" ? "filter-active" : ""} onClick={() => void updateSearch({ view: "qualification", expanded: undefined })}>Property Qualification</button>
+          <button type="button" aria-pressed={view === "delivery"} className={view === "delivery" ? "filter-active" : ""} onClick={() => void updateSearch({ view: "delivery", expanded: undefined })}>Connection Delivery</button>
+        </nav>
+
+        <PropertyImportPanel onImported={() => void refetch()} />
 
         {isLoading ? (
           <div className="portfolio-state" role="status" aria-live="polite">
@@ -205,7 +215,11 @@ function Portfolio() {
           </div>
         ) : (
           <>
-            <ConnectionDecisionBoard />
+            {view === "delivery" ? <ConnectionDecisionBoard /> : null}
+            {view === "qualification" ? (
+              <PropertyQualificationTable projects={visibleProjects} />
+            ) : (
+              <>
             <section className="portfolio-summary" aria-label="Portfolio priorities">
               <Metric
                 label="Needs action"
@@ -345,10 +359,38 @@ function Portfolio() {
                 </div>
               )}
             </section>
+              </>
+            )}
           </>
         )}
       </main>
     </AppShell>
+  );
+}
+
+function PropertyQualificationTable({ projects }: { projects: PortfolioProject[] }) {
+  return (
+    <section className="portfolio-work-queue" aria-labelledby="qualification-table-title">
+      <div className="portfolio-controls"><div><h2 id="qualification-table-title">Property qualification</h2><p>{projects.length} properties compared across separate decision dimensions</p></div></div>
+      <div className="table-wrap portfolio-table-wrap">
+        <table className="portfolio-table property-qualification-table">
+          <caption className="sr-only">Property qualification comparison. Readiness and evidence are not available capacity.</caption>
+          <thead><tr><th>Property</th><th>Required MW</th><th>Grid evidence</th><th>Property readiness</th><th>Planning readiness</th><th>Evidence completeness</th><th>Principal unknowns</th><th>Next action</th></tr></thead>
+          <tbody>{projects.map((project) => (
+            <tr key={project.id}>
+              <td><Link to="/assessments/$id" params={{ id: project.id }}><b>{project.name}</b></Link><small>{label(project.project_type)}</small></td>
+              <td><b>{project.requested_import_mw}</b><small>Import requirement, not capacity</small></td>
+              <td><span className={`portfolio-chip operator-${project.operator_confirmation_status}`}>{project.operatorStatusLabel}</span><small>{project.likely_network_operator ?? "Operator unconfirmed"}</small></td>
+              <td><b>{project.stageLabel}</b><small>{project.packageReady ? "Delivery inputs assembled" : "Inputs incomplete"}</small></td>
+              <td><b>Not assessed</b><small>Planning evidence is not yet in this portfolio projection</small></td>
+              <td><b>{project.readinessScore}%</b><small>Visible inputs; not a connection score</small></td>
+              <td><b>{project.blockers.length || "None recorded"}</b><small>{project.blockers.slice(0, 2).join("; ") || "Review source evidence"}</small></td>
+              <td><b>{project.nextAction}</b><small><Link to="/capacity-dossiers/$id" params={{ id: project.id }}>Open Capacity Dossier</Link></small></td>
+            </tr>
+          ))}</tbody>
+        </table>
+      </div>
+    </section>
   );
 }
 

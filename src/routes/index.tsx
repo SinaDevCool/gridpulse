@@ -10,7 +10,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Find connection candidates, plan flexible activation and explore operational envelopes with GridPulse. No account required.",
+          "Qualify high-load properties with grid screening, transparent evidence and operator-ready next steps. No account required.",
       },
       { property: "og:title", content: "GridPulse Grid Intelligence Workspace" },
       {
@@ -69,8 +69,8 @@ function FinderLandingPage() {
               <p className="landing-eyebrow">GridPulse Grid Intelligence</p>
               <h1 id="hero-title">Find stronger grid connection candidates, sooner.</h1>
               <p className="landing-hero-lead">
-                Find promising connection candidates, shape a flexible activation strategy and
-                explore how an approved envelope would be monitored—all in one connected workflow.
+                Compare promising properties and connection candidates, understand the evidence,
+                and identify the operator questions that determine the next investment decision.
               </p>
               <div className="landing-actions">
                 <Link to="/power-finder" className="landing-button landing-button-primary">

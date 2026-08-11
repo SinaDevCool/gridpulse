@@ -409,7 +409,7 @@ function FinderDataSourcesPage() {
       <main id="main-content" className="section-page public-methodology-page finder-methodology">
         <PublicPageHero
           eyebrow="Data & Methodology"
-          title="See how a mapped node becomes an activation envelope."
+          title="See how mapped evidence becomes a governed capacity decision."
           description="Follow the calculation from public geography through graph-selected contingencies, AC power flow and hourly flexibility—while keeping synthetic results separate from operator-confirmed capacity."
         >
           <Link to="/power-finder" className="public-button public-button-primary">

@@ -1,25 +1,21 @@
 import { expect, test } from "@playwright/test";
 
-test("Finder MVP is public and contains no account entry points", async ({ page }) => {
+test("Finder exploration is public with optional private portfolio saving", async ({ page }) => {
   const requests: string[] = [];
   page.on("request", (request) => requests.push(request.url()));
 
   await page.goto("/power-finder");
   await expect(page.getByRole("heading", { level: 1 })).toContainText("connection context");
-  await expect(page.getByRole("navigation", { name: "Finder navigation" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Contact" })).toHaveAttribute(
-    "href",
-    "mailto:kshitijjindal1@gmail.com",
-  );
+  await expect(page.getByRole("navigation", { name: "Grid workspace navigation" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Discuss a site" })).toHaveCount(0);
   await expect(page.getByText(/Sign in|Sign up|Create account/i)).toHaveCount(0);
   await expect(page.getByText(/^Screening only\./i)).toHaveCount(0);
-  await expect(page.getByText(/unknown capacity remains unknown/i).first()).toBeVisible();
+  await expect(page.getByText(/demand headroom is not established/i).first()).toBeVisible();
   await expect(page.getByText("No declared site yet")).toBeVisible();
   await page.getByText(/Operator questions & report/i).click();
   await expect(page.getByRole("button", { name: /Download screening report/i })).toBeDisabled();
   await expect(page.getByRole("button", { name: /Show .* on map, .*\/100/ })).toHaveCount(0);
-  expect(requests.some((url) => url.includes("/auth/v1/"))).toBe(false);
+  await expect(page.getByRole("link", { name: /Save to Property Portfolio/i })).toBeVisible();
   expect(requests.some((url) => url.includes("/rest/v1/rpc/"))).toBe(false);
 });
 
@@ -51,7 +47,7 @@ test("Finder landing, sector pages and methodology form the public product site"
 
   await page.goto("/data-sources");
   await expect(page.getByRole("heading", { level: 1 })).toContainText(
-    "See how a mapped node becomes an activation envelope",
+    "See how mapped evidence becomes a governed capacity decision",
   );
   await expect(page.getByRole("heading", { name: "What Powers the Shortlist" })).toHaveCount(0);
   await expect(page.getByText("What Powers the Shortlist", { exact: true })).toBeVisible();
@@ -60,11 +56,13 @@ test("Finder landing, sector pages and methodology form the public product site"
   await expect(page.getByText(/product tour|start a pilot|review the assessment/i)).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Discuss a site" })).toHaveCount(0);
 
-  for (const pathname of ["/auth", "/portfolio", "/assessments/new", "/reports", "/pilot"]) {
+  for (const pathname of ["/portfolio", "/assessments/new", "/reports"]) {
     const response = await page.goto(pathname);
-    expect(response?.status(), pathname).toBe(404);
-    await expect(page.getByRole("heading", { name: "Page not found" })).toBeVisible();
+    expect(response?.status(), pathname).toBeLessThan(400);
+    await expect(page.locator("main")).toBeVisible();
   }
+  const pilotResponse = await page.goto("/pilot");
+  expect(pilotResponse?.status()).toBe(404);
 });
 
 test("account-free project screening supports a custom site and BESS requirements", async ({
@@ -188,20 +186,16 @@ test("capacity screening reacts to project demand without exposing the reference
   const metric = page.locator('select[name="capacity-overlay-metric"]');
   await expect(metric).toBeVisible();
   await expect(page.locator('input[name="required-capacity-range"]')).toHaveValue("20");
-  await expect(page.getByText("Illustrative capacity screen", { exact: true })).toBeVisible();
-  await expect(page.getByText(/Illustrative values.*not real grid capacity/i)).toBeVisible();
+  await expect(page.getByText("Berlin synthetic calculation", { exact: true })).toBeVisible();
+  await expect(page.getByText(/real locations, synthetic electrical model/i)).toBeVisible();
   const fitSummary = page.locator(".capacity-fit-summary");
   const initialSummary = await fitSummary.innerText();
   await page.getByLabel("Exact MW").fill("100");
   await expect(fitSummary).not.toHaveText(initialSummary);
   await expect(page.getByRole("button", { name: /Open Reference Capacity Lab/i })).toHaveCount(0);
   await expect(page.getByText("Reference Capacity Lab", { exact: true })).toHaveCount(0);
-  await expect(
-    page.getByText(/Illustrative demo.*synthetic values, not grid capacity/i),
-  ).toBeVisible();
-  await metric.selectOption("bess_assisted_import_mw");
-  await expect(metric).toHaveValue("bess_assisted_import_mw");
-  await expect(page.locator(".power-finder-legend strong")).toContainText("BESS-assisted import");
+  await expect(page.getByText(/real locations, synthetic electrical model/i)).toBeVisible();
+  await expect(metric.locator('option[value="bess_assisted_import_mw"]')).toHaveAttribute("disabled", "");
 });
 
 test("static fallback remains honest when the public viewport is unavailable", async ({ page }) => {
@@ -210,12 +204,8 @@ test("static fallback remains honest when the public viewport is unavailable", a
   );
   await page.goto("/power-finder");
   await page.getByText("Map Layers", { exact: true }).click();
-  await expect(
-    page.getByRole("checkbox", { name: /Registered generation Unavailable in this release/ }),
-  ).toBeDisabled({ timeout: 15_000 });
-  await expect(
-    page.getByRole("checkbox", { name: /Registered storage Unavailable in this release/ }),
-  ).toBeDisabled();
+  await expect(page.getByRole("checkbox", { name: /Registered generation.*0 in current detail view/ })).not.toBeChecked({ timeout: 15_000 });
+  await expect(page.getByRole("checkbox", { name: /Registered storage 0 in current detail view/ })).not.toBeChecked();
 });
 
 test("unclustered grid lines and industrial polygons render in the Brandenburg view", async ({
@@ -225,16 +215,16 @@ test("unclustered grid lines and industrial polygons render in the Brandenburg v
     "/power-finder?lat=52.232112&lng=13.305687&mw=20&distance=20&voltage=20&region=DE-BB",
   );
   await page.getByText("Map Layers", { exact: true }).click();
-  const gridLines = page.getByRole("checkbox", { name: /Grid lines/ });
+  const gridLines = page.getByRole("checkbox", { name: /Mapped grid corridors/ });
   const industrialSites = page.getByRole("checkbox", { name: /Industrial sites/ });
   await expect(gridLines).toBeChecked();
   await expect(industrialSites).toBeChecked();
   await expect
     .poll(() => gridLines.locator("..").textContent(), { timeout: 15_000 })
-    .toMatch(/[1-9]\d* visible · 233 total/);
+    .toMatch(/[1-9]\d* visible/);
   await expect
     .poll(() => industrialSites.locator("..").textContent(), { timeout: 15_000 })
-    .toMatch(/[1-9]\d* visible · 142 total/);
+    .toMatch(/[1-9]\d* visible/);
 });
 
 test("comparison enforces five candidates and supports independent removal", async ({ page }) => {

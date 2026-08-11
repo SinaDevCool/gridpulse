@@ -10,17 +10,20 @@ import {
 describe("Finder MVP route boundary", () => {
   it("documents the public Finder allowlist", async () => {
     expect(productMode).toBe("finder");
-    expect(productCapabilities.authentication).toBe(false);
+    expect(productCapabilities.authentication).toBe(true);
     expect(isRouteEnabled("/")).toBe(true);
     expect(isRouteEnabled("/power-finder")).toBe(true);
+    // Legacy roots remain routable only to execute their safe redirects.
     expect(isRouteEnabled("/activation")).toBe(true);
     expect(isRouteEnabled("/operations")).toBe(true);
+    expect(isRouteEnabled("/activation/private-id")).toBe(false);
+    expect(isRouteEnabled("/operations/private-id")).toBe(false);
     expect(isRouteEnabled("/data-sources")).toBe(true);
     expect(isRouteEnabled("/synthetic-network-study")).toBe(true);
     expect(isRouteEnabled("/api/synthetic-network-study")).toBe(false);
-    expect(isRouteEnabled("/auth")).toBe(false);
-    expect(isRouteEnabled("/portfolio")).toBe(false);
-    expect(isRouteEnabled("/assessments/new")).toBe(false);
+    expect(isRouteEnabled("/auth")).toBe(true);
+    expect(isRouteEnabled("/portfolio")).toBe(true);
+    expect(isRouteEnabled("/assessments/new")).toBe(true);
   });
 
   it("reactivates the retained workspace in connect and full modes", () => {

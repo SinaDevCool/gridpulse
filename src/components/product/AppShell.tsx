@@ -1,31 +1,44 @@
-import { useRouterState } from "@tanstack/react-router";
+import { Navigate, useRouterState } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { ProductTruthNotice } from "./ProductTruthNotice";
 import { productCapabilities } from "@/config/product-mode";
 import { FinderShell } from "./FinderShell";
 import { ProductHeader, ProductStageNavigation } from "./ProductChrome";
+import { useAuth } from "@/context/useAuth";
 
-export function AppShell({ children }: { children: ReactNode; requireAuth?: boolean }) {
+function AuthenticatedBoundary({ children }: { children: ReactNode }) {
+  const { user, loading } = useAuth();
+  const pathname = useRouterState({ select: (state) => state.location.href });
+  if (loading) {
+    return (
+      <main id="main-content" className="empty-page" role="status" aria-live="polite">
+        <p>Checking workspace access…</p>
+      </main>
+    );
+  }
+  if (!user) return <Navigate to="/auth" search={{ redirect: pathname }} replace />;
+  return children;
+}
+
+export function AppShell({ children, requireAuth = false }: { children: ReactNode; requireAuth?: boolean }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const publicProduct = ["/power-finder", "/activation", "/operations"].some((path) =>
-    pathname.startsWith(path),
-  );
-  const workspacePage = pathname.startsWith("/activation") || pathname.startsWith("/operations");
+  const publicProduct = pathname.startsWith("/power-finder");
   if (!productCapabilities.workspace) return <FinderShell>{children}</FinderShell>;
-  return (
+  const shell = (
     <div
-      className={`product-shell${publicProduct ? " product-shell--focused" : ""}${workspacePage ? " product-shell--workspace" : ""}`}
+      className={`product-shell${publicProduct ? " product-shell--focused" : ""}`}
     >
       <ProductHeader />
       <ProductStageNavigation />
       {publicProduct ? <ProductTruthNotice compact /> : null}
       {children}
       <footer className="product-footer">
-        <span>Screening, activation planning &amp; operational simulation.</span>
-        <b>Operator confirmation remains required.</b>
+        <span>Property qualification &amp; grid connection decision intelligence.</span>
+        <b>Capacity and connection terms require operator confirmation.</b>
       </footer>
     </div>
   );
+  return requireAuth ? <AuthenticatedBoundary>{shell}</AuthenticatedBoundary> : shell;
 }
 
 export function PageHeading({

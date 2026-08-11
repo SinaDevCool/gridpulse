@@ -24,7 +24,7 @@ const content = {
   metrics: [
     { value: "N-1", label: "Firm-capacity security screen" },
     { value: "8,760", label: "Hourly states per scenario" },
-    { value: "3 stages", label: "Find, activate and operate" },
+    { value: "5 steps", label: "Discover, qualify, investigate, engage, decide" },
   ],
   questions: [
     {
@@ -37,12 +37,12 @@ const content = {
     },
     {
       title: "How would the site stay compliant?",
-      body: "Translate a selected candidate into an envelope that operations can monitor without obscuring its evidence status.",
+      body: "Translate a selected candidate into a governed capacity dossier without obscuring its evidence status.",
     },
   ],
   strategy: [
     "Preserve the firm floor for critical compute and cooling.",
     "Model workload shifting and battery response above the firm floor.",
-    "Carry the selected node, constraint and evidence class into operations.",
+    "Carry the selected node, constraint and evidence class into operator engagement.",
   ],
 } as const;

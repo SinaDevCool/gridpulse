@@ -5,7 +5,6 @@ import { ProductHeader, ProductStageNavigation } from "./ProductChrome";
 export function FinderShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const landingPage = pathname === "/";
-  const workspacePage = pathname.startsWith("/activation") || pathname.startsWith("/operations");
   const methodologyPage = pathname === "/data-sources";
   const marketingPage =
     landingPage ||
@@ -15,14 +14,14 @@ export function FinderShell({ children }: { children: ReactNode }) {
     pathname === "/hydrogen-industry";
   return (
     <div
-      className={`product-shell product-shell--focused finder-shell${landingPage ? " finder-shell--landing" : ""}${workspacePage ? " finder-shell--workspace" : ""}${methodologyPage ? " finder-shell--methodology" : ""}`}
+      className={`product-shell product-shell--focused finder-shell${landingPage ? " finder-shell--landing" : ""}${methodologyPage ? " finder-shell--methodology" : ""}`}
     >
       <ProductHeader />
       {marketingPage ? null : <ProductStageNavigation />}
       {children}
       <footer className="product-footer">
-        <span>Screening, activation planning &amp; operational simulation.</span>
-        <b>Operator confirmation remains required.</b>
+        <span>Property qualification &amp; grid connection decision intelligence.</span>
+        <b>Capacity and connection terms require operator confirmation.</b>
       </footer>
     </div>
   );

@@ -5,6 +5,7 @@ import { PublicLayout } from "@/components/public/PublicLayout";
 import { useAuth } from "@/context/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { trackEvent } from "@/lib/analytics";
+import { isFinderMvp } from "@/config/product-mode";
 
 export const Route = createFileRoute("/auth")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -152,8 +153,8 @@ function AuthPage() {
               </button>
             </form>
             <div className="auth-pilot-route">
-              <span>Not yet a customer?</span>
-              <Link to="/pilot">Request a Pilot</Link>
+              <span>{isFinderMvp() ? "Need to evaluate a location first?" : "Not yet a customer?"}</span>
+              {isFinderMvp() ? <Link to="/power-finder">Open Power Finder</Link> : <Link to="/pilot">Request a Pilot</Link>}
             </div>
             <small>GridPulse workspaces contain private project and evidence records.</small>
           </div>
