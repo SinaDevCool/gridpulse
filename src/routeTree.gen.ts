@@ -37,6 +37,7 @@ import { Route as CapacityDossiersIdRouteImport } from './routes/capacity-dossie
 import { Route as AssessmentsNewRouteImport } from './routes/assessments.new'
 import { Route as AssessmentsIdRouteImport } from './routes/assessments.$id'
 import { Route as ActivationIdRouteImport } from './routes/activation.$id'
+import { Route as ApiPropertiesEnrichRouteImport } from './routes/api.properties.enrich'
 import { Route as ApiPowerFinderViewportRouteImport } from './routes/api.power-finder.viewport'
 import { Route as ApiPowerFinderStudyRouteImport } from './routes/api.power-finder.study'
 import { Route as ApiPowerFinderScenarioRouteImport } from './routes/api.power-finder.scenario'
@@ -182,6 +183,11 @@ const ActivationIdRoute = ActivationIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => ActivationRoute,
 } as any)
+const ApiPropertiesEnrichRoute = ApiPropertiesEnrichRouteImport.update({
+  id: '/api/properties/enrich',
+  path: '/api/properties/enrich',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPowerFinderViewportRoute = ApiPowerFinderViewportRouteImport.update({
   id: '/api/power-finder/viewport',
   path: '/api/power-finder/viewport',
@@ -235,6 +241,7 @@ export interface FileRoutesByFullPath {
   '/api/power-finder/scenario': typeof ApiPowerFinderScenarioRoute
   '/api/power-finder/study': typeof ApiPowerFinderStudyRoute
   '/api/power-finder/viewport': typeof ApiPowerFinderViewportRoute
+  '/api/properties/enrich': typeof ApiPropertiesEnrichRoute
   '/api/power-finder/tile/$z/$x/$y': typeof ApiPowerFinderTileZXYRoute
 }
 export interface FileRoutesByTo {
@@ -269,6 +276,7 @@ export interface FileRoutesByTo {
   '/api/power-finder/scenario': typeof ApiPowerFinderScenarioRoute
   '/api/power-finder/study': typeof ApiPowerFinderStudyRoute
   '/api/power-finder/viewport': typeof ApiPowerFinderViewportRoute
+  '/api/properties/enrich': typeof ApiPropertiesEnrichRoute
   '/api/power-finder/tile/$z/$x/$y': typeof ApiPowerFinderTileZXYRoute
 }
 export interface FileRoutesById {
@@ -304,6 +312,7 @@ export interface FileRoutesById {
   '/api/power-finder/scenario': typeof ApiPowerFinderScenarioRoute
   '/api/power-finder/study': typeof ApiPowerFinderStudyRoute
   '/api/power-finder/viewport': typeof ApiPowerFinderViewportRoute
+  '/api/properties/enrich': typeof ApiPropertiesEnrichRoute
   '/api/power-finder/tile/$z/$x/$y': typeof ApiPowerFinderTileZXYRoute
 }
 export interface FileRouteTypes {
@@ -340,6 +349,7 @@ export interface FileRouteTypes {
     | '/api/power-finder/scenario'
     | '/api/power-finder/study'
     | '/api/power-finder/viewport'
+    | '/api/properties/enrich'
     | '/api/power-finder/tile/$z/$x/$y'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -374,6 +384,7 @@ export interface FileRouteTypes {
     | '/api/power-finder/scenario'
     | '/api/power-finder/study'
     | '/api/power-finder/viewport'
+    | '/api/properties/enrich'
     | '/api/power-finder/tile/$z/$x/$y'
   id:
     | '__root__'
@@ -408,6 +419,7 @@ export interface FileRouteTypes {
     | '/api/power-finder/scenario'
     | '/api/power-finder/study'
     | '/api/power-finder/viewport'
+    | '/api/properties/enrich'
     | '/api/power-finder/tile/$z/$x/$y'
   fileRoutesById: FileRoutesById
 }
@@ -440,6 +452,7 @@ export interface RootRouteChildren {
   ApiPowerFinderScenarioRoute: typeof ApiPowerFinderScenarioRoute
   ApiPowerFinderStudyRoute: typeof ApiPowerFinderStudyRoute
   ApiPowerFinderViewportRoute: typeof ApiPowerFinderViewportRoute
+  ApiPropertiesEnrichRoute: typeof ApiPropertiesEnrichRoute
   ApiPowerFinderTileZXYRoute: typeof ApiPowerFinderTileZXYRoute
 }
 
@@ -641,6 +654,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ActivationIdRouteImport
       parentRoute: typeof ActivationRoute
     }
+    '/api/properties/enrich': {
+      id: '/api/properties/enrich'
+      path: '/api/properties/enrich'
+      fullPath: '/api/properties/enrich'
+      preLoaderRoute: typeof ApiPropertiesEnrichRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/power-finder/viewport': {
       id: '/api/power-finder/viewport'
       path: '/api/power-finder/viewport'
@@ -737,6 +757,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPowerFinderScenarioRoute: ApiPowerFinderScenarioRoute,
   ApiPowerFinderStudyRoute: ApiPowerFinderStudyRoute,
   ApiPowerFinderViewportRoute: ApiPowerFinderViewportRoute,
+  ApiPropertiesEnrichRoute: ApiPropertiesEnrichRoute,
   ApiPowerFinderTileZXYRoute: ApiPowerFinderTileZXYRoute,
 }
 export const routeTree = rootRouteImport

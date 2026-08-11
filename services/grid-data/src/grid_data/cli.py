@@ -18,6 +18,7 @@ from .c2_benchmark import build_c2_benchmark_artifact
 from .c2_publish import publish_c2_artifact
 from .cgmes_import import import_cgmes_model
 from .download import download_artifact
+from .enrichment_sources import normalize_enrichment_geojson, publish_enrichment_release
 from .fixture import build_fixture
 from .geofabrik import discover_germany_pbf, discover_state_manifest
 from .health import check_source, discover_mastr_export
@@ -113,6 +114,15 @@ def parser() -> argparse.ArgumentParser:
     publish_national.add_argument("--input", type=Path, required=True)
     publish_national.add_argument("--manifest", type=Path, required=True)
     publish_national.add_argument("--batch-size", type=int, default=250)
+    enrichment = subcommands.add_parser("normalize-enrichment-source")
+    enrichment.add_argument("--source", required=True, choices=["bkg_admin", "osm_context", "bfn_protected", "bkg_heavy_rain"])
+    enrichment.add_argument("--input", type=Path, required=True)
+    enrichment.add_argument("--output", type=Path, required=True)
+    publish_enrichment = subcommands.add_parser("publish-enrichment-source")
+    publish_enrichment.add_argument("--source", required=True, choices=["bkg_admin", "osm_context", "bfn_protected", "bkg_heavy_rain"])
+    publish_enrichment.add_argument("--input", type=Path, required=True)
+    publish_enrichment.add_argument("--manifest", type=Path, required=True)
+    publish_enrichment.add_argument("--batch-size", type=int, default=250)
     operator_sources = subcommands.add_parser("fetch-operator-evidence")
     operator_sources.add_argument("--output", type=Path, required=True)
     operator_matches = subcommands.add_parser("propose-operator-matches")
@@ -261,6 +271,12 @@ def main() -> None:
     elif args.command == "write-mastr-sql":
         count = write_mastr_sql(args.input, args.output)
         print(f"Wrote a transactional MaStR ingestion script for {count} assets.")
+    elif args.command == "normalize-enrichment-source":
+        report = normalize_enrichment_geojson(args.source, args.input, args.output)
+        print(f"Validated {report.records} {report.source} records; {report.rejected} rejected.")
+    elif args.command == "publish-enrichment-source":
+        report = publish_enrichment_release(args.source, args.input, args.manifest, batch_size=args.batch_size)
+        print(f"Activated {report['source']} release {report['release_id']} with {report['records']} records.")
     elif args.command == "download":
         report = download_artifact(args.url, args.output)
         print(

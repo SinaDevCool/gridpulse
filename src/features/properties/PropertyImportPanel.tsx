@@ -8,6 +8,7 @@ import {
   propertyImportTemplateCsv,
   type PropertyImportRow,
 } from "./property-import";
+import { enrichProperties, mergeEnrichment } from "./property-enrichment";
 
 function downloadTemplate() {
   const url = URL.createObjectURL(
@@ -33,6 +34,7 @@ export function PropertyImportPanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [conflict, setConflict] = useState<"skip" | "replace" | "merge">("skip");
+  const [enrichAfterImport, setEnrichAfterImport] = useState(true);
   const invalid = rows.filter((row) => row.errors.length > 0).length;
 
   async function selectFile(file: File | undefined) {
@@ -60,10 +62,21 @@ export function PropertyImportPanel({
     setError("");
     try {
       const extension = fileName.split(".").pop()?.toLowerCase() ?? "csv";
-      const result = await importAnonymousProperties(
-        rows.map(({ value }) => propertyFromImport(value, extension)),
-        conflict,
-      );
+      let properties = rows.map(({ value }) => propertyFromImport(value, extension));
+      if (enrichAfterImport) {
+        const startedAt = new Date().toISOString();
+        try {
+          const enrichment = await enrichProperties(properties);
+          properties = properties.map((property) =>
+            mergeEnrichment(property, enrichment, startedAt),
+          );
+        } catch (reason) {
+          toast.warning(
+            `Sites were imported without public enrichment: ${reason instanceof Error ? reason.message : "source unavailable"}`,
+          );
+        }
+      }
+      const result = await importAnonymousProperties(properties, conflict);
       toast.success(
         `${result.imported} ${result.imported === 1 ? "property" : "properties"} imported${result.skipped ? `; ${result.skipped} existing IDs skipped` : ""}`,
       );
@@ -175,6 +188,14 @@ export function PropertyImportPanel({
             </table>
           </div>
           <div className="property-import-actions">
+            <label className="property-import-enrich-option">
+              <input
+                type="checkbox"
+                checked={enrichAfterImport}
+                onChange={(event) => setEnrichAfterImport(event.target.checked)}
+              />
+              Enrich imported sites from accepted public sources
+            </label>
             <label>
               Existing matches
               <select

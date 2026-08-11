@@ -46,7 +46,7 @@ const legacy = {
 describe("data-centre qualification", () => {
   it("migrates legacy sites fail-closed", () => {
     const property = migrateAnonymousProperty(legacy);
-    expect(property.schemaVersion).toBe(4);
+    expect(property.schemaVersion).toBe(5);
     expect(deriveQualification(property).readiness).toBe(0);
     expect(deriveQualification(property).criticalBlockers).toHaveLength(3);
   });

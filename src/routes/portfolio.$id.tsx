@@ -36,6 +36,7 @@ import {
   updateQualificationDimension,
 } from "@/features/anonymous-workspace/data-centre-qualification";
 import { preferredCandidate } from "@/features/anonymous-workspace/portfolio-projection";
+import { PropertyEnrichmentPanel } from "@/features/properties/PropertyEnrichmentPanel";
 
 const tabs = ["overview", "qualification", "grid", "evidence", "decision"] as const;
 type Tab = (typeof tabs)[number];
@@ -425,7 +426,11 @@ function Qualification({
               : "Not evidenced"}
         </small>
       </div>
-      <select name="status" defaultValue={dimension.status} aria-label={`${qualificationLabels[dimension.key]} status`}>
+      <select
+        name="status"
+        defaultValue={dimension.status}
+        aria-label={`${qualificationLabels[dimension.key]} status`}
+      >
         <option value="unknown">Unknown</option>
         <option value="favourable">Favourable</option>
         <option value="conditional">Conditional</option>
@@ -476,7 +481,9 @@ function Qualification({
         <details className="additional-readiness-checks">
           <summary>Additional checks</summary>
           <div>
-            {result.dimensions.filter((item) => !primaryKeys.includes(item.key)).map(renderDimension)}
+            {result.dimensions
+              .filter((item) => !primaryKeys.includes(item.key))
+              .map(renderDimension)}
           </div>
         </details>
       </div>
@@ -611,6 +618,7 @@ function EvidenceOperator({
           <h2>Evidence and operator engagement</h2>
         </div>
       </header>
+      <PropertyEnrichmentPanel property={property} onSave={onSave} />
       <section className="operator-panel">
         <h3>Operator enquiry</h3>
         <form

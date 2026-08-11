@@ -16743,6 +16743,90 @@ tbody tr:last-child td {
   justify-content: flex-end;
   margin-top: 1rem;
 }
+
+.property-import-enrich-option {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-right: auto;
+}
+
+.property-import-enrich-option input {
+  width: auto;
+}
+
+.enrichment-review {
+  margin-bottom: 1.25rem;
+}
+
+.enrichment-run-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--border);
+  background: rgba(34, 211, 238, 0.04);
+}
+
+.enrichment-run-summary svg {
+  width: 1rem;
+  color: var(--cyan-accent);
+}
+.enrichment-findings {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 0.75rem;
+}
+.enrichment-findings article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--panel) 88%, transparent);
+}
+.enrichment-finding-copy {
+  display: grid;
+  gap: 0.3rem;
+}
+.enrichment-finding-copy > span,
+.enrichment-finding-copy small {
+  color: var(--muted);
+}
+.enrichment-finding-copy > span {
+  text-transform: capitalize;
+  font-size: 0.74rem;
+}
+.enrichment-finding-copy p {
+  margin: 0;
+}
+.enrichment-actions {
+  display: flex;
+  align-items: start;
+  gap: 0.4rem;
+}
+.enrichment-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.enrichment-actions svg {
+  width: 0.9rem;
+}
+.enrichment-reviewed-count {
+  color: var(--muted);
+  margin-bottom: 0;
+}
+
+@media (max-width: 760px) {
+  .enrichment-findings article {
+    grid-template-columns: 1fr;
+  }
+  .enrichment-actions {
+    flex-wrap: wrap;
+  }
+}
 @media (max-width: 720px) {
   .property-import-panel .workspace-card-heading {
     align-items: flex-start;

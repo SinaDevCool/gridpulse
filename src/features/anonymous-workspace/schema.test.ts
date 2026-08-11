@@ -26,7 +26,7 @@ describe("anonymous workspace schema migration", () => {
       createdAt: now,
       updatedAt: now,
     });
-    expect(migrated.schemaVersion).toBe(4);
+    expect(migrated.schemaVersion).toBe(5);
     expect(migrated.decisionStatus).toBe("unreviewed");
     expect(migrated.preferredCandidateId).toBeNull();
     expect(migrated.qualification).toHaveLength(11);

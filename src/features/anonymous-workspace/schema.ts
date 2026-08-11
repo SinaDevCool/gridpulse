@@ -2,7 +2,7 @@ import type { MultiPolygon, Polygon } from "geojson";
 import type { CandidateOpportunity } from "@/features/power-finder/candidate-intelligence";
 import type { FinderProject } from "@/features/power-finder/finder-project";
 
-export const ANONYMOUS_WORKSPACE_SCHEMA_VERSION = 4;
+export const ANONYMOUS_WORKSPACE_SCHEMA_VERSION = 5;
 
 export type AnonymousDecisionStatus = "unreviewed" | "advance" | "hold" | "reject";
 
@@ -65,6 +65,48 @@ export type AnonymousEvidenceItem = {
   relatedDimensionKeys: QualificationDimensionKey[];
   createdAt: string;
   updatedAt: string;
+};
+
+export type EnrichmentSource =
+  | "bkg_admin"
+  | "osm_context"
+  | "bfn_protected"
+  | "mastr"
+  | "bkg_heavy_rain"
+  | "power_finder";
+
+export type AnonymousEnrichmentFinding = {
+  id: string;
+  propertyId: string;
+  source: EnrichmentSource;
+  category: QualificationDimensionKey;
+  fieldPath: "municipality" | "dataCentreProfile.federalState" | "dataCentreProfile.address" | null;
+  title: string;
+  displayValue: string;
+  proposedValue: string | number | boolean | null;
+  status: "proposed" | "accepted" | "edited" | "rejected" | "superseded";
+  confidence: "high" | "medium" | "low";
+  method: "point_in_polygon" | "intersection" | "nearest" | "radius_aggregate";
+  sourceOrganisation: string;
+  sourceReference: string;
+  sourceUrl: string;
+  licence: string;
+  releaseId: string;
+  observedAt: string | null;
+  retrievedAt: string;
+  coverage: "available" | "not_covered" | "unavailable";
+  limitations: string[];
+  reviewedAt: string | null;
+};
+
+export type AnonymousEnrichmentRun = {
+  id: string;
+  status: "running" | "complete" | "partial" | "failed";
+  requestedSources: EnrichmentSource[];
+  completedSources: EnrichmentSource[];
+  failedSources: EnrichmentSource[];
+  startedAt: string;
+  completedAt: string | null;
 };
 
 export type AnonymousOperatorEngagement = {
@@ -231,6 +273,8 @@ export type AnonymousProperty = {
   dataCentreProfile?: DataCentrePropertyProfile;
   qualification?: QualificationDimension[];
   evidenceRegister?: AnonymousEvidenceItem[];
+  enrichmentFindings?: AnonymousEnrichmentFinding[];
+  enrichmentRuns?: AnonymousEnrichmentRun[];
   operatorEngagement?: AnonymousOperatorEngagement;
   selectedCandidateIds: string[];
   candidateSnapshots: AnonymousCandidateSnapshot[];
@@ -304,6 +348,10 @@ export function migrateAnonymousProperty(value: unknown): AnonymousProperty {
     },
     qualification,
     evidenceRegister: Array.isArray(property.evidenceRegister) ? property.evidenceRegister : [],
+    enrichmentFindings: Array.isArray(property.enrichmentFindings)
+      ? property.enrichmentFindings
+      : [],
+    enrichmentRuns: Array.isArray(property.enrichmentRuns) ? property.enrichmentRuns : [],
     operatorEngagement: {
       operatorName: property.operatorEngagement?.operatorName ?? candidate?.operator ?? null,
       operatorLevel: property.operatorEngagement?.operatorLevel ?? "unknown",
