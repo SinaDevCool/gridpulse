@@ -9,6 +9,10 @@ const SOURCES = new Set([
   "bkg_heavy_rain",
   "power_finder",
 ]);
+const SOURCE_TIMEOUT_MS = 8_000;
+const MAX_ATTEMPTS = 2;
+
+type SourceStatus = "succeeded" | "unavailable" | "timed_out" | "not_covered" | "failed";
 
 function json(body: unknown, status = 200, headers?: HeadersInit) {
   return new Response(JSON.stringify(body), {
@@ -61,6 +65,63 @@ export function parseEnrichmentRequest(value: unknown) {
   return { properties, sources: Array.from(new Set(sources)) };
 }
 
+function normalizeStatus(value: unknown): SourceStatus {
+  if (value === "complete" || value === "succeeded") return "succeeded";
+  if (value === "not_covered") return "not_covered";
+  if (value === "unavailable") return "unavailable";
+  if (value === "timed_out") return "timed_out";
+  if (value === "failed") return "failed";
+  return "failed";
+}
+
+async function enrichSource(
+  supabaseUrl: string,
+  key: string,
+  properties: ReturnType<typeof parseEnrichmentRequest>["properties"],
+  source: string,
+): Promise<{ source: string; status: SourceStatus; body: Record<string, unknown> | null }> {
+  let lastStatus = 0;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), SOURCE_TIMEOUT_MS);
+    try {
+      const response = await fetch(`${supabaseUrl}/rest/v1/rpc/property_enrichment_batch`, {
+        method: "POST",
+        headers: {
+          apikey: key,
+          authorization: `Bearer ${key}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ p_properties: properties, p_sources: [source] }),
+        signal: controller.signal,
+      });
+      lastStatus = response.status;
+      if (!response.ok) {
+        if (attempt < MAX_ATTEMPTS && (response.status === 429 || response.status >= 500)) continue;
+        return {
+          source,
+          status: response.status === 404 ? "unavailable" : "failed",
+          body: null,
+        };
+      }
+      const text = await response.text();
+      if (text.length > 2_000_000) return { source, status: "failed" as const, body: null };
+      const body = JSON.parse(text) as Record<string, unknown>;
+      if (!Array.isArray(body.findings) || typeof body.sourceStatus !== "object")
+        return { source, status: "failed" as const, body: null };
+      const sourceStatus = body.sourceStatus as Record<string, unknown>;
+      return { source, status: normalizeStatus(sourceStatus[source]), body };
+    } catch (error) {
+      const timedOut = error instanceof Error && error.name === "AbortError";
+      if (attempt < MAX_ATTEMPTS) continue;
+      return { source, status: timedOut ? "timed_out" : "failed", body: null };
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+  return { source, status: lastStatus === 404 ? "unavailable" : "failed", body: null };
+}
+
 export async function handlePublicPropertyEnrichment(request: Request, env: PublicFinderEnv) {
   const url = new URL(request.url);
   if (url.pathname !== PATH) return null;
@@ -85,34 +146,47 @@ export async function handlePublicPropertyEnrichment(request: Request, env: Publ
   const key = envValue(env, "key");
   if (!supabaseUrl || !key)
     return json({ error: "Enrichment data is temporarily unavailable." }, 503);
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 20_000);
-  try {
-    const response = await fetch(`${supabaseUrl}/rest/v1/rpc/property_enrichment_batch`, {
-      method: "POST",
-      headers: {
-        apikey: key,
-        authorization: key.startsWith("eyJ") ? `Bearer ${key}` : "",
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({ p_properties: input.properties, p_sources: input.sources }),
-      signal: controller.signal,
-    });
-    if (!response.ok)
-      return json({ error: "The accepted enrichment release is unavailable." }, 502);
-    const body = await response.text();
-    if (body.length > 6_000_000)
-      return json({ error: "Enrichment response exceeded the safe limit." }, 502);
-    return new Response(body, {
-      headers: {
-        "content-type": "application/json; charset=utf-8",
-        "cache-control": "no-store",
-        "x-content-type-options": "nosniff",
-      },
-    });
-  } catch {
-    return json({ error: "Property enrichment is temporarily unavailable." }, 502);
-  } finally {
-    clearTimeout(timeout);
-  }
+  const results = await Promise.all(
+    input.sources.map((source) => enrichSource(supabaseUrl, key, input.properties, source)),
+  );
+  const findings = results.flatMap((result) =>
+    result.body && Array.isArray(result.body.findings) ? result.body.findings : [],
+  );
+  const sourceStatus = Object.fromEntries(results.map((result) => [result.source, result.status]));
+  const sourceResults = results.flatMap((result) => {
+    if (result.body && Array.isArray(result.body.sourceResults)) {
+      return result.body.sourceResults.map((item) => {
+        const sourceResult = item as Record<string, unknown>;
+        return {
+          ...sourceResult,
+          status: normalizeStatus(sourceResult.status ?? result.status),
+        };
+      });
+    }
+    return input.properties.map((property) => ({
+      propertyId: property.property_id,
+      source: result.source,
+      status: result.status,
+      findingCount: 0,
+      releaseId: null,
+      checkedAt: new Date().toISOString(),
+      limitation:
+        result.status === "timed_out"
+          ? "The source timed out after a safe retry."
+          : "The source could not be checked; retry this source.",
+    }));
+  });
+  const fingerprints = results
+    .map((result) => result.body?.releaseFingerprint)
+    .filter((value): value is string => typeof value === "string");
+  return json(
+    {
+      releaseFingerprint: fingerprints.join(":") || "no-source-release",
+      findings,
+      sourceStatus,
+      sourceResults,
+    },
+    200,
+    { "cache-control": "no-store" },
+  );
 }

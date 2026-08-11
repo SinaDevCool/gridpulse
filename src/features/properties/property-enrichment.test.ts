@@ -53,7 +53,7 @@ describe("property enrichment review", () => {
         releaseFingerprint: "hash",
         findings: [finding(input.id)],
         sourceStatus: {
-          bkg_admin: "complete",
+          bkg_admin: "succeeded",
           osm_context: "unavailable",
           bfn_protected: "unavailable",
           mastr: "unavailable",
@@ -99,7 +99,7 @@ describe("property enrichment review", () => {
         releaseFingerprint: "hash",
         findings: [{ ...finding(input.id), id: "finding-2" }],
         sourceStatus: {
-          bkg_admin: "complete",
+          bkg_admin: "succeeded",
           osm_context: "unavailable",
           bfn_protected: "unavailable",
           mastr: "unavailable",

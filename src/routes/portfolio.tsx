@@ -58,6 +58,7 @@ export const Route = createFileRoute("/portfolio")({
     risk: z.enum(["all", "blocked", "deadline", "operator_confirmed"]).optional(),
     operator: z.string().max(160).optional(),
     selected: z.string().uuid().optional(),
+    import: z.literal("open").optional(),
   }),
   head: () => ({
     meta: [{ title: "Sites | GridPulse" }, { name: "robots", content: "noindex, nofollow" }],
@@ -88,7 +89,6 @@ function SitePipelineIndex() {
   const navigate = useNavigate();
   const search = Route.useSearch();
   const restoreInput = useRef<HTMLInputElement>(null);
-  const [importOpen, setImportOpen] = useState(false);
   const {
     properties,
     summaries,
@@ -99,6 +99,7 @@ function SitePipelineIndex() {
     selectedSite: selected,
   } = useSitePortfolio(search.selected);
   const activeView = search.view ?? "pipeline";
+  const importOpen = search.import === "open";
   const visible = useMemo(() => {
     const needle = (search.q ?? "").trim().toLocaleLowerCase();
     return summaries
@@ -337,7 +338,10 @@ function SitePipelineIndex() {
               <Database aria-hidden="true" /> Workspace Data
             </summary>
             <div>
-              <button type="button" onClick={() => setImportOpen((value) => !value)}>
+              <button
+                type="button"
+                onClick={() => patchSearch({ import: importOpen ? undefined : "open" })}
+              >
                 <FileUp aria-hidden="true" /> Import Sites
               </button>
               <button
@@ -467,7 +471,7 @@ function SitePipelineIndex() {
                 className="panel-close"
                 type="button"
                 aria-label="Close import panel"
-                onClick={() => setImportOpen(false)}
+                onClick={() => patchSearch({ import: undefined })}
               >
                 <X aria-hidden="true" />
               </button>
@@ -475,7 +479,7 @@ function SitePipelineIndex() {
                 variant="compact"
                 onImported={() => {
                   void refresh();
-                  setImportOpen(false);
+                  patchSearch({ import: undefined });
                 }}
               />
             </div>
@@ -516,12 +520,12 @@ function SitePipelineIndex() {
           ) : (
             <div className="site-queue">
               {visible.map((site) => (
-                <button
-                  type="button"
+                <Link
+                  to="/portfolio"
+                  search={{ ...search, selected: site.id }}
                   className={`site-queue-row${selected?.id === site.id ? " is-selected" : ""}`}
                   key={site.id}
-                  onClick={() => patchSearch({ selected: site.id })}
-                  aria-pressed={selected?.id === site.id}
+                  aria-current={selected?.id === site.id ? "true" : undefined}
                 >
                   <span className="site-identity">
                     <b>{site.name}</b>
@@ -556,14 +560,15 @@ function SitePipelineIndex() {
                     <small>Evidence</small>
                     <b>{site.evidenceScore == null ? "Unknown" : `${site.evidenceScore}/100`}</b>
                     <em>
-                      {site.blockers.length} open {site.blockers.length === 1 ? "gap" : "gaps"}
+                      {site.checksRemaining.length}{" "}
+                      {site.checksRemaining.length === 1 ? "check" : "checks"} remaining
                     </em>
                   </span>
                   <span className={`decision-chip is-${site.decisionStatus}`}>
                     {site.decisionStatus}
                   </span>
                   <ArrowRight aria-hidden="true" />
-                </button>
+                </Link>
               ))}
             </div>
           )}
@@ -680,7 +685,7 @@ function SiteDetail({
       <section>
         <h3>Checks Before Decision</h3>
         <ul className="detail-blockers">
-          {site.blockers.slice(0, 6).map((blocker) => (
+          {site.checksRemaining.slice(0, 6).map((blocker) => (
             <li key={blocker}>{blocker}</li>
           ))}
         </ul>

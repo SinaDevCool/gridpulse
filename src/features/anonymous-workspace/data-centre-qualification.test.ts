@@ -5,6 +5,7 @@ import {
   updateQualificationDimension,
 } from "./data-centre-qualification";
 import { migrateAnonymousProperty } from "./schema";
+import { projectAnonymousProperty } from "./portfolio-projection";
 
 const legacy = {
   id: "00000000-0000-4000-8000-000000000001",
@@ -88,5 +89,14 @@ describe("data-centre qualification", () => {
       evidenceIds: ["public-map"],
     });
     expect(deriveQualification(property).unsupported.map((item) => item.key)).toContain("grid");
+  });
+
+  it("projects the canonical readiness values unchanged for portfolio surfaces", () => {
+    const property = migrateAnonymousProperty(legacy);
+    const canonical = deriveQualification(property);
+    const portfolio = projectAnonymousProperty(property);
+    expect(portfolio.qualificationReadiness).toBe(canonical.confirmedReadiness);
+    expect(portfolio.screeningCoverage).toBe(canonical.screeningCoverage);
+    expect(portfolio.genuineConstraints).toBe(canonical.genuineConstraints);
   });
 });

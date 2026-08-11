@@ -67,6 +67,7 @@ export async function screenProperty(
   input: AnonymousProperty,
   startedBy: AnonymousEnrichmentRun["startedBy"] = "manual_refresh",
   onStatus?: (status: AnonymousEnrichmentRun["screeningStatus"], message: string) => void,
+  sources?: AnonymousEnrichmentRun["requestedSources"],
 ): Promise<AnonymousProperty> {
   if (input.project.latitude == null || input.project.longitude == null) {
     throw new Error(`${input.name} requires coordinates before screening.`);
@@ -93,7 +94,7 @@ export async function screenProperty(
     updateRun("enriching");
     onStatus?.("enriching", "Checking accepted public-source releases");
     const startedAt = property.enrichmentRuns![0].startedAt;
-    const enrichment = await enrichProperties([property]);
+    const enrichment = await enrichProperties([property], sources);
     property = mergeEnrichment(property, enrichment, startedAt, startedBy);
     property = {
       ...property,

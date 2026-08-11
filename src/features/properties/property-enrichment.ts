@@ -28,7 +28,7 @@ export type EnrichmentRequestProperty = {
 export type EnrichmentBatchResponse = {
   releaseFingerprint: string;
   findings: AnonymousEnrichmentFinding[];
-  sourceStatus: Record<EnrichmentSource, "complete" | "not_covered" | "unavailable">;
+  sourceStatus: Partial<Record<EnrichmentSource, SourceRunResult["status"]>>;
   sourceResults?: Array<SourceRunResult & { propertyId?: string }>;
 };
 
@@ -104,6 +104,7 @@ export function mergeEnrichment(
   startedAt: string,
   startedBy: AnonymousEnrichmentRun["startedBy"] = "manual_refresh",
 ): AnonymousProperty {
+  const requestedSources = enrichmentSources.filter((source) => response.sourceStatus[source]);
   const normalizedIncoming = response.findings
     .filter((item) => item.propertyId === property.id)
     .map(normalizeFinding);
@@ -133,16 +134,17 @@ export function mergeEnrichment(
         }
       : item,
   );
-  const completedSources = enrichmentSources.filter(
-    (source) => response.sourceStatus[source] === "complete",
+  const completedSources = requestedSources.filter(
+    (source) => response.sourceStatus[source] === "succeeded",
   );
-  const failedSources = enrichmentSources.filter(
-    (source) => response.sourceStatus[source] === "unavailable",
-  );
+  const failedSources = requestedSources.filter((source) => {
+    const status = response.sourceStatus[source] ?? "failed";
+    return !["succeeded", "not_covered"].includes(status);
+  });
   const run: AnonymousEnrichmentRun = {
     id: crypto.randomUUID(),
     status: failedSources.length ? "partial" : "complete",
-    requestedSources: enrichmentSources,
+    requestedSources,
     completedSources,
     failedSources,
     startedAt,
@@ -153,19 +155,19 @@ export function mergeEnrichment(
       : failedSources.length
         ? "partial"
         : "complete",
-    sourceResults: enrichmentSources.map((source) => {
+    sourceResults: requestedSources.map((source) => {
       const explicit = response.sourceResults?.find(
         (item) => item.source === source && (!item.propertyId || item.propertyId === property.id),
       );
       return (
         explicit ?? {
           source,
-          status: response.sourceStatus[source],
+          status: response.sourceStatus[source] ?? "failed",
           findingCount: incoming.filter((item) => item.source === source).length,
           releaseId: incoming.find((item) => item.source === source)?.releaseId ?? null,
           checkedAt: new Date().toISOString(),
           limitation:
-            response.sourceStatus[source] === "complete"
+            response.sourceStatus[source] === "succeeded"
               ? null
               : "The accepted source did not provide usable coverage for this property.",
         }

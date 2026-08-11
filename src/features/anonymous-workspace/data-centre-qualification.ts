@@ -52,6 +52,9 @@ export function deriveQualification(property: AnonymousProperty, now = new Date(
   const unknown = dimensions.filter((item) => item.status === "unknown");
   const conditional = dimensions.filter((item) => item.status === "conditional");
   const unsupported = dimensions.filter((item) => item.unsupported);
+  const unresolvedDimensions = dimensions.filter(
+    (item) => item.status === "unknown" || item.status === "conditional" || item.unsupported,
+  );
   const criticalBlockers = dimensions.filter(
     (item) =>
       criticalQualificationKeys.includes(item.key) && ["unknown", "adverse"].includes(item.status),
@@ -76,6 +79,16 @@ export function deriveQualification(property: AnonymousProperty, now = new Date(
     confirmedReadiness: readiness,
     screeningCoverage,
     constraintsDetected: constraintsDetected.length,
+    genuineConstraints: adverse.length + constraintsDetected.length,
+    acceptedEvidenceCount: accepted.size,
+    findingsAwaitingReview: (property.enrichmentFindings ?? []).filter(
+      (item) => item.status === "proposed",
+    ).length,
+    checksRemaining: unresolvedDimensions.length,
+    unresolvedChecks: unresolvedDimensions.map(
+      (item) => `${qualificationLabels[item.key]} requires confirmation`,
+    ),
+    operatorEngagementStatus: property.operatorEngagement?.enquiryStatus ?? "not_started",
     unknownDimensions: dimensions.length - screenedDimensions.length - constraintsDetected.length,
     confirmedDimensions: dimensions.filter(
       (item) => item.status !== "unknown" && !item.unsupported,

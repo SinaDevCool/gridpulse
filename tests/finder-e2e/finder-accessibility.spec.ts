@@ -37,7 +37,7 @@ test("Sites portfolio views have no serious or critical violations", async ({ pa
     expect(blocking, `${path}: ${JSON.stringify(blocking, null, 2)}`).toEqual([]);
   }
   await page.goto("/portfolio");
-  await page.getByRole("button", { name: /Untitled screening project/i }).click();
+  await page.getByRole("link", { name: /Untitled screening project/i }).click();
   await page.getByRole("link", { name: "Open Site Workspace" }).click();
   const siteResult = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])

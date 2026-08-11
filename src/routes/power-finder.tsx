@@ -1254,6 +1254,7 @@ function PowerFinderPage() {
                   className="primary-button"
                   disabled={
                     propertySaveStatus === "saving" ||
+                    propertySaveStatus === "saved" ||
                     project.latitude == null ||
                     project.longitude == null
                   }
@@ -3009,7 +3010,11 @@ function PowerFinderPage() {
                       <button
                         type="button"
                         className="primary-button candidate-shortlist-action"
-                        disabled={propertySaveStatus === "saving"}
+                        disabled={
+                          propertySaveStatus === "saving" ||
+                          activeProperty?.preferredCandidateId === selectedOpportunity.id ||
+                          shortlistId === selectedOpportunity.id
+                        }
                         onClick={async () => {
                           const candidateSet = Array.from(
                             new Map(

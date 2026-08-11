@@ -149,16 +149,9 @@ function SiteWorkspace() {
             tone="screened"
           />
           <StatusMetric
-            label="Needs attention"
-            value={String(
-              qualification.criticalBlockers.length + qualification.constraintsDetected,
-            )}
+            label="Checks remaining"
+            value={String(qualification.checksRemaining)}
             tone="attention"
-          />
-          <StatusMetric
-            label="Evidence"
-            value={String((property.evidenceRegister?.length ?? 0) + documents.length)}
-            tone="evidence"
           />
           <p className="truth-boundary">
             <ShieldAlert aria-hidden="true" /> Screening indicates context, not available capacity,

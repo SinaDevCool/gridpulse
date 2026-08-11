@@ -155,11 +155,12 @@ export function downloadClientDecisionPackage(
   y += 37;
   line("Rationale", property.decisionRationale);
   line("Next action", data.summary.nextAction);
-  line("Open checks", data.summary.blockers.join("; ") || "None recorded");
+  line("Checks before decision", data.summary.checksRemaining.join("; ") || "None recorded");
 
   heading("Essential Qualification");
   line("Confirmed readiness", `${data.qualification.confirmedReadiness}%`);
   line("Screening coverage", `${data.qualification.screeningCoverage}%`);
+  line("Checks remaining", data.qualification.checksRemaining);
   const mvpKeys = new Set(["grid", "land", "planning", "environment", "access_logistics", "fibre"]);
   data.qualification.dimensions
     .filter((item) => mvpKeys.has(item.key))

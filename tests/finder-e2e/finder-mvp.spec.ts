@@ -23,15 +23,10 @@ test("Finder landing, sector pages and methodology form the public product site"
 }) => {
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: /Find stronger grid connection candidates/i }),
+    page.getByRole("heading", { name: /See which sites are worth advancing/i }),
   ).toBeVisible();
-  await expect(page.getByRole("link", { name: /Open Grid Workspace/i })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Open Site Pipeline/i }).first()).toBeVisible();
   await expect(page.getByRole("link", { name: "Review the data" })).toHaveCount(0);
-  const solutions = page.getByRole("navigation", { name: "Solutions navigation" });
-  await expect(solutions.getByRole("link", { name: "Data Centres" })).toBeVisible();
-  await expect(solutions.getByRole("link", { name: "Energy Storage" })).toBeVisible();
-  await expect(solutions.getByRole("link", { name: "Hydrogen & Industry" })).toBeVisible();
-  await expect(solutions.getByRole("link", { name: "Methodology" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Discuss a site" })).toHaveCount(0);
 
   for (const [pathname, heading] of [
@@ -45,15 +40,10 @@ test("Finder landing, sector pages and methodology form the public product site"
   }
 
   await page.goto("/data-sources");
-  await expect(page.getByRole("heading", { level: 1 })).toContainText(
-    "See how mapped evidence becomes a governed capacity decision",
-  );
-  await expect(page.getByRole("heading", { name: "What Powers the Shortlist" })).toHaveCount(0);
-  await expect(page.getByText("What Powers the Shortlist", { exact: true })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Activation Benchmark" })).toHaveCount(0);
-  await expect(page.getByText("Private Topology Intelligence", { exact: true })).toHaveCount(0);
-  await expect(page.getByText(/product tour|start a pilot|review the assessment/i)).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "Discuss a site" })).toHaveCount(0);
+  await expect(page).toHaveURL(/\/$/);
+  await expect(
+    page.getByRole("heading", { name: /See which sites are worth advancing/i }),
+  ).toBeVisible();
 
   for (const pathname of ["/portfolio", "/reports"]) {
     const response = await page.goto(pathname);
@@ -75,11 +65,11 @@ test("a Finder project saves locally, survives navigation, and opens a dossier",
   const save = page.getByRole("button", { name: /Create pipeline site|Shortlist for/i });
   await expect(save).toBeEnabled();
   await save.click();
-  await expect(page.locator('p.sr-only[role="status"]')).toContainText("Property saved locally");
+  await expect(page).toHaveURL(/propertyId=/);
   await page.getByRole("link", { name: /Sites Manage portfolio decisions/i }).click();
   await expect(page.getByRole("heading", { name: "Sites", exact: true })).toBeVisible();
   await expect(page.getByText("Untitled screening project").first()).toBeVisible();
-  await page.getByRole("button", { name: /Untitled screening project/i }).click();
+  await page.getByRole("link", { name: /Untitled screening project/i }).click();
   await page.getByRole("link", { name: "Review in Power Finder" }).click();
   await expect(page).toHaveURL(/propertyId=/);
   await expect(page).toHaveURL(/lat=52\.52/);
@@ -92,13 +82,13 @@ test("a Finder project saves locally, survives navigation, and opens a dossier",
   await expect(page.getByLabel("Minimum voltage")).toHaveValue("110");
   await expect(page.getByText(/Suggested from the declared 55 MW load/i)).toBeVisible();
   await page.goto("/portfolio");
-  await page.getByRole("button", { name: /Untitled screening project/i }).click();
+  await page.getByRole("link", { name: /Untitled screening project/i }).click();
   await page.getByRole("link", { name: "Open Site Workspace" }).click();
   await expect(page.getByRole("heading", { name: "Opportunity overview" })).toBeVisible();
-  await page.getByRole("button", { name: "decision", exact: true }).click();
+  await page.getByRole("button", { name: "Decision", exact: true }).click();
   await page.getByRole("link", { name: /Open client decision record/i }).click();
   await expect(page.getByRole("heading", { name: "Untitled screening project" })).toBeVisible();
-  await expect(page.getByText(/Capacity metrics are withheld/i)).toBeVisible();
+  await expect(page.getByText("Capacity not established", { exact: true })).toBeVisible();
 });
 
 test("anonymous site workspace qualifies a site and records operator evidence", async ({
@@ -111,7 +101,7 @@ test("anonymous site workspace qualifies a site and records operator evidence", 
   await page.getByRole("button", { name: "Create pipeline site", exact: true }).click();
   await expect(page).toHaveURL(/propertyId=/);
   await page.goto("/portfolio");
-  await page.getByRole("button", { name: /Untitled screening project/i }).click();
+  await page.getByRole("link", { name: /Untitled screening project/i }).click();
   await page.getByRole("link", { name: "Open Site Workspace" }).click();
   await page.getByLabel("Site name").fill("Bremen Data Centre Campus");
   await page.getByLabel("Municipality").fill("Bremen");
@@ -143,7 +133,8 @@ test("site decisions flow into the unified Decision Review view", async ({ page 
   await page.getByRole("button", { name: "Create pipeline site", exact: true }).click();
   await expect(page.getByRole("button", { name: /Screening saved/i })).toBeDisabled();
   await page.getByRole("link", { name: /Sites Manage portfolio decisions/i }).click();
-  await page.getByRole("button", { name: /Untitled screening project/i }).click();
+  await page.getByRole("link", { name: /Untitled screening project/i }).click();
+  await expect(page).toHaveURL(/selected=[0-9a-f-]{36}/);
   await page.getByRole("link", { name: "Review Decision" }).click();
   await page.getByRole("radio", { name: "Hold" }).check();
   await page
@@ -178,7 +169,7 @@ test("portfolio views are URL-backed and the site workspace is directly discover
   await expect(page.getByRole("heading", { name: "No Matching Sites" })).toBeVisible();
   await page.getByRole("button", { name: "Reset Filters" }).click();
   await page.getByRole("button", { name: "Pipeline" }).click();
-  await page.getByRole("button", { name: /Untitled screening project/i }).click();
+  await page.getByRole("link", { name: /Untitled screening project/i }).click();
   await page.getByRole("link", { name: /Open Site Workspace/i }).click();
   await expect(page.getByRole("heading", { name: "Opportunity overview" })).toBeVisible();
 });
@@ -202,7 +193,7 @@ test("a stale site link cannot trap a new Power Finder screening in saving state
     page.getByRole("heading", { name: /Define the site and power requirement/i }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Create pipeline site", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Screening saved", exact: true })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Screening saved", exact: true })).toBeDisabled();
   await expect(page).not.toHaveURL(new RegExp(`propertyId=${staleId}`));
   await expect(page.getByRole("link", { name: "Return to Site Workspace" }).first()).toBeVisible();
 });
@@ -234,16 +225,75 @@ test("the MVP decision package is concise and downloads a valid PDF", async ({
   expect(bytes.length).toBeGreaterThan(5_000);
 });
 
-test("the downloadable client-style XLSX passes the browser import preview", async ({ page }) => {
+test("the release workbook passes the browser import preview", async ({ page }, testInfo) => {
+  test.setTimeout(120_000);
   await page.goto("/portfolio");
+  await expect(page.getByRole("heading", { name: "No Sites in the Pipeline" })).toBeVisible();
   await page.getByText("Workspace Data").click();
   await page.getByRole("button", { name: "Import Sites" }).click();
+  await expect(page).toHaveURL(/import=open/);
   await page
     .locator('input[name="property-portfolio-file"]')
-    .setInputFiles("public/samples/gridpulse-client-portfolio-sample.xlsx");
+    .setInputFiles("outputs/client-demo-portfolio/gridpulse-client-portfolio-sample.xlsx");
   await expect(page.getByText("10 rows")).toBeVisible();
   await expect(page.getByText("Ready to import")).toBeVisible();
   await expect(page.getByText("GP-DE-001")).toBeVisible();
+  await page.getByLabel("Enrich imported sites from accepted public sources").uncheck();
+  await page.getByRole("button", { name: "Import 10 Properties" }).click();
+  await expect(page.getByText("Hunte Edge Campus").first()).toBeVisible();
+  await expect(page.getByText(/10 of 10 sites shown/i)).toBeVisible();
+
+  await page.reload();
+  await expect(page.getByText("Hunte Edge Campus").first()).toBeVisible();
+  await expect(page.getByText(/10 of 10 sites shown/i)).toBeVisible();
+  await page.getByRole("link", { name: /Brandenburg South Campus/i }).click();
+  await page.getByRole("link", { name: "Review in Power Finder" }).click();
+  await expect(page).toHaveURL(/propertyId=/);
+  await expect(page).toHaveURL(/lat=52\.3031/);
+  await expect(page).toHaveURL(/lng=13\.254/);
+  await expect(page.getByText(/candidate site-to-node matches/i).first()).toBeVisible({
+    timeout: 15_000,
+  });
+  await page.getByLabel("Maximum distance").selectOption("50");
+  await page.getByLabel(/Minimum voltage/).selectOption("0");
+  const candidates = page.getByRole("button", { name: /Show .* on map, .*\/100/ });
+  await expect(candidates.first()).toBeVisible({ timeout: 15_000 });
+  await candidates.first().click();
+  const shortlist = page.getByRole("button", { name: /Shortlist for Brandenburg South Campus/i });
+  await expect(shortlist).toBeEnabled();
+  await shortlist.click();
+  await expect(page.locator('p.sr-only[role="status"]')).toContainText(
+    "shortlisted for Brandenburg South Campus",
+  );
+  await page.getByRole("link", { name: "Return to Site Workspace" }).first().click();
+  await expect(page.getByRole("heading", { name: "Brandenburg South Campus" })).toBeVisible();
+  await page.getByRole("button", { name: "Evidence", exact: true }).click();
+  await page.getByRole("button", { name: /Enrich site|Retry incomplete sources/i }).click();
+  await expect(page.getByText(/sources completed/i)).toBeVisible({ timeout: 25_000 });
+  await page.getByPlaceholder("Evidence title").fill("Client site declaration");
+  await page
+    .getByPlaceholder("Claim supported by this evidence")
+    .fill("The client declared the site coordinates and required total site load.");
+  await page.getByLabel("Category").selectOption("property");
+  await page.getByRole("button", { name: /Add evidence/i }).click();
+  await expect(page.getByText("Client site declaration")).toBeVisible();
+  await page.getByRole("button", { name: "Operator", exact: true }).click();
+  await page.getByRole("textbox", { name: "Operator", exact: true }).fill("Example Netz GmbH");
+  await page.getByLabel("Enquiry status").selectOption("submitted");
+  await page.getByLabel("Enquiry reference").fill("GP-DE-005-ENQUIRY");
+  await page.getByRole("button", { name: /Save operator engagement/i }).click();
+  await page.getByRole("button", { name: "Decision", exact: true }).click();
+  await page.getByRole("radio", { name: "Hold" }).check();
+  await page
+    .getByLabel("Decision rationale")
+    .fill("Hold pending operator confirmation of capacity, connection point, cost and programme.");
+  await page.getByRole("button", { name: "Save recommendation" }).click();
+  await expect(page.getByText("hold", { exact: true }).first()).toBeVisible();
+  await page.getByRole("link", { name: /Open client decision record/i }).click();
+  const decisionDownload = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download PDF" }).click();
+  const decisionPdf = await decisionDownload;
+  await decisionPdf.saveAs(testInfo.outputPath("brandenburg-south-decision-record.pdf"));
 });
 
 test("legacy portfolio destinations redirect into unified Sites views", async ({ page }) => {
@@ -265,7 +315,7 @@ test("Sites remains usable without horizontal page overflow on mobile", async ({
   await expect(page).toHaveURL(/propertyId=/);
   await page.goto("/portfolio");
   await expect(page.getByRole("heading", { name: "Sites", exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: /Untitled screening project/i })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Untitled screening project/i })).toBeVisible();
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,

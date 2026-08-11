@@ -22,7 +22,15 @@ export function PropertyEnrichmentPanel({
   async function run() {
     setBusy(true);
     try {
-      const screened = await screenProperty(property, "manual_refresh");
+      const failedSources = property.enrichmentRuns?.[0]?.sourceResults
+        .filter((result) => !["succeeded", "not_covered"].includes(result.status))
+        .map((result) => result.source);
+      const screened = await screenProperty(
+        property,
+        "manual_refresh",
+        undefined,
+        failedSources?.length ? Array.from(new Set(failedSources)) : undefined,
+      );
       await onSave(screened, "Public context and grid screening refreshed");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Enrichment failed");
@@ -68,16 +76,18 @@ export function PropertyEnrichmentPanel({
           )}
           {busy
             ? "Enriching…"
-            : property.enrichmentRuns?.length
-              ? "Refresh context"
-              : "Enrich site"}
+            : property.enrichmentRuns?.[0]?.failedSources.length
+              ? "Retry incomplete sources"
+              : property.enrichmentRuns?.length
+                ? "Refresh context"
+                : "Enrich site"}
         </button>
       </header>
       {property.enrichmentRuns?.[0] ? (
         <div className="enrichment-run-summary" role="status">
           <Database aria-hidden="true" />
           <span>{property.enrichmentRuns[0].completedSources.length} sources completed</span>
-          <span>{property.enrichmentRuns[0].failedSources.length} unavailable</span>
+          <span>{property.enrichmentRuns[0].failedSources.length} incomplete</span>
           <span>{proposed.length} awaiting review</span>
         </div>
       ) : (

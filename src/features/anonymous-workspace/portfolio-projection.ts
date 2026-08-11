@@ -24,6 +24,8 @@ export type AnonymousSiteSummary = {
   evidenceScore: number | null;
   capacityState: ReturnType<typeof localCapacityState>;
   blockers: string[];
+  checksRemaining: string[];
+  genuineConstraints: number;
   nextAction: string;
   operator: string | null;
   qualificationReadiness: number;
@@ -120,6 +122,8 @@ export function projectAnonymousProperty(property: AnonymousProperty): Anonymous
     evidenceScore: recommended?.evidenceScore ?? null,
     capacityState,
     blockers: uniqueBlockers,
+    checksRemaining: uniqueBlockers,
+    genuineConstraints: qualification.genuineConstraints,
     nextAction,
     operator: recordedOperator ?? recommended?.operator ?? null,
     qualificationReadiness: qualification.readiness,

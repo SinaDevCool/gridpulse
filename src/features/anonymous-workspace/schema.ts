@@ -108,7 +108,7 @@ export type AnonymousEnrichmentFinding = {
 
 export type SourceRunResult = {
   source: EnrichmentSource;
-  status: "complete" | "not_covered" | "unavailable";
+  status: "succeeded" | "unavailable" | "timed_out" | "not_covered" | "failed";
   findingCount: number;
   releaseId: string | null;
   checkedAt: string;
@@ -428,7 +428,7 @@ export function migrateAnonymousProperty(value: unknown): AnonymousProperty {
             run.requestedSources.map((source) => ({
               source,
               status: run.completedSources.includes(source)
-                ? ("complete" as const)
+                ? ("succeeded" as const)
                 : ("unavailable" as const),
               findingCount: 0,
               releaseId: null,
