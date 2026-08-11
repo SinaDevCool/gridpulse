@@ -125,12 +125,14 @@ export function AppShell({
   children: ReactNode;
   requireAuth?: boolean;
 }) {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const focusedWorkspace = pathname.startsWith("/activation") || pathname.startsWith("/operations");
   if (!productCapabilities.workspace) return <FinderShell>{children}</FinderShell>;
   return (
-    <div className="product-shell">
+    <div className={`product-shell${focusedWorkspace ? " product-shell--focused" : ""}`}>
       <AppHeader />
-      <ProductLifecycle />
-      <ProductTruthNotice />
+      {focusedWorkspace ? null : <ProductLifecycle />}
+      <ProductTruthNotice compact={focusedWorkspace} />
       {requireAuth ? <ProtectedContent>{children}</ProtectedContent> : children}
       <footer className="product-footer">
         <span>
@@ -170,14 +172,16 @@ function ProtectedContent({ children }: { children: ReactNode }) {
   if (loading)
     return (
       <main id="main-content" className="auth-gate">
-        <div className="loading-spinner" />
-        <p>Checking your session…</p>
+        <div className="loading-spinner" aria-hidden="true" />
+        <p role="status" aria-live="polite">
+          Checking Your Session…
+        </p>
       </main>
     );
   if (!user)
     return (
       <main id="main-content" className="auth-gate">
-        <LockKeyhole />
+        <LockKeyhole aria-hidden="true" />
         <p className="context-label">Private workspace</p>
         <h1>Sign in to continue</h1>
         <p>Your projects and evidence are protected per account.</p>

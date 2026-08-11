@@ -27,24 +27,36 @@ function OperationsIndex() {
       <main id="main-content" className="section-page activation-index">
         <PageHeading
           eyebrow="Power Operations"
-          title="Operate within approved limits"
+          title="Operate Within Approved Limits"
           description="Simulate and shadow flexible operation with explicit telemetry, evidence and authorization gates."
         />
         <div className="activation-project-list">
           {query.isLoading ? (
-            <p>Loading projects…</p>
+            <p role="status" aria-live="polite">
+              Loading Projects…
+            </p>
           ) : query.error ? (
-            <p role="alert">Projects could not be loaded.</p>
-          ) : (
-            query.data?.map((site) => (
+            <div className="workspace-error" role="alert">
+              <h2>Projects Could Not Be Loaded</h2>
+              <p>Check your connection, then try again.</p>
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => void query.refetch()}
+              >
+                Retry Loading
+              </button>
+            </div>
+          ) : query.data?.length ? (
+            query.data.map((site) => (
               <Link
                 key={site.id}
                 to="/operations/$id"
                 params={{ id: site.id }}
                 className="activation-project-card"
               >
-                <RadioTower />
-                <div>
+                <RadioTower aria-hidden="true" />
+                <div className="project-card-copy">
                   <h2>{site.name}</h2>
                   <p>
                     {site.project_type.replaceAll("_", " ")} ·{" "}
@@ -52,9 +64,18 @@ function OperationsIndex() {
                   </p>
                 </div>
                 <strong>{site.requested_import_mw} MW</strong>
-                <ArrowRight />
+                <ArrowRight aria-hidden="true" />
               </Link>
             ))
+          ) : (
+            <div className="workspace-empty">
+              <RadioTower aria-hidden="true" />
+              <h2>No Operations Projects Yet</h2>
+              <p>Create a project before rehearsing flexible operation.</p>
+              <Link to="/assessments/new" className="primary-button">
+                Create Project
+              </Link>
+            </div>
           )}
         </div>
       </main>

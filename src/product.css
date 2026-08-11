@@ -14563,7 +14563,7 @@ tbody tr:last-child td {
   width: 17px;
   transition: transform 0.2s;
 }
-.activation-details-toggle svg.rotated {
+.activation-disclosure[open] .activation-details-toggle svg {
   transform: rotate(180deg);
 }
 .activation-details {
@@ -14650,6 +14650,249 @@ tbody tr:last-child td {
   }
   .activation-legend {
     margin-top: 0.7rem;
+  }
+}
+
+/* Focused Activation & Operations workspace audit */
+.product-shell--focused {
+  min-width: 0;
+  overflow-x: hidden;
+  background: #f6f8fa;
+  color: #101828;
+}
+.product-shell--focused .product-truth--compact {
+  width: min(1120px, calc(100% - 48px));
+  margin-top: 12px;
+  border: 0;
+  border-radius: 8px;
+  background: #102231;
+}
+.product-truth--compact .product-truth-heading {
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 0;
+}
+.product-truth--compact .product-truth-heading > svg {
+  margin-top: 0;
+}
+.product-truth--compact .product-truth-heading p {
+  margin-top: 2px;
+  max-width: 880px;
+}
+.product-shell--focused .section-page {
+  width: min(1120px, calc(100% - 48px));
+  padding: 28px 0 64px;
+}
+.product-shell--focused .page-heading {
+  align-items: center;
+  margin-bottom: 22px;
+}
+.product-shell--focused .page-heading h1 {
+  color: #101828;
+  font-size: clamp(1.65rem, 3vw, 2rem);
+  text-wrap: balance;
+}
+.product-shell--focused .page-heading > div {
+  min-width: 0;
+}
+.product-shell--focused .page-heading > div > p:last-child {
+  color: #667085;
+  text-wrap: pretty;
+}
+.product-shell--focused :where(h1, h2) {
+  text-wrap: balance;
+}
+.product-shell--focused :where(button, a) {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(21, 112, 239, 0.14);
+}
+.activation-status-line > span:last-child,
+.operations-mode p,
+.project-card-copy {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.activation-kpis strong,
+.activation-recommendation > strong,
+.activation-detail strong,
+.operations-main header > strong,
+.operations-side > strong,
+.operations-cards strong,
+.envelope-history > div,
+.operations-events time {
+  font-variant-numeric: tabular-nums;
+}
+.activation-chart-card,
+.activation-recommendation,
+.operations-main,
+.operations-side,
+.operations-events,
+.control-readiness {
+  border-radius: 10px;
+}
+.activation-chart-card,
+.operations-main {
+  overflow: hidden;
+}
+.activation-details-toggle {
+  min-height: 44px;
+  cursor: pointer;
+  list-style: none;
+}
+.activation-details-toggle::-webkit-details-marker {
+  display: none;
+}
+.activation-details-toggle:hover {
+  border-color: #84adff;
+  background: #f8fbff;
+}
+.activation-details-toggle:focus-visible {
+  outline: 2px solid #1570ef;
+  outline-offset: 2px;
+}
+.activation-project-card {
+  min-height: 68px;
+  text-decoration: none;
+}
+.project-card-copy h2,
+.project-card-copy p {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.workspace-empty {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 48px 24px;
+  border: 1px dashed #cfd5de;
+  border-radius: 10px;
+  background: #fff;
+  text-align: center;
+}
+.workspace-empty > svg {
+  width: 22px;
+  color: #1570ef;
+}
+.workspace-empty h2,
+.workspace-empty p {
+  margin: 0;
+}
+.workspace-empty p {
+  max-width: 420px;
+  color: #667085;
+  font-size: 0.82rem;
+}
+.workspace-empty .primary-button {
+  margin-top: 8px;
+}
+.workspace-error {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  padding: 28px;
+  border: 1px solid #fecdca;
+  border-radius: 10px;
+  background: #fff7f6;
+}
+.workspace-error h1,
+.workspace-error h2,
+.workspace-error p {
+  margin: 0;
+}
+.workspace-error h1,
+.workspace-error h2 {
+  color: #912018;
+  font-size: 1rem;
+}
+.workspace-error p {
+  color: #667085;
+  font-size: 0.82rem;
+}
+.workspace-error button {
+  min-height: 44px;
+  margin-top: 6px;
+}
+.activation-detail > span:first-child,
+.operations-cards article > span:first-child {
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+.activation-detail > span:first-child svg,
+.operations-cards article > span:first-child svg {
+  width: 18px;
+}
+.product-shell--focused .product-footer {
+  border-top-color: #dfe3e8;
+  background: #eef1f4;
+  color: #667085;
+}
+@media (prefers-reduced-motion: reduce) {
+  .activation-details-toggle svg {
+    transition: none;
+  }
+}
+@media (max-width: 760px) {
+  .product-shell--focused .product-truth--compact,
+  .product-shell--focused .section-page {
+    width: min(100% - 32px, 1120px);
+  }
+  .product-truth--compact .product-truth-heading p {
+    display: none;
+  }
+  .product-shell--focused .section-page {
+    padding-top: 20px;
+  }
+  .product-shell--focused .page-heading {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .product-shell--focused .page-heading .secondary-button {
+    width: 100%;
+    justify-content: center;
+    min-height: 44px;
+  }
+  .activation-status-line,
+  .operations-mode {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .activation-chart-card svg,
+  .operations-main svg {
+    height: clamp(180px, 52vw, 240px);
+  }
+  .control-readiness header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .control-readiness header > span {
+    margin-left: 0;
+  }
+  .operations-events > div {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .operations-events time {
+    grid-column: 2;
+  }
+}
+@media (max-width: 520px) {
+  .activation-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .activation-kpis article {
+    padding: 1rem;
+  }
+  .activation-kpis strong {
+    font-size: 1.55rem;
+  }
+  .activation-recommendation {
+    grid-template-columns: 1fr;
+  }
+  .activation-recommendation > svg,
+  .activation-recommendation > strong {
+    grid-column: 1;
   }
 }
 @media (max-width: 520px) {

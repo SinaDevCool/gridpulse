@@ -1,7 +1,11 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, type ReactNode } from "react";
 import { Activity, BatteryCharging, CalendarClock, ChevronDown, ShieldCheck } from "lucide-react";
 import type { ActivationEnvelope, ActivationSite } from "./workspace-model";
 import { buildActivationWorkspaceModel } from "./workspace-model";
+
+const numberFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
+const integerFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
+const dateFormatter = new Intl.DateTimeFormat(undefined, { dateStyle: "medium" });
 
 function path(values: number[], maximum: number) {
   return values
@@ -19,7 +23,6 @@ export function ActivationWorkspace({
   site: ActivationSite;
   envelopes: ActivationEnvelope[];
 }) {
-  const [detailsOpen, setDetailsOpen] = useState(false);
   const model = useMemo(() => buildActivationWorkspaceModel(site, envelopes), [site, envelopes]);
   const maximum = Math.max(1, model.requestedMw);
   return (
@@ -28,7 +31,7 @@ export function ActivationWorkspace({
         <span
           className={`evidence-pill ${model.envelope?.status === "agreed" ? "verified" : "illustrative"}`}
         >
-          <ShieldCheck size={14} /> {model.evidenceLabel}
+          <ShieldCheck size={14} aria-hidden="true" /> {model.evidenceLabel}
         </span>
         <span>{model.evidenceDetail}</span>
       </div>
@@ -43,8 +46,8 @@ export function ActivationWorkspace({
       <article className="activation-chart-card">
         <header>
           <div>
-            <p className="context-label">Representative week</p>
-            <h2>How the connection is activated</h2>
+            <p className="context-label">Representative Week</p>
+            <h2>How the Connection Is Activated</h2>
           </div>
           <div className="activation-legend">
             <span className="demand">Demand</span>
@@ -110,48 +113,44 @@ export function ActivationWorkspace({
       <div className="activation-recommendation">
         <Activity aria-hidden="true" />
         <div>
-          <p className="context-label">Recommended operating strategy</p>
-          <h2>Contract firm capacity, activate the balance flexibly</h2>
+          <p className="context-label">Recommended Operating Strategy</p>
+          <h2>Contract Firm Capacity, Activate the Balance Flexibly</h2>
           <p>
-            Use the {model.firmMw.toFixed(0)} MW floor for critical load and coordinate up to{" "}
-            {model.flexibleMw.toFixed(0)} MW against the current envelope. The final step to{" "}
-            {model.activatedMw.toFixed(0)} MW is supported by the declared battery.
+            Use the {numberFormatter.format(model.firmMw)} MW floor for critical load and coordinate
+            up to {numberFormatter.format(model.flexibleMw)} MW against the current envelope. The
+            final step to {numberFormatter.format(model.activatedMw)} MW is supported by the
+            declared battery.
           </p>
         </div>
-        <strong>{(model.flexibleMw - model.firmMw).toFixed(0)} MW flexible</strong>
+        <strong>{numberFormatter.format(model.flexibleMw - model.firmMw)} MW flexible</strong>
       </div>
 
-      <button
-        type="button"
-        className="activation-details-toggle"
-        onClick={() => setDetailsOpen((value) => !value)}
-        aria-expanded={detailsOpen}
-      >
-        Calculation and evidence details{" "}
-        <ChevronDown className={detailsOpen ? "rotated" : undefined} />
-      </button>
-      {detailsOpen ? (
+      <details className="activation-disclosure">
+        <summary className="activation-details-toggle">
+          Calculation & Evidence Details
+          <ChevronDown aria-hidden="true" />
+        </summary>
         <div className="activation-details">
           <Detail
             icon={<CalendarClock />}
             label="Estimated restrictions"
-            value={`${model.restrictionHours} h/year`}
+            value={`${integerFormatter.format(model.restrictionHours)} h/year`}
           />
           <Detail
             icon={<BatteryCharging />}
             label="Declared battery"
-            value={`${site.bess_power_mw ?? 0} MW / ${site.bess_energy_mwh ?? 0} MWh`}
+            value={`${numberFormatter.format(site.bess_power_mw ?? 0)} MW / ${numberFormatter.format(site.bess_energy_mwh ?? 0)} MWh`}
           />
           <Detail
             icon={<Activity />}
             label="Flexible energy potential"
-            value={`${model.annualFlexibleMwh.toLocaleString()} MWh/year`}
+            value={`${integerFormatter.format(model.annualFlexibleMwh)} MWh/year`}
           />
           {model.envelope ? (
             <Detail
               icon={<ShieldCheck />}
               label="Envelope validity"
-              value={`${model.envelope.valid_from ? new Date(model.envelope.valid_from).toLocaleDateString() : "Open"} → ${model.envelope.valid_to ? new Date(model.envelope.valid_to).toLocaleDateString() : "Open"}`}
+              value={`${model.envelope.valid_from ? dateFormatter.format(new Date(model.envelope.valid_from)) : "Open"} → ${model.envelope.valid_to ? dateFormatter.format(new Date(model.envelope.valid_to)) : "Open"}`}
             />
           ) : null}
           <p>
@@ -160,11 +159,11 @@ export function ActivationWorkspace({
               : "Firm capacity is modelled as 84% of requested power, the flexible band as 95%, and battery support is capped at the declared power. These assumptions are deliberately visible and replaceable."}
           </p>
         </div>
-      ) : null}
+      </details>
       {envelopes.length ? (
         <article className="envelope-history">
           <header>
-            <h2>Envelope history</h2>
+            <h2>Envelope History</h2>
             <span>Latest version is applied automatically</span>
           </header>
           {[...envelopes]
@@ -177,7 +176,9 @@ export function ActivationWorkspace({
                 <span>
                   {item.mode} · {item.status}
                 </span>
-                <span>{item.max_import_mw ?? "—"} MW</span>
+                <span>
+                  {item.max_import_mw == null ? "—" : numberFormatter.format(item.max_import_mw)} MW
+                </span>
               </div>
             ))}
         </article>
@@ -201,7 +202,7 @@ function Metric({
     <article className={accent ? "accent" : undefined}>
       <p>{label}</p>
       <strong>
-        {value.toFixed(0)} <small>MW</small>
+        {numberFormatter.format(value)} <small>MW</small>
       </strong>
       <span>{note}</span>
     </article>
@@ -211,7 +212,7 @@ function Metric({
 function Detail({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
   return (
     <div className="activation-detail">
-      {icon}
+      <span aria-hidden="true">{icon}</span>
       <span>
         {label}
         <strong>{value}</strong>

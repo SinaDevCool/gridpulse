@@ -9,6 +9,12 @@ import {
 import type { ReactNode } from "react";
 import { buildOperationsModel, type OperationsEvent } from "./workspace-model";
 
+const numberFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
+const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {
+  dateStyle: "medium",
+  timeStyle: "short",
+});
+
 function line(values: number[], max: number) {
   return values
     .map((v, i) => `${i ? "L" : "M"} ${(i / (values.length - 1)) * 1000} ${230 - (v / max) * 195}`)
@@ -26,10 +32,10 @@ export function OperationsWorkspace({
   const model = buildOperationsModel(requestedMw, firmMw, events);
   const maximum = Math.max(1, requestedMw);
   return (
-    <section className="operations-workspace">
+    <section className="operations-workspace" aria-label="Power Operations workspace">
       <div className="operations-mode">
         <span className={model.mode.toLowerCase()}>
-          <RadioTower /> {model.mode}
+          <RadioTower aria-hidden="true" /> {model.mode}
         </span>
         <p>
           {model.mode === "SHADOW"
@@ -41,10 +47,10 @@ export function OperationsWorkspace({
         <article className="operations-main">
           <header>
             <div>
-              <p className="context-label">Last 60 minutes</p>
-              <h2>Demand and network envelope</h2>
+              <p className="context-label">Last 60 Minutes</p>
+              <h2>Demand & Network Envelope</h2>
             </div>
-            <strong>{model.limitMw.toFixed(0)} MW limit</strong>
+            <strong>{numberFormatter.format(model.limitMw)} MW limit</strong>
           </header>
           <svg
             viewBox="0 0 1000 250"
@@ -80,11 +86,11 @@ export function OperationsWorkspace({
           </div>
         </article>
         <aside className="operations-side">
-          <p className="context-label">Restriction response</p>
-          <strong>{model.responseMw.toFixed(1)} MW</strong>
+          <p className="context-label">Restriction Response</p>
+          <strong>{numberFormatter.format(model.responseMw)} MW</strong>
           <span>required flexibility</span>
           <div>
-            <BatteryCharging />
+            <BatteryCharging aria-hidden="true" />
             <p>Battery and workload response are simulated. No command was sent.</p>
           </div>
         </aside>
@@ -111,9 +117,9 @@ export function OperationsWorkspace({
       </div>
       <article className={`control-readiness ${model.readiness.status}`}>
         <header>
-          <AlertTriangle />
+          <AlertTriangle aria-hidden="true" />
           <div>
-            <p className="context-label">Milestone 6 · control boundary</p>
+            <p className="context-label">Control Boundary</p>
             <h2>
               {model.readiness.status === "within_envelope"
                 ? "Advisory monitoring ready"
@@ -139,20 +145,22 @@ export function OperationsWorkspace({
       </article>
       <article className="operations-events">
         <header>
-          <h2>Evidence event log</h2>
+          <h2>Evidence Event Log</h2>
           <span>{events.length} stored events</span>
         </header>
         {events.length ? (
           events.slice(0, 8).map((event) => (
             <div key={event.id}>
-              <span className={`event-dot ${event.evidence_state}`} />
+              <span className={`event-dot ${event.evidence_state}`} aria-hidden="true" />
               <div>
                 <strong>{event.kind.replaceAll("_", " ")}</strong>
                 <p>
                   {event.organization} · {event.evidence_state.replaceAll("_", " ")}
                 </p>
               </div>
-              <time>{new Date(event.valid_from).toLocaleString()}</time>
+              <time dateTime={event.valid_from}>
+                {dateTimeFormatter.format(new Date(event.valid_from))}
+              </time>
             </div>
           ))
         ) : (
@@ -177,7 +185,7 @@ function Status({
 }) {
   return (
     <article className={ok ? "ok" : "blocked"}>
-      {icon}
+      <span aria-hidden="true">{icon}</span>
       <div>
         <span>{label}</span>
         <strong>{value}</strong>

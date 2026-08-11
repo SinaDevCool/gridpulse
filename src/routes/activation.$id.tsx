@@ -3,13 +3,16 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import { AppShell, PageHeading } from "@/components/product/AppShell";
 import { ActivationWorkspace } from "@/features/activation/ActivationWorkspace";
+import { useAuth } from "@/context/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/activation/$id")({ component: ActivationProject });
 function ActivationProject() {
   const { id } = Route.useParams();
+  const { user } = useAuth();
   const query = useQuery({
     queryKey: ["activation-workspace", id],
+    enabled: Boolean(user),
     queryFn: async () => {
       const [site, envelopes] = await Promise.all([
         supabase
@@ -36,17 +39,25 @@ function ActivationProject() {
     <AppShell requireAuth>
       <main id="main-content" className="section-page activation-page">
         <Link to="/activation" className="back-link">
-          <ArrowLeft /> All activation projects
+          <ArrowLeft aria-hidden="true" /> All Activation Projects
         </Link>
         {query.isLoading ? (
-          <p>Building activation workspace…</p>
+          <p role="status" aria-live="polite">
+            Building Activation Workspace…
+          </p>
         ) : query.error || !query.data ? (
-          <p role="alert">This activation workspace could not be loaded.</p>
+          <div className="workspace-error" role="alert">
+            <h1>Activation Workspace Unavailable</h1>
+            <p>Check your connection and project access, then try again.</p>
+            <button type="button" className="secondary-button" onClick={() => void query.refetch()}>
+              Retry Loading
+            </button>
+          </div>
         ) : (
           <>
             <PageHeading
               eyebrow="Power Activation"
-              title={query.data.site.name}
+              title={query.data.site.name || "Untitled Activation Project"}
               description={`Connection activation strategy for ${query.data.site.likely_network_operator ?? "the responsible network operator"}. Evidence labels distinguish operator inputs from illustrative assumptions.`}
             />
             <ActivationWorkspace site={query.data.site} envelopes={query.data.envelopes} />

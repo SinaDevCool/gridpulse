@@ -29,24 +29,36 @@ function ActivationIndex() {
       <main id="main-content" className="section-page activation-index">
         <PageHeading
           eyebrow="Power Activation"
-          title="Activate more usable power"
+          title="Activate More Usable Power"
           description="Turn a capacity finding into an evidence-labelled firm, flexible and storage-supported connection strategy."
         />
         <div className="activation-project-list">
           {query.isLoading ? (
-            <p>Loading projects…</p>
+            <p role="status" aria-live="polite">
+              Loading Projects…
+            </p>
           ) : query.error ? (
-            <p role="alert">Projects could not be loaded.</p>
-          ) : (
-            query.data?.map((site) => (
+            <div className="workspace-error" role="alert">
+              <h2>Projects Could Not Be Loaded</h2>
+              <p>Check your connection, then try again.</p>
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => void query.refetch()}
+              >
+                Retry Loading
+              </button>
+            </div>
+          ) : query.data?.length ? (
+            query.data.map((site) => (
               <Link
                 key={site.id}
                 to="/activation/$id"
                 params={{ id: site.id }}
                 className="activation-project-card"
               >
-                <Zap />
-                <div>
+                <Zap aria-hidden="true" />
+                <div className="project-card-copy">
                   <h2>{site.name}</h2>
                   <p>
                     {site.project_type.replaceAll("_", " ")} ·{" "}
@@ -54,9 +66,18 @@ function ActivationIndex() {
                   </p>
                 </div>
                 <strong>{site.requested_import_mw} MW</strong>
-                <ArrowRight />
+                <ArrowRight aria-hidden="true" />
               </Link>
             ))
+          ) : (
+            <div className="workspace-empty">
+              <Zap aria-hidden="true" />
+              <h2>No Activation Projects Yet</h2>
+              <p>Create a project to turn a capacity finding into an activation strategy.</p>
+              <Link to="/assessments/new" className="primary-button">
+                Create Project
+              </Link>
+            </div>
           )}
         </div>
       </main>
