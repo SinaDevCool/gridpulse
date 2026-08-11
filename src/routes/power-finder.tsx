@@ -29,6 +29,7 @@ import {
   type PowerFinderFeature,
   type PowerFinderKind,
 } from "@/features/power-finder/fixture-data";
+import { saveFinderProjectToPortfolio } from "@/features/power-finder/property-handoff";
 import { GRID_VOLTAGE_CLASSES } from "@/features/power-finder/voltage-style";
 import { layerAvailability } from "@/features/power-finder/layer-availability";
 import {
@@ -63,8 +64,6 @@ import {
   type FinderProjectType,
 } from "@/features/power-finder/finder-project";
 import { loadFinderProject, saveFinderProject } from "@/features/power-finder/project-store";
-import { saveFinderProjectToPortfolio } from "@/features/power-finder/property-handoff";
-import { useAuth } from "@/context/useAuth";
 import { downloadFinderReport } from "@/features/power-finder/finder-report";
 import {
   addComparisonCandidate,
@@ -235,7 +234,7 @@ function formatMw(value: number) {
 }
 
 function PowerFinderPage() {
-  const { user } = useAuth();
+  const user = null;
   const navigate = useNavigate();
   const search = Route.useSearch();
   const [collection, setCollection] = useState<PowerFinderCollection | null>(null);
