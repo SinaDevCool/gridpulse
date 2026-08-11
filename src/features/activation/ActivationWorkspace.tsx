@@ -41,6 +41,12 @@ export function ActivationWorkspace({
         <Metric label="Firm" value={model.firmMw} note="Always-on baseline" />
         <Metric label="Flexible" value={model.flexibleMw} note="Conditional envelope" accent />
         <Metric label="Activated" value={model.activatedMw} note="With on-site flexibility" />
+        <Metric
+          label="Restrictions"
+          value={model.restrictionHours}
+          unit="h/yr"
+          note="Modelled exposure"
+        />
       </div>
 
       <article className="activation-chart-card">
@@ -113,8 +119,8 @@ export function ActivationWorkspace({
       <div className="activation-recommendation">
         <Activity aria-hidden="true" />
         <div>
-          <p className="context-label">Recommended Operating Strategy</p>
-          <h2>Contract Firm Capacity, Activate the Balance Flexibly</h2>
+          <p className="context-label">Selected Strategy</p>
+          <h2>Firm Baseline + Flexible Envelope</h2>
           <p>
             Use the {numberFormatter.format(model.firmMw)} MW floor for critical load and coordinate
             up to {numberFormatter.format(model.flexibleMw)} MW against the current envelope. The
@@ -125,7 +131,7 @@ export function ActivationWorkspace({
         <strong>{numberFormatter.format(model.flexibleMw - model.firmMw)} MW flexible</strong>
       </div>
 
-      <details className="activation-disclosure">
+      <details className="activation-disclosure" suppressHydrationWarning>
         <summary className="activation-details-toggle">
           Calculation & Evidence Details
           <ChevronDown aria-hidden="true" />
@@ -192,17 +198,19 @@ function Metric({
   value,
   note,
   accent = false,
+  unit = "MW",
 }: {
   label: string;
   value: number;
   note: string;
   accent?: boolean;
+  unit?: string;
 }) {
   return (
     <article className={accent ? "accent" : undefined}>
       <p>{label}</p>
       <strong>
-        {numberFormatter.format(value)} <small>MW</small>
+        {numberFormatter.format(value)} <small>{unit}</small>
       </strong>
       <span>{note}</span>
     </article>

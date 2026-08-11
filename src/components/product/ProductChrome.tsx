@@ -14,11 +14,11 @@ const productStages = [
 export function ProductHeader() {
   return (
     <header className="app-header product-header--minimal">
-      <Link to="/power-finder" className="brand" aria-label="GridPulse Power Finder" translate="no">
+      <Link to="/" className="brand" aria-label="GridPulse home" translate="no">
         <span>GRID</span>
         <strong>PULSE</strong>
       </Link>
-      <span className="product-header-label">Grid Capacity Intelligence</span>
+      <span className="product-header-label">Grid Intelligence Workspace</span>
     </header>
   );
 }

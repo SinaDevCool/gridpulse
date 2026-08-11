@@ -6,13 +6,13 @@ import "../landing.css";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "GridPulse Power Finder | German Grid Screening" },
+      { title: "GridPulse | Grid Intelligence Workspace" },
       {
         name: "description",
         content:
-          "Screen German grid nodes, industrial sites, voltage context and source evidence with GridPulse Power Finder. No account required.",
+          "Find connection candidates, plan flexible activation and explore operational envelopes with GridPulse. No account required.",
       },
-      { property: "og:title", content: "GridPulse Power Finder" },
+      { property: "og:title", content: "GridPulse Grid Intelligence Workspace" },
       {
         property: "og:description",
         content:
@@ -66,16 +66,15 @@ function FinderLandingPage() {
             />
             <div className="landing-hero-overlay" />
             <div className="landing-container landing-hero-content">
-              <p className="landing-eyebrow">GridPulse Power Finder</p>
+              <p className="landing-eyebrow">GridPulse Grid Intelligence</p>
               <h1 id="hero-title">Find stronger grid connection candidates, sooner.</h1>
               <p className="landing-hero-lead">
-                Turn fragmented public grid evidence into a focused shortlist for large-load and
-                energy projects in Germany. Start with the map, compare candidates, then take the
-                strongest options into technical review.
+                Find promising connection candidates, shape a flexible activation strategy and
+                explore how an approved envelope would be monitored—all in one connected workflow.
               </p>
               <div className="landing-actions">
                 <Link to="/power-finder" className="landing-button landing-button-primary">
-                  Open Power Finder <ArrowRight aria-hidden="true" />
+                  Open Grid Workspace <ArrowRight aria-hidden="true" />
                 </Link>
                 <Link to="/data-sources" className="landing-button landing-button-secondary">
                   Review the data

@@ -1,6 +1,7 @@
 import {
   AlertTriangle,
   BatteryCharging,
+  ChevronDown,
   CircleCheck,
   Gauge,
   LockKeyhole,
@@ -31,6 +32,8 @@ export function OperationsWorkspace({
 }) {
   const model = buildOperationsModel(requestedMw, firmMw, events);
   const maximum = Math.max(1, requestedMw);
+  const currentDemandMw = model.timeline.at(-1)?.demandMw ?? requestedMw;
+  const currentNetMw = currentDemandMw - model.responseMw;
   return (
     <section className="operations-workspace" aria-label="Power Operations workspace">
       <div className="operations-mode">
@@ -42,6 +45,12 @@ export function OperationsWorkspace({
             ? "Stored integration events are replayed for advisory monitoring."
             : "Deterministic fixture data—no live telemetry or network instruction."}
         </p>
+      </div>
+      <div className="operations-kpis" aria-label="Current operating metrics">
+        <OperationMetric label="Current Demand" value={currentDemandMw} unit="MW" />
+        <OperationMetric label="Network Limit" value={model.limitMw} unit="MW" accent />
+        <OperationMetric label="Response Required" value={model.responseMw} unit="MW" warning />
+        <OperationMetric label="Net After Response" value={currentNetMw} unit="MW" />
       </div>
       <div className="operations-grid">
         <article className="operations-main">
@@ -115,63 +124,97 @@ export function OperationsWorkspace({
           ok={false}
         />
       </div>
-      <article className={`control-readiness ${model.readiness.status}`}>
-        <header>
-          <AlertTriangle aria-hidden="true" />
-          <div>
-            <p className="context-label">Control Boundary</p>
-            <h2>
-              {model.readiness.status === "within_envelope"
-                ? "Advisory monitoring ready"
-                : "Live-control prerequisites incomplete"}
-            </h2>
-          </div>
-          <span>FAIL CLOSED</span>
-        </header>
-        <p>{model.readiness.recommendedHumanAction}</p>
-        {model.readiness.reasons.length ? (
-          <ul>
-            {model.readiness.reasons.map((reason) => (
-              <li key={reason}>{reason}</li>
-            ))}
-          </ul>
-        ) : (
-          <p>
-            All snapshot quality gates pass, but this product still authorizes no automatic
-            dispatch. An operator-approved EMS integration, safety case and accountable human
-            authorization remain external prerequisites.
-          </p>
-        )}
-      </article>
-      <article className="operations-events">
-        <header>
-          <h2>Evidence Event Log</h2>
-          <span>{events.length} stored events</span>
-        </header>
-        {events.length ? (
-          events.slice(0, 8).map((event) => (
-            <div key={event.id}>
-              <span className={`event-dot ${event.evidence_state}`} aria-hidden="true" />
+      <details className="operations-disclosure">
+        <summary className="activation-details-toggle">
+          Control &amp; Evidence Details
+          <span>
+            FAIL CLOSED <ChevronDown aria-hidden="true" />
+          </span>
+        </summary>
+        <div className="operations-disclosure-body">
+          <article className={`control-readiness ${model.readiness.status}`}>
+            <header>
+              <AlertTriangle aria-hidden="true" />
               <div>
-                <strong>{event.kind.replaceAll("_", " ")}</strong>
-                <p>
-                  {event.organization} · {event.evidence_state.replaceAll("_", " ")}
-                </p>
+                <p className="context-label">Control Boundary</p>
+                <h2>
+                  {model.readiness.status === "within_envelope"
+                    ? "Advisory Monitoring Ready"
+                    : "Live-Control Prerequisites Incomplete"}
+                </h2>
               </div>
-              <time dateTime={event.valid_from}>
-                {dateTimeFormatter.format(new Date(event.valid_from))}
-              </time>
-            </div>
-          ))
-        ) : (
-          <p>
-            No integration events are stored. The workspace is showing an illustrative simulation.
-          </p>
-        )}
-      </article>
+              <span>FAIL CLOSED</span>
+            </header>
+            <p>{model.readiness.recommendedHumanAction}</p>
+            {model.readiness.reasons.length ? (
+              <ul>
+                {model.readiness.reasons.map((reason) => (
+                  <li key={reason}>{reason}</li>
+                ))}
+              </ul>
+            ) : (
+              <p>
+                All snapshot quality gates pass, but this product still authorizes no automatic
+                dispatch. An operator-approved EMS integration, safety case and accountable human
+                authorization remain external prerequisites.
+              </p>
+            )}
+          </article>
+          <article className="operations-events">
+            <header>
+              <h2>Evidence Event Log</h2>
+              <span>{events.length} stored events</span>
+            </header>
+            {events.length ? (
+              events.slice(0, 8).map((event) => (
+                <div key={event.id}>
+                  <span className={`event-dot ${event.evidence_state}`} aria-hidden="true" />
+                  <div>
+                    <strong>{event.kind.replaceAll("_", " ")}</strong>
+                    <p>
+                      {event.organization} · {event.evidence_state.replaceAll("_", " ")}
+                    </p>
+                  </div>
+                  <time dateTime={event.valid_from}>
+                    {dateTimeFormatter.format(new Date(event.valid_from))}
+                  </time>
+                </div>
+              ))
+            ) : (
+              <p>
+                No integration events are stored. This workspace shows an illustrative simulation.
+              </p>
+            )}
+          </article>
+        </div>
+      </details>
     </section>
   );
 }
+
+function OperationMetric({
+  label,
+  value,
+  unit,
+  accent = false,
+  warning = false,
+}: {
+  label: string;
+  value: number;
+  unit: string;
+  accent?: boolean;
+  warning?: boolean;
+}) {
+  return (
+    <article className={accent ? "accent" : warning ? "warning" : undefined}>
+      <span>{label}</span>
+      <strong>
+        {numberFormatter.format(value)} <small>{unit}</small>
+      </strong>
+    </article>
+  );
+}
+
 function Status({
   icon,
   label,

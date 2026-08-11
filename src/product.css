@@ -14653,6 +14653,379 @@ tbody tr:last-child td {
   }
 }
 
+/* Compact energy consoles — Activation & Operations */
+.product-shell--focused .energy-console {
+  margin-block: 18px 48px;
+  padding: 28px;
+  border: 1px solid #1f3747;
+  border-radius: 12px;
+  background: #07131f;
+  color: #dbe8ee;
+  box-shadow: 0 18px 48px rgba(7, 19, 31, 0.16);
+}
+.energy-console-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 22px;
+}
+.energy-console-heading > div {
+  min-width: 0;
+}
+.energy-console-heading h1 {
+  margin: 3px 0 5px;
+  color: #f2f8fa;
+  font-size: clamp(1.55rem, 3vw, 2rem);
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+.energy-console-heading > div > p:last-child {
+  margin: 0;
+  color: #8199a8;
+  font-size: 0.78rem;
+  text-wrap: pretty;
+}
+.energy-console .context-label {
+  color: #668293;
+}
+.console-action {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 13px;
+  border: 1px solid #1e8eab;
+  border-radius: 6px;
+  background: #0c2937;
+  color: #77e3f7;
+  font-size: 0.72rem;
+  font-weight: 750;
+  text-decoration: none;
+}
+.console-action:hover {
+  border-color: #57d9f2;
+  background: #103545;
+  color: #e2fbff;
+}
+.console-action:focus-visible {
+  outline: 2px solid #57d9f2;
+  outline-offset: 3px;
+}
+.console-action--quiet {
+  border-color: #2b4657;
+  background: #0b1c28;
+  color: #b7cbd5;
+}
+.energy-console .activation-status-line,
+.energy-console .operations-mode {
+  margin-bottom: 12px;
+  color: #8199a8;
+}
+.energy-console .evidence-pill.illustrative,
+.energy-console .operations-mode .simulation {
+  background: rgba(242, 183, 5, 0.1);
+  color: #f3c654;
+}
+.energy-console .activation-kpis,
+.energy-console .operations-kpis {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid #1c3343;
+  border-radius: 8px;
+  background: #1c3343;
+}
+.energy-console .activation-kpis article,
+.energy-console .operations-kpis article {
+  min-width: 0;
+  padding: 14px 16px;
+  border-right: 1px solid #1c3343;
+  background: #0a1925;
+}
+.energy-console .activation-kpis article:last-child,
+.energy-console .operations-kpis article:last-child {
+  border-right: 0;
+}
+.energy-console .activation-kpis article.accent,
+.energy-console .operations-kpis article.accent {
+  background: #0b202c;
+}
+.energy-console .operations-kpis article.warning {
+  background: #201a13;
+}
+.energy-console .activation-kpis p,
+.energy-console .operations-kpis span {
+  display: block;
+  margin: 0 0 8px;
+  overflow: hidden;
+  color: #6f8999;
+  font-size: 0.65rem;
+  letter-spacing: 0.06em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.energy-console .activation-kpis strong,
+.energy-console .operations-kpis strong {
+  display: block;
+  color: #edf7fa;
+  font-size: clamp(1.2rem, 2.2vw, 1.65rem);
+  font-variant-numeric: tabular-nums;
+}
+.energy-console .activation-kpis .accent strong,
+.energy-console .operations-kpis .accent strong {
+  color: #55ddf3;
+}
+.energy-console .operations-kpis .warning strong {
+  color: #f3c654;
+}
+.energy-console .activation-kpis small,
+.energy-console .operations-kpis small {
+  color: #6f8999;
+  font-size: 0.63rem;
+  font-weight: 700;
+}
+.energy-console .activation-kpis article > span {
+  margin-top: 4px;
+  color: #587282;
+  font-size: 0.66rem;
+}
+.energy-console .activation-chart-card,
+.energy-console .operations-main,
+.energy-console .operations-side,
+.energy-console .operations-cards article,
+.energy-console .operations-events,
+.energy-console .activation-details,
+.energy-console .activation-details-toggle {
+  border-color: #1c3343;
+  background: #0a1925;
+  color: #dbe8ee;
+}
+.energy-console .activation-chart-card,
+.energy-console .operations-main {
+  margin-top: 12px;
+  padding: 18px;
+}
+.energy-console .activation-chart-card h2,
+.energy-console .operations-main h2,
+.energy-console .operations-events h2,
+.energy-console .control-readiness h2,
+.energy-console .activation-recommendation h2,
+.energy-console .activation-detail strong,
+.energy-console .operations-cards strong {
+  color: #e8f3f6;
+}
+.energy-console .activation-chart-card svg,
+.energy-console .operations-main svg {
+  height: 230px;
+}
+.energy-console .chart-grid {
+  stroke: #173041;
+}
+.energy-console .chart-demand,
+.energy-console .ops-demand {
+  stroke: #647d8d;
+}
+.energy-console .chart-envelope,
+.energy-console .ops-limit {
+  stroke: #43cde8;
+}
+.energy-console .chart-firm {
+  stroke: #b1c3cc;
+}
+.energy-console .chart-activated,
+.energy-console .ops-net {
+  stroke: #48d597;
+}
+.energy-console .activation-legend,
+.energy-console .chart-days,
+.energy-console .activation-detail,
+.energy-console .operations-side > span,
+.energy-console .operations-side > div,
+.energy-console .operations-cards span,
+.energy-console .operations-events header span,
+.energy-console .operations-events > p {
+  color: #718b9a;
+}
+.energy-console .activation-recommendation {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  margin-top: 12px;
+  padding: 14px 16px;
+  border: 1px solid #5b481b;
+  background: #181a17;
+}
+.energy-console .activation-recommendation p {
+  color: #879ca7;
+}
+.energy-console .activation-recommendation strong {
+  color: #f3c654;
+}
+.energy-console .activation-details-toggle {
+  margin-top: 12px;
+}
+.energy-console .activation-details-toggle:hover {
+  border-color: #3a6478;
+  background: #0d202d;
+}
+.energy-console .operations-kpis {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 12px;
+}
+.energy-console .operations-grid {
+  gap: 12px;
+}
+.energy-console .operations-side {
+  padding: 18px;
+}
+.energy-console .operations-side > div {
+  border-top-color: #1c3343;
+}
+.energy-console .operations-cards {
+  gap: 12px;
+  margin-top: 12px;
+}
+.energy-console .control-readiness {
+  margin-top: 12px;
+  border-color: #634c19;
+  background: #1b1913;
+  color: #dbe8ee;
+}
+.energy-console .control-readiness > p,
+.energy-console .control-readiness li {
+  color: #8fa3ad;
+}
+.energy-console .operations-events {
+  margin-top: 12px;
+}
+.energy-console .operations-events > div {
+  border-top-color: #1c3343;
+}
+
+@media (max-width: 800px) {
+  .product-shell--focused .energy-console {
+    width: min(100% - 24px, 1120px);
+    margin-top: 12px;
+    padding: 20px;
+  }
+  .energy-console-heading {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .energy-console .console-action {
+    justify-content: center;
+    width: 100%;
+    min-height: 44px;
+  }
+  .energy-console .activation-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .energy-console .activation-kpis article,
+  .energy-console .operations-kpis article {
+    border-bottom: 1px solid #1c3343;
+  }
+  .energy-console .activation-kpis article:last-child,
+  .energy-console .operations-kpis article:last-child {
+    border-bottom: 0;
+  }
+  .energy-console .activation-recommendation {
+    grid-template-columns: 1fr;
+  }
+  .energy-console .activation-recommendation > strong {
+    grid-column: 1;
+  }
+}
+@media (max-width: 520px) {
+  .product-shell--focused .energy-console {
+    padding: 16px;
+  }
+  .energy-console .activation-kpis,
+  .energy-console .operations-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .energy-console .activation-kpis article,
+  .energy-console .operations-kpis article {
+    padding: 12px;
+  }
+  .energy-console .activation-chart-card,
+  .energy-console .operations-main,
+  .energy-console .operations-side {
+    padding: 14px;
+  }
+}
+
+.product-shell--focused.finder-shell--workspace,
+.product-shell--focused.product-shell--workspace {
+  min-height: 100vh;
+  background: #050d15;
+  color-scheme: dark;
+}
+.product-shell--focused.finder-shell--workspace .energy-console,
+.product-shell--focused.product-shell--workspace .energy-console {
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-top: 34px;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.product-shell--focused.finder-shell--workspace .product-footer,
+.product-shell--focused.product-shell--workspace .product-footer {
+  border-top-color: #172b39;
+  background: #050d15;
+  color: #6f8999;
+}
+.operations-disclosure {
+  margin-top: 12px;
+}
+.operations-disclosure > summary > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #f3c654;
+  font-size: 0.65rem;
+  letter-spacing: 0.06em;
+}
+.operations-disclosure > summary > span svg {
+  width: 16px;
+  transition: transform 0.2s;
+}
+.operations-disclosure[open] > summary > span svg {
+  transform: rotate(180deg);
+}
+.operations-disclosure-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.8fr);
+  gap: 12px;
+  padding-top: 12px;
+}
+.energy-console .operations-disclosure-body .control-readiness,
+.energy-console .operations-disclosure-body .operations-events {
+  margin-top: 0;
+}
+.finder-shell--landing .product-header--minimal {
+  border-bottom: 1px solid #173041;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .operations-disclosure > summary > span svg {
+    transition: none;
+  }
+}
+@media (max-width: 800px) {
+  .product-shell--focused.finder-shell--workspace .energy-console,
+  .product-shell--focused.product-shell--workspace .energy-console {
+    margin-top: 0;
+    padding-top: 24px;
+  }
+  .operations-disclosure-body {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Focused Activation & Operations workspace audit */
 .product-header--minimal {
   height: 58px;

@@ -10,9 +10,12 @@ export function AppShell({ children }: { children: ReactNode; requireAuth?: bool
   const publicProduct = ["/power-finder", "/activation", "/operations"].some((path) =>
     pathname.startsWith(path),
   );
+  const workspacePage = pathname.startsWith("/activation") || pathname.startsWith("/operations");
   if (!productCapabilities.workspace) return <FinderShell>{children}</FinderShell>;
   return (
-    <div className={`product-shell${publicProduct ? " product-shell--focused" : ""}`}>
+    <div
+      className={`product-shell${publicProduct ? " product-shell--focused" : ""}${workspacePage ? " product-shell--workspace" : ""}`}
+    >
       <ProductHeader />
       <ProductStageNavigation />
       {publicProduct ? <ProductTruthNotice compact /> : null}

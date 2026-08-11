@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { RadioTower } from "lucide-react";
-import { AppShell, PageHeading } from "@/components/product/AppShell";
+import { ArrowRight, RadioTower } from "lucide-react";
+import { AppShell } from "@/components/product/AppShell";
 import { ActivationWorkspace } from "@/features/activation/ActivationWorkspace";
 import type { ActivationSite } from "@/features/activation/workspace-model";
 
@@ -23,18 +23,19 @@ const publicDemonstrationSite: ActivationSite = {
 function ActivationPage() {
   return (
     <AppShell>
-      <main id="main-content" className="section-page activation-page">
-        <PageHeading
-          eyebrow="02 · Power Activation"
-          title="Plan a Flexible Grid Connection"
-          description="Explore how firm capacity, a conditional envelope and on-site flexibility can combine to activate more usable power. Values below are an illustrative 50Hertz-region scenario—not an operator offer."
-          action={
-            <Link to="/operations" className="secondary-button">
-              <RadioTower size={15} aria-hidden="true" />
-              Continue to Operations
-            </Link>
-          }
-        />
+      <main id="main-content" className="section-page activation-page energy-console">
+        <header className="energy-console-heading">
+          <div>
+            <p className="context-label">02 · Activation Workspace</p>
+            <h1>Power Activation</h1>
+            <p>Shape a flexible connection strategy for the selected 50Hertz candidate.</p>
+          </div>
+          <Link to="/operations" className="console-action">
+            <RadioTower size={15} aria-hidden="true" />
+            Open Operations
+            <ArrowRight size={14} aria-hidden="true" />
+          </Link>
+        </header>
         <ActivationWorkspace site={publicDemonstrationSite} envelopes={[]} />
       </main>
     </AppShell>
