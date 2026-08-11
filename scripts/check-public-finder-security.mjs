@@ -22,19 +22,22 @@ viewport.search = new URLSearchParams({
   south: "52.1",
   east: "13.8",
   north: "52.7",
+  generation: "true",
+  storage: "true",
 }).toString();
 
 const publicResponse = await fetch(viewport);
 if (!publicResponse.ok) throw new Error(`Public viewport returned ${publicResponse.status}.`);
 const collection = await publicResponse.json();
 const kinds = new Set(collection.features?.map((feature) => feature.properties?.kind));
-if (!kinds.has("node") || !kinds.has("line") || !kinds.has("industrial_site")) {
+const availableKinds = new Set(collection.metadata?.available_kinds ?? []);
+if (!["node", "line", "industrial_site"].every((kind) => availableKinds.has(kind))) {
   throw new Error("Public viewport is missing required topology layers.");
 }
-if (!collection.metadata?.available_kinds?.includes("generation_asset")) {
+if (!availableKinds.has("generation_asset")) {
   throw new Error("Public viewport does not advertise registered generation.");
 }
-if (!collection.metadata?.available_kinds?.includes("storage_asset")) {
+if (!availableKinds.has("storage_asset")) {
   throw new Error("Public viewport does not advertise registered storage.");
 }
 
