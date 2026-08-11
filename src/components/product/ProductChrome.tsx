@@ -2,6 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 const workspaceLinks = [
   { label: "Site Pipeline", detail: "Qualify opportunities", to: "/portfolio" },
   { label: "Power Finder", detail: "Investigate candidates", to: "/power-finder" },
+  { label: "Site Workspaces", detail: "Develop each site", to: "/workspaces" },
   { label: "Decision Centre", detail: "Review evidence", to: "/reports" },
 ] as const;
 
@@ -59,7 +60,11 @@ export function ProductStageNavigation() {
       <div>
         {links.map((item, index) => {
           const active =
-            pathname.startsWith(item.to) ||
+            (item.to === "/portfolio"
+              ? pathname === "/portfolio"
+              : item.to === "/workspaces"
+                ? pathname === "/workspaces" || pathname.startsWith("/portfolio/")
+                : pathname.startsWith(item.to)) ||
             (item.to === "/reports" && pathname.startsWith("/capacity-dossiers/"));
           return (
             <Link

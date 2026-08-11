@@ -143,6 +143,44 @@ test("Site Pipeline decisions flow into Decision Centre", async ({ page }) => {
   await expect(page.getByText("hold", { exact: true }).first()).toBeVisible();
 });
 
+test("portfolio filters are URL-backed and Site Workspaces are directly discoverable", async ({
+  page,
+}) => {
+  await page.goto("/power-finder?lat=52.52&lng=13.405&mw=65&projectType=data_centre");
+  await expect(page.getByText(/candidate site-to-node matches/i).first()).toBeVisible({
+    timeout: 15_000,
+  });
+  await page.getByRole("button", { name: /Create pipeline site|Shortlist for/i }).click();
+  await page.getByRole("link", { name: /Site Pipeline Qualify opportunities/i }).click();
+  await page.getByLabel("Stage").selectOption("draft");
+  await expect(page).toHaveURL(/stage=draft/);
+  await expect(page.getByRole("heading", { name: "No Sites Match This View" })).toBeVisible();
+  await page.getByRole("button", { name: "Reset Filters" }).click();
+  await expect(page.getByText("Untitled screening project").first()).toBeVisible();
+  await page.getByRole("link", { name: /Decision Centre Review evidence/i }).click();
+  await expect(page.getByRole("heading", { name: "Decision Centre" })).toBeVisible();
+  await page.locator('select[name="decision-centre-decision"]').selectOption("reject");
+  await expect(page).toHaveURL(/decision=reject/);
+  await expect(page.getByRole("heading", { name: "No Sites Match This Scope" })).toBeVisible();
+  await page.getByRole("button", { name: "Reset Filters" }).click();
+  await page.getByRole("link", { name: /Site Workspaces Develop each site/i }).click();
+  await expect(page.getByRole("heading", { name: "Site Workspaces" })).toBeVisible();
+  await page.getByRole("link", { name: /Open Site Workspace/i }).click();
+  await expect(page.getByRole("heading", { name: "Opportunity overview" })).toBeVisible();
+});
+
+test("the downloadable client-style XLSX passes the browser import preview", async ({ page }) => {
+  await page.goto("/portfolio");
+  await page.getByText("Workspace Data").click();
+  await page.getByRole("button", { name: "Import Sites" }).click();
+  await page
+    .locator('input[name="property-portfolio-file"]')
+    .setInputFiles("public/samples/gridpulse-client-portfolio-sample.xlsx");
+  await expect(page.getByText("10 rows")).toBeVisible();
+  await expect(page.getByText("Ready to import")).toBeVisible();
+  await expect(page.getByText("GP-DE-001")).toBeVisible();
+});
+
 test("Site Pipeline remains usable without horizontal page overflow on mobile", async ({
   page,
 }) => {

@@ -8,7 +8,6 @@ import {
   MapPin,
   Plus,
   Search,
-  ShieldAlert,
   Trash2,
   X,
 } from "lucide-react";
@@ -145,6 +144,12 @@ function SitePipelineIndex() {
   const totalMw = summaries.reduce((sum, site) => sum + site.requiredMw, 0);
   const actionRequired = summaries.filter((site) => site.blockers.length > 0).length;
   const decisionReady = summaries.filter((site) => site.stage === "decision_ready").length;
+  const filtersActive = Boolean(
+    search.q ||
+    (search.stage && search.stage !== "all") ||
+    (search.decision && search.decision !== "all") ||
+    (search.sort && search.sort !== "priority"),
+  );
 
   return (
     <AppShell>
@@ -236,6 +241,21 @@ function SitePipelineIndex() {
                 <option value="name">Site Name</option>
               </select>
             </label>
+            {filtersActive ? (
+              <button
+                type="button"
+                className="rail-reset-button"
+                onClick={() =>
+                  void navigate({
+                    to: "/portfolio",
+                    search: {},
+                    replace: true,
+                  })
+                }
+              >
+                <X aria-hidden="true" /> Reset Filters
+              </button>
+            ) : null}
           </section>
           <details className="rail-section workspace-data-menu">
             <summary>
@@ -302,10 +322,6 @@ function SitePipelineIndex() {
               </button>
             </div>
           </details>
-          <p className="rail-boundary">
-            <ShieldAlert aria-hidden="true" /> Data stays in this browser unless exported. Grid
-            context does not establish available capacity.
-          </p>
         </aside>
         <section className="decision-workspace-main">
           <header className="workspace-main-header">
@@ -315,6 +331,15 @@ function SitePipelineIndex() {
               <p>
                 {visible.length} of {summaries.length} sites shown
               </p>
+              {summaries.length && filtersActive ? (
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => void navigate({ to: "/portfolio", search: {}, replace: true })}
+                >
+                  Reset Portfolio View
+                </button>
+              ) : null}
             </div>
             <Link to="/power-finder" className="primary-button">
               <Plus aria-hidden="true" /> New Site Screening

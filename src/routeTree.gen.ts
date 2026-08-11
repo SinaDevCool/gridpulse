@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WorkspacesRouteImport } from './routes/workspaces'
 import { Route as ValidationCaseRouteImport } from './routes/validation-case'
 import { Route as SyntheticNetworkStudyRouteImport } from './routes/synthetic-network-study'
 import { Route as ServiceRouteImport } from './routes/service'
@@ -43,6 +44,11 @@ import { Route as ApiPowerFinderStudyRouteImport } from './routes/api.power-find
 import { Route as ApiPowerFinderScenarioRouteImport } from './routes/api.power-finder.scenario'
 import { Route as ApiPowerFinderTileZXYRouteImport } from './routes/api.power-finder.tile.$z.$x.$y'
 
+const WorkspacesRoute = WorkspacesRouteImport.update({
+  id: '/workspaces',
+  path: '/workspaces',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ValidationCaseRoute = ValidationCaseRouteImport.update({
   id: '/validation-case',
   path: '/validation-case',
@@ -229,6 +235,7 @@ export interface FileRoutesByFullPath {
   '/service': typeof ServiceRoute
   '/synthetic-network-study': typeof SyntheticNetworkStudyRoute
   '/validation-case': typeof ValidationCaseRoute
+  '/workspaces': typeof WorkspacesRoute
   '/activation/$id': typeof ActivationIdRoute
   '/assessments/$id': typeof AssessmentsIdRoute
   '/assessments/new': typeof AssessmentsNewRoute
@@ -264,6 +271,7 @@ export interface FileRoutesByTo {
   '/service': typeof ServiceRoute
   '/synthetic-network-study': typeof SyntheticNetworkStudyRoute
   '/validation-case': typeof ValidationCaseRoute
+  '/workspaces': typeof WorkspacesRoute
   '/activation/$id': typeof ActivationIdRoute
   '/assessments/$id': typeof AssessmentsIdRoute
   '/assessments/new': typeof AssessmentsNewRoute
@@ -300,6 +308,7 @@ export interface FileRoutesById {
   '/service': typeof ServiceRoute
   '/synthetic-network-study': typeof SyntheticNetworkStudyRoute
   '/validation-case': typeof ValidationCaseRoute
+  '/workspaces': typeof WorkspacesRoute
   '/activation/$id': typeof ActivationIdRoute
   '/assessments/$id': typeof AssessmentsIdRoute
   '/assessments/new': typeof AssessmentsNewRoute
@@ -337,6 +346,7 @@ export interface FileRouteTypes {
     | '/service'
     | '/synthetic-network-study'
     | '/validation-case'
+    | '/workspaces'
     | '/activation/$id'
     | '/assessments/$id'
     | '/assessments/new'
@@ -372,6 +382,7 @@ export interface FileRouteTypes {
     | '/service'
     | '/synthetic-network-study'
     | '/validation-case'
+    | '/workspaces'
     | '/activation/$id'
     | '/assessments/$id'
     | '/assessments/new'
@@ -407,6 +418,7 @@ export interface FileRouteTypes {
     | '/service'
     | '/synthetic-network-study'
     | '/validation-case'
+    | '/workspaces'
     | '/activation/$id'
     | '/assessments/$id'
     | '/assessments/new'
@@ -443,6 +455,7 @@ export interface RootRouteChildren {
   ServiceRoute: typeof ServiceRoute
   SyntheticNetworkStudyRoute: typeof SyntheticNetworkStudyRoute
   ValidationCaseRoute: typeof ValidationCaseRoute
+  WorkspacesRoute: typeof WorkspacesRoute
   AssessmentsIdRoute: typeof AssessmentsIdRoute
   AssessmentsNewRoute: typeof AssessmentsNewRoute
   CapacityDossiersIdRoute: typeof CapacityDossiersIdRoute
@@ -458,6 +471,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/workspaces': {
+      id: '/workspaces'
+      path: '/workspaces'
+      fullPath: '/workspaces'
+      preLoaderRoute: typeof WorkspacesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/validation-case': {
       id: '/validation-case'
       path: '/validation-case'
@@ -748,6 +768,7 @@ const rootRouteChildren: RootRouteChildren = {
   ServiceRoute: ServiceRoute,
   SyntheticNetworkStudyRoute: SyntheticNetworkStudyRoute,
   ValidationCaseRoute: ValidationCaseRoute,
+  WorkspacesRoute: WorkspacesRoute,
   AssessmentsIdRoute: AssessmentsIdRoute,
   AssessmentsNewRoute: AssessmentsNewRoute,
   CapacityDossiersIdRoute: CapacityDossiersIdRoute,

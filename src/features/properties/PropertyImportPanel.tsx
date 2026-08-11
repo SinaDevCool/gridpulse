@@ -108,10 +108,10 @@ export function PropertyImportPanel({
         <div className="property-import-downloads">
           <a
             className="secondary-button"
-            href="/samples/gridpulse-data-centre-portfolio-sample.csv"
+            href="/samples/gridpulse-client-portfolio-sample.xlsx"
             download
           >
-            <Download aria-hidden="true" /> Sample portfolio
+            <Download aria-hidden="true" /> Client-Style XLSX Sample
           </a>
           <button type="button" className="secondary-button" onClick={downloadTemplate}>
             <Download aria-hidden="true" /> Blank template

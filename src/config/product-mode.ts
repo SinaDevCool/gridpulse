@@ -39,6 +39,7 @@ const finderRoutes = new Set([
   "/energy-storage",
   "/hydrogen-industry",
   "/portfolio",
+  "/workspaces",
   "/reports",
 ]);
 
@@ -46,6 +47,7 @@ const finderApiRoutes = new Set([
   "/api/power-finder/viewport",
   "/api/power-finder/study",
   "/api/power-finder/scenario",
+  "/api/properties/enrich",
 ]);
 
 export function isRouteEnabledForMode(pathname: string, mode: ProductMode): boolean {

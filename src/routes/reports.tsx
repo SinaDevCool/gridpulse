@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowRight, BarChart3, Download, FileText, ShieldAlert } from "lucide-react";
+import { ArrowRight, BarChart3, Download, FileText, RotateCcw, ShieldAlert } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { AppShell } from "@/components/product/AppShell";
@@ -119,12 +119,32 @@ function DecisionCentre() {
       }),
     [decisionRows, search.operator, search.risk, search.sort],
   );
-  const rows = properties.map(exportable);
+  const scopedIds = useMemo(
+    () => new Set(intelligence.rows.map((row) => row.site_id)),
+    [intelligence.rows],
+  );
+  const scopedProperties = useMemo(
+    () => properties.filter((property) => scopedIds.has(property.id)),
+    [properties, scopedIds],
+  );
+  const scopedSummaries = useMemo(
+    () => summaries.filter((site) => scopedIds.has(site.id)),
+    [scopedIds, summaries],
+  );
+  const rows = scopedProperties.map(exportable);
   const patchSearch = (patch: Partial<typeof search>) =>
     void navigate({ to: "/reports", search: { ...search, ...patch }, replace: true });
-  const advanced = properties.filter((property) => property.decisionStatus === "advance").length;
-  const operatorIdentified = summaries.filter((site) => site.operator).length;
-  const validated = summaries.filter((site) => site.capacityState === "validated").length;
+  const advanced = scopedProperties.filter(
+    (property) => property.decisionStatus === "advance",
+  ).length;
+  const operatorIdentified = scopedSummaries.filter((site) => site.operator).length;
+  const validated = scopedSummaries.filter((site) => site.capacityState === "validated").length;
+  const filtersActive = Boolean(
+    (search.decision && search.decision !== "all") ||
+    (search.risk && search.risk !== "all") ||
+    search.operator ||
+    (search.sort && search.sort !== "urgency"),
+  );
   const requestedView = search.view ?? "priority";
   const activeView =
     (requestedView === "operator" && !finderMvpFeatures.operatorPipeline) ||
@@ -208,6 +228,15 @@ function DecisionCentre() {
                 <option value="name">Site Name</option>
               </select>
             </label>
+            {filtersActive ? (
+              <button
+                type="button"
+                className="rail-reset-button"
+                onClick={() => void navigate({ to: "/reports", search: {}, replace: true })}
+              >
+                <RotateCcw aria-hidden="true" /> Reset Filters
+              </button>
+            ) : null}
           </section>
           <section className="rail-section export-menu">
             <h2>
@@ -229,7 +258,11 @@ function DecisionCentre() {
             </button>
             {finderMvpFeatures.advancedExports ? (
               <>
-                <button type="button" disabled={!rows.length} onClick={() => downloadPropertyCsv(rows)}>
+                <button
+                  type="button"
+                  disabled={!rows.length}
+                  onClick={() => downloadPropertyCsv(rows)}
+                >
                   Export CSV
                 </button>
                 <button
@@ -274,7 +307,14 @@ function DecisionCentre() {
             ) : null}
           </header>
           <nav className="decision-view-switcher" aria-label="Decision Centre view">
-            {(["priority", "qualification", ...(finderMvpFeatures.operatorPipeline ? ["operator" as const] : []), ...(finderMvpFeatures.decisionHistory ? ["decisions" as const] : [])] as const).map((view) => (
+            {(
+              [
+                "priority",
+                "qualification",
+                ...(finderMvpFeatures.operatorPipeline ? ["operator" as const] : []),
+                ...(finderMvpFeatures.decisionHistory ? ["decisions" as const] : []),
+              ] as const
+            ).map((view) => (
               <button
                 key={view}
                 className={activeView === view ? "active" : ""}
@@ -332,14 +372,10 @@ function DecisionCentre() {
                 ) : null}
               </section>
               {activeView === "qualification" ? (
-                <QualificationPortfolio summaries={summaries} />
+                <QualificationPortfolio summaries={scopedSummaries} />
               ) : null}
-              {activeView === "operator" ? (
-                <OperatorPipeline summaries={summaries} />
-              ) : null}
-              {activeView === "decisions" ? (
-                <DecisionRegister summaries={summaries} />
-              ) : null}
+              {activeView === "operator" ? <OperatorPipeline summaries={scopedSummaries} /> : null}
+              {activeView === "decisions" ? <DecisionRegister summaries={scopedSummaries} /> : null}
               {activeView === "priority" ? (
                 <>
                   <section className="decision-priority-section">
@@ -416,73 +452,77 @@ function DecisionCentre() {
                   </section>
                 </>
               ) : null}
-              {finderMvpFeatures.operatorPipeline ? <section className="operator-exposure-section">
-                <header>
+              {finderMvpFeatures.operatorPipeline ? (
+                <section className="operator-exposure-section">
+                  <header>
+                    <div>
+                      <p className="context-label">Portfolio Concentration</p>
+                      <h2>Operator Context</h2>
+                    </div>
+                    <p>Declared demand grouped by mapped operator context.</p>
+                  </header>
                   <div>
-                    <p className="context-label">Portfolio Concentration</p>
-                    <h2>Operator Context</h2>
+                    {intelligence.operators.map((item) => (
+                      <article key={item.operator}>
+                        <span>{item.operator}</span>
+                        <strong>{number.format(item.requestedMw)} MW</strong>
+                        <small>
+                          {item.projects} {item.projects === 1 ? "site" : "sites"}
+                        </small>
+                      </article>
+                    ))}
                   </div>
-                  <p>Declared demand grouped by mapped operator context.</p>
-                </header>
-                <div>
-                  {intelligence.operators.map((item) => (
-                    <article key={item.operator}>
-                      <span>{item.operator}</span>
-                      <strong>{number.format(item.requestedMw)} MW</strong>
-                      <small>
-                        {item.projects} {item.projects === 1 ? "site" : "sites"}
-                      </small>
-                    </article>
-                  ))}
-                </div>
-              </section> : null}
-              {finderMvpFeatures.decisionHistory ? <section className="decision-record-index">
-                <header>
+                </section>
+              ) : null}
+              {finderMvpFeatures.decisionHistory ? (
+                <section className="decision-record-index">
+                  <header>
+                    <div>
+                      <p className="context-label">Stakeholder Evidence</p>
+                      <h2>Site Decision Records</h2>
+                    </div>
+                  </header>
                   <div>
-                    <p className="context-label">Stakeholder Evidence</p>
-                    <h2>Site Decision Records</h2>
+                    {scopedSummaries.map((site) => (
+                      <article key={site.id}>
+                        <div>
+                          <span className={`decision-chip is-${site.decisionStatus}`}>
+                            {site.decisionStatus}
+                          </span>
+                          <h3>{site.name}</h3>
+                          <p>
+                            {site.requiredMw} MW declared ·{" "}
+                            {site.preferredCandidate?.nodeName ?? "No candidate shortlisted"}
+                          </p>
+                        </div>
+                        <dl>
+                          <div>
+                            <dt>Evidence</dt>
+                            <dd>
+                              {site.evidenceScore == null ? "Unknown" : `${site.evidenceScore}/100`}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>Capacity</dt>
+                            <dd>{site.capacityState === "validated" ? "Validated" : "Unknown"}</dd>
+                          </div>
+                          <div>
+                            <dt>Updated</dt>
+                            <dd>
+                              {new Intl.DateTimeFormat("en-GB", { dateStyle: "medium" }).format(
+                                new Date(site.updatedAt),
+                              )}
+                            </dd>
+                          </div>
+                        </dl>
+                        <Link to="/capacity-dossiers/$id" params={{ id: site.id }}>
+                          Open Export Record <ArrowRight aria-hidden="true" />
+                        </Link>
+                      </article>
+                    ))}
                   </div>
-                </header>
-                <div>
-                  {summaries.map((site) => (
-                    <article key={site.id}>
-                      <div>
-                        <span className={`decision-chip is-${site.decisionStatus}`}>
-                          {site.decisionStatus}
-                        </span>
-                        <h3>{site.name}</h3>
-                        <p>
-                          {site.requiredMw} MW declared ·{" "}
-                          {site.preferredCandidate?.nodeName ?? "No candidate shortlisted"}
-                        </p>
-                      </div>
-                      <dl>
-                        <div>
-                          <dt>Evidence</dt>
-                          <dd>
-                            {site.evidenceScore == null ? "Unknown" : `${site.evidenceScore}/100`}
-                          </dd>
-                        </div>
-                        <div>
-                          <dt>Capacity</dt>
-                          <dd>{site.capacityState === "validated" ? "Validated" : "Unknown"}</dd>
-                        </div>
-                        <div>
-                          <dt>Updated</dt>
-                          <dd>
-                            {new Intl.DateTimeFormat("en-GB", { dateStyle: "medium" }).format(
-                              new Date(site.updatedAt),
-                            )}
-                          </dd>
-                        </div>
-                      </dl>
-                      <Link to="/capacity-dossiers/$id" params={{ id: site.id }}>
-                        Open Export Record <ArrowRight aria-hidden="true" />
-                      </Link>
-                    </article>
-                  ))}
-                </div>
-              </section> : null}
+                </section>
+              ) : null}
             </>
           )}
         </section>
@@ -650,9 +690,7 @@ function DecisionRegister({
   summaries: ReturnType<typeof projectAnonymousProperty>[];
 }) {
   const events = summaries
-    .flatMap((site) =>
-      (site.property.decisionEvents ?? []).map((event) => ({ site, event })),
-    )
+    .flatMap((site) => (site.property.decisionEvents ?? []).map((event) => ({ site, event })))
     .sort((left, right) => Date.parse(right.event.recordedAt) - Date.parse(left.event.recordedAt));
   return (
     <section className="decision-register-section">
@@ -663,7 +701,8 @@ function DecisionRegister({
         </div>
       </header>
       <div>
-        {events.length ? events.map(({ site, event }) => (
+        {events.length ? (
+          events.map(({ site, event }) => (
             <article key={event.id}>
               <span>
                 {new Intl.DateTimeFormat("en-GB", { dateStyle: "medium" }).format(
@@ -675,13 +714,19 @@ function DecisionRegister({
                 <p>{event.rationale ?? "No rationale recorded"}</p>
               </div>
               <span className={`decision-chip is-${event.status}`}>
-                {event.provisional ? "Provisional " : ""}{event.status}
+                {event.provisional ? "Provisional " : ""}
+                {event.status}
               </span>
               <Link to="/portfolio/$id" params={{ id: site.id }} search={{ tab: "decision" }}>
                 Open site
               </Link>
             </article>
-          )) : <div className="decision-empty compact"><p>No decision changes have been recorded yet.</p></div>}
+          ))
+        ) : (
+          <div className="decision-empty compact">
+            <p>No decision changes have been recorded yet.</p>
+          </div>
+        )}
       </div>
     </section>
   );
