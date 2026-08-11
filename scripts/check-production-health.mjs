@@ -34,9 +34,9 @@ const checks = [
     url: `${baseUrl}/data-sources`,
     expectedStatus: 200,
     validate: async (response) => {
-      const html = await response.text();
-      if (/Product Tour|Start a Pilot|Review the Assessment/i.test(html)) {
-        throw new Error("methodology exposes a deferred product workflow");
+      const finalUrl = new URL(response.url);
+      if (finalUrl.pathname !== "/") {
+        throw new Error("retired methodology page did not redirect to the current landing page");
       }
     },
   },
