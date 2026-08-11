@@ -9,7 +9,6 @@ from typing import Any
 
 from .publish import SupabasePublisher, _chunks
 
-
 SOURCE_CONFIG = {
     "bkg_admin": {
         "publisher": "Bundesamt für Kartographie und Geodäsie (BKG)",
@@ -55,7 +54,7 @@ def _record(source: str, feature: dict[str, Any], index: int) -> dict[str, Any]:
         raise ValueError("unsupported or missing geometry")
     properties = feature.get("properties") or {}
     if not isinstance(properties, dict):
-        raise ValueError("properties must be an object")
+        raise TypeError("properties must be an object")
     record_id = str(feature.get("id") or properties.get("id") or properties.get("kennziffer") or index)
     if source in {"bkg_admin", "bfn_protected", "bkg_heavy_rain"}:
         if geometry["type"] == "Polygon":
@@ -64,14 +63,20 @@ def _record(source: str, feature: dict[str, Any], index: int) -> dict[str, Any]:
             raise ValueError(f"{source} requires polygon geometry")
     base = {"source_record_id": record_id, "geometry": geometry, "metadata": properties}
     if source == "bkg_admin":
-        official_name = str(properties.get("GEN") or properties.get("name") or "").strip()
+        official_name = str(
+            properties.get("GEN") or properties.get("gen") or properties.get("name") or ""
+        ).strip()
         if not official_name:
             raise ValueError("BKG administrative feature is missing its official name")
         return {**base, "level": str(properties.get("level") or "municipality"),
                 "official_name": official_name,
-                "official_key": properties.get("AGS") or properties.get("ars"),
-                "federal_state_name": properties.get("federal_state") or properties.get("BEZ_LAN"),
-                "federal_state_code": properties.get("LKZ")}
+                "official_key": properties.get("AGS") or properties.get("ags") or properties.get("ars"),
+                "federal_state_name": (
+                    properties.get("federal_state")
+                    or properties.get("BEZ_LAN")
+                    or properties.get("bez_lan")
+                ),
+                "federal_state_code": properties.get("LKZ") or properties.get("lkz")}
     if source == "bfn_protected":
         return {**base, "category": str(properties.get("category") or properties.get("SGB") or "protected_area"),
                 "official_name": properties.get("name") or properties.get("NAME")}
