@@ -1,8 +1,8 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 const workspaceLinks = [
-  { label: "Properties", detail: "Qualify the portfolio", to: "/portfolio" },
+  { label: "Site Pipeline", detail: "Qualify opportunities", to: "/portfolio" },
   { label: "Power Finder", detail: "Investigate candidates", to: "/power-finder" },
-  { label: "Reports", detail: "Export decision evidence", to: "/reports" },
+  { label: "Decision Centre", detail: "Review evidence", to: "/reports" },
 ] as const;
 
 export function ProductHeader() {
@@ -65,7 +65,9 @@ export function ProductStageNavigation() {
               to={item.to}
               className={active ? "active" : undefined}
               aria-current={active ? "page" : undefined}
-              onClick={(event) => { if (active) event.preventDefault(); }}
+              onClick={(event) => {
+                if (active) event.preventDefault();
+              }}
             >
               <span>0{index + 1}</span>
               <span>

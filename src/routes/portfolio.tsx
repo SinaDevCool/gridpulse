@@ -1,9 +1,21 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Download, FileUp, MapPin, Plus, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  ArrowRight,
+  Database,
+  Download,
+  FileUp,
+  Filter,
+  MapPin,
+  Plus,
+  Search,
+  ShieldAlert,
+  Trash2,
+  X,
+} from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
-import { AppShell, PageHeading } from "@/components/product/AppShell";
+import { AppShell } from "@/components/product/AppShell";
 import { PropertyImportPanel } from "@/features/properties/PropertyImportPanel";
 import {
   clearAnonymousWorkspace,
@@ -11,55 +23,593 @@ import {
   exportAnonymousWorkspace,
   listAnonymousProperties,
   restoreAnonymousWorkspace,
+  saveAnonymousProperty,
   subscribeAnonymousWorkspace,
 } from "@/features/anonymous-workspace/repository";
-import type { AnonymousProperty } from "@/features/anonymous-workspace/schema";
+import type {
+  AnonymousDecisionStatus,
+  AnonymousProperty,
+} from "@/features/anonymous-workspace/schema";
+import {
+  projectAnonymousProperty,
+  type AnonymousSiteStage,
+} from "@/features/anonymous-workspace/portfolio-projection";
+
+const stages = [
+  "all",
+  "action_required",
+  "draft",
+  "screening",
+  "shortlisted",
+  "evidence_review",
+  "decision_ready",
+] as const;
+const decisions = ["all", "unreviewed", "advance", "hold", "reject"] as const;
 
 export const Route = createFileRoute("/portfolio")({
-  validateSearch: z.object({ q: z.string().max(160).optional(), sort: z.enum(["updated", "name", "mw"]).optional() }),
-  head: () => ({ meta: [{ title: "Anonymous Property Portfolio | GridPulse" }, { name: "robots", content: "noindex, nofollow" }] }),
-  component: Portfolio,
+  validateSearch: z.object({
+    q: z.string().max(160).optional(),
+    stage: z.enum(stages).optional(),
+    decision: z.enum(decisions).optional(),
+    sort: z.enum(["priority", "updated", "name", "mw"]).optional(),
+    selected: z.string().uuid().optional(),
+  }),
+  head: () => ({
+    meta: [
+      { title: "Site Pipeline | GridPulse" },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
+  component: SitePipeline,
 });
 
 function downloadJson(value: unknown, name: string) {
-  const url = URL.createObjectURL(new Blob([JSON.stringify(value, null, 2)], { type: "application/json" }));
-  const anchor = document.createElement("a"); anchor.href = url; anchor.download = name; anchor.click(); URL.revokeObjectURL(url);
+  const url = URL.createObjectURL(
+    new Blob([JSON.stringify(value, null, 2)], { type: "application/json" }),
+  );
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = name;
+  anchor.click();
+  URL.revokeObjectURL(url);
 }
 
-function Portfolio() {
+const stageLabel: Record<AnonymousSiteStage, string> = {
+  draft: "Draft",
+  screening: "Screening",
+  shortlisted: "Candidate Shortlisted",
+  evidence_review: "Evidence Review",
+  decision_ready: "Decision Ready",
+};
+
+function SitePipeline() {
   const navigate = useNavigate();
   const search = Route.useSearch();
   const restoreInput = useRef<HTMLInputElement>(null);
   const [properties, setProperties] = useState<AnonymousProperty[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const refresh = async () => { try { setProperties(await listAnonymousProperties()); setError(""); } catch (reason) { setError(reason instanceof Error ? reason.message : "Properties could not be loaded."); } finally { setLoading(false); } };
-  useEffect(() => { void refresh(); return subscribeAnonymousWorkspace(() => void refresh()); }, []);
+  const [importOpen, setImportOpen] = useState(false);
+  const refresh = async () => {
+    try {
+      setProperties(await listAnonymousProperties());
+      setError("");
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Sites could not be loaded.");
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    void refresh();
+    return subscribeAnonymousWorkspace(() => void refresh());
+  }, []);
+  const summaries = useMemo(() => properties.map(projectAnonymousProperty), [properties]);
   const visible = useMemo(() => {
     const needle = (search.q ?? "").trim().toLocaleLowerCase();
-    return properties.filter((item) => !needle || [item.name, item.externalPropertyId, item.propertyType].some((value) => value?.toLocaleLowerCase().includes(needle))).sort((a, b) => search.sort === "name" ? a.name.localeCompare(b.name) : search.sort === "mw" ? (b.requiredTotalSiteLoadMw ?? -1) - (a.requiredTotalSiteLoadMw ?? -1) : Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
-  }, [properties, search.q, search.sort]);
-  return <AppShell><main id="main-content" className="section-page portfolio-page">
-    <PageHeading eyebrow="Stored on this device" title="Property portfolio" description="Compare anonymous property screening records. Data stays in this browser unless you export a workspace backup." action={<Link to="/power-finder" className="primary-button"><Plus aria-hidden="true" /> New screening</Link>} />
-    <section className="workspace-card anonymous-workspace-controls" aria-labelledby="workspace-data-title">
-      <div><h2 id="workspace-data-title">Workspace data</h2><p>Back up before clearing browser storage or moving to another device.</p></div>
-      <div className="property-import-actions">
-        <button type="button" className="secondary-button" onClick={async () => downloadJson(await exportAnonymousWorkspace(), "gridpulse-workspace-backup.json")}><Download aria-hidden="true" /> Export backup</button>
-        <button type="button" className="secondary-button" onClick={() => restoreInput.current?.click()}><FileUp aria-hidden="true" /> Restore backup</button>
-        <input ref={restoreInput} className="sr-only" type="file" accept="application/json,.json" onChange={async (event) => { const file = event.target.files?.[0]; if (!file) return; try { const result = await restoreAnonymousWorkspace(JSON.parse(await file.text())); toast.success(`${result.imported} properties restored`); } catch (reason) { toast.error(reason instanceof Error ? reason.message : "Restore failed"); } event.target.value = ""; }} />
-        <button type="button" className="secondary-button" onClick={async () => { if (!window.confirm("Export a backup first if needed. Clear every locally stored property?")) return; await clearAnonymousWorkspace(); toast.success("Local workspace cleared"); }}><Trash2 aria-hidden="true" /> Clear workspace</button>
-      </div>
-    </section>
-    <PropertyImportPanel onImported={() => void refresh()} />
-    <section className="portfolio-work-queue" aria-labelledby="property-table-title">
-      <div className="portfolio-controls"><div><h2 id="property-table-title">Property qualification</h2><p>{properties.length} locally stored {properties.length === 1 ? "property" : "properties"}</p></div><div className="portfolio-filter-row"><input aria-label="Search properties" placeholder="Search properties" value={search.q ?? ""} onChange={(event) => void navigate({ to: "/portfolio", search: { ...search, q: event.target.value || undefined }, replace: true })} /><select aria-label="Sort properties" value={search.sort ?? "updated"} onChange={(event) => void navigate({ to: "/portfolio", search: { ...search, sort: event.target.value as "updated" | "name" | "mw" }, replace: true })}><option value="updated">Recently updated</option><option value="name">Name</option><option value="mw">Required MW</option></select></div></div>
-      {loading ? <p role="status">Loading local propertiesâ€¦</p> : error ? <p role="alert" className="error-message">{error}</p> : !visible.length ? <div className="portfolio-state"><MapPin aria-hidden="true" /><h2>No properties stored yet</h2><p>Screen a site in Power Finder or import a property file. No account is required.</p><Link to="/power-finder" className="primary-button">Screen a property</Link></div> : <div className="table-wrap portfolio-table-wrap"><table className="portfolio-table property-qualification-table"><caption className="sr-only">Anonymous property qualification comparison</caption><thead><tr><th>Property</th><th>Required MW</th><th>Location</th><th>Candidates</th><th>Capacity evidence</th><th>Land</th><th>Actions</th></tr></thead><tbody>{visible.map((property) => <PropertyRow key={property.id} property={property} onDelete={async () => { if (!window.confirm(`Delete ${property.name} from this browser?`)) return; await deleteAnonymousProperty(property.id); }} />)}</tbody></table></div>}
-    </section>
-  </main></AppShell>;
+    return summaries
+      .filter((site) => {
+        const queryMatch =
+          !needle ||
+          [site.name, site.locationLabel, site.operator, site.projectType, site.nextAction]
+            .filter(Boolean)
+            .some((value) => String(value).toLocaleLowerCase().includes(needle));
+        const stageMatch =
+          !search.stage ||
+          search.stage === "all" ||
+          (search.stage === "action_required"
+            ? site.blockers.length > 0
+            : site.stage === search.stage);
+        const decisionMatch =
+          !search.decision || search.decision === "all" || site.decisionStatus === search.decision;
+        return queryMatch && stageMatch && decisionMatch;
+      })
+      .sort((left, right) => {
+        if (search.sort === "name") return left.name.localeCompare(right.name);
+        if (search.sort === "mw") return right.requiredMw - left.requiredMw;
+        if (search.sort === "updated")
+          return Date.parse(right.updatedAt) - Date.parse(left.updatedAt);
+        return (
+          Number(right.decisionStatus === "unreviewed") -
+            Number(left.decisionStatus === "unreviewed") ||
+          right.blockers.length - left.blockers.length ||
+          right.requiredMw - left.requiredMw
+        );
+      });
+  }, [search, summaries]);
+  const selected = summaries.find((site) => site.id === search.selected) ?? null;
+  const patchSearch = (patch: Partial<typeof search>) =>
+    void navigate({ to: "/portfolio", search: { ...search, ...patch }, replace: true });
+  const totalMw = summaries.reduce((sum, site) => sum + site.requiredMw, 0);
+  const actionRequired = summaries.filter((site) => site.blockers.length > 0).length;
+  const decisionReady = summaries.filter((site) => site.stage === "decision_ready").length;
+
+  return (
+    <AppShell>
+      <main id="main-content" className="site-pipeline-page decision-workspace-page">
+        <aside className="decision-workspace-rail" aria-label="Site Pipeline controls">
+          <header>
+            <p className="context-label">Portfolio Context</p>
+            <h1>Site Pipeline</h1>
+            <p>Qualify opportunities against power, grid evidence, and development readiness.</p>
+          </header>
+          <section className="rail-metrics" aria-label="Portfolio summary">
+            <Metric label="Sites" value={summaries.length} />
+            <Metric label="Declared" value={`${totalMw.toLocaleString("en-GB")} MW`} />
+            <Metric label="Action" value={actionRequired} tone="warning" />
+            <Metric label="Ready" value={decisionReady} tone="positive" />
+          </section>
+          <section className="rail-section">
+            <h2>
+              <Filter aria-hidden="true" /> Portfolio View
+            </h2>
+            <label className="rail-search">
+              <span className="sr-only">Search sites</span>
+              <Search aria-hidden="true" />
+              <input
+                name="site-search"
+                type="search"
+                autoComplete="off"
+                placeholder="Search site or operator…"
+                value={search.q ?? ""}
+                onChange={(event) =>
+                  patchSearch({ q: event.target.value || undefined, selected: undefined })
+                }
+              />
+            </label>
+            <label>
+              Stage
+              <select
+                name="pipeline-stage"
+                value={search.stage ?? "all"}
+                onChange={(event) =>
+                  patchSearch({
+                    stage: event.target.value as (typeof stages)[number],
+                    selected: undefined,
+                  })
+                }
+              >
+                <option value="all">All Sites</option>
+                <option value="action_required">Action Required</option>
+                <option value="draft">Draft</option>
+                <option value="screening">Screening</option>
+                <option value="shortlisted">Candidate Shortlisted</option>
+                <option value="evidence_review">Evidence Review</option>
+                <option value="decision_ready">Decision Ready</option>
+              </select>
+            </label>
+            <label>
+              Decision
+              <select
+                name="pipeline-decision"
+                value={search.decision ?? "all"}
+                onChange={(event) =>
+                  patchSearch({
+                    decision: event.target.value as (typeof decisions)[number],
+                    selected: undefined,
+                  })
+                }
+              >
+                <option value="all">All Decisions</option>
+                <option value="unreviewed">Unreviewed</option>
+                <option value="advance">Advance</option>
+                <option value="hold">Hold</option>
+                <option value="reject">Reject</option>
+              </select>
+            </label>
+            <label>
+              Sort
+              <select
+                name="pipeline-sort"
+                value={search.sort ?? "priority"}
+                onChange={(event) =>
+                  patchSearch({
+                    sort: event.target.value as "priority" | "updated" | "name" | "mw",
+                  })
+                }
+              >
+                <option value="priority">Decision Priority</option>
+                <option value="updated">Recently Updated</option>
+                <option value="mw">Required MW</option>
+                <option value="name">Site Name</option>
+              </select>
+            </label>
+          </section>
+          <details className="rail-section workspace-data-menu">
+            <summary>
+              <Database aria-hidden="true" /> Workspace Data
+            </summary>
+            <div>
+              <button type="button" onClick={() => setImportOpen((value) => !value)}>
+                <FileUp aria-hidden="true" /> Import Sites
+              </button>
+              <button
+                type="button"
+                onClick={async () =>
+                  downloadJson(await exportAnonymousWorkspace(), "gridpulse-workspace-backup.json")
+                }
+              >
+                <Download aria-hidden="true" /> Export Backup
+              </button>
+              <button type="button" onClick={() => restoreInput.current?.click()}>
+                <FileUp aria-hidden="true" /> Restore Backup
+              </button>
+              <input
+                ref={restoreInput}
+                className="sr-only"
+                type="file"
+                accept="application/json,.json"
+                onChange={async (event) => {
+                  const file = event.target.files?.[0];
+                  if (!file) return;
+                  try {
+                    const result = await restoreAnonymousWorkspace(JSON.parse(await file.text()));
+                    toast.success(`${result.imported} sites restored`);
+                  } catch (reason) {
+                    toast.error(reason instanceof Error ? reason.message : "Restore failed");
+                  }
+                  event.target.value = "";
+                }}
+              />
+              <button
+                type="button"
+                className="danger-action"
+                onClick={async () => {
+                  if (
+                    !window.confirm(
+                      "Export a backup first if needed. Clear every locally stored site?",
+                    )
+                  )
+                    return;
+                  await clearAnonymousWorkspace();
+                  toast.success("Local workspace cleared");
+                }}
+              >
+                <Trash2 aria-hidden="true" /> Clear Workspace
+              </button>
+            </div>
+          </details>
+          <p className="rail-boundary">
+            <ShieldAlert aria-hidden="true" /> Data stays in this browser unless exported. Grid
+            context does not establish available capacity.
+          </p>
+        </aside>
+        <section className="decision-workspace-main">
+          <header className="workspace-main-header">
+            <div>
+              <p className="context-label">Data-Centre Opportunity Qualification</p>
+              <h2>Sites Under Review</h2>
+              <p>
+                {visible.length} of {summaries.length} sites shown
+              </p>
+            </div>
+            <Link to="/power-finder" className="primary-button">
+              <Plus aria-hidden="true" /> New Site Screening
+            </Link>
+          </header>
+          {importOpen ? (
+            <div className="workspace-inline-panel">
+              <button
+                className="panel-close"
+                type="button"
+                aria-label="Close import panel"
+                onClick={() => setImportOpen(false)}
+              >
+                <X />
+              </button>
+              <PropertyImportPanel
+                variant="compact"
+                onImported={() => {
+                  void refresh();
+                  setImportOpen(false);
+                }}
+              />
+            </div>
+          ) : null}
+          {loading ? (
+            <div className="decision-empty" role="status">
+              <div className="loading-spinner" /> Loading local sites…
+            </div>
+          ) : error ? (
+            <div className="decision-empty error-message" role="alert">
+              {error}
+            </div>
+          ) : !visible.length ? (
+            <div className="decision-empty">
+              <MapPin aria-hidden="true" />
+              <h2>{summaries.length ? "No Sites Match This View" : "No Sites in the Pipeline"}</h2>
+              <p>
+                {summaries.length
+                  ? "Clear filters or choose another portfolio stage."
+                  : "Declare a site in Power Finder or import an existing opportunity."}
+              </p>
+              <Link to="/power-finder" className="primary-button">
+                Screen a Site
+              </Link>
+            </div>
+          ) : (
+            <div className="site-queue">
+              {visible.map((site) => (
+                <button
+                  type="button"
+                  className={`site-queue-row${selected?.id === site.id ? " is-selected" : ""}`}
+                  key={site.id}
+                  onClick={() => patchSearch({ selected: site.id })}
+                  aria-pressed={selected?.id === site.id}
+                >
+                  <span className="site-identity">
+                    <b>{site.name}</b>
+                    <small>
+                      {site.locationLabel} · {site.projectType.replaceAll("_", " ")}
+                    </small>
+                  </span>
+                  <span>
+                    <small>Required</small>
+                    <b>{site.requiredMw.toLocaleString("en-GB")} MW</b>
+                  </span>
+                  <span>
+                    <small>Stage</small>
+                    <b>{stageLabel[site.stage]}</b>
+                  </span>
+                  <span>
+                    <small>Preferred Candidate</small>
+                    <b>{site.preferredCandidate?.nodeName ?? "Not shortlisted"}</b>
+                    <em>
+                      {site.preferredCandidate
+                        ? `${site.preferredCandidate.distanceKm.toFixed(1)} km · ${site.preferredCandidate.voltageKv.length ? `${Math.max(...site.preferredCandidate.voltageKv)} kV` : "Voltage unknown"}`
+                        : "Open in Power Finder"}
+                    </em>
+                  </span>
+                  <span>
+                    <small>Evidence</small>
+                    <b>{site.evidenceScore == null ? "Unknown" : `${site.evidenceScore}/100`}</b>
+                    <em>
+                      {site.blockers.length} open {site.blockers.length === 1 ? "gap" : "gaps"}
+                    </em>
+                  </span>
+                  <span className={`decision-chip is-${site.decisionStatus}`}>
+                    {site.decisionStatus}
+                  </span>
+                  <ArrowRight aria-hidden="true" />
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
+        {selected ? (
+          <SiteDetail
+            site={selected}
+            onClose={() => patchSearch({ selected: undefined })}
+            onSaved={() => void refresh()}
+            onDeleted={async () => {
+              await deleteAnonymousProperty(selected.id);
+              patchSearch({ selected: undefined });
+            }}
+          />
+        ) : null}
+      </main>
+    </AppShell>
+  );
 }
 
-function PropertyRow({ property, onDelete }: { property: AnonymousProperty; onDelete: () => Promise<void> }) {
-  const validityExpired = property.evidence?.validTo != null && Number.isFinite(Date.parse(property.evidence.validTo)) && Date.parse(property.evidence.validTo) < Date.now();
-  const capacity = property.evidence?.validationStatus === "validated" && !validityExpired && !["stale", "failed"].includes(property.evidence.status) ? property.evidence.n1FirmCapacityMw : null;
-  return <tr><td><b>{property.name}</b><small>{property.externalPropertyId ?? property.source.replaceAll("_", " ")}</small></td><td><b>{property.requiredTotalSiteLoadMw ?? "Unknown"}</b><small>Import requirement, not capacity</small></td><td><b>{property.project.latitude?.toFixed(4)}, {property.project.longitude?.toFixed(4)}</b><small>{property.boundary ? "Boundary stored" : "Point location"}</small></td><td><b>{property.candidateSnapshots.length}</b><small>{property.candidateSnapshots[0]?.nodeName ?? "Not screened"}</small></td><td><b>{capacity == null ? "Unknown" : `${capacity} MW`}</b><small>{property.evidence?.evidenceClass ?? "No accepted capacity evidence"}</small></td><td><b>{property.landControlStatus}</b><small>{property.propertyCondition ?? "Condition unknown"}</small></td><td><div className="property-row-actions"><Link to="/power-finder" search={{ propertyId: property.id, lat: property.project.latitude ?? undefined, lng: property.project.longitude ?? undefined, mw: property.project.importMw, projectType: property.project.type }}>Open in Finder</Link><Link to="/capacity-dossiers/$id" params={{ id: property.id }}>Dossier</Link><button type="button" onClick={() => void onDelete()} aria-label={`Delete ${property.name}`}><Trash2 size={15} /></button></div></td></tr>;
+function Metric({
+  label,
+  value,
+  tone = "",
+}: {
+  label: string;
+  value: string | number;
+  tone?: string;
+}) {
+  return (
+    <div className={tone}>
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+function SiteDetail({
+  site,
+  onClose,
+  onSaved,
+  onDeleted,
+}: {
+  site: ReturnType<typeof projectAnonymousProperty>;
+  onClose: () => void;
+  onSaved: () => void;
+  onDeleted: () => Promise<void>;
+}) {
+  const [decision, setDecision] = useState<AnonymousDecisionStatus>(site.decisionStatus);
+  const [rationale, setRationale] = useState(site.property.decisionRationale ?? "");
+  const [preferred, setPreferred] = useState(
+    site.property.preferredCandidateId ?? site.preferredCandidate?.id ?? "",
+  );
+  const [siteLabel, setSiteLabel] = useState(site.property.siteLabel ?? "");
+  const [municipality, setMunicipality] = useState(site.property.municipality ?? "");
+  async function saveDecision(event: FormEvent) {
+    event.preventDefault();
+    if (decision !== "unreviewed" && rationale.trim().length < 10)
+      return toast.error("Add at least 10 characters explaining the decision.");
+    await saveAnonymousProperty({
+      ...site.property,
+      siteLabel: siteLabel.trim() || null,
+      municipality: municipality.trim() || null,
+      decisionStatus: decision,
+      decisionRationale: rationale.trim() || null,
+      preferredCandidateId: preferred || null,
+      updatedAt: new Date().toISOString(),
+    });
+    toast.success("Site decision saved locally");
+    onSaved();
+  }
+  return (
+    <aside className="site-detail-panel" aria-label={`${site.name} details`}>
+      <header>
+        <div>
+          <p className="context-label">Selected Site</p>
+          <h2>{site.name}</h2>
+          <p>{site.locationLabel}</p>
+        </div>
+        <button type="button" aria-label="Close site details" onClick={onClose}>
+          <X />
+        </button>
+      </header>
+      <div className="detail-status-line">
+        <span className={`decision-chip is-${site.decisionStatus}`}>{site.decisionStatus}</span>
+        <span>{stageLabel[site.stage]}</span>
+        <span>{site.requiredMw} MW required</span>
+      </div>
+      <div className="detail-location-fields">
+        <label>
+          Site Label
+          <input
+            name="site-label"
+            autoComplete="off"
+            value={siteLabel}
+            onChange={(event) => setSiteLabel(event.target.value)}
+            placeholder="e.g. Berlin DC Campus…"
+          />
+        </label>
+        <label>
+          Municipality
+          <input
+            name="site-municipality"
+            autoComplete="address-level2"
+            value={municipality}
+            onChange={(event) => setMunicipality(event.target.value)}
+            placeholder="e.g. Berlin…"
+          />
+        </label>
+      </div>
+      <section>
+        <h3>Connection Context</h3>
+        <dl>
+          <div>
+            <dt>Preferred candidate</dt>
+            <dd>{site.preferredCandidate?.nodeName ?? "Not shortlisted"}</dd>
+          </div>
+          <div>
+            <dt>Operator</dt>
+            <dd>{site.operator ?? "Unconfirmed"}</dd>
+          </div>
+          <div>
+            <dt>Capacity</dt>
+            <dd>
+              {site.capacityState === "validated" ? "Validated evidence attached" : "Unknown"}
+            </dd>
+          </div>
+          <div>
+            <dt>Land control</dt>
+            <dd>{site.property.landControlStatus}</dd>
+          </div>
+        </dl>
+      </section>
+      {site.property.candidateSnapshots.length ? (
+        <label className="detail-field">
+          Preferred Candidate
+          <select
+            name="preferred-candidate"
+            value={preferred}
+            onChange={(event) => setPreferred(event.target.value)}
+          >
+            <option value="">No preferred candidate</option>
+            {site.property.candidateSnapshots.map((candidate) => (
+              <option key={candidate.id} value={candidate.id}>
+                {candidate.nodeName} · {candidate.distanceKm.toFixed(1)} km
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
+      <section>
+        <h3>Primary Blockers</h3>
+        <ul className="detail-blockers">
+          {site.blockers.slice(0, 6).map((blocker) => (
+            <li key={blocker}>{blocker}</li>
+          ))}
+        </ul>
+        <p className="next-action">
+          <b>Next:</b> {site.nextAction}
+        </p>
+      </section>
+      <form className="site-decision-form" onSubmit={(event) => void saveDecision(event)}>
+        <h3>Client Decision</h3>
+        <div className="decision-choice">
+          {(["unreviewed", "advance", "hold", "reject"] as const).map((value) => (
+            <label key={value}>
+              <input
+                type="radio"
+                name="site-decision"
+                value={value}
+                checked={decision === value}
+                onChange={() => setDecision(value)}
+              />
+              <span>{value}</span>
+            </label>
+          ))}
+        </div>
+        <label>
+          Decision Rationale
+          <textarea
+            name="decision-rationale"
+            rows={3}
+            value={rationale}
+            onChange={(event) => setRationale(event.target.value)}
+            placeholder="Record the evidence and conditions behind this decision…"
+          />
+        </label>
+        <button className="primary-button" type="submit">
+          Save Decision
+        </button>
+      </form>
+      <footer>
+        <Link
+          to="/power-finder"
+          search={{
+            propertyId: site.id,
+            lat: site.property.project.latitude ?? undefined,
+            lng: site.property.project.longitude ?? undefined,
+            mw: site.property.project.importMw,
+            projectType: site.property.project.type,
+          }}
+        >
+          Open in Finder
+        </Link>
+        <Link to="/capacity-dossiers/$id" params={{ id: site.id }}>
+          Decision Record
+        </Link>
+        <button
+          type="button"
+          className="danger-action"
+          onClick={async () => {
+            if (!window.confirm(`Delete ${site.name} from this browser?`)) return;
+            await onDeleted();
+          }}
+        >
+          <Trash2 /> Delete
+        </button>
+      </footer>
+    </aside>
+  );
 }

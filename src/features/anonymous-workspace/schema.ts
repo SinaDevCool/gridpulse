@@ -2,7 +2,9 @@ import type { MultiPolygon, Polygon } from "geojson";
 import type { CandidateOpportunity } from "@/features/power-finder/candidate-intelligence";
 import type { FinderProject } from "@/features/power-finder/finder-project";
 
-export const ANONYMOUS_WORKSPACE_SCHEMA_VERSION = 1;
+export const ANONYMOUS_WORKSPACE_SCHEMA_VERSION = 2;
+
+export type AnonymousDecisionStatus = "unreviewed" | "advance" | "hold" | "reject";
 
 export type AnonymousPropertySource =
   | "power_finder"
@@ -60,6 +62,11 @@ export type AnonymousProperty = {
   exportRequirementMw: number | null;
   developmentPhase: string | null;
   landControlStatus: "unknown" | "identified" | "optioned" | "controlled";
+  municipality: string | null;
+  siteLabel: string | null;
+  decisionStatus: AnonymousDecisionStatus;
+  decisionRationale: string | null;
+  preferredCandidateId: string | null;
   selectedCandidateIds: string[];
   candidateSnapshots: AnonymousCandidateSnapshot[];
   evidence: LocalCapacityEvidence | null;
@@ -80,12 +87,30 @@ export function isAnonymousProperty(value: unknown): value is AnonymousProperty 
   const item = value as Partial<AnonymousProperty>;
   return Boolean(
     item.id &&
-      item.name &&
-      item.project &&
-      typeof item.project === "object" &&
-      Array.isArray(item.selectedCandidateIds) &&
-      Array.isArray(item.candidateSnapshots) &&
-      item.createdAt &&
-      item.updatedAt,
+    item.name &&
+    item.project &&
+    typeof item.project === "object" &&
+    Array.isArray(item.selectedCandidateIds) &&
+    Array.isArray(item.candidateSnapshots) &&
+    item.createdAt &&
+    item.updatedAt,
   );
+}
+
+export function migrateAnonymousProperty(value: unknown): AnonymousProperty {
+  if (!isAnonymousProperty(value)) throw new Error("The property record is invalid.");
+  const property = value as AnonymousProperty;
+  return {
+    ...property,
+    schemaVersion: ANONYMOUS_WORKSPACE_SCHEMA_VERSION,
+    municipality: typeof property.municipality === "string" ? property.municipality : null,
+    siteLabel: typeof property.siteLabel === "string" ? property.siteLabel : null,
+    decisionStatus: ["advance", "hold", "reject"].includes(property.decisionStatus)
+      ? property.decisionStatus
+      : "unreviewed",
+    decisionRationale:
+      typeof property.decisionRationale === "string" ? property.decisionRationale : null,
+    preferredCandidateId:
+      typeof property.preferredCandidateId === "string" ? property.preferredCandidateId : null,
+  };
 }

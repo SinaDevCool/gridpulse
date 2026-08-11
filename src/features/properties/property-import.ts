@@ -3,6 +3,8 @@ import readXlsxFile from "read-excel-file";
 export const propertyImportHeaders = [
   "property_name",
   "external_property_id",
+  "site_label",
+  "municipality",
   "latitude",
   "longitude",
   "property_type",
@@ -22,6 +24,8 @@ export const propertyImportHeaders = [
 export type PropertyImportValue = {
   propertyName: string;
   externalPropertyId: string | null;
+  siteLabel: string | null;
+  municipality: string | null;
   latitude: number | null;
   longitude: number | null;
   boundary: GeoJSON.Polygon | GeoJSON.MultiPolygon | null;
@@ -111,15 +115,18 @@ function valueFromRecord(
   const land = nullableText(record.land_control_status)?.toLowerCase() ?? "unknown";
   const confidentiality =
     nullableText(record.confidentiality_classification)?.toLowerCase() ?? "confidential";
-  const geometryCoordinates = geometry?.type === "Polygon"
-    ? geometry.coordinates.flat(1)
-    : geometry?.type === "MultiPolygon"
-      ? geometry.coordinates.flat(2)
-      : [];
+  const geometryCoordinates =
+    geometry?.type === "Polygon"
+      ? geometry.coordinates.flat(1)
+      : geometry?.type === "MultiPolygon"
+        ? geometry.coordinates.flat(2)
+        : [];
   const representativePoint = geometryCoordinates.length
     ? [
-        geometryCoordinates.reduce((sum, coordinate) => sum + coordinate[0], 0) / geometryCoordinates.length,
-        geometryCoordinates.reduce((sum, coordinate) => sum + coordinate[1], 0) / geometryCoordinates.length,
+        geometryCoordinates.reduce((sum, coordinate) => sum + coordinate[0], 0) /
+          geometryCoordinates.length,
+        geometryCoordinates.reduce((sum, coordinate) => sum + coordinate[1], 0) /
+          geometryCoordinates.length,
       ]
     : null;
   const point = geometry?.type === "Point" ? geometry.coordinates : representativePoint;
@@ -128,6 +135,8 @@ function valueFromRecord(
   return {
     propertyName: nullableText(record.property_name ?? record.name) ?? "",
     externalPropertyId: nullableText(record.external_property_id),
+    siteLabel: nullableText(record.site_label ?? record.address_label),
+    municipality: nullableText(record.municipality ?? record.city),
     latitude: nullableNumber(record.latitude ?? point?.[1]),
     longitude: nullableNumber(record.longitude ?? point?.[0]),
     boundary,
@@ -154,9 +163,19 @@ function validate(value: PropertyImportValue): string[] {
   const errors: string[] = [];
   if (value.propertyName.length < 2 || value.propertyName.length > 160)
     errors.push("Property name must contain 2–160 characters.");
-  if (value.latitude == null || !Number.isFinite(value.latitude) || value.latitude < 47 || value.latitude > 56)
+  if (
+    value.latitude == null ||
+    !Number.isFinite(value.latitude) ||
+    value.latitude < 47 ||
+    value.latitude > 56
+  )
     errors.push("Latitude must be within Germany (47–56).");
-  if (value.longitude == null || !Number.isFinite(value.longitude) || value.longitude < 5 || value.longitude > 16)
+  if (
+    value.longitude == null ||
+    !Number.isFinite(value.longitude) ||
+    value.longitude < 5 ||
+    value.longitude > 16
+  )
     errors.push("Longitude must be within Germany (5–16).");
   for (const [label, number] of [
     ["Required IT load", value.requiredItLoadMw],
@@ -207,12 +226,16 @@ export async function parsePropertyImport(file: File): Promise<PropertyImportRow
       throw new Error("Import 1–100 GeoJSON features at a time.");
     return finalize(
       features.map((feature, index) =>
-        valueFromRecord((feature.properties ?? {}) as Record<string, unknown>, index + 1, feature.geometry),
+        valueFromRecord(
+          (feature.properties ?? {}) as Record<string, unknown>,
+          index + 1,
+          feature.geometry,
+        ),
       ),
     );
   }
   const rows = extension === "xlsx" ? await readXlsxFile(file) : csvRows(await file.text());
-  if (!['csv', 'xlsx'].includes(extension ?? '')) throw new Error("Upload CSV, XLSX, or GeoJSON.");
+  if (!["csv", "xlsx"].includes(extension ?? "")) throw new Error("Upload CSV, XLSX, or GeoJSON.");
   if (rows.length < 2) throw new Error("The import needs a header and at least 1 property row.");
   if (rows.length > 101) throw new Error("Import no more than 100 properties at a time.");
   const headers = rows[0].map(header);
@@ -224,5 +247,5 @@ export async function parsePropertyImport(file: File): Promise<PropertyImportRow
 }
 
 export function propertyImportTemplateCsv() {
-  return `${propertyImportHeaders.join(",")}\nExample property,EXT-001,52.5200,13.4050,data_centre,brownfield,40,55,0,2030,site_selection,optioned,confidential,Example client,owner@example.com,Replace this row\n`;
+  return `${propertyImportHeaders.join(",")}\nExample property,EXT-001,Berlin DC Campus,Berlin,52.5200,13.4050,data_centre,brownfield,40,55,0,2030,site_selection,optioned,confidential,Example client,owner@example.com,Replace this row\n`;
 }

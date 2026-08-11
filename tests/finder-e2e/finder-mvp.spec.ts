@@ -66,20 +66,65 @@ test("Finder landing, sector pages and methodology form the public product site"
   expect(pilotResponse?.status()).toBe(404);
 });
 
-test("a Finder project saves locally, survives navigation, and opens a dossier", async ({ page }) => {
+test("a Finder project saves locally, survives navigation, and opens a dossier", async ({
+  page,
+}) => {
   await page.goto("/power-finder?lat=52.52&lng=13.405&mw=55&projectType=data_centre");
-  await expect(page.getByText(/candidate site-to-node matches/i).first()).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText(/candidate site-to-node matches/i).first()).toBeVisible({
+    timeout: 15_000,
+  });
   await page.getByText(/Operator questions & report/i).click();
   const save = page.getByRole("button", { name: /Save to Properties/i });
   await expect(save).toBeEnabled();
   await save.click();
   await expect(page.locator('p.sr-only[role="status"]')).toContainText("Property saved locally");
-  await page.getByRole("link", { name: /Properties Qualify the portfolio/i }).click();
-  await expect(page.getByRole("heading", { name: "Property portfolio" })).toBeVisible();
+  await page.getByRole("link", { name: /Site Pipeline Qualify opportunities/i }).click();
+  await expect(page.getByRole("heading", { name: "Site Pipeline" })).toBeVisible();
   await expect(page.getByText("Untitled screening project").first()).toBeVisible();
-  await page.getByRole("link", { name: "Dossier" }).click();
+  await page.getByRole("button", { name: /Untitled screening project/i }).click();
+  await page.getByRole("link", { name: "Decision Record" }).click();
   await expect(page.getByRole("heading", { name: "Untitled screening project" })).toBeVisible();
   await expect(page.getByText(/Capacity metrics are withheld/i)).toBeVisible();
+});
+
+test("Site Pipeline decisions flow into Decision Centre", async ({ page }) => {
+  await page.goto("/power-finder?lat=52.52&lng=13.405&mw=65&projectType=data_centre");
+  await expect(page.getByText(/candidate site-to-node matches/i).first()).toBeVisible({
+    timeout: 15_000,
+  });
+  await page.getByRole("button", { name: /Save to Properties/i }).click();
+  await expect(page.getByRole("button", { name: /Saved locally/i })).toBeDisabled();
+  await page.getByRole("link", { name: /Site Pipeline Qualify opportunities/i }).click();
+  await page.getByRole("button", { name: /Untitled screening project/i }).click();
+  await page.getByRole("radio", { name: "Hold" }).check();
+  await page
+    .getByLabel("Decision Rationale")
+    .fill("Hold until the responsible operator and evidence are confirmed.");
+  await page.getByRole("button", { name: "Save Decision" }).click();
+  await expect(page.getByText("hold", { exact: true }).first()).toBeVisible();
+  await page.getByRole("link", { name: /Decision Centre Review evidence/i }).click();
+  await expect(page.getByRole("heading", { name: "Decision Centre" })).toBeVisible();
+  await expect(page.getByText("Untitled screening project").first()).toBeVisible();
+  await expect(page.getByText("hold", { exact: true }).first()).toBeVisible();
+});
+
+test("Site Pipeline remains usable without horizontal page overflow on mobile", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/power-finder?lat=52.52&lng=13.405&mw=55&projectType=data_centre");
+  await expect(page.getByText(/candidate site-to-node matches/i).first()).toBeVisible({
+    timeout: 15_000,
+  });
+  await page.getByRole("button", { name: /Save to Properties/i }).click();
+  await page.goto("/portfolio");
+  await expect(page.getByRole("heading", { name: "Site Pipeline" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Untitled screening project/i })).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+    ),
+  ).toBe(true);
 });
 
 test("account-free project screening supports a custom site and BESS requirements", async ({
@@ -212,7 +257,10 @@ test("capacity screening reacts to project demand without exposing the reference
   await expect(page.getByRole("button", { name: /Open Reference Capacity Lab/i })).toHaveCount(0);
   await expect(page.getByText("Reference Capacity Lab", { exact: true })).toHaveCount(0);
   await expect(page.getByText(/real locations, synthetic electrical model/i)).toBeVisible();
-  await expect(metric.locator('option[value="bess_assisted_import_mw"]')).toHaveAttribute("disabled", "");
+  await expect(metric.locator('option[value="bess_assisted_import_mw"]')).toHaveAttribute(
+    "disabled",
+    "",
+  );
 });
 
 test("static fallback remains honest when the public viewport is unavailable", async ({ page }) => {
@@ -221,8 +269,12 @@ test("static fallback remains honest when the public viewport is unavailable", a
   );
   await page.goto("/power-finder");
   await page.getByText("Map Layers", { exact: true }).click();
-  await expect(page.getByRole("checkbox", { name: /Registered generation.*0 in current detail view/ })).not.toBeChecked({ timeout: 15_000 });
-  await expect(page.getByRole("checkbox", { name: /Registered storage 0 in current detail view/ })).not.toBeChecked();
+  await expect(
+    page.getByRole("checkbox", { name: /Registered generation.*0 in current detail view/ }),
+  ).not.toBeChecked({ timeout: 15_000 });
+  await expect(
+    page.getByRole("checkbox", { name: /Registered storage 0 in current detail view/ }),
+  ).not.toBeChecked();
 });
 
 test("unclustered grid lines and industrial polygons render in the Brandenburg view", async ({

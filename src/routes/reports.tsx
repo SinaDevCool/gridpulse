@@ -1,29 +1,443 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { Download, FileText } from "lucide-react";
-import { useEffect, useState } from "react";
-import { AppShell, PageHeading } from "@/components/product/AppShell";
-import { exportAnonymousWorkspace, listAnonymousProperties, subscribeAnonymousWorkspace } from "@/features/anonymous-workspace/repository";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { ArrowRight, BarChart3, Download, FileText, ShieldAlert } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { z } from "zod";
+import { AppShell } from "@/components/product/AppShell";
+import {
+  exportAnonymousWorkspace,
+  listAnonymousProperties,
+  subscribeAnonymousWorkspace,
+} from "@/features/anonymous-workspace/repository";
 import type { AnonymousProperty } from "@/features/anonymous-workspace/schema";
+import {
+  anonymousPropertyToDecisionRow,
+  projectAnonymousProperty,
+} from "@/features/anonymous-workspace/portfolio-projection";
+import {
+  buildPortfolioIntelligence,
+  type PortfolioRiskFilter,
+  type PortfolioSort,
+} from "@/features/grid-connection/portfolio-intelligence";
 import { downloadPortfolioComparisonPdf } from "@/features/properties/capacity-dossier";
-import { downloadPropertyCsv, downloadPropertyGeoJson, downloadPropertyXlsx, type ExportableProperty } from "@/features/properties/property-export";
+import {
+  downloadPropertyCsv,
+  downloadPropertyGeoJson,
+  downloadPropertyXlsx,
+  type ExportableProperty,
+} from "@/features/properties/property-export";
 
-export const Route = createFileRoute("/reports")({ head: () => ({ meta: [{ title: "Anonymous Property Reports | GridPulse" }, { name: "robots", content: "noindex, nofollow" }] }), component: ReportsPage });
+export const Route = createFileRoute("/reports")({
+  validateSearch: z.object({
+    operator: z.string().max(160).optional(),
+    risk: z.enum(["all", "blocked", "deadline", "operator_confirmed"]).optional(),
+    sort: z.enum(["urgency", "evidence", "mw", "name"]).optional(),
+    decision: z.enum(["all", "unreviewed", "advance", "hold", "reject"]).optional(),
+  }),
+  head: () => ({
+    meta: [
+      { title: "Decision Centre | GridPulse" },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
+  component: DecisionCentre,
+});
 
 function exportable(property: AnonymousProperty): ExportableProperty {
-  return { id: property.id, name: property.name, project_type: property.propertyType ?? property.project.type, latitude: property.project.latitude!, longitude: property.project.longitude!, requested_import_mw: property.requiredTotalSiteLoadMw ?? property.project.importMw, requested_export_mw: property.exportRequirementMw ?? property.project.exportMw, likely_network_operator: property.candidateSnapshots[0]?.operator ?? null, operator_status: property.candidateSnapshots.length ? "screening_context" : "not_assessed", planning_status: "not_assessed", land_status: property.landControlStatus, assessment_status: property.evidence?.validationStatus === "validated" ? "evidence_attached" : "screening", boundary: property.boundary };
+  const summary = projectAnonymousProperty(property);
+  return {
+    id: property.id,
+    name: property.name,
+    project_type: summary.projectType,
+    latitude: property.project.latitude!,
+    longitude: property.project.longitude!,
+    requested_import_mw: summary.requiredMw,
+    requested_export_mw: property.exportRequirementMw ?? property.project.exportMw,
+    likely_network_operator: summary.operator,
+    operator_status: summary.operator ? "screening_context" : "not_assessed",
+    planning_status: "not_assessed",
+    land_status: property.landControlStatus,
+    assessment_status: property.decisionStatus,
+    boundary: property.boundary,
+  };
 }
-function downloadBackup(value: unknown) { const url = URL.createObjectURL(new Blob([JSON.stringify(value, null, 2)], { type: "application/json" })); const anchor = document.createElement("a"); anchor.href = url; anchor.download = "gridpulse-workspace-backup.json"; anchor.click(); URL.revokeObjectURL(url); }
+function downloadBackup(value: unknown) {
+  const url = URL.createObjectURL(
+    new Blob([JSON.stringify(value, null, 2)], { type: "application/json" }),
+  );
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = "gridpulse-workspace-backup.json";
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+const number = new Intl.NumberFormat("en-GB", { maximumFractionDigits: 0 });
 
-function ReportsPage() {
+function DecisionCentre() {
+  const navigate = useNavigate();
+  const search = Route.useSearch();
   const [properties, setProperties] = useState<AnonymousProperty[]>([]);
-  const refresh = () => void listAnonymousProperties().then(setProperties);
-  useEffect(() => { refresh(); return subscribeAnonymousWorkspace(refresh); }, []);
+  const [loading, setLoading] = useState(true);
+  const refresh = () =>
+    void listAnonymousProperties().then((items) => {
+      setProperties(items);
+      setLoading(false);
+    });
+  useEffect(() => {
+    refresh();
+    return subscribeAnonymousWorkspace(refresh);
+  }, []);
+  const summaries = useMemo(() => properties.map(projectAnonymousProperty), [properties]);
+  const allRows = useMemo(() => properties.map(anonymousPropertyToDecisionRow), [properties]);
+  const decisionRows = useMemo(
+    () =>
+      search.decision && search.decision !== "all"
+        ? allRows.filter(
+            (row) =>
+              properties.find((property) => property.id === row.site_id)?.decisionStatus ===
+              search.decision,
+          )
+        : allRows,
+    [allRows, properties, search.decision],
+  );
+  const intelligence = useMemo(
+    () =>
+      buildPortfolioIntelligence(decisionRows, {
+        operator: search.operator ?? "all",
+        risk: (search.risk ?? "all") as PortfolioRiskFilter,
+        sort: (search.sort ?? "urgency") as PortfolioSort,
+      }),
+    [decisionRows, search.operator, search.risk, search.sort],
+  );
   const rows = properties.map(exportable);
-  const unresolved = properties.filter((property) => property.evidence?.validationStatus !== "validated").length;
-  return <AppShell><main id="main-content" className="section-page management-report">
-    <PageHeading eyebrow="Stored on this device" title="Property reports and exports" description="Generate portable decision records without an account. Unknown capacity remains Unknown in every format." action={properties.length ? <button type="button" className="primary-button" onClick={() => downloadPortfolioComparisonPdf(rows)}><Download aria-hidden="true" /> Portfolio PDF</button> : undefined} />
-    <section className="management-kpi-grid"><article><span>Properties</span><strong>{properties.length}</strong></article><article><span>Declared requirement</span><strong>{properties.reduce((sum, item) => sum + (item.requiredTotalSiteLoadMw ?? item.project.importMw), 0).toLocaleString("en-GB")} MW</strong></article><article><span>With candidate snapshots</span><strong>{properties.filter((item) => item.candidateSnapshots.length).length}</strong></article><article><span>Capacity unresolved</span><strong>{unresolved}</strong></article></section>
-    <section className="workspace-card report-export-actions" aria-labelledby="export-title"><div><h2 id="export-title">Data exchange and backup</h2><p>CSV, XLSX, and GeoJSON contain declared property information and screening context only. The workspace backup can restore this browser portfolio on another device.</p></div><div className="property-import-actions"><button type="button" className="secondary-button" disabled={!rows.length} onClick={() => downloadPropertyCsv(rows)}>Export CSV</button><button type="button" className="secondary-button" disabled={!rows.length} onClick={() => void downloadPropertyXlsx(rows)}>Export XLSX</button><button type="button" className="secondary-button" disabled={!rows.length} onClick={() => downloadPropertyGeoJson(rows)}>Export GeoJSON</button><button type="button" className="secondary-button" onClick={async () => downloadBackup(await exportAnonymousWorkspace())}>Workspace backup</button></div></section>
-    <section><h2>Property dossiers</h2>{properties.length ? <div className="report-index-grid">{properties.map((property) => <article className="report-index-card" key={property.id}><p className="context-label">Local property</p><h2>{property.name}</h2><p>{property.requiredTotalSiteLoadMw ?? property.project.importMw} MW declared requirement</p><span className="status warning-text">{property.evidence?.validationStatus === "validated" ? "Accepted evidence attached" : "Capacity Unknown"}</span><Link to="/capacity-dossiers/$id" params={{ id: property.id }}>Open capacity dossier</Link></article>)}</div> : <div className="portfolio-state"><FileText aria-hidden="true" /><h2>No reports yet</h2><p>Save or import a property before generating reports.</p><Link to="/power-finder" className="primary-button">Screen a property</Link></div>}</section>
-  </main></AppShell>;
+  const patchSearch = (patch: Partial<typeof search>) =>
+    void navigate({ to: "/reports", search: { ...search, ...patch }, replace: true });
+  const advanced = properties.filter((property) => property.decisionStatus === "advance").length;
+  const operatorIdentified = summaries.filter((site) => site.operator).length;
+  const validated = summaries.filter((site) => site.capacityState === "validated").length;
+
+  return (
+    <AppShell>
+      <main id="main-content" className="decision-centre-page decision-workspace-page">
+        <aside className="decision-workspace-rail" aria-label="Decision Centre controls">
+          <header>
+            <p className="context-label">Portfolio Intelligence</p>
+            <h1>Decision Centre</h1>
+            <p>Prioritise sites, expose evidence gaps, and prepare stakeholder-ready records.</p>
+          </header>
+          <section className="rail-section">
+            <h2>
+              <BarChart3 aria-hidden="true" /> Portfolio Scope
+            </h2>
+            <label>
+              Decision
+              <select
+                name="decision-centre-decision"
+                value={search.decision ?? "all"}
+                onChange={(event) =>
+                  patchSearch({ decision: event.target.value as typeof search.decision })
+                }
+              >
+                <option value="all">All Decisions</option>
+                <option value="unreviewed">Unreviewed</option>
+                <option value="advance">Advance</option>
+                <option value="hold">Hold</option>
+                <option value="reject">Reject</option>
+              </select>
+            </label>
+            <label>
+              Evidence Exposure
+              <select
+                name="decision-centre-risk"
+                value={search.risk ?? "all"}
+                onChange={(event) =>
+                  patchSearch({ risk: event.target.value as PortfolioRiskFilter })
+                }
+              >
+                <option value="all">All Sites</option>
+                <option value="blocked">Blocked by Evidence</option>
+                <option value="deadline">Validity Deadline</option>
+                <option value="operator_confirmed">Validated Evidence</option>
+              </select>
+            </label>
+            <label>
+              Operator Context
+              <select
+                name="decision-centre-operator"
+                value={search.operator ?? "all"}
+                onChange={(event) =>
+                  patchSearch({
+                    operator: event.target.value === "all" ? undefined : event.target.value,
+                  })
+                }
+              >
+                <option value="all">All Operators</option>
+                {intelligence.operators.map((item) => (
+                  <option key={item.operator} value={item.operator}>
+                    {item.operator}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Sort
+              <select
+                name="decision-centre-sort"
+                value={search.sort ?? "urgency"}
+                onChange={(event) => patchSearch({ sort: event.target.value as PortfolioSort })}
+              >
+                <option value="urgency">Decision Urgency</option>
+                <option value="evidence">Evidence Strength</option>
+                <option value="mw">Required MW</option>
+                <option value="name">Site Name</option>
+              </select>
+            </label>
+          </section>
+          <section className="rail-section export-menu">
+            <h2>
+              <Download aria-hidden="true" /> Decision Packages
+            </h2>
+            <button
+              type="button"
+              disabled={!rows.length}
+              onClick={() => downloadPortfolioComparisonPdf(rows)}
+            >
+              Portfolio Decision PDF
+            </button>
+            <button type="button" disabled={!rows.length} onClick={() => downloadPropertyCsv(rows)}>
+              Export CSV
+            </button>
+            <button
+              type="button"
+              disabled={!rows.length}
+              onClick={() => void downloadPropertyXlsx(rows)}
+            >
+              Export XLSX
+            </button>
+            <button
+              type="button"
+              disabled={!rows.length}
+              onClick={() => downloadPropertyGeoJson(rows)}
+            >
+              Export GeoJSON
+            </button>
+            <button
+              type="button"
+              onClick={async () => downloadBackup(await exportAnonymousWorkspace())}
+            >
+              Workspace Backup
+            </button>
+          </section>
+          <p className="rail-boundary">
+            <ShieldAlert aria-hidden="true" /> Portfolio exposure aggregates requirements and
+            evidence maturity—not available grid capacity or connection probability.
+          </p>
+        </aside>
+        <section className="decision-workspace-main">
+          <header className="workspace-main-header">
+            <div>
+              <p className="context-label">Evidence-Led Portfolio Review</p>
+              <h2>Portfolio Decision Exposure</h2>
+              <p>
+                {properties.length} locally stored {properties.length === 1 ? "site" : "sites"}
+              </p>
+            </div>
+            {rows.length ? (
+              <button
+                type="button"
+                className="primary-button"
+                onClick={() => downloadPortfolioComparisonPdf(rows)}
+              >
+                <Download aria-hidden="true" /> Portfolio PDF
+              </button>
+            ) : null}
+          </header>
+          {loading ? (
+            <div className="decision-empty" role="status">
+              <div className="loading-spinner" /> Loading decision intelligence…
+            </div>
+          ) : !properties.length ? (
+            <div className="decision-empty">
+              <FileText aria-hidden="true" />
+              <h2>No Decision Records Yet</h2>
+              <p>Save or import a site before reviewing portfolio exposure.</p>
+              <Link to="/power-finder" className="primary-button">
+                Screen a Site
+              </Link>
+            </div>
+          ) : (
+            <>
+              <section className="decision-kpi-strip" aria-label="Portfolio decision metrics">
+                <Kpi
+                  label="Declared Demand"
+                  value={`${number.format(intelligence.metrics.totalMw)} MW`}
+                />
+                <Kpi
+                  label="MW Requiring Evidence"
+                  value={`${number.format(intelligence.metrics.atRiskMw)} MW`}
+                  tone="warning"
+                />
+                <Kpi
+                  label="Action Required"
+                  value={intelligence.metrics.urgentProjects}
+                  tone="warning"
+                />
+                <Kpi label="Advanced" value={advanced} tone="positive" />
+                <Kpi label="Operator Identified" value={operatorIdentified} />
+                <Kpi label="Validated Evidence" value={validated} tone="positive" />
+              </section>
+              <section className="decision-priority-section">
+                <header>
+                  <div>
+                    <p className="context-label">Decision Work Queue</p>
+                    <h2>Priority Sites</h2>
+                  </div>
+                  <span>{intelligence.rows.length} shown</span>
+                </header>
+                {intelligence.rows.length ? (
+                  <div className="decision-priority-list">
+                    {intelligence.rows.map((row) => {
+                      const summary = summaries.find((site) => site.id === row.site_id)!;
+                      return (
+                        <article key={row.site_id} data-severity={row.risk.severity}>
+                          <div>
+                            <span className={`decision-chip is-${summary.decisionStatus}`}>
+                              {summary.decisionStatus}
+                            </span>
+                            <h3>{row.site_name}</h3>
+                            <p>
+                              {summary.locationLabel} · {summary.projectType.replaceAll("_", " ")}
+                            </p>
+                          </div>
+                          <dl>
+                            <div>
+                              <dt>Required</dt>
+                              <dd>{number.format(row.requested_import_mw)} MW</dd>
+                            </div>
+                            <div>
+                              <dt>Preferred Candidate</dt>
+                              <dd>{summary.preferredCandidate?.nodeName ?? "Not shortlisted"}</dd>
+                            </div>
+                            <div>
+                              <dt>Operator</dt>
+                              <dd>{row.operator_name ?? "Unconfirmed"}</dd>
+                            </div>
+                            <div>
+                              <dt>Evidence</dt>
+                              <dd>
+                                {row.evidence_score ? `${row.evidence_score}/100` : "Unknown"}
+                              </dd>
+                            </div>
+                          </dl>
+                          <p className="priority-blocker">
+                            <b>Primary blocker</b>
+                            {row.missing_evidence[0] ?? "No open evidence blocker"}
+                          </p>
+                          <p className="priority-next">
+                            <b>Next</b>
+                            {summary.nextAction}
+                          </p>
+                          <Link to="/capacity-dossiers/$id" params={{ id: row.site_id }}>
+                            Open Decision Record <ArrowRight aria-hidden="true" />
+                          </Link>
+                        </article>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="decision-empty compact">
+                    <h3>No Sites Match This Scope</h3>
+                    <p>Choose another decision, evidence, or operator filter.</p>
+                  </div>
+                )}
+              </section>
+              <section className="operator-exposure-section">
+                <header>
+                  <div>
+                    <p className="context-label">Portfolio Concentration</p>
+                    <h2>Operator Context</h2>
+                  </div>
+                  <p>Declared demand grouped by mapped operator context.</p>
+                </header>
+                <div>
+                  {intelligence.operators.map((item) => (
+                    <article key={item.operator}>
+                      <span>{item.operator}</span>
+                      <strong>{number.format(item.requestedMw)} MW</strong>
+                      <small>
+                        {item.projects} {item.projects === 1 ? "site" : "sites"}
+                      </small>
+                    </article>
+                  ))}
+                </div>
+              </section>
+              <section className="decision-record-index">
+                <header>
+                  <div>
+                    <p className="context-label">Stakeholder Evidence</p>
+                    <h2>Site Decision Records</h2>
+                  </div>
+                </header>
+                <div>
+                  {summaries.map((site) => (
+                    <article key={site.id}>
+                      <div>
+                        <span className={`decision-chip is-${site.decisionStatus}`}>
+                          {site.decisionStatus}
+                        </span>
+                        <h3>{site.name}</h3>
+                        <p>
+                          {site.requiredMw} MW declared ·{" "}
+                          {site.preferredCandidate?.nodeName ?? "No candidate shortlisted"}
+                        </p>
+                      </div>
+                      <dl>
+                        <div>
+                          <dt>Evidence</dt>
+                          <dd>
+                            {site.evidenceScore == null ? "Unknown" : `${site.evidenceScore}/100`}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>Capacity</dt>
+                          <dd>{site.capacityState === "validated" ? "Validated" : "Unknown"}</dd>
+                        </div>
+                        <div>
+                          <dt>Updated</dt>
+                          <dd>
+                            {new Intl.DateTimeFormat("en-GB", { dateStyle: "medium" }).format(
+                              new Date(site.updatedAt),
+                            )}
+                          </dd>
+                        </div>
+                      </dl>
+                      <Link to="/capacity-dossiers/$id" params={{ id: site.id }}>
+                        Open Record <ArrowRight aria-hidden="true" />
+                      </Link>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            </>
+          )}
+        </section>
+      </main>
+    </AppShell>
+  );
+}
+
+function Kpi({
+  label,
+  value,
+  tone = "",
+}: {
+  label: string;
+  value: string | number;
+  tone?: string;
+}) {
+  return (
+    <article className={tone}>
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </article>
+  );
 }
