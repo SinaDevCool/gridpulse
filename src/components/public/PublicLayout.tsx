@@ -20,8 +20,14 @@ export function PublicBrand() {
   );
 }
 
-export function PublicLayout({ children }: { children: ReactNode }) {
-  if (isFinderMvp()) return <FinderShell>{children}</FinderShell>;
+export function PublicLayout({
+  children,
+  forcePublicChrome = false,
+}: {
+  children: ReactNode;
+  forcePublicChrome?: boolean;
+}) {
+  if (isFinderMvp() && !forcePublicChrome) return <FinderShell>{children}</FinderShell>;
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
   const onPilotPage = location.pathname === "/pilot";
