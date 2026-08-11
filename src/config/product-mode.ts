@@ -30,7 +30,14 @@ export const graphStudySubmissionEnabled =
 
 export const finderContactEmail = "kshitijjindal1@gmail.com";
 
-const finderRoutes = new Set(["/", "/power-finder", "/synthetic-network-study", "/data-sources"]);
+const finderRoutes = new Set([
+  "/",
+  "/power-finder",
+  "/activation",
+  "/operations",
+  "/synthetic-network-study",
+  "/data-sources",
+]);
 
 const finderApiRoutes = new Set([
   "/api/power-finder/viewport",

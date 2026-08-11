@@ -1,8 +1,7 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { ArrowRight, Menu, X } from "lucide-react";
-import { useContext, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { trackEvent } from "@/lib/analytics";
-import { AuthContext } from "@/context/auth-context-core";
 import { isFinderMvp } from "@/config/product-mode";
 import { FinderShell } from "@/components/product/FinderShell";
 
@@ -22,7 +21,6 @@ export function PublicBrand() {
 }
 
 export function PublicLayout({ children }: { children: ReactNode }) {
-  const user = useContext(AuthContext)?.user ?? null;
   if (isFinderMvp()) return <FinderShell>{children}</FinderShell>;
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
@@ -44,20 +42,6 @@ export function PublicLayout({ children }: { children: ReactNode }) {
               {item.label}
             </Link>
           ))}
-          {user ? (
-            <Link to="/portfolio" className="public-sign-in" onClick={() => setMenuOpen(false)}>
-              Workspace
-            </Link>
-          ) : (
-            <Link
-              to="/auth"
-              search={{ redirect: undefined }}
-              className="public-sign-in"
-              onClick={() => setMenuOpen(false)}
-            >
-              Sign In
-            </Link>
-          )}
           <Link
             to="/pilot"
             hash={onPilotPage ? "pilot-form" : undefined}
@@ -87,7 +71,6 @@ export function PublicLayout({ children }: { children: ReactNode }) {
 }
 
 export function PublicFooter() {
-  const user = useContext(AuthContext)?.user ?? null;
   return (
     <footer className="public-footer">
       <div className="public-container public-footer-grid">
@@ -100,13 +83,6 @@ export function PublicFooter() {
           <Link to="/demo">Product Tour</Link>
           <Link to="/data-sources">Methodology &amp; Sources</Link>
           <Link to="/pilot">Start a Pilot</Link>
-          {user ? (
-            <Link to="/portfolio">Workspace</Link>
-          ) : (
-            <Link to="/auth" search={{ redirect: undefined }}>
-              Sign In
-            </Link>
-          )}
         </nav>
       </div>
       <div className="public-container public-footer-boundary">

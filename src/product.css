@@ -14654,6 +14654,85 @@ tbody tr:last-child td {
 }
 
 /* Focused Activation & Operations workspace audit */
+.product-header--minimal {
+  height: 58px;
+  justify-content: space-between;
+  padding-inline: max(24px, calc((100vw - 1120px) / 2));
+}
+.product-header-label {
+  color: #7f96a5;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.product-stage-navigation {
+  position: sticky;
+  top: 58px;
+  z-index: 19;
+  border-bottom: 1px solid #203747;
+  background: rgba(7, 19, 31, 0.96);
+  backdrop-filter: blur(12px);
+}
+.product-stage-navigation > div {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: min(760px, calc(100% - 48px));
+  margin: 0 auto;
+}
+.product-stage-navigation a {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-height: 60px;
+  padding: 8px 18px;
+  color: #7f96a5;
+  text-decoration: none;
+}
+.product-stage-navigation a::after {
+  position: absolute;
+  right: 18px;
+  bottom: -1px;
+  left: 18px;
+  height: 2px;
+  background: transparent;
+  content: "";
+}
+.product-stage-navigation a:hover,
+.product-stage-navigation a:focus-visible {
+  color: #dce8ee;
+}
+.product-stage-navigation a.active {
+  color: #effbff;
+}
+.product-stage-navigation a.active::after {
+  background: #20c4e8;
+}
+.product-stage-navigation a > span:first-child {
+  color: #20c4e8;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.66rem;
+  font-weight: 800;
+}
+.product-stage-navigation a > span:last-child {
+  min-width: 0;
+}
+.product-stage-navigation strong,
+.product-stage-navigation small {
+  display: block;
+}
+.product-stage-navigation strong {
+  font-size: 0.78rem;
+}
+.product-stage-navigation small {
+  margin-top: 2px;
+  overflow: hidden;
+  font-size: 0.62rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .product-shell--focused {
   min-width: 0;
   overflow-x: hidden;
@@ -14833,6 +14912,27 @@ tbody tr:last-child td {
   }
 }
 @media (max-width: 760px) {
+  .product-header-label {
+    display: none;
+  }
+  .product-stage-navigation > div {
+    width: 100%;
+  }
+  .product-stage-navigation a {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 2px;
+    min-height: 54px;
+    padding: 6px 4px;
+    text-align: center;
+  }
+  .product-stage-navigation a::after {
+    right: 8px;
+    left: 8px;
+  }
+  .product-stage-navigation small {
+    display: none;
+  }
   .product-shell--focused .product-truth--compact,
   .product-shell--focused .section-page {
     width: min(100% - 32px, 1120px);
