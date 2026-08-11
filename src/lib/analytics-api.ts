@@ -46,7 +46,7 @@ async function authenticatedRequest<T>(path: string, init?: RequestInit): Promis
   const {
     data: { session },
   } = await supabase.auth.getSession();
-  if (!session) throw new Error("Sign in before using analytics jobs");
+  if (!session) throw new Error("Analytics jobs are unavailable in the public Finder");
 
   const response = await fetch(`${analyticsBaseUrl()}${path}`, {
     ...init,

@@ -14,7 +14,7 @@ export async function savePowerFinderCandidate(
     error: userError,
   } = await supabase.auth.getUser();
   if (userError) throw userError;
-  if (!user) throw new Error("Sign in before saving a candidate.");
+  if (!user) throw new Error("Saved candidate storage is unavailable in the public Finder.");
 
   const score = scoreFeature(feature);
   const { data, error } = await supabase

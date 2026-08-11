@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
   AlertTriangle,
   BookmarkPlus,
@@ -1751,11 +1751,7 @@ function PowerFinderPage() {
                 <BookmarkPlus aria-hidden="true" />
                 {propertySaveStatus === "saving" ? "Saving property…" : propertySaveStatus === "saved" ? "Saved to property portfolio" : propertySaveStatus === "error" ? "Try saving property again" : "Save to property portfolio"}
               </button>
-            ) : (
-              <Link to="/auth" search={{ redirect: "/power-finder" }} className="primary-button">
-                <BookmarkPlus aria-hidden="true" /> Save to Property Portfolio
-              </Link>
-            )}
+            ) : null}
           </details>
 
           <p className="sr-only" role="status" aria-live="polite">
@@ -2885,7 +2881,7 @@ function PowerFinderPage() {
                         <p>Evidence service is temporarily unavailable.</p>
                       )}
                       {operatorEvidenceState === "idle" && dataMode === "published_artifact" && (
-                        <p>Sign in to the live evidence release to inspect operator sources.</p>
+                        <p>Operator source inspection is not included in the public Finder.</p>
                       )}
                       {operatorEvidenceState === "ready" &&
                         (operatorEvidence?.items.length ? (

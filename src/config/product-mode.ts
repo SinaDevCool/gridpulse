@@ -9,9 +9,7 @@ export const productMode = parseProductMode(__GRIDPULSE_PRODUCT_MODE__);
 export function capabilitiesForMode(mode: ProductMode) {
   return {
     finder: true,
-    // Public exploration stays anonymous; authentication is available only when a user
-    // chooses to save work into the private property portfolio.
-    authentication: true,
+    authentication: false,
     workspace: mode !== "finder",
     connect: mode === "connect" || mode === "full",
     operate: mode === "full",
@@ -40,20 +38,7 @@ const finderRoutes = new Set([
   "/data-centres",
   "/energy-storage",
   "/hydrogen-industry",
-  "/auth",
-  "/portfolio",
-  "/assessments/new",
-  "/reports",
 ]);
-
-const finderPrivateRoutePrefixes = [
-  "/assessments/",
-  "/evidence",
-  "/evidence-review",
-  "/operator-review/",
-  "/submission-package/",
-  "/capacity-dossiers/",
-];
 
 const finderApiRoutes = new Set([
   "/api/power-finder/viewport",
@@ -68,8 +53,7 @@ export function isRouteEnabledForMode(pathname: string, mode: ProductMode): bool
   const normalized = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
   return (
     finderRoutes.has(normalized) ||
-    finderApiRoutes.has(normalized) ||
-    finderPrivateRoutePrefixes.some((prefix) => normalized.startsWith(prefix))
+    finderApiRoutes.has(normalized)
   );
 }
 

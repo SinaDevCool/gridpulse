@@ -5399,11 +5399,6 @@
   width: 32px;
   height: 32px;
 }
-.header-sign-in {
-  color: #29c7e8;
-  text-decoration: none;
-  font-size: 12px;
-}
 .auth-gate {
   min-height: calc(100vh - 111px);
   display: grid;

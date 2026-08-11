@@ -8,7 +8,6 @@ import { useAuth } from "@/context/useAuth";
 
 function AuthenticatedBoundary({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
-  const pathname = useRouterState({ select: (state) => state.location.href });
   if (loading) {
     return (
       <main id="main-content" className="empty-page" role="status" aria-live="polite">
@@ -16,7 +15,7 @@ function AuthenticatedBoundary({ children }: { children: ReactNode }) {
       </main>
     );
   }
-  if (!user) return <Navigate to="/auth" search={{ redirect: pathname }} replace />;
+  if (!user) return <Navigate to="/power-finder" replace />;
   return children;
 }
 

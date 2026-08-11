@@ -12,7 +12,7 @@ export async function saveFinderProjectToPortfolio(
     error: userError,
   } = await supabase.auth.getUser();
   if (userError) throw userError;
-  if (!user) throw new Error("Sign in to save this project to the property portfolio.");
+  if (!user) throw new Error("Property portfolio storage is unavailable in the public Finder.");
   if (project.latitude == null || project.longitude == null)
     throw new Error("Set property coordinates before saving to the portfolio.");
   const candidateSnapshots = candidates.map((candidate) => ({

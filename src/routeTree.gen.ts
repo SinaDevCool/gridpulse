@@ -26,7 +26,6 @@ import { Route as EnergyStorageRouteImport } from './routes/energy-storage'
 import { Route as DemoRouteImport } from './routes/demo'
 import { Route as DataSourcesRouteImport } from './routes/data-sources'
 import { Route as DataCentresRouteImport } from './routes/data-centres'
-import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ActivationRouteImport } from './routes/activation'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SubmissionPackageIdRouteImport } from './routes/submission-package.$id'
@@ -127,11 +126,6 @@ const DataCentresRoute = DataCentresRouteImport.update({
   path: '/data-centres',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ActivationRoute = ActivationRouteImport.update({
   id: '/activation',
   path: '/activation',
@@ -206,7 +200,6 @@ const ApiPowerFinderTileZXYRoute = ApiPowerFinderTileZXYRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/activation': typeof ActivationRouteWithChildren
-  '/auth': typeof AuthRoute
   '/data-centres': typeof DataCentresRoute
   '/data-sources': typeof DataSourcesRoute
   '/demo': typeof DemoRoute
@@ -240,7 +233,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/activation': typeof ActivationRouteWithChildren
-  '/auth': typeof AuthRoute
   '/data-centres': typeof DataCentresRoute
   '/data-sources': typeof DataSourcesRoute
   '/demo': typeof DemoRoute
@@ -275,7 +267,6 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/activation': typeof ActivationRouteWithChildren
-  '/auth': typeof AuthRoute
   '/data-centres': typeof DataCentresRoute
   '/data-sources': typeof DataSourcesRoute
   '/demo': typeof DemoRoute
@@ -311,7 +302,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/activation'
-    | '/auth'
     | '/data-centres'
     | '/data-sources'
     | '/demo'
@@ -345,7 +335,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/activation'
-    | '/auth'
     | '/data-centres'
     | '/data-sources'
     | '/demo'
@@ -379,7 +368,6 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/activation'
-    | '/auth'
     | '/data-centres'
     | '/data-sources'
     | '/demo'
@@ -414,7 +402,6 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ActivationRoute: typeof ActivationRouteWithChildren
-  AuthRoute: typeof AuthRoute
   DataCentresRoute: typeof DataCentresRoute
   DataSourcesRoute: typeof DataSourcesRoute
   DemoRoute: typeof DemoRoute
@@ -565,13 +552,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DataCentresRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/activation': {
       id: '/activation'
       path: '/activation'
@@ -700,7 +680,6 @@ const OperationsRouteWithChildren = OperationsRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ActivationRoute: ActivationRouteWithChildren,
-  AuthRoute: AuthRoute,
   DataCentresRoute: DataCentresRoute,
   DataSourcesRoute: DataSourcesRoute,
   DemoRoute: DemoRoute,
