@@ -12,6 +12,12 @@ const publicNavigation = [
   { label: "Methodology & Sources", to: "/data-sources" },
 ] as const;
 
+const finderNavigation = [
+  { label: "How It Works", to: "/", hash: "how-it-works" },
+  { label: "Product Tour", to: "/demo" },
+  { label: "Methodology & Sources", to: "/data-sources" },
+] as const;
+
 export function PublicBrand() {
   return (
     <Link to="/" className="public-brand" aria-label="GridPulse home" translate="no">
@@ -23,20 +29,23 @@ export function PublicBrand() {
 export function PublicLayout({
   children,
   forcePublicChrome = false,
+  finderMarketingChrome = false,
 }: {
   children: ReactNode;
   forcePublicChrome?: boolean;
+  finderMarketingChrome?: boolean;
 }) {
-  if (isFinderMvp() && !forcePublicChrome) return <FinderShell>{children}</FinderShell>;
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
+  if (isFinderMvp() && !forcePublicChrome) return <FinderShell>{children}</FinderShell>;
   const onPilotPage = location.pathname === "/pilot";
+  const navigation = finderMarketingChrome ? finderNavigation : publicNavigation;
   return (
     <div className="public-shell">
       <header className="public-header">
         <PublicBrand />
         <nav className={menuOpen ? "is-open" : undefined} aria-label="Public navigation">
-          {publicNavigation.map((item) => (
+          {navigation.map((item) => (
             <Link
               key={`${item.to}-${"hash" in item ? item.hash : ""}`}
               to={item.to}
@@ -49,15 +58,24 @@ export function PublicLayout({
             </Link>
           ))}
           <Link
-            to="/pilot"
-            hash={onPilotPage ? "pilot-form" : undefined}
+            to={finderMarketingChrome ? "/portfolio" : "/pilot"}
+            hash={!finderMarketingChrome && onPilotPage ? "pilot-form" : undefined}
             className="public-header-cta"
             onClick={() => {
               setMenuOpen(false);
-              trackEvent("public_start_pilot_clicked", { placement: "header" });
+              trackEvent(
+                finderMarketingChrome
+                  ? "public_open_site_pipeline_clicked"
+                  : "public_start_pilot_clicked",
+                { placement: "header" },
+              );
             }}
           >
-            {onPilotPage ? "Continue Application" : "Start a Pilot"}
+            {finderMarketingChrome
+              ? "Open Site Pipeline"
+              : onPilotPage
+                ? "Continue Application"
+                : "Start a Pilot"}
           </Link>
         </nav>
         <button
@@ -71,12 +89,16 @@ export function PublicLayout({
         </button>
       </header>
       {children}
-      <PublicFooter />
+      <PublicFooter finderMarketingChrome={finderMarketingChrome} />
     </div>
   );
 }
 
-export function PublicFooter() {
+export function PublicFooter({
+  finderMarketingChrome = false,
+}: {
+  finderMarketingChrome?: boolean;
+}) {
   return (
     <footer className="public-footer">
       <div className="public-container public-footer-grid">
@@ -85,10 +107,14 @@ export function PublicFooter() {
           <p>Evidence-led grid-connection decision support for German infrastructure projects.</p>
         </div>
         <nav aria-label="Public footer navigation">
-          <Link to="/service">Assessment</Link>
+          {finderMarketingChrome ? null : <Link to="/service">Assessment</Link>}
           <Link to="/demo">Product Tour</Link>
           <Link to="/data-sources">Methodology &amp; Sources</Link>
-          <Link to="/pilot">Start a Pilot</Link>
+          {finderMarketingChrome ? (
+            <Link to="/portfolio">Open Site Pipeline</Link>
+          ) : (
+            <Link to="/pilot">Start a Pilot</Link>
+          )}
         </nav>
       </div>
       <div className="public-container public-footer-boundary">

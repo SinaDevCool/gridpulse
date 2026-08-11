@@ -85,7 +85,7 @@ const clientNeeds = [
 
 function DataCentreLandingPage() {
   return (
-    <PublicLayout forcePublicChrome>
+    <PublicLayout forcePublicChrome finderMarketingChrome>
       <div className="landing-page dc-landing">
         <main id="main-content">
           <section className="dc-hero" aria-labelledby="hero-title">
