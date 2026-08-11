@@ -30,6 +30,7 @@ export function propertyFromFinder(
   project: FinderProject,
   candidates: CandidateOpportunity[],
   existing?: AnonymousProperty | null,
+  shortlistedCandidateId?: string | null,
 ): AnonymousProperty {
   if (project.latitude == null || project.longitude == null)
     throw new Error("Declare a property location before saving.");
@@ -41,12 +42,14 @@ export function propertyFromFinder(
   );
   const candidateSnapshots = [...capturedCandidates, ...retainedCandidates];
   const preferredCandidateId =
-    existing?.preferredCandidateId &&
-    candidateSnapshots.some((item) => item.id === existing.preferredCandidateId)
-      ? existing.preferredCandidateId
-      : existing
-        ? null
-        : capturedCandidates[0]?.id ?? null;
+    shortlistedCandidateId && candidateSnapshots.some((item) => item.id === shortlistedCandidateId)
+      ? shortlistedCandidateId
+      : existing?.preferredCandidateId &&
+          candidateSnapshots.some((item) => item.id === existing.preferredCandidateId)
+        ? existing.preferredCandidateId
+        : existing
+          ? null
+          : (capturedCandidates[0]?.id ?? null);
   return {
     ...existing,
     id: existing?.id ?? crypto.randomUUID(),

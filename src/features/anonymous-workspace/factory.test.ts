@@ -116,4 +116,15 @@ describe("anonymous property factory", () => {
     expect(result.preferredCandidateId).toBeNull();
     expect(result.candidateSnapshots.map((item) => item.id)).toEqual(["new"]);
   });
+
+  it("records an explicitly shortlisted Finder candidate", () => {
+    const existing = imported();
+    const result = propertyFromFinder(
+      existing.project,
+      [candidate("preferred"), candidate("alternative")],
+      existing,
+      "preferred",
+    );
+    expect(result.preferredCandidateId).toBe("preferred");
+  });
 });

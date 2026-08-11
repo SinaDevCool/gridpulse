@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   AlertTriangle,
   BookmarkPlus,
@@ -35,6 +35,7 @@ import {
 } from "@/features/power-finder/fixture-data";
 import { saveFinderProjectToPortfolio } from "@/features/power-finder/property-handoff";
 import { getAnonymousProperty } from "@/features/anonymous-workspace/repository";
+import type { AnonymousProperty } from "@/features/anonymous-workspace/schema";
 import { GRID_VOLTAGE_CLASSES } from "@/features/power-finder/voltage-style";
 import { layerAvailability } from "@/features/power-finder/layer-availability";
 import {
@@ -287,6 +288,8 @@ function PowerFinderPage() {
   const [propertySaveStatus, setPropertySaveStatus] = useState<
     "idle" | "saving" | "saved" | "error"
   >("idle");
+  const [activeProperty, setActiveProperty] = useState<AnonymousProperty | null>(null);
+  const [showAllCandidates, setShowAllCandidates] = useState(false);
   const [operatorEvidence, setOperatorEvidence] = useState<OperatorEvidenceResult | null>(null);
   const [operatorEvidenceState, setOperatorEvidenceState] = useState<
     "idle" | "loading" | "ready" | "unavailable"
@@ -492,7 +495,7 @@ function PowerFinderPage() {
     const saved = loadFinderProject();
     setProject({
       ...saved,
-      type: search.projectType ?? saved.type,
+      type: finderMvpFeatures.dataCentreOnly ? "data_centre" : (search.projectType ?? saved.type),
       latitude: search.lat ?? saved.latitude,
       longitude: search.lng ?? saved.longitude,
       importMw: search.mw ?? saved.importMw,
@@ -516,11 +519,15 @@ function PowerFinderPage() {
   }, [project, projectHydrated]);
 
   useEffect(() => {
-    if (!search.propertyId) return;
+    if (!search.propertyId) {
+      setActiveProperty(null);
+      return;
+    }
     void getAnonymousProperty(search.propertyId).then((property) => {
       if (!property) return;
+      setActiveProperty(property);
       setProject(property.project);
-      setInteractionNotice(`Loaded ${property.name} from Properties.`);
+      setInteractionNotice(`Loaded ${property.name} from Site Pipeline.`);
     });
   }, [search.propertyId]);
 
@@ -813,6 +820,7 @@ function PowerFinderPage() {
     selectedTso,
   ]);
   const candidates = candidateSelection.items;
+  const visibleCandidates = showAllCandidates ? candidates : candidates.slice(0, 5);
   const capacitySummary = useMemo(
     () =>
       summariseCapacityOpportunities(
@@ -1065,6 +1073,7 @@ function PowerFinderPage() {
           <div className="finder-rail-sticky">
             <div className="finder-project-summary">
               <div>
+                <small>{activeProperty ? "Site under review" : "Current screening"}</small>
                 <strong>{project.name}</strong>
                 <span>
                   {formatMw(project.importMw)} import · {project.preferredVoltageKv ?? "Any"} kV ·{" "}
@@ -1077,46 +1086,104 @@ function PowerFinderPage() {
                 aria-controls="finder-project-editor"
                 onClick={() => setProjectEditorOpen((current) => !current)}
               >
-                {projectEditorOpen ? "Close" : "Edit Project"}
+                {projectEditorOpen ? "Close brief" : "Screening brief"}
               </button>
               <button
                 type="button"
                 onClick={() => {
-                  if ((project.latitude != null || project.name !== defaultFinderProject.name) && !window.confirm("Start a new screening? Save the current property first if you want to keep it.")) return;
+                  if (
+                    (project.latitude != null || project.name !== defaultFinderProject.name) &&
+                    !window.confirm(
+                      "Start a new screening? Save the current property first if you want to keep it.",
+                    )
+                  )
+                    return;
                   setProject({ ...defaultFinderProject, updatedAt: new Date().toISOString() });
-                  setSelected(null); setSelectedOpportunitySnapshot(null); setComparisonOpen(false); setPropertySaveStatus("idle");
+                  setSelected(null);
+                  setSelectedOpportunitySnapshot(null);
+                  setComparisonOpen(false);
+                  setPropertySaveStatus("idle");
+                  setShowAllCandidates(false);
                   void navigate({ to: "/power-finder", search: {}, replace: true });
                   setInteractionNotice("New screening started.");
                 }}
               >
-                New
+                New site
               </button>
               <button
                 type="button"
                 className="primary-button"
-                disabled={propertySaveStatus === "saving" || propertySaveStatus === "saved" || project.latitude == null || project.longitude == null}
+                disabled={
+                  propertySaveStatus === "saving" ||
+                  propertySaveStatus === "saved" ||
+                  project.latitude == null ||
+                  project.longitude == null
+                }
                 onClick={async () => {
                   setPropertySaveStatus("saving");
                   setInteractionNotice("Saving property locally.");
                   try {
-                    const candidatesToSave = comparedCandidates.length ? comparedCandidates : selectedOpportunity ? [selectedOpportunity] : [];
-                    await saveFinderProjectToPortfolio(project, candidatesToSave, search.propertyId);
+                    const candidatesToSave = selectedOpportunity
+                      ? Array.from(
+                          new Map(
+                            [...comparedCandidates, selectedOpportunity].map((item) => [
+                              item.id,
+                              item,
+                            ]),
+                          ).values(),
+                        )
+                      : comparedCandidates;
+                    const savedPropertyId = await saveFinderProjectToPortfolio(
+                      project,
+                      candidatesToSave,
+                      search.propertyId,
+                      selectedOpportunity?.id ?? null,
+                    );
+                    const refreshed = await getAnonymousProperty(savedPropertyId);
+                    setActiveProperty(refreshed);
+                    if (!search.propertyId) {
+                      await updateSearch({ propertyId: savedPropertyId });
+                    }
                     setPropertySaveStatus("saved");
                     setInteractionNotice("Property saved locally in this browser.");
                   } catch (reason) {
                     setPropertySaveStatus("error");
-                    setInteractionNotice(reason instanceof Error ? reason.message : "The property could not be saved.");
+                    setInteractionNotice(
+                      reason instanceof Error ? reason.message : "The property could not be saved.",
+                    );
                   }
                 }}
               >
                 <BookmarkPlus aria-hidden="true" />
-                {propertySaveStatus === "saving" ? "Saving property…" : propertySaveStatus === "saved" ? "Saved locally" : propertySaveStatus === "error" ? "Try saving property again" : "Save to Properties"}
+                {propertySaveStatus === "saving"
+                  ? "Saving screening…"
+                  : propertySaveStatus === "saved"
+                    ? "Screening saved"
+                    : propertySaveStatus === "error"
+                      ? "Try saving again"
+                      : selectedOpportunity
+                        ? `Shortlist for ${project.name}`
+                        : activeProperty
+                          ? "Save screening to site"
+                          : "Create pipeline site"}
               </button>
+              {activeProperty && propertySaveStatus === "saved" ? (
+                <Link
+                  className="finder-return-to-workspace"
+                  to="/portfolio/$id"
+                  params={{ id: activeProperty.id }}
+                  search={{ tab: "grid" }}
+                >
+                  Return to Site Workspace
+                </Link>
+              ) : null}
             </div>
           </div>
           <header>
             <p className="context-label">Power Finder · Public-source screen</p>
-            <h1>{activeCoverage.regionName} connection context</h1>
+            <h1>
+              {activeProperty ? project.name : `${activeCoverage.regionName} connection context`}
+            </h1>
             <p>
               Explore grid proximity, mapped voltage, industrial land and the evidence behind each
               screening candidate.
@@ -1145,7 +1212,7 @@ function PowerFinderPage() {
               <small>Saved on this device</small>
             </div>
             <label>
-              <span>Project name</span>
+              <span>Site opportunity</span>
               <input
                 name="project-name"
                 autoComplete="off"
@@ -1154,31 +1221,36 @@ function PowerFinderPage() {
                 onChange={(event) => updateProject({ name: event.target.value })}
               />
             </label>
-            <label>
-              <span>Project type</span>
-              <select
-                name="project-type"
-                value={project.type}
-                onChange={(event) => {
-                  const type = event.target.value as FinderProjectType;
-                  updateProject({ type });
-                  void updateSearch({
-                    projectType: type,
-                    candidate: undefined,
-                    compare: undefined,
-                  });
-                }}
-              >
-                {Object.entries(finderProjectTypes)
-                  .filter(([value]) => finderMvpFeatures.additionalProjectTypes || value === "data_centre")
-                  .map(([value, profile]) => (
-                  <option value={value} key={value}>
-                    {profile.label}
-                  </option>
-                  ))}
-              </select>
-              <small>{finderProjectTypes[project.type].description}</small>
-            </label>
+            {!finderMvpFeatures.dataCentreOnly ? (
+              <label>
+                <span>Project type</span>
+                <select
+                  name="project-type"
+                  value={project.type}
+                  onChange={(event) => {
+                    const type = event.target.value as FinderProjectType;
+                    updateProject({ type });
+                    void updateSearch({
+                      projectType: type,
+                      candidate: undefined,
+                      compare: undefined,
+                    });
+                  }}
+                >
+                  {Object.entries(finderProjectTypes)
+                    .filter(
+                      ([value]) =>
+                        finderMvpFeatures.additionalProjectTypes || value === "data_centre",
+                    )
+                    .map(([value, profile]) => (
+                      <option value={value} key={value}>
+                        {profile.label}
+                      </option>
+                    ))}
+                </select>
+                <small>{finderProjectTypes[project.type].description}</small>
+              </label>
+            ) : null}
             <div className="finder-project-grid">
               <label>
                 <span>Latitude</span>
@@ -1253,7 +1325,7 @@ function PowerFinderPage() {
                 )}
               </label>
               <label>
-                <span>Import MW</span>
+                <span>Total site load (MW)</span>
                 <input
                   name="import-mw"
                   type="number"
@@ -1330,7 +1402,7 @@ function PowerFinderPage() {
               )}
             </div>
             <label>
-              <span>Preferred search voltage</span>
+              <span>Voltage context</span>
               <select
                 name="preferred-voltage"
                 value={project.preferredVoltageKv ?? 0}
@@ -1350,7 +1422,9 @@ function PowerFinderPage() {
                 <option value={220}>220 kV</option>
                 <option value={380}>380 kV</option>
               </select>
-              <small>Search context only—not a suitable or required connection voltage.</small>
+              <small>
+                Screening assumption only. Adjust when a connection-voltage assumption is known.
+              </small>
             </label>
             {search.study === "activation" && (
               <details className="finder-scenario-inputs">
@@ -1784,184 +1858,186 @@ function PowerFinderPage() {
             {interactionNotice}
           </p>
 
-          {finderMvpFeatures.syntheticCapacity ? <section
-            className="capacity-opportunity-card"
-            aria-labelledby="capacity-opportunity-title"
-          >
-            <label className="capacity-overlay-switch">
-              <span>
-                <strong id="capacity-opportunity-title">Capacity opportunities</strong>
-                <small>Compare available results with your required power</small>
-              </span>
-              <input
-                name="capacity-overlay"
-                type="checkbox"
-                role="switch"
-                checked={mapMode === "capacity"}
-                onChange={(event) => {
-                  const isEnabled = event.target.checked;
-                  setMapMode(isEnabled ? "capacity" : "voltage");
-                  const nextSource = search.workspaceId ? "private" : "berlin_synthetic";
-                  setCapacitySource(nextSource);
-                  setInteractionNotice(
-                    `Capacity opportunities ${isEnabled ? "enabled" : "disabled"}.`,
-                  );
-                  void updateSearch({
-                    mapMode: isEnabled ? "capacity" : "voltage",
-                    capacitySource: isEnabled ? nextSource : undefined,
-                  });
-                }}
-              />
-            </label>
-            {mapMode === "capacity" && (
-              <div className="capacity-opportunity-controls">
-                <p className="capacity-source-status">
-                  {capacitySource === "berlin_synthetic"
-                    ? "Berlin synthetic calculation"
-                    : "Reviewed private calculation"}
-                </p>
-                <div className="capacity-required-heading">
-                  <label htmlFor="required-capacity-range">Required power</label>
-                  <span>
-                    {requiredCapacityMw.toLocaleString("en-GB", { maximumFractionDigits: 1 })} MW
-                  </span>
-                </div>
+          {finderMvpFeatures.syntheticCapacity ? (
+            <section
+              className="capacity-opportunity-card"
+              aria-labelledby="capacity-opportunity-title"
+            >
+              <label className="capacity-overlay-switch">
+                <span>
+                  <strong id="capacity-opportunity-title">Capacity opportunities</strong>
+                  <small>Compare available results with your required power</small>
+                </span>
                 <input
-                  id="required-capacity-range"
-                  name="required-capacity-range"
-                  type="range"
-                  min={1}
-                  max={Math.min(1000, Math.max(100, Math.ceil((project.importMw * 3) / 25) * 25))}
-                  step={1}
-                  value={requiredCapacityMw}
-                  aria-valuetext={`${requiredCapacityMw} megawatts required power`}
-                  onChange={(event) => setRequiredCapacityMw(Number(event.target.value))}
-                  onPointerUp={(event) =>
-                    void updateSearch({ requiredMw: Number(event.currentTarget.value) })
-                  }
-                  onKeyUp={(event) =>
-                    void updateSearch({ requiredMw: Number(event.currentTarget.value) })
-                  }
+                  name="capacity-overlay"
+                  type="checkbox"
+                  role="switch"
+                  checked={mapMode === "capacity"}
+                  onChange={(event) => {
+                    const isEnabled = event.target.checked;
+                    setMapMode(isEnabled ? "capacity" : "voltage");
+                    const nextSource = search.workspaceId ? "private" : "berlin_synthetic";
+                    setCapacitySource(nextSource);
+                    setInteractionNotice(
+                      `Capacity opportunities ${isEnabled ? "enabled" : "disabled"}.`,
+                    );
+                    void updateSearch({
+                      mapMode: isEnabled ? "capacity" : "voltage",
+                      capacitySource: isEnabled ? nextSource : undefined,
+                    });
+                  }}
                 />
-                <div className="capacity-control-row">
-                  <label>
-                    <span>Exact MW</span>
-                    <input
-                      type="number"
-                      min={0.1}
-                      max={1000}
-                      step={0.1}
-                      value={requiredCapacityMw}
-                      onChange={(event) => {
-                        const value = Math.min(
-                          1000,
-                          Math.max(0.1, Number(event.target.value) || 0.1),
-                        );
-                        setRequiredCapacityMw(value);
-                        void updateSearch({ requiredMw: value });
-                      }}
-                    />
-                  </label>
-                  <label>
-                    <span>Capacity basis</span>
-                    <select
-                      name="capacity-overlay-metric"
-                      value={capacityMetric}
-                      onChange={(event) => {
-                        const value = event.target.value as CapacityMetric;
-                        setCapacityMetric(value);
-                        void updateSearch({ capacityMetric: value });
+              </label>
+              {mapMode === "capacity" && (
+                <div className="capacity-opportunity-controls">
+                  <p className="capacity-source-status">
+                    {capacitySource === "berlin_synthetic"
+                      ? "Berlin synthetic calculation"
+                      : "Reviewed private calculation"}
+                  </p>
+                  <div className="capacity-required-heading">
+                    <label htmlFor="required-capacity-range">Required power</label>
+                    <span>
+                      {requiredCapacityMw.toLocaleString("en-GB", { maximumFractionDigits: 1 })} MW
+                    </span>
+                  </div>
+                  <input
+                    id="required-capacity-range"
+                    name="required-capacity-range"
+                    type="range"
+                    min={1}
+                    max={Math.min(1000, Math.max(100, Math.ceil((project.importMw * 3) / 25) * 25))}
+                    step={1}
+                    value={requiredCapacityMw}
+                    aria-valuetext={`${requiredCapacityMw} megawatts required power`}
+                    onChange={(event) => setRequiredCapacityMw(Number(event.target.value))}
+                    onPointerUp={(event) =>
+                      void updateSearch({ requiredMw: Number(event.currentTarget.value) })
+                    }
+                    onKeyUp={(event) =>
+                      void updateSearch({ requiredMw: Number(event.currentTarget.value) })
+                    }
+                  />
+                  <div className="capacity-control-row">
+                    <label>
+                      <span>Exact MW</span>
+                      <input
+                        type="number"
+                        min={0.1}
+                        max={1000}
+                        step={0.1}
+                        value={requiredCapacityMw}
+                        onChange={(event) => {
+                          const value = Math.min(
+                            1000,
+                            Math.max(0.1, Number(event.target.value) || 0.1),
+                          );
+                          setRequiredCapacityMw(value);
+                          void updateSearch({ requiredMw: value });
+                        }}
+                      />
+                    </label>
+                    <label>
+                      <span>Capacity basis</span>
+                      <select
+                        name="capacity-overlay-metric"
+                        value={capacityMetric}
+                        onChange={(event) => {
+                          const value = event.target.value as CapacityMetric;
+                          setCapacityMetric(value);
+                          void updateSearch({ capacityMetric: value });
+                        }}
+                      >
+                        {(Object.entries(capacityMetricLabels) as [CapacityMetric, string][]).map(
+                          ([value, label]) => {
+                            const unavailableInSynthetic =
+                              capacitySource === "berlin_synthetic" &&
+                              value !== "n0_import_mw" &&
+                              value !== "firm_import_mw";
+                            return (
+                              <option key={value} value={value} disabled={unavailableInSynthetic}>
+                                {label}
+                                {unavailableInSynthetic ? " · private study required" : ""}
+                              </option>
+                            );
+                          },
+                        )}
+                      </select>
+                    </label>
+                  </div>
+                  {Math.abs(requiredCapacityMw - project.importMw) > 0.01 && (
+                    <button
+                      type="button"
+                      className="capacity-reset-demand"
+                      onClick={() => {
+                        setRequiredCapacityMw(project.importMw);
+                        void updateSearch({ requiredMw: undefined });
                       }}
                     >
-                      {(Object.entries(capacityMetricLabels) as [CapacityMetric, string][]).map(
-                        ([value, label]) => {
-                          const unavailableInSynthetic =
-                            capacitySource === "berlin_synthetic" &&
-                            value !== "n0_import_mw" &&
-                            value !== "firm_import_mw";
-                          return (
-                            <option key={value} value={value} disabled={unavailableInSynthetic}>
-                              {label}
-                              {unavailableInSynthetic ? " · private study required" : ""}
-                            </option>
-                          );
-                        },
-                      )}
-                    </select>
-                  </label>
-                </div>
-                {Math.abs(requiredCapacityMw - project.importMw) > 0.01 && (
-                  <button
-                    type="button"
-                    className="capacity-reset-demand"
-                    onClick={() => {
-                      setRequiredCapacityMw(project.importMw);
-                      void updateSearch({ requiredMw: undefined });
-                    }}
-                  >
-                    Use project demand · {project.importMw} MW
-                  </button>
-                )}
-                <p className="capacity-data-basis">
-                  <ShieldCheck aria-hidden="true" />
-                  {capacitySource === "berlin_synthetic"
-                    ? "Berlin calculation pocket · real locations, synthetic electrical model"
-                    : `Private reviewed results · ${capacityViewport?.access === "ready" ? "workspace connected" : "no coverage"}`}
-                </p>
-                {capacitySource === "berlin_synthetic" && (
-                  <p className="capacity-overlay-empty">
-                    Release 2 AI routing does not colour these nodes. Every displayed Berlin value
-                    remains a Release 1 physics result.
-                  </p>
-                )}
-                <p className="capacity-overlay-empty">
-                  Move Required power to reclassify calculated nodes immediately: cyan meets the
-                  threshold, dark blue is below it, and grey is outside this calculation pocket.
-                </p>
-                <div className="capacity-threshold-key" aria-label="Capacity map colour key">
-                  <span>
-                    <i className="is-meets" />
-                    Meets {requiredCapacityMw} MW
-                  </span>
-                  <span>
-                    <i className="is-activation" />
-                    Activation pathway
-                  </span>
-                  <span>
-                    <i className="is-below" />
-                    Below requirement
-                  </span>
-                </div>
-                <div className="capacity-fit-summary" role="status" aria-live="polite">
-                  <span>
-                    <b>{capacitySummary.meets}</b> meet
-                  </span>
-                  {capacitySource === "private" && (
-                    <span>
-                      <b>{capacitySummary.activation}</b> activation paths
-                    </span>
+                      Use project demand · {project.importMw} MW
+                    </button>
                   )}
-                  <span>
-                    <b>{capacitySummary.below}</b> below
-                  </span>
-                  <span>
-                    <b>{capacitySummary.unknown}</b> not calculated
-                  </span>
-                </div>
-                {capacityState === "error" && (
-                  <p className="capacity-overlay-empty">Capacity results could not be loaded.</p>
-                )}
-                {capacitySource === "private" &&
-                  capacityState !== "error" &&
-                  capacitySummary.meets === 0 &&
-                  capacitySummary.activation === 0 && (
+                  <p className="capacity-data-basis">
+                    <ShieldCheck aria-hidden="true" />
+                    {capacitySource === "berlin_synthetic"
+                      ? "Berlin calculation pocket · real locations, synthetic electrical model"
+                      : `Private reviewed results · ${capacityViewport?.access === "ready" ? "workspace connected" : "no coverage"}`}
+                  </p>
+                  {capacitySource === "berlin_synthetic" && (
                     <p className="capacity-overlay-empty">
-                      No reviewed capacity results cover this map. Unknown is not zero.
+                      Release 2 AI routing does not colour these nodes. Every displayed Berlin value
+                      remains a Release 1 physics result.
                     </p>
                   )}
-              </div>
-            )}
-          </section> : null}
+                  <p className="capacity-overlay-empty">
+                    Move Required power to reclassify calculated nodes immediately: cyan meets the
+                    threshold, dark blue is below it, and grey is outside this calculation pocket.
+                  </p>
+                  <div className="capacity-threshold-key" aria-label="Capacity map colour key">
+                    <span>
+                      <i className="is-meets" />
+                      Meets {requiredCapacityMw} MW
+                    </span>
+                    <span>
+                      <i className="is-activation" />
+                      Activation pathway
+                    </span>
+                    <span>
+                      <i className="is-below" />
+                      Below requirement
+                    </span>
+                  </div>
+                  <div className="capacity-fit-summary" role="status" aria-live="polite">
+                    <span>
+                      <b>{capacitySummary.meets}</b> meet
+                    </span>
+                    {capacitySource === "private" && (
+                      <span>
+                        <b>{capacitySummary.activation}</b> activation paths
+                      </span>
+                    )}
+                    <span>
+                      <b>{capacitySummary.below}</b> below
+                    </span>
+                    <span>
+                      <b>{capacitySummary.unknown}</b> not calculated
+                    </span>
+                  </div>
+                  {capacityState === "error" && (
+                    <p className="capacity-overlay-empty">Capacity results could not be loaded.</p>
+                  )}
+                  {capacitySource === "private" &&
+                    capacityState !== "error" &&
+                    capacitySummary.meets === 0 &&
+                    capacitySummary.activation === 0 && (
+                      <p className="capacity-overlay-empty">
+                        No reviewed capacity results cover this map. Unknown is not zero.
+                      </p>
+                    )}
+                </div>
+              )}
+            </section>
+          ) : null}
 
           <details className="finder-layers-menu" suppressHydrationWarning>
             <summary>Map Layers</summary>
@@ -2024,7 +2100,7 @@ function PowerFinderPage() {
           <section className="power-finder-candidates">
             <header>
               <span>
-                <h2>Candidate connection points</h2>
+                <h2>Grid candidates</h2>
                 <small role="status" aria-live="polite">
                   {project.latitude == null || project.longitude == null
                     ? "Choose a site to rank candidates"
@@ -2042,8 +2118,8 @@ function PowerFinderPage() {
                     void updateSearch({ sort: event.target.value as CandidateSort })
                   }
                 >
-                  <option value="context">Best evidence match</option>
-                  <option value="voltage">Highest voltage</option>
+                  <option value="context">Best investigation match</option>
+                  <option value="voltage">Mapped voltage</option>
                   <option value="name">Name</option>
                 </select>
               </label>
@@ -2077,7 +2153,7 @@ function PowerFinderPage() {
                   No candidate connection points are within {maxDistanceKm} km in this view.
                 </p>
               )}
-            {candidates.map((candidate, index) => {
+            {visibleCandidates.map((candidate, index) => {
               const capacityNode = activeCapacityNodes.find(
                 (node) => node.publicNodeId === candidate.nodeId,
               );
@@ -2137,24 +2213,30 @@ function PowerFinderPage() {
                 >
                   <span className="candidate-rank">{index + 1}</span>
                   <span>
-                    <b>{candidate.siteName}</b>
+                    <b>{candidate.nodeName}</b>
                     <small>
-                      {candidate.nodeName} · {distanceFormatter.format(candidate.distanceKm)} km
+                      {candidate.voltageKv.length
+                        ? `${Math.max(...candidate.voltageKv)} kV`
+                        : "Voltage unknown"}{" "}
+                      · {distanceFormatter.format(candidate.distanceKm)} km ·{" "}
+                      {candidate.operator
+                        ? canonicalOperatorName(candidate.operator)
+                        : "Operator unconfirmed"}
                     </small>
                     <span className="candidate-badges">
                       <i data-fit={candidate.voltageFit}>
                         {candidate.voltageFit === "compatible"
-                          ? "Voltage aligned"
+                          ? "Voltage relevant"
                           : candidate.voltageFit === "conditional"
                             ? "Voltage differs"
                             : "Voltage unknown"}
                       </i>
                       <i data-confidence={candidate.confidence}>
                         {candidate.confidence === "high"
-                          ? "High evidence"
+                          ? "Strong evidence match"
                           : candidate.confidence === "medium"
-                            ? "Medium evidence"
-                            : "Limited evidence"}
+                            ? "Medium evidence match"
+                            : "Limited evidence match"}
                       </i>
                       {candidate.capacityScenario && (
                         <i data-confidence="synthetic">
@@ -2167,7 +2249,7 @@ function PowerFinderPage() {
                           {formatMw(candidate.networkScenario.selectedSecurityLimitMw)}
                         </i>
                       )}
-                      <strong>{formatScore(candidate.screeningRank)}/100</strong>
+                      <strong>Capacity unknown</strong>
                     </span>
                     {mapMode === "capacity" && (
                       <span className={`candidate-capacity-fit is-${capacityFit.fit}`}>
@@ -2185,6 +2267,23 @@ function PowerFinderPage() {
                 </button>
               );
             })}
+            {!showAllCandidates && candidates.length > 5 ? (
+              <button
+                type="button"
+                className="candidate-show-more"
+                onClick={() => setShowAllCandidates(true)}
+              >
+                Show all {candidates.length} candidates
+              </button>
+            ) : showAllCandidates && candidates.length > 5 ? (
+              <button
+                type="button"
+                className="candidate-show-more"
+                onClick={() => setShowAllCandidates(false)}
+              >
+                Show top 5 candidates
+              </button>
+            ) : null}
             {ranking && project.latitude != null && project.longitude != null && (
               <>
                 <details className="finder-ranking-method">
@@ -2603,6 +2702,12 @@ function PowerFinderPage() {
                       highest-ranked match is selected from the current list.
                     </p>
                   )}
+                  {selectedOpportunity ? (
+                    <div className="candidate-capacity-banner" role="status">
+                      <strong>Capacity unknown</strong>
+                      <span>Operator confirmation and accepted evidence are required.</span>
+                    </div>
+                  ) : null}
                   {selectedCapacity &&
                     selectedCapacityOpportunity.fit !== "stale" &&
                     selectedCapacity.validationState !== "failed" && (
@@ -2753,8 +2858,14 @@ function PowerFinderPage() {
                     <section className="candidate-intelligence" aria-label="Candidate intelligence">
                       <header>
                         <span>
-                          <strong>{formatScore(selectedOpportunity.screeningRank)}/100</strong>
-                          <small>candidate priority score</small>
+                          <strong>
+                            {selectedOpportunity.confidence === "high"
+                              ? "Strong"
+                              : selectedOpportunity.confidence === "medium"
+                                ? "Medium"
+                                : "Limited"}
+                          </strong>
+                          <small>public-evidence match</small>
                         </span>
                         <b>{selectedOpportunity.siteName}</b>
                       </header>
@@ -2763,10 +2874,10 @@ function PowerFinderPage() {
                         aria-labelledby="candidate-outcome-title"
                       >
                         <div>
-                          <span id="candidate-outcome-title">Shortlist Position</span>
+                          <span id="candidate-outcome-title">Investigation recommendation</span>
                           <strong>
                             {selectedOpportunity.screeningRank >= 70
-                              ? "High-priority candidate"
+                              ? "Recommended for operator verification"
                               : selectedOpportunity.screeningRank >= 40
                                 ? "Worth comparing"
                                 : "More evidence needed"}
@@ -2781,7 +2892,11 @@ function PowerFinderPage() {
                         className="candidate-key-drivers"
                         aria-labelledby="key-drivers-title"
                       >
-                        <h3 id="key-drivers-title">Why This Candidate Was Shortlisted</h3>
+                        <h3 id="key-drivers-title">
+                          {activeProperty?.preferredCandidateId === selectedOpportunity.id
+                            ? "Why this candidate was shortlisted"
+                            : "Why this candidate ranks highly"}
+                        </h3>
                         <ul>
                           <li>{voltageFitLabels[selectedOpportunity.voltageFit]}.</li>
                           <li>
@@ -2809,6 +2924,89 @@ function PowerFinderPage() {
                           <dd>{selectedOpportunity.confidence}</dd>
                         </div>
                       </dl>
+                      <section
+                        className="candidate-evidence-gaps"
+                        aria-labelledby="candidate-gaps-title"
+                      >
+                        <h3 id="candidate-gaps-title">Required before advance</h3>
+                        <ul>
+                          <li>Confirm the responsible network operator.</li>
+                          <li>Confirm a suitable connection point.</li>
+                          <li>Obtain an operator capacity indication.</li>
+                          <li>Request indicative programme, cost and reinforcement context.</li>
+                        </ul>
+                      </section>
+                      <section
+                        className="candidate-site-impact"
+                        aria-labelledby="candidate-site-impact-title"
+                      >
+                        <h3 id="candidate-site-impact-title">Site impact</h3>
+                        <dl>
+                          <div>
+                            <dt>Grid readiness</dt>
+                            <dd>Screening only</dd>
+                          </div>
+                          <div>
+                            <dt>Current decision</dt>
+                            <dd>{activeProperty?.decisionStatus ?? "Unreviewed"}</dd>
+                          </div>
+                          <div>
+                            <dt>Primary blocker</dt>
+                            <dd>No accepted capacity evidence</dd>
+                          </div>
+                          <div>
+                            <dt>Next step</dt>
+                            <dd>Prepare operator enquiry</dd>
+                          </div>
+                        </dl>
+                      </section>
+                      <button
+                        type="button"
+                        className="primary-button candidate-shortlist-action"
+                        disabled={propertySaveStatus === "saving"}
+                        onClick={async () => {
+                          setPropertySaveStatus("saving");
+                          try {
+                            const candidateSet = Array.from(
+                              new Map(
+                                [...comparedCandidates, selectedOpportunity].map((item) => [
+                                  item.id,
+                                  item,
+                                ]),
+                              ).values(),
+                            );
+                            const savedPropertyId = await saveFinderProjectToPortfolio(
+                              project,
+                              candidateSet,
+                              search.propertyId,
+                              selectedOpportunity.id,
+                            );
+                            setPropertySaveStatus("saved");
+                            setShortlistId(selectedOpportunity.id);
+                            setInteractionNotice(
+                              `${selectedOpportunity.nodeName} shortlisted for ${project.name}.`,
+                            );
+                            const refreshed = await getAnonymousProperty(savedPropertyId);
+                            setActiveProperty(refreshed);
+                            if (!search.propertyId) {
+                              await updateSearch({ propertyId: savedPropertyId });
+                            }
+                          } catch (reason) {
+                            setPropertySaveStatus("error");
+                            setInteractionNotice(
+                              reason instanceof Error
+                                ? reason.message
+                                : "The candidate could not be shortlisted.",
+                            );
+                          }
+                        }}
+                      >
+                        <BookmarkPlus aria-hidden="true" />
+                        {activeProperty?.preferredCandidateId === selectedOpportunity.id ||
+                        shortlistId === selectedOpportunity.id
+                          ? "Preferred candidate saved"
+                          : `Shortlist for ${project.name}`}
+                      </button>
                       <button
                         type="button"
                         className="secondary-button"
@@ -2839,9 +3037,19 @@ function PowerFinderPage() {
                       >
                         <GitCompareArrows aria-hidden="true" />
                         {comparisonIds.includes(selectedOpportunity.id)
-                          ? "Remove From Comparison"
-                          : "Add to Comparison"}
+                          ? "Remove from comparison"
+                          : "Compare candidate"}
                       </button>
+                      {activeProperty && propertySaveStatus === "saved" ? (
+                        <Link
+                          className="secondary-button candidate-return-action"
+                          to="/portfolio/$id"
+                          params={{ id: activeProperty.id }}
+                          search={{ tab: "grid" }}
+                        >
+                          Return to Site Workspace
+                        </Link>
+                      ) : null}
                     </section>
                   )}
                   {selected.properties.kind === "node" && c1Study?.c3?.available && (

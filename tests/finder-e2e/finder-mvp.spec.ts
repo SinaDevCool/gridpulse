@@ -15,7 +15,7 @@ test("Finder exploration and local property portfolio are anonymous", async ({ p
   await page.getByText(/Operator questions & report/i).click();
   await expect(page.getByRole("button", { name: /Download screening report/i })).toBeDisabled();
   await expect(page.getByRole("button", { name: /Show .* on map, .*\/100/ })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: /Save to Properties/i })).toBeDisabled();
+  await expect(page.getByRole("button", { name: /Create pipeline site/i })).toBeDisabled();
   expect(requests.some((url) => /\/auth\/v1\/(token|signup)/.test(url))).toBe(false);
 });
 
@@ -74,7 +74,7 @@ test("a Finder project saves locally, survives navigation, and opens a dossier",
     timeout: 15_000,
   });
   await page.getByText(/Operator questions & report/i).click();
-  const save = page.getByRole("button", { name: /Save to Properties/i });
+  const save = page.getByRole("button", { name: /Create pipeline site|Shortlist for/i });
   await expect(save).toBeEnabled();
   await save.click();
   await expect(page.locator('p.sr-only[role="status"]')).toContainText("Property saved locally");
@@ -97,8 +97,8 @@ test("anonymous site workspace qualifies a site and records operator evidence", 
   await expect(page.getByText(/candidate site-to-node matches/i).first()).toBeVisible({
     timeout: 15_000,
   });
-  await page.getByRole("button", { name: /Save to Properties/i }).click();
-  await expect(page.getByRole("button", { name: /Saved locally/i })).toBeDisabled();
+  await page.getByRole("button", { name: /Create pipeline site|Shortlist for/i }).click();
+  await expect(page.getByRole("button", { name: /Screening saved/i })).toBeDisabled();
   await page.goto("/portfolio");
   await page.getByRole("button", { name: /Untitled screening project/i }).click();
   await page.getByRole("link", { name: "Open Site Workspace" }).click();
@@ -128,8 +128,8 @@ test("Site Pipeline decisions flow into Decision Centre", async ({ page }) => {
   await expect(page.getByText(/candidate site-to-node matches/i).first()).toBeVisible({
     timeout: 15_000,
   });
-  await page.getByRole("button", { name: /Save to Properties/i }).click();
-  await expect(page.getByRole("button", { name: /Saved locally/i })).toBeDisabled();
+  await page.getByRole("button", { name: /Create pipeline site|Shortlist for/i }).click();
+  await expect(page.getByRole("button", { name: /Screening saved/i })).toBeDisabled();
   await page.getByRole("link", { name: /Site Pipeline Qualify opportunities/i }).click();
   await page.getByRole("button", { name: /Untitled screening project/i }).click();
   await page.getByRole("link", { name: "Review Decision" }).click();
@@ -153,8 +153,8 @@ test("Site Pipeline remains usable without horizontal page overflow on mobile", 
   await expect(page.getByText(/candidate site-to-node matches/i).first()).toBeVisible({
     timeout: 15_000,
   });
-  await page.getByRole("button", { name: /Save to Properties/i }).click();
-  await expect(page.getByRole("button", { name: /Saved locally/i })).toBeDisabled();
+  await page.getByRole("button", { name: /Create pipeline site|Shortlist for/i }).click();
+  await expect(page.getByRole("button", { name: /Screening saved/i })).toBeDisabled();
   await page.goto("/portfolio");
   await expect(page.getByRole("heading", { name: "Site Pipeline" })).toBeVisible();
   await expect(page.getByRole("button", { name: /Untitled screening project/i })).toBeVisible();
@@ -165,26 +165,23 @@ test("Site Pipeline remains usable without horizontal page overflow on mobile", 
   ).toBe(true);
 });
 
-test("account-free MVP keeps a custom site inside the data-centre workflow", async ({
-  page,
-}) => {
+test("account-free MVP keeps a custom site inside the data-centre workflow", async ({ page }) => {
   await page.goto(
     "/power-finder?lat=52.31&lng=13.36&projectType=battery_storage&mw=50&exportMw=50&distance=20",
   );
   await expect(
     page.getByRole("heading", { name: "Define the site and power requirement" }),
   ).toBeVisible();
-  await expect(page.getByLabel("Project type")).toHaveValue("data_centre");
-  await expect(page.getByLabel("Project type").locator('option[value="battery_storage"]')).toHaveCount(0);
+  await expect(page.getByLabel("Project type")).toHaveCount(0);
   await expect(page.getByLabel("Latitude")).toHaveValue("52.31");
   await expect(page.getByLabel("Longitude")).toHaveValue("13.36");
-  await expect(page.getByLabel("Import MW")).toHaveValue("50");
+  await expect(page.getByLabel("Total site load (MW)")).toHaveValue("50");
   await expect(page.getByLabel("Export MW")).toHaveValue("50");
   await expect(page.getByText(/candidate site-to-node matches/i).first()).toBeVisible({
     timeout: 15_000,
   });
-  await page.getByLabel("Project name").fill("Brandenburg data-centre screen");
-  await expect(page.getByLabel("Project name")).toHaveValue("Brandenburg data-centre screen");
+  await page.getByLabel("Site opportunity").fill("Brandenburg data-centre screen");
+  await expect(page.getByLabel("Site opportunity")).toHaveValue("Brandenburg data-centre screen");
   await page.getByText(/Operator questions & report/i).click();
   await expect(page.getByText(/Confirm the operator, connection point/i)).toBeVisible();
   await expect(page.getByRole("button", { name: /Download screening report/i })).toBeEnabled();
@@ -192,7 +189,7 @@ test("account-free MVP keeps a custom site inside the data-centre workflow", asy
     .poll(() => page.evaluate(() => localStorage.getItem("gridpulse-finder-active-project")))
     .toContain("Brandenburg data-centre screen");
   await page.reload();
-  await expect(page.getByLabel("Project name")).toHaveValue("Brandenburg data-centre screen");
+  await expect(page.getByLabel("Site opportunity")).toHaveValue("Brandenburg data-centre screen");
   await page.getByText(/Operator questions & report/i).click();
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: /Download screening report/i }).click();
@@ -227,12 +224,12 @@ test("comparison supports multiple candidates and resets when the site changes",
   await candidates.nth(0).click();
   let detail = page.locator(".power-finder-detail.open");
   await expect(detail).toBeVisible({ timeout: 15_000 });
-  await detail.getByRole("button", { name: "Add to Comparison" }).click();
+  await detail.getByRole("button", { name: "Compare candidate" }).click();
   await page.getByRole("button", { name: "Close detail" }).click();
   await candidates.nth(1).click();
   detail = page.locator(".power-finder-detail.open");
   await expect(detail).toBeVisible({ timeout: 15_000 });
-  await detail.getByRole("button", { name: "Add to Comparison" }).click();
+  await detail.getByRole("button", { name: "Compare candidate" }).click();
   await expect(page.getByText("Compare 2 Candidates")).toBeVisible();
   expect(new URL(page.url()).searchParams.get("compare")?.split(",")).toHaveLength(2);
 
@@ -328,6 +325,7 @@ test("comparison enforces five candidates and supports independent removal", asy
   test.setTimeout(90_000);
   await page.goto("/power-finder?lat=52.31&lng=13.36&mw=50");
   await expect(page.getByText(/candidate site-to-node matches/i).first()).toBeVisible();
+  await page.getByRole("button", { name: /Show all \d+ candidates/i }).click();
   const candidates = page.getByRole("button", { name: /Show .* on map, .*\/100/ });
   await expect(candidates.nth(5)).toBeVisible({ timeout: 15_000 });
   const candidateNames = await candidates.evaluateAll((items) =>
@@ -337,7 +335,7 @@ test("comparison enforces five candidates and supports independent removal", asy
     await page.getByRole("button", { name: candidateNames[index], exact: true }).click();
     const detail = page.locator(".power-finder-detail.open");
     await expect(detail).toBeVisible({ timeout: 15_000 });
-    await detail.getByRole("button", { name: "Add to Comparison" }).click();
+    await detail.getByRole("button", { name: "Compare candidate" }).click();
     await expect(
       page.getByText(`Compare ${index + 1} ${index === 0 ? "Candidate" : "Candidates"}`),
     ).toBeVisible();
@@ -349,7 +347,7 @@ test("comparison enforces five candidates and supports independent removal", asy
   await page.getByRole("button", { name: candidateNames[5], exact: true }).click();
   await page
     .locator(".power-finder-detail.open")
-    .getByRole("button", { name: "Add to Comparison" })
+    .getByRole("button", { name: "Compare candidate" })
     .click();
   await expect(page.getByText("You can compare up to 5 candidates.")).toBeAttached();
   await expect(page.getByText("Compare 5 Candidates")).toBeVisible();
@@ -389,12 +387,12 @@ test("selected candidates remain highlighted independently of the node layer", a
 test("Finder controls and comparison remain usable on a narrow viewport", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto("/power-finder?lat=52.31&lng=13.36&mw=50");
-  await expect(page.getByRole("button", { name: "Edit Project" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Screening brief" })).toBeVisible();
   await expect(page.getByRole("application", { name: /Interactive grid/ })).toBeVisible();
   const candidates = page.getByRole("button", { name: /Show .* on map, .*\/100/ });
   await expect(candidates.first()).toBeVisible({ timeout: 15_000 });
   await candidates.first().click();
-  await page.getByRole("button", { name: "Add to Comparison" }).click();
+  await page.getByRole("button", { name: "Compare candidate" }).click();
   await page.getByRole("button", { name: "Close detail" }).click();
   await expect(page.getByText("Compare 1 Candidate")).toBeVisible();
   await expect(page.getByRole("button", { name: /Remove .* from comparison/ })).toBeVisible();
@@ -411,9 +409,9 @@ test("candidate detail prioritises decisions, contains its layout and omits cand
   const detail = page.locator(".power-finder-detail.open");
   await expect(detail).toBeVisible({ timeout: 15_000 });
   await expect(detail.getByText("Selected candidate connection point")).toBeVisible();
-  await expect(detail.getByText("Shortlist Position")).toBeVisible();
+  await expect(detail.getByText("Investigation recommendation")).toBeVisible();
   await expect(
-    detail.getByRole("heading", { name: "Why This Candidate Was Shortlisted" }),
+    detail.getByRole("heading", { name: /Why this candidate (ranks highly|was shortlisted)/i }),
   ).toBeVisible();
   await expect(detail.getByText("Public Data Confidence", { exact: true })).toHaveCount(0);
   await expect(detail.getByRole("heading", { name: "Connection Context" })).toBeVisible();
@@ -424,7 +422,7 @@ test("candidate detail prioritises decisions, contains its layout and omits cand
   await expect(detail.getByText("German Connection Framework")).toHaveCount(0);
   await expect(detail.getByText(/Experimental Hourly Demonstration/)).toHaveCount(0);
   await expect(page.getByRole("link", { name: /Discuss this candidate/i })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Add to Comparison" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Compare candidate" })).toBeVisible();
   expect(await detail.evaluate((element) => element.scrollWidth <= element.clientWidth + 1)).toBe(
     true,
   );

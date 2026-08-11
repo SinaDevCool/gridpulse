@@ -17490,6 +17490,145 @@ tbody tr:last-child td {
 .decision-kpi-strip.is-mvp {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
+
+/* Client-focused Power Finder decision rails */
+.finder-project-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+}
+.finder-project-summary > div {
+  grid-column: 1 / -1;
+  padding-bottom: 4px;
+}
+.finder-project-summary > div > small {
+  color: #67d9f3;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+.finder-project-summary button {
+  min-width: 0;
+  white-space: normal;
+}
+.finder-project-summary .primary-button {
+  grid-column: 1 / -1;
+}
+.finder-return-to-workspace {
+  grid-column: 1 / -1;
+  border: 1px solid #31526c;
+  border-radius: 7px;
+  color: #8ee8fa;
+  padding: 8px 10px;
+  text-align: center;
+  text-decoration: none;
+}
+.candidate-show-more {
+  justify-content: center !important;
+  margin-top: 8px;
+  min-height: 40px;
+  width: 100%;
+}
+.candidate-capacity-banner {
+  display: grid;
+  gap: 3px;
+  margin: 12px 0;
+  border-left: 3px solid #f2b846;
+  background: rgb(242 184 70 / 10%);
+  padding: 10px 12px;
+}
+.candidate-capacity-banner strong {
+  color: #fbd36f;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+}
+.candidate-capacity-banner span {
+  color: #cbd5e1;
+  font-size: 0.72rem;
+}
+.candidate-intelligence .candidate-evidence-gaps,
+.candidate-intelligence .candidate-site-impact {
+  border-top: 1px solid rgb(148 163 184 / 18%);
+  margin-top: 12px;
+  padding-top: 4px;
+}
+.candidate-intelligence .candidate-evidence-gaps ul {
+  color: #f5c95d;
+  line-height: 1.45;
+}
+.candidate-site-impact > dl {
+  display: grid;
+  gap: 1px;
+  margin: 0;
+  border: 1px solid rgb(148 163 184 / 14%);
+  background: rgb(148 163 184 / 14%);
+}
+.candidate-site-impact > dl > div {
+  display: grid;
+  grid-template-columns: minmax(110px, 0.8fr) minmax(0, 1.2fr);
+  gap: 10px;
+  background: #0b1a28;
+  padding: 8px;
+}
+.candidate-site-impact dt,
+.candidate-site-impact dd {
+  margin: 0;
+  font-size: 0.68rem;
+}
+.candidate-site-impact dt {
+  color: #7f9aae;
+}
+.candidate-site-impact dd {
+  color: #e6edf5;
+  text-align: right;
+}
+.candidate-intelligence .candidate-shortlist-action,
+.candidate-intelligence .candidate-return-action {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+  min-height: 42px;
+  width: 100%;
+}
+.candidate-intelligence .candidate-shortlist-action {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+}
+.candidate-intelligence .candidate-return-action {
+  align-items: center;
+  text-decoration: none;
+}
+
+@media (max-width: 1180px) {
+  .power-finder-page:has(.power-finder-detail.open) {
+    grid-template-columns: 0 minmax(0, 1fr);
+  }
+  .power-finder-page:has(.power-finder-detail.open) .power-finder-sidebar {
+    visibility: hidden;
+    overflow: hidden;
+    padding: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .finder-project-summary {
+    grid-template-columns: 1fr 1fr;
+  }
+  .finder-project-summary .primary-button,
+  .finder-project-summary > button:last-of-type {
+    grid-column: 1 / -1;
+  }
+  .candidate-site-impact > dl > div {
+    grid-template-columns: 1fr;
+  }
+  .candidate-site-impact dd {
+    text-align: left;
+  }
+}
 .decision-kpi-strip article {
   min-width: 0;
   padding: 0.85rem;

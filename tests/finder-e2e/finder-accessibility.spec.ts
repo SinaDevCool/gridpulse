@@ -5,7 +5,7 @@ test("public Finder has no serious or critical automated accessibility violation
   page,
 }) => {
   await page.goto("/power-finder?lat=52.3316&lng=13.4995&mw=20&distance=20&region=DE-BB");
-  await expect(page.getByRole("heading", { name: "Candidate connection points" })).toBeVisible({
+  await expect(page.getByRole("heading", { name: "Grid candidates" })).toBeVisible({
     timeout: 15_000,
   });
   const result = await new AxeBuilder({ page })
@@ -25,8 +25,8 @@ test("Site Pipeline and Decision Centre have no serious or critical violations",
   await expect(page.getByText(/candidate site-to-node matches/i).first()).toBeVisible({
     timeout: 15_000,
   });
-  await page.getByRole("button", { name: /Save to Properties/i }).click();
-  await expect(page.getByRole("button", { name: /Saved locally/i })).toBeDisabled();
+  await page.getByRole("button", { name: /Create pipeline site|Shortlist for/i }).click();
+  await expect(page.getByRole("button", { name: /Screening saved/i })).toBeDisabled();
   for (const path of ["/portfolio", "/reports"]) {
     await page.goto(path);
     await expect(page.locator("main")).toBeVisible();
