@@ -80,6 +80,19 @@ test("a Finder project saves locally, survives navigation, and opens a dossier",
   await expect(page.getByRole("heading", { name: "Sites", exact: true })).toBeVisible();
   await expect(page.getByText("Untitled screening project").first()).toBeVisible();
   await page.getByRole("button", { name: /Untitled screening project/i }).click();
+  await page.getByRole("link", { name: "Review in Power Finder" }).click();
+  await expect(page).toHaveURL(/propertyId=/);
+  await expect(page).toHaveURL(/lat=52\.52/);
+  await expect(page).toHaveURL(/lng=13\.405/);
+  await expect(page).toHaveURL(/voltage=110/);
+  await expect(page.getByRole("button", { name: "More Filters" })).toHaveAttribute(
+    "aria-expanded",
+    "true",
+  );
+  await expect(page.getByLabel("Minimum voltage")).toHaveValue("110");
+  await expect(page.getByText(/Suggested from the declared 55 MW load/i)).toBeVisible();
+  await page.goto("/portfolio");
+  await page.getByRole("button", { name: /Untitled screening project/i }).click();
   await page.getByRole("link", { name: "Open Site Workspace" }).click();
   await expect(page.getByRole("heading", { name: "Opportunity overview" })).toBeVisible();
   await page.getByRole("button", { name: "decision", exact: true }).click();

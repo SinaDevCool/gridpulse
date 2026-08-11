@@ -32,6 +32,7 @@ import {
   type AnonymousSiteStage,
 } from "@/features/anonymous-workspace/portfolio-projection";
 import { buildPortfolioIntelligence } from "@/features/grid-connection/portfolio-intelligence";
+import { suggestScreeningVoltage } from "@/features/power-finder/site-screening-context";
 import {
   PortfolioDecisionView,
   PortfolioReadinessView,
@@ -687,6 +688,16 @@ function SiteDetail({
             lng: site.property.project.longitude ?? undefined,
             mw: site.property.project.importMw,
             projectType: site.property.project.type,
+            voltage: suggestScreeningVoltage(
+              site.property.project.importMw,
+              site.property.project.type,
+              site.property.project.preferredVoltageKv,
+            ),
+            preferredVoltage: suggestScreeningVoltage(
+              site.property.project.importMw,
+              site.property.project.type,
+              site.property.project.preferredVoltageKv,
+            ),
           }}
         >
           Review in Power Finder

@@ -87,6 +87,10 @@ import {
 } from "@/features/power-finder/operator-catalog";
 import { operatorBoundsIntersect } from "@/features/power-finder/operator-map-navigation";
 import {
+  suggestOperatorFilters,
+  suggestScreeningVoltage,
+} from "@/features/power-finder/site-screening-context";
+import {
   activationStudySnapshot,
   createActivationStudyContext,
 } from "@/features/power-finder/activation-study";
@@ -345,7 +349,7 @@ function PowerFinderPage() {
   const [projectEditorOpen, setProjectEditorOpen] = useState(
     Boolean(search.projectType || search.exportMw || search.batteryMw || search.batteryMwh),
   );
-  const [secondaryControlsOpen, setSecondaryControlsOpen] = useState(false);
+  const [secondaryControlsOpen, setSecondaryControlsOpen] = useState(Boolean(search.propertyId));
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mapNavigationTarget, setMapNavigationTarget] = useState<
     | { requestId: number; kind: "point"; center: [number, number]; zoom?: number }
@@ -522,10 +526,26 @@ function PowerFinderPage() {
     }
     void getAnonymousProperty(search.propertyId).then((property) => {
       if (!property) return;
+      const suggestedVoltage = suggestScreeningVoltage(
+        property.project.importMw,
+        property.project.type,
+        search.preferredVoltage ?? property.project.preferredVoltageKv,
+      );
       setActiveProperty(property);
-      setProject(property.project);
-      setInteractionNotice(`Loaded ${property.name} from Sites.`);
+      setProject({ ...property.project, preferredVoltageKv: suggestedVoltage });
+      setSecondaryControlsOpen(true);
+      setInteractionNotice(
+        `Loaded ${property.name} and focused its declared location. ${suggestedVoltage} kV is a screening suggestion, not a connection requirement.`,
+      );
+      if (search.voltage == null || search.preferredVoltage == null) {
+        void updateSearch({
+          voltage: search.voltage ?? suggestedVoltage,
+          preferredVoltage: search.preferredVoltage ?? suggestedVoltage,
+        });
+      }
     });
+    // The property ID intentionally controls this one-time device-local lookup.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search.propertyId]);
 
   useEffect(() => {
@@ -711,6 +731,7 @@ function PowerFinderPage() {
   }, [distributionOperators, selectedDso, selectedTso, transmissionOperators]);
 
   useEffect(() => {
+    if (search.propertyId) return;
     if (selectedDso !== "all" && operators.some((item) => item.name === selectedDso)) {
       navigateMapToOperator(selectedDso);
     } else if (selectedTso !== "all" && operators.some((item) => item.name === selectedTso)) {
@@ -842,6 +863,35 @@ function PowerFinderPage() {
     // Only recommend automatically when a saved site enters Finder without a durable selection.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [candidates, search.candidate, search.propertyId]);
+  useEffect(() => {
+    if (
+      !search.propertyId ||
+      search.tso ||
+      search.dso ||
+      !ranking?.candidates.length ||
+      !operatorCatalog.length
+    )
+      return;
+    const suggestion = suggestOperatorFilters(ranking.candidates[0], operatorCatalog);
+    if (!suggestion.tso && !suggestion.dso) {
+      setInteractionNotice(
+        "The site is focused and grid candidates were queried, but no unambiguous mapped operator filter could be suggested. Operator responsibility requires confirmation.",
+      );
+      return;
+    }
+    void updateSearch({ tso: suggestion.tso, dso: suggestion.dso });
+    const context = [
+      suggestion.dso ? `likely DSO ${suggestion.dso}` : null,
+      suggestion.tso ? `mapped TSO context ${suggestion.tso}` : null,
+    ]
+      .filter(Boolean)
+      .join(" and ");
+    setInteractionNotice(
+      `The site is focused and candidates were queried. Filters now show ${context}; this is mapped screening context and requires operator confirmation.`,
+    );
+    // Only derive context when a saved site has no explicit operator filters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [operatorCatalog, ranking?.candidates, search.dso, search.propertyId, search.tso]);
   // URL search is the durable selection source. A viewport refresh can replace the
   // feature collection between a card click and navigation completion, so rebuild
   // the detail feature from the selected opportunity instead of briefly closing it.
@@ -1760,6 +1810,11 @@ function PowerFinderPage() {
                     <option value={220}>220+ kV</option>
                     <option value={380}>380+ kV</option>
                   </select>
+                  {search.propertyId && minimumVoltage > 0 && (
+                    <small>
+                      Suggested from the declared {formatMw(project.importMw)} load; screening only.
+                    </small>
+                  )}
                 </label>
                 <label className="power-finder-filter-wide">
                   <span>Transmission operator (TSO)</span>
@@ -1784,7 +1839,12 @@ function PowerFinderPage() {
                       </option>
                     ))}
                   </select>
-                  {selectedTso !== "all" && <small>{selectedTso}</small>}
+                  {selectedTso !== "all" && (
+                    <small>
+                      {selectedTso}
+                      {search.propertyId ? " · mapped context, confirmation required" : ""}
+                    </small>
+                  )}
                 </label>
                 <label className="power-finder-filter-wide">
                   <span>Distribution operator (DSO / other)</span>
@@ -1808,7 +1868,12 @@ function PowerFinderPage() {
                       </option>
                     ))}
                   </select>
-                  {selectedDso !== "all" && <small>{selectedDso}</small>}
+                  {selectedDso !== "all" && (
+                    <small>
+                      {selectedDso}
+                      {search.propertyId ? " · likely operator, confirmation required" : ""}
+                    </small>
+                  )}
                 </label>
                 <p className="operator-hierarchy-boundary power-finder-filter-wide">
                   Region options intersect accepted mapped assets. DSO choices under a TSO use
