@@ -1,14 +1,8 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { productCapabilities } from "@/config/product-mode";
-
-const finderWorkspaceLinks = [
-  { label: "Power Finder", detail: "Screen connection candidates", to: "/power-finder" },
-] as const;
-
-const privateWorkspaceLinks = [
+const workspaceLinks = [
   { label: "Properties", detail: "Qualify the portfolio", to: "/portfolio" },
   { label: "Power Finder", detail: "Investigate candidates", to: "/power-finder" },
-  { label: "Reports", detail: "Review decision evidence", to: "/reports" },
+  { label: "Reports", detail: "Export decision evidence", to: "/reports" },
 ] as const;
 
 export function ProductHeader() {
@@ -59,12 +53,7 @@ export function ProductHeader() {
 
 export function ProductStageNavigation() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const privateWorkflow =
-    productCapabilities.authentication &&
-    ["/portfolio", "/assessments", "/reports", "/evidence", "/operator-review", "/submission-package"].some(
-      (prefix) => pathname.startsWith(prefix),
-    );
-  const links = privateWorkflow ? privateWorkspaceLinks : finderWorkspaceLinks;
+  const links = workspaceLinks;
   return (
     <nav className="product-stage-navigation" aria-label="Grid workspace navigation">
       <div>
@@ -76,6 +65,7 @@ export function ProductStageNavigation() {
               to={item.to}
               className={active ? "active" : undefined}
               aria-current={active ? "page" : undefined}
+              onClick={(event) => { if (active) event.preventDefault(); }}
             >
               <span>0{index + 1}</span>
               <span>

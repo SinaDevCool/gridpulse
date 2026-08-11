@@ -876,7 +876,7 @@ function LegacyFinderDataSourcesPage() {
                 <p>
                   Operator correspondence can be machine-highlighted for review, but extracted
                   values remain linked to the source and never overwrite customer declarations.
-                  Conflicts stay visible, authenticated grid-expert approval is required, and
+                  Conflicts stay visible, grid-expert approval is required, and
                   restriction events are non-operational rehearsals. They neither dispatch equipment
                   nor establish mapped capacity.
                 </p>

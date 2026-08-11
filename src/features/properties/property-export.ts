@@ -4,6 +4,7 @@ export type ExportableProperty = {
   id: string; name: string; project_type: string; latitude: number; longitude: number;
   requested_import_mw: number; requested_export_mw: number; likely_network_operator: string | null;
   operator_status: string; planning_status: string; land_status: string; assessment_status: string;
+  boundary?: GeoJSON.Polygon | GeoJSON.MultiPolygon | null;
 };
 
 const columns: Array<[keyof ExportableProperty, string]> = [
@@ -28,12 +29,15 @@ export function downloadPropertyCsv(properties: ExportableProperty[]) {
 export async function downloadPropertyXlsx(properties: ExportableProperty[]) {
   const data = [
     columns.map(([, label]) => ({ value: label, fontWeight: "bold" as const })),
-    ...properties.map((property) => columns.map(([key]) => ({ value: property[key] ?? "" }))),
+    ...properties.map((property) => columns.map(([key]) => {
+      const value = property[key];
+      return { value: value == null ? "" : typeof value === "object" ? JSON.stringify(value) : value };
+    })),
   ];
   await writeXlsxFile(data, { fileName: "gridpulse-property-portfolio.xlsx" });
 }
 
 export function downloadPropertyGeoJson(properties: ExportableProperty[]) {
-  const collection: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: properties.map((property) => ({ type: "Feature", id: property.id, geometry: { type: "Point", coordinates: [property.longitude, property.latitude] }, properties: { ...property, capacity_boundary: "No capacity value is inferred from this export." } })) };
+  const collection: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: properties.map((property) => ({ type: "Feature", id: property.id, geometry: property.boundary ?? { type: "Point", coordinates: [property.longitude, property.latitude] }, properties: { ...property, boundary: undefined, capacity_boundary: "No capacity value is inferred from this export." } })) };
   download(new Blob([JSON.stringify(collection, null, 2)], { type: "application/geo+json" }), "gridpulse-property-portfolio.geojson");
 }

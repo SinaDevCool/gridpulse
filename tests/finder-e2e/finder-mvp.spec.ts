@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("Finder exploration is public with optional private portfolio saving", async ({ page }) => {
+test("Finder exploration and local property portfolio are anonymous", async ({ page }) => {
   const requests: string[] = [];
   page.on("request", (request) => requests.push(request.url()));
 
@@ -15,8 +15,8 @@ test("Finder exploration is public with optional private portfolio saving", asyn
   await page.getByText(/Operator questions & report/i).click();
   await expect(page.getByRole("button", { name: /Download screening report/i })).toBeDisabled();
   await expect(page.getByRole("button", { name: /Show .* on map, .*\/100/ })).toHaveCount(0);
-  await expect(page.getByRole("link", { name: /Save to Property Portfolio/i })).toBeVisible();
-  expect(requests.some((url) => url.includes("/rest/v1/rpc/"))).toBe(false);
+  await expect(page.getByRole("button", { name: /Save to Properties/i })).toBeDisabled();
+  expect(requests.some((url) => /\/auth\/v1\/(token|signup)/.test(url))).toBe(false);
 });
 
 test("Finder landing, sector pages and methodology form the public product site", async ({
@@ -56,13 +56,30 @@ test("Finder landing, sector pages and methodology form the public product site"
   await expect(page.getByText(/product tour|start a pilot|review the assessment/i)).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Discuss a site" })).toHaveCount(0);
 
-  for (const pathname of ["/portfolio", "/assessments/new", "/reports"]) {
+  for (const pathname of ["/portfolio", "/reports"]) {
     const response = await page.goto(pathname);
     expect(response?.status(), pathname).toBeLessThan(400);
     await expect(page.locator("main")).toBeVisible();
   }
+  expect((await page.goto("/assessments/new"))?.status()).toBe(404);
   const pilotResponse = await page.goto("/pilot");
   expect(pilotResponse?.status()).toBe(404);
+});
+
+test("a Finder project saves locally, survives navigation, and opens a dossier", async ({ page }) => {
+  await page.goto("/power-finder?lat=52.52&lng=13.405&mw=55&projectType=data_centre");
+  await expect(page.getByText(/candidate site-to-node matches/i).first()).toBeVisible({ timeout: 15_000 });
+  await page.getByText(/Operator questions & report/i).click();
+  const save = page.getByRole("button", { name: /Save to Properties/i });
+  await expect(save).toBeEnabled();
+  await save.click();
+  await expect(page.locator('p.sr-only[role="status"]')).toContainText("Property saved locally");
+  await page.getByRole("link", { name: /Properties Qualify the portfolio/i }).click();
+  await expect(page.getByRole("heading", { name: "Property portfolio" })).toBeVisible();
+  await expect(page.getByText("Untitled screening project").first()).toBeVisible();
+  await page.getByRole("link", { name: "Dossier" }).click();
+  await expect(page.getByRole("heading", { name: "Untitled screening project" })).toBeVisible();
+  await expect(page.getByText(/Capacity metrics are withheld/i)).toBeVisible();
 });
 
 test("account-free project screening supports a custom site and BESS requirements", async ({

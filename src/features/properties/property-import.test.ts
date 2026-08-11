@@ -27,4 +27,13 @@ describe("property portfolio import", () => {
     expect(row.errors).toEqual([]);
     expect(row.value.longitude).toBe(13.4);
   });
+
+  it("accepts a boundary-only GeoJSON property and derives a representative location", async () => {
+    const geojson = { type: "Feature", geometry: { type: "Polygon", coordinates: [[[13.3, 52.4], [13.5, 52.4], [13.5, 52.6], [13.3, 52.6], [13.3, 52.4]]] }, properties: { property_name: "Boundary property", required_total_site_load_mw: 30 } };
+    const [row] = await parsePropertyImport(new File([JSON.stringify(geojson)], "boundary.geojson"));
+    expect(row.errors).toEqual([]);
+    expect(row.value.boundary?.type).toBe("Polygon");
+    expect(row.value.latitude).toBeCloseTo(52.48);
+    expect(row.value.longitude).toBeCloseTo(13.38);
+  });
 });

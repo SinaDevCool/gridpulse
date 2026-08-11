@@ -1,7 +1,8 @@
 import { Download, FileSpreadsheet, LoaderCircle, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { propertyFromImport } from "@/features/anonymous-workspace/factory";
+import { importAnonymousProperties } from "@/features/anonymous-workspace/repository";
 import { parsePropertyImport, propertyImportTemplateCsv, type PropertyImportRow } from "./property-import";
 
 function downloadTemplate() {
@@ -40,38 +41,16 @@ export function PropertyImportPanel({ onImported }: { onImported: () => void }) 
     if (!rows.length || invalid) return;
     setBusy(true);
     setError("");
-    const payload = rows.map(({ value }) => ({
-      name: value.propertyName,
-      type: value.propertyType ?? "large_load",
-      latitude: value.latitude,
-      longitude: value.longitude,
-      importMw: value.requiredTotalSiteLoadMw,
-      exportMw: value.exportRequirementMw,
-      requiredItLoadMw: value.requiredItLoadMw,
-      requiredTotalSiteLoadMw: value.requiredTotalSiteLoadMw,
-      targetEnergisationYear: value.targetEnergisationYear,
-      externalPropertyId: value.externalPropertyId,
-      clientOrganization: value.clientOrganisation,
-      confidentialityClassification: value.confidentialityClassification,
-      projectOwner: value.projectOwner,
-      propertyType: value.propertyType,
-      propertyCondition: value.propertyCondition,
-      developmentPhase: value.developmentPhase,
-      landControlStatus: value.landControlStatus,
-      notes: value.notes,
-      sourceSystem: "property_portfolio_import",
-      sourceRow: value.sourceRow,
-      boundary: value.boundary,
-    }));
-    const { data, error: importError } = await supabase.rpc("import_property_batch", {
-      p_properties: payload,
-    });
-    setBusy(false);
-    if (importError) {
-      setError(`${importError.message} No rows were committed; correct the file and try again.`);
+    try {
+      const extension = fileName.split(".").pop()?.toLowerCase() ?? "csv";
+      const result = await importAnonymousProperties(rows.map(({ value }) => propertyFromImport(value, extension)), "skip");
+      toast.success(`${result.imported} ${result.imported === 1 ? "property" : "properties"} imported${result.skipped ? `; ${result.skipped} existing IDs skipped` : ""}`);
+    } catch (reason) {
+      setError(`${reason instanceof Error ? reason.message : "Import failed."} No rows were committed.`);
+      setBusy(false);
       return;
     }
-    toast.success(`${data.length} ${data.length === 1 ? "property" : "properties"} imported`);
+    setBusy(false);
     setRows([]);
     setFileName("");
     if (input.current) input.current.value = "";

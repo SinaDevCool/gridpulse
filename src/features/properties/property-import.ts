@@ -111,7 +111,18 @@ function valueFromRecord(
   const land = nullableText(record.land_control_status)?.toLowerCase() ?? "unknown";
   const confidentiality =
     nullableText(record.confidentiality_classification)?.toLowerCase() ?? "confidential";
-  const point = geometry?.type === "Point" ? geometry.coordinates : null;
+  const geometryCoordinates = geometry?.type === "Polygon"
+    ? geometry.coordinates.flat(1)
+    : geometry?.type === "MultiPolygon"
+      ? geometry.coordinates.flat(2)
+      : [];
+  const representativePoint = geometryCoordinates.length
+    ? [
+        geometryCoordinates.reduce((sum, coordinate) => sum + coordinate[0], 0) / geometryCoordinates.length,
+        geometryCoordinates.reduce((sum, coordinate) => sum + coordinate[1], 0) / geometryCoordinates.length,
+      ]
+    : null;
+  const point = geometry?.type === "Point" ? geometry.coordinates : representativePoint;
   const boundary =
     geometry?.type === "Polygon" || geometry?.type === "MultiPolygon" ? geometry : null;
   return {

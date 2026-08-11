@@ -30,6 +30,7 @@ import {
   type PowerFinderKind,
 } from "@/features/power-finder/fixture-data";
 import { saveFinderProjectToPortfolio } from "@/features/power-finder/property-handoff";
+import { getAnonymousProperty } from "@/features/anonymous-workspace/repository";
 import { GRID_VOLTAGE_CLASSES } from "@/features/power-finder/voltage-style";
 import { layerAvailability } from "@/features/power-finder/layer-availability";
 import {
@@ -191,6 +192,7 @@ export const Route = createFileRoute("/power-finder")({
       .refine((value) => [0, 20, 110, 220, 380].includes(value))
       .optional()
       .catch(undefined),
+    propertyId: z.string().uuid().optional().catch(undefined),
   }),
   head: () => ({
     meta: [
@@ -234,7 +236,6 @@ function formatMw(value: number) {
 }
 
 function PowerFinderPage() {
-  const user = null;
   const navigate = useNavigate();
   const search = Route.useSearch();
   const [collection, setCollection] = useState<PowerFinderCollection | null>(null);
@@ -509,6 +510,15 @@ function PowerFinderPage() {
   useEffect(() => {
     if (projectHydrated) void saveFinderProject(project);
   }, [project, projectHydrated]);
+
+  useEffect(() => {
+    if (!search.propertyId) return;
+    void getAnonymousProperty(search.propertyId).then((property) => {
+      if (!property) return;
+      setProject(property.project);
+      setInteractionNotice(`Loaded ${property.name} from Properties.`);
+    });
+  }, [search.propertyId]);
 
   useEffect(() => {
     const raw = new URLSearchParams(window.location.search);
@@ -1064,6 +1074,39 @@ function PowerFinderPage() {
                 onClick={() => setProjectEditorOpen((current) => !current)}
               >
                 {projectEditorOpen ? "Close" : "Edit Project"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if ((project.latitude != null || project.name !== defaultFinderProject.name) && !window.confirm("Start a new screening? Save the current property first if you want to keep it.")) return;
+                  setProject({ ...defaultFinderProject, updatedAt: new Date().toISOString() });
+                  setSelected(null); setSelectedOpportunitySnapshot(null); setComparisonOpen(false); setPropertySaveStatus("idle");
+                  void navigate({ to: "/power-finder", search: {}, replace: true });
+                  setInteractionNotice("New screening started.");
+                }}
+              >
+                New
+              </button>
+              <button
+                type="button"
+                className="primary-button"
+                disabled={propertySaveStatus === "saving" || propertySaveStatus === "saved" || project.latitude == null || project.longitude == null}
+                onClick={async () => {
+                  setPropertySaveStatus("saving");
+                  setInteractionNotice("Saving property locally.");
+                  try {
+                    const candidatesToSave = comparedCandidates.length ? comparedCandidates : selectedOpportunity ? [selectedOpportunity] : [];
+                    await saveFinderProjectToPortfolio(project, candidatesToSave, search.propertyId);
+                    setPropertySaveStatus("saved");
+                    setInteractionNotice("Property saved locally in this browser.");
+                  } catch (reason) {
+                    setPropertySaveStatus("error");
+                    setInteractionNotice(reason instanceof Error ? reason.message : "The property could not be saved.");
+                  }
+                }}
+              >
+                <BookmarkPlus aria-hidden="true" />
+                {propertySaveStatus === "saving" ? "Saving property…" : propertySaveStatus === "saved" ? "Saved locally" : propertySaveStatus === "error" ? "Try saving property again" : "Save to Properties"}
               </button>
             </div>
           </div>
@@ -1729,28 +1772,6 @@ function PowerFinderPage() {
               <Download aria-hidden="true" />
               <span>{reportPreparing ? "Preparing report…" : "Download screening report"}</span>
             </button>
-            {user ? (
-              <button
-                type="button"
-                className="primary-button"
-                disabled={propertySaveStatus === "saving" || propertySaveStatus === "saved" || project.latitude == null || project.longitude == null}
-                onClick={async () => {
-                  setPropertySaveStatus("saving");
-                  try {
-                    const candidatesToSave = comparedCandidates.length ? comparedCandidates : selectedOpportunity ? [selectedOpportunity] : [];
-                    await saveFinderProjectToPortfolio(project, candidatesToSave);
-                    setPropertySaveStatus("saved");
-                    setInteractionNotice("Property saved to your private portfolio.");
-                  } catch (reason) {
-                    setPropertySaveStatus("error");
-                    setInteractionNotice(reason instanceof Error ? reason.message : "The property could not be saved.");
-                  }
-                }}
-              >
-                <BookmarkPlus aria-hidden="true" />
-                {propertySaveStatus === "saving" ? "Saving property…" : propertySaveStatus === "saved" ? "Saved to property portfolio" : propertySaveStatus === "error" ? "Try saving property again" : "Save to property portfolio"}
-              </button>
-            ) : null}
           </details>
 
           <p className="sr-only" role="status" aria-live="polite">
@@ -2182,7 +2203,7 @@ function PowerFinderPage() {
                 <span>
                   {collection.metadata.freshness} · {collection.metadata.record_count} records ·{" "}
                   {dataMode === "database"
-                    ? "authenticated database query"
+                    ? "private workspace database query"
                     : dataMode === "public_database"
                       ? "live public viewport"
                       : "accepted static fallback"}

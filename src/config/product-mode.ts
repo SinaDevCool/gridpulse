@@ -38,6 +38,8 @@ const finderRoutes = new Set([
   "/data-centres",
   "/energy-storage",
   "/hydrogen-industry",
+  "/portfolio",
+  "/reports",
 ]);
 
 const finderApiRoutes = new Set([
@@ -53,7 +55,8 @@ export function isRouteEnabledForMode(pathname: string, mode: ProductMode): bool
   const normalized = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
   return (
     finderRoutes.has(normalized) ||
-    finderApiRoutes.has(normalized)
+    finderApiRoutes.has(normalized) ||
+    normalized.startsWith("/capacity-dossiers/")
   );
 }
 
