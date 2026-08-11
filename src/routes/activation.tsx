@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, RadioTower } from "lucide-react";
 import { AppShell } from "@/components/product/AppShell";
+import { SelectedAssetContext } from "@/components/product/SelectedAssetContext";
+import { publicSelectedAsset } from "@/components/product/selected-asset-data";
 import { ActivationWorkspace } from "@/features/activation/ActivationWorkspace";
 import type { ActivationSite } from "@/features/activation/workspace-model";
 
@@ -11,12 +13,12 @@ export const Route = createFileRoute("/activation")({
 
 const publicDemonstrationSite: ActivationSite = {
   id: "public-activation-demonstration",
-  name: "50Hertz Flexible Connection Example",
+  name: publicSelectedAsset.name,
   project_type: "data_centre",
-  requested_import_mw: 500,
-  minimum_viable_import_mw: 400,
-  bess_power_mw: 25,
-  bess_energy_mwh: 50,
+  requested_import_mw: 250,
+  minimum_viable_import_mw: 180,
+  bess_power_mw: 15,
+  bess_energy_mwh: 30,
   likely_network_operator: "50Hertz",
 };
 
@@ -36,7 +38,23 @@ function ActivationPage() {
             <ArrowRight size={14} aria-hidden="true" />
           </Link>
         </header>
-        <ActivationWorkspace site={publicDemonstrationSite} envelopes={[]} />
+        <SelectedAssetContext stage="activation" />
+        <ActivationWorkspace
+          site={publicDemonstrationSite}
+          envelopes={[
+            {
+              id: "berlin-synthetic-n1-basis",
+              name: "Berlin synthetic N-1 basis",
+              version: 1,
+              status: "calculated",
+              mode: "synthetic_geographic_demonstration",
+              max_import_mw: publicSelectedAsset.firmMw,
+              valid_from: null,
+              valid_to: null,
+              restriction_schedule: null,
+            },
+          ]}
+        />
       </main>
     </AppShell>
   );

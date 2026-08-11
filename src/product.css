@@ -14903,6 +14903,95 @@ tbody tr:last-child td {
 .energy-console .operations-events > div {
   border-top-color: #1c3343;
 }
+.selected-asset-context {
+  display: grid;
+  grid-template-columns: minmax(230px, 0.8fr) minmax(0, 1.5fr);
+  gap: 14px 24px;
+  margin-bottom: 12px;
+  padding: 16px;
+  border: 1px solid #1c3343;
+  border-radius: 8px;
+  background: #081723;
+}
+.selected-asset-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.selected-asset-identity > svg {
+  flex: 0 0 auto;
+  width: 19px;
+  color: #55ddf3;
+}
+.selected-asset-identity h2 {
+  margin: 2px 0 3px;
+  color: #edf7fa;
+  font-size: 0.94rem;
+}
+.selected-asset-identity span,
+.selected-asset-evidence {
+  color: #718b9a;
+  font-size: 0.68rem;
+}
+.selected-asset-context dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+}
+.selected-asset-context dl > div {
+  min-width: 0;
+  padding: 3px 14px;
+  border-left: 1px solid #1c3343;
+}
+.selected-asset-context dt {
+  color: #607b8b;
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.selected-asset-context dd {
+  margin: 6px 0 0;
+  overflow-wrap: anywhere;
+  color: #dce9ed;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+.selected-asset-lineage {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  gap: 9px;
+  color: #6f8999;
+  font-size: 0.66rem;
+}
+.selected-asset-lineage svg {
+  width: 14px;
+  color: #55ddf3;
+}
+.selected-asset-lineage i {
+  flex: 1;
+  max-width: 70px;
+  border-top: 1px solid #315063;
+}
+.selected-asset-lineage strong {
+  color: #55ddf3;
+}
+.selected-asset-evidence {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 0;
+  padding-top: 10px;
+  border-top: 1px solid #142b3a;
+  line-height: 1.45;
+}
+.selected-asset-evidence svg {
+  flex: 0 0 auto;
+  width: 14px;
+  color: #f3c654;
+}
 
 @media (max-width: 800px) {
   .product-shell--focused .energy-console {
@@ -14936,6 +15025,17 @@ tbody tr:last-child td {
   }
   .energy-console .activation-recommendation > strong {
     grid-column: 1;
+  }
+  .selected-asset-context {
+    grid-template-columns: 1fr;
+  }
+  .selected-asset-context dl {
+    grid-template-columns: 1fr 1fr;
+  }
+  .selected-asset-context dl > div {
+    padding: 10px 0;
+    border-top: 1px solid #1c3343;
+    border-left: 0;
   }
 }
 @media (max-width: 520px) {

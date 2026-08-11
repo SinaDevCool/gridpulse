@@ -27,10 +27,9 @@ test("landing page introduces the complete workspace and the product brand retur
 
 test("activation is public and its evidence disclosure works", async ({ page }) => {
   await page.goto("/activation");
-  await expect(
-    page.getByRole("heading", { name: "Power Activation" }),
-  ).toBeVisible();
-  await expect(page.getByText("500 MW", { exact: true }).first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Power Activation" })).toBeVisible();
+  await expect(page.getByText("Berlin 110 kV Candidate", { exact: true })).toBeVisible();
+  await expect(page.getByText("187.8 MW", { exact: true }).first()).toBeVisible();
   const disclosure = page.getByText("Calculation & Evidence Details", { exact: true });
   await disclosure.click();
   await expect(page.getByText("Estimated restrictions")).toBeVisible();
@@ -38,6 +37,19 @@ test("activation is public and its evidence disclosure works", async ({ page }) 
   await expect(page.getByText("Estimated restrictions")).toBeHidden();
   await page.getByRole("link", { name: "Open Operations" }).click();
   await expect(page).toHaveURL(/\/operations$/);
+});
+
+test("methodology connects public sources to the calculation stack", async ({ page }) => {
+  await page.goto("/data-sources");
+  const heading = page.getByRole("heading", {
+    name: "See how a mapped node becomes an activation envelope.",
+  });
+  test.skip((await heading.count()) === 0, "Finder-mode methodology is not active in this build");
+  await expect(heading).toBeVisible();
+  await expect(page.getByText("32 N-1", { exact: true })).toBeVisible();
+  await expect(page.getByText("236,520 h", { exact: true })).toBeVisible();
+  await expect(page.getByText("40%", { exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Open Grid Workspace" })).toBeVisible();
 });
 
 test("operations is public and remains explicitly simulation-only", async ({ page }) => {

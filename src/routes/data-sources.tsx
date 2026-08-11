@@ -128,6 +128,45 @@ const authorityGroups = [
   },
 ] as const;
 
+const calculationEvidence = [
+  {
+    label: "Geographic Demonstration",
+    value: "15 nodes",
+    detail: "Berlin mapped anchors with a synthetic 110 kV electrical model",
+    status: "Calculated",
+  },
+  {
+    label: "Security Assessment",
+    value: "32 N-1",
+    detail: "Every synthetic branch evaluated as an individual outage",
+    status: "Physics solved",
+  },
+  {
+    label: "Hourly Envelope",
+    value: "236,520 h",
+    detail: "27 deterministic scenarios across the reference candidate set",
+    status: "Representative",
+  },
+  {
+    label: "Graph Reduction",
+    value: "40%",
+    detail: "Fewer cases selected with 100% constraint and infeasible recall",
+    status: "Qualified",
+  },
+] as const;
+
+const benchmarkSteps = [
+  ["01", "Map the candidate", "OpenStreetMap anchors, voltage context and proximity."],
+  ["02", "Trace the pathway", "Neo4j-compatible topology selects relevant upstream cases."],
+  ["03", "Solve the physics", "Pandapower AC load flow tests voltage, thermal and N-1 limits."],
+  [
+    "04",
+    "Build the envelope",
+    "Hourly scenarios compare firm, flexible, battery and staged strategies.",
+  ],
+  ["05", "Gate the claim", "Evidence class determines what can be displayed or operationalised."],
+] as const;
+
 function DataSourcesPage() {
   if (isFinderMvp()) return <FinderDataSourcesPage />;
 
@@ -370,11 +409,11 @@ function FinderDataSourcesPage() {
       <main id="main-content" className="section-page public-methodology-page finder-methodology">
         <PublicPageHero
           eyebrow="Data & Methodology"
-          title="Evidence you can screen with. Boundaries you can trust."
-          description="GridPulse combines mapped infrastructure, registered assets and transparent comparison rules to help teams shortlist connection candidates without presenting public data as confirmed grid capacity."
+          title="See how a mapped node becomes an activation envelope."
+          description="Follow the calculation from public geography through graph-selected contingencies, AC power flow and hourly flexibility—while keeping synthetic results separate from operator-confirmed capacity."
         >
           <Link to="/power-finder" className="public-button public-button-primary">
-            Open Power Finder <ArrowRight aria-hidden="true" />
+            Open Grid Workspace <ArrowRight aria-hidden="true" />
           </Link>
         </PublicPageHero>
 
@@ -406,6 +445,48 @@ function FinderDataSourcesPage() {
                 <h3>Governed capacity</h3>
                 <p>Node-specific MW only when an accepted model and completed study support it.</p>
               </article>
+            </div>
+          </section>
+
+          <section className="calculation-evidence" aria-labelledby="calculation-evidence-title">
+            <div className="calculation-evidence-heading">
+              <div>
+                <p className="context-label">Calculation Evidence</p>
+                <h2 id="calculation-evidence-title">The current public calculation stack.</h2>
+              </div>
+              <p>
+                These figures summarize completed repository benchmarks. They validate the method;
+                they do not establish capacity at an operator-owned node.
+              </p>
+            </div>
+            <div className="calculation-evidence-metrics">
+              {calculationEvidence.map((item) => (
+                <article key={item.label}>
+                  <span>{item.label}</span>
+                  <strong>{item.value}</strong>
+                  <p>{item.detail}</p>
+                  <small>{item.status}</small>
+                </article>
+              ))}
+            </div>
+            <ol className="calculation-pipeline">
+              {benchmarkSteps.map(([number, title, detail]) => (
+                <li key={number}>
+                  <span>{number}</span>
+                  <div>
+                    <h3>{title}</h3>
+                    <p>{detail}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+            <div className="calculation-boundary-strip">
+              <Network aria-hidden="true" />
+              <p>
+                <strong>Authority boundary:</strong> graph analysis selects and explains study
+                pathways; the electrical solver remains authoritative for MW; the network operator
+                remains authoritative for connection capacity.
+              </p>
             </div>
           </section>
 

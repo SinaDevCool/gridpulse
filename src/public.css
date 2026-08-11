@@ -1209,6 +1209,132 @@
   display: grid;
   gap: 0;
 }
+.product-shell--focused.finder-shell--methodology {
+  min-height: 100vh;
+  background: #050d15;
+  color: #e7f3f7;
+  color-scheme: dark;
+}
+.finder-shell--methodology .public-methodology-page.section-page {
+  width: min(1180px, 100%);
+  padding-top: 0;
+  background: #06101a;
+}
+.finder-shell--methodology .product-footer {
+  border-top-color: #20303c;
+  background: #050d15;
+  color: #718b9a;
+}
+.calculation-evidence {
+  padding-block: 76px;
+  border-bottom: 1px solid #20303c;
+}
+.calculation-evidence-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.72fr);
+  gap: 48px;
+  align-items: end;
+}
+.calculation-evidence-heading > p {
+  margin: 0 0 18px;
+  color: #91a6b3;
+  font-size: 13px;
+  line-height: 1.65;
+}
+.calculation-evidence-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  margin-top: 36px;
+  border: 1px solid #263b48;
+  background: #263b48;
+}
+.calculation-evidence-metrics article {
+  min-width: 0;
+  padding: 22px;
+  background: #081722;
+}
+.calculation-evidence-metrics span,
+.calculation-evidence-metrics small {
+  display: block;
+  color: #668493;
+  font-size: 10px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.calculation-evidence-metrics strong {
+  display: block;
+  margin-top: 12px;
+  color: #55ddf3;
+  font-size: 25px;
+  font-variant-numeric: tabular-nums;
+}
+.calculation-evidence-metrics p {
+  min-height: 56px;
+  margin: 10px 0 14px;
+  color: #91a6b3;
+  font-size: 11px;
+  line-height: 1.55;
+}
+.calculation-evidence-metrics small {
+  color: #49d69b;
+}
+.calculation-pipeline {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin: 28px 0 0;
+  padding: 0;
+  border-block: 1px solid #263b48;
+  list-style: none;
+}
+.calculation-pipeline li {
+  min-width: 0;
+  padding: 22px 18px;
+  border-right: 1px solid #263b48;
+}
+.calculation-pipeline li:last-child {
+  border-right: 0;
+}
+.calculation-pipeline li > span {
+  color: #55ddf3;
+  font:
+    600 10px/1 "JetBrains Mono",
+    monospace;
+}
+.calculation-pipeline h3 {
+  margin: 18px 0 7px;
+  color: #e7f3f7;
+  font-size: 13px;
+}
+.calculation-pipeline p {
+  margin: 0;
+  color: #8095a2;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.calculation-boundary-strip {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 28px;
+  padding: 18px;
+  border: 1px solid #5b481b;
+  background: #181a17;
+}
+.calculation-boundary-strip svg {
+  flex: 0 0 auto;
+  width: 18px;
+  color: #f3c654;
+}
+.calculation-boundary-strip p {
+  margin: 0;
+  color: #9cabb2;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.calculation-boundary-strip strong {
+  color: #f3c654;
+}
 .finder-methodology-content h2 {
   max-width: 760px;
   margin: 8px 0 18px;
@@ -1358,6 +1484,20 @@
   .finder-methodology-boundary,
   .finder-methodology-sources {
     grid-template-columns: 1fr;
+  }
+  .calculation-evidence-heading,
+  .calculation-evidence-metrics,
+  .calculation-pipeline {
+    grid-template-columns: 1fr;
+  }
+  .calculation-pipeline li {
+    display: grid;
+    grid-template-columns: 34px 1fr;
+    border-right: 0;
+    border-bottom: 1px solid #263b48;
+  }
+  .calculation-pipeline h3 {
+    margin-top: 0;
   }
   .finder-methodology-flow li {
     grid-template-columns: 36px 1fr;

@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Zap } from "lucide-react";
 import { AppShell } from "@/components/product/AppShell";
+import { SelectedAssetContext } from "@/components/product/SelectedAssetContext";
+import { publicSelectedAsset } from "@/components/product/selected-asset-data";
 import { OperationsWorkspace } from "@/features/operations/OperationsWorkspace";
 
 export const Route = createFileRoute("/operations")({
@@ -24,7 +26,8 @@ function OperationsPage() {
             Review Activation
           </Link>
         </header>
-        <OperationsWorkspace requestedMw={500} firmMw={420} events={[]} />
+        <SelectedAssetContext stage="operations" />
+        <OperationsWorkspace requestedMw={250} firmMw={publicSelectedAsset.firmMw} events={[]} />
       </main>
     </AppShell>
   );

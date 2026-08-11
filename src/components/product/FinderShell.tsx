@@ -6,9 +6,10 @@ export function FinderShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const landingPage = pathname === "/";
   const workspacePage = pathname.startsWith("/activation") || pathname.startsWith("/operations");
+  const methodologyPage = pathname === "/data-sources";
   return (
     <div
-      className={`product-shell product-shell--focused finder-shell${landingPage ? " finder-shell--landing" : ""}${workspacePage ? " finder-shell--workspace" : ""}`}
+      className={`product-shell product-shell--focused finder-shell${landingPage ? " finder-shell--landing" : ""}${workspacePage ? " finder-shell--workspace" : ""}${methodologyPage ? " finder-shell--methodology" : ""}`}
     >
       <ProductHeader />
       {landingPage ? null : <ProductStageNavigation />}
