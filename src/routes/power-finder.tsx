@@ -14,7 +14,7 @@ import {
   ShieldCheck,
   Zap,
 } from "lucide-react";
-import { lazy, Suspense, useEffect, useMemo, useState, type ChangeEvent } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { z } from "zod";
 import { AppShell } from "@/components/product/AppShell";
 import { PowerFinderMap } from "@/components/product/PowerFinderMap";
@@ -242,6 +242,22 @@ function formatMw(value: number) {
   return `${mwFormatter.format(value)} MW`;
 }
 
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timeout = window.setTimeout(() => reject(new Error(message)), timeoutMs);
+    promise.then(
+      (value) => {
+        window.clearTimeout(timeout);
+        resolve(value);
+      },
+      (reason) => {
+        window.clearTimeout(timeout);
+        reject(reason);
+      },
+    );
+  });
+}
+
 function PowerFinderPage() {
   const navigate = useNavigate();
   const search = Route.useSearch();
@@ -291,6 +307,7 @@ function PowerFinderPage() {
     "idle" | "saving" | "saved" | "error"
   >("idle");
   const [activeProperty, setActiveProperty] = useState<AnonymousProperty | null>(null);
+  const propertySaveRequest = useRef(0);
   const [showAllCandidates, setShowAllCandidates] = useState(false);
   const [operatorEvidence, setOperatorEvidence] = useState<OperatorEvidenceResult | null>(null);
   const [operatorEvidenceState, setOperatorEvidenceState] = useState<
@@ -303,6 +320,51 @@ function PowerFinderPage() {
       search: (current) => ({ ...current, ...patch }),
       replace: true,
     });
+  const persistScreening = async (
+    candidatesToSave: CandidateOpportunity[],
+    shortlistedCandidateId: string | null = null,
+  ) => {
+    const requestId = ++propertySaveRequest.current;
+    setPropertySaveStatus("saving");
+    setInteractionNotice(
+      shortlistedCandidateId ? "Saving shortlisted candidate…" : "Saving screening…",
+    );
+    try {
+      const savedPropertyId = await withTimeout(
+        saveFinderProjectToPortfolio(
+          project,
+          candidatesToSave,
+          activeProperty?.id,
+          shortlistedCandidateId,
+        ),
+        10_000,
+        "Saving took too long. Please try again.",
+      );
+      if (requestId !== propertySaveRequest.current) return null;
+      const refreshed = await withTimeout(
+        getAnonymousProperty(savedPropertyId),
+        5_000,
+        "The site was saved, but could not be reloaded.",
+      );
+      if (requestId !== propertySaveRequest.current) return null;
+      setActiveProperty(refreshed);
+      setPropertySaveStatus("saved");
+      setInteractionNotice(
+        shortlistedCandidateId
+          ? "Candidate shortlisted and saved to the site workspace."
+          : "Screening saved to the site workspace.",
+      );
+      if (search.propertyId !== savedPropertyId) void updateSearch({ propertyId: savedPropertyId });
+      return savedPropertyId;
+    } catch (reason) {
+      if (requestId !== propertySaveRequest.current) return null;
+      setPropertySaveStatus("error");
+      setInteractionNotice(
+        reason instanceof Error ? reason.message : "The screening could not be saved.",
+      );
+      return null;
+    }
+  };
   const updateProject = (patch: Partial<FinderProject>) => {
     setProject((current) => ({ ...current, ...patch, updatedAt: new Date().toISOString() }));
   };
@@ -1149,7 +1211,17 @@ function PowerFinderPage() {
                   type="button"
                   aria-expanded={projectEditorOpen}
                   aria-controls="finder-project-editor"
-                  onClick={() => setProjectEditorOpen((current) => !current)}
+                  onClick={() => {
+                    const opening = !projectEditorOpen;
+                    setProjectEditorOpen(opening);
+                    if (opening) {
+                      window.requestAnimationFrame(() =>
+                        document
+                          .getElementById("finder-project-editor")
+                          ?.scrollIntoView({ block: "nearest", behavior: "smooth" }),
+                      );
+                    }
+                  }}
                 >
                   {projectEditorOpen ? "Close brief" : "Screening brief"}
                 </button>
@@ -1163,7 +1235,9 @@ function PowerFinderPage() {
                       )
                     )
                       return;
+                    propertySaveRequest.current += 1;
                     setProject({ ...defaultFinderProject, updatedAt: new Date().toISOString() });
+                    setActiveProperty(null);
                     setSelected(null);
                     setSelectedOpportunitySnapshot(null);
                     setComparisonOpen(false);
@@ -1180,37 +1254,10 @@ function PowerFinderPage() {
                   className="primary-button"
                   disabled={
                     propertySaveStatus === "saving" ||
-                    propertySaveStatus === "saved" ||
                     project.latitude == null ||
                     project.longitude == null
                   }
-                  onClick={async () => {
-                    setPropertySaveStatus("saving");
-                    setInteractionNotice("Saving property locally.");
-                    try {
-                      const candidatesToSave = candidates.slice(0, 3);
-                      const savedPropertyId = await saveFinderProjectToPortfolio(
-                        project,
-                        candidatesToSave,
-                        search.propertyId,
-                        null,
-                      );
-                      const refreshed = await getAnonymousProperty(savedPropertyId);
-                      setActiveProperty(refreshed);
-                      if (!search.propertyId) {
-                        await updateSearch({ propertyId: savedPropertyId });
-                      }
-                      setPropertySaveStatus("saved");
-                      setInteractionNotice("Property saved locally in this browser.");
-                    } catch (reason) {
-                      setPropertySaveStatus("error");
-                      setInteractionNotice(
-                        reason instanceof Error
-                          ? reason.message
-                          : "The property could not be saved.",
-                      );
-                    }
-                  }}
+                  onClick={() => void persistScreening(candidates.slice(0, 3))}
                 >
                   <BookmarkPlus aria-hidden="true" />
                   {propertySaveStatus === "saving"
@@ -2964,38 +3011,22 @@ function PowerFinderPage() {
                         className="primary-button candidate-shortlist-action"
                         disabled={propertySaveStatus === "saving"}
                         onClick={async () => {
-                          setPropertySaveStatus("saving");
-                          try {
-                            const candidateSet = Array.from(
-                              new Map(
-                                [...comparedCandidates, selectedOpportunity].map((item) => [
-                                  item.id,
-                                  item,
-                                ]),
-                              ).values(),
-                            );
-                            const savedPropertyId = await saveFinderProjectToPortfolio(
-                              project,
-                              candidateSet,
-                              search.propertyId,
-                              selectedOpportunity.id,
-                            );
-                            setPropertySaveStatus("saved");
+                          const candidateSet = Array.from(
+                            new Map(
+                              [...comparedCandidates, selectedOpportunity].map((item) => [
+                                item.id,
+                                item,
+                              ]),
+                            ).values(),
+                          );
+                          const savedPropertyId = await persistScreening(
+                            candidateSet,
+                            selectedOpportunity.id,
+                          );
+                          if (savedPropertyId) {
                             setShortlistId(selectedOpportunity.id);
                             setInteractionNotice(
                               `${selectedOpportunity.nodeName} shortlisted for ${project.name}.`,
-                            );
-                            const refreshed = await getAnonymousProperty(savedPropertyId);
-                            setActiveProperty(refreshed);
-                            if (!search.propertyId) {
-                              await updateSearch({ propertyId: savedPropertyId });
-                            }
-                          } catch (reason) {
-                            setPropertySaveStatus("error");
-                            setInteractionNotice(
-                              reason instanceof Error
-                                ? reason.message
-                                : "The candidate could not be shortlisted.",
                             );
                           }
                         }}

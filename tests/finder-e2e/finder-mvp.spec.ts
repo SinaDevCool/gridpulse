@@ -183,6 +183,30 @@ test("portfolio views are URL-backed and the site workspace is directly discover
   await expect(page.getByRole("heading", { name: "Opportunity overview" })).toBeVisible();
 });
 
+test("a stale site link cannot trap a new Power Finder screening in saving state", async ({
+  page,
+}) => {
+  const staleId = "f002ed17-2f75-446d-968b-7e89b86b7e47";
+  await page.goto(
+    `/power-finder?lat=51.4232&lng=12.3566&mw=100&projectType=data_centre&propertyId=${staleId}`,
+  );
+  await expect(page.getByText(/candidate site-to-node matches/i).first()).toBeVisible({
+    timeout: 15_000,
+  });
+  await expect(
+    page.getByRole("heading", { name: /Define the site and power requirement/i }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Close brief" }).click();
+  await page.getByRole("button", { name: "Screening brief" }).click();
+  await expect(
+    page.getByRole("heading", { name: /Define the site and power requirement/i }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Create pipeline site", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Screening saved", exact: true })).toBeEnabled();
+  await expect(page).not.toHaveURL(new RegExp(`propertyId=${staleId}`));
+  await expect(page.getByRole("link", { name: "Return to Site Workspace" }).first()).toBeVisible();
+});
+
 test("the downloadable client-style XLSX passes the browser import preview", async ({ page }) => {
   await page.goto("/portfolio");
   await page.getByText("Workspace Data").click();
