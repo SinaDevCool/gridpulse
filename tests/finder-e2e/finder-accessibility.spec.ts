@@ -40,7 +40,7 @@ test("Site Pipeline and Decision Centre have no serious or critical violations",
   }
   await page.goto("/portfolio");
   await page.getByRole("button", { name: /Untitled screening project/i }).click();
-  await page.getByRole("link", { name: "Site Workspace" }).click();
+  await page.getByRole("link", { name: "Open Site Workspace" }).click();
   const siteResult = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
     .analyze();

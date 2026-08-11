@@ -30,6 +30,7 @@ import {
 } from "@/features/anonymous-workspace/schema";
 import {
   deriveQualification,
+  decisionRecommendationLabel,
   operatorReadiness,
   qualificationLabels,
   updateQualificationDimension,
@@ -57,6 +58,7 @@ function SiteWorkspace() {
   const [property, setProperty] = useState<AnonymousProperty | null>(null);
   const [documents, setDocuments] = useState<AnonymousDocumentMetadata[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dirty, setDirty] = useState(false);
   const tab = search.tab ?? "overview";
   const refresh = useCallback(async () => {
     const value = await getAnonymousProperty(id);
@@ -67,10 +69,19 @@ function SiteWorkspace() {
   useEffect(() => {
     void refresh();
   }, [refresh]);
+  useEffect(() => {
+    const warn = (event: BeforeUnloadEvent) => {
+      if (!dirty) return;
+      event.preventDefault();
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
   const save = async (next: AnonymousProperty, message = "Site saved") => {
     const updated = migrateAnonymousProperty({ ...next, updatedAt: new Date().toISOString() });
     await saveAnonymousProperty(updated);
     setProperty(updated);
+    setDirty(false);
     toast.success(message);
   };
   if (loading)
@@ -107,7 +118,7 @@ function SiteWorkspace() {
             </p>
           </div>
           <div className={`decision-badge decision-${property.decisionStatus}`}>
-            {property.decisionStatus.replace("unreviewed", "Unreviewed")}
+            {decisionRecommendationLabel(property)}
           </div>
         </header>
         <nav className="site-workspace-tabs" aria-label="Site workspace">
@@ -115,22 +126,29 @@ function SiteWorkspace() {
             <button
               key={item}
               className={tab === item ? "active" : ""}
-              onClick={() =>
+              onClick={() => {
+                setDirty(false);
                 void navigate({
                   to: "/portfolio/$id",
                   params: { id },
                   search: { tab: item },
                   replace: true,
-                })
-              }
+                });
+              }}
             >
-              {item === "evidence" ? "Evidence & operator" : item}
+              {item === "evidence"
+                ? "Evidence & operator"
+                : item === "qualification"
+                  ? "Readiness"
+                  : item === "grid"
+                    ? "Grid screening"
+                    : item}
             </button>
           ))}
         </nav>
         <section className="site-workspace-layout">
           <aside className="site-workspace-summary">
-            <Readiness label="Site qualification" value={qualification.readiness} />
+            <Readiness label="Site readiness" value={qualification.readiness} />
             <Readiness label="Operator readiness" value={operator.score} />
             <dl>
               <div>
@@ -155,7 +173,7 @@ function SiteWorkspace() {
               or delivery date.
             </p>
           </aside>
-          <div className="site-workspace-canvas">
+          <div className="site-workspace-canvas" onChangeCapture={() => setDirty(true)}>
             {tab === "overview" && (
               <Overview
                 property={property}
@@ -367,12 +385,86 @@ function Qualification({
   onSave: (p: AnonymousProperty, m?: string) => Promise<void>;
 }) {
   const result = deriveQualification(property);
+  const primaryKeys: QualificationDimensionKey[] = [
+    "land",
+    "planning",
+    "grid",
+    "fibre",
+    "environment",
+    "municipality",
+  ];
+  const renderDimension = (dimension: (typeof result.dimensions)[number]) => (
+    <form
+      key={dimension.key}
+      className={`qualification-row status-${dimension.status}`}
+      onSubmit={(event) => {
+        event.preventDefault();
+        const form = new FormData(event.currentTarget);
+        const evidenceIds = form.getAll("evidence").map(String);
+        void onSave(
+          {
+            ...property,
+            qualification: updateQualificationDimension(property.qualification!, dimension.key, {
+              status: String(form.get("status")) as typeof dimension.status,
+              summary: String(form.get("summary")) || null,
+              evidenceIds,
+              reviewedAt: new Date().toISOString(),
+            }),
+          },
+          `${qualificationLabels[dimension.key]} reviewed`,
+        );
+      }}
+    >
+      <div>
+        <strong>{qualificationLabels[dimension.key]}</strong>
+        <small>
+          {dimension.unsupported
+            ? "Finding needs accepted evidence"
+            : dimension.acceptedEvidence
+              ? `${dimension.acceptedEvidence} accepted evidence item(s)`
+              : "Not evidenced"}
+        </small>
+      </div>
+      <select name="status" defaultValue={dimension.status} aria-label={`${qualificationLabels[dimension.key]} status`}>
+        <option value="unknown">Unknown</option>
+        <option value="favourable">Favourable</option>
+        <option value="conditional">Conditional</option>
+        <option value="adverse">Adverse</option>
+      </select>
+      <textarea
+        name="summary"
+        rows={2}
+        aria-label={`${qualificationLabels[dimension.key]} finding`}
+        placeholder="Concise finding and implications"
+        defaultValue={dimension.summary ?? ""}
+      />
+      <details>
+        <summary>Link evidence</summary>
+        {(property.evidenceRegister ?? []).length ? (
+          property.evidenceRegister!.map((evidence) => (
+            <label key={evidence.id} className="check-label">
+              <input
+                type="checkbox"
+                name="evidence"
+                value={evidence.id}
+                defaultChecked={dimension.evidenceIds.includes(evidence.id)}
+              />
+              {evidence.title}
+            </label>
+          ))
+        ) : (
+          <p>Add evidence in Evidence & operator.</p>
+        )}
+      </details>
+      <button type="submit">Save</button>
+    </form>
+  );
   return (
     <>
       <header className="workspace-section-heading">
         <div>
           <p className="context-label">Evidence-led review</p>
-          <h2>Data-centre qualification</h2>
+          <h2>Data-centre readiness</h2>
           <p>
             Record the current finding for each development dimension. Non-unknown findings need
             linked evidence to count towards readiness.
@@ -380,75 +472,13 @@ function Qualification({
         </div>
       </header>
       <div className="qualification-list">
-        {result.dimensions.map((dimension) => (
-          <form
-            key={dimension.key}
-            className={`qualification-row status-${dimension.status}`}
-            onSubmit={(event) => {
-              event.preventDefault();
-              const form = new FormData(event.currentTarget);
-              const evidenceIds = form.getAll("evidence").map(String);
-              void onSave(
-                {
-                  ...property,
-                  qualification: updateQualificationDimension(
-                    property.qualification!,
-                    dimension.key,
-                    {
-                      status: String(form.get("status")) as typeof dimension.status,
-                      summary: String(form.get("summary")) || null,
-                      evidenceIds,
-                      reviewedAt: new Date().toISOString(),
-                    },
-                  ),
-                },
-                `${qualificationLabels[dimension.key]} reviewed`,
-              );
-            }}
-          >
-            <div>
-              <strong>{qualificationLabels[dimension.key]}</strong>
-              <small>
-                {dimension.unsupported
-                  ? "Finding needs accepted evidence"
-                  : dimension.acceptedEvidence
-                    ? `${dimension.acceptedEvidence} accepted evidence item(s)`
-                    : "Not evidenced"}
-              </small>
-            </div>
-            <select name="status" defaultValue={dimension.status}>
-              <option value="unknown">Unknown</option>
-              <option value="favourable">Favourable</option>
-              <option value="conditional">Conditional</option>
-              <option value="adverse">Adverse</option>
-            </select>
-            <textarea
-              name="summary"
-              rows={2}
-              placeholder="Concise finding and implications"
-              defaultValue={dimension.summary ?? ""}
-            />
-            <details>
-              <summary>Link evidence</summary>
-              {(property.evidenceRegister ?? []).length ? (
-                property.evidenceRegister!.map((evidence) => (
-                  <label key={evidence.id} className="check-label">
-                    <input
-                      type="checkbox"
-                      name="evidence"
-                      value={evidence.id}
-                      defaultChecked={dimension.evidenceIds.includes(evidence.id)}
-                    />
-                    {evidence.title}
-                  </label>
-                ))
-              ) : (
-                <p>Add evidence in Evidence & operator.</p>
-              )}
-            </details>
-            <button type="submit">Save</button>
-          </form>
-        ))}
+        {result.dimensions.filter((item) => primaryKeys.includes(item.key)).map(renderDimension)}
+        <details className="additional-readiness-checks">
+          <summary>Additional checks</summary>
+          <div>
+            {result.dimensions.filter((item) => !primaryKeys.includes(item.key)).map(renderDimension)}
+          </div>
+        </details>
       </div>
     </>
   );
@@ -475,8 +505,11 @@ function GridWorkspace({
           className="primary-action"
           to="/power-finder"
           search={{
+            propertyId: property.id,
             lng: property.project.longitude,
             lat: property.project.latitude,
+            mw: property.project.importMw,
+            projectType: property.project.type,
             candidate: property.preferredCandidateId ?? undefined,
           }}
         >
@@ -971,8 +1004,32 @@ function Decision({
           const rationale = String(form.get("rationale")).trim();
           if (status !== "unreviewed" && rationale.length < 10)
             return toast.error("Add a decision rationale of at least 10 characters.");
+          const changed =
+            status !== property.decisionStatus || rationale !== (property.decisionRationale ?? "");
+          const decisionEvent = changed
+            ? {
+                id: crypto.randomUUID(),
+                previousStatus: property.decisionStatus,
+                status,
+                provisional: status === "advance" && !qualificationReady,
+                rationale: rationale || null,
+                preferredCandidateId: property.preferredCandidateId,
+                evidenceIds: (property.evidenceRegister ?? [])
+                  .filter((item) => item.validationStatus === "validated")
+                  .map((item) => item.id),
+                actorLabel: "Local workspace",
+                recordedAt: new Date().toISOString(),
+              }
+            : null;
           void onSave(
-            { ...property, decisionStatus: status, decisionRationale: rationale || null },
+            {
+              ...property,
+              decisionStatus: status,
+              decisionRationale: rationale || null,
+              decisionEvents: decisionEvent
+                ? [...(property.decisionEvents ?? []), decisionEvent]
+                : property.decisionEvents,
+            },
             "Decision recorded",
           );
         }}

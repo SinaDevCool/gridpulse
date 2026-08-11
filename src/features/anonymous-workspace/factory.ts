@@ -34,7 +34,21 @@ export function propertyFromFinder(
   if (project.latitude == null || project.longitude == null)
     throw new Error("Declare a property location before saving.");
   const now = new Date().toISOString();
+  const capturedCandidates = candidates.map(candidateSnapshot);
+  const capturedIds = new Set(capturedCandidates.map((item) => item.id));
+  const retainedCandidates = (existing?.candidateSnapshots ?? []).filter(
+    (item) => !capturedIds.has(item.id),
+  );
+  const candidateSnapshots = [...capturedCandidates, ...retainedCandidates];
+  const preferredCandidateId =
+    existing?.preferredCandidateId &&
+    candidateSnapshots.some((item) => item.id === existing.preferredCandidateId)
+      ? existing.preferredCandidateId
+      : existing
+        ? null
+        : capturedCandidates[0]?.id ?? null;
   return {
+    ...existing,
     id: existing?.id ?? crypto.randomUUID(),
     schemaVersion: ANONYMOUS_WORKSPACE_SCHEMA_VERSION,
     name: project.name,
@@ -52,9 +66,12 @@ export function propertyFromFinder(
     siteLabel: existing?.siteLabel ?? null,
     decisionStatus: existing?.decisionStatus ?? "unreviewed",
     decisionRationale: existing?.decisionRationale ?? null,
-    preferredCandidateId: existing?.preferredCandidateId ?? candidates[0]?.id ?? null,
-    selectedCandidateIds: candidates.map((item) => item.id),
-    candidateSnapshots: candidates.map(candidateSnapshot),
+    decisionEvents: existing?.decisionEvents ?? [],
+    preferredCandidateId,
+    selectedCandidateIds: Array.from(
+      new Set([...(existing?.selectedCandidateIds ?? []), ...candidates.map((item) => item.id)]),
+    ),
+    candidateSnapshots,
     evidence: existing?.evidence ?? null,
     source: "power_finder",
     createdAt: existing?.createdAt ?? now,
@@ -88,7 +105,7 @@ export function propertyFromImport(
     importMw: value.requiredTotalSiteLoadMw!,
     ultimateImportMw: value.requiredTotalSiteLoadMw!,
     exportMw: value.exportRequirementMw ?? 0,
-    minimumFirmMw: value.requiredTotalSiteLoadMw!,
+    minimumFirmMw: value.minimumViableLoadMw ?? value.requiredTotalSiteLoadMw!,
     flexibleLoadMw: 0,
     targetEnergisationYear: value.targetEnergisationYear ?? new Date().getFullYear() + 3,
     preferredVoltageKv: null,
@@ -123,6 +140,7 @@ export function propertyFromImport(
     siteLabel: value.siteLabel,
     decisionStatus: "unreviewed",
     decisionRationale: null,
+    decisionEvents: [],
     preferredCandidateId: null,
     dataCentreProfile: {
       address: value.address,

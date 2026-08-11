@@ -82,7 +82,7 @@ test("a Finder project saves locally, survives navigation, and opens a dossier",
   await expect(page.getByRole("heading", { name: "Site Pipeline" })).toBeVisible();
   await expect(page.getByText("Untitled screening project").first()).toBeVisible();
   await page.getByRole("button", { name: /Untitled screening project/i }).click();
-  await page.getByRole("link", { name: "Site Workspace" }).click();
+  await page.getByRole("link", { name: "Open Site Workspace" }).click();
   await expect(page.getByRole("heading", { name: "Opportunity overview" })).toBeVisible();
   await page.getByRole("button", { name: "decision", exact: true }).click();
   await page.getByRole("link", { name: /Open client decision record/i }).click();
@@ -101,7 +101,7 @@ test("anonymous site workspace qualifies a site and records operator evidence", 
   await expect(page.getByRole("button", { name: /Saved locally/i })).toBeDisabled();
   await page.goto("/portfolio");
   await page.getByRole("button", { name: /Untitled screening project/i }).click();
-  await page.getByRole("link", { name: "Site Workspace" }).click();
+  await page.getByRole("link", { name: "Open Site Workspace" }).click();
   await page.getByLabel("Site name").fill("Bremen Data Centre Campus");
   await page.getByLabel("Municipality").fill("Bremen");
   await page.getByLabel("Site area (ha)").fill("12.5");
@@ -119,7 +119,7 @@ test("anonymous site workspace qualifies a site and records operator evidence", 
   await page.getByRole("button", { name: /Add evidence/i }).click();
   await expect(page.getByText("Operator acknowledgement")).toBeVisible();
   await page.getByRole("link", { name: /Decision Centre Review evidence/i }).click();
-  await page.getByRole("button", { name: "Operator pipeline" }).click();
+  await page.getByRole("button", { name: "Portfolio readiness" }).click();
   await expect(page.getByText("Bremen Data Centre Campus").first()).toBeVisible();
 });
 
@@ -132,11 +132,12 @@ test("Site Pipeline decisions flow into Decision Centre", async ({ page }) => {
   await expect(page.getByRole("button", { name: /Saved locally/i })).toBeDisabled();
   await page.getByRole("link", { name: /Site Pipeline Qualify opportunities/i }).click();
   await page.getByRole("button", { name: /Untitled screening project/i }).click();
+  await page.getByRole("link", { name: "Review Decision" }).click();
   await page.getByRole("radio", { name: "Hold" }).check();
   await page
-    .getByLabel("Decision Rationale")
+    .getByLabel("Decision rationale")
     .fill("Hold until the responsible operator and evidence are confirmed.");
-  await page.getByRole("button", { name: "Save Decision" }).click();
+  await page.getByRole("button", { name: "Save recommendation" }).click();
   await expect(page.getByText("hold", { exact: true }).first()).toBeVisible();
   await page.getByRole("link", { name: /Decision Centre Review evidence/i }).click();
   await expect(page.getByRole("heading", { name: "Decision Centre" })).toBeVisible();
@@ -164,7 +165,7 @@ test("Site Pipeline remains usable without horizontal page overflow on mobile", 
   ).toBe(true);
 });
 
-test("account-free project screening supports a custom site and BESS requirements", async ({
+test("account-free MVP keeps a custom site inside the data-centre workflow", async ({
   page,
 }) => {
   await page.goto(
@@ -173,7 +174,8 @@ test("account-free project screening supports a custom site and BESS requirement
   await expect(
     page.getByRole("heading", { name: "Define the site and power requirement" }),
   ).toBeVisible();
-  await expect(page.getByLabel("Project type")).toHaveValue("battery_storage");
+  await expect(page.getByLabel("Project type")).toHaveValue("data_centre");
+  await expect(page.getByLabel("Project type").locator('option[value="battery_storage"]')).toHaveCount(0);
   await expect(page.getByLabel("Latitude")).toHaveValue("52.31");
   await expect(page.getByLabel("Longitude")).toHaveValue("13.36");
   await expect(page.getByLabel("Import MW")).toHaveValue("50");
@@ -181,16 +183,16 @@ test("account-free project screening supports a custom site and BESS requirement
   await expect(page.getByText(/candidate site-to-node matches/i).first()).toBeVisible({
     timeout: 15_000,
   });
-  await page.getByLabel("Project name").fill("Brandenburg storage screen");
-  await expect(page.getByLabel("Project name")).toHaveValue("Brandenburg storage screen");
+  await page.getByLabel("Project name").fill("Brandenburg data-centre screen");
+  await expect(page.getByLabel("Project name")).toHaveValue("Brandenburg data-centre screen");
   await page.getByText(/Operator questions & report/i).click();
   await expect(page.getByText(/Confirm the operator, connection point/i)).toBeVisible();
   await expect(page.getByRole("button", { name: /Download screening report/i })).toBeEnabled();
   await expect
     .poll(() => page.evaluate(() => localStorage.getItem("gridpulse-finder-active-project")))
-    .toContain("Brandenburg storage screen");
+    .toContain("Brandenburg data-centre screen");
   await page.reload();
-  await expect(page.getByLabel("Project name")).toHaveValue("Brandenburg storage screen");
+  await expect(page.getByLabel("Project name")).toHaveValue("Brandenburg data-centre screen");
   await page.getByText(/Operator questions & report/i).click();
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: /Download screening report/i }).click();
@@ -273,31 +275,20 @@ test("public MVP excludes experimental capacity and network-study outputs", asyn
   expect(scenarioRequests).toHaveLength(0);
 });
 
-test("capacity screening reacts to project demand without exposing the reference lab", async ({
+test("anonymous MVP hides synthetic capacity controls even when requested by URL", async ({
   page,
 }) => {
   await page.goto("/power-finder?lat=52.31&lng=13.36&mw=20&distance=20&mapMode=capacity");
   await expect(page.getByText(/candidate site-to-node matches/i).first()).toBeVisible({
     timeout: 15_000,
   });
-  const overlay = page.getByRole("switch", { name: /Capacity opportunities/i });
-  await expect(overlay).toBeChecked();
-  const metric = page.locator('select[name="capacity-overlay-metric"]');
-  await expect(metric).toBeVisible();
-  await expect(page.locator('input[name="required-capacity-range"]')).toHaveValue("20");
-  await expect(page.getByText("Berlin synthetic calculation", { exact: true })).toBeVisible();
-  await expect(page.getByText(/real locations, synthetic electrical model/i)).toBeVisible();
-  const fitSummary = page.locator(".capacity-fit-summary");
-  const initialSummary = await fitSummary.innerText();
-  await page.getByLabel("Exact MW").fill("100");
-  await expect(fitSummary).not.toHaveText(initialSummary);
+  await expect(page.getByRole("switch", { name: /Capacity opportunities/i })).toHaveCount(0);
+  await expect(page.locator('select[name="capacity-overlay-metric"]')).toHaveCount(0);
+  await expect(page.locator('input[name="required-capacity-range"]')).toHaveCount(0);
+  await expect(page.getByText("Berlin synthetic calculation", { exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /Open Reference Capacity Lab/i })).toHaveCount(0);
   await expect(page.getByText("Reference Capacity Lab", { exact: true })).toHaveCount(0);
-  await expect(page.getByText(/real locations, synthetic electrical model/i)).toBeVisible();
-  await expect(metric.locator('option[value="bess_assisted_import_mw"]')).toHaveAttribute(
-    "disabled",
-    "",
-  );
+  await expect(page.getByText(/candidate site-to-node matches/i).first()).toBeVisible();
 });
 
 test("static fallback remains honest when the public viewport is unavailable", async ({ page }) => {

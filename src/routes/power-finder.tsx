@@ -21,7 +21,11 @@ import { AppShell } from "@/components/product/AppShell";
 import { PowerFinderMap } from "@/components/product/PowerFinderMap";
 import type { ActivationStudyTab } from "@/components/product/ActivationStudyPanel";
 import type { VisibleLayerCounts } from "@/components/product/power-finder-map-data";
-import { integratedActivationStudyEnabled, productCapabilities } from "@/config/product-mode";
+import {
+  finderMvpFeatures,
+  integratedActivationStudyEnabled,
+  productCapabilities,
+} from "@/config/product-mode";
 import {
   featureSummary,
   pointCoordinates,
@@ -1165,11 +1169,13 @@ function PowerFinderPage() {
                   });
                 }}
               >
-                {Object.entries(finderProjectTypes).map(([value, profile]) => (
+                {Object.entries(finderProjectTypes)
+                  .filter(([value]) => finderMvpFeatures.additionalProjectTypes || value === "data_centre")
+                  .map(([value, profile]) => (
                   <option value={value} key={value}>
                     {profile.label}
                   </option>
-                ))}
+                  ))}
               </select>
               <small>{finderProjectTypes[project.type].description}</small>
             </label>
@@ -1778,7 +1784,7 @@ function PowerFinderPage() {
             {interactionNotice}
           </p>
 
-          <section
+          {finderMvpFeatures.syntheticCapacity ? <section
             className="capacity-opportunity-card"
             aria-labelledby="capacity-opportunity-title"
           >
@@ -1955,7 +1961,7 @@ function PowerFinderPage() {
                   )}
               </div>
             )}
-          </section>
+          </section> : null}
 
           <details className="finder-layers-menu" suppressHydrationWarning>
             <summary>Map Layers</summary>
@@ -2402,7 +2408,7 @@ function PowerFinderPage() {
             )}
           </div>
 
-          {activationOpen && selectedOpportunity && (
+          {finderMvpFeatures.activationStudy && activationOpen && selectedOpportunity && (
             <Suspense
               fallback={<div className="activation-study-loading">Loading Activation Study…</div>}
             >

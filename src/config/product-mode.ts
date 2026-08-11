@@ -68,3 +68,15 @@ export function isRouteEnabled(pathname: string): boolean {
 export function isFinderMvp(): boolean {
   return productMode === "finder";
 }
+
+/** Central visibility policy for the anonymous data-centre MVP. */
+export const finderMvpFeatures = {
+  dataCentreOnly: isFinderMvp(),
+  syntheticCapacity: !isFinderMvp(),
+  activationStudy: !isFinderMvp() && integratedActivationStudyEnabled,
+  additionalProjectTypes: !isFinderMvp(),
+  operatorPipeline: !isFinderMvp(),
+  decisionHistory: true,
+  advancedExports: !isFinderMvp(),
+  reportBranding: !isFinderMvp(),
+} as const;

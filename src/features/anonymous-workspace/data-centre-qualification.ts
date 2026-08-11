@@ -30,7 +30,10 @@ export function evidenceIsCurrent(item: AnonymousEvidenceItem, now = new Date())
 }
 
 export function evidenceSupportsDecision(item: AnonymousEvidenceItem, now = new Date()) {
-  return ["collected", "validated"].includes(item.validationStatus) && evidenceIsCurrent(item, now);
+  if (!evidenceIsCurrent(item, now)) return false;
+  // Public, derived and customer-declared material is useful screening context,
+  // but only accepted/validated material may resolve a decision finding.
+  return item.validationStatus === "validated";
 }
 
 export function deriveQualification(property: AnonymousProperty, now = new Date()) {
@@ -111,4 +114,11 @@ export function operatorReadiness(property: AnonymousProperty) {
     checks,
     blockers: checks.filter((item) => !item.ready).map((item) => item.label),
   };
+}
+
+export function decisionRecommendationLabel(property: AnonymousProperty) {
+  if (property.decisionStatus === "unreviewed") return "Unreviewed";
+  if (property.decisionStatus === "advance" && !deriveQualification(property).decisionReady)
+    return "Provisional advance";
+  return property.decisionStatus.charAt(0).toUpperCase() + property.decisionStatus.slice(1);
 }

@@ -92,9 +92,18 @@ export function PropertyImportPanel({
           <h2 id="property-import-title">Import 1–100 properties</h2>
           <p>Preview CSV, XLSX, or GeoJSON rows before an atomic portfolio commit.</p>
         </div>
-        <button type="button" className="secondary-button" onClick={downloadTemplate}>
-          <Download aria-hidden="true" /> Download Template
-        </button>
+        <div className="property-import-downloads">
+          <a
+            className="secondary-button"
+            href="/samples/gridpulse-data-centre-portfolio-sample.csv"
+            download
+          >
+            <Download aria-hidden="true" /> Sample portfolio
+          </a>
+          <button type="button" className="secondary-button" onClick={downloadTemplate}>
+            <Download aria-hidden="true" /> Blank template
+          </button>
+        </div>
       </header>
       <label className="property-import-dropzone">
         <FileSpreadsheet aria-hidden="true" />

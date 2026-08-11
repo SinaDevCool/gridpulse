@@ -12,8 +12,8 @@ const checks = [
       if (/Power Activation|Power Operations|dispatch engine|Start a Pilot/i.test(html)) {
         throw new Error("landing page promises a capability outside the Finder MVP");
       }
-      if (!html.includes("kshitijjindal1@gmail.com")) {
-        throw new Error("Finder contact email is missing");
+      if (/Sign In|Sign Up|Create account/i.test(html)) {
+        throw new Error("home unexpectedly exposes account access");
       }
     },
   },
@@ -179,7 +179,30 @@ const checks = [
     },
   },
   { name: "auth-disabled", url: `${baseUrl}/auth`, expectedStatus: 404 },
-  { name: "portfolio-disabled", url: `${baseUrl}/portfolio`, expectedStatus: 404 },
+  {
+    name: "anonymous-site-pipeline",
+    url: `${baseUrl}/portfolio`,
+    expectedStatus: 200,
+    validate: async (response) => {
+      const html = await response.text();
+      if (!html.includes("Site Pipeline")) throw new Error("Site Pipeline heading is missing");
+      if (/Sign In|Sign Up|Create account/i.test(html)) {
+        throw new Error("Site Pipeline unexpectedly exposes account access");
+      }
+    },
+  },
+  {
+    name: "anonymous-decision-centre",
+    url: `${baseUrl}/reports`,
+    expectedStatus: 200,
+    validate: async (response) => {
+      const html = await response.text();
+      if (!html.includes("Decision Centre")) throw new Error("Decision Centre heading is missing");
+      if (/Sign In|Sign Up|Create account/i.test(html)) {
+        throw new Error("Decision Centre unexpectedly exposes account access");
+      }
+    },
+  },
   { name: "assessments-disabled", url: `${baseUrl}/assessments/new`, expectedStatus: 404 },
 ];
 

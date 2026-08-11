@@ -3,6 +3,7 @@ import { ArrowRight, BarChart3, Download, FileText, ShieldAlert } from "lucide-r
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { AppShell } from "@/components/product/AppShell";
+import { finderMvpFeatures } from "@/config/product-mode";
 import {
   exportAnonymousWorkspace,
   listAnonymousProperties,
@@ -124,6 +125,12 @@ function DecisionCentre() {
   const advanced = properties.filter((property) => property.decisionStatus === "advance").length;
   const operatorIdentified = summaries.filter((site) => site.operator).length;
   const validated = summaries.filter((site) => site.capacityState === "validated").length;
+  const requestedView = search.view ?? "priority";
+  const activeView =
+    (requestedView === "operator" && !finderMvpFeatures.operatorPipeline) ||
+    (requestedView === "decisions" && !finderMvpFeatures.decisionHistory)
+      ? "priority"
+      : requestedView;
 
   return (
     <AppShell>
@@ -213,9 +220,6 @@ function DecisionCentre() {
             >
               Portfolio Decision PDF
             </button>
-            <button type="button" disabled={!rows.length} onClick={() => downloadPropertyCsv(rows)}>
-              Export CSV
-            </button>
             <button
               type="button"
               disabled={!rows.length}
@@ -223,21 +227,28 @@ function DecisionCentre() {
             >
               Export XLSX
             </button>
-            <button
-              type="button"
-              disabled={!rows.length}
-              onClick={() => downloadPropertyGeoJson(rows)}
-            >
-              Export GeoJSON
-            </button>
-            <button
-              type="button"
-              onClick={async () => downloadBackup(await exportAnonymousWorkspace())}
-            >
-              Workspace Backup
-            </button>
+            {finderMvpFeatures.advancedExports ? (
+              <>
+                <button type="button" disabled={!rows.length} onClick={() => downloadPropertyCsv(rows)}>
+                  Export CSV
+                </button>
+                <button
+                  type="button"
+                  disabled={!rows.length}
+                  onClick={() => downloadPropertyGeoJson(rows)}
+                >
+                  Export GeoJSON
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => downloadBackup(await exportAnonymousWorkspace())}
+                >
+                  Workspace Backup
+                </button>
+              </>
+            ) : null}
           </section>
-          <WorkspaceBranding />
+          {finderMvpFeatures.reportBranding ? <WorkspaceBranding /> : null}
           <p className="rail-boundary">
             <ShieldAlert aria-hidden="true" /> Portfolio exposure aggregates requirements and
             evidence maturity—not available grid capacity or connection probability.
@@ -263,19 +274,19 @@ function DecisionCentre() {
             ) : null}
           </header>
           <nav className="decision-view-switcher" aria-label="Decision Centre view">
-            {(["priority", "qualification", "operator", "decisions"] as const).map((view) => (
+            {(["priority", "qualification", ...(finderMvpFeatures.operatorPipeline ? ["operator" as const] : []), ...(finderMvpFeatures.decisionHistory ? ["decisions" as const] : [])] as const).map((view) => (
               <button
                 key={view}
-                className={(search.view ?? "priority") === view ? "active" : ""}
+                className={activeView === view ? "active" : ""}
                 onClick={() => patchSearch({ view })}
               >
                 {view === "priority"
                   ? "Priority queue"
                   : view === "qualification"
-                    ? "Qualification matrix"
+                    ? "Portfolio readiness"
                     : view === "operator"
                       ? "Operator pipeline"
-                      : "Decision register"}
+                      : "Decision history"}
               </button>
             ))}
           </nav>
@@ -294,35 +305,42 @@ function DecisionCentre() {
             </div>
           ) : (
             <>
-              <section className="decision-kpi-strip" aria-label="Portfolio decision metrics">
+              <section
+                className={`decision-kpi-strip ${finderMvpFeatures.dataCentreOnly ? "is-mvp" : ""}`}
+                aria-label="Portfolio decision metrics"
+              >
                 <Kpi
                   label="Declared Demand"
                   value={`${number.format(intelligence.metrics.totalMw)} MW`}
                 />
                 <Kpi
-                  label="MW Requiring Evidence"
-                  value={`${number.format(intelligence.metrics.atRiskMw)} MW`}
-                  tone="warning"
-                />
-                <Kpi
-                  label="Action Required"
+                  label="Sites Requiring Action"
                   value={intelligence.metrics.urgentProjects}
                   tone="warning"
                 />
-                <Kpi label="Advanced" value={advanced} tone="positive" />
-                <Kpi label="Operator Identified" value={operatorIdentified} />
-                <Kpi label="Validated Evidence" value={validated} tone="positive" />
+                <Kpi label="Advanced / Ready" value={advanced} tone="positive" />
+                {!finderMvpFeatures.dataCentreOnly ? (
+                  <>
+                    <Kpi
+                      label="MW Requiring Evidence"
+                      value={`${number.format(intelligence.metrics.atRiskMw)} MW`}
+                      tone="warning"
+                    />
+                    <Kpi label="Operator Identified" value={operatorIdentified} />
+                    <Kpi label="Validated Evidence" value={validated} tone="positive" />
+                  </>
+                ) : null}
               </section>
-              {(search.view ?? "priority") === "qualification" ? (
+              {activeView === "qualification" ? (
                 <QualificationPortfolio summaries={summaries} />
               ) : null}
-              {(search.view ?? "priority") === "operator" ? (
+              {activeView === "operator" ? (
                 <OperatorPipeline summaries={summaries} />
               ) : null}
-              {(search.view ?? "priority") === "decisions" ? (
+              {activeView === "decisions" ? (
                 <DecisionRegister summaries={summaries} />
               ) : null}
-              {(search.view ?? "priority") === "priority" ? (
+              {activeView === "priority" ? (
                 <>
                   <section className="decision-priority-section">
                     <header>
@@ -378,8 +396,12 @@ function DecisionCentre() {
                                 <b>Next</b>
                                 {summary.nextAction}
                               </p>
-                              <Link to="/capacity-dossiers/$id" params={{ id: row.site_id }}>
-                                Open Decision Record <ArrowRight aria-hidden="true" />
+                              <Link
+                                to="/portfolio/$id"
+                                params={{ id: row.site_id }}
+                                search={{ tab: "decision" }}
+                              >
+                                Review Decision <ArrowRight aria-hidden="true" />
                               </Link>
                             </article>
                           );
@@ -394,7 +416,7 @@ function DecisionCentre() {
                   </section>
                 </>
               ) : null}
-              <section className="operator-exposure-section">
+              {finderMvpFeatures.operatorPipeline ? <section className="operator-exposure-section">
                 <header>
                   <div>
                     <p className="context-label">Portfolio Concentration</p>
@@ -413,8 +435,8 @@ function DecisionCentre() {
                     </article>
                   ))}
                 </div>
-              </section>
-              <section className="decision-record-index">
+              </section> : null}
+              {finderMvpFeatures.decisionHistory ? <section className="decision-record-index">
                 <header>
                   <div>
                     <p className="context-label">Stakeholder Evidence</p>
@@ -455,12 +477,12 @@ function DecisionCentre() {
                         </div>
                       </dl>
                       <Link to="/capacity-dossiers/$id" params={{ id: site.id }}>
-                        Open Record <ArrowRight aria-hidden="true" />
+                        Open Export Record <ArrowRight aria-hidden="true" />
                       </Link>
                     </article>
                   ))}
                 </div>
-              </section>
+              </section> : null}
             </>
           )}
         </section>
@@ -531,7 +553,7 @@ function QualificationPortfolio({
       <header>
         <div>
           <p className="context-label">Development readiness</p>
-          <h2>Qualification matrix</h2>
+          <h2>Portfolio readiness</h2>
         </div>
       </header>
       <div className="portfolio-matrix">
@@ -627,36 +649,39 @@ function DecisionRegister({
 }: {
   summaries: ReturnType<typeof projectAnonymousProperty>[];
 }) {
+  const events = summaries
+    .flatMap((site) =>
+      (site.property.decisionEvents ?? []).map((event) => ({ site, event })),
+    )
+    .sort((left, right) => Date.parse(right.event.recordedAt) - Date.parse(left.event.recordedAt));
   return (
     <section className="decision-register-section">
       <header>
         <div>
           <p className="context-label">Recommendation history</p>
-          <h2>Decision register</h2>
+          <h2>Decision history</h2>
         </div>
       </header>
       <div>
-        {[...summaries]
-          .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt))
-          .map((site) => (
-            <article key={site.id}>
+        {events.length ? events.map(({ site, event }) => (
+            <article key={event.id}>
               <span>
                 {new Intl.DateTimeFormat("en-GB", { dateStyle: "medium" }).format(
-                  new Date(site.updatedAt),
+                  new Date(event.recordedAt),
                 )}
               </span>
               <div>
                 <b>{site.name}</b>
-                <p>{site.property.decisionRationale ?? "No rationale recorded"}</p>
+                <p>{event.rationale ?? "No rationale recorded"}</p>
               </div>
-              <span className={`decision-chip is-${site.decisionStatus}`}>
-                {site.decisionStatus}
+              <span className={`decision-chip is-${event.status}`}>
+                {event.provisional ? "Provisional " : ""}{event.status}
               </span>
-              <Link to="/capacity-dossiers/$id" params={{ id: site.id }}>
-                Open record
+              <Link to="/portfolio/$id" params={{ id: site.id }} search={{ tab: "decision" }}>
+                Open site
               </Link>
             </article>
-          ))}
+          )) : <div className="decision-empty compact"><p>No decision changes have been recorded yet.</p></div>}
       </div>
     </section>
   );

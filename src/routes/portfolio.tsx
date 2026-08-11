@@ -12,7 +12,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { AppShell } from "@/components/product/AppShell";
@@ -23,13 +23,9 @@ import {
   exportAnonymousWorkspace,
   listAnonymousProperties,
   restoreAnonymousWorkspace,
-  saveAnonymousProperty,
   subscribeAnonymousWorkspace,
 } from "@/features/anonymous-workspace/repository";
-import type {
-  AnonymousDecisionStatus,
-  AnonymousProperty,
-} from "@/features/anonymous-workspace/schema";
+import type { AnonymousProperty } from "@/features/anonymous-workspace/schema";
 import {
   projectAnonymousProperty,
   type AnonymousSiteStage,
@@ -332,7 +328,7 @@ function SitePipelineIndex() {
                 aria-label="Close import panel"
                 onClick={() => setImportOpen(false)}
               >
-                <X />
+                <X aria-hidden="true" />
               </button>
               <PropertyImportPanel
                 variant="compact"
@@ -417,7 +413,6 @@ function SitePipelineIndex() {
           <SiteDetail
             site={selected}
             onClose={() => patchSearch({ selected: undefined })}
-            onSaved={() => void refresh()}
             onDeleted={async () => {
               await deleteAnonymousProperty(selected.id);
               patchSearch({ selected: undefined });
@@ -449,37 +444,12 @@ function Metric({
 function SiteDetail({
   site,
   onClose,
-  onSaved,
   onDeleted,
 }: {
   site: ReturnType<typeof projectAnonymousProperty>;
   onClose: () => void;
-  onSaved: () => void;
   onDeleted: () => Promise<void>;
 }) {
-  const [decision, setDecision] = useState<AnonymousDecisionStatus>(site.decisionStatus);
-  const [rationale, setRationale] = useState(site.property.decisionRationale ?? "");
-  const [preferred, setPreferred] = useState(
-    site.property.preferredCandidateId ?? site.preferredCandidate?.id ?? "",
-  );
-  const [siteLabel, setSiteLabel] = useState(site.property.siteLabel ?? "");
-  const [municipality, setMunicipality] = useState(site.property.municipality ?? "");
-  async function saveDecision(event: FormEvent) {
-    event.preventDefault();
-    if (decision !== "unreviewed" && rationale.trim().length < 10)
-      return toast.error("Add at least 10 characters explaining the decision.");
-    await saveAnonymousProperty({
-      ...site.property,
-      siteLabel: siteLabel.trim() || null,
-      municipality: municipality.trim() || null,
-      decisionStatus: decision,
-      decisionRationale: rationale.trim() || null,
-      preferredCandidateId: preferred || null,
-      updatedAt: new Date().toISOString(),
-    });
-    toast.success("Site decision saved locally");
-    onSaved();
-  }
   return (
     <aside className="site-detail-panel" aria-label={`${site.name} details`}>
       <header>
@@ -489,7 +459,7 @@ function SiteDetail({
           <p>{site.locationLabel}</p>
         </div>
         <button type="button" aria-label="Close site details" onClick={onClose}>
-          <X />
+          <X aria-hidden="true" />
         </button>
       </header>
       <div className="detail-status-line">
@@ -497,28 +467,16 @@ function SiteDetail({
         <span>{stageLabel[site.stage]}</span>
         <span>{site.requiredMw} MW required</span>
       </div>
-      <div className="detail-location-fields">
-        <label>
-          Site Label
-          <input
-            name="site-label"
-            autoComplete="off"
-            value={siteLabel}
-            onChange={(event) => setSiteLabel(event.target.value)}
-            placeholder="e.g. Berlin DC Campus…"
-          />
-        </label>
-        <label>
-          Municipality
-          <input
-            name="site-municipality"
-            autoComplete="address-level2"
-            value={municipality}
-            onChange={(event) => setMunicipality(event.target.value)}
-            placeholder="e.g. Berlin…"
-          />
-        </label>
-      </div>
+      <dl className="detail-location-summary">
+        <div>
+          <dt>Site label</dt>
+          <dd>{site.property.siteLabel ?? "Not recorded"}</dd>
+        </div>
+        <div>
+          <dt>Municipality</dt>
+          <dd>{site.property.municipality ?? "Not recorded"}</dd>
+        </div>
+      </dl>
       <section>
         <h3>Connection Context</h3>
         <dl>
@@ -542,23 +500,6 @@ function SiteDetail({
           </div>
         </dl>
       </section>
-      {site.property.candidateSnapshots.length ? (
-        <label className="detail-field">
-          Preferred Candidate
-          <select
-            name="preferred-candidate"
-            value={preferred}
-            onChange={(event) => setPreferred(event.target.value)}
-          >
-            <option value="">No preferred candidate</option>
-            {site.property.candidateSnapshots.map((candidate) => (
-              <option key={candidate.id} value={candidate.id}>
-                {candidate.nodeName} · {candidate.distanceKm.toFixed(1)} km
-              </option>
-            ))}
-          </select>
-        </label>
-      ) : null}
       <section>
         <h3>Primary Blockers</h3>
         <ul className="detail-blockers">
@@ -570,36 +511,21 @@ function SiteDetail({
           <b>Next:</b> {site.nextAction}
         </p>
       </section>
-      <form className="site-decision-form" onSubmit={(event) => void saveDecision(event)}>
+      <section className="site-decision-form detail-decision-summary">
         <h3>Client Decision</h3>
-        <div className="decision-choice">
-          {(["unreviewed", "advance", "hold", "reject"] as const).map((value) => (
-            <label key={value}>
-              <input
-                type="radio"
-                name="site-decision"
-                value={value}
-                checked={decision === value}
-                onChange={() => setDecision(value)}
-              />
-              <span>{value}</span>
-            </label>
-          ))}
+        <div className="detail-decision-current">
+          <span className={`decision-chip is-${site.decisionStatus}`}>{site.decisionStatus}</span>
+          <p>{site.property.decisionRationale ?? "No rationale recorded yet."}</p>
         </div>
-        <label>
-          Decision Rationale
-          <textarea
-            name="decision-rationale"
-            rows={3}
-            value={rationale}
-            onChange={(event) => setRationale(event.target.value)}
-            placeholder="Record the evidence and conditions behind this decision…"
-          />
-        </label>
-        <button className="primary-button" type="submit">
-          Save Decision
-        </button>
-      </form>
+        <Link
+          className="primary-button"
+          to="/portfolio/$id"
+          params={{ id: site.id }}
+          search={{ tab: "decision" }}
+        >
+          Review Decision
+        </Link>
+      </section>
       <footer>
         <Link
           to="/power-finder"
@@ -614,7 +540,10 @@ function SiteDetail({
           Open in Finder
         </Link>
         <Link to="/portfolio/$id" params={{ id: site.id }} search={{ tab: "overview" }}>
-          Site Workspace
+          Open Site Workspace
+        </Link>
+        <Link to="/capacity-dossiers/$id" params={{ id: site.id }}>
+          Export Record
         </Link>
         <button
           type="button"

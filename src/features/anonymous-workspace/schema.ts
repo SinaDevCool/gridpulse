@@ -2,9 +2,21 @@ import type { MultiPolygon, Polygon } from "geojson";
 import type { CandidateOpportunity } from "@/features/power-finder/candidate-intelligence";
 import type { FinderProject } from "@/features/power-finder/finder-project";
 
-export const ANONYMOUS_WORKSPACE_SCHEMA_VERSION = 3;
+export const ANONYMOUS_WORKSPACE_SCHEMA_VERSION = 4;
 
 export type AnonymousDecisionStatus = "unreviewed" | "advance" | "hold" | "reject";
+
+export type AnonymousDecisionEvent = {
+  id: string;
+  previousStatus: AnonymousDecisionStatus;
+  status: AnonymousDecisionStatus;
+  provisional: boolean;
+  rationale: string | null;
+  preferredCandidateId: string | null;
+  evidenceIds: string[];
+  actorLabel: string;
+  recordedAt: string;
+};
 
 export type QualificationDimensionKey =
   | "land"
@@ -214,6 +226,7 @@ export type AnonymousProperty = {
   siteLabel: string | null;
   decisionStatus: AnonymousDecisionStatus;
   decisionRationale: string | null;
+  decisionEvents?: AnonymousDecisionEvent[];
   preferredCandidateId: string | null;
   dataCentreProfile?: DataCentrePropertyProfile;
   qualification?: QualificationDimension[];
@@ -274,6 +287,7 @@ export function migrateAnonymousProperty(value: unknown): AnonymousProperty {
       : "unreviewed",
     decisionRationale:
       typeof property.decisionRationale === "string" ? property.decisionRationale : null,
+    decisionEvents: Array.isArray(property.decisionEvents) ? property.decisionEvents : [],
     preferredCandidateId:
       typeof property.preferredCandidateId === "string" ? property.preferredCandidateId : null,
     dataCentreProfile: {

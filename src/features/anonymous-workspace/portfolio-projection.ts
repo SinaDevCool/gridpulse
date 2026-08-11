@@ -51,6 +51,7 @@ export function projectAnonymousProperty(property: AnonymousProperty): Anonymous
   const qualification = deriveQualification(property);
   const operatorQualification = operatorReadiness(property);
   const capacityState = localCapacityState(property.evidence);
+  const recordedOperator = property.operatorEngagement?.operatorName?.trim() || null;
   const blockers = [
     ...(property.name === "Untitled screening project"
       ? ["Give the site a client-ready name"]
@@ -104,7 +105,7 @@ export function projectAnonymousProperty(property: AnonymousProperty): Anonymous
     capacityState,
     blockers: uniqueBlockers,
     nextAction,
-    operator: candidate?.operator ?? null,
+    operator: recordedOperator ?? candidate?.operator ?? null,
     qualificationReadiness: qualification.readiness,
     criticalBlockers: qualification.criticalBlockers.length,
     unknownDimensions: qualification.unknown.length,

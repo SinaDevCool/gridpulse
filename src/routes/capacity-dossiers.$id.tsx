@@ -15,6 +15,7 @@ import {
 } from "@/features/properties/capacity-dossier";
 import { downloadClientDecisionPackage } from "@/features/properties/decision-package";
 import {
+  decisionRecommendationLabel,
   deriveQualification,
   qualificationLabels,
 } from "@/features/anonymous-workspace/data-centre-qualification";
@@ -22,7 +23,7 @@ import {
 export const Route = createFileRoute("/capacity-dossiers/$id")({
   head: () => ({
     meta: [
-      { title: "Site Decision Record | GridPulse" },
+      { title: "Current Decision Package | GridPulse" },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
@@ -79,25 +80,35 @@ function DecisionRecord({
   return (
     <>
       <header className="record-header">
-        <Link to="/portfolio" className="back-link">
-          <ArrowLeft aria-hidden="true" /> Site Pipeline
+        <Link to="/reports" className="back-link">
+          <ArrowLeft aria-hidden="true" /> Decision Centre
         </Link>
         <div>
-          <p className="context-label">Site Decision Record</p>
+              <p className="context-label">Current Decision Package</p>
           <h1>{property.name}</h1>
           <p>
             {summary.locationLabel} · {summary.requiredMw} MW declared requirement
           </p>
         </div>
-        <button
-          type="button"
-          className="primary-button"
-          onClick={async () =>
-            downloadClientDecisionPackage(property, data, await getWorkspaceSettings())
-          }
-        >
-          <Download aria-hidden="true" /> Download Record
-        </button>
+        <div className="record-header-actions">
+          <Link
+            className="secondary-button"
+            to="/portfolio/$id"
+            params={{ id: property.id }}
+            search={{ tab: "decision" }}
+          >
+            Review Decision
+          </Link>
+          <button
+            type="button"
+            className="primary-button"
+            onClick={async () =>
+              downloadClientDecisionPackage(property, data, await getWorkspaceSettings())
+            }
+          >
+            <Download aria-hidden="true" /> Download Record
+          </button>
+        </div>
       </header>
       <aside className="record-truth-boundary">
         <ShieldAlert aria-hidden="true" />
@@ -113,7 +124,7 @@ function DecisionRecord({
         <article>
           <span>Client Decision</span>
           <strong className={`decision-chip is-${property.decisionStatus}`}>
-            {property.decisionStatus}
+            {decisionRecommendationLabel(property)}
           </strong>
           <p>{property.decisionRationale ?? "No client decision rationale has been recorded."}</p>
         </article>

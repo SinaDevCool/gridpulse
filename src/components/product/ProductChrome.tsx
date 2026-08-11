@@ -58,7 +58,9 @@ export function ProductStageNavigation() {
     <nav className="product-stage-navigation" aria-label="Grid workspace navigation">
       <div>
         {links.map((item, index) => {
-          const active = pathname.startsWith(item.to);
+          const active =
+            pathname.startsWith(item.to) ||
+            (item.to === "/reports" && pathname.startsWith("/capacity-dossiers/"));
           return (
             <Link
               key={item.to}

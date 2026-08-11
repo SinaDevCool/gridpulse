@@ -2,6 +2,7 @@ import { jsPDF } from "jspdf";
 import type { AnonymousProperty, AnonymousWorkspaceSettings } from "../anonymous-workspace/schema";
 import {
   deriveQualification,
+  decisionRecommendationLabel,
   qualificationLabels,
 } from "../anonymous-workspace/data-centre-qualification";
 import { projectAnonymousProperty } from "../anonymous-workspace/portfolio-projection";
@@ -84,7 +85,7 @@ export function downloadClientDecisionPackage(
   y += 8;
   line("Prepared for", settings.preparedFor || "Not specified");
   line("Classification", settings.confidentialityLabel);
-  line("Recommendation", property.decisionStatus.toUpperCase());
+  line("Recommendation", decisionRecommendationLabel(property).toUpperCase());
   line("Rationale", property.decisionRationale);
   line("Declared load", capacityValue(data.summary.requiredMw));
   line("Location", data.summary.locationLabel);
