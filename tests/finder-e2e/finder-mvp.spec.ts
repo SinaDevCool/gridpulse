@@ -76,8 +76,8 @@ test("a Finder project saves locally, survives navigation, and opens a dossier",
   await expect(save).toBeEnabled();
   await save.click();
   await expect(page.locator('p.sr-only[role="status"]')).toContainText("Property saved locally");
-  await page.getByRole("link", { name: /Site Pipeline Qualify opportunities/i }).click();
-  await expect(page.getByRole("heading", { name: "Site Pipeline" })).toBeVisible();
+  await page.getByRole("link", { name: /Sites Manage portfolio decisions/i }).click();
+  await expect(page.getByRole("heading", { name: "Sites", exact: true })).toBeVisible();
   await expect(page.getByText("Untitled screening project").first()).toBeVisible();
   await page.getByRole("button", { name: /Untitled screening project/i }).click();
   await page.getByRole("link", { name: "Open Site Workspace" }).click();
@@ -116,19 +116,19 @@ test("anonymous site workspace qualifies a site and records operator evidence", 
   await page.getByLabel("Category").selectOption("operator");
   await page.getByRole("button", { name: /Add evidence/i }).click();
   await expect(page.getByText("Operator acknowledgement")).toBeVisible();
-  await page.getByRole("link", { name: /Decision Centre Review evidence/i }).click();
-  await page.getByRole("button", { name: "Portfolio readiness" }).click();
+  await page.getByRole("link", { name: /Sites Manage portfolio decisions/i }).click();
+  await page.getByRole("button", { name: "Readiness" }).click();
   await expect(page.getByText("Bremen Data Centre Campus").first()).toBeVisible();
 });
 
-test("Site Pipeline decisions flow into Decision Centre", async ({ page }) => {
+test("site decisions flow into the unified Decision Review view", async ({ page }) => {
   await page.goto("/power-finder?lat=52.52&lng=13.405&mw=65&projectType=data_centre");
   await expect(page.getByText(/candidate site-to-node matches/i).first()).toBeVisible({
     timeout: 15_000,
   });
   await page.getByRole("button", { name: /Create pipeline site|Shortlist for/i }).click();
   await expect(page.getByRole("button", { name: /Screening saved/i })).toBeDisabled();
-  await page.getByRole("link", { name: /Site Pipeline Qualify opportunities/i }).click();
+  await page.getByRole("link", { name: /Sites Manage portfolio decisions/i }).click();
   await page.getByRole("button", { name: /Untitled screening project/i }).click();
   await page.getByRole("link", { name: "Review Decision" }).click();
   await page.getByRole("radio", { name: "Hold" }).check();
@@ -137,13 +137,14 @@ test("Site Pipeline decisions flow into Decision Centre", async ({ page }) => {
     .fill("Hold until the responsible operator and evidence are confirmed.");
   await page.getByRole("button", { name: "Save recommendation" }).click();
   await expect(page.getByText("hold", { exact: true }).first()).toBeVisible();
-  await page.getByRole("link", { name: /Decision Centre Review evidence/i }).click();
-  await expect(page.getByRole("heading", { name: "Decision Centre" })).toBeVisible();
+  await page.getByRole("link", { name: /Sites Manage portfolio decisions/i }).click();
+  await page.getByRole("button", { name: "Decision Review" }).click();
+  await expect(page.getByRole("heading", { name: "Decision Review" }).first()).toBeVisible();
   await expect(page.getByText("Untitled screening project").first()).toBeVisible();
   await expect(page.getByText("hold", { exact: true }).first()).toBeVisible();
 });
 
-test("portfolio filters are URL-backed and Site Workspaces are directly discoverable", async ({
+test("portfolio views are URL-backed and the site workspace is directly discoverable", async ({
   page,
 }) => {
   await page.goto("/power-finder?lat=52.52&lng=13.405&mw=65&projectType=data_centre");
@@ -151,20 +152,19 @@ test("portfolio filters are URL-backed and Site Workspaces are directly discover
     timeout: 15_000,
   });
   await page.getByRole("button", { name: /Create pipeline site|Shortlist for/i }).click();
-  await page.getByRole("link", { name: /Site Pipeline Qualify opportunities/i }).click();
+  await page.getByRole("link", { name: /Sites Manage portfolio decisions/i }).click();
   await page.getByLabel("Stage").selectOption("draft");
   await expect(page).toHaveURL(/stage=draft/);
   await expect(page.getByRole("heading", { name: "No Sites Match This View" })).toBeVisible();
   await page.getByRole("button", { name: "Reset Filters" }).click();
   await expect(page.getByText("Untitled screening project").first()).toBeVisible();
-  await page.getByRole("link", { name: /Decision Centre Review evidence/i }).click();
-  await expect(page.getByRole("heading", { name: "Decision Centre" })).toBeVisible();
-  await page.locator('select[name="decision-centre-decision"]').selectOption("reject");
+  await page.getByRole("button", { name: "Decision Review" }).click();
+  await page.locator('select[name="pipeline-decision"]').selectOption("reject");
   await expect(page).toHaveURL(/decision=reject/);
-  await expect(page.getByRole("heading", { name: "No Sites Match This Scope" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "No Matching Sites" })).toBeVisible();
   await page.getByRole("button", { name: "Reset Filters" }).click();
-  await page.getByRole("link", { name: /Site Workspaces Develop each site/i }).click();
-  await expect(page.getByRole("heading", { name: "Site Workspaces" })).toBeVisible();
+  await page.getByRole("button", { name: "Pipeline" }).click();
+  await page.getByRole("button", { name: /Untitled screening project/i }).click();
   await page.getByRole("link", { name: /Open Site Workspace/i }).click();
   await expect(page.getByRole("heading", { name: "Opportunity overview" })).toBeVisible();
 });
@@ -181,9 +181,16 @@ test("the downloadable client-style XLSX passes the browser import preview", asy
   await expect(page.getByText("GP-DE-001")).toBeVisible();
 });
 
-test("Site Pipeline remains usable without horizontal page overflow on mobile", async ({
-  page,
-}) => {
+test("legacy portfolio destinations redirect into unified Sites views", async ({ page }) => {
+  await page.goto("/workspaces");
+  await expect(page).toHaveURL(/\/portfolio\?view=pipeline/);
+  await expect(page.getByRole("heading", { name: "Sites", exact: true })).toBeVisible();
+  await page.goto("/reports?view=qualification");
+  await expect(page).toHaveURL(/\/portfolio\?view=readiness/);
+  await expect(page.getByRole("button", { name: "Readiness" })).toHaveClass(/active/);
+});
+
+test("Sites remains usable without horizontal page overflow on mobile", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/power-finder?lat=52.52&lng=13.405&mw=55&projectType=data_centre");
   await expect(page.getByText(/candidate site-to-node matches/i).first()).toBeVisible({
@@ -192,7 +199,7 @@ test("Site Pipeline remains usable without horizontal page overflow on mobile", 
   await page.getByRole("button", { name: /Create pipeline site|Shortlist for/i }).click();
   await expect(page.getByRole("button", { name: /Screening saved/i })).toBeDisabled();
   await page.goto("/portfolio");
-  await expect(page.getByRole("heading", { name: "Site Pipeline" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Sites" })).toBeVisible();
   await expect(page.getByRole("button", { name: /Untitled screening project/i })).toBeVisible();
   expect(
     await page.evaluate(

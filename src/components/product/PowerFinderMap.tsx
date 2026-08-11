@@ -246,8 +246,8 @@ export function PowerFinderMap({
       if (cancelled || !containerRef.current) return;
       const map = new Map({
         container: containerRef.current,
-        center: [13.36, 52.31],
-        zoom: 9.1,
+        center: projectSiteRef.current ?? [13.36, 52.31],
+        zoom: projectSiteRef.current ? 11.2 : 9.1,
         attributionControl: {},
         style: {
           version: 8,
@@ -860,6 +860,13 @@ export function PowerFinderMap({
           ]
         : [],
     });
+    if (projectSite) {
+      mapRef.current?.easeTo({
+        center: projectSite,
+        zoom: Math.max(mapRef.current.getZoom(), 11.2),
+        duration: 650,
+      });
+    }
   }, [projectSite]);
 
   useEffect(() => {

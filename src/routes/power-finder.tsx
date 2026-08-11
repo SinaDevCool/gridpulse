@@ -524,7 +524,7 @@ function PowerFinderPage() {
       if (!property) return;
       setActiveProperty(property);
       setProject(property.project);
-      setInteractionNotice(`Loaded ${property.name} from Site Pipeline.`);
+      setInteractionNotice(`Loaded ${property.name} from Sites.`);
     });
   }, [search.propertyId]);
 
@@ -832,6 +832,16 @@ function PowerFinderPage() {
     (selectedOpportunitySnapshot?.nodeId === String(selected?.id)
       ? selectedOpportunitySnapshot
       : null) ?? candidates.find((candidate) => candidate.id === search.candidate);
+  useEffect(() => {
+    if (!search.propertyId || search.candidate || !candidates.length) return;
+    const recommended = candidates[0];
+    setInteractionNotice(
+      `${recommended.nodeName} is the highest-ranked connection hypothesis for investigation. Capacity remains unconfirmed.`,
+    );
+    void updateSearch({ candidate: recommended.id });
+    // Only recommend automatically when a saved site enters Finder without a durable selection.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [candidates, search.candidate, search.propertyId]);
   // URL search is the durable selection source. A viewport refresh can replace the
   // feature collection between a card click and navigation completion, so rebuild
   // the detail feature from the selected opportunity instead of briefly closing it.

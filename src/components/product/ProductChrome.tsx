@@ -1,9 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 const workspaceLinks = [
-  { label: "Site Pipeline", detail: "Qualify opportunities", to: "/portfolio" },
-  { label: "Power Finder", detail: "Investigate candidates", to: "/power-finder" },
-  { label: "Site Workspaces", detail: "Develop each site", to: "/workspaces" },
-  { label: "Decision Centre", detail: "Review evidence", to: "/reports" },
+  { label: "Sites", detail: "Manage portfolio decisions", to: "/portfolio" },
+  { label: "Power Finder", detail: "Investigate grid hypotheses", to: "/power-finder" },
 ] as const;
 
 export function ProductHeader() {
@@ -60,21 +58,18 @@ export function ProductStageNavigation() {
       <div>
         {links.map((item, index) => {
           const active =
-            (item.to === "/portfolio"
-              ? pathname === "/portfolio"
-              : item.to === "/workspaces"
-                ? pathname === "/workspaces" || pathname.startsWith("/portfolio/")
-                : pathname.startsWith(item.to)) ||
-            (item.to === "/reports" && pathname.startsWith("/capacity-dossiers/"));
+            item.to === "/portfolio"
+              ? pathname.startsWith("/portfolio") ||
+                pathname === "/workspaces" ||
+                pathname === "/reports" ||
+                pathname.startsWith("/capacity-dossiers/")
+              : pathname.startsWith(item.to);
           return (
             <Link
               key={item.to}
               to={item.to}
               className={active ? "active" : undefined}
               aria-current={active ? "page" : undefined}
-              onClick={(event) => {
-                if (active) event.preventDefault();
-              }}
             >
               <span>0{index + 1}</span>
               <span>

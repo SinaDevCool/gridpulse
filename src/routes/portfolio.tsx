@@ -16,44 +16,50 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { AppShell } from "@/components/product/AppShell";
 import { PropertyImportPanel } from "@/features/properties/PropertyImportPanel";
+import { downloadPortfolioComparisonPdf } from "@/features/properties/capacity-dossier";
+import { downloadPropertyXlsx } from "@/features/properties/property-export";
+import { portfolioExportRow } from "@/features/site-portfolio/portfolio-export";
 import {
   clearAnonymousWorkspace,
   deleteAnonymousProperty,
   exportAnonymousWorkspace,
-  listAnonymousProperties,
   restoreAnonymousWorkspace,
-  subscribeAnonymousWorkspace,
 } from "@/features/anonymous-workspace/repository";
 import type { AnonymousProperty } from "@/features/anonymous-workspace/schema";
 import {
   projectAnonymousProperty,
+  anonymousPropertyToDecisionRow,
   type AnonymousSiteStage,
 } from "@/features/anonymous-workspace/portfolio-projection";
+import { buildPortfolioIntelligence } from "@/features/grid-connection/portfolio-intelligence";
+import {
+  PortfolioDecisionView,
+  PortfolioReadinessView,
+} from "@/features/site-portfolio/PortfolioViews";
+import {
+  portfolioDecisions,
+  portfolioStages,
+  portfolioStageLabels,
+  portfolioViews,
+} from "@/features/site-portfolio/portfolio-status";
+import { useSitePortfolio } from "@/features/site-portfolio/use-site-portfolio";
 
-const stages = [
-  "all",
-  "action_required",
-  "draft",
-  "screening",
-  "shortlisted",
-  "evidence_review",
-  "decision_ready",
-] as const;
-const decisions = ["all", "unreviewed", "advance", "hold", "reject"] as const;
+const stages = portfolioStages;
+const decisions = portfolioDecisions;
 
 export const Route = createFileRoute("/portfolio")({
   validateSearch: z.object({
     q: z.string().max(160).optional(),
+    view: z.enum(portfolioViews).optional(),
     stage: z.enum(stages).optional(),
     decision: z.enum(decisions).optional(),
     sort: z.enum(["priority", "updated", "name", "mw"]).optional(),
+    risk: z.enum(["all", "blocked", "deadline", "operator_confirmed"]).optional(),
+    operator: z.string().max(160).optional(),
     selected: z.string().uuid().optional(),
   }),
   head: () => ({
-    meta: [
-      { title: "Site Pipeline | GridPulse" },
-      { name: "robots", content: "noindex, nofollow" },
-    ],
+    meta: [{ title: "Sites | GridPulse" }, { name: "robots", content: "noindex, nofollow" }],
   }),
   component: SitePipeline,
 });
@@ -69,13 +75,7 @@ function downloadJson(value: unknown, name: string) {
   URL.revokeObjectURL(url);
 }
 
-const stageLabel: Record<AnonymousSiteStage, string> = {
-  draft: "Draft",
-  screening: "Screening",
-  shortlisted: "Candidate Shortlisted",
-  evidence_review: "Evidence Review",
-  decision_ready: "Decision Ready",
-};
+const stageLabel: Record<AnonymousSiteStage, string> = portfolioStageLabels;
 
 function SitePipeline() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
@@ -87,25 +87,17 @@ function SitePipelineIndex() {
   const navigate = useNavigate();
   const search = Route.useSearch();
   const restoreInput = useRef<HTMLInputElement>(null);
-  const [properties, setProperties] = useState<AnonymousProperty[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [importOpen, setImportOpen] = useState(false);
-  const refresh = async () => {
-    try {
-      setProperties(await listAnonymousProperties());
-      setError("");
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Sites could not be loaded.");
-    } finally {
-      setLoading(false);
-    }
-  };
-  useEffect(() => {
-    void refresh();
-    return subscribeAnonymousWorkspace(() => void refresh());
-  }, []);
-  const summaries = useMemo(() => properties.map(projectAnonymousProperty), [properties]);
+  const {
+    properties,
+    summaries,
+    loading,
+    error,
+    refresh,
+    metrics,
+    selectedSite: selected,
+  } = useSitePortfolio(search.selected);
+  const activeView = search.view ?? "pipeline";
   const visible = useMemo(() => {
     const needle = (search.q ?? "").trim().toLocaleLowerCase();
     return summaries
@@ -138,33 +130,75 @@ function SitePipelineIndex() {
         );
       });
   }, [search, summaries]);
-  const selected = summaries.find((site) => site.id === search.selected) ?? null;
   const patchSearch = (patch: Partial<typeof search>) =>
     void navigate({ to: "/portfolio", search: { ...search, ...patch }, replace: true });
-  const totalMw = summaries.reduce((sum, site) => sum + site.requiredMw, 0);
-  const actionRequired = summaries.filter((site) => site.blockers.length > 0).length;
-  const decisionReady = summaries.filter((site) => site.stage === "decision_ready").length;
+  const decisionRows = useMemo(() => {
+    const permittedIds = new Set(
+      summaries
+        .filter(
+          (site) =>
+            !search.decision ||
+            search.decision === "all" ||
+            site.decisionStatus === search.decision,
+        )
+        .map((site) => site.id),
+    );
+    return properties
+      .filter((property) => permittedIds.has(property.id))
+      .map(anonymousPropertyToDecisionRow);
+  }, [properties, search.decision, summaries]);
+  const intelligence = useMemo(
+    () =>
+      buildPortfolioIntelligence(decisionRows, {
+        operator: search.operator ?? "all",
+        risk: search.risk ?? "all",
+        sort: search.sort === "name" || search.sort === "mw" ? search.sort : "urgency",
+      }),
+    [decisionRows, search.operator, search.risk, search.sort],
+  );
+  const scopedIds = useMemo(
+    () => new Set(intelligence.rows.map((row) => row.site_id)),
+    [intelligence.rows],
+  );
+  const decisionSites = useMemo(
+    () => summaries.filter((site) => scopedIds.has(site.id)),
+    [scopedIds, summaries],
+  );
+  const exportIds = useMemo(
+    () => new Set((search.view === "pipeline" ? visible : decisionSites).map((site) => site.id)),
+    [decisionSites, search.view, visible],
+  );
+  const exportRows = useMemo(
+    () =>
+      properties
+        .filter((property) => exportIds.has(property.id))
+        .map(portfolioExportRow)
+        .filter((row) => row != null),
+    [exportIds, properties],
+  );
   const filtersActive = Boolean(
     search.q ||
     (search.stage && search.stage !== "all") ||
     (search.decision && search.decision !== "all") ||
-    (search.sort && search.sort !== "priority"),
+    (search.sort && search.sort !== "priority") ||
+    (search.risk && search.risk !== "all") ||
+    search.operator,
   );
 
   return (
     <AppShell>
       <main id="main-content" className="site-pipeline-page decision-workspace-page">
-        <aside className="decision-workspace-rail" aria-label="Site Pipeline controls">
+        <aside className="decision-workspace-rail" aria-label="Sites controls">
           <header>
-            <p className="context-label">Portfolio Context</p>
-            <h1>Site Pipeline</h1>
-            <p>Qualify opportunities against power, grid evidence, and development readiness.</p>
+            <p className="context-label">Portfolio Workspace</p>
+            <h1>Sites</h1>
+            <p>Screen, qualify, and make evidence-led decisions across the portfolio.</p>
           </header>
           <section className="rail-metrics" aria-label="Portfolio summary">
-            <Metric label="Sites" value={summaries.length} />
-            <Metric label="Declared" value={`${totalMw.toLocaleString("en-GB")} MW`} />
-            <Metric label="Action" value={actionRequired} tone="warning" />
-            <Metric label="Ready" value={decisionReady} tone="positive" />
+            <Metric label="Sites" value={metrics.sites} />
+            <Metric label="Declared" value={`${metrics.declaredMw.toLocaleString("en-GB")} MW`} />
+            <Metric label="Action" value={metrics.actionRequired} tone="warning" />
+            <Metric label="Ready" value={metrics.decisionReady} tone="positive" />
           </section>
           <section className="rail-section">
             <h2>
@@ -184,27 +218,29 @@ function SitePipelineIndex() {
                 }
               />
             </label>
-            <label>
-              Stage
-              <select
-                name="pipeline-stage"
-                value={search.stage ?? "all"}
-                onChange={(event) =>
-                  patchSearch({
-                    stage: event.target.value as (typeof stages)[number],
-                    selected: undefined,
-                  })
-                }
-              >
-                <option value="all">All Sites</option>
-                <option value="action_required">Action Required</option>
-                <option value="draft">Draft</option>
-                <option value="screening">Screening</option>
-                <option value="shortlisted">Candidate Shortlisted</option>
-                <option value="evidence_review">Evidence Review</option>
-                <option value="decision_ready">Decision Ready</option>
-              </select>
-            </label>
+            {activeView === "pipeline" ? (
+              <label>
+                Stage
+                <select
+                  name="pipeline-stage"
+                  value={search.stage ?? "all"}
+                  onChange={(event) =>
+                    patchSearch({
+                      stage: event.target.value as (typeof stages)[number],
+                      selected: undefined,
+                    })
+                  }
+                >
+                  <option value="all">All Sites</option>
+                  <option value="action_required">Action Required</option>
+                  <option value="draft">Draft</option>
+                  <option value="screening">Screening</option>
+                  <option value="shortlisted">Candidate Shortlisted</option>
+                  <option value="evidence_review">Evidence Review</option>
+                  <option value="decision_ready">Decision Ready</option>
+                </select>
+              </label>
+            ) : null}
             <label>
               Decision
               <select
@@ -241,6 +277,44 @@ function SitePipelineIndex() {
                 <option value="name">Site Name</option>
               </select>
             </label>
+            {activeView !== "pipeline" ? (
+              <>
+                <label>
+                  Evidence Exposure
+                  <select
+                    name="portfolio-risk"
+                    value={search.risk ?? "all"}
+                    onChange={(event) =>
+                      patchSearch({ risk: event.target.value as typeof search.risk })
+                    }
+                  >
+                    <option value="all">All Sites</option>
+                    <option value="blocked">Evidence Required</option>
+                    <option value="deadline">Validity Deadline</option>
+                    <option value="operator_confirmed">Operator Confirmed</option>
+                  </select>
+                </label>
+                <label>
+                  Operator
+                  <select
+                    name="portfolio-operator"
+                    value={search.operator ?? "all"}
+                    onChange={(event) =>
+                      patchSearch({
+                        operator: event.target.value === "all" ? undefined : event.target.value,
+                      })
+                    }
+                  >
+                    <option value="all">All Operators</option>
+                    {intelligence.operators.map((item) => (
+                      <option key={item.operator} value={item.operator}>
+                        {item.operator}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </>
+            ) : null}
             {filtersActive ? (
               <button
                 type="button"
@@ -248,7 +322,7 @@ function SitePipelineIndex() {
                 onClick={() =>
                   void navigate({
                     to: "/portfolio",
-                    search: {},
+                    search: { view: activeView },
                     replace: true,
                   })
                 }
@@ -283,6 +357,20 @@ function SitePipelineIndex() {
                 }
               >
                 <Download aria-hidden="true" /> Complete Backup + Documents
+              </button>
+              <button
+                type="button"
+                disabled={!exportRows.length}
+                onClick={() => void downloadPropertyXlsx(exportRows)}
+              >
+                <Download aria-hidden="true" /> Export Portfolio XLSX
+              </button>
+              <button
+                type="button"
+                disabled={!exportRows.length}
+                onClick={() => downloadPortfolioComparisonPdf(exportRows)}
+              >
+                <Download aria-hidden="true" /> Portfolio Decision PDF
               </button>
               <button type="button" onClick={() => restoreInput.current?.click()}>
                 <FileUp aria-hidden="true" /> Restore Backup
@@ -326,8 +414,14 @@ function SitePipelineIndex() {
         <section className="decision-workspace-main">
           <header className="workspace-main-header">
             <div>
-              <p className="context-label">Data-Centre Opportunity Qualification</p>
-              <h2>Sites Under Review</h2>
+              <p className="context-label">Data-Centre Opportunity Portfolio</p>
+              <h2>
+                {activeView === "pipeline"
+                  ? "Sites Under Review"
+                  : activeView === "readiness"
+                    ? "Portfolio Readiness"
+                    : "Decision Review"}
+              </h2>
               <p>
                 {visible.length} of {summaries.length} sites shown
               </p>
@@ -335,7 +429,9 @@ function SitePipelineIndex() {
                 <button
                   type="button"
                   className="secondary-button"
-                  onClick={() => void navigate({ to: "/portfolio", search: {}, replace: true })}
+                  onClick={() =>
+                    void navigate({ to: "/portfolio", search: { view: activeView }, replace: true })
+                  }
                 >
                   Reset Portfolio View
                 </button>
@@ -345,6 +441,25 @@ function SitePipelineIndex() {
               <Plus aria-hidden="true" /> New Site Screening
             </Link>
           </header>
+          <nav
+            className="decision-view-switcher site-portfolio-view-switcher"
+            aria-label="Sites portfolio view"
+          >
+            {portfolioViews.map((view) => (
+              <button
+                key={view}
+                type="button"
+                className={activeView === view ? "active" : ""}
+                onClick={() => patchSearch({ view, selected: undefined })}
+              >
+                {view === "pipeline"
+                  ? "Pipeline"
+                  : view === "readiness"
+                    ? "Readiness"
+                    : "Decision Review"}
+              </button>
+            ))}
+          </nav>
           {importOpen ? (
             <div className="workspace-inline-panel">
               <button
@@ -372,6 +487,18 @@ function SitePipelineIndex() {
             <div className="decision-empty error-message" role="alert">
               {error}
             </div>
+          ) : activeView === "readiness" ? (
+            <PortfolioReadinessView sites={decisionSites} />
+          ) : activeView === "decisions" ? (
+            <PortfolioDecisionView
+              intelligence={{
+                ...intelligence,
+                rows: intelligence.rows.filter((row) =>
+                  decisionSites.some((site) => site.id === row.site_id),
+                ),
+              }}
+              sites={decisionSites}
+            />
           ) : !visible.length ? (
             <div className="decision-empty">
               <MapPin aria-hidden="true" />
@@ -526,14 +653,14 @@ function SiteDetail({
         </dl>
       </section>
       <section>
-        <h3>Primary Blockers</h3>
+        <h3>Checks Before Decision</h3>
         <ul className="detail-blockers">
           {site.blockers.slice(0, 6).map((blocker) => (
             <li key={blocker}>{blocker}</li>
           ))}
         </ul>
         <p className="next-action">
-          <b>Next:</b> {site.nextAction}
+          <b>Recommended Next Step:</b> {site.nextAction}
         </p>
       </section>
       <section className="site-decision-form detail-decision-summary">
@@ -562,7 +689,7 @@ function SiteDetail({
             projectType: site.property.project.type,
           }}
         >
-          Open in Finder
+          Review in Power Finder
         </Link>
         <Link to="/portfolio/$id" params={{ id: site.id }} search={{ tab: "overview" }}>
           Open Site Workspace

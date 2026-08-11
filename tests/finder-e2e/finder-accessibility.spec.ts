@@ -18,16 +18,14 @@ test("public Finder has no serious or critical automated accessibility violation
   expect(blocking, JSON.stringify(blocking, null, 2)).toEqual([]);
 });
 
-test("Site Pipeline and Decision Centre have no serious or critical violations", async ({
-  page,
-}) => {
+test("Sites portfolio views have no serious or critical violations", async ({ page }) => {
   await page.goto("/power-finder?lat=52.52&lng=13.405&mw=55&projectType=data_centre");
   await expect(page.getByText(/candidate site-to-node matches/i).first()).toBeVisible({
     timeout: 15_000,
   });
   await page.getByRole("button", { name: /Create pipeline site|Shortlist for/i }).click();
   await expect(page.getByRole("button", { name: /Screening saved/i })).toBeDisabled();
-  for (const path of ["/portfolio", "/reports"]) {
+  for (const path of ["/portfolio?view=pipeline", "/portfolio?view=decisions"]) {
     await page.goto(path);
     await expect(page.locator("main")).toBeVisible();
     const result = await new AxeBuilder({ page })

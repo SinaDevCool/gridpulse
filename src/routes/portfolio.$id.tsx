@@ -96,7 +96,9 @@ function SiteWorkspace() {
       <AppShell>
         <main className="site-workspace-state">
           <h1>Site not found</h1>
-          <Link to="/portfolio">Return to Site Pipeline</Link>
+          <Link to="/portfolio" search={{ view: "pipeline" }}>
+            Return to Sites
+          </Link>
         </main>
       </AppShell>
     );
@@ -107,8 +109,8 @@ function SiteWorkspace() {
     <AppShell>
       <main id="main-content" className="site-workspace-page">
         <header className="site-workspace-header">
-          <Link to="/portfolio" className="back-link">
-            <ArrowLeft /> Site Pipeline
+          <Link to="/portfolio" search={{ view: "pipeline" }} className="back-link">
+            <ArrowLeft /> Sites
           </Link>
           <div>
             <p className="context-label">Data Centre Opportunity</p>
@@ -137,13 +139,15 @@ function SiteWorkspace() {
                 });
               }}
             >
-              {item === "evidence"
-                ? "Evidence & operator"
-                : item === "qualification"
-                  ? "Readiness"
-                  : item === "grid"
-                    ? "Grid screening"
-                    : item}
+              {item === "overview"
+                ? "Summary"
+                : item === "evidence"
+                  ? "Evidence & operator"
+                  : item === "qualification"
+                    ? "Readiness"
+                    : item === "grid"
+                      ? "Grid screening"
+                      : item}
             </button>
           ))}
         </nav>

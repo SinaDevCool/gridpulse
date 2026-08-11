@@ -185,21 +185,21 @@ const checks = [
     expectedStatus: 200,
     validate: async (response) => {
       const html = await response.text();
-      if (!html.includes("Site Pipeline")) throw new Error("Site Pipeline heading is missing");
+      if (!html.includes("Sites")) throw new Error("Sites heading is missing");
       if (/Sign In|Sign Up|Create account/i.test(html)) {
-        throw new Error("Site Pipeline unexpectedly exposes account access");
+        throw new Error("Sites unexpectedly exposes account access");
       }
     },
   },
   {
-    name: "anonymous-decision-centre",
-    url: `${baseUrl}/reports`,
+    name: "anonymous-decision-review",
+    url: `${baseUrl}/portfolio?view=decisions`,
     expectedStatus: 200,
     validate: async (response) => {
       const html = await response.text();
-      if (!html.includes("Decision Centre")) throw new Error("Decision Centre heading is missing");
+      if (!html.includes("Decision Review")) throw new Error("Decision Review heading is missing");
       if (/Sign In|Sign Up|Create account/i.test(html)) {
-        throw new Error("Decision Centre unexpectedly exposes account access");
+        throw new Error("Decision Review unexpectedly exposes account access");
       }
     },
   },

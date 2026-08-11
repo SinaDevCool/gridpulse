@@ -58,7 +58,7 @@ function DecisionRecordPage() {
               Pipeline.
             </p>
             <Link to="/portfolio" className="primary-button">
-              Return to Site Pipeline
+              Return to Sites
             </Link>
           </div>
         ) : (
@@ -81,7 +81,7 @@ function DecisionRecord({
     <>
       <header className="record-header">
         <Link to="/reports" className="back-link">
-          <ArrowLeft aria-hidden="true" /> Decision Centre
+          <ArrowLeft aria-hidden="true" /> Sites
         </Link>
         <div>
               <p className="context-label">Current Decision Package</p>
