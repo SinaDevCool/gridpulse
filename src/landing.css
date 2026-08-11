@@ -15,6 +15,187 @@
   overflow-x: clip;
 }
 
+/* Finder MVP landing: restrained, editorial, and intentionally low-density. */
+.minimal-landing {
+  background: #05080f;
+}
+
+.minimal-hero {
+  align-items: center;
+  display: flex;
+  min-height: min(880px, calc(100svh - 72px));
+  overflow: hidden;
+  padding-block: clamp(120px, 16vh, 190px);
+  position: relative;
+}
+
+.minimal-hero-image,
+.minimal-hero-overlay {
+  inset: 0;
+  position: absolute;
+}
+
+.minimal-hero-image {
+  height: 100%;
+  object-fit: cover;
+  object-position: 67% center;
+  width: 100%;
+}
+
+.minimal-hero-overlay {
+  background:
+    linear-gradient(90deg, #05080f 0%, rgba(5, 8, 15, 0.93) 46%, rgba(5, 8, 15, 0.42) 82%),
+    linear-gradient(0deg, #05080f 0%, transparent 38%, rgba(5, 8, 15, 0.2) 100%);
+}
+
+.minimal-hero-content {
+  position: relative;
+  z-index: 1;
+}
+
+.minimal-hero-content > * {
+  max-width: 780px;
+}
+
+.minimal-hero h1 {
+  font-size: clamp(56px, 6vw, 96px);
+  line-height: 0.97;
+  max-width: 850px;
+}
+
+.minimal-hero-lead {
+  color: #becbd2;
+  font-size: clamp(17px, 1.4vw, 21px);
+  line-height: 1.65;
+  margin-top: 30px !important;
+  max-width: 650px;
+}
+
+.minimal-secondary-link {
+  color: #c5d1d7;
+  font-size: 14px;
+  font-weight: 650;
+  padding: 15px 4px;
+  text-decoration: none;
+  transition: color 180ms ease;
+}
+
+.minimal-secondary-link:hover {
+  color: var(--landing-cyan);
+}
+
+.minimal-access-note {
+  color: #758894;
+  font-size: 12px;
+  margin-top: 28px !important;
+}
+
+.minimal-flow {
+  border-top: 1px solid var(--landing-line);
+  padding-block: clamp(100px, 12vw, 170px);
+}
+
+.minimal-section-heading {
+  max-width: 760px;
+}
+
+.minimal-section-heading h2,
+.minimal-positioning h2 {
+  font-size: clamp(40px, 4.6vw, 68px);
+  line-height: 1.04;
+}
+
+.minimal-flow-grid {
+  border-top: 1px solid var(--landing-line);
+  display: grid;
+  gap: clamp(36px, 6vw, 90px);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: clamp(64px, 8vw, 110px);
+  padding-top: 42px;
+}
+
+.minimal-flow-grid article {
+  min-width: 0;
+}
+
+.minimal-flow-grid svg {
+  color: var(--landing-cyan);
+  height: 24px;
+  stroke-width: 1.5;
+  width: 24px;
+}
+
+.minimal-flow-grid h3 {
+  font-size: 20px;
+  margin-top: 34px;
+}
+
+.minimal-flow-grid p {
+  color: var(--landing-muted);
+  font-size: 14px;
+  line-height: 1.7;
+  margin-top: 14px;
+  max-width: 330px;
+}
+
+.minimal-positioning {
+  background: radial-gradient(circle at 72% 42%, rgba(66, 223, 242, 0.1), transparent 28%), #071019;
+  border-top: 1px solid var(--landing-line);
+  padding-block: clamp(110px, 14vw, 190px);
+}
+
+.minimal-positioning-inner {
+  max-width: 1040px;
+}
+
+.minimal-positioning-inner > p:not(.landing-eyebrow) {
+  color: var(--landing-muted);
+  font-size: 17px;
+  line-height: 1.75;
+  margin-top: 28px;
+  max-width: 700px;
+}
+
+.minimal-positioning .landing-button {
+  margin-top: 40px;
+}
+
+@media (max-width: 760px) {
+  .minimal-hero {
+    align-items: end;
+    min-height: 760px;
+    padding-block: 128px 72px;
+  }
+
+  .minimal-hero-image {
+    object-position: 72% center;
+  }
+
+  .minimal-hero-overlay {
+    background:
+      linear-gradient(0deg, #05080f 4%, rgba(5, 8, 15, 0.8) 67%, rgba(5, 8, 15, 0.3) 100%),
+      linear-gradient(90deg, rgba(5, 8, 15, 0.84), transparent);
+  }
+
+  .minimal-hero h1 {
+    font-size: clamp(48px, 13vw, 66px);
+  }
+
+  .minimal-flow-grid {
+    gap: 48px;
+    grid-template-columns: 1fr;
+  }
+
+  .minimal-flow-grid article {
+    border-bottom: 1px solid var(--landing-line);
+    padding-bottom: 42px;
+  }
+
+  .minimal-flow-grid article:last-child {
+    border-bottom: 0;
+  }
+}
+
 /* Data-centre advisory landing */
 .dc-landing {
   --dc-panel: #091722;

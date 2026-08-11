@@ -8,7 +8,6 @@ export function ProductHeader() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const marketingPage =
     pathname === "/" ||
-    pathname === "/data-sources" ||
     pathname === "/data-centres" ||
     pathname === "/energy-storage" ||
     pathname === "/hydrogen-industry";
@@ -16,7 +15,6 @@ export function ProductHeader() {
     { label: "Data Centres", to: "/data-centres" },
     { label: "Energy Storage", to: "/energy-storage" },
     { label: "Hydrogen & Industry", to: "/hydrogen-industry" },
-    { label: "Methodology", to: "/data-sources" },
   ] as const;
   return (
     <header className="app-header product-header--minimal">

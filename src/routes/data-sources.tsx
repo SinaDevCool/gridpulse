@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import {
   AlertTriangle,
   ArrowRight,
@@ -18,6 +18,9 @@ import { isFinderMvp } from "@/config/product-mode";
 import { germanGridEvidenceGaps, germanGridSources } from "@/lib/german-grid-sources";
 
 export const Route = createFileRoute("/data-sources")({
+  beforeLoad: () => {
+    if (isFinderMvp()) throw redirect({ to: "/" });
+  },
   head: () => ({
     meta: [
       { title: "German Grid Data Methodology & Sources | GridPulse" },
@@ -876,9 +879,9 @@ function LegacyFinderDataSourcesPage() {
                 <p>
                   Operator correspondence can be machine-highlighted for review, but extracted
                   values remain linked to the source and never overwrite customer declarations.
-                  Conflicts stay visible, grid-expert approval is required, and
-                  restriction events are non-operational rehearsals. They neither dispatch equipment
-                  nor establish mapped capacity.
+                  Conflicts stay visible, grid-expert approval is required, and restriction events
+                  are non-operational rehearsals. They neither dispatch equipment nor establish
+                  mapped capacity.
                 </p>
               </article>
             </div>
