@@ -1,9 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   ArrowLeft,
+  Building2,
   CheckCircle2,
   FileText,
+  Gauge,
+  Gavel,
   Map,
+  RadioTower,
   Paperclip,
   Plus,
   ShieldAlert,
@@ -31,7 +35,6 @@ import {
 import {
   deriveQualification,
   decisionRecommendationLabel,
-  operatorReadiness,
   qualificationLabels,
   updateQualificationDimension,
 } from "@/features/anonymous-workspace/data-centre-qualification";
@@ -40,6 +43,14 @@ import { PropertyEnrichmentPanel } from "@/features/properties/PropertyEnrichmen
 
 const tabs = ["overview", "qualification", "grid", "evidence", "operator", "decision"] as const;
 type Tab = (typeof tabs)[number];
+const tabDetails: Record<Tab, { label: string; hint: string; icon: typeof Gauge }> = {
+  overview: { label: "Summary", hint: "Site brief", icon: Building2 },
+  qualification: { label: "Readiness", hint: "Development checks", icon: Gauge },
+  grid: { label: "Grid", hint: "Connection options", icon: Map },
+  evidence: { label: "Evidence", hint: "Sources & documents", icon: FileText },
+  operator: { label: "Operator", hint: "Enquiry tracking", icon: RadioTower },
+  decision: { label: "Decision", hint: "Recommendation", icon: Gavel },
+};
 
 export const Route = createFileRoute("/portfolio/$id")({
   validateSearch: z.object({ tab: z.enum(tabs).optional() }),
@@ -103,7 +114,6 @@ function SiteWorkspace() {
       </AppShell>
     );
   const qualification = deriveQualification(property);
-  const operator = operatorReadiness(property);
   const candidate = preferredCandidate(property);
   const recommendedCandidate = property.candidateSnapshots.find(
     (item) => item.id === property.recommendedCandidateId,
@@ -112,10 +122,10 @@ function SiteWorkspace() {
     <AppShell>
       <main id="main-content" className="site-workspace-page">
         <header className="site-workspace-header">
-          <Link to="/portfolio" search={{ view: "pipeline" }} className="back-link">
-            <ArrowLeft /> Sites
-          </Link>
-          <div>
+          <div className="site-workspace-title">
+            <Link to="/portfolio" search={{ view: "pipeline" }} className="back-link">
+              <ArrowLeft aria-hidden="true" /> All sites
+            </Link>
             <p className="context-label">Data Centre Opportunity</p>
             <h1>{property.name}</h1>
             <p>
@@ -127,63 +137,64 @@ function SiteWorkspace() {
             {decisionRecommendationLabel(property)}
           </div>
         </header>
+        <section className="site-workspace-status" aria-label="Workspace status">
+          <StatusMetric
+            label="Confirmed"
+            value={`${qualification.confirmedReadiness}%`}
+            tone="confirmed"
+          />
+          <StatusMetric
+            label="Screened"
+            value={`${qualification.screeningCoverage}%`}
+            tone="screened"
+          />
+          <StatusMetric
+            label="Needs attention"
+            value={String(
+              qualification.criticalBlockers.length + qualification.constraintsDetected,
+            )}
+            tone="attention"
+          />
+          <StatusMetric
+            label="Evidence"
+            value={String((property.evidenceRegister?.length ?? 0) + documents.length)}
+            tone="evidence"
+          />
+          <p className="truth-boundary">
+            <ShieldAlert aria-hidden="true" /> Screening indicates context, not available capacity,
+            cost or delivery date.
+          </p>
+        </section>
         <nav className="site-workspace-tabs" aria-label="Site workspace">
-          {tabs.map((item) => (
-            <button
-              key={item}
-              className={tab === item ? "active" : ""}
-              onClick={() => {
-                setDirty(false);
-                void navigate({
-                  to: "/portfolio/$id",
-                  params: { id },
-                  search: { tab: item },
-                  replace: true,
-                });
-              }}
-            >
-              {item === "overview"
-                ? "Summary"
-                : item === "evidence"
-                  ? "Evidence"
-                  : item === "operator"
-                    ? "Operator"
-                    : item === "qualification"
-                      ? "Readiness"
-                      : item === "grid"
-                        ? "Grid screening"
-                        : item}
-            </button>
-          ))}
+          {tabs.map((item) => {
+            const detail = tabDetails[item];
+            const Icon = detail.icon;
+            return (
+              <button
+                key={item}
+                className={tab === item ? "active" : ""}
+                aria-label={detail.label}
+                aria-current={tab === item ? "page" : undefined}
+                onClick={() => {
+                  setDirty(false);
+                  void navigate({
+                    to: "/portfolio/$id",
+                    params: { id },
+                    search: { tab: item },
+                    replace: true,
+                  });
+                }}
+              >
+                <Icon aria-hidden="true" />
+                <span>
+                  <b>{detail.label}</b>
+                  <small>{detail.hint}</small>
+                </span>
+              </button>
+            );
+          })}
         </nav>
         <section className="site-workspace-layout">
-          <aside className="site-workspace-summary">
-            <Readiness label="Confirmed readiness" value={qualification.confirmedReadiness} />
-            <Readiness label="Screening coverage" value={qualification.screeningCoverage} />
-            <Readiness label="Operator readiness" value={operator.score} />
-            <dl>
-              <div>
-                <dt>Critical blockers</dt>
-                <dd>{qualification.criticalBlockers.length}</dd>
-              </div>
-              <div>
-                <dt>Screening constraints</dt>
-                <dd>{qualification.constraintsDetected}</dd>
-              </div>
-              <div>
-                <dt>Evidence items</dt>
-                <dd>{property.evidenceRegister?.length ?? 0}</dd>
-              </div>
-              <div>
-                <dt>Documents</dt>
-                <dd>{documents.length}</dd>
-              </div>
-            </dl>
-            <p className="truth-boundary">
-              <ShieldAlert /> Grid proximity and screening evidence do not establish capacity, cost
-              or delivery date.
-            </p>
-          </aside>
           <div className="site-workspace-canvas" onChangeCapture={() => setDirty(true)}>
             {tab === "overview" && (
               <Overview
@@ -234,14 +245,11 @@ function SiteWorkspace() {
   );
 }
 
-function Readiness({ label, value }: { label: string; value: number }) {
+function StatusMetric({ label, value, tone }: { label: string; value: string; tone: string }) {
   return (
-    <div className="workspace-readiness">
+    <div className={`workspace-status-metric status-${tone}`}>
       <span>{label}</span>
-      <strong>{value}%</strong>
-      <div>
-        <i style={{ width: `${value}%` }} />
-      </div>
+      <strong>{value}</strong>
     </div>
   );
 }
@@ -264,6 +272,9 @@ function Overview({
         <div>
           <p className="context-label">Site Brief</p>
           <h2>Opportunity overview</h2>
+          <p>
+            Keep the commercial brief concise. Public screening results are reviewed separately.
+          </p>
         </div>
       </header>
       <form
@@ -295,102 +306,124 @@ function Overview({
           });
         }}
       >
-        <div className="form-grid">
-          <label>
-            Site name
-            <input name="name" required defaultValue={property.name} />
-          </label>
-          <label>
-            Address / site label
-            <input name="address" defaultValue={profile.address ?? ""} />
-          </label>
-          <label>
-            Municipality
-            <input name="municipality" defaultValue={property.municipality ?? ""} />
-          </label>
-          <label>
-            Federal state
-            <input name="state" defaultValue={profile.federalState ?? ""} />
-          </label>
-          <label>
-            Cadastral reference
-            <input name="cadastre" defaultValue={profile.cadastralReference ?? ""} />
-          </label>
-          <label>
-            Site area (ha)
-            <input
-              name="area"
-              type="number"
-              min="0"
-              step="0.01"
-              defaultValue={profile.siteAreaHectares ?? ""}
-            />
-          </label>
-          <label>
-            Developable area (ha)
-            <input
-              name="developable"
-              type="number"
-              min="0"
-              step="0.01"
-              defaultValue={profile.developableAreaHectares ?? ""}
-            />
-          </label>
-          <label>
-            IT load (MW)
-            <input
-              name="itLoad"
-              type="number"
-              min="0"
-              step="0.1"
-              defaultValue={property.requiredItLoadMw ?? ""}
-            />
-          </label>
-          <label>
-            Total site load (MW)
-            <input
-              name="totalLoad"
-              required
-              type="number"
-              min="0"
-              step="0.1"
-              defaultValue={property.requiredTotalSiteLoadMw ?? property.project.importMw}
-            />
-          </label>
-          <label>
-            Minimum viable load (MW)
-            <input
-              name="minimumMw"
-              type="number"
-              min="0"
-              step="0.1"
-              defaultValue={profile.minimumViableLoadMw ?? ""}
-            />
-          </label>
-          <label>
-            Target energisation
-            <input name="date" type="date" defaultValue={profile.targetEnergisationDate ?? ""} />
-          </label>
-          <label>
-            Land control
-            <select name="land" defaultValue={property.landControlStatus}>
-              <option value="unknown">Unknown</option>
-              <option value="identified">Identified</option>
-              <option value="optioned">Optioned</option>
-              <option value="controlled">Controlled</option>
-            </select>
-          </label>
-          <label>
-            Transaction
-            <select name="transaction" defaultValue={profile.transactionStructure}>
-              <option value="unknown">Unknown</option>
-              <option value="purchase">Purchase</option>
-              <option value="lease">Lease</option>
-              <option value="option">Option</option>
-              <option value="joint_venture">Joint venture</option>
-            </select>
-          </label>
-        </div>
+        <section className="workspace-form-section">
+          <header>
+            <h3>Site identity</h3>
+            <p>Location and land reference</p>
+          </header>
+          <div className="form-grid">
+            <label>
+              Site name
+              <input name="name" required defaultValue={property.name} />
+            </label>
+            <label>
+              Address / site label
+              <input name="address" defaultValue={profile.address ?? ""} />
+            </label>
+            <label>
+              Municipality
+              <input name="municipality" defaultValue={property.municipality ?? ""} />
+            </label>
+            <label>
+              Federal state
+              <input name="state" defaultValue={profile.federalState ?? ""} />
+            </label>
+            <label>
+              Cadastral reference
+              <input name="cadastre" defaultValue={profile.cadastralReference ?? ""} />
+            </label>
+          </div>
+        </section>
+        <section className="workspace-form-section">
+          <header>
+            <h3>Scale and power</h3>
+            <p>Declared requirements, not available capacity</p>
+          </header>
+          <div className="form-grid">
+            <label>
+              Site area (ha)
+              <input
+                name="area"
+                type="number"
+                min="0"
+                step="0.01"
+                defaultValue={profile.siteAreaHectares ?? ""}
+              />
+            </label>
+            <label>
+              Developable area (ha)
+              <input
+                name="developable"
+                type="number"
+                min="0"
+                step="0.01"
+                defaultValue={profile.developableAreaHectares ?? ""}
+              />
+            </label>
+            <label>
+              IT load (MW)
+              <input
+                name="itLoad"
+                type="number"
+                min="0"
+                step="0.1"
+                defaultValue={property.requiredItLoadMw ?? ""}
+              />
+            </label>
+            <label>
+              Total site load (MW)
+              <input
+                name="totalLoad"
+                required
+                type="number"
+                min="0"
+                step="0.1"
+                defaultValue={property.requiredTotalSiteLoadMw ?? property.project.importMw}
+              />
+            </label>
+            <label>
+              Minimum viable load (MW)
+              <input
+                name="minimumMw"
+                type="number"
+                min="0"
+                step="0.1"
+                defaultValue={profile.minimumViableLoadMw ?? ""}
+              />
+            </label>
+          </div>
+        </section>
+        <section className="workspace-form-section">
+          <header>
+            <h3>Delivery position</h3>
+            <p>Commercial assumptions supplied by the client</p>
+          </header>
+          <div className="form-grid">
+            <label>
+              Target energisation
+              <input name="date" type="date" defaultValue={profile.targetEnergisationDate ?? ""} />
+            </label>
+            <label>
+              Land control
+              <select name="land" defaultValue={property.landControlStatus}>
+                <option value="unknown">Unknown</option>
+                <option value="identified">Identified</option>
+                <option value="optioned">Optioned</option>
+                <option value="controlled">Controlled</option>
+              </select>
+            </label>
+            <label>
+              Transaction
+              <select name="transaction" defaultValue={profile.transactionStructure}>
+                <option value="unknown">Unknown</option>
+                <option value="purchase">Purchase</option>
+                <option value="lease">Lease</option>
+                <option value="option">Option</option>
+                <option value="joint_venture">Joint venture</option>
+              </select>
+            </label>
+          </div>
+        </section>
         <div className="workspace-callout">
           <Map />{" "}
           <div>
@@ -403,9 +436,11 @@ function Overview({
             </span>
           </div>
         </div>
-        <button className="primary-action" type="submit">
-          <CheckCircle2 /> Save site brief
-        </button>
+        <footer className="workspace-form-actions">
+          <button className="primary-action" type="submit">
+            <CheckCircle2 aria-hidden="true" /> Save site brief
+          </button>
+        </footer>
       </form>
     </>
   );

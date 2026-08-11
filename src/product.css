@@ -767,6 +767,330 @@
   }
 }
 
+/* Site workspace: calm, task-led hierarchy shared by every workspace tab. */
+.site-workspace-page {
+  --workspace-border: #1b394c;
+  --workspace-panel: #0a1a28;
+  --workspace-muted: #8fa9ba;
+  background: #06111b;
+}
+.site-workspace-header {
+  min-height: 0;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 28px 32px 24px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  background: transparent;
+  border: 0;
+}
+.site-workspace-title {
+  min-width: 0;
+}
+.site-workspace-title .back-link {
+  width: max-content;
+  margin-bottom: 20px;
+  color: #8da8ba;
+  font-size: 13px;
+}
+.site-workspace-title .back-link:hover {
+  color: #69def5;
+}
+.site-workspace-header h1 {
+  margin: 5px 0 7px;
+  font-size: clamp(28px, 3vw, 40px);
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+}
+.site-workspace-status {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(105px, 150px)) minmax(280px, 1fr);
+  max-width: 1216px;
+  margin: 0 auto 20px;
+  border: 1px solid var(--workspace-border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #091925;
+}
+.workspace-status-metric {
+  display: grid;
+  gap: 5px;
+  padding: 16px 18px;
+  border-right: 1px solid var(--workspace-border);
+}
+.workspace-status-metric span {
+  color: var(--workspace-muted);
+  font-size: 11px;
+}
+.workspace-status-metric strong {
+  color: #edf7fa;
+  font-size: 21px;
+  line-height: 1;
+}
+.workspace-status-metric.status-screened strong {
+  color: #75dff1;
+}
+.workspace-status-metric.status-attention strong {
+  color: #f3bd58;
+}
+.workspace-status-metric.status-evidence strong {
+  color: #92d8c1;
+}
+.site-workspace-status .truth-boundary {
+  align-items: center;
+  margin: 0;
+  padding: 14px 18px;
+  background: transparent;
+}
+.site-workspace-tabs {
+  justify-content: center;
+  gap: 8px;
+  padding: 0 24px 20px;
+  border: 0;
+  background: transparent;
+}
+.site-workspace-tabs button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 174px;
+  min-height: 58px;
+  padding: 9px 12px;
+  border: 1px solid var(--workspace-border);
+  border-radius: 8px;
+  background: #091925;
+  text-align: left;
+  text-transform: none;
+}
+.site-workspace-tabs button svg {
+  width: 18px;
+  flex: none;
+}
+.site-workspace-tabs button span {
+  display: grid;
+  gap: 2px;
+}
+.site-workspace-tabs button b {
+  color: #c8d8e1;
+  font-size: 12px;
+}
+.site-workspace-tabs button small {
+  color: #718c9f;
+  font-size: 10px;
+  font-weight: 500;
+}
+.site-workspace-tabs button.active {
+  border-color: #2a8da2;
+  background: #0d2a39;
+  box-shadow: inset 0 0 0 1px rgb(36 204 233 / 12%);
+}
+.site-workspace-tabs button.active svg,
+.site-workspace-tabs button.active b {
+  color: #75e3f5;
+}
+.site-workspace-tabs button:hover {
+  border-color: #326078;
+  background: #0b2130;
+}
+.site-workspace-layout {
+  display: block;
+  max-width: 1280px;
+}
+.site-workspace-canvas {
+  padding: 34px 32px 64px;
+}
+.workspace-section-heading {
+  margin-bottom: 24px;
+}
+.workspace-section-heading h2 {
+  font-size: 26px;
+  letter-spacing: -0.015em;
+}
+.workspace-section-heading p {
+  max-width: 680px;
+  font-size: 14px;
+  line-height: 1.55;
+}
+.workspace-form,
+.operator-panel,
+.evidence-grid > section,
+.correspondence-panel {
+  border-radius: 10px;
+  background: var(--workspace-panel);
+}
+.workspace-form {
+  padding: 0;
+  overflow: hidden;
+}
+.workspace-form-section {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 28px;
+  padding: 26px;
+  border-bottom: 1px solid var(--workspace-border);
+}
+.workspace-form-section > header h3 {
+  margin: 0 0 5px;
+  color: #e6f1f5;
+  font-size: 15px;
+}
+.workspace-form-section > header p {
+  margin: 0;
+  color: #7894a6;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.workspace-form-section .form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.workspace-form input,
+.workspace-form select,
+.operator-panel input,
+.operator-panel select,
+.evidence-add-form input,
+.evidence-add-form select,
+.evidence-add-form textarea,
+.decision-form textarea,
+.qualification-row select,
+.qualification-row textarea {
+  border-radius: 7px;
+  border-color: #26465a;
+  background: #071520;
+}
+.workspace-form input:focus-visible,
+.workspace-form select:focus-visible,
+.operator-panel input:focus-visible,
+.operator-panel select:focus-visible,
+.evidence-add-form input:focus-visible,
+.evidence-add-form select:focus-visible,
+.evidence-add-form textarea:focus-visible,
+.decision-form textarea:focus-visible,
+.qualification-row select:focus-visible,
+.qualification-row textarea:focus-visible {
+  outline: 2px solid #24cce8;
+  outline-offset: 1px;
+}
+.workspace-callout {
+  margin: 22px 26px;
+  border-radius: 8px;
+}
+.workspace-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 26px 26px;
+}
+.primary-action,
+.secondary-action {
+  border-radius: 7px;
+}
+.qualification-list {
+  gap: 12px;
+}
+.qualification-row {
+  grid-template-columns: minmax(190px, 0.8fr) 150px minmax(260px, 1.4fr) 130px 72px;
+  padding: 18px;
+  border-radius: 8px;
+}
+.qualification-row textarea {
+  resize: vertical;
+}
+.additional-readiness-checks {
+  border-radius: 8px;
+}
+.workspace-facts {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+.workspace-facts article {
+  border-radius: 8px;
+  min-height: 105px;
+}
+.candidate-table {
+  border-radius: 8px;
+  overflow: hidden;
+}
+.evidence-grid {
+  align-items: start;
+}
+.document-upload {
+  border-radius: 8px;
+}
+.decision-form {
+  max-width: 880px;
+}
+.decision-form fieldset span {
+  border-radius: 8px;
+}
+
+@media (max-width: 1050px) {
+  .site-workspace-status {
+    grid-template-columns: repeat(4, 1fr);
+    margin-inline: 24px;
+  }
+  .site-workspace-status .truth-boundary {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--workspace-border);
+  }
+  .site-workspace-tabs {
+    justify-content: flex-start;
+  }
+  .site-workspace-tabs button {
+    width: 158px;
+  }
+  .workspace-form-section {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  .workspace-facts {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 680px) {
+  .site-workspace-header {
+    padding: 22px 18px 20px;
+  }
+  .site-workspace-header h1 {
+    font-size: 28px;
+  }
+  .site-workspace-status {
+    grid-template-columns: repeat(2, 1fr);
+    margin: 0 14px 16px;
+  }
+  .workspace-status-metric:nth-child(2) {
+    border-right: 0;
+  }
+  .site-workspace-tabs {
+    padding: 0 14px 16px;
+  }
+  .site-workspace-tabs button {
+    width: 138px;
+    min-height: 52px;
+  }
+  .site-workspace-tabs button small {
+    display: none;
+  }
+  .site-workspace-canvas {
+    padding: 26px 14px 48px;
+  }
+  .workspace-form-section {
+    padding: 20px 16px;
+  }
+  .workspace-form-section .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .workspace-callout {
+    margin: 18px 16px;
+  }
+  .workspace-form-actions {
+    padding: 0 16px 20px;
+  }
+  .workspace-form-actions .primary-action {
+    width: 100%;
+  }
+  .workspace-facts {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Power Finder compact desktop rail: progressive disclosure and quiet controls. */
 @media (min-width: 761px) {
   .power-finder-page {
