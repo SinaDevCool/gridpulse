@@ -74,6 +74,23 @@ function normalizeStatus(value: unknown): SourceStatus {
   return "failed";
 }
 
+function sourceResultStatus(body: Record<string, unknown>, source: string): SourceStatus | null {
+  if (!Array.isArray(body.sourceResults)) return null;
+  const statuses = body.sourceResults
+    .filter(
+      (item): item is Record<string, unknown> =>
+        Boolean(item) &&
+        typeof item === "object" &&
+        (item as Record<string, unknown>).source === source,
+    )
+    .map((item) => normalizeStatus(item.status));
+  if (!statuses.length) return null;
+  if (statuses.some((status) => status === "succeeded")) return "succeeded";
+  if (statuses.every((status) => status === "not_covered")) return "succeeded";
+  if (statuses.every((status) => status === "unavailable")) return "unavailable";
+  return statuses.find((status) => status === "timed_out" || status === "failed") ?? "failed";
+}
+
 async function enrichSource(
   supabaseUrl: string,
   key: string,
@@ -110,7 +127,11 @@ async function enrichSource(
       if (!Array.isArray(body.findings) || typeof body.sourceStatus !== "object")
         return { source, status: "failed" as const, body: null };
       const sourceStatus = body.sourceStatus as Record<string, unknown>;
-      return { source, status: normalizeStatus(sourceStatus[source]), body };
+      return {
+        source,
+        status: sourceResultStatus(body, source) ?? normalizeStatus(sourceStatus[source]),
+        body,
+      };
     } catch (error) {
       const timedOut = error instanceof Error && error.name === "AbortError";
       if (attempt < MAX_ATTEMPTS) continue;

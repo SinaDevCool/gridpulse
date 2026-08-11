@@ -79,6 +79,32 @@ describe("public property enrichment isolation", () => {
     expect(body.sourceStatus).toEqual({ bkg_admin: "succeeded", osm_context: "failed" });
   });
 
+  it("prefers per-property coverage over a stale aggregate source status", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          findings: [],
+          sourceStatus: { osm_context: "unavailable" },
+          sourceResults: [
+            {
+              propertyId: "property-1",
+              source: "osm_context",
+              status: "complete",
+              findingCount: 0,
+            },
+          ],
+        }),
+        { status: 200 },
+      ),
+    );
+
+    const response = await handlePublicPropertyEnrichment(request(["osm_context"]), env);
+    expect(await response?.json()).toMatchObject({
+      sourceStatus: { osm_context: "succeeded" },
+      sourceResults: [{ source: "osm_context", status: "succeeded" }],
+    });
+  });
+
   it("preserves property-specific coverage statuses from a successful source", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(
