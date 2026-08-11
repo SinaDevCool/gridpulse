@@ -108,8 +108,8 @@ test("anonymous site workspace qualifies a site and records operator evidence", 
   await expect(page.getByText(/candidate site-to-node matches/i).first()).toBeVisible({
     timeout: 15_000,
   });
-  await page.getByRole("button", { name: /Create pipeline site|Shortlist for/i }).click();
-  await expect(page.getByRole("button", { name: /Screening saved/i })).toBeDisabled();
+  await page.getByRole("button", { name: "Create pipeline site", exact: true }).click();
+  await expect(page).toHaveURL(/propertyId=/);
   await page.goto("/portfolio");
   await page.getByRole("button", { name: /Untitled screening project/i }).click();
   await page.getByRole("link", { name: "Open Site Workspace" }).click();
@@ -117,11 +117,12 @@ test("anonymous site workspace qualifies a site and records operator evidence", 
   await page.getByLabel("Municipality").fill("Bremen");
   await page.getByLabel("Site area (ha)").fill("12.5");
   await page.getByRole("button", { name: /Save site brief/i }).click();
-  await page.getByRole("button", { name: /Evidence & operator/i }).click();
+  await page.getByRole("button", { name: "Operator", exact: true }).click();
   await page.getByRole("textbox", { name: "Operator", exact: true }).fill("Example Netz GmbH");
   await page.getByLabel("Enquiry status").selectOption("submitted");
   await page.getByLabel("Enquiry reference").fill("NVP-2026-001");
   await page.getByRole("button", { name: /Save operator engagement/i }).click();
+  await page.getByRole("button", { name: "Evidence", exact: true }).click();
   await page.getByPlaceholder("Evidence title").fill("Operator acknowledgement");
   await page
     .getByPlaceholder("Claim supported by this evidence")
@@ -139,7 +140,7 @@ test("site decisions flow into the unified Decision Review view", async ({ page 
   await expect(page.getByText(/candidate site-to-node matches/i).first()).toBeVisible({
     timeout: 15_000,
   });
-  await page.getByRole("button", { name: /Create pipeline site|Shortlist for/i }).click();
+  await page.getByRole("button", { name: "Create pipeline site", exact: true }).click();
   await expect(page.getByRole("button", { name: /Screening saved/i })).toBeDisabled();
   await page.getByRole("link", { name: /Sites Manage portfolio decisions/i }).click();
   await page.getByRole("button", { name: /Untitled screening project/i }).click();
@@ -164,7 +165,7 @@ test("portfolio views are URL-backed and the site workspace is directly discover
   await expect(page.getByText(/candidate site-to-node matches/i).first()).toBeVisible({
     timeout: 15_000,
   });
-  await page.getByRole("button", { name: /Create pipeline site|Shortlist for/i }).click();
+  await page.getByRole("button", { name: "Create pipeline site", exact: true }).click();
   await page.getByRole("link", { name: /Sites Manage portfolio decisions/i }).click();
   await page.getByLabel("Stage").selectOption("draft");
   await expect(page).toHaveURL(/stage=draft/);
@@ -209,10 +210,10 @@ test("Sites remains usable without horizontal page overflow on mobile", async ({
   await expect(page.getByText(/candidate site-to-node matches/i).first()).toBeVisible({
     timeout: 15_000,
   });
-  await page.getByRole("button", { name: /Create pipeline site|Shortlist for/i }).click();
-  await expect(page.getByRole("button", { name: /Screening saved/i })).toBeDisabled();
+  await page.getByRole("button", { name: "Create pipeline site", exact: true }).click();
+  await expect(page).toHaveURL(/propertyId=/);
   await page.goto("/portfolio");
-  await expect(page.getByRole("heading", { name: "Sites" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Sites", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: /Untitled screening project/i })).toBeVisible();
   expect(
     await page.evaluate(

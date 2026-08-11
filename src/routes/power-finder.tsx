@@ -429,6 +429,13 @@ function PowerFinderPage() {
     () => ({ center: activeCoverage.center, zoom: activeCoverage.zoom }),
     [activeCoverage.center, activeCoverage.zoom],
   );
+  const projectSite = useMemo<[number, number] | null>(
+    () =>
+      project.longitude != null && project.latitude != null
+        ? [project.longitude, project.latitude]
+        : null,
+    [project.latitude, project.longitude],
+  );
 
   useEffect(() => {
     void loadGridOperatorCatalog()
@@ -1181,21 +1188,12 @@ function PowerFinderPage() {
                     setPropertySaveStatus("saving");
                     setInteractionNotice("Saving property locally.");
                     try {
-                      const candidatesToSave = selectedOpportunity
-                        ? Array.from(
-                            new Map(
-                              [...comparedCandidates, selectedOpportunity].map((item) => [
-                                item.id,
-                                item,
-                              ]),
-                            ).values(),
-                          )
-                        : comparedCandidates;
+                      const candidatesToSave = candidates.slice(0, 3);
                       const savedPropertyId = await saveFinderProjectToPortfolio(
                         project,
                         candidatesToSave,
                         search.propertyId,
-                        selectedOpportunity?.id ?? null,
+                        null,
                       );
                       const refreshed = await getAnonymousProperty(savedPropertyId);
                       setActiveProperty(refreshed);
@@ -1221,11 +1219,9 @@ function PowerFinderPage() {
                       ? "Screening saved"
                       : propertySaveStatus === "error"
                         ? "Try saving again"
-                        : selectedOpportunity
-                          ? `Shortlist for ${project.name}`
-                          : activeProperty
-                            ? "Save screening to site"
-                            : "Create pipeline site"}
+                        : activeProperty
+                          ? "Save screening to site"
+                          : "Create pipeline site"}
                 </button>
               </div>
               {activeProperty && propertySaveStatus === "saved" ? (
@@ -2392,11 +2388,7 @@ function PowerFinderPage() {
                 void updateSearch({ candidate: undefined });
               }}
               onViewportChange={setBounds}
-              projectSite={
-                project.longitude != null && project.latitude != null
-                  ? [project.longitude, project.latitude]
-                  : null
-              }
+              projectSite={projectSite}
               onSitePlacement={([longitude, latitude]) => {
                 const containingRegion = coverage.find((item) => {
                   if (item.regionCode === "DE") return false;

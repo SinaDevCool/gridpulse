@@ -38,7 +38,7 @@ describe("anonymous portfolio projection", () => {
   it("requires candidate screening when no shortlist exists", () => {
     const summary = projectAnonymousProperty(property());
     expect(summary.stage).toBe("screening");
-    expect(summary.nextAction).toMatch(/shortlist/i);
+    expect(summary.nextAction).toMatch(/grid screening/i);
   });
   it("uses the explicitly preferred candidate", () => {
     const candidates = [

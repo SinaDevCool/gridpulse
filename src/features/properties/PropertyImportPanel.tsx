@@ -3,12 +3,16 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { propertyFromImport } from "@/features/anonymous-workspace/factory";
 import { importAnonymousProperties } from "@/features/anonymous-workspace/repository";
+import { listAnonymousProperties } from "@/features/anonymous-workspace/repository";
 import {
   parsePropertyImport,
   propertyImportTemplateCsv,
   type PropertyImportRow,
 } from "./property-import";
-import { enrichProperties, mergeEnrichment } from "./property-enrichment";
+import {
+  screenPropertyPortfolio,
+  type PropertyScreeningProgress,
+} from "./property-screening-workflow";
 
 function downloadTemplate() {
   const url = URL.createObjectURL(
@@ -35,6 +39,17 @@ export function PropertyImportPanel({
   const [error, setError] = useState("");
   const [conflict, setConflict] = useState<"skip" | "replace" | "merge">("skip");
   const [enrichAfterImport, setEnrichAfterImport] = useState(true);
+  const [screeningProgress, setScreeningProgress] = useState<PropertyScreeningProgress | null>(
+    null,
+  );
+  const [screeningSummary, setScreeningSummary] = useState<{
+    imported: number;
+    completed: number;
+    failed: number;
+    findings: number;
+  } | null>(null);
+  const [failedPropertyIds, setFailedPropertyIds] = useState<string[]>([]);
+  const [firstReviewId, setFirstReviewId] = useState<string | null>(null);
   const invalid = rows.filter((row) => row.errors.length > 0).length;
 
   async function selectFile(file: File | undefined) {
@@ -62,23 +77,48 @@ export function PropertyImportPanel({
     setError("");
     try {
       const extension = fileName.split(".").pop()?.toLowerCase() ?? "csv";
-      let properties = rows.map(({ value }) => propertyFromImport(value, extension));
-      if (enrichAfterImport) {
-        const startedAt = new Date().toISOString();
-        try {
-          const enrichment = await enrichProperties(properties);
-          properties = properties.map((property) =>
-            mergeEnrichment(property, enrichment, startedAt),
-          );
-        } catch (reason) {
-          toast.warning(
-            `Sites were imported without public enrichment: ${reason instanceof Error ? reason.message : "source unavailable"}`,
-          );
-        }
-      }
+      const properties = rows.map(({ value }) => propertyFromImport(value, extension));
       const result = await importAnonymousProperties(properties, conflict);
+      let completed = 0;
+      let failed = 0;
+      let findings = 0;
+      if (enrichAfterImport && result.imported) {
+        const stored = await listAnonymousProperties();
+        const importedKeys = new Set(
+          properties.flatMap((property) => [
+            property.id,
+            property.externalPropertyId?.toLocaleLowerCase() ?? "",
+          ]),
+        );
+        const targets = stored.filter(
+          (property) =>
+            importedKeys.has(property.id) ||
+            (property.externalPropertyId &&
+              importedKeys.has(property.externalPropertyId.toLocaleLowerCase())),
+        );
+        const screened = await screenPropertyPortfolio(targets, setScreeningProgress);
+        completed = screened.results.length;
+        failed = screened.failures.length;
+        setFailedPropertyIds(screened.failures.map((item) => item.property.id));
+        setFirstReviewId(
+          screened.results.find((property) =>
+            property.enrichmentFindings?.some((finding) => finding.status === "proposed"),
+          )?.id ??
+            screened.failures[0]?.property.id ??
+            null,
+        );
+        findings = screened.results.reduce(
+          (sum, property) =>
+            sum +
+            (property.enrichmentFindings ?? []).filter((finding) => finding.status === "proposed")
+              .length,
+          0,
+        );
+        if (failed) toast.warning(`${failed} sites require a screening retry.`);
+      }
+      setScreeningSummary({ imported: result.imported, completed, failed, findings });
       toast.success(
-        `${result.imported} ${result.imported === 1 ? "property" : "properties"} imported${result.skipped ? `; ${result.skipped} existing IDs skipped` : ""}`,
+        `${result.imported} ${result.imported === 1 ? "property" : "properties"} imported${completed ? `; ${completed} screened` : ""}${result.skipped ? `; ${result.skipped} existing IDs skipped` : ""}`,
       );
     } catch (reason) {
       setError(
@@ -92,6 +132,45 @@ export function PropertyImportPanel({
     setFileName("");
     if (input.current) input.current.value = "";
     onImported();
+  }
+
+  async function retryFailed() {
+    if (!failedPropertyIds.length) return;
+    setBusy(true);
+    const stored = await listAnonymousProperties();
+    const targets = stored.filter((property) => failedPropertyIds.includes(property.id));
+    const screened = await screenPropertyPortfolio(targets, setScreeningProgress);
+    setFailedPropertyIds(screened.failures.map((item) => item.property.id));
+    setScreeningSummary(
+      (current) =>
+        current && {
+          ...current,
+          completed: current.completed + screened.results.length,
+          failed: screened.failures.length,
+        },
+    );
+    setBusy(false);
+    onImported();
+    if (screened.failures.length)
+      toast.warning(`${screened.failures.length} sites still require review.`);
+    else toast.success("All failed site screenings completed.");
+  }
+
+  function exportSummary() {
+    if (!screeningSummary) return;
+    const rows = [
+      "metric,value",
+      `imported,${screeningSummary.imported}`,
+      `screened,${screeningSummary.completed}`,
+      `failed,${screeningSummary.failed}`,
+      `findings_awaiting_review,${screeningSummary.findings}`,
+    ];
+    const url = URL.createObjectURL(new Blob([rows.join("\n")], { type: "text/csv" }));
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "gridpulse-import-screening-summary.csv";
+    anchor.click();
+    URL.revokeObjectURL(url);
   }
 
   return (
@@ -139,6 +218,39 @@ export function PropertyImportPanel({
         <p className="form-message error-message" role="alert">
           {error}
         </p>
+      ) : null}
+      {screeningProgress && busy ? (
+        <div className="enrichment-run-summary" role="status" aria-live="polite">
+          <LoaderCircle className="spin" aria-hidden="true" />
+          <strong>{screeningProgress.propertyName}</strong>
+          <span>{screeningProgress.message}</span>
+          <span>
+            {screeningProgress.completed} of {screeningProgress.total}
+          </span>
+        </div>
+      ) : null}
+      {screeningSummary && !busy ? (
+        <div className="enrichment-run-summary" role="status">
+          <strong>{screeningSummary.imported} sites imported</strong>
+          <span>{screeningSummary.completed} enriched and grid-screened</span>
+          <span>{screeningSummary.failed} require retry</span>
+          <span>{screeningSummary.findings} findings awaiting review</span>
+          <div className="property-import-summary-actions">
+            {failedPropertyIds.length ? (
+              <button type="button" onClick={() => void retryFailed()}>
+                Retry failed sites
+              </button>
+            ) : null}
+            {firstReviewId ? (
+              <a href={`/portfolio/${firstReviewId}?tab=evidence`}>
+                Open first site needing review
+              </a>
+            ) : null}
+            <button type="button" onClick={exportSummary}>
+              Export screening summary
+            </button>
+          </div>
+        </div>
       ) : null}
       {rows.length ? (
         <>

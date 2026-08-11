@@ -2,7 +2,7 @@ import type { MultiPolygon, Polygon } from "geojson";
 import type { CandidateOpportunity } from "@/features/power-finder/candidate-intelligence";
 import type { FinderProject } from "@/features/power-finder/finder-project";
 
-export const ANONYMOUS_WORKSPACE_SCHEMA_VERSION = 5;
+export const ANONYMOUS_WORKSPACE_SCHEMA_VERSION = 6;
 
 export type AnonymousDecisionStatus = "unreviewed" | "advance" | "hold" | "reject";
 
@@ -97,16 +97,67 @@ export type AnonymousEnrichmentFinding = {
   coverage: "available" | "not_covered" | "unavailable";
   limitations: string[];
   reviewedAt: string | null;
+  findingKey: string;
+  polarity: "positive" | "neutral" | "constraint" | "unknown";
+  screeningEffect: "supports" | "constraint" | "context" | "none";
+  distanceMetres: number | null;
+  geometryRelation: "contains" | "intersects" | "nearest" | "within_radius" | "none" | null;
+  supersedesFindingId: string | null;
+  automaticallyDerived: boolean;
+};
+
+export type SourceRunResult = {
+  source: EnrichmentSource;
+  status: "complete" | "not_covered" | "unavailable";
+  findingCount: number;
+  releaseId: string | null;
+  checkedAt: string;
+  limitation: string | null;
 };
 
 export type AnonymousEnrichmentRun = {
   id: string;
   status: "running" | "complete" | "partial" | "failed";
+  releaseFingerprint: string;
+  screeningStatus:
+    | "queued"
+    | "enriching"
+    | "screening_grid"
+    | "deriving"
+    | "review_required"
+    | "complete"
+    | "partial"
+    | "failed";
+  sourceResults: SourceRunResult[];
+  startedBy: "import" | "manual_refresh" | "finder_save";
   requestedSources: EnrichmentSource[];
   completedSources: EnrichmentSource[];
   failedSources: EnrichmentSource[];
   startedAt: string;
   completedAt: string | null;
+};
+
+export type ScreeningAssessment = {
+  dimensionKey: QualificationDimensionKey;
+  state: "screened" | "constraint_detected" | "unknown";
+  summary: string;
+  sourceFindingIds: string[];
+  confidence: "high" | "medium" | "low";
+  derivedAt: string;
+  ruleVersion: string;
+  requiresConfirmation: boolean;
+};
+
+export type GridScreeningSnapshot = {
+  id: string;
+  propertyId: string;
+  status: "complete" | "partial" | "failed";
+  candidateIds: string[];
+  recommendedCandidateId: string | null;
+  shortlistedCandidateId: string | null;
+  calculationVersion: string;
+  releaseFingerprint: string;
+  screenedAt: string;
 };
 
 export type AnonymousOperatorEngagement = {
@@ -275,6 +326,9 @@ export type AnonymousProperty = {
   evidenceRegister?: AnonymousEvidenceItem[];
   enrichmentFindings?: AnonymousEnrichmentFinding[];
   enrichmentRuns?: AnonymousEnrichmentRun[];
+  screeningAssessments?: ScreeningAssessment[];
+  gridScreeningSnapshots?: GridScreeningSnapshot[];
+  recommendedCandidateId?: string | null;
   operatorEngagement?: AnonymousOperatorEngagement;
   selectedCandidateIds: string[];
   candidateSnapshots: AnonymousCandidateSnapshot[];
@@ -321,6 +375,18 @@ export function migrateAnonymousProperty(value: unknown): AnonymousProperty {
       ? { ...fallback, ...existing, evidenceIds: existing.evidenceIds ?? [] }
       : fallback;
   });
+  const migrateFinding = (item: AnonymousEnrichmentFinding): AnonymousEnrichmentFinding => ({
+    ...item,
+    findingKey:
+      item.findingKey ??
+      `${item.source}:${item.propertyId}:${item.category}:${item.sourceReference}:${item.title}`,
+    polarity: item.polarity ?? "neutral",
+    screeningEffect: item.screeningEffect ?? "context",
+    distanceMetres: item.distanceMetres ?? null,
+    geometryRelation: item.geometryRelation ?? null,
+    supersedesFindingId: item.supersedesFindingId ?? null,
+    automaticallyDerived: item.automaticallyDerived ?? true,
+  });
   return {
     ...property,
     schemaVersion: ANONYMOUS_WORKSPACE_SCHEMA_VERSION,
@@ -349,9 +415,37 @@ export function migrateAnonymousProperty(value: unknown): AnonymousProperty {
     qualification,
     evidenceRegister: Array.isArray(property.evidenceRegister) ? property.evidenceRegister : [],
     enrichmentFindings: Array.isArray(property.enrichmentFindings)
-      ? property.enrichmentFindings
+      ? property.enrichmentFindings.map(migrateFinding)
       : [],
-    enrichmentRuns: Array.isArray(property.enrichmentRuns) ? property.enrichmentRuns : [],
+    enrichmentRuns: Array.isArray(property.enrichmentRuns)
+      ? property.enrichmentRuns.map((run) => ({
+          ...run,
+          releaseFingerprint: run.releaseFingerprint ?? "legacy",
+          screeningStatus:
+            run.screeningStatus ?? (run.status === "complete" ? "complete" : run.status),
+          sourceResults:
+            run.sourceResults ??
+            run.requestedSources.map((source) => ({
+              source,
+              status: run.completedSources.includes(source)
+                ? ("complete" as const)
+                : ("unavailable" as const),
+              findingCount: 0,
+              releaseId: null,
+              checkedAt: run.completedAt ?? run.startedAt,
+              limitation: "Migrated from a legacy enrichment run without explicit coverage.",
+            })),
+          startedBy: run.startedBy ?? "manual_refresh",
+        }))
+      : [],
+    screeningAssessments: Array.isArray(property.screeningAssessments)
+      ? property.screeningAssessments
+      : [],
+    gridScreeningSnapshots: Array.isArray(property.gridScreeningSnapshots)
+      ? property.gridScreeningSnapshots
+      : [],
+    recommendedCandidateId:
+      typeof property.recommendedCandidateId === "string" ? property.recommendedCandidateId : null,
     operatorEngagement: {
       operatorName: property.operatorEngagement?.operatorName ?? candidate?.operator ?? null,
       operatorLevel: property.operatorEngagement?.operatorLevel ?? "unknown",

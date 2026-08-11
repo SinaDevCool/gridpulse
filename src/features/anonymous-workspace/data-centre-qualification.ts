@@ -31,9 +31,11 @@ export function evidenceIsCurrent(item: AnonymousEvidenceItem, now = new Date())
 
 export function evidenceSupportsDecision(item: AnonymousEvidenceItem, now = new Date()) {
   if (!evidenceIsCurrent(item, now)) return false;
-  // Public, derived and customer-declared material is useful screening context,
-  // but only accepted/validated material may resolve a decision finding.
-  return item.validationStatus === "validated";
+  return (
+    item.validationStatus === "validated" &&
+    item.evidenceClass !== "public_source" &&
+    item.evidenceClass !== "derived"
+  );
 }
 
 export function deriveQualification(property: AnonymousProperty, now = new Date()) {
@@ -58,9 +60,27 @@ export function deriveQualification(property: AnonymousProperty, now = new Date(
     (item) => item.status !== "unknown" && !item.unsupported,
   ).length;
   const readiness = Math.round((reviewed / Math.max(dimensions.length, 1)) * 100);
+  const screenedDimensions = (property.screeningAssessments ?? []).filter(
+    (item) => item.state === "screened",
+  );
+  const constraintsDetected = (property.screeningAssessments ?? []).filter(
+    (item) => item.state === "constraint_detected",
+  );
+  const screeningCoverage = Math.round(
+    ((screenedDimensions.length + constraintsDetected.length) / Math.max(dimensions.length, 1)) *
+      100,
+  );
   return {
     dimensions,
     readiness,
+    confirmedReadiness: readiness,
+    screeningCoverage,
+    constraintsDetected: constraintsDetected.length,
+    unknownDimensions: dimensions.length - screenedDimensions.length - constraintsDetected.length,
+    confirmedDimensions: dimensions.filter(
+      (item) => item.status !== "unknown" && !item.unsupported,
+    ),
+    screenedDimensions,
     adverse,
     unknown,
     conditional,

@@ -8,7 +8,7 @@ import {
   type AnonymousProperty,
 } from "./schema";
 
-function candidateSnapshot(candidate: CandidateOpportunity): AnonymousCandidateSnapshot {
+export function candidateSnapshot(candidate: CandidateOpportunity): AnonymousCandidateSnapshot {
   return {
     id: candidate.id,
     siteName: candidate.siteName,
@@ -47,12 +47,24 @@ export function propertyFromFinder(
       : existing?.preferredCandidateId &&
           candidateSnapshots.some((item) => item.id === existing.preferredCandidateId)
         ? existing.preferredCandidateId
-        : existing
-          ? null
-          : (capturedCandidates[0]?.id ?? null);
+        : null;
+  const gridSnapshot = capturedCandidates.length
+    ? {
+        id: crypto.randomUUID(),
+        propertyId: existing?.id ?? "pending",
+        status: "complete" as const,
+        candidateIds: capturedCandidates.map((item) => item.id),
+        recommendedCandidateId: capturedCandidates[0]?.id ?? null,
+        shortlistedCandidateId: preferredCandidateId,
+        calculationVersion: capturedCandidates[0]?.calculationVersion ?? "unavailable",
+        releaseFingerprint: "interactive-power-finder",
+        screenedAt: now,
+      }
+    : null;
+  const propertyId = existing?.id ?? crypto.randomUUID();
   return {
     ...existing,
-    id: existing?.id ?? crypto.randomUUID(),
+    id: propertyId,
     schemaVersion: ANONYMOUS_WORKSPACE_SCHEMA_VERSION,
     name: project.name,
     externalPropertyId: existing?.externalPropertyId ?? null,
@@ -71,10 +83,15 @@ export function propertyFromFinder(
     decisionRationale: existing?.decisionRationale ?? null,
     decisionEvents: existing?.decisionEvents ?? [],
     preferredCandidateId,
+    recommendedCandidateId: capturedCandidates[0]?.id ?? existing?.recommendedCandidateId ?? null,
     selectedCandidateIds: Array.from(
       new Set([...(existing?.selectedCandidateIds ?? []), ...candidates.map((item) => item.id)]),
     ),
     candidateSnapshots,
+    gridScreeningSnapshots: gridSnapshot
+      ? [{ ...gridSnapshot, propertyId }, ...(existing?.gridScreeningSnapshots ?? [])].slice(0, 20)
+      : (existing?.gridScreeningSnapshots ?? []),
+    screeningAssessments: existing?.screeningAssessments ?? [],
     evidence: existing?.evidence ?? null,
     source: "power_finder",
     createdAt: existing?.createdAt ?? now,
@@ -145,6 +162,7 @@ export function propertyFromImport(
     decisionRationale: null,
     decisionEvents: [],
     preferredCandidateId: null,
+    recommendedCandidateId: null,
     dataCentreProfile: {
       address: value.address,
       federalState: value.federalState,
@@ -160,6 +178,10 @@ export function propertyFromImport(
     },
     qualification: emptyQualificationDimensions(),
     evidenceRegister: [],
+    enrichmentFindings: [],
+    enrichmentRuns: [],
+    screeningAssessments: [],
+    gridScreeningSnapshots: [],
     operatorEngagement: {
       operatorName: null,
       operatorLevel: "unknown",

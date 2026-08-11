@@ -19,6 +19,7 @@ export type AnonymousSiteSummary = {
   stage: AnonymousSiteStage;
   decisionStatus: AnonymousProperty["decisionStatus"];
   preferredCandidate: AnonymousCandidateSnapshot | null;
+  recommendedCandidate: AnonymousCandidateSnapshot | null;
   candidateCount: number;
   evidenceScore: number | null;
   capacityState: ReturnType<typeof localCapacityState>;
@@ -26,6 +27,8 @@ export type AnonymousSiteSummary = {
   nextAction: string;
   operator: string | null;
   qualificationReadiness: number;
+  screeningCoverage: number;
+  screeningConstraints: number;
   criticalBlockers: number;
   unknownDimensions: number;
   operatorEngagementStage: string;
@@ -37,7 +40,13 @@ export type AnonymousSiteSummary = {
 
 export function preferredCandidate(property: AnonymousProperty) {
   return (
-    property.candidateSnapshots.find((item) => item.id === property.preferredCandidateId) ??
+    property.candidateSnapshots.find((item) => item.id === property.preferredCandidateId) ?? null
+  );
+}
+
+export function recommendedCandidate(property: AnonymousProperty) {
+  return (
+    property.candidateSnapshots.find((item) => item.id === property.recommendedCandidateId) ??
     [...property.candidateSnapshots].sort(
       (left, right) =>
         right.screeningRank - left.screeningRank || left.distanceKm - right.distanceKm,
@@ -48,6 +57,7 @@ export function preferredCandidate(property: AnonymousProperty) {
 
 export function projectAnonymousProperty(property: AnonymousProperty): AnonymousSiteSummary {
   const candidate = preferredCandidate(property);
+  const recommended = recommendedCandidate(property);
   const qualification = deriveQualification(property);
   const operatorQualification = operatorReadiness(property);
   const capacityState = localCapacityState(property.evidence);
@@ -56,9 +66,12 @@ export function projectAnonymousProperty(property: AnonymousProperty): Anonymous
     ...(property.name === "Untitled screening project"
       ? ["Give the site a client-ready name"]
       : []),
-    ...(!candidate ? ["No connection candidate has been shortlisted"] : []),
-    ...(candidate && !candidate.operator ? ["Responsible network operator is unconfirmed"] : []),
-    ...(candidate?.missingEvidence ?? []),
+    ...(!recommended ? ["Grid screening has not produced a connection hypothesis"] : []),
+    ...(!candidate && recommended ? ["Recommended connection hypothesis needs review"] : []),
+    ...(recommended && !recommended.operator
+      ? ["Responsible network operator is unconfirmed"]
+      : []),
+    ...(recommended?.missingEvidence ?? []),
     ...localEvidenceGaps(property.evidence),
     ...(property.landControlStatus === "unknown" ? ["Land control status is unknown"] : []),
     ...qualification.criticalBlockers.map(
@@ -78,15 +91,17 @@ export function projectAnonymousProperty(property: AnonymousProperty): Anonymous
   const nextAction =
     property.name === "Untitled screening project"
       ? "Name the site and confirm its development brief"
-      : !candidate
-        ? "Screen and shortlist connection candidates"
-        : !candidate.operator
-          ? "Confirm the responsible network operator"
-          : capacityState !== "validated"
-            ? "Resolve the highest-priority evidence gap"
-            : property.decisionStatus === "unreviewed"
-              ? "Record an advance, hold, or reject decision"
-              : "Review the decision record and stakeholder package";
+      : !recommended
+        ? "Run grid screening for connection hypotheses"
+        : !candidate
+          ? "Review and shortlist the recommended connection hypothesis"
+          : !recommended.operator
+            ? "Confirm the responsible network operator"
+            : capacityState !== "validated"
+              ? "Resolve the highest-priority evidence gap"
+              : property.decisionStatus === "unreviewed"
+                ? "Record an advance, hold, or reject decision"
+                : "Review the decision record and stakeholder package";
   const coordinates =
     property.project.latitude == null || property.project.longitude == null
       ? "Location not declared"
@@ -100,13 +115,16 @@ export function projectAnonymousProperty(property: AnonymousProperty): Anonymous
     stage,
     decisionStatus: property.decisionStatus,
     preferredCandidate: candidate,
+    recommendedCandidate: recommended,
     candidateCount: property.candidateSnapshots.length,
-    evidenceScore: candidate?.evidenceScore ?? null,
+    evidenceScore: recommended?.evidenceScore ?? null,
     capacityState,
     blockers: uniqueBlockers,
     nextAction,
-    operator: recordedOperator ?? candidate?.operator ?? null,
+    operator: recordedOperator ?? recommended?.operator ?? null,
     qualificationReadiness: qualification.readiness,
+    screeningCoverage: qualification.screeningCoverage,
+    screeningConstraints: qualification.constraintsDetected,
     criticalBlockers: qualification.criticalBlockers.length,
     unknownDimensions: qualification.unknown.length,
     operatorEngagementStage: property.operatorEngagement?.enquiryStatus ?? "not_started",

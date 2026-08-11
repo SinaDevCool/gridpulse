@@ -34,6 +34,13 @@ function finding(propertyId: string): AnonymousEnrichmentFinding {
     coverage: "available",
     limitations: ["Not cadastral."],
     reviewedAt: null,
+    findingKey: "bkg:municipality:test",
+    polarity: "neutral",
+    screeningEffect: "supports",
+    distanceMetres: null,
+    geometryRelation: "contains",
+    supersedesFindingId: null,
+    automaticallyDerived: true,
   };
 }
 
@@ -80,5 +87,30 @@ describe("property enrichment review", () => {
     expect(rejected.municipality).toBeNull();
     expect(rejected.evidenceRegister).toHaveLength(0);
     expect(rejected.enrichmentFindings?.[0].status).toBe("rejected");
+  });
+
+  it("keeps a reviewed finding idempotent when the same release is refreshed", () => {
+    const input = property();
+    input.enrichmentFindings = [finding(input.id)];
+    const accepted = reviewEnrichmentFinding(input, "finding-1", "accept");
+    const refreshed = mergeEnrichment(
+      accepted,
+      {
+        releaseFingerprint: "hash",
+        findings: [{ ...finding(input.id), id: "finding-2" }],
+        sourceStatus: {
+          bkg_admin: "complete",
+          osm_context: "unavailable",
+          bfn_protected: "unavailable",
+          mastr: "unavailable",
+          bkg_heavy_rain: "unavailable",
+          power_finder: "unavailable",
+        },
+      },
+      "2026-08-11T01:00:00Z",
+    );
+    expect(refreshed.enrichmentFindings).toHaveLength(1);
+    expect(refreshed.enrichmentFindings?.[0].status).toBe("accepted");
+    expect(refreshed.evidenceRegister).toHaveLength(1);
   });
 });

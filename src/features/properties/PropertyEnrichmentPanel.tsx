@@ -2,7 +2,8 @@ import { Check, Database, LoaderCircle, Pencil, RefreshCw, X } from "lucide-reac
 import { useState } from "react";
 import { toast } from "sonner";
 import type { AnonymousProperty } from "@/features/anonymous-workspace/schema";
-import { enrichProperties, mergeEnrichment, reviewEnrichmentFinding } from "./property-enrichment";
+import { reviewEnrichmentFinding } from "./property-enrichment";
+import { screenProperty } from "./property-screening-workflow";
 
 export function PropertyEnrichmentPanel({
   property,
@@ -20,10 +21,9 @@ export function PropertyEnrichmentPanel({
   );
   async function run() {
     setBusy(true);
-    const startedAt = new Date().toISOString();
     try {
-      const response = await enrichProperties([property]);
-      await onSave(mergeEnrichment(property, response, startedAt), "Public context refreshed");
+      const screened = await screenProperty(property, "manual_refresh");
+      await onSave(screened, "Public context and grid screening refreshed");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Enrichment failed");
     } finally {

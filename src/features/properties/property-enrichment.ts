@@ -4,8 +4,10 @@ import type {
   AnonymousEvidenceItem,
   AnonymousProperty,
   EnrichmentSource,
+  SourceRunResult,
 } from "../anonymous-workspace/schema";
 import { emptyQualificationDimensions } from "../anonymous-workspace/schema";
+import { applyScreeningAssessments } from "../anonymous-workspace/screening-assessment";
 
 export const enrichmentSources: EnrichmentSource[] = [
   "bkg_admin",
@@ -27,7 +29,42 @@ export type EnrichmentBatchResponse = {
   releaseFingerprint: string;
   findings: AnonymousEnrichmentFinding[];
   sourceStatus: Record<EnrichmentSource, "complete" | "not_covered" | "unavailable">;
+  sourceResults?: Array<SourceRunResult & { propertyId?: string }>;
 };
+
+function deterministicFindingKey(finding: AnonymousEnrichmentFinding) {
+  return (
+    finding.findingKey ??
+    [
+      finding.propertyId,
+      finding.source,
+      finding.category,
+      finding.sourceReference,
+      finding.title,
+      finding.geometryRelation ?? finding.method,
+    ].join(":")
+  );
+}
+
+function normalizeFinding(finding: AnonymousEnrichmentFinding): AnonymousEnrichmentFinding {
+  const constraint =
+    /intersection|constraint|hazard/i.test(finding.title) && Boolean(finding.proposedValue);
+  const negativeObservation = /no mapped|no protected|non-intersection/i.test(finding.title);
+  return {
+    ...finding,
+    findingKey: deterministicFindingKey(finding),
+    polarity:
+      finding.polarity ??
+      (constraint ? "constraint" : negativeObservation ? "positive" : "neutral"),
+    screeningEffect:
+      finding.screeningEffect ??
+      (constraint ? "constraint" : negativeObservation ? "supports" : "context"),
+    distanceMetres: finding.distanceMetres ?? null,
+    geometryRelation: finding.geometryRelation ?? null,
+    supersedesFindingId: finding.supersedesFindingId ?? null,
+    automaticallyDerived: finding.automaticallyDerived ?? true,
+  };
+}
 
 export function enrichmentRequest(properties: AnonymousProperty[]): EnrichmentRequestProperty[] {
   return properties.flatMap((property) =>
@@ -65,15 +102,35 @@ export function mergeEnrichment(
   property: AnonymousProperty,
   response: EnrichmentBatchResponse,
   startedAt: string,
+  startedBy: AnonymousEnrichmentRun["startedBy"] = "manual_refresh",
 ): AnonymousProperty {
-  const incoming = response.findings.filter((item) => item.propertyId === property.id);
-  const incomingKeys = new Set(
-    incoming.map((item) => `${item.source}:${item.category}:${item.fieldPath}`),
+  const normalizedIncoming = response.findings
+    .filter((item) => item.propertyId === property.id)
+    .map(normalizeFinding);
+  const existingByKey = new Map(
+    (property.enrichmentFindings ?? []).map((item) => [deterministicFindingKey(item), item]),
   );
+  const incoming = normalizedIncoming
+    .filter((item) => {
+      const existing = existingByKey.get(item.findingKey);
+      return !existing || !["accepted", "edited"].includes(existing.status);
+    })
+    .map((item) => ({
+      ...item,
+      supersedesFindingId:
+        existingByKey.get(item.findingKey)?.status === "proposed" ||
+        existingByKey.get(item.findingKey)?.status === "rejected"
+          ? existingByKey.get(item.findingKey)!.id
+          : item.supersedesFindingId,
+    }));
+  const incomingKeys = new Set(incoming.map((item) => item.findingKey));
   const retained = (property.enrichmentFindings ?? []).map((item) =>
-    incomingKeys.has(`${item.source}:${item.category}:${item.fieldPath}`) &&
+    incomingKeys.has(deterministicFindingKey(item)) &&
     ["proposed", "rejected"].includes(item.status)
-      ? { ...item, status: "superseded" as const }
+      ? {
+          ...item,
+          status: "superseded" as const,
+        }
       : item,
   );
   const completedSources = enrichmentSources.filter(
@@ -90,13 +147,38 @@ export function mergeEnrichment(
     failedSources,
     startedAt,
     completedAt: new Date().toISOString(),
+    releaseFingerprint: response.releaseFingerprint,
+    screeningStatus: incoming.length
+      ? "review_required"
+      : failedSources.length
+        ? "partial"
+        : "complete",
+    sourceResults: enrichmentSources.map((source) => {
+      const explicit = response.sourceResults?.find(
+        (item) => item.source === source && (!item.propertyId || item.propertyId === property.id),
+      );
+      return (
+        explicit ?? {
+          source,
+          status: response.sourceStatus[source],
+          findingCount: incoming.filter((item) => item.source === source).length,
+          releaseId: incoming.find((item) => item.source === source)?.releaseId ?? null,
+          checkedAt: new Date().toISOString(),
+          limitation:
+            response.sourceStatus[source] === "complete"
+              ? null
+              : "The accepted source did not provide usable coverage for this property.",
+        }
+      );
+    }),
+    startedBy,
   };
-  return {
+  return applyScreeningAssessments({
     ...property,
     enrichmentFindings: [...incoming, ...retained],
     enrichmentRuns: [run, ...(property.enrichmentRuns ?? [])].slice(0, 20),
     updatedAt: new Date().toISOString(),
-  };
+  });
 }
 
 function evidenceCategory(

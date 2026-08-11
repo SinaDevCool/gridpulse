@@ -15,6 +15,10 @@ export type ExportableProperty = {
   assessment_status: string;
   boundary?: GeoJSON.Polygon | GeoJSON.MultiPolygon | null;
   qualification_readiness?: number;
+  screening_coverage?: number;
+  screening_constraints?: number;
+  recommended_candidate?: string | null;
+  shortlisted_candidate?: string | null;
   operator_engagement_status?: string;
   critical_blockers?: number;
 };
@@ -33,6 +37,10 @@ const columns: Array<[keyof ExportableProperty, string]> = [
   ["land_status", "land_control_status"],
   ["assessment_status", "assessment_status"],
   ["qualification_readiness", "qualification_readiness_percent"],
+  ["screening_coverage", "screening_coverage_percent"],
+  ["screening_constraints", "screening_constraints_detected"],
+  ["recommended_candidate", "recommended_connection_hypothesis"],
+  ["shortlisted_candidate", "user_shortlisted_candidate"],
   ["operator_engagement_status", "operator_engagement_status"],
   ["critical_blockers", "critical_blockers"],
 ];

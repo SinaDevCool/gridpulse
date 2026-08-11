@@ -332,7 +332,7 @@ function SitePipelineIndex() {
               </button>
             ) : null}
           </section>
-          <details className="rail-section workspace-data-menu">
+          <details className="rail-section workspace-data-menu" suppressHydrationWarning>
             <summary>
               <Database aria-hidden="true" /> Workspace Data
             </summary>
@@ -538,11 +538,17 @@ function SitePipelineIndex() {
                     <b>{stageLabel[site.stage]}</b>
                   </span>
                   <span>
-                    <small>Preferred Candidate</small>
-                    <b>{site.preferredCandidate?.nodeName ?? "Not shortlisted"}</b>
+                    <small>
+                      {site.preferredCandidate ? "Shortlisted Candidate" : "Recommended"}
+                    </small>
+                    <b>
+                      {site.preferredCandidate?.nodeName ??
+                        site.recommendedCandidate?.nodeName ??
+                        "Not screened"}
+                    </b>
                     <em>
-                      {site.preferredCandidate
-                        ? `${site.preferredCandidate.distanceKm.toFixed(1)} km · ${site.preferredCandidate.voltageKv.length ? `${Math.max(...site.preferredCandidate.voltageKv)} kV` : "Voltage unknown"}`
+                      {(site.preferredCandidate ?? site.recommendedCandidate)
+                        ? `${(site.preferredCandidate ?? site.recommendedCandidate)!.distanceKm.toFixed(1)} km · ${(site.preferredCandidate ?? site.recommendedCandidate)!.voltageKv.length ? `${Math.max(...(site.preferredCandidate ?? site.recommendedCandidate)!.voltageKv)} kV` : "Voltage unknown"}`
                         : "Open in Power Finder"}
                     </em>
                   </span>
@@ -631,11 +637,19 @@ function SiteDetail({
         </div>
       </dl>
       <section>
-        <h3>Connection Context</h3>
+        <h3>Screening Snapshot</h3>
         <dl>
           <div>
-            <dt>Preferred candidate</dt>
-            <dd>{site.preferredCandidate?.nodeName ?? "Not shortlisted"}</dd>
+            <dt>Public sources</dt>
+            <dd>{site.property.enrichmentRuns?.[0]?.completedSources.length ?? 0} checked</dd>
+          </div>
+          <div>
+            <dt>Grid candidates</dt>
+            <dd>{site.candidateCount}</dd>
+          </div>
+          <div>
+            <dt>Screening coverage</dt>
+            <dd>{site.screeningCoverage}%</dd>
           </div>
           <div>
             <dt>Operator</dt>
@@ -652,6 +666,16 @@ function SiteDetail({
             <dd>{site.property.landControlStatus}</dd>
           </div>
         </dl>
+      </section>
+      <section>
+        <h3>Recommended Connection Hypothesis</h3>
+        <p>
+          <b>{site.recommendedCandidate?.nodeName ?? "Not yet screened"}</b>
+          {site.recommendedCandidate
+            ? ` · ${site.recommendedCandidate.distanceKm.toFixed(1)} km · ${site.recommendedCandidate.screeningRank.toFixed(0)}/100 investigation score`
+            : ""}
+        </p>
+        <small>Recommended for investigation—not a capacity offer.</small>
       </section>
       <section>
         <h3>Checks Before Decision</h3>

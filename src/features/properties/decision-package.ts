@@ -93,7 +93,9 @@ export function downloadClientDecisionPackage(
   line("Next action", data.summary.nextAction);
   line("Open blockers", data.summary.blockers.join("; ") || "None recorded");
   heading("Data-centre qualification");
-  line("Readiness", `${data.qualification.readiness}%`);
+  line("Confirmed readiness", `${data.qualification.confirmedReadiness}%`);
+  line("Screening coverage", `${data.qualification.screeningCoverage}%`);
+  line("Constraints detected", data.qualification.constraintsDetected);
   data.qualification.dimensions.forEach((item) =>
     line(
       qualificationLabels[item.key],
@@ -101,7 +103,8 @@ export function downloadClientDecisionPackage(
     ),
   );
   heading("Grid screening");
-  line("Preferred candidate", data.summary.preferredCandidate?.nodeName);
+  line("Recommended for investigation", data.summary.recommendedCandidate?.nodeName);
+  line("User-shortlisted candidate", data.summary.preferredCandidate?.nodeName);
   line("Likely operator", data.summary.operator);
   line("N-1 firm", capacityValue(dossier.dossier.n1_firm_capacity_mw));
   line("Validation", dossier.dossier.validation_status);
@@ -128,6 +131,13 @@ export function downloadClientDecisionPackage(
     line(
       item.title,
       `${item.claim} [${item.evidenceClass}; ${item.validationStatus}${item.validTo ? `; valid to ${item.validTo}` : ""}]`,
+    ),
+  );
+  heading("Automatic source coverage");
+  (property.enrichmentRuns?.[0]?.sourceResults ?? []).forEach((source) =>
+    line(
+      source.source,
+      `${source.status}; ${source.findingCount} finding(s); release ${source.releaseId ?? "not reported"}${source.limitation ? `; ${source.limitation}` : ""}`,
     ),
   );
   heading("Limitations");

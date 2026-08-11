@@ -38,7 +38,7 @@ import {
 import { preferredCandidate } from "@/features/anonymous-workspace/portfolio-projection";
 import { PropertyEnrichmentPanel } from "@/features/properties/PropertyEnrichmentPanel";
 
-const tabs = ["overview", "qualification", "grid", "evidence", "decision"] as const;
+const tabs = ["overview", "qualification", "grid", "evidence", "operator", "decision"] as const;
 type Tab = (typeof tabs)[number];
 
 export const Route = createFileRoute("/portfolio/$id")({
@@ -105,6 +105,9 @@ function SiteWorkspace() {
   const qualification = deriveQualification(property);
   const operator = operatorReadiness(property);
   const candidate = preferredCandidate(property);
+  const recommendedCandidate = property.candidateSnapshots.find(
+    (item) => item.id === property.recommendedCandidateId,
+  );
   return (
     <AppShell>
       <main id="main-content" className="site-workspace-page">
@@ -142,18 +145,21 @@ function SiteWorkspace() {
               {item === "overview"
                 ? "Summary"
                 : item === "evidence"
-                  ? "Evidence & operator"
-                  : item === "qualification"
-                    ? "Readiness"
-                    : item === "grid"
-                      ? "Grid screening"
-                      : item}
+                  ? "Evidence"
+                  : item === "operator"
+                    ? "Operator"
+                    : item === "qualification"
+                      ? "Readiness"
+                      : item === "grid"
+                        ? "Grid screening"
+                        : item}
             </button>
           ))}
         </nav>
         <section className="site-workspace-layout">
           <aside className="site-workspace-summary">
-            <Readiness label="Site readiness" value={qualification.readiness} />
+            <Readiness label="Confirmed readiness" value={qualification.confirmedReadiness} />
+            <Readiness label="Screening coverage" value={qualification.screeningCoverage} />
             <Readiness label="Operator readiness" value={operator.score} />
             <dl>
               <div>
@@ -161,8 +167,8 @@ function SiteWorkspace() {
                 <dd>{qualification.criticalBlockers.length}</dd>
               </div>
               <div>
-                <dt>Unknown dimensions</dt>
-                <dd>{qualification.unknown.length}</dd>
+                <dt>Screening constraints</dt>
+                <dd>{qualification.constraintsDetected}</dd>
               </div>
               <div>
                 <dt>Evidence items</dt>
@@ -182,13 +188,19 @@ function SiteWorkspace() {
             {tab === "overview" && (
               <Overview
                 property={property}
-                candidateName={candidate?.nodeName ?? null}
+                candidateName={candidate?.nodeName ?? recommendedCandidate?.nodeName ?? null}
+                candidateShortlisted={Boolean(candidate)}
                 onSave={save}
               />
             )}
             {tab === "qualification" && <Qualification property={property} onSave={save} />}
             {tab === "grid" && (
-              <GridWorkspace property={property} candidateName={candidate?.nodeName ?? null} />
+              <GridWorkspace
+                property={property}
+                candidateName={candidate?.nodeName ?? null}
+                recommendedName={recommendedCandidate?.nodeName ?? null}
+                onSave={save}
+              />
             )}
             {tab === "evidence" && (
               <EvidenceOperator
@@ -196,6 +208,16 @@ function SiteWorkspace() {
                 documents={documents}
                 onSave={save}
                 onDocuments={refresh}
+                mode="evidence"
+              />
+            )}
+            {tab === "operator" && (
+              <EvidenceOperator
+                property={property}
+                documents={documents}
+                onSave={save}
+                onDocuments={refresh}
+                mode="operator"
               />
             )}
             {tab === "decision" && (
@@ -227,10 +249,12 @@ function Readiness({ label, value }: { label: string; value: number }) {
 function Overview({
   property,
   candidateName,
+  candidateShortlisted,
   onSave,
 }: {
   property: AnonymousProperty;
   candidateName: string | null;
+  candidateShortlisted: boolean;
   onSave: (p: AnonymousProperty) => Promise<void>;
 }) {
   const profile = property.dataCentreProfile!;
@@ -370,8 +394,13 @@ function Overview({
         <div className="workspace-callout">
           <Map />{" "}
           <div>
-            <b>Preferred grid route</b>
-            <span>{candidateName ?? "No candidate selected — continue in Power Finder."}</span>
+            <b>
+              {candidateShortlisted ? "Shortlisted grid hypothesis" : "Recommended grid hypothesis"}
+            </b>
+            <span>
+              {candidateName ?? "No connection hypothesis yet — continue in Power Finder."}
+              {!candidateShortlisted && candidateName ? " · review before shortlisting" : ""}
+            </span>
           </div>
         </div>
         <button className="primary-action" type="submit">
@@ -429,6 +458,19 @@ function Qualification({
               ? `${dimension.acceptedEvidence} accepted evidence item(s)`
               : "Not evidenced"}
         </small>
+        {property.screeningAssessments?.find((item) => item.dimensionKey === dimension.key) ? (
+          <small className="screening-assessment-note">
+            Screening:{" "}
+            {property.screeningAssessments
+              .find((item) => item.dimensionKey === dimension.key)!
+              .state.replaceAll("_", " ")}{" "}
+            —{" "}
+            {
+              property.screeningAssessments.find((item) => item.dimensionKey === dimension.key)!
+                .summary
+            }
+          </small>
+        ) : null}
       </div>
       <select
         name="status"
@@ -498,9 +540,13 @@ function Qualification({
 function GridWorkspace({
   property,
   candidateName,
+  recommendedName,
+  onSave,
 }: {
   property: AnonymousProperty;
   candidateName: string | null;
+  recommendedName: string | null;
+  onSave: (p: AnonymousProperty, m?: string) => Promise<void>;
 }) {
   return (
     <>
@@ -529,7 +575,12 @@ function GridWorkspace({
       </header>
       <div className="workspace-facts">
         <article>
-          <span>Preferred candidate</span>
+          <span>Recommended for investigation</span>
+          <strong>{recommendedName ?? "Not screened"}</strong>
+          <small>Not a capacity offer.</small>
+        </article>
+        <article>
+          <span>Shortlisted candidate</span>
           <strong>{candidateName ?? "Not selected"}</strong>
         </article>
         <article>
@@ -549,6 +600,36 @@ function GridWorkspace({
           </strong>
         </article>
       </div>
+      {property.recommendedCandidateId &&
+      property.recommendedCandidateId !== property.preferredCandidateId ? (
+        <button
+          type="button"
+          className="primary-action"
+          onClick={() =>
+            void onSave(
+              {
+                ...property,
+                preferredCandidateId: property.recommendedCandidateId ?? null,
+                selectedCandidateIds: Array.from(
+                  new Set([...property.selectedCandidateIds, property.recommendedCandidateId!]),
+                ),
+                gridScreeningSnapshots: (property.gridScreeningSnapshots ?? []).map(
+                  (snapshot, index) =>
+                    index === 0
+                      ? {
+                          ...snapshot,
+                          shortlistedCandidateId: property.recommendedCandidateId ?? null,
+                        }
+                      : snapshot,
+                ),
+              },
+              "Recommended connection hypothesis shortlisted",
+            )
+          }
+        >
+          Shortlist recommended candidate
+        </button>
+      ) : null}
       <div className="candidate-table">
         {property.candidateSnapshots.map((item) => (
           <div
@@ -571,11 +652,13 @@ function EvidenceOperator({
   documents,
   onSave,
   onDocuments,
+  mode,
 }: {
   property: AnonymousProperty;
   documents: AnonymousDocumentMetadata[];
   onSave: (p: AnonymousProperty, m?: string) => Promise<void>;
   onDocuments: () => Promise<void>;
+  mode: "evidence" | "operator";
 }) {
   const engagement = property.operatorEngagement!;
   const addEvidence = (event: FormEvent<HTMLFormElement>) => {
@@ -619,128 +702,130 @@ function EvidenceOperator({
       <header className="workspace-section-heading">
         <div>
           <p className="context-label">Traceable evidence</p>
-          <h2>Evidence and operator engagement</h2>
+          <h2>{mode === "evidence" ? "Evidence review" : "Operator engagement"}</h2>
         </div>
       </header>
-      <PropertyEnrichmentPanel property={property} onSave={onSave} />
-      <section className="operator-panel">
-        <h3>Operator enquiry</h3>
-        <form
-          className="form-grid"
-          onSubmit={(event) => {
-            event.preventDefault();
-            const form = new FormData(event.currentTarget);
-            void onSave(
-              {
-                ...property,
-                operatorEngagement: {
-                  ...engagement,
-                  operatorName: String(form.get("operator")) || null,
-                  operatorLevel: String(form.get("level")) as typeof engagement.operatorLevel,
-                  responsibilityStatus: String(
-                    form.get("responsibility"),
-                  ) as typeof engagement.responsibilityStatus,
-                  enquiryStatus: String(form.get("status")) as typeof engagement.enquiryStatus,
-                  enquiryReference: String(form.get("reference")) || null,
-                  submittedAt: String(form.get("submitted")) || null,
-                  nextAction: String(form.get("next")) || null,
-                  nextActionDueAt: String(form.get("due")) || null,
-                  indicatedConnectionPoint: String(form.get("connection")) || null,
-                  indicatedCapacityMw: numberOrNull(form.get("capacity")),
-                  indicatedCostEur: numberOrNull(form.get("cost")),
-                  indicatedDeliveryDate: String(form.get("delivery")) || null,
+      {mode === "evidence" ? <PropertyEnrichmentPanel property={property} onSave={onSave} /> : null}
+      <div hidden={mode !== "operator"}>
+        <section className="operator-panel">
+          <h3>Operator enquiry</h3>
+          <form
+            className="form-grid"
+            onSubmit={(event) => {
+              event.preventDefault();
+              const form = new FormData(event.currentTarget);
+              void onSave(
+                {
+                  ...property,
+                  operatorEngagement: {
+                    ...engagement,
+                    operatorName: String(form.get("operator")) || null,
+                    operatorLevel: String(form.get("level")) as typeof engagement.operatorLevel,
+                    responsibilityStatus: String(
+                      form.get("responsibility"),
+                    ) as typeof engagement.responsibilityStatus,
+                    enquiryStatus: String(form.get("status")) as typeof engagement.enquiryStatus,
+                    enquiryReference: String(form.get("reference")) || null,
+                    submittedAt: String(form.get("submitted")) || null,
+                    nextAction: String(form.get("next")) || null,
+                    nextActionDueAt: String(form.get("due")) || null,
+                    indicatedConnectionPoint: String(form.get("connection")) || null,
+                    indicatedCapacityMw: numberOrNull(form.get("capacity")),
+                    indicatedCostEur: numberOrNull(form.get("cost")),
+                    indicatedDeliveryDate: String(form.get("delivery")) || null,
+                  },
                 },
-              },
-              "Operator engagement saved",
-            );
-          }}
-        >
-          <label>
-            Operator
-            <input name="operator" defaultValue={engagement.operatorName ?? ""} />
-          </label>
-          <label>
-            Level
-            <select name="level" defaultValue={engagement.operatorLevel}>
-              <option value="unknown">Unknown</option>
-              <option value="dso">DSO</option>
-              <option value="tso">TSO</option>
-            </select>
-          </label>
-          <label>
-            Responsibility
-            <select name="responsibility" defaultValue={engagement.responsibilityStatus}>
-              <option value="screening_only">Screening only</option>
-              <option value="customer_confirmed">Customer confirmed</option>
-              <option value="operator_confirmed">Operator confirmed</option>
-            </select>
-          </label>
-          <label>
-            Enquiry status
-            <select name="status" defaultValue={engagement.enquiryStatus}>
-              <option value="not_started">Not started</option>
-              <option value="preparing">Preparing</option>
-              <option value="submitted">Submitted</option>
-              <option value="acknowledged">Acknowledged</option>
-              <option value="response_received">Response received</option>
-              <option value="closed">Closed</option>
-            </select>
-          </label>
-          <label>
-            Enquiry reference
-            <input name="reference" defaultValue={engagement.enquiryReference ?? ""} />
-          </label>
-          <label>
-            Submitted
-            <input name="submitted" type="date" defaultValue={engagement.submittedAt ?? ""} />
-          </label>
-          <label>
-            Indicated connection point
-            <input name="connection" defaultValue={engagement.indicatedConnectionPoint ?? ""} />
-          </label>
-          <label>
-            Indicated capacity (MW)
-            <input
-              name="capacity"
-              type="number"
-              min="0"
-              step="0.1"
-              defaultValue={engagement.indicatedCapacityMw ?? ""}
-            />
-          </label>
-          <label>
-            Indicated cost (€)
-            <input
-              name="cost"
-              type="number"
-              min="0"
-              step="1"
-              defaultValue={engagement.indicatedCostEur ?? ""}
-            />
-          </label>
-          <label>
-            Indicated delivery date
-            <input
-              name="delivery"
-              type="date"
-              defaultValue={engagement.indicatedDeliveryDate ?? ""}
-            />
-          </label>
-          <label>
-            Next action
-            <input name="next" defaultValue={engagement.nextAction ?? ""} />
-          </label>
-          <label>
-            Due date
-            <input name="due" type="date" defaultValue={engagement.nextActionDueAt ?? ""} />
-          </label>
-          <button type="submit" className="primary-action">
-            Save operator engagement
-          </button>
-        </form>
-      </section>
-      <Correspondence property={property} onSave={onSave} />
-      <div className="evidence-grid">
+                "Operator engagement saved",
+              );
+            }}
+          >
+            <label>
+              Operator
+              <input name="operator" defaultValue={engagement.operatorName ?? ""} />
+            </label>
+            <label>
+              Level
+              <select name="level" defaultValue={engagement.operatorLevel}>
+                <option value="unknown">Unknown</option>
+                <option value="dso">DSO</option>
+                <option value="tso">TSO</option>
+              </select>
+            </label>
+            <label>
+              Responsibility
+              <select name="responsibility" defaultValue={engagement.responsibilityStatus}>
+                <option value="screening_only">Screening only</option>
+                <option value="customer_confirmed">Customer confirmed</option>
+                <option value="operator_confirmed">Operator confirmed</option>
+              </select>
+            </label>
+            <label>
+              Enquiry status
+              <select name="status" defaultValue={engagement.enquiryStatus}>
+                <option value="not_started">Not started</option>
+                <option value="preparing">Preparing</option>
+                <option value="submitted">Submitted</option>
+                <option value="acknowledged">Acknowledged</option>
+                <option value="response_received">Response received</option>
+                <option value="closed">Closed</option>
+              </select>
+            </label>
+            <label>
+              Enquiry reference
+              <input name="reference" defaultValue={engagement.enquiryReference ?? ""} />
+            </label>
+            <label>
+              Submitted
+              <input name="submitted" type="date" defaultValue={engagement.submittedAt ?? ""} />
+            </label>
+            <label>
+              Indicated connection point
+              <input name="connection" defaultValue={engagement.indicatedConnectionPoint ?? ""} />
+            </label>
+            <label>
+              Indicated capacity (MW)
+              <input
+                name="capacity"
+                type="number"
+                min="0"
+                step="0.1"
+                defaultValue={engagement.indicatedCapacityMw ?? ""}
+              />
+            </label>
+            <label>
+              Indicated cost (€)
+              <input
+                name="cost"
+                type="number"
+                min="0"
+                step="1"
+                defaultValue={engagement.indicatedCostEur ?? ""}
+              />
+            </label>
+            <label>
+              Indicated delivery date
+              <input
+                name="delivery"
+                type="date"
+                defaultValue={engagement.indicatedDeliveryDate ?? ""}
+              />
+            </label>
+            <label>
+              Next action
+              <input name="next" defaultValue={engagement.nextAction ?? ""} />
+            </label>
+            <label>
+              Due date
+              <input name="due" type="date" defaultValue={engagement.nextActionDueAt ?? ""} />
+            </label>
+            <button type="submit" className="primary-action">
+              Save operator engagement
+            </button>
+          </form>
+        </section>
+        <Correspondence property={property} onSave={onSave} />
+      </div>
+      <div className="evidence-grid" hidden={mode !== "evidence"}>
         <section>
           <h3>Evidence register</h3>
           <form className="evidence-add-form" onSubmit={addEvidence}>
