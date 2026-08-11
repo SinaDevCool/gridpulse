@@ -207,6 +207,33 @@ test("a stale site link cannot trap a new Power Finder screening in saving state
   await expect(page.getByRole("link", { name: "Return to Site Workspace" }).first()).toBeVisible();
 });
 
+test("the MVP decision package is concise and downloads a valid PDF", async ({
+  page,
+}, testInfo) => {
+  await page.goto("/power-finder?lat=53.54&lng=8.58&mw=125&projectType=data_centre");
+  await expect(page.getByText(/candidate site-to-node matches/i).first()).toBeVisible({
+    timeout: 15_000,
+  });
+  await page.getByRole("button", { name: "Create pipeline site", exact: true }).click();
+  await page.getByRole("link", { name: "Return to Site Workspace" }).first().click();
+  await page.getByRole("button", { name: "Decision", exact: true }).click();
+  await page.getByRole("link", { name: "Open client decision record" }).click();
+  await expect(page.getByRole("heading", { name: "Essential Qualification" })).toBeVisible();
+  await expect(page.getByText("N-0 Capacity")).toHaveCount(0);
+  await expect(page.getByText("BESS-Assisted")).toHaveCount(0);
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download PDF" }).click();
+  const download = await downloadPromise;
+  await download.saveAs(testInfo.outputPath("mvp-decision-package.pdf"));
+  expect(download.suggestedFilename()).toMatch(/decision-package\.pdf$/);
+  const stream = await download.createReadStream();
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream) chunks.push(Buffer.from(chunk));
+  const bytes = Buffer.concat(chunks);
+  expect(bytes.subarray(0, 4).toString()).toBe("%PDF");
+  expect(bytes.length).toBeGreaterThan(5_000);
+});
+
 test("the downloadable client-style XLSX passes the browser import preview", async ({ page }) => {
   await page.goto("/portfolio");
   await page.getByText("Workspace Data").click();

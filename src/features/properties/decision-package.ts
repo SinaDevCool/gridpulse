@@ -14,16 +14,14 @@ export function buildDecisionPackageProjection(
   dossier: CapacityDossierProjection,
   settings: AnonymousWorkspaceSettings,
 ) {
-  const summary = projectAnonymousProperty(property);
-  const qualification = deriveQualification(property);
   return {
     schema: "gridpulse.site-decision-package.v1",
     generatedAt: new Date().toISOString(),
     settings,
     property,
     dossier,
-    summary,
-    qualification,
+    summary: projectAnonymousProperty(property),
+    qualification: deriveQualification(property),
     truthNotice:
       "Preliminary decision support. Grid screening does not establish capacity, feasibility, cost, connection point or delivery date. Only current validated operator evidence may support confirmed claims.",
   };
@@ -36,112 +34,185 @@ export function downloadClientDecisionPackage(
 ) {
   const data = buildDecisionPackageProjection(property, dossier, settings);
   const pdf = new jsPDF({ unit: "mm", format: "a4", compress: true });
-  let y = 18;
+  const navy = "#071722",
+    ink = "#122634",
+    muted = "#637b89",
+    border = "#d7e2e8";
+  const accent = settings.accentColour || "#22c7e6";
+  const cleanPdfText = (value: unknown, fallback = "Not established") =>
+    (value == null || value === "" ? fallback : String(value))
+      .replaceAll("_", " ")
+      .replace(/[\u2010-\u2015]/g, "-");
+  let y = 20,
+    pageNumber = 1;
   const footer = () => {
+    pdf.setDrawColor(border);
+    pdf.line(16, 280, 194, 280);
     pdf.setFontSize(7);
-    pdf.setTextColor(90);
-    pdf.text(settings.reportFooter, 15, 286, { maxWidth: 170 });
-    pdf.text(`${pdf.getNumberOfPages()}`, 194, 286, { align: "right" });
-    pdf.setTextColor(0);
+    pdf.setTextColor(muted);
+    pdf.text(cleanPdfText(settings.reportFooter, "GridPulse decision support"), 16, 286, {
+      maxWidth: 150,
+    });
+    pdf.text(`Page ${pageNumber}`, 194, 286, { align: "right" });
   };
-  const page = () => {
+  const nextPage = () => {
     footer();
     pdf.addPage();
-    y = 18;
+    pageNumber += 1;
+    y = 20;
+    pdf.setFillColor(navy);
+    pdf.rect(0, 0, 210, 10, "F");
   };
   const heading = (value: string) => {
-    if (y > 260) page();
+    if (y > 254) nextPage();
+    y += 3;
     pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(13);
-    pdf.text(value, 15, y);
-    y += 8;
+    pdf.setFontSize(12);
+    pdf.setTextColor(ink);
+    pdf.text(value, 16, y);
+    pdf.setDrawColor(accent);
+    pdf.setLineWidth(0.7);
+    pdf.line(16, y + 3, 36, y + 3);
+    y += 10;
   };
   const line = (label: string, value: unknown) => {
-    if (y > 272) page();
-    pdf.setFontSize(9);
+    const rendered = cleanPdfText(value);
+    const wrapped = pdf.splitTextToSize(rendered, 118);
+    const height = Math.max(7, wrapped.length * 4.2 + 2);
+    if (y + height > 274) nextPage();
+    pdf.setFontSize(7);
     pdf.setFont("helvetica", "bold");
-    pdf.text(label, 15, y);
+    pdf.setTextColor(muted);
+    pdf.text(label.toUpperCase(), 16, y);
+    pdf.setFontSize(9);
     pdf.setFont("helvetica", "normal");
-    const wrapped = pdf.splitTextToSize(
-      value == null || value === "" ? "Unknown" : String(value),
-      125,
-    );
-    pdf.text(wrapped, 68, y);
-    y += Math.max(6, wrapped.length * 4.5);
+    pdf.setTextColor(ink);
+    pdf.text(wrapped, 72, y);
+    y += height;
   };
-  pdf.setFillColor(settings.accentColour || "#22d3ee");
-  pdf.rect(0, 0, 8, 297, "F");
-  pdf.setFontSize(9);
-  pdf.setTextColor(75);
-  pdf.text(settings.organisationName, 15, y);
-  y += 8;
-  pdf.setTextColor(0);
-  pdf.setFontSize(21);
+  const card = (x: number, label: string, value: string, detail: string) => {
+    pdf.setFillColor("#f4f8fa");
+    pdf.setDrawColor(border);
+    pdf.roundedRect(x, y, 56, 29, 2, 2, "FD");
+    pdf.setTextColor(muted);
+    pdf.setFontSize(7);
+    pdf.setFont("helvetica", "bold");
+    pdf.text(label.toUpperCase(), x + 4, y + 6);
+    pdf.setTextColor(ink);
+    pdf.setFontSize(9);
+    pdf.text(pdf.splitTextToSize(cleanPdfText(value), 48), x + 4, y + 13);
+    pdf.setTextColor(muted);
+    pdf.setFontSize(7);
+    pdf.setFont("helvetica", "normal");
+    pdf.text(pdf.splitTextToSize(cleanPdfText(detail), 48), x + 4, y + 23);
+  };
+
+  pdf.setFillColor(navy);
+  pdf.rect(0, 0, 210, 58, "F");
+  pdf.setFillColor(accent);
+  pdf.rect(0, 0, 6, 58, "F");
+  pdf.setTextColor("#8fe8f6");
+  pdf.setFontSize(8);
   pdf.setFont("helvetica", "bold");
-  pdf.text("Data Centre Site Decision Package", 15, y);
-  y += 10;
-  pdf.setFontSize(14);
-  pdf.text(property.name, 15, y);
-  y += 8;
+  pdf.text(cleanPdfText(settings.organisationName, "GRIDPULSE").toUpperCase(), 16, y);
+  y += 9;
+  pdf.setTextColor("#ffffff");
+  pdf.setFontSize(20);
+  pdf.text("Site Decision Package", 16, y);
+  y += 9;
+  pdf.setFontSize(13);
+  pdf.text(pdf.splitTextToSize(property.name, 170), 16, y);
+  y = 70;
   line("Prepared for", settings.preparedFor || "Not specified");
   line("Classification", settings.confidentialityLabel);
-  line("Recommendation", decisionRecommendationLabel(property).toUpperCase());
-  line("Rationale", property.decisionRationale);
   line("Declared load", capacityValue(data.summary.requiredMw));
   line("Location", data.summary.locationLabel);
-  heading("Executive recommendation");
+
+  heading("Decision Summary");
+  card(
+    16,
+    "Decision",
+    decisionRecommendationLabel(property),
+    property.decisionRationale ?? "No rationale recorded",
+  );
+  card(
+    77,
+    "Grid position",
+    data.summary.preferredCandidate?.nodeName ??
+      data.summary.recommendedCandidate?.nodeName ??
+      "Not screened",
+    data.summary.operator ?? "Operator unconfirmed",
+  );
+  const validated = (property.evidenceRegister ?? []).filter(
+    (item) => item.validationStatus === "validated",
+  ).length;
+  card(
+    138,
+    "Validated evidence",
+    String(validated),
+    `${data.qualification.confirmedReadiness}% confirmed readiness`,
+  );
+  y += 37;
+  line("Rationale", property.decisionRationale);
   line("Next action", data.summary.nextAction);
-  line("Open blockers", data.summary.blockers.join("; ") || "None recorded");
-  heading("Data-centre qualification");
+  line("Open checks", data.summary.blockers.join("; ") || "None recorded");
+
+  heading("Essential Qualification");
   line("Confirmed readiness", `${data.qualification.confirmedReadiness}%`);
   line("Screening coverage", `${data.qualification.screeningCoverage}%`);
-  line("Constraints detected", data.qualification.constraintsDetected);
-  data.qualification.dimensions.forEach((item) =>
-    line(
-      qualificationLabels[item.key],
-      `${item.status.toUpperCase()} — ${item.summary ?? "No finding recorded"}${item.unsupported ? " (accepted evidence missing)" : ""}`,
-    ),
-  );
-  heading("Grid screening");
-  line("Recommended for investigation", data.summary.recommendedCandidate?.nodeName);
-  line("User-shortlisted candidate", data.summary.preferredCandidate?.nodeName);
+  const mvpKeys = new Set(["grid", "land", "planning", "environment", "access_logistics", "fibre"]);
+  data.qualification.dimensions
+    .filter((item) => mvpKeys.has(item.key))
+    .forEach((item) =>
+      line(
+        qualificationLabels[item.key],
+        `${item.status.toUpperCase()} - ${item.summary ?? "Not assessed"}${item.unsupported ? " (supporting evidence needed)" : ""}`,
+      ),
+    );
+
+  heading("Grid Screening");
+  line("Recommended", data.summary.recommendedCandidate?.nodeName);
+  line("Shortlisted", data.summary.preferredCandidate?.nodeName);
   line("Likely operator", data.summary.operator);
-  line("N-1 firm", capacityValue(dossier.dossier.n1_firm_capacity_mw));
-  line("Validation", dossier.dossier.validation_status);
   line(
-    "Validity",
-    `${dossier.dossier.valid_from ?? "Unknown"} to ${dossier.dossier.valid_to ?? "Unknown"}`,
+    "Capacity",
+    dossier.dossier.fail_closed
+      ? "Not established - operator confirmation required"
+      : "Validated evidence attached",
   );
-  heading("Operator engagement");
+  dossier.alternatives
+    .slice(0, 3)
+    .forEach((candidate, index) =>
+      line(
+        `Candidate ${index + 1}`,
+        `${candidate.name}; ${candidate.distance_km == null ? "distance unknown" : `${candidate.distance_km.toFixed(1)} km`}; ${candidate.voltage_kv == null ? "voltage unknown" : `${candidate.voltage_kv} kV`}; ${candidate.operator ?? "operator unconfirmed"}`,
+      ),
+    );
+
+  heading("Operator Engagement");
   const engagement = property.operatorEngagement!;
   line("Operator", engagement.operatorName);
   line("Responsibility", engagement.responsibilityStatus);
   line("Enquiry status", engagement.enquiryStatus);
   line("Reference", engagement.enquiryReference);
-  line("Indicated connection point", engagement.indicatedConnectionPoint);
-  line(
-    "Indicated cost",
-    engagement.indicatedCostEur == null
-      ? "Unknown"
-      : `EUR ${engagement.indicatedCostEur.toLocaleString("en-GB")}`,
-  );
-  line("Indicated delivery", engagement.indicatedDeliveryDate);
-  heading("Evidence register");
+  line("Next action", engagement.nextAction);
+
+  heading("Evidence Register");
   (property.evidenceRegister ?? []).forEach((item) =>
     line(
       item.title,
-      `${item.claim} [${item.evidenceClass}; ${item.validationStatus}${item.validTo ? `; valid to ${item.validTo}` : ""}]`,
+      `${item.claim} [${item.validationStatus}; ${item.sourceOrganisation ?? "source not recorded"}]`,
     ),
   );
-  heading("Automatic source coverage");
-  (property.enrichmentRuns?.[0]?.sourceResults ?? []).forEach((source) =>
-    line(
-      source.source,
-      `${source.status}; ${source.findingCount} finding(s); release ${source.releaseId ?? "not reported"}${source.limitation ? `; ${source.limitation}` : ""}`,
-    ),
+  heading("Open Checks");
+  (dossier.dossier.unresolved_evidence ?? []).forEach((item, index) =>
+    line(`Check ${index + 1}`, item),
   );
-  heading("Limitations");
-  line("Truth boundary", data.truthNotice);
+  (dossier.dossier.operator_questions ?? []).forEach((item, index) =>
+    line(`Operator question ${index + 1}`, item),
+  );
+  heading("Important Note");
+  line("Scope", data.truthNotice);
   footer();
   pdf.save(`${property.name.replaceAll(/[^a-z0-9]+/gi, "-").toLowerCase()}-decision-package.pdf`);
 }

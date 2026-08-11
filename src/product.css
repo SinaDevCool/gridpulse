@@ -18504,6 +18504,161 @@ tbody tr:last-child td {
   color: #88a1af;
   font-size: 0.7rem;
 }
+
+/* MVP decision package: compact on-screen review aligned with the exported PDF. */
+.site-decision-record-page {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 32px 28px 64px;
+  background: #06111a;
+}
+.record-header {
+  grid-template-columns: 120px minmax(0, 1fr) auto;
+  padding-bottom: 24px;
+}
+.record-header h1 {
+  font-size: clamp(24px, 3vw, 32px);
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+.record-header-actions .primary-button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+.record-decision-summary {
+  margin-top: 24px;
+  border-radius: 10px;
+}
+.record-decision-summary article {
+  min-width: 0;
+  padding: 20px;
+}
+.record-decision-summary strong {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.record-decision-summary p {
+  font-size: 12px;
+}
+.record-evidence-status {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 16px;
+}
+.record-evidence-status article {
+  display: flex;
+  gap: 13px;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid #1b394b;
+  border-radius: 10px;
+  background: #081722;
+}
+.record-evidence-status svg {
+  width: 20px;
+  flex: none;
+  color: #32cbe8;
+}
+.record-evidence-status div {
+  min-width: 0;
+}
+.record-evidence-status span {
+  display: block;
+  color: #718d9e;
+  font-size: 11px;
+}
+.record-evidence-status strong {
+  display: block;
+  margin-top: 5px;
+  color: #e7f2f6;
+  font-size: 14px;
+}
+.record-evidence-status p {
+  margin: 5px 0 0;
+  color: #89a2b1;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.record-qualification-section {
+  max-width: none;
+  margin: 30px 0 0;
+  padding: 24px;
+  border: 1px solid #1b394b;
+  border-radius: 10px;
+  background: #081722;
+}
+.record-qualification-section h2 {
+  margin: 4px 0;
+  font-size: 18px;
+}
+.record-section-intro {
+  margin: 0 0 18px;
+  color: #88a1af;
+  font-size: 12px;
+}
+.record-qualification-section > div {
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.record-qualification-section article {
+  min-height: 120px;
+  padding: 16px;
+  border-radius: 7px;
+  background: #06131e;
+}
+.record-qualification-section p {
+  overflow-wrap: anywhere;
+}
+.record-grid {
+  margin-top: 16px;
+  gap: 12px;
+}
+.record-grid > section,
+.record-evidence-grid > article {
+  padding: 20px;
+  border-radius: 10px;
+}
+.record-evidence-grid {
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.record-evidence-grid li {
+  overflow-wrap: anywhere;
+}
+.record-empty-copy {
+  color: #88a1af;
+  font-size: 12px;
+}
+.record-footnote {
+  margin: 18px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid #183344;
+  color: #718b9a;
+  font-size: 11px;
+  line-height: 1.5;
+}
+@media (max-width: 900px) {
+  .record-evidence-status,
+  .record-qualification-section > div {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .record-evidence-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 640px) {
+  .site-decision-record-page {
+    padding: 22px 14px 48px;
+  }
+  .record-evidence-status,
+  .record-qualification-section > div {
+    grid-template-columns: 1fr;
+  }
+  .record-qualification-section {
+    padding: 18px;
+  }
+}
 @media (min-width: 1100px) {
   .site-pipeline-page:has(.site-detail-panel) .decision-workspace-main {
     margin-right: 410px;
