@@ -1278,7 +1278,10 @@ function PowerFinderPage() {
                   type="button"
                   className={finderWorkflow === "discover" ? "is-active" : ""}
                   aria-pressed={finderWorkflow === "discover"}
-                  onClick={() => setFinderWorkflow("discover")}
+                  onClick={() => {
+                    setFinderWorkflow("discover");
+                    if (regionCode === "DE") void updateSearch({ region: "DE-BB" });
+                  }}
                 >
                   <MapPinned aria-hidden="true" />
                   <span>
@@ -1301,7 +1304,23 @@ function PowerFinderPage() {
                 <div className="finder-discovery-form">
                   <label>
                     <span>Bundesland</span>
-                    <strong>{activeCoverage.regionName}</strong>
+                    <select
+                      value={regionCode === "DE" ? "DE-BB" : regionCode}
+                      onChange={(event) => {
+                        const nextRegion = event.target.value as typeof search.region;
+                        setDiscoveryResults([]);
+                        setSelectedDiscoveryId(null);
+                        void updateSearch({ region: nextRegion });
+                      }}
+                    >
+                      {coverage
+                        .filter((item) => item.regionCode !== "DE")
+                        .map((item) => (
+                          <option key={item.regionCode} value={item.regionCode}>
+                            {item.regionName}
+                          </option>
+                        ))}
+                    </select>
                   </label>
                   <label>
                     <span>Required load (MW)</span>
@@ -1422,6 +1441,12 @@ function PowerFinderPage() {
                         });
                         setDiscoveryResults(results);
                         setSelectedDiscoveryId(results[0]?.id ?? null);
+                        setMapNavigationTarget({
+                          requestId: Date.now(),
+                          kind: "bounds",
+                          bounds: activeCoverage.bounds,
+                          maxZoom: activeCoverage.zoom,
+                        });
                         setDiscoveryState("ready");
                         setInteractionNotice(
                           results.length
@@ -2875,6 +2900,11 @@ function PowerFinderPage() {
                 </>
               ) : (
                 <>
+                  {finderWorkflow === "discover" && discoveryResults.length > 0 ? (
+                    <span className="legend-discovery-location">
+                      <i>1</i> Ranked investigation location
+                    </span>
+                  ) : null}
                   <span>
                     <i className="legend-node" /> Grid node · orange marker, voltage outline
                   </span>

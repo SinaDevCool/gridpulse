@@ -483,15 +483,27 @@ export function PowerFinderMap({
           data: discoveryLocationsRef.current ?? { type: "FeatureCollection", features: [] },
         });
         map.addLayer({
+          id: "finder-discovery-halos",
+          type: "circle",
+          source: "finder-discovery-locations",
+          paint: {
+            "circle-radius": ["interpolate", ["linear"], ["get", "score"], 0, 20, 100, 30],
+            "circle-color": "#07131c",
+            "circle-opacity": 0.92,
+            "circle-stroke-color": "#f8d34f",
+            "circle-stroke-width": 4,
+          },
+        });
+        map.addLayer({
           id: "finder-discovery-locations",
           type: "circle",
           source: "finder-discovery-locations",
           paint: {
-            "circle-radius": ["interpolate", ["linear"], ["get", "score"], 0, 13, 100, 21],
+            "circle-radius": ["interpolate", ["linear"], ["get", "score"], 0, 14, 100, 22],
             "circle-color": "#12c8e8",
-            "circle-opacity": 0.88,
+            "circle-opacity": 1,
             "circle-stroke-color": "#ffffff",
-            "circle-stroke-width": 2,
+            "circle-stroke-width": 3,
           },
         });
         map.addLayer({
