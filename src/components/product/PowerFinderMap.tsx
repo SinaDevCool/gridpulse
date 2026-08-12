@@ -95,22 +95,6 @@ const registeredCapacityRadius: ExpressionSpecification = [
   31.7,
   19,
 ];
-const nationalRegisteredCapacityRadius: ExpressionSpecification = [
-  "interpolate",
-  ["linear"],
-  ["sqrt", ["max", 0.01, ["coalesce", ["get", "registered_mw"], ["get", "net_capacity_mw"], 0.01]]],
-  0.1,
-  6,
-  3.2,
-  12,
-  10,
-  18,
-  31.7,
-  28,
-  100,
-  38,
-];
-
 const generationClusterColour: ExpressionSpecification = [
   "case",
   [">=", ["get", "solar_count"], ["max", ["get", "wind_count"], ["get", "other_count"]]],
@@ -594,38 +578,11 @@ export function PowerFinderMap({
             visibility: enabledLayersRef.current.generation_asset ? "visible" : "none",
           },
           paint: {
-            "circle-radius": nationalRegisteredCapacityRadius,
+            "circle-radius": registeredCapacityRadius,
             "circle-color": generationColour,
             "circle-opacity": ["interpolate", ["linear"], ["zoom"], 6, 0.72, 9, 0.9],
             "circle-stroke-color": "rgba(255, 255, 255, 0.7)",
             "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 6, 0.25, 9, 0.7],
-          },
-        });
-        map.addLayer({
-          id: "national-generation-overview-label",
-          type: "symbol",
-          source: "power-finder-registry-tiles",
-          "source-layer": "power_finder",
-          minzoom: 6,
-          maxzoom: 9,
-          filter: generationAssetFilter(
-            assetFilterRef.current.generationGroup,
-            assetFilterRef.current.minimumGenerationMw,
-          ),
-          layout: {
-            visibility: enabledLayersRef.current.generation_asset ? "visible" : "none",
-            "text-field": [
-              "case",
-              [">", ["get", "known_mw_count"], 0],
-              ["concat", ["round", ["get", "registered_mw"]], " MW"],
-              ["concat", ["get", "asset_count"], " assets"],
-            ],
-            "text-size": 10,
-          },
-          paint: {
-            "text-color": "#07111f",
-            "text-halo-color": "rgba(255,255,255,0.9)",
-            "text-halo-width": 1,
           },
         });
         map.addLayer({
