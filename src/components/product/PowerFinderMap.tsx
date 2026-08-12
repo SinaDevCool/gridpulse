@@ -1077,12 +1077,16 @@ export function PowerFinderMap({
         map.setLayoutProperty(layer, "visibility", visible ? "visible" : "none");
     }
     const localLayers = {
-      "generation-clusters": enabledLayers.generation_asset,
-      "generation-cluster-count": enabledLayers.generation_asset,
-      "generation-assets": enabledLayers.generation_asset,
-      "storage-clusters": enabledLayers.storage_asset,
-      "storage-cluster-count": enabledLayers.storage_asset,
-      "storage-assets": enabledLayers.storage_asset,
+      // Registry vector tiles already provide technology-separated regional
+      // aggregates and exact assets. Showing the bounded GeoJSON registry
+      // copy at the same time creates duplicate, mixed-technology grey
+      // clusters over the correctly coloured national symbols.
+      "generation-clusters": false,
+      "generation-cluster-count": false,
+      "generation-assets": false,
+      "storage-clusters": false,
+      "storage-cluster-count": false,
+      "storage-assets": false,
     } as const;
     for (const [layer, visible] of Object.entries(localLayers)) {
       if (map.getLayer(layer))
