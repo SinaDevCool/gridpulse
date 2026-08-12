@@ -103,6 +103,7 @@ type PowerFinderMapProps = {
   selectedFeature?: PowerFinderFeature | null;
   previewFeature?: PowerFinderFeature | null;
   mapMode: "voltage" | "evidence" | "capacity";
+  basemapMode?: "dark" | "light";
   capacityNodes?: CalculatedCapacityNode[];
   capacityMetric?: CapacityMetric;
   requiredCapacityMw?: number;
@@ -199,6 +200,7 @@ export function PowerFinderMap({
   selectedFeature,
   previewFeature,
   mapMode,
+  basemapMode = "dark",
   capacityNodes = [],
   capacityMetric = "firm_import_mw",
   requiredCapacityMw = 1,
@@ -225,6 +227,8 @@ export function PowerFinderMap({
   const capacityMetricRef = useRef(capacityMetric);
   const requiredCapacityMwRef = useRef(requiredCapacityMw);
   const capacityCoverageRef = useRef(capacityCoverage);
+  const basemapModeRef = useRef(basemapMode);
+  const enabledLayersRef = useRef(enabledLayers);
   onSelectRef.current = onSelect;
   onViewportChangeRef.current = onViewportChange;
   collectionRef.current = collection;
@@ -237,6 +241,8 @@ export function PowerFinderMap({
   capacityMetricRef.current = capacityMetric;
   requiredCapacityMwRef.current = requiredCapacityMw;
   capacityCoverageRef.current = capacityCoverage;
+  basemapModeRef.current = basemapMode;
+  enabledLayersRef.current = enabledLayers;
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -252,7 +258,7 @@ export function PowerFinderMap({
         style: {
           version: 8,
           sources: {
-            carto: {
+            "carto-dark": {
               type: "raster",
               tiles: [
                 "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
@@ -262,8 +268,31 @@ export function PowerFinderMap({
               tileSize: 256,
               attribution: "© OpenStreetMap contributors © CARTO",
             },
+            "carto-light": {
+              type: "raster",
+              tiles: [
+                "https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
+                "https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
+                "https://c.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
+              ],
+              tileSize: 256,
+              attribution: "© OpenStreetMap contributors © CARTO",
+            },
           },
-          layers: [{ id: "carto", type: "raster", source: "carto" }],
+          layers: [
+            {
+              id: "carto-dark",
+              type: "raster",
+              source: "carto-dark",
+              layout: { visibility: basemapModeRef.current === "dark" ? "visible" : "none" },
+            },
+            {
+              id: "carto-light",
+              type: "raster",
+              source: "carto-light",
+              layout: { visibility: basemapModeRef.current === "light" ? "visible" : "none" },
+            },
+          ],
         },
       });
       mapRef.current = map;
@@ -391,7 +420,7 @@ export function PowerFinderMap({
           minzoom: 4,
           maxzoom: 24,
           filter: ["==", ["get", "kind"], "line"],
-          layout: { visibility: enabledLayers.line ? "visible" : "none" },
+          layout: { visibility: enabledLayersRef.current.line ? "visible" : "none" },
           paint: {
             "line-color": voltageColorExpression(),
             "line-width": voltageWidthExpression(),
@@ -406,7 +435,7 @@ export function PowerFinderMap({
           minzoom: 4,
           maxzoom: 24,
           filter: ["==", ["get", "kind"], "node"],
-          layout: { visibility: enabledLayers.node ? "visible" : "none" },
+          layout: { visibility: enabledLayersRef.current.node ? "visible" : "none" },
           paint: {
             "circle-radius": ["interpolate", ["linear"], ["zoom"], 4, 1, 7, 1.6, 8.5, 2.5, 11, 4.5],
             "circle-color": "#f59e0b",
@@ -422,7 +451,9 @@ export function PowerFinderMap({
           minzoom: 8,
           maxzoom: 24,
           filter: ["==", ["get", "kind"], "industrial_site"],
-          layout: { visibility: enabledLayers.industrial_site ? "visible" : "none" },
+          layout: {
+            visibility: enabledLayersRef.current.industrial_site ? "visible" : "none",
+          },
           paint: {
             "fill-color": "#17c3b2",
             "fill-opacity": ["interpolate", ["linear"], ["zoom"], 10, 0.28, 16, 0.48],
@@ -437,7 +468,9 @@ export function PowerFinderMap({
           minzoom: 8,
           maxzoom: 10,
           filter: ["==", ["get", "kind"], "industrial_site"],
-          layout: { visibility: enabledLayers.industrial_site ? "visible" : "none" },
+          layout: {
+            visibility: enabledLayersRef.current.industrial_site ? "visible" : "none",
+          },
           paint: {
             "circle-radius": ["interpolate", ["linear"], ["zoom"], 8, 2.2, 10, 5],
             "circle-color": "rgba(7, 17, 31, 0.75)",
@@ -454,7 +487,9 @@ export function PowerFinderMap({
           minzoom: 6,
           maxzoom: 9,
           filter: ["==", ["get", "kind"], "generation_asset"],
-          layout: { visibility: enabledLayers.generation_asset ? "visible" : "none" },
+          layout: {
+            visibility: enabledLayersRef.current.generation_asset ? "visible" : "none",
+          },
           paint: {
             "circle-radius": ["interpolate", ["linear"], ["zoom"], 6, 1.35, 9, 3.2],
             "circle-color": generationColour,
@@ -471,7 +506,9 @@ export function PowerFinderMap({
           minzoom: 9,
           maxzoom: 24,
           filter: ["==", ["get", "kind"], "generation_asset"],
-          layout: { visibility: enabledLayers.generation_asset ? "visible" : "none" },
+          layout: {
+            visibility: enabledLayersRef.current.generation_asset ? "visible" : "none",
+          },
           paint: {
             "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 4.5, 13, 7],
             "circle-color": generationColour,
@@ -487,7 +524,9 @@ export function PowerFinderMap({
           minzoom: 6,
           maxzoom: 24,
           filter: ["==", ["get", "kind"], "storage_asset"],
-          layout: { visibility: enabledLayers.storage_asset ? "visible" : "none" },
+          layout: {
+            visibility: enabledLayersRef.current.storage_asset ? "visible" : "none",
+          },
           paint: {
             "circle-radius": ["interpolate", ["linear"], ["zoom"], 6, 3, 9, 5],
             "circle-color": "#a855f7",
@@ -1083,6 +1122,17 @@ export function PowerFinderMap({
     });
   }, [previewFeature, selectedFeature]);
 
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map?.getLayer("carto-dark") || !map.getLayer("carto-light")) return;
+    map.setLayoutProperty("carto-dark", "visibility", basemapMode === "dark" ? "visible" : "none");
+    map.setLayoutProperty(
+      "carto-light",
+      "visibility",
+      basemapMode === "light" ? "visible" : "none",
+    );
+  }, [basemapMode]);
+
   return (
     <div
       ref={containerRef}
@@ -1091,6 +1141,7 @@ export function PowerFinderMap({
       aria-label="Interactive grid and industrial-site screening map"
       data-selected-feature={selectedFeature?.id ?? ""}
       data-preview-feature={previewFeature?.id ?? ""}
+      data-basemap={basemapMode}
     />
   );
 }

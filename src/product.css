@@ -13133,12 +13133,49 @@ tbody tr:last-child td {
   height: 17px;
 }
 
+.power-finder-basemap-toggle {
+  position: absolute;
+  z-index: 4;
+  top: 16px;
+  right: 56px;
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  border: 1px solid #2b465c;
+  border-radius: 8px;
+  background: rgb(7 21 37 / 94%);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 30%);
+  color: #dff7ff;
+  font:
+    700 0.7rem/1 "Geist",
+    sans-serif;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.power-finder-basemap-toggle:hover {
+  border-color: #55c8eb;
+  background: #102b3d;
+}
+.power-finder-basemap-toggle:focus-visible {
+  outline: 2px solid #67ddfa;
+  outline-offset: 2px;
+}
+.power-finder-basemap-toggle svg {
+  width: 17px;
+  height: 17px;
+}
+
 @media (max-width: 760px) {
   .power-finder-page.is-sidebar-collapsed {
     grid-template-columns: minmax(0, 1fr);
   }
 
   .power-finder-sidebar-toggle span {
+    display: none;
+  }
+  .power-finder-basemap-toggle span {
     display: none;
   }
 }

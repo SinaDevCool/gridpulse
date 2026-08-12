@@ -12,6 +12,8 @@ import {
   PanelLeftOpen,
   Search,
   ShieldCheck,
+  Sun,
+  Moon,
   Zap,
 } from "lucide-react";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
@@ -413,6 +415,16 @@ function PowerFinderPage() {
   );
   const [secondaryControlsOpen, setSecondaryControlsOpen] = useState(Boolean(search.propertyId));
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [basemapMode, setBasemapMode] = useState<"dark" | "light">("dark");
+  const [basemapHydrated, setBasemapHydrated] = useState(false);
+  useEffect(() => {
+    if (window.localStorage.getItem("gridpulse-basemap") === "light") setBasemapMode("light");
+    setBasemapHydrated(true);
+  }, []);
+  useEffect(() => {
+    if (!basemapHydrated) return;
+    window.localStorage.setItem("gridpulse-basemap", basemapMode);
+  }, [basemapHydrated, basemapMode]);
   const [mapNavigationTarget, setMapNavigationTarget] = useState<
     | { requestId: number; kind: "point"; center: [number, number]; zoom?: number }
     | {
@@ -2394,6 +2406,16 @@ function PowerFinderPage() {
             )}
             <span>{sidebarOpen ? "Hide panel" : "Show panel"}</span>
           </button>
+          <button
+            type="button"
+            className="power-finder-basemap-toggle"
+            aria-label={`Use ${basemapMode === "dark" ? "light" : "dark"} map`}
+            aria-pressed={basemapMode === "light"}
+            onClick={() => setBasemapMode((current) => (current === "dark" ? "light" : "dark"))}
+          >
+            {basemapMode === "dark" ? <Sun aria-hidden="true" /> : <Moon aria-hidden="true" />}
+            <span>{basemapMode === "dark" ? "Light Map" : "Dark Map"}</span>
+          </button>
           {error && <div className="power-finder-error">{error}</div>}
           {!visibleCollection && !error && (
             <div className="power-finder-loading">Loading map context…</div>
@@ -2405,6 +2427,7 @@ function PowerFinderPage() {
               selectedFeature={selected}
               previewFeature={previewFeature}
               mapMode={mapMode}
+              basemapMode={basemapMode}
               capacityNodes={activeCapacityNodes}
               capacityCoverage={
                 capacitySource === "berlin_synthetic" ? (berlinCapacity?.coverage ?? null) : null

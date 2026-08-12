@@ -568,6 +568,23 @@ test("Finder controls and comparison remain usable on a narrow viewport", async 
   await expect(page.getByRole("button", { name: /Remove .* from comparison/ })).toBeVisible();
 });
 
+test("Power Finder switches and remembers the light basemap", async ({ page }) => {
+  await page.goto("/power-finder?lat=52.31&lng=13.36&mw=50");
+  const map = page.getByRole("application", { name: /Interactive grid/ });
+  await expect(map).toHaveAttribute("data-basemap", "dark");
+  await page.getByRole("button", { name: "Use light map" }).click();
+  await expect(map).toHaveAttribute("data-basemap", "light");
+  await expect(page.getByRole("button", { name: "Use dark map" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await page.reload();
+  await expect(page.getByRole("application", { name: /Interactive grid/ })).toHaveAttribute(
+    "data-basemap",
+    "light",
+  );
+});
+
 test("candidate detail prioritises decisions, contains its layout and omits candidate contact", async ({
   page,
 }) => {
