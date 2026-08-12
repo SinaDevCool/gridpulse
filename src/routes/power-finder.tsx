@@ -85,6 +85,12 @@ import {
   type FinderNumericField,
 } from "@/features/power-finder/project-validation";
 import { loadC1Study, type C1StudyPayload } from "@/features/power-finder/c1-study";
+import {
+  discoverLocations,
+  discoveryGeoJson,
+  type DiscoveryLocation,
+  type DiscoveryStrategy,
+} from "@/features/power-finder/location-discovery";
 import { canonicalOperatorName } from "@/features/power-finder/operator-normalization";
 import {
   loadGridOperatorCatalog,
@@ -420,6 +426,13 @@ function PowerFinderPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [legendOpen, setLegendOpen] = useState(true);
   const [finderWorkflow, setFinderWorkflow] = useState<"screen" | "discover">("screen");
+  const [discoveryStrategy, setDiscoveryStrategy] = useState<DiscoveryStrategy>("balanced");
+  const [discoveryResultCount, setDiscoveryResultCount] = useState<10 | 20>(10);
+  const [discoveryResults, setDiscoveryResults] = useState<DiscoveryLocation[]>([]);
+  const [selectedDiscoveryId, setSelectedDiscoveryId] = useState<string | null>(null);
+  const [discoveryState, setDiscoveryState] = useState<"idle" | "loading" | "ready" | "error">(
+    "idle",
+  );
   const [generationGroup, setGenerationGroup] = useState("all");
   const [minimumGenerationMw, setMinimumGenerationMw] = useState(0);
   const [minimumStorageMw, setMinimumStorageMw] = useState(0);
@@ -1285,32 +1298,175 @@ function PowerFinderPage() {
                   Compare mapped grid context, industrial land and the surrounding energy ecosystem
                   without treating public mapping as capacity or feasibility evidence.
                 </p>
-                <dl>
-                  <div>
-                    <dt>Region</dt>
-                    <dd>{activeCoverage.regionName}</dd>
-                  </div>
-                  <div>
-                    <dt>Target load</dt>
-                    <dd>{formatMw(project.importMw)}</dd>
-                  </div>
-                  <div>
-                    <dt>Output</dt>
-                    <dd>10 investigation areas</dd>
-                  </div>
-                </dl>
+                <div className="finder-discovery-form">
+                  <label>
+                    <span>Bundesland</span>
+                    <strong>{activeCoverage.regionName}</strong>
+                  </label>
+                  <label>
+                    <span>Required load (MW)</span>
+                    <input
+                      type="number"
+                      min="1"
+                      max="1000"
+                      value={project.importMw}
+                      onChange={(event) =>
+                        updateProject({ importMw: Number(event.target.value) || 1 })
+                      }
+                    />
+                  </label>
+                  <label>
+                    <span>Preferred voltage</span>
+                    <select
+                      value={project.preferredVoltageKv ?? 0}
+                      onChange={(event) =>
+                        updateProject({ preferredVoltageKv: Number(event.target.value) || null })
+                      }
+                    >
+                      <option value="0">Any / unknown</option>
+                      <option value="110">110 kV</option>
+                      <option value="220">220 kV</option>
+                      <option value="380">380 kV</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>Maximum node distance</span>
+                    <select
+                      value={project.maxDistanceKm}
+                      onChange={(event) =>
+                        updateProject({ maxDistanceKm: Number(event.target.value) })
+                      }
+                    >
+                      <option value="10">10 km</option>
+                      <option value="20">20 km</option>
+                      <option value="30">30 km</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>Ranking strategy</span>
+                    <select
+                      value={discoveryStrategy}
+                      onChange={(event) =>
+                        setDiscoveryStrategy(event.target.value as DiscoveryStrategy)
+                      }
+                    >
+                      <option value="connection">Connection-first</option>
+                      <option value="balanced">Balanced</option>
+                      <option value="energy">Energy ecosystem</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>Number of results</span>
+                    <select
+                      value={discoveryResultCount}
+                      onChange={(event) =>
+                        setDiscoveryResultCount(Number(event.target.value) as 10 | 20)
+                      }
+                    >
+                      <option value="10">10 locations</option>
+                      <option value="20">20 locations</option>
+                    </select>
+                  </label>
+                </div>
                 <button
                   type="button"
                   className="primary-button"
+                  disabled={discoveryState === "loading"}
                   onClick={() => {
-                    setInteractionNotice(
-                      "Regional ranking is not enabled yet. Continue with Screen a site for defensible node screening.",
-                    );
+                    void (async () => {
+                      setDiscoveryState("loading");
+                      setInteractionNotice("Sampling accepted mapped context across the region…");
+                      try {
+                        const [west, south, east, north] = activeCoverage.bounds;
+                        const columns = 4;
+                        const rows = 4;
+                        const longitudeStep = (east - west) / columns;
+                        const latitudeStep = (north - south) / rows;
+                        const samples = await Promise.all(
+                          Array.from({ length: columns * rows }, (_, index) => {
+                            const column = index % columns;
+                            const row = Math.floor(index / columns);
+                            return loadPowerFinderViewport(
+                              {
+                                west: west + column * longitudeStep,
+                                south: south + row * latitudeStep,
+                                east: west + (column + 1) * longitudeStep,
+                                north: south + (row + 1) * latitudeStep,
+                              },
+                              undefined,
+                              { fallbackAllowed: false },
+                            );
+                          }),
+                        );
+                        const byId = new Map<string, PowerFinderFeature>();
+                        for (const sample of samples) {
+                          for (const feature of sample.collection.features)
+                            byId.set(feature.id, feature);
+                        }
+                        const regionalCollection: PowerFinderCollection = {
+                          ...samples[0].collection,
+                          features: [...byId.values()],
+                          metadata: {
+                            ...samples[0].collection.metadata,
+                            title: `${activeCoverage.regionName} discovery sample`,
+                            record_count: byId.size,
+                            geographic_scope: activeCoverage.bounds,
+                          },
+                        };
+                        const results = discoverLocations(regionalCollection, {
+                          requiredMw: project.importMw,
+                          preferredVoltageKv: project.preferredVoltageKv,
+                          maxNodeDistanceKm: project.maxDistanceKm,
+                          resultCount: discoveryResultCount,
+                          strategy: discoveryStrategy,
+                        });
+                        setDiscoveryResults(results);
+                        setSelectedDiscoveryId(results[0]?.id ?? null);
+                        setDiscoveryState("ready");
+                        setInteractionNotice(
+                          results.length
+                            ? `${results.length} geographically distinct investigation locations found after regional sampling and local refinement.`
+                            : "No investigation locations met the current mapped-data criteria. Try a wider node distance.",
+                        );
+                      } catch {
+                        setDiscoveryState("error");
+                        setInteractionNotice(
+                          "Regional data sampling was incomplete. Please try again.",
+                        );
+                      }
+                    })();
                   }}
                 >
-                  Define regional search
+                  {discoveryState === "loading"
+                    ? "Scanning regional context…"
+                    : `Find ${discoveryResultCount} investigation locations`}
                 </button>
                 <small>Recommended for investigation only. Capacity remains unknown.</small>
+                {discoveryResults.length > 0 ? (
+                  <ol className="finder-discovery-results">
+                    {discoveryResults.map((result, index) => (
+                      <li key={result.id}>
+                        <button
+                          type="button"
+                          className={selectedDiscoveryId === result.id ? "is-active" : ""}
+                          onClick={() => {
+                            setSelectedDiscoveryId(result.id);
+                            navigateMapToPoint(result.coordinates);
+                          }}
+                        >
+                          <span>{index + 1}</span>
+                          <div>
+                            <strong>{result.name}</strong>
+                            <small>
+                              {result.score}/100 investigation fit · {result.nodeDistanceKm} km to{" "}
+                              {result.node.properties.voltage_kv?.join("/") || "unknown"} kV node
+                            </small>
+                          </div>
+                        </button>
+                      </li>
+                    ))}
+                  </ol>
+                ) : null}
               </section>
             ) : (
               <div className="finder-project-summary">
@@ -2664,6 +2820,17 @@ function PowerFinderPage() {
                 });
               }}
               onVisibleLayerCounts={setVisibleLayerCounts}
+              discoveryLocations={
+                finderWorkflow === "discover" ? discoveryGeoJson(discoveryResults) : null
+              }
+              onDiscoverySelect={(id) => {
+                const result = discoveryResults.find((item) => item.id === id);
+                if (!result) return;
+                setSelectedDiscoveryId(id);
+                setInteractionNotice(
+                  `${result.name}: ${result.score}/100 investigation fit. Capacity remains unknown.`,
+                );
+              }}
             />
           )}
           <div className={`power-finder-legend ${legendOpen ? "is-open" : "is-collapsed"}`}>

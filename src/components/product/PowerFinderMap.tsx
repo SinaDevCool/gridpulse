@@ -1,7 +1,7 @@
 import "maplibre-gl/dist/maplibre-gl.css";
 
 import { useEffect, useRef } from "react";
-import type { FeatureCollection, Polygon } from "geojson";
+import type { FeatureCollection, Point, Polygon } from "geojson";
 import type {
   ExpressionSpecification,
   GeoJSONSource,
@@ -196,6 +196,8 @@ type PowerFinderMapProps = {
   projectSite?: [number, number] | null;
   onSitePlacement?: (coordinates: [number, number]) => void;
   onVisibleLayerCounts?: (counts: VisibleLayerCounts) => void;
+  discoveryLocations?: FeatureCollection<Point> | null;
+  onDiscoverySelect?: (id: string) => void;
 };
 
 function isGeoJsonSource(source: Source | undefined): source is GeoJSONSource {
@@ -289,6 +291,8 @@ export function PowerFinderMap({
   projectSite,
   onSitePlacement,
   onVisibleLayerCounts,
+  discoveryLocations = null,
+  onDiscoverySelect,
 }: PowerFinderMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -298,6 +302,8 @@ export function PowerFinderMap({
   const projectSiteRef = useRef(projectSite);
   const onSitePlacementRef = useRef(onSitePlacement);
   const onVisibleLayerCountsRef = useRef(onVisibleLayerCounts);
+  const onDiscoverySelectRef = useRef(onDiscoverySelect);
+  const discoveryLocationsRef = useRef(discoveryLocations);
   const selectedFeatureRef = useRef(selectedFeature);
   const previewFeatureRef = useRef(previewFeature);
   const capacityNodesRef = useRef(capacityNodes);
@@ -313,6 +319,8 @@ export function PowerFinderMap({
   projectSiteRef.current = projectSite;
   onSitePlacementRef.current = onSitePlacement;
   onVisibleLayerCountsRef.current = onVisibleLayerCounts;
+  onDiscoverySelectRef.current = onDiscoverySelect;
+  discoveryLocationsRef.current = discoveryLocations;
   selectedFeatureRef.current = selectedFeature;
   previewFeatureRef.current = previewFeature;
   capacityNodesRef.current = capacityNodes;
@@ -469,6 +477,38 @@ export function PowerFinderMap({
                 ]
               : [],
           },
+        });
+        map.addSource("finder-discovery-locations", {
+          type: "geojson",
+          data: discoveryLocationsRef.current ?? { type: "FeatureCollection", features: [] },
+        });
+        map.addLayer({
+          id: "finder-discovery-locations",
+          type: "circle",
+          source: "finder-discovery-locations",
+          paint: {
+            "circle-radius": ["interpolate", ["linear"], ["get", "score"], 0, 13, 100, 21],
+            "circle-color": "#12c8e8",
+            "circle-opacity": 0.88,
+            "circle-stroke-color": "#ffffff",
+            "circle-stroke-width": 2,
+          },
+        });
+        map.addLayer({
+          id: "finder-discovery-labels",
+          type: "symbol",
+          source: "finder-discovery-locations",
+          layout: {
+            "text-field": ["to-string", ["get", "rank"]],
+            "text-size": 12,
+            "text-font": ["Open Sans Bold"],
+            "text-allow-overlap": true,
+          },
+          paint: { "text-color": "#04131d" },
+        });
+        map.on("click", "finder-discovery-locations", (event) => {
+          const id = event.features?.[0]?.properties?.id;
+          if (id) onDiscoverySelectRef.current?.(String(id));
         });
         const highlighted = previewFeatureRef.current ?? selectedFeatureRef.current;
         map.addSource("finder-selected-candidate", {
@@ -1118,6 +1158,13 @@ export function PowerFinderMap({
       });
     }
   }, [projectSite]);
+
+  useEffect(() => {
+    const source = mapRef.current?.getSource("finder-discovery-locations");
+    if (isGeoJsonSource(source)) {
+      source.setData(discoveryLocations ?? { type: "FeatureCollection", features: [] });
+    }
+  }, [discoveryLocations]);
 
   useEffect(() => {
     const map = mapRef.current;
