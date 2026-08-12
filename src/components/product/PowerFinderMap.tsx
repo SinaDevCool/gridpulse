@@ -117,6 +117,15 @@ const registeredClusterRadius: ExpressionSpecification = [
   100,
   38,
 ];
+
+const registeredMwLabel: ExpressionSpecification = [
+  "case",
+  [">=", ["coalesce", ["get", "registered_mw"], ["get", "net_capacity_mw"], -1], 1],
+  ["concat", ["round", ["coalesce", ["get", "registered_mw"], ["get", "net_capacity_mw"]]], " MW"],
+  [">", ["coalesce", ["get", "registered_mw"], ["get", "net_capacity_mw"], -1], 0],
+  "<1 MW",
+  "MW unknown",
+];
 const localGenerationColour: ExpressionSpecification = [
   "match",
   ["coalesce", ["get", "generation_group"], ["get", "technology"]],
@@ -589,6 +598,29 @@ export function PowerFinderMap({
           },
         });
         map.addLayer({
+          id: "national-generation-overview-label",
+          type: "symbol",
+          source: "power-finder-registry-tiles",
+          "source-layer": "power_finder",
+          minzoom: 6,
+          maxzoom: 9,
+          filter: generationAssetFilter(
+            assetFilterRef.current.generationGroup,
+            assetFilterRef.current.minimumGenerationMw,
+          ),
+          layout: {
+            visibility: enabledLayersRef.current.generation_asset ? "visible" : "none",
+            "text-field": registeredMwLabel,
+            "text-size": 10,
+            "text-allow-overlap": false,
+          },
+          paint: {
+            "text-color": "#07111f",
+            "text-halo-color": "rgba(255,255,255,0.92)",
+            "text-halo-width": 1.5,
+          },
+        });
+        map.addLayer({
           id: "national-generation-assets",
           type: "circle",
           source: "power-finder-registry-tiles",
@@ -610,6 +642,29 @@ export function PowerFinderMap({
           },
         });
         map.addLayer({
+          id: "national-generation-asset-labels",
+          type: "symbol",
+          source: "power-finder-registry-tiles",
+          "source-layer": "power_finder",
+          minzoom: 9,
+          maxzoom: 24,
+          filter: generationAssetFilter(
+            assetFilterRef.current.generationGroup,
+            assetFilterRef.current.minimumGenerationMw,
+          ),
+          layout: {
+            visibility: enabledLayersRef.current.generation_asset ? "visible" : "none",
+            "text-field": registeredMwLabel,
+            "text-size": 10,
+            "text-allow-overlap": false,
+          },
+          paint: {
+            "text-color": "#07111f",
+            "text-halo-color": "rgba(255,255,255,0.92)",
+            "text-halo-width": 1.5,
+          },
+        });
+        map.addLayer({
           id: "national-storage-assets",
           type: "circle",
           source: "power-finder-registry-tiles",
@@ -625,6 +680,26 @@ export function PowerFinderMap({
             "circle-color": "#a855f7",
             "circle-stroke-color": "#f3e8ff",
             "circle-stroke-width": 1,
+          },
+        });
+        map.addLayer({
+          id: "national-storage-asset-labels",
+          type: "symbol",
+          source: "power-finder-registry-tiles",
+          "source-layer": "power_finder",
+          minzoom: 6,
+          maxzoom: 24,
+          filter: storageAssetFilter(assetFilterRef.current.minimumStorageMw),
+          layout: {
+            visibility: enabledLayersRef.current.storage_asset ? "visible" : "none",
+            "text-field": registeredMwLabel,
+            "text-size": 10,
+            "text-allow-overlap": false,
+          },
+          paint: {
+            "text-color": "#2e1065",
+            "text-halo-color": "rgba(255,255,255,0.92)",
+            "text-halo-width": 1.5,
           },
         });
         map.addLayer({
@@ -993,7 +1068,9 @@ export function PowerFinderMap({
       "national-generation-overview": enabledLayers.generation_asset,
       "national-generation-overview-label": enabledLayers.generation_asset,
       "national-generation-assets": enabledLayers.generation_asset,
+      "national-generation-asset-labels": enabledLayers.generation_asset,
       "national-storage-assets": enabledLayers.storage_asset,
+      "national-storage-asset-labels": enabledLayers.storage_asset,
     } as const;
     for (const [layer, visible] of Object.entries(nationalLayers)) {
       if (map.getLayer(layer))
@@ -1272,10 +1349,11 @@ export function PowerFinderMap({
       "national-generation-overview",
       "national-generation-overview-label",
       "national-generation-assets",
+      "national-generation-asset-labels",
     ])
       if (map.getLayer(layer)) map.setFilter(layer, generationFilter);
-    if (map.getLayer("national-storage-assets"))
-      map.setFilter("national-storage-assets", storageFilter);
+    for (const layer of ["national-storage-assets", "national-storage-asset-labels"])
+      if (map.getLayer(layer)) map.setFilter(layer, storageFilter);
   }, [generationGroup, minimumGenerationMw, minimumStorageMw]);
 
   return (
