@@ -279,6 +279,7 @@ test("the release workbook passes the browser import preview", async ({ page }, 
   await page.getByRole("link", { name: "Return to Site Workspace" }).first().click();
   await expect(page.getByRole("heading", { name: "Brandenburg South Campus" })).toBeVisible();
   await page.getByRole("button", { name: "Readiness", exact: true }).click();
+  await page.getByRole("button", { name: "Grid", exact: true }).click();
   await page.getByRole("button", { name: "Evidence", exact: true }).click();
   await page.getByRole("button", { name: /Enrich site|Retry incomplete sources/i }).click();
   await expect(page.getByText(/sources completed/i)).toBeVisible({ timeout: 25_000 });

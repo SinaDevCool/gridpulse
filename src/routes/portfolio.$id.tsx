@@ -600,7 +600,7 @@ function GridWorkspace({
           </p>
         </div>
         <Link
-          className="primary-action"
+          className="primary-action grid-open-finder"
           to="/power-finder"
           search={{
             propertyId: property.id,
@@ -614,6 +614,13 @@ function GridWorkspace({
           <Map /> Open Power Finder
         </Link>
       </header>
+      <div className="grid-truth-note">
+        <ShieldAlert aria-hidden="true" />
+        <span>
+          Candidate ranking is an investigation aid. Capacity, feasibility, cost, and programme
+          require operator confirmation.
+        </span>
+      </div>
       <div className="workspace-facts">
         <article>
           <span>Recommended for investigation</span>
@@ -641,39 +648,52 @@ function GridWorkspace({
           </strong>
         </article>
       </div>
-      {property.recommendedCandidateId &&
-      property.recommendedCandidateId !== property.preferredCandidateId ? (
-        <button
-          type="button"
-          className="primary-action"
-          onClick={() =>
-            void onSave(
-              {
-                ...property,
-                preferredCandidateId: property.recommendedCandidateId ?? null,
-                selectedCandidateIds: Array.from(
-                  new Set([...property.selectedCandidateIds, property.recommendedCandidateId!]),
-                ),
-                gridScreeningSnapshots: (property.gridScreeningSnapshots ?? []).map(
-                  (snapshot, index) =>
-                    index === 0
-                      ? {
-                          ...snapshot,
-                          shortlistedCandidateId: property.recommendedCandidateId ?? null,
-                        }
-                      : snapshot,
-                ),
-              },
-              "Recommended connection hypothesis shortlisted",
-            )
-          }
-        >
-          Shortlist recommended candidate
-        </button>
-      ) : null}
-      <div className="candidate-table">
+      <div className="grid-candidate-heading">
+        <div>
+          <p className="context-label">Mapped alternatives</p>
+          <h3>Candidate comparison</h3>
+        </div>
+        {property.recommendedCandidateId &&
+        property.recommendedCandidateId !== property.preferredCandidateId ? (
+          <button
+            type="button"
+            className="primary-action shortlist-candidate-action"
+            onClick={() =>
+              void onSave(
+                {
+                  ...property,
+                  preferredCandidateId: property.recommendedCandidateId ?? null,
+                  selectedCandidateIds: Array.from(
+                    new Set([...property.selectedCandidateIds, property.recommendedCandidateId!]),
+                  ),
+                  gridScreeningSnapshots: (property.gridScreeningSnapshots ?? []).map(
+                    (snapshot, index) =>
+                      index === 0
+                        ? {
+                            ...snapshot,
+                            shortlistedCandidateId: property.recommendedCandidateId ?? null,
+                          }
+                        : snapshot,
+                  ),
+                },
+                "Recommended connection hypothesis shortlisted",
+              )
+            }
+          >
+            Shortlist recommended candidate
+          </button>
+        ) : null}
+      </div>
+      <div className="candidate-table" role="table" aria-label="Grid candidate comparison">
+        <div className="candidate-table-head" role="row">
+          <span>Candidate</span>
+          <span>Distance</span>
+          <span>Likely operator</span>
+          <span>Status</span>
+        </div>
         {property.candidateSnapshots.map((item) => (
           <div
+            role="row"
             key={item.id}
             className={item.id === property.preferredCandidateId ? "preferred" : ""}
           >
@@ -1056,7 +1076,13 @@ function Correspondence({
   const engagement = property.operatorEngagement!;
   return (
     <section className="correspondence-panel">
-      <h3>Engagement timeline</h3>
+      <header>
+        <div>
+          <p className="context-label">Traceable contact history</p>
+          <h3>Engagement timeline</h3>
+        </div>
+        <span>{engagement.correspondence.length} interactions</span>
+      </header>
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -1087,23 +1113,38 @@ function Correspondence({
           event.currentTarget.reset();
         }}
       >
-        <input name="occurredAt" type="date" required />
-        <select name="channel">
-          <option value="email">Email</option>
-          <option value="letter">Letter</option>
-          <option value="call">Call</option>
-          <option value="meeting">Meeting</option>
-          <option value="portal">Portal</option>
-        </select>
-        <select name="direction">
-          <option value="outbound">Outbound</option>
-          <option value="inbound">Inbound</option>
-          <option value="internal">Internal</option>
-        </select>
-        <input name="subject" required placeholder="Subject" />
-        <input name="summary" required placeholder="Outcome or commitment" />
+        <label>
+          Date
+          <input name="occurredAt" type="date" required />
+        </label>
+        <label>
+          Channel
+          <select name="channel">
+            <option value="email">Email</option>
+            <option value="letter">Letter</option>
+            <option value="call">Call</option>
+            <option value="meeting">Meeting</option>
+            <option value="portal">Portal</option>
+          </select>
+        </label>
+        <label>
+          Direction
+          <select name="direction">
+            <option value="outbound">Outbound</option>
+            <option value="inbound">Inbound</option>
+            <option value="internal">Internal</option>
+          </select>
+        </label>
+        <label className="correspondence-subject">
+          Subject
+          <input name="subject" required />
+        </label>
+        <label className="correspondence-outcome">
+          Outcome or commitment
+          <input name="summary" required />
+        </label>
         <button type="submit">
-          <Plus /> Record
+          <Plus aria-hidden="true" /> Record interaction
         </button>
       </form>
       <div>

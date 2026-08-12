@@ -18,6 +18,12 @@ export function PortfolioReadinessView({ sites }: { sites: AnonymousSiteSummary[
           <p>Compare confirmed site findings and unresolved screening checks.</p>
         </div>
       </header>
+      <div className="matrix-legend" aria-label="Readiness status legend">
+        <span className="status-favourable">Confirmed favourable</span>
+        <span className="status-conditional">Confirmed with conditions</span>
+        <span className="status-adverse">Confirmed adverse</span>
+        <span className="status-unknown">Unknown</span>
+      </div>
       <div className="portfolio-matrix">
         <div className="matrix-head">
           <b>Site</b>
@@ -45,7 +51,13 @@ export function PortfolioReadinessView({ sites }: { sites: AnonymousSiteSummary[
                   className={`matrix-status status-${status}`}
                   title={`${key}: ${status}`}
                 >
-                  {status}
+                  {status === "conditional"
+                    ? "Conditions"
+                    : status === "favourable"
+                      ? "Favourable"
+                      : status === "adverse"
+                        ? "Adverse"
+                        : "Unknown"}
                 </span>
               );
             })}

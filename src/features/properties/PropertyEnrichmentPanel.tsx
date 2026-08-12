@@ -19,6 +19,13 @@ export function PropertyEnrichmentPanel({
   const reviewed = (property.enrichmentFindings ?? []).filter((item) =>
     ["accepted", "edited", "rejected"].includes(item.status),
   );
+  const destinationLabel = (category: string) => {
+    if (category === "municipality") return "Municipality readiness";
+    if (category === "environment") return "Environmental constraints";
+    if (category === "grid") return "Grid connection";
+    if (category === "fibre") return "Fibre & carriers";
+    return "Site evidence";
+  };
   async function run() {
     setBusy(true);
     try {
@@ -56,12 +63,12 @@ export function PropertyEnrichmentPanel({
     }
   }
   return (
-    <section className="workspace-card enrichment-review" aria-labelledby="enrichment-heading">
-      <header className="workspace-card-heading">
+    <section className="enrichment-review" aria-labelledby="enrichment-heading">
+      <header className="enrichment-review-heading">
         <div>
           <p className="context-label">Source-attributed public context</p>
           <h3 id="enrichment-heading">Automatic site enrichment</h3>
-          <p>Review every proposed finding before it changes this site or counts as evidence.</p>
+          <p>Accept, edit, or reject each finding before it is mapped to the site.</p>
         </div>
         <button
           type="button"
@@ -97,6 +104,9 @@ export function PropertyEnrichmentPanel({
         {proposed.map((finding) => (
           <article key={finding.id}>
             <div className="enrichment-finding-copy">
+              <div className="enrichment-finding-destination">
+                Maps to {destinationLabel(finding.category)}
+              </div>
               <span>
                 {finding.source.replaceAll("_", " ")} · {finding.confidence} confidence
               </span>
@@ -122,11 +132,11 @@ export function PropertyEnrichmentPanel({
                 aria-label={`Accept ${finding.title}`}
                 onClick={() => void decide(finding.id, "accept")}
               >
-                <Check aria-hidden="true" /> Accept
+                <Check aria-hidden="true" /> Accept &amp; map
               </button>
               {editing === finding.id ? (
                 <button type="button" onClick={() => void decide(finding.id, "edit")}>
-                  <Check aria-hidden="true" /> Accept edit
+                  <Check aria-hidden="true" /> Save &amp; map
                 </button>
               ) : (
                 <button
