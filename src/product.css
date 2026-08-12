@@ -18696,7 +18696,7 @@ tbody tr:last-child td {
 /* Client-focused Power Finder decision rails */
 .finder-project-summary {
   display: block;
-  padding: 14px;
+  padding: 16px 18px 18px;
 }
 .finder-project-summary > div {
   padding-bottom: 0;
@@ -18711,7 +18711,7 @@ tbody tr:last-child td {
 .finder-project-summary .finder-project-actions {
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 8px;
+  gap: 10px;
   margin-top: 12px;
   border-top: 1px solid rgb(148 163 184 / 16%);
   padding-top: 12px;
@@ -19522,7 +19522,8 @@ tbody tr:last-child td {
   gap: 10px;
   grid-column: 1 / -1;
   margin-top: 4px;
-  padding: 12px;
+  padding: 14px;
+  margin-bottom: 4px;
   border: 1px solid #2b5369;
   border-radius: 8px;
   background: #0a2130;
@@ -19550,6 +19551,26 @@ tbody tr:last-child td {
   background: #0d3445;
   color: #92ebfa;
   font-weight: 800;
+  margin-top: 4px;
+}
+
+.power-finder-sidebar > :not(.finder-rail-sticky) {
+  margin-left: 12px;
+  margin-right: 12px;
+}
+
+.power-finder-sidebar > header {
+  padding-top: 4px;
+}
+
+.power-finder-sidebar .finder-screening-controls {
+  margin-left: 12px;
+  margin-right: 12px;
+}
+
+.power-finder-candidates {
+  padding-left: 2px;
+  padding-right: 6px;
 }
 .readiness-source-import {
   display: flex;

@@ -724,11 +724,14 @@ function PowerFinderPage() {
         north: project.latitude + latitudeRadius,
       },
       controller.signal,
-      { fallbackAllowed: true },
+      { fallbackAllowed: false, includeRegistryAssets: false },
     )
       .then(({ collection: siteCollection }) => setRankingCollection(siteCollection))
       .catch(() => {
-        if (!controller.signal.aborted) setRankingState("error");
+        if (!controller.signal.aborted) {
+          setRankingCollection(null);
+          setRankingState("error");
+        }
       });
     return () => controller.abort();
   }, [maxDistanceKm, project.latitude, project.longitude, regionCode]);
@@ -1299,6 +1302,7 @@ function PowerFinderPage() {
                   disabled={
                     propertySaveStatus === "saving" ||
                     propertySaveStatus === "saved" ||
+                    rankingState === "loading" ||
                     project.latitude == null ||
                     project.longitude == null
                   }
@@ -1307,13 +1311,15 @@ function PowerFinderPage() {
                   <BookmarkPlus aria-hidden="true" />
                   {propertySaveStatus === "saving"
                     ? "Saving screening…"
-                    : propertySaveStatus === "saved"
-                      ? "Screening saved"
-                      : propertySaveStatus === "error"
-                        ? "Try saving again"
-                        : activeProperty
-                          ? "Save screening to site"
-                          : "Create pipeline site"}
+                    : rankingState === "loading"
+                      ? "Finding candidates…"
+                      : propertySaveStatus === "saved"
+                        ? "Screening saved"
+                        : propertySaveStatus === "error"
+                          ? "Try saving again"
+                          : activeProperty
+                            ? "Save screening to site"
+                            : "Create pipeline site"}
                 </button>
               </div>
               {activeProperty && propertySaveStatus === "saved" ? (
@@ -2680,12 +2686,6 @@ function PowerFinderPage() {
                   <span>
                     <i className="legend-storage" /> Registered storage
                   </span>
-                  <small>
-                    At wider views, bubbles aggregate nearby registered assets; bubble area
-                    represents summed known registered MW and the label shows MW or asset count.
-                    Zoom in to split clusters into individual assets. Unknown MW is never added to a
-                    total.
-                  </small>
                 </>
               ))}
           </div>
@@ -2888,8 +2888,21 @@ function PowerFinderPage() {
                   )}
                   {selectedOpportunity ? (
                     <div className="candidate-capacity-banner" role="status">
-                      <strong>Capacity unknown</strong>
-                      <span>Operator confirmation and accepted evidence are required.</span>
+                      <strong>
+                        {selected.properties.capacity_state === "published_exact" &&
+                        selected.properties.exact_mw != null
+                          ? `${selected.properties.exact_mw} MW published observation`
+                          : selected.properties.capacity_state === "published_band" &&
+                              selected.properties.band_min_mw != null
+                            ? `${selected.properties.band_min_mw}–${selected.properties.band_max_mw ?? "?"} MW published band`
+                            : "Capacity unknown"}
+                      </strong>
+                      <span>
+                        {selected.properties.capacity_state === "published_exact" ||
+                        selected.properties.capacity_state === "published_band"
+                          ? `Source-attributed observation${selected.properties.capacity_published_at ? ` · published ${selected.properties.capacity_published_at}` : ""}. It is not current available capacity or a connection offer.`
+                          : "Mapped voltage is not MW capacity. Operator confirmation and accepted evidence are required."}
+                      </span>
                     </div>
                   ) : null}
                   {selectedCapacity &&

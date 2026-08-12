@@ -23,15 +23,20 @@ async function loadFallback(signal?: AbortSignal): Promise<PowerFinderCollection
   return toPublicPowerFinderCollection(parsePowerFinderCollection(await response.json()));
 }
 
-async function loadPublicViewport(bounds: PowerFinderBounds, signal?: AbortSignal) {
+async function loadPublicViewport(
+  bounds: PowerFinderBounds,
+  signal?: AbortSignal,
+  layers: { generation: boolean; storage: boolean } = { generation: true, storage: true },
+) {
   const query = new URLSearchParams({
     west: String(bounds.west),
     south: String(bounds.south),
     east: String(bounds.east),
     north: String(bounds.north),
-    generation: "true",
-    storage: "true",
+    generation: String(layers.generation),
+    storage: String(layers.storage),
   });
+  if (!layers.generation && !layers.storage) query.set("ranking", "true");
   const response = await fetch(`/api/power-finder/viewport?${query}`, { signal });
   if (!response.ok) throw new Error(`Public Finder API returned ${response.status}.`);
   return toPublicPowerFinderCollection(parsePowerFinderCollection(await response.json()));
@@ -40,19 +45,21 @@ async function loadPublicViewport(bounds: PowerFinderBounds, signal?: AbortSigna
 export async function loadPowerFinderViewport(
   bounds: PowerFinderBounds,
   signal?: AbortSignal,
-  options: { fallbackAllowed?: boolean } = {},
+  options: { fallbackAllowed?: boolean; includeRegistryAssets?: boolean } = {},
 ): Promise<{ collection: PowerFinderCollection; mode: PowerFinderDataMode }> {
   if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
   if (isFinderMvp()) {
-    if (options.fallbackAllowed === false) {
-      throw new Error(
-        "No accepted national release is available yet. Select Brandenburg to inspect the public release.",
-      );
-    }
     try {
-      return { collection: await loadPublicViewport(bounds, signal), mode: "public_database" };
+      return {
+        collection: await loadPublicViewport(bounds, signal, {
+          generation: options.includeRegistryAssets !== false,
+          storage: options.includeRegistryAssets !== false,
+        }),
+        mode: "public_database",
+      };
     } catch (error) {
       if (signal?.aborted) throw error;
+      if (options.fallbackAllowed === false) throw error;
       return { collection: await loadFallback(signal), mode: "published_artifact" };
     }
   }

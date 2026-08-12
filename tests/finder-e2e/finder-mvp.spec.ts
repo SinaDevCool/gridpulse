@@ -444,7 +444,7 @@ test("registered generation and storage are available without an account", async
 
 test("candidate detail and map legend can be dismissed on a laptop viewport", async ({ page }) => {
   await page.setViewportSize({ width: 1366, height: 768 });
-  await page.goto("/power-finder?lat=53.534&lng=8.649&mw=100&projectType=data_centre");
+  await page.goto("/power-finder?lat=52.31&lng=13.36&mw=100&projectType=data_centre");
   const candidates = page.getByRole("button", { name: /Show .* on map, .*\/100/ });
   await expect(candidates.first()).toBeVisible({ timeout: 15_000 });
   await candidates.first().click();
@@ -455,6 +455,25 @@ test("candidate detail and map legend can be dismissed on a laptop viewport", as
   await expect(page.getByRole("button", { name: "Show map legend" })).toBeVisible();
   await page.getByRole("button", { name: "Show map legend" }).click();
   await expect(page.getByRole("button", { name: "Hide map legend" })).toBeVisible();
+});
+
+test("editing the screening brief refreshes candidates before pipeline creation", async ({
+  page,
+}) => {
+  await page.goto("/power-finder");
+  const latitude = page.getByRole("spinbutton", { name: "Latitude" });
+  const openBrief = page.getByRole("button", { name: "Screening brief", exact: true });
+  await expect(openBrief.or(latitude)).toBeVisible();
+  if (await openBrief.isVisible()) {
+    await openBrief.click();
+  }
+  await expect(latitude).toBeVisible();
+  await latitude.fill("52.520008");
+  await page.getByRole("spinbutton", { name: "Longitude" }).fill("13.404954");
+  await expect(page.getByText(/candidate site-to-node matches/)).not.toContainText("0 candidate", {
+    timeout: 20_000,
+  });
+  await expect(page.getByRole("button", { name: "Create pipeline site" })).toBeEnabled();
 });
 
 test("public MVP excludes experimental capacity and network-study outputs", async ({ page }) => {

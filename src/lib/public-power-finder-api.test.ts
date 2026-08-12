@@ -20,9 +20,13 @@ describe("public Power Finder API", () => {
       includeGeneration: true,
       includeStorage: true,
     });
-    expect(parsePublicViewportRequest(new URL(
-      "https://gridpulseinsights.com/api/power-finder/viewport?west=11.3&south=48.0&east=12.0&north=48.5",
-    ))).toMatchObject({ west: 11.3, south: 48 });
+    expect(
+      parsePublicViewportRequest(
+        new URL(
+          "https://gridpulseinsights.com/api/power-finder/viewport?west=11.3&south=48.0&east=12.0&north=48.5",
+        ),
+      ),
+    ).toMatchObject({ west: 11.3, south: 48 });
     expect(() =>
       parsePublicViewportRequest(
         new URL(
@@ -79,6 +83,37 @@ describe("public Power Finder API", () => {
     expect(response?.headers.get("cache-control")).toContain("s-maxage=300");
     await expect(response?.json()).resolves.toMatchObject({
       metadata: { coverage_status: "unavailable" },
+    });
+  });
+
+  it("uses the bounded node-only RPC for candidate ranking", async () => {
+    const origin = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          type: "FeatureCollection",
+          metadata: { record_count: 1 },
+          features: [],
+        }),
+        { status: 200 },
+      ),
+    );
+    vi.stubGlobal("fetch", origin);
+    const response = await handlePublicPowerFinderRequest(
+      new Request(`${viewportUrl}&generation=false&storage=false&ranking=true`),
+      {
+        SUPABASE_URL: "https://example.supabase.co",
+        SUPABASE_PUBLISHABLE_KEY: "sb_publishable_test",
+      },
+    );
+    expect(response?.status).toBe(200);
+    const [url, options] = origin.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("https://example.supabase.co/rest/v1/rpc/power_finder_public_candidate_nodes");
+    expect(JSON.parse(String(options.body))).toEqual({
+      west: 12.9,
+      south: 52.1,
+      east: 13.8,
+      north: 52.7,
+      max_features: 1000,
     });
   });
 
