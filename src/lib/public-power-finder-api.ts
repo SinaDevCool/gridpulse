@@ -1,7 +1,7 @@
 const PUBLIC_VIEWPORT_PATH = "/api/power-finder/viewport";
 const PUBLIC_TILE_PATTERN = /^\/api\/power-finder\/tile\/(\d+)\/(\d+)\/(\d+)$/;
 const CACHE_SECONDS = 300;
-const TILE_CACHE_RELEASE = "20260810-national-mastr-exact-v3";
+const TILE_CACHE_RELEASE = "20260812-progressive-technology-v1";
 const TILE_EDGE_CACHE_SECONDS = 2_592_000;
 
 export type PublicFinderEnv = {

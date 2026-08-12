@@ -581,7 +581,7 @@ export function PowerFinderMap({
           source: "power-finder-registry-tiles",
           "source-layer": "power_finder",
           minzoom: 6,
-          maxzoom: 9,
+          maxzoom: 11,
           filter: generationAssetFilter(
             assetFilterRef.current.generationGroup,
             assetFilterRef.current.minimumGenerationMw,
@@ -603,7 +603,7 @@ export function PowerFinderMap({
           source: "power-finder-registry-tiles",
           "source-layer": "power_finder",
           minzoom: 6,
-          maxzoom: 9,
+          maxzoom: 11,
           filter: generationAssetFilter(
             assetFilterRef.current.generationGroup,
             assetFilterRef.current.minimumGenerationMw,
@@ -625,7 +625,7 @@ export function PowerFinderMap({
           type: "circle",
           source: "power-finder-registry-tiles",
           "source-layer": "power_finder",
-          minzoom: 9,
+          minzoom: 11,
           maxzoom: 24,
           filter: generationAssetFilter(
             assetFilterRef.current.generationGroup,
@@ -646,7 +646,7 @@ export function PowerFinderMap({
           type: "symbol",
           source: "power-finder-registry-tiles",
           "source-layer": "power_finder",
-          minzoom: 9,
+          minzoom: 11,
           maxzoom: 24,
           filter: generationAssetFilter(
             assetFilterRef.current.generationGroup,
