@@ -26,6 +26,8 @@ test("Finder landing, sector pages and methodology form the public product site"
     page.getByRole("heading", { name: /See which sites are worth advancing/i }),
   ).toBeVisible();
   await expect(page.getByRole("link", { name: /Open Site Pipeline/i }).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "How It Works" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Product Tour" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Review the data" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Discuss a site" })).toHaveCount(0);
 

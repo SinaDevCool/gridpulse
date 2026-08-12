@@ -12,10 +12,7 @@ const publicNavigation = [
   { label: "Methodology & Sources", to: "/data-sources" },
 ] as const;
 
-const finderNavigation = [
-  { label: "How It Works", to: "/", hash: "how-it-works" },
-  { label: "Product Tour", to: "/demo" },
-] as const;
+const finderNavigation = [{ label: "How It Works", to: "/", hash: "how-it-works" }] as const;
 
 export function PublicBrand() {
   return (
@@ -107,7 +104,7 @@ export function PublicFooter({
         </div>
         <nav aria-label="Public footer navigation">
           {finderMarketingChrome ? null : <Link to="/service">Assessment</Link>}
-          <Link to="/demo">Product Tour</Link>
+          {finderMarketingChrome ? null : <Link to="/demo">Product Tour</Link>}
           {finderMarketingChrome ? null : <Link to="/data-sources">Methodology &amp; Sources</Link>}
           {finderMarketingChrome ? (
             <Link to="/portfolio">Open Site Pipeline</Link>
