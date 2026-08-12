@@ -14323,6 +14323,96 @@ tbody tr:last-child td {
 .candidate-table > div:not(.candidate-table-head):hover {
   background: #0b202e;
 }
+.candidate-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #244254;
+  border-radius: 10px;
+  background: #071722;
+}
+.candidate-table-wrap .candidate-table {
+  width: 100%;
+  min-width: 760px;
+  margin: 0;
+  overflow: visible;
+  border: 0;
+  border-collapse: collapse;
+  border-radius: 0;
+  table-layout: fixed;
+}
+.candidate-table-wrap .candidate-table th,
+.candidate-table-wrap .candidate-table td {
+  padding: 17px 18px;
+  border-bottom: 1px solid #203c4d;
+  color: #9ab2bf;
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: left;
+  vertical-align: middle;
+  font-variant-numeric: tabular-nums;
+}
+.candidate-table-wrap .candidate-table thead th {
+  padding-block: 12px;
+  background: #0a1c29;
+  color: #7895a7;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.candidate-table-wrap .candidate-table th:first-child {
+  width: 40%;
+}
+.candidate-table-wrap .candidate-table th:nth-child(2) {
+  width: 13%;
+}
+.candidate-table-wrap .candidate-table th:nth-child(3) {
+  width: 25%;
+}
+.candidate-table-wrap .candidate-table tbody th {
+  color: #e4f1f5;
+  font-size: 14px;
+  font-weight: 750;
+}
+.candidate-table-wrap .candidate-table tbody tr:last-child > * {
+  border-bottom: 0;
+}
+.candidate-table-wrap .candidate-table tbody tr:hover > * {
+  background: #0b202e;
+}
+.candidate-table-wrap .candidate-table tbody tr.preferred > * {
+  background: #103040;
+}
+.candidate-status,
+.candidate-select-action {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.candidate-status {
+  border: 1px solid #2a8197;
+  color: #72e1f3;
+}
+.candidate-select-action {
+  border: 1px solid #31566b;
+  background: #0a2030;
+  color: #a5dae5;
+  cursor: pointer;
+}
+.candidate-select-action:hover {
+  border-color: #55cfe7;
+  background: #103345;
+  color: #effcff;
+}
+.candidate-select-action:focus-visible {
+  outline: 2px solid #67ddfa;
+  outline-offset: 2px;
+}
 .enrichment-review {
   margin-bottom: 24px;
   overflow: hidden;
@@ -14442,9 +14532,21 @@ tbody tr:last-child td {
   min-height: 88px;
 }
 .evidence-add-form button[type="submit"] {
+  display: inline-flex;
   min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 16px;
   border-radius: 7px;
   font-weight: 800;
+  line-height: 1;
+}
+.evidence-add-form button[type="submit"] svg,
+.correspondence-panel > form button svg {
+  flex: none;
+  width: 17px;
+  height: 17px;
 }
 .operator-panel {
   padding: 28px;
@@ -17955,6 +18057,43 @@ tbody tr:last-child td {
 .workspace-data-menu button svg {
   width: 15px;
 }
+.workspace-data-menu > div {
+  gap: 0.8rem;
+}
+.workspace-data-group {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.55rem;
+  border: 1px solid #183648;
+  border-radius: 0.55rem;
+  background: #06111a;
+}
+.workspace-data-group > span {
+  padding: 0.2rem 0.45rem 0.35rem;
+  color: #688899;
+  font-size: 0.61rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+.workspace-data-menu .workspace-data-group button {
+  min-height: 38px;
+  padding: 0.5rem 0.55rem;
+  color: #a9c0cb;
+  font-size: 0.78rem;
+  line-height: 1.25;
+}
+.workspace-data-menu .workspace-data-group button strong {
+  font-weight: 650;
+}
+.workspace-data-menu .workspace-data-group button:hover {
+  border-color: #285267;
+  background: #0b2230;
+  color: #effbfe;
+}
+.workspace-data-menu .workspace-data-group button:disabled {
+  color: #506775;
+}
 .decision-workspace-page .danger-action {
   color: #ff8a85;
 }
@@ -19099,9 +19238,10 @@ tbody tr:last-child td {
 
 /* MVP decision package: compact on-screen review aligned with the exported PDF. */
 .site-decision-record-page {
-  max-width: 1240px;
-  margin: 0 auto;
-  padding: 32px 28px 64px;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 32px max(28px, calc((100vw - 1240px) / 2)) 64px;
   background: #06111a;
 }
 .record-header {
@@ -19289,9 +19429,14 @@ tbody tr:last-child td {
   grid-column: 1 / -2;
 }
 .correspondence-panel > form button {
+  display: inline-flex;
   min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   padding: 0 16px;
   border-radius: 7px;
+  line-height: 1;
   white-space: nowrap;
 }
 @media (max-width: 900px) {

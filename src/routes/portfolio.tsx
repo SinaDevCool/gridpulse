@@ -338,48 +338,57 @@ function SitePipelineIndex() {
               <Database aria-hidden="true" /> Workspace Data
             </summary>
             <div>
-              <button
-                type="button"
-                onClick={() => patchSearch({ import: importOpen ? undefined : "open" })}
-              >
-                <FileUp aria-hidden="true" /> Import Sites
-              </button>
-              <button
-                type="button"
-                onClick={async () =>
-                  downloadJson(await exportAnonymousWorkspace(), "gridpulse-workspace-backup.json")
-                }
-              >
-                <Download aria-hidden="true" /> Export Backup
-              </button>
-              <button
-                type="button"
-                onClick={async () =>
-                  downloadJson(
-                    await exportAnonymousWorkspace(true),
-                    "gridpulse-complete-portable-workspace.json",
-                  )
-                }
-              >
-                <Download aria-hidden="true" /> Complete Backup + Documents
-              </button>
-              <button
-                type="button"
-                disabled={!exportRows.length}
-                onClick={() => void downloadPropertyXlsx(exportRows)}
-              >
-                <Download aria-hidden="true" /> Export Portfolio XLSX
-              </button>
-              <button
-                type="button"
-                disabled={!exportRows.length}
-                onClick={() => downloadPortfolioComparisonPdf(exportRows)}
-              >
-                <Download aria-hidden="true" /> Portfolio Decision PDF
-              </button>
-              <button type="button" onClick={() => restoreInput.current?.click()}>
-                <FileUp aria-hidden="true" /> Restore Backup
-              </button>
+              <div className="workspace-data-group">
+                <span>Bring Data In</span>
+                <button
+                  type="button"
+                  onClick={() => patchSearch({ import: importOpen ? undefined : "open" })}
+                >
+                  <FileUp aria-hidden="true" /> <strong>Import Sites</strong>
+                </button>
+                <button type="button" onClick={() => restoreInput.current?.click()}>
+                  <FileUp aria-hidden="true" /> <strong>Restore Backup</strong>
+                </button>
+              </div>
+              <div className="workspace-data-group">
+                <span>Export &amp; Share</span>
+                <button
+                  type="button"
+                  onClick={async () =>
+                    downloadJson(
+                      await exportAnonymousWorkspace(),
+                      "gridpulse-workspace-backup.json",
+                    )
+                  }
+                >
+                  <Download aria-hidden="true" /> <strong>Workspace Backup</strong>
+                </button>
+                <button
+                  type="button"
+                  onClick={async () =>
+                    downloadJson(
+                      await exportAnonymousWorkspace(true),
+                      "gridpulse-complete-portable-workspace.json",
+                    )
+                  }
+                >
+                  <Download aria-hidden="true" /> <strong>Backup With Documents</strong>
+                </button>
+                <button
+                  type="button"
+                  disabled={!exportRows.length}
+                  onClick={() => void downloadPropertyXlsx(exportRows)}
+                >
+                  <Download aria-hidden="true" /> <strong>Portfolio XLSX</strong>
+                </button>
+                <button
+                  type="button"
+                  disabled={!exportRows.length}
+                  onClick={() => downloadPortfolioComparisonPdf(exportRows)}
+                >
+                  <Download aria-hidden="true" /> <strong>Decision PDF</strong>
+                </button>
+              </div>
               <input
                 ref={restoreInput}
                 className="sr-only"

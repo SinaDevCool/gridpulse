@@ -275,6 +275,14 @@ test("the release workbook passes the browser import preview", async ({ page }, 
   const candidates = page.getByRole("button", { name: /Show .* on map, .*\/100/ });
   await expect(candidates.first()).toBeVisible({ timeout: 15_000 });
   await candidates.first().click();
+  let candidateDetail = page.locator(".power-finder-detail.open");
+  await candidateDetail.getByRole("button", { name: "Compare candidate" }).click();
+  await page.getByRole("button", { name: "Close detail" }).click();
+  await candidates.nth(1).click();
+  candidateDetail = page.locator(".power-finder-detail.open");
+  await candidateDetail.getByRole("button", { name: "Compare candidate" }).click();
+  await page.getByRole("button", { name: "Close detail" }).click();
+  await candidates.first().click();
   const shortlist = page.getByRole("button", { name: /Shortlist for Brandenburg South Campus/i });
   await expect(shortlist).toBeEnabled();
   await shortlist.click();
@@ -285,6 +293,10 @@ test("the release workbook passes the browser import preview", async ({ page }, 
   await expect(page.getByRole("heading", { name: "Brandenburg South Campus" })).toBeVisible();
   await page.getByRole("button", { name: "Site Checks", exact: true }).click();
   await page.getByRole("button", { name: "Power Options", exact: true }).click();
+  const alternativeShortlist = page.getByRole("button", { name: "Shortlist Instead" }).first();
+  await expect(alternativeShortlist).toBeVisible();
+  await alternativeShortlist.click();
+  await expect(page.getByText("Shortlisted", { exact: true })).toHaveCount(1);
   await page.getByRole("button", { name: "Sources", exact: true }).click();
   await page.getByRole("button", { name: /Enrich site|Retry incomplete sources/i }).click();
   await expect(page.getByText(/sources completed/i)).toBeVisible({ timeout: 25_000 });

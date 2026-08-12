@@ -711,6 +711,19 @@ function GridWorkspace({
   recommendedName: string | null;
   onSave: (p: AnonymousProperty, m?: string) => Promise<void>;
 }) {
+  const shortlistCandidate = (candidateId: string, candidateLabel: string) =>
+    onSave(
+      {
+        ...property,
+        preferredCandidateId: candidateId,
+        selectedCandidateIds: Array.from(new Set([...property.selectedCandidateIds, candidateId])),
+        gridScreeningSnapshots: (property.gridScreeningSnapshots ?? []).map((snapshot, index) =>
+          index === 0 ? { ...snapshot, shortlistedCandidateId: candidateId } : snapshot,
+        ),
+      },
+      `${candidateLabel} shortlisted as the connection hypothesis`,
+    );
+
   return (
     <>
       <header className="workspace-section-heading">
@@ -781,24 +794,9 @@ function GridWorkspace({
             type="button"
             className="primary-action shortlist-candidate-action"
             onClick={() =>
-              void onSave(
-                {
-                  ...property,
-                  preferredCandidateId: property.recommendedCandidateId ?? null,
-                  selectedCandidateIds: Array.from(
-                    new Set([...property.selectedCandidateIds, property.recommendedCandidateId!]),
-                  ),
-                  gridScreeningSnapshots: (property.gridScreeningSnapshots ?? []).map(
-                    (snapshot, index) =>
-                      index === 0
-                        ? {
-                            ...snapshot,
-                            shortlistedCandidateId: property.recommendedCandidateId ?? null,
-                          }
-                        : snapshot,
-                  ),
-                },
-                "Recommended connection hypothesis shortlisted",
+              void shortlistCandidate(
+                property.recommendedCandidateId!,
+                recommendedName ?? "Candidate",
               )
             }
           >
@@ -806,25 +804,43 @@ function GridWorkspace({
           </button>
         ) : null}
       </div>
-      <div className="candidate-table" role="table" aria-label="Grid candidate comparison">
-        <div className="candidate-table-head" role="row">
-          <span>Candidate</span>
-          <span>Distance</span>
-          <span>Likely operator</span>
-          <span>Status</span>
-        </div>
-        {property.candidateSnapshots.map((item) => (
-          <div
-            role="row"
-            key={item.id}
-            className={item.id === property.preferredCandidateId ? "preferred" : ""}
-          >
-            <strong>{item.nodeName}</strong>
-            <span>{item.distanceKm.toFixed(1)} km</span>
-            <span>{item.operator ?? "Operator unknown"}</span>
-            <span>{item.id === property.preferredCandidateId ? "Preferred" : "Alternative"}</span>
-          </div>
-        ))}
+      <div className="candidate-table-wrap">
+        <table className="candidate-table">
+          <caption className="sr-only">Grid candidate comparison</caption>
+          <thead>
+            <tr>
+              <th scope="col">Candidate</th>
+              <th scope="col">Distance</th>
+              <th scope="col">Likely Operator</th>
+              <th scope="col">Selection</th>
+            </tr>
+          </thead>
+          <tbody>
+            {property.candidateSnapshots.map((item) => {
+              const preferred = item.id === property.preferredCandidateId;
+              return (
+                <tr key={item.id} className={preferred ? "preferred" : ""}>
+                  <th scope="row">{item.nodeName}</th>
+                  <td>{item.distanceKm.toFixed(1)} km</td>
+                  <td>{item.operator ?? "Operator unknown"}</td>
+                  <td>
+                    {preferred ? (
+                      <span className="candidate-status">Shortlisted</span>
+                    ) : (
+                      <button
+                        type="button"
+                        className="candidate-select-action"
+                        onClick={() => void shortlistCandidate(item.id, item.nodeName)}
+                      >
+                        Shortlist Instead
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     </>
   );
@@ -1103,7 +1119,7 @@ function EvidenceOperator({
                 </label>
               </div>
               <button type="submit">
-                <Plus /> Add evidence
+                <Plus aria-hidden="true" /> <span>Add Evidence</span>
               </button>
             </form>
           </details>
@@ -1271,7 +1287,7 @@ function Correspondence({
           <input name="summary" required />
         </label>
         <button type="submit">
-          <Plus aria-hidden="true" /> Record interaction
+          <Plus aria-hidden="true" /> <span>Record Interaction</span>
         </button>
       </form>
       <div>
