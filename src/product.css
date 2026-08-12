@@ -13012,6 +13012,37 @@ tbody tr:last-child td {
   position: absolute;
   z-index: 2;
 }
+.power-finder-legend.is-collapsed {
+  padding: 0;
+}
+.power-finder-legend-toggle {
+  display: flex;
+  min-width: 180px;
+  min-height: 34px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #eef6ff;
+  cursor: pointer;
+  text-align: left;
+}
+.power-finder-legend.is-collapsed .power-finder-legend-toggle {
+  padding: 8px 11px;
+}
+.power-finder-legend-toggle strong {
+  margin: 0;
+}
+.power-finder-legend-toggle svg {
+  width: 16px;
+  height: 16px;
+}
+.power-finder-legend-toggle:focus-visible {
+  outline: 2px solid #67ddfa;
+  outline-offset: 2px;
+}
 .power-finder-legend strong {
   color: #eef6ff;
   margin-bottom: 2px;
@@ -13076,6 +13107,32 @@ tbody tr:last-child td {
 }
 .power-finder-detail:not(.open) {
   display: none;
+}
+.registered-capacity-filters {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #244254;
+}
+.registered-capacity-filters label {
+  display: grid;
+  gap: 5px;
+  color: #91a9b7;
+  font-size: 11px;
+  font-weight: 700;
+}
+.registered-capacity-filters select {
+  width: 100%;
+  min-height: 40px;
+  padding: 7px 9px;
+  border: 1px solid #28485b;
+  border-radius: 6px;
+  background: #07131e;
+  color: #e1f0f4;
+}
+.registered-capacity-filters .layer-visibility-note {
+  margin: 2px 0 0;
 }
 
 .power-finder-page,

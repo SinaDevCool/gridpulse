@@ -55,6 +55,42 @@ const generationColour: ExpressionSpecification = [
   "#f472b6",
   "#94a3b8",
 ];
+
+function generationAssetFilter(group: string, minimumMw: number): ExpressionSpecification {
+  const conditions: ExpressionSpecification[] = [["==", ["get", "kind"], "generation_asset"]];
+  if (group !== "all") conditions.push(["==", ["get", "generation_group"], group]);
+  if (minimumMw > 0)
+    conditions.push([">=", ["coalesce", ["get", "net_capacity_mw"], -1], minimumMw]);
+  return ["all", ...conditions] as ExpressionSpecification;
+}
+
+function storageAssetFilter(minimumMw: number): ExpressionSpecification {
+  return (
+    minimumMw > 0
+      ? [
+          "all",
+          ["==", ["get", "kind"], "storage_asset"],
+          [">=", ["coalesce", ["get", "net_capacity_mw"], -1], minimumMw],
+        ]
+      : ["==", ["get", "kind"], "storage_asset"]
+  ) as ExpressionSpecification;
+}
+
+const registeredCapacityRadius: ExpressionSpecification = [
+  "interpolate",
+  ["linear"],
+  ["sqrt", ["max", 0.01, ["coalesce", ["get", "net_capacity_mw"], 0.01]]],
+  0.1,
+  3,
+  1,
+  5,
+  3.2,
+  8,
+  10,
+  13,
+  31.7,
+  19,
+];
 const localGenerationColour: ExpressionSpecification = [
   "match",
   ["coalesce", ["get", "generation_group"], ["get", "technology"]],
@@ -104,6 +140,9 @@ type PowerFinderMapProps = {
   previewFeature?: PowerFinderFeature | null;
   mapMode: "voltage" | "evidence" | "capacity";
   basemapMode?: "dark" | "light";
+  generationGroup?: string;
+  minimumGenerationMw?: number;
+  minimumStorageMw?: number;
   capacityNodes?: CalculatedCapacityNode[];
   capacityMetric?: CapacityMetric;
   requiredCapacityMw?: number;
@@ -201,6 +240,9 @@ export function PowerFinderMap({
   previewFeature,
   mapMode,
   basemapMode = "dark",
+  generationGroup = "all",
+  minimumGenerationMw = 0,
+  minimumStorageMw = 0,
   capacityNodes = [],
   capacityMetric = "firm_import_mw",
   requiredCapacityMw = 1,
@@ -229,6 +271,7 @@ export function PowerFinderMap({
   const capacityCoverageRef = useRef(capacityCoverage);
   const basemapModeRef = useRef(basemapMode);
   const enabledLayersRef = useRef(enabledLayers);
+  const assetFilterRef = useRef({ generationGroup, minimumGenerationMw, minimumStorageMw });
   onSelectRef.current = onSelect;
   onViewportChangeRef.current = onViewportChange;
   collectionRef.current = collection;
@@ -243,6 +286,7 @@ export function PowerFinderMap({
   capacityCoverageRef.current = capacityCoverage;
   basemapModeRef.current = basemapMode;
   enabledLayersRef.current = enabledLayers;
+  assetFilterRef.current = { generationGroup, minimumGenerationMw, minimumStorageMw };
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -486,12 +530,15 @@ export function PowerFinderMap({
           "source-layer": "power_finder",
           minzoom: 6,
           maxzoom: 9,
-          filter: ["==", ["get", "kind"], "generation_asset"],
+          filter: generationAssetFilter(
+            assetFilterRef.current.generationGroup,
+            assetFilterRef.current.minimumGenerationMw,
+          ),
           layout: {
             visibility: enabledLayersRef.current.generation_asset ? "visible" : "none",
           },
           paint: {
-            "circle-radius": ["interpolate", ["linear"], ["zoom"], 6, 1.35, 9, 3.2],
+            "circle-radius": registeredCapacityRadius,
             "circle-color": generationColour,
             "circle-opacity": ["interpolate", ["linear"], ["zoom"], 6, 0.72, 9, 0.9],
             "circle-stroke-color": "rgba(255, 255, 255, 0.7)",
@@ -505,12 +552,15 @@ export function PowerFinderMap({
           "source-layer": "power_finder",
           minzoom: 9,
           maxzoom: 24,
-          filter: ["==", ["get", "kind"], "generation_asset"],
+          filter: generationAssetFilter(
+            assetFilterRef.current.generationGroup,
+            assetFilterRef.current.minimumGenerationMw,
+          ),
           layout: {
             visibility: enabledLayersRef.current.generation_asset ? "visible" : "none",
           },
           paint: {
-            "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 4.5, 13, 7],
+            "circle-radius": registeredCapacityRadius,
             "circle-color": generationColour,
             "circle-stroke-color": "#ffffff",
             "circle-stroke-width": 1.25,
@@ -523,12 +573,12 @@ export function PowerFinderMap({
           "source-layer": "power_finder",
           minzoom: 6,
           maxzoom: 24,
-          filter: ["==", ["get", "kind"], "storage_asset"],
+          filter: storageAssetFilter(assetFilterRef.current.minimumStorageMw),
           layout: {
             visibility: enabledLayersRef.current.storage_asset ? "visible" : "none",
           },
           paint: {
-            "circle-radius": ["interpolate", ["linear"], ["zoom"], 6, 3, 9, 5],
+            "circle-radius": registeredCapacityRadius,
             "circle-color": "#a855f7",
             "circle-stroke-color": "#f3e8ff",
             "circle-stroke-width": 1,
@@ -638,7 +688,7 @@ export function PowerFinderMap({
           layout: { visibility: "none" },
           filter: ["!", ["has", "point_count"]],
           paint: {
-            "circle-radius": 4,
+            "circle-radius": registeredCapacityRadius,
             "circle-color": localGenerationColour,
             "circle-stroke-color": "#dcfce7",
             "circle-stroke-width": 1,
@@ -676,7 +726,7 @@ export function PowerFinderMap({
           layout: { visibility: "none" },
           filter: ["!", ["has", "point_count"]],
           paint: {
-            "circle-radius": 5,
+            "circle-radius": registeredCapacityRadius,
             "circle-color": "#a855f7",
             "circle-stroke-color": "#f3e8ff",
             "circle-stroke-width": 1,
@@ -1132,6 +1182,17 @@ export function PowerFinderMap({
       basemapMode === "light" ? "visible" : "none",
     );
   }, [basemapMode]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const generationFilter = generationAssetFilter(generationGroup, minimumGenerationMw);
+    const storageFilter = storageAssetFilter(minimumStorageMw);
+    for (const layer of ["national-generation-overview", "national-generation-assets"])
+      if (map.getLayer(layer)) map.setFilter(layer, generationFilter);
+    if (map.getLayer("national-storage-assets"))
+      map.setFilter("national-storage-assets", storageFilter);
+  }, [generationGroup, minimumGenerationMw, minimumStorageMw]);
 
   return (
     <div

@@ -14,6 +14,8 @@ import {
   ShieldCheck,
   Sun,
   Moon,
+  ChevronDown,
+  ChevronUp,
   Zap,
 } from "lucide-react";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
@@ -415,6 +417,11 @@ function PowerFinderPage() {
   );
   const [secondaryControlsOpen, setSecondaryControlsOpen] = useState(Boolean(search.propertyId));
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [legendOpen, setLegendOpen] = useState(true);
+  const [generationGroup, setGenerationGroup] = useState("all");
+  const [minimumGenerationMw, setMinimumGenerationMw] = useState(0);
+  const [minimumStorageMw, setMinimumStorageMw] = useState(0);
+  const detailDismissedRef = useRef(false);
   const [basemapMode, setBasemapMode] = useState<"dark" | "light">("dark");
   const [basemapHydrated, setBasemapHydrated] = useState(false);
   useEffect(() => {
@@ -750,14 +757,38 @@ function PowerFinderPage() {
         selectedTso !== "all" && selectedDso !== "all"
           ? canonicalOperator === selectedTso || canonicalOperator === selectedDso
           : matchesTso && matchesDso;
-      return enabled[properties.kind] && matchesQuery && matchesVoltage && matchesOperator;
+      const matchesRegisteredCapacity =
+        properties.kind === "generation_asset"
+          ? (generationGroup === "all" || properties.generation_group === generationGroup) &&
+            (minimumGenerationMw === 0 || (properties.net_capacity_mw ?? -1) >= minimumGenerationMw)
+          : properties.kind === "storage_asset"
+            ? minimumStorageMw === 0 || (properties.net_capacity_mw ?? -1) >= minimumStorageMw
+            : true;
+      return (
+        enabled[properties.kind] &&
+        matchesQuery &&
+        matchesVoltage &&
+        matchesOperator &&
+        matchesRegisteredCapacity
+      );
     });
     return {
       ...collection,
       features,
       metadata: { ...collection.metadata, record_count: features.length },
     };
-  }, [collection, enabled, minimumVoltage, operatorCatalog, query, selectedDso, selectedTso]);
+  }, [
+    collection,
+    enabled,
+    generationGroup,
+    minimumGenerationMw,
+    minimumStorageMw,
+    minimumVoltage,
+    operatorCatalog,
+    query,
+    selectedDso,
+    selectedTso,
+  ]);
 
   const operators = useMemo(() => {
     if (operatorCatalog.length) return operatorCatalog;
@@ -935,7 +966,8 @@ function PowerFinderPage() {
       ? selectedOpportunitySnapshot
       : null) ?? candidates.find((candidate) => candidate.id === search.candidate);
   useEffect(() => {
-    if (!search.propertyId || search.candidate || !candidates.length) return;
+    if (!search.propertyId || search.candidate || !candidates.length || detailDismissedRef.current)
+      return;
     const recommended = candidates[0];
     setInteractionNotice(
       `${recommended.nodeName} is the highest-ranked connection hypothesis for investigation. Capacity remains unconfirmed.`,
@@ -2174,11 +2206,67 @@ function PowerFinderPage() {
               ))}
             </div>
             {(enabled.generation_asset || enabled.storage_asset) && (
-              <p className="layer-visibility-note">
-                Registered generation and storage show exact public coordinates from the accepted
-                nationwide MaStR release. Zoom in for individual assets. If this view shows zero, no
-                exact published coordinate is available here; locations are never invented.
-              </p>
+              <div className="registered-capacity-filters">
+                {enabled.generation_asset ? (
+                  <>
+                    <label>
+                      <span>Generation Technology</span>
+                      <select
+                        aria-label="Generation technology"
+                        value={generationGroup}
+                        onChange={(event) => setGenerationGroup(event.target.value)}
+                      >
+                        <option value="all">All Technologies</option>
+                        <option value="solar">Solar</option>
+                        <option value="wind">Wind</option>
+                        <option value="biomass">Biomass</option>
+                        <option value="hydro">Hydro</option>
+                        <option value="geothermal">Geothermal</option>
+                        <option value="nuclear">Nuclear</option>
+                        <option value="gas">Gas</option>
+                        <option value="fossil_other">Other Fossil</option>
+                        <option value="other">Other / Unknown</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Minimum Registered Generation</span>
+                      <select
+                        aria-label="Minimum registered generation"
+                        value={minimumGenerationMw}
+                        onChange={(event) => setMinimumGenerationMw(Number(event.target.value))}
+                      >
+                        <option value="0">Any MW, Including Unknown</option>
+                        <option value="1">1+ MW</option>
+                        <option value="10">10+ MW</option>
+                        <option value="50">50+ MW</option>
+                        <option value="100">100+ MW</option>
+                        <option value="500">500+ MW</option>
+                      </select>
+                    </label>
+                  </>
+                ) : null}
+                {enabled.storage_asset ? (
+                  <label>
+                    <span>Minimum Registered Storage Power</span>
+                    <select
+                      aria-label="Minimum registered storage power"
+                      value={minimumStorageMw}
+                      onChange={(event) => setMinimumStorageMw(Number(event.target.value))}
+                    >
+                      <option value="0">Any MW, Including Unknown</option>
+                      <option value="1">1+ MW</option>
+                      <option value="10">10+ MW</option>
+                      <option value="50">50+ MW</option>
+                      <option value="100">100+ MW</option>
+                    </select>
+                  </label>
+                ) : null}
+                <p className="layer-visibility-note">
+                  Circle area represents registered net capacity where published. Small circles may
+                  mean low or unknown MW. This is nearby asset context, not available power or grid
+                  headroom.
+                </p>
+              </div>
             )}
             {(enabled.line || enabled.industrial_site) &&
               visibleLayerCounts.line + visibleLayerCounts.industrial_site === 0 && (
@@ -2428,6 +2516,9 @@ function PowerFinderPage() {
               previewFeature={previewFeature}
               mapMode={mapMode}
               basemapMode={basemapMode}
+              generationGroup={generationGroup}
+              minimumGenerationMw={minimumGenerationMw}
+              minimumStorageMw={minimumStorageMw}
               capacityNodes={activeCapacityNodes}
               capacityCoverage={
                 capacitySource === "berlin_synthetic" ? (berlinCapacity?.coverage ?? null) : null
@@ -2499,88 +2590,98 @@ function PowerFinderPage() {
               onVisibleLayerCounts={setVisibleLayerCounts}
             />
           )}
-          <div className="power-finder-legend" aria-label="Map legend">
-            <strong>
-              {mapMode === "capacity"
-                ? `${capacityMetricLabels[capacityMetric]} · MW`
-                : mapMode === "voltage"
-                  ? "Voltage context"
-                  : "Evidence authority"}
-            </strong>
-            {mapMode === "capacity" ? (
-              <>
-                <span>
-                  <i className="legend-capacity-high" /> Meets {requiredCapacityMw} MW
-                </span>
-                <span>
-                  <i className="legend-capacity-activation" /> Alternative pathway
-                </span>
-                <span>
-                  <i className="legend-capacity-low" /> Below {requiredCapacityMw} MW
-                </span>
-                <span>
-                  <i className="legend-capacity-stale" /> Stale · recalculate
-                </span>
-                <small>
-                  {capacitySource === "berlin_synthetic"
-                    ? "Berlin pocket · real mapped nodes, synthetic 110 kV model; not operator headroom"
-                    : capacityViewport?.nodes[0]
-                      ? `${capacityViewport.nodes[0].scenarioLabel} · ${capacityViewport.nodes[0].modelVersion}`
-                      : "No reviewed results in this workspace view"}
-                </small>
-              </>
-            ) : (
-              <>
-                <span>
-                  <i className="legend-node" /> Grid node · orange marker, voltage outline
-                </span>
-                {GRID_VOLTAGE_CLASSES.map((voltageClass) => (
-                  <span key={voltageClass.id}>
-                    <i
-                      className="legend-voltage-line"
-                      style={{ borderColor: voltageClass.color }}
-                    />
-                    {voltageClass.label}
+          <div className={`power-finder-legend ${legendOpen ? "is-open" : "is-collapsed"}`}>
+            <button
+              type="button"
+              className="power-finder-legend-toggle"
+              aria-expanded={legendOpen}
+              aria-label={legendOpen ? "Hide map legend" : "Show map legend"}
+              onClick={() => setLegendOpen((current) => !current)}
+            >
+              <strong>
+                {mapMode === "capacity"
+                  ? `${capacityMetricLabels[capacityMetric]} · MW`
+                  : mapMode === "voltage"
+                    ? "Voltage context"
+                    : "Evidence authority"}
+              </strong>
+              {legendOpen ? <ChevronDown aria-hidden="true" /> : <ChevronUp aria-hidden="true" />}
+            </button>
+            {legendOpen &&
+              (mapMode === "capacity" ? (
+                <>
+                  <span>
+                    <i className="legend-capacity-high" /> Meets {requiredCapacityMw} MW
                   </span>
-                ))}
-                <span>
-                  <i className="legend-site" /> Industrial land
-                </span>
-                <span>
-                  <i className="legend-generation" style={{ background: "#facc15" }} /> Solar
-                </span>
-                <span>
-                  <i className="legend-generation" style={{ background: "#38bdf8" }} /> Wind
-                </span>
-                <span>
-                  <i className="legend-generation" style={{ background: "#22c55e" }} /> Biomass
-                </span>
-                <span>
-                  <i className="legend-generation" style={{ background: "#06b6d4" }} /> Hydro
-                </span>
-                <span>
-                  <i className="legend-generation" style={{ background: "#f97316" }} />
-                  Geothermal
-                </span>
-                <span>
-                  <i className="legend-generation" style={{ background: "#f472b6" }} /> Nuclear
-                </span>
-                <span>
-                  <i className="legend-generation" style={{ background: "#a78bfa" }} /> Gas
-                </span>
-                <span>
-                  <i className="legend-generation" style={{ background: "#ef4444" }} /> Coal, oil
-                  &amp; other fossil
-                </span>
-                <span>
-                  <i className="legend-generation" style={{ background: "#94a3b8" }} /> Other /
-                  unknown
-                </span>
-                <span>
-                  <i className="legend-storage" /> Registered storage
-                </span>
-              </>
-            )}
+                  <span>
+                    <i className="legend-capacity-activation" /> Alternative pathway
+                  </span>
+                  <span>
+                    <i className="legend-capacity-low" /> Below {requiredCapacityMw} MW
+                  </span>
+                  <span>
+                    <i className="legend-capacity-stale" /> Stale · recalculate
+                  </span>
+                  <small>
+                    {capacitySource === "berlin_synthetic"
+                      ? "Berlin pocket · real mapped nodes, synthetic 110 kV model; not operator headroom"
+                      : capacityViewport?.nodes[0]
+                        ? `${capacityViewport.nodes[0].scenarioLabel} · ${capacityViewport.nodes[0].modelVersion}`
+                        : "No reviewed results in this workspace view"}
+                  </small>
+                </>
+              ) : (
+                <>
+                  <span>
+                    <i className="legend-node" /> Grid node · orange marker, voltage outline
+                  </span>
+                  {GRID_VOLTAGE_CLASSES.map((voltageClass) => (
+                    <span key={voltageClass.id}>
+                      <i
+                        className="legend-voltage-line"
+                        style={{ borderColor: voltageClass.color }}
+                      />
+                      {voltageClass.label}
+                    </span>
+                  ))}
+                  <span>
+                    <i className="legend-site" /> Industrial land
+                  </span>
+                  <span>
+                    <i className="legend-generation" style={{ background: "#facc15" }} /> Solar
+                  </span>
+                  <span>
+                    <i className="legend-generation" style={{ background: "#38bdf8" }} /> Wind
+                  </span>
+                  <span>
+                    <i className="legend-generation" style={{ background: "#22c55e" }} /> Biomass
+                  </span>
+                  <span>
+                    <i className="legend-generation" style={{ background: "#06b6d4" }} /> Hydro
+                  </span>
+                  <span>
+                    <i className="legend-generation" style={{ background: "#f97316" }} />
+                    Geothermal
+                  </span>
+                  <span>
+                    <i className="legend-generation" style={{ background: "#f472b6" }} /> Nuclear
+                  </span>
+                  <span>
+                    <i className="legend-generation" style={{ background: "#a78bfa" }} /> Gas
+                  </span>
+                  <span>
+                    <i className="legend-generation" style={{ background: "#ef4444" }} /> Coal, oil
+                    &amp; other fossil
+                  </span>
+                  <span>
+                    <i className="legend-generation" style={{ background: "#94a3b8" }} /> Other /
+                    unknown
+                  </span>
+                  <span>
+                    <i className="legend-storage" /> Registered storage
+                  </span>
+                </>
+              ))}
           </div>
 
           {finderMvpFeatures.activationStudy && activationOpen && selectedOpportunity && (
@@ -2741,6 +2842,7 @@ function PowerFinderPage() {
                     type="button"
                     className="detail-close"
                     onClick={async () => {
+                      detailDismissedRef.current = true;
                       await updateSearch({ candidate: undefined });
                       setSelectedOpportunitySnapshot(null);
                       setSelected(null);

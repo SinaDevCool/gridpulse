@@ -434,6 +434,25 @@ test("registered generation and storage are available without an account", async
   await storage.check();
   await expect(generation).toBeChecked();
   await expect(storage).toBeChecked();
+  await expect(page.getByLabel("Generation technology")).toBeVisible();
+  await page.getByLabel("Generation technology").selectOption("solar");
+  await page.getByLabel("Minimum registered generation").selectOption("10");
+  await page.getByLabel("Minimum registered storage power").selectOption("10");
+});
+
+test("candidate detail and map legend can be dismissed on a laptop viewport", async ({ page }) => {
+  await page.setViewportSize({ width: 1366, height: 768 });
+  await page.goto("/power-finder?lat=53.534&lng=8.649&mw=100&projectType=data_centre");
+  const candidates = page.getByRole("button", { name: /Show .* on map, .*\/100/ });
+  await expect(candidates.first()).toBeVisible({ timeout: 15_000 });
+  await candidates.first().click();
+  await expect(page.locator(".power-finder-detail.open")).toBeVisible();
+  await page.getByRole("button", { name: "Close detail" }).click();
+  await expect(page.locator(".power-finder-detail.open")).toHaveCount(0);
+  await page.getByRole("button", { name: "Hide map legend" }).click();
+  await expect(page.getByRole("button", { name: "Show map legend" })).toBeVisible();
+  await page.getByRole("button", { name: "Show map legend" }).click();
+  await expect(page.getByRole("button", { name: "Hide map legend" })).toBeVisible();
 });
 
 test("public MVP excludes experimental capacity and network-study outputs", async ({ page }) => {
