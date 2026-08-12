@@ -396,7 +396,10 @@ export function PowerFinderMap({
           type: "geojson",
           data: split.generationAssets,
           cluster: true,
-          clusterMaxZoom: 12,
+          // Registry records often share an official publication coordinate.
+          // Keep those co-located assets aggregated at close zooms so their
+          // summed registered MW does not collapse into overlapping points.
+          clusterMaxZoom: 18,
           clusterRadius: 34,
           clusterProperties: {
             registered_mw: ["+", ["number", ["get", "net_capacity_mw"], 0]],
@@ -413,7 +416,7 @@ export function PowerFinderMap({
           type: "geojson",
           data: split.storageAssets,
           cluster: true,
-          clusterMaxZoom: 12,
+          clusterMaxZoom: 18,
           clusterRadius: 34,
           clusterProperties: {
             registered_mw: ["+", ["number", ["get", "net_capacity_mw"], 0]],
@@ -718,7 +721,12 @@ export function PowerFinderMap({
             "text-field": [
               "case",
               [">", ["get", "known_mw_count"], 0],
-              ["concat", ["round", ["get", "registered_mw"]], " MW"],
+              [
+                "case",
+                ["<", ["get", "registered_mw"], 1],
+                "<1 MW",
+                ["concat", ["round", ["get", "registered_mw"]], " MW"],
+              ],
               ["concat", ["get", "point_count_abbreviated"], " assets"],
             ],
             "text-size": 10,
@@ -765,7 +773,12 @@ export function PowerFinderMap({
             "text-field": [
               "case",
               [">", ["get", "known_mw_count"], 0],
-              ["concat", ["round", ["get", "registered_mw"]], " MW"],
+              [
+                "case",
+                ["<", ["get", "registered_mw"], 1],
+                "<1 MW",
+                ["concat", ["round", ["get", "registered_mw"]], " MW"],
+              ],
               ["concat", ["get", "point_count_abbreviated"], " assets"],
             ],
             "text-size": 10,
