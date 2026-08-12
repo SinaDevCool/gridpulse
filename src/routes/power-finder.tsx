@@ -1401,22 +1401,36 @@ function PowerFinderPage() {
                         const rows = 4;
                         const longitudeStep = (east - west) / columns;
                         const latitudeStep = (north - south) / rows;
-                        const samples = await Promise.all(
-                          Array.from({ length: columns * rows }, (_, index) => {
-                            const column = index % columns;
-                            const row = Math.floor(index / columns);
-                            return loadPowerFinderViewport(
-                              {
-                                west: west + column * longitudeStep,
-                                south: south + row * latitudeStep,
-                                east: west + (column + 1) * longitudeStep,
-                                north: south + (row + 1) * latitudeStep,
-                              },
-                              undefined,
-                              { fallbackAllowed: false },
-                            );
-                          }),
-                        );
+                        const sampleBounds = Array.from({ length: columns * rows }, (_, index) => {
+                          const column = index % columns;
+                          const row = Math.floor(index / columns);
+                          return {
+                            west: west + column * longitudeStep,
+                            south: south + row * latitudeStep,
+                            east: west + (column + 1) * longitudeStep,
+                            north: south + (row + 1) * latitudeStep,
+                          };
+                        });
+                        const samples: Awaited<ReturnType<typeof loadPowerFinderViewport>>[] = [];
+                        let failedSampleCount = 0;
+                        // Keep regional discovery below the public endpoint's burst limit and
+                        // preserve usable tiles when one part of a Bundesland is unavailable.
+                        for (let offset = 0; offset < sampleBounds.length; offset += 2) {
+                          const batch = await Promise.allSettled(
+                            sampleBounds.slice(offset, offset + 2).map((bounds) =>
+                              loadPowerFinderViewport(bounds, undefined, {
+                                fallbackAllowed: false,
+                              }),
+                            ),
+                          );
+                          for (const sample of batch) {
+                            if (sample.status === "fulfilled") samples.push(sample.value);
+                            else failedSampleCount += 1;
+                          }
+                        }
+                        if (samples.length === 0) {
+                          throw new Error("No regional samples were available.");
+                        }
                         const byId = new Map<string, PowerFinderFeature>();
                         for (const sample of samples) {
                           for (const feature of sample.collection.features)
@@ -1450,7 +1464,13 @@ function PowerFinderPage() {
                         setDiscoveryState("ready");
                         setInteractionNotice(
                           results.length
-                            ? `${results.length} geographically distinct investigation locations found after regional sampling and local refinement.`
+                            ? `${results.length} geographically distinct investigation locations found${
+                                failedSampleCount > 0
+                                  ? ` from ${samples.length} of ${sampleBounds.length} available regional samples`
+                                  : " after regional sampling and local refinement"
+                              }. ${
+                                failedSampleCount > 0 ? "Unavailable areas remain unassessed." : ""
+                              }`
                             : "No investigation locations met the current mapped-data criteria. Try a wider node distance.",
                         );
                       } catch {
