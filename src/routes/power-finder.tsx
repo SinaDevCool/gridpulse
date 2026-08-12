@@ -7,6 +7,7 @@ import {
   Database,
   ExternalLink,
   MapPin,
+  MapPinned,
   Network,
   PanelLeftClose,
   PanelLeftOpen,
@@ -418,6 +419,7 @@ function PowerFinderPage() {
   const [secondaryControlsOpen, setSecondaryControlsOpen] = useState(Boolean(search.propertyId));
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [legendOpen, setLegendOpen] = useState(true);
+  const [finderWorkflow, setFinderWorkflow] = useState<"screen" | "discover">("screen");
   const [generationGroup, setGenerationGroup] = useState("all");
   const [minimumGenerationMw, setMinimumGenerationMw] = useState(0);
   const [minimumStorageMw, setMinimumStorageMw] = useState(0);
@@ -1244,101 +1246,169 @@ function PowerFinderPage() {
       >
         <section className="power-finder-sidebar" aria-label="Power Finder controls">
           <div className="finder-rail-sticky">
-            <div className="finder-project-summary">
-              <div>
-                <small>{activeProperty ? "Site under review" : "Current screening"}</small>
-                <strong>{project.name}</strong>
-                <span>
-                  {formatMw(project.importMw)} import · {project.preferredVoltageKv ?? "Any"} kV ·{" "}
-                  {project.maxDistanceKm} km
-                </span>
+            <div className="finder-workflow-switch" aria-label="Power Finder workflow">
+              <p>Choose your starting point</p>
+              <div role="group" aria-label="Power Finder modes">
+                <button
+                  type="button"
+                  className={finderWorkflow === "screen" ? "is-active" : ""}
+                  aria-pressed={finderWorkflow === "screen"}
+                  onClick={() => setFinderWorkflow("screen")}
+                >
+                  <MapPin aria-hidden="true" />
+                  <span>
+                    <strong>Screen a site</strong>
+                    <small>Test a known property</small>
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  className={finderWorkflow === "discover" ? "is-active" : ""}
+                  aria-pressed={finderWorkflow === "discover"}
+                  onClick={() => setFinderWorkflow("discover")}
+                >
+                  <MapPinned aria-hidden="true" />
+                  <span>
+                    <strong>Discover locations</strong>
+                    <small>Search across a region</small>
+                  </span>
+                </button>
               </div>
-              <div className="finder-project-actions">
-                <button
-                  type="button"
-                  aria-expanded={projectEditorOpen}
-                  aria-controls="finder-project-editor"
-                  onClick={() => {
-                    const opening = !projectEditorOpen;
-                    setProjectEditorOpen(opening);
-                    if (opening) {
-                      window.requestAnimationFrame(() =>
-                        document
-                          .getElementById("finder-project-editor")
-                          ?.scrollIntoView({ block: "nearest", behavior: "smooth" }),
-                      );
-                    }
-                  }}
-                >
-                  {projectEditorOpen ? "Close brief" : "Screening brief"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (
-                      (project.latitude != null || project.name !== defaultFinderProject.name) &&
-                      !window.confirm(
-                        "Start a new screening? Save the current property first if you want to keep it.",
-                      )
-                    )
-                      return;
-                    propertySaveRequest.current += 1;
-                    setProject({ ...defaultFinderProject, updatedAt: new Date().toISOString() });
-                    setActiveProperty(null);
-                    setSelected(null);
-                    setSelectedOpportunitySnapshot(null);
-                    setComparisonOpen(false);
-                    setPropertySaveStatus("idle");
-                    setShowAllCandidates(false);
-                    void navigate({ to: "/power-finder", search: {}, replace: true });
-                    setInteractionNotice("New screening started.");
-                  }}
-                >
-                  New site
-                </button>
+            </div>
+            {finderWorkflow === "discover" ? (
+              <section className="finder-discovery-intro" aria-labelledby="finder-discovery-title">
+                <p className="context-label">Regional opportunity discovery</p>
+                <h2 id="finder-discovery-title">
+                  Find investigation areas in {activeCoverage.regionName}
+                </h2>
+                <p>
+                  Compare mapped grid context, industrial land and the surrounding energy ecosystem
+                  without treating public mapping as capacity or feasibility evidence.
+                </p>
+                <dl>
+                  <div>
+                    <dt>Region</dt>
+                    <dd>{activeCoverage.regionName}</dd>
+                  </div>
+                  <div>
+                    <dt>Target load</dt>
+                    <dd>{formatMw(project.importMw)}</dd>
+                  </div>
+                  <div>
+                    <dt>Output</dt>
+                    <dd>10 investigation areas</dd>
+                  </div>
+                </dl>
                 <button
                   type="button"
                   className="primary-button"
-                  disabled={
-                    propertySaveStatus === "saving" ||
-                    propertySaveStatus === "saved" ||
-                    rankingState === "loading" ||
-                    project.latitude == null ||
-                    project.longitude == null
-                  }
-                  onClick={() => void persistScreening(candidates.slice(0, 3))}
+                  onClick={() => {
+                    setInteractionNotice(
+                      "Regional ranking is not enabled yet. Continue with Screen a site for defensible node screening.",
+                    );
+                  }}
                 >
-                  <BookmarkPlus aria-hidden="true" />
-                  {propertySaveStatus === "saving"
-                    ? "Saving screening…"
-                    : rankingState === "loading"
-                      ? "Finding candidates…"
-                      : propertySaveStatus === "saved"
-                        ? "Screening saved"
-                        : propertySaveStatus === "error"
-                          ? "Try saving again"
-                          : activeProperty
-                            ? "Save screening to site"
-                            : "Create pipeline site"}
+                  Define regional search
                 </button>
-              </div>
-              {activeProperty && propertySaveStatus === "saved" ? (
-                <div className="finder-workspace-return-card">
-                  <div>
-                    <strong>Pipeline site created</strong>
-                    <span>Continue from Summary, then review each workspace step.</span>
-                  </div>
-                  <Link
-                    className="finder-return-to-workspace"
-                    to="/portfolio/$id"
-                    params={{ id: activeProperty.id }}
-                    search={{ tab: "overview" }}
-                  >
-                    Open Site Workspace
-                  </Link>
+                <small>Recommended for investigation only. Capacity remains unknown.</small>
+              </section>
+            ) : (
+              <div className="finder-project-summary">
+                <div>
+                  <small>{activeProperty ? "Site under review" : "Current screening"}</small>
+                  <strong>{project.name}</strong>
+                  <span>
+                    {formatMw(project.importMw)} import · {project.preferredVoltageKv ?? "Any"} kV ·{" "}
+                    {project.maxDistanceKm} km
+                  </span>
                 </div>
-              ) : null}
-            </div>
+                <div className="finder-project-actions">
+                  <button
+                    type="button"
+                    aria-expanded={projectEditorOpen}
+                    aria-controls="finder-project-editor"
+                    onClick={() => {
+                      const opening = !projectEditorOpen;
+                      setProjectEditorOpen(opening);
+                      if (opening) {
+                        window.requestAnimationFrame(() =>
+                          document
+                            .getElementById("finder-project-editor")
+                            ?.scrollIntoView({ block: "nearest", behavior: "smooth" }),
+                        );
+                      }
+                    }}
+                  >
+                    {projectEditorOpen ? "Close brief" : "Screening brief"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (
+                        (project.latitude != null || project.name !== defaultFinderProject.name) &&
+                        !window.confirm(
+                          "Start a new screening? Save the current property first if you want to keep it.",
+                        )
+                      )
+                        return;
+                      propertySaveRequest.current += 1;
+                      setProject({ ...defaultFinderProject, updatedAt: new Date().toISOString() });
+                      setActiveProperty(null);
+                      setSelected(null);
+                      setSelectedOpportunitySnapshot(null);
+                      setComparisonOpen(false);
+                      setPropertySaveStatus("idle");
+                      setShowAllCandidates(false);
+                      void navigate({ to: "/power-finder", search: {}, replace: true });
+                      setInteractionNotice("New screening started.");
+                    }}
+                  >
+                    New site
+                  </button>
+                  <button
+                    type="button"
+                    className="primary-button"
+                    disabled={
+                      propertySaveStatus === "saving" ||
+                      propertySaveStatus === "saved" ||
+                      rankingState === "loading" ||
+                      project.latitude == null ||
+                      project.longitude == null
+                    }
+                    onClick={() => void persistScreening(candidates.slice(0, 3))}
+                  >
+                    <BookmarkPlus aria-hidden="true" />
+                    {propertySaveStatus === "saving"
+                      ? "Saving screening…"
+                      : rankingState === "loading"
+                        ? "Finding candidates…"
+                        : propertySaveStatus === "saved"
+                          ? "Screening saved"
+                          : propertySaveStatus === "error"
+                            ? "Try saving again"
+                            : activeProperty
+                              ? "Save screening to site"
+                              : "Create pipeline site"}
+                  </button>
+                </div>
+                {activeProperty && propertySaveStatus === "saved" ? (
+                  <div className="finder-workspace-return-card">
+                    <div>
+                      <strong>Pipeline site created</strong>
+                      <span>Continue from Summary, then review each workspace step.</span>
+                    </div>
+                    <Link
+                      className="finder-return-to-workspace"
+                      to="/portfolio/$id"
+                      params={{ id: activeProperty.id }}
+                      search={{ tab: "overview" }}
+                    >
+                      Open Site Workspace
+                    </Link>
+                  </div>
+                ) : null}
+              </div>
+            )}
           </div>
           <header>
             <p className="context-label">Power Finder · Public-source screen</p>
