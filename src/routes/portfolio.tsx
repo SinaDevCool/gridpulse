@@ -424,7 +424,7 @@ function SitePipelineIndex() {
                 {activeView === "pipeline"
                   ? "Sites Under Review"
                   : activeView === "readiness"
-                    ? "Portfolio Readiness"
+                    ? "Property Comparison"
                     : "Decision Review"}
               </h2>
               <p>
@@ -460,7 +460,7 @@ function SitePipelineIndex() {
                 {view === "pipeline"
                   ? "Pipeline"
                   : view === "readiness"
-                    ? "Readiness"
+                    ? "Comparison"
                     : "Decision Review"}
               </button>
             ))}

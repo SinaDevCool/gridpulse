@@ -47,12 +47,12 @@ import { screenProperty } from "@/features/properties/property-screening-workflo
 const tabs = ["overview", "qualification", "grid", "evidence", "operator", "decision"] as const;
 type Tab = (typeof tabs)[number];
 const tabDetails: Record<Tab, { label: string; hint: string; icon: typeof Gauge }> = {
-  overview: { label: "Summary", hint: "Site brief", icon: Building2 },
-  qualification: { label: "Readiness", hint: "Development checks", icon: Gauge },
-  grid: { label: "Grid", hint: "Connection options", icon: Map },
-  evidence: { label: "Evidence", hint: "Sources & documents", icon: FileText },
-  operator: { label: "Operator", hint: "Enquiry tracking", icon: RadioTower },
-  decision: { label: "Decision", hint: "Recommendation", icon: Gavel },
+  overview: { label: "Overview", hint: "Property brief", icon: Building2 },
+  qualification: { label: "Site Checks", hint: "Development review", icon: Gauge },
+  grid: { label: "Power Options", hint: "Connection hypotheses", icon: Map },
+  evidence: { label: "Sources", hint: "Evidence & documents", icon: FileText },
+  operator: { label: "Enquiries", hint: "External engagement", icon: RadioTower },
+  decision: { label: "Decision", hint: "Advance, hold or reject", icon: Gavel },
 };
 
 export const Route = createFileRoute("/portfolio/$id")({
@@ -234,10 +234,44 @@ function SiteWorkspace() {
                 onSave={save}
               />
             )}
+            <WorkspaceStepActions propertyId={property.id} current={tab} />
           </div>
         </section>
       </main>
     </AppShell>
+  );
+}
+
+function WorkspaceStepActions({ propertyId, current }: { propertyId: string; current: Tab }) {
+  const index = tabs.indexOf(current);
+  const previous = index > 0 ? tabs[index - 1] : null;
+  const next = index < tabs.length - 1 ? tabs[index + 1] : null;
+  return (
+    <nav className="workspace-step-actions" aria-label="Property review steps">
+      {previous ? (
+        <Link to="/portfolio/$id" params={{ id: propertyId }} search={{ tab: previous }}>
+          <ArrowLeft aria-hidden="true" /> Back to {tabDetails[previous].label}
+        </Link>
+      ) : (
+        <Link to="/portfolio" search={{ view: "pipeline" }}>
+          <ArrowLeft aria-hidden="true" /> Back to Portfolio
+        </Link>
+      )}
+      {next ? (
+        <Link
+          className="primary-action"
+          to="/portfolio/$id"
+          params={{ id: propertyId }}
+          search={{ tab: next }}
+        >
+          Next: {tabDetails[next].label}
+        </Link>
+      ) : (
+        <Link className="primary-action" to="/portfolio" search={{ view: "decisions" }}>
+          Return to Decision Review
+        </Link>
+      )}
+    </nav>
   );
 }
 
@@ -262,17 +296,54 @@ function Overview({
   onSave: (p: AnonymousProperty) => Promise<void>;
 }) {
   const profile = property.dataCentreProfile!;
+  const qualification = deriveQualification(property);
+  const constraints = qualification.dimensions.filter((item) => item.status === "adverse");
+  const supportingReasons = [
+    `${property.requiredTotalSiteLoadMw ?? property.project.importMw} MW client-declared requirement`,
+    candidateName ? `${candidateName} mapped as a connection hypothesis` : null,
+    property.municipality ? `${property.municipality} municipality identified` : null,
+  ].filter(Boolean) as string[];
   return (
     <>
       <header className="workspace-section-heading">
         <div>
-          <p className="context-label">Site Brief</p>
-          <h2>Opportunity overview</h2>
-          <p>
-            Keep the commercial brief concise. Public screening results are reviewed separately.
-          </p>
+          <p className="context-label">Property Brief</p>
+          <h2>Opportunity Overview</h2>
+          <p>Understand the opportunity, material concerns and next investigation step.</p>
         </div>
       </header>
+      <section className="overview-executive" aria-label="Executive property summary">
+        <article className="overview-recommendation">
+          <span>Current position</span>
+          <strong>{decisionRecommendationLabel(property)}</strong>
+          <p>
+            {property.decisionRationale ??
+              "Review the available context before recording an Advance, Hold or Reject decision."}
+          </p>
+        </article>
+        <article>
+          <span>Why investigate</span>
+          <ul>
+            {supportingReasons.slice(0, 3).map((reason) => (
+              <li key={reason}>{reason}</li>
+            ))}
+          </ul>
+        </article>
+        <article>
+          <span>Material concerns</span>
+          <ul>
+            {constraints.length ? (
+              constraints
+                .slice(0, 3)
+                .map((item) => (
+                  <li key={item.key}>{qualificationLabels[item.key]} constraint detected</li>
+                ))
+            ) : (
+              <li>{qualification.checksRemaining} checks still require review or evidence.</li>
+            )}
+          </ul>
+        </article>
+      </section>
       <form
         className="workspace-form"
         onSubmit={(event) => {
@@ -549,7 +620,7 @@ function Qualification({
               </label>
             ))
           ) : (
-            <p>Add evidence in the Evidence tab first.</p>
+            <p>Add confirming material in Sources first.</p>
           )}
         </details>
         <button type="submit">Save Review</button>
@@ -560,8 +631,8 @@ function Qualification({
     <>
       <header className="workspace-section-heading">
         <div>
-          <p className="context-label">Evidence-led review</p>
-          <h2>Data-centre readiness</h2>
+          <p className="context-label">Development review</p>
+          <h2>Site Checks</h2>
           <p>
             Review prefilled screening context, link confirming evidence, and change an outcome only
             when the source supports it. Missing information remains unknown.
@@ -644,8 +715,8 @@ function GridWorkspace({
     <>
       <header className="workspace-section-heading">
         <div>
-          <p className="context-label">Connection hypothesis</p>
-          <h2>Grid connection</h2>
+          <p className="context-label">Connection hypotheses</p>
+          <h2>Power Options</h2>
           <p>
             Power Finder remains the single screening engine. This page summarises its saved output.
           </p>
@@ -662,7 +733,7 @@ function GridWorkspace({
             candidate: property.preferredCandidateId ?? undefined,
           }}
         >
-          <Map /> Open Power Finder
+          <Map aria-hidden="true" /> Investigate on Map
         </Link>
       </header>
       <div className="grid-truth-note">
@@ -813,8 +884,13 @@ function EvidenceOperator({
     <>
       <header className="workspace-section-heading">
         <div>
-          <p className="context-label">Traceable evidence</p>
-          <h2>{mode === "evidence" ? "Evidence review" : "Operator engagement"}</h2>
+          <p className="context-label">Traceable property record</p>
+          <h2>{mode === "evidence" ? "Sources" : "Enquiries"}</h2>
+          <p>
+            {mode === "evidence"
+              ? "Review public findings, client declarations and supporting documents without merging their provenance."
+              : "Track external confirmation work and record only information sent or received."}
+          </p>
         </div>
       </header>
       {mode === "evidence" ? <PropertyEnrichmentPanel property={property} onSave={onSave} /> : null}
@@ -947,7 +1023,7 @@ function EvidenceOperator({
               <input name="due" type="date" defaultValue={engagement.nextActionDueAt ?? ""} />
             </label>
             <button type="submit" className="primary-action">
-              Save Operator Engagement
+              Save Enquiry
             </button>
           </form>
         </section>
@@ -1235,7 +1311,7 @@ function Decision({
       <header className="workspace-section-heading">
         <div>
           <p className="context-label">Controlled recommendation</p>
-          <h2>Site decision</h2>
+          <h2>Decision</h2>
           <p>
             The recommendation records what the team knows now. It does not replace technical or
             operator due diligence.
@@ -1254,6 +1330,38 @@ function Decision({
           </div>
         </div>
       )}
+      <section className="decision-gate-summary" aria-label="Decision evidence summary">
+        <article>
+          <span>Accepted evidence</span>
+          <strong>
+            {
+              (property.evidenceRegister ?? []).filter(
+                (item) => item.validationStatus === "validated",
+              ).length
+            }
+          </strong>
+        </article>
+        <article>
+          <span>Power candidate</span>
+          <strong>
+            {property.preferredCandidateId ? "Explicitly shortlisted" : "Not shortlisted"}
+          </strong>
+        </article>
+        <article>
+          <span>Operator response</span>
+          <strong>
+            {property.operatorEngagement?.enquiryStatus.replaceAll("_", " ") ?? "Not started"}
+          </strong>
+        </article>
+        <article>
+          <span>Capacity</span>
+          <strong>
+            {property.operatorEngagement?.indicatedCapacityMw != null
+              ? "Operator-indicated"
+              : "Not established"}
+          </strong>
+        </article>
+      </section>
       <form
         className="decision-form"
         onSubmit={async (event) => {

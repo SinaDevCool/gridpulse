@@ -19383,6 +19383,124 @@ tbody tr:last-child td {
     margin-right: 410px;
   }
 }
+
+/* Adviser workflow: property brief, guided review and decision controls. */
+.overview-executive {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+.overview-executive article {
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid #234457;
+  border-radius: 10px;
+  background: #0a1b28;
+}
+.overview-executive .overview-recommendation {
+  border-color: #2a7185;
+  background: linear-gradient(135deg, #0c2b3a, #0a1b28);
+}
+.overview-executive span,
+.decision-gate-summary span {
+  display: block;
+  color: #809aaa;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.overview-executive strong {
+  display: block;
+  margin-top: 8px;
+  color: #edf8fa;
+  font-size: 18px;
+  overflow-wrap: anywhere;
+}
+.overview-executive p,
+.overview-executive ul {
+  margin: 10px 0 0;
+  color: #a3b7c2;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.overview-executive ul {
+  padding-left: 18px;
+}
+.workspace-step-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #203d4e;
+}
+.workspace-step-actions a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 15px;
+  border: 1px solid #2a5065;
+  border-radius: 7px;
+  color: #9bddeb;
+  font-size: 13px;
+  font-weight: 750;
+  text-decoration: none;
+}
+.workspace-step-actions a:hover,
+.workspace-step-actions a:focus-visible {
+  border-color: #54d0e8;
+  color: #e9fbff;
+}
+.workspace-step-actions svg {
+  width: 17px;
+}
+.decision-gate-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  margin: 18px 0;
+  border: 1px solid #234457;
+  border-radius: 9px;
+  overflow: hidden;
+  background: #234457;
+}
+.decision-gate-summary article {
+  min-width: 0;
+  padding: 16px;
+  background: #0a1b28;
+}
+.decision-gate-summary strong {
+  display: block;
+  margin-top: 7px;
+  color: #e9f5f8;
+  font-size: 13px;
+  text-transform: capitalize;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 900px) {
+  .overview-executive,
+  .decision-gate-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 640px) {
+  .overview-executive,
+  .decision-gate-summary {
+    grid-template-columns: 1fr;
+  }
+  .workspace-step-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .workspace-step-actions a {
+    width: 100%;
+  }
+}
 @media (max-width: 1180px) {
   .site-queue-row {
     grid-template-columns: minmax(180px, 1.4fr) 85px 130px minmax(160px, 1fr) auto 18px;

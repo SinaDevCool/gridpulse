@@ -109,12 +109,12 @@ test("anonymous site workspace qualifies a site and records operator evidence", 
   await page.getByLabel("Municipality").fill("Bremen");
   await page.getByLabel("Site area (ha)").fill("12.5");
   await page.getByRole("button", { name: /Save site brief/i }).click();
-  await page.getByRole("button", { name: "Operator", exact: true }).click();
+  await page.getByRole("button", { name: "Enquiries", exact: true }).click();
   await page.getByRole("textbox", { name: "Operator", exact: true }).fill("Example Netz GmbH");
   await page.getByLabel("Enquiry status").selectOption("submitted");
   await page.getByLabel("Enquiry reference").fill("NVP-2026-001");
-  await page.getByRole("button", { name: /Save operator engagement/i }).click();
-  await page.getByRole("button", { name: "Evidence", exact: true }).click();
+  await page.getByRole("button", { name: /Save enquiry/i }).click();
+  await page.getByRole("button", { name: "Sources", exact: true }).click();
   await page.getByText("Add Client or Operator Evidence", { exact: true }).click();
   await page.getByPlaceholder("Evidence title").fill("Operator acknowledgement");
   await page
@@ -124,7 +124,7 @@ test("anonymous site workspace qualifies a site and records operator evidence", 
   await page.getByRole("button", { name: /Add evidence/i }).click();
   await expect(page.getByText("Operator acknowledgement")).toBeVisible();
   await page.getByRole("link", { name: /Sites Manage portfolio decisions/i }).click();
-  await page.getByRole("button", { name: "Readiness" }).click();
+  await page.getByRole("button", { name: "Comparison" }).click();
   await expect(page.getByText("Bremen Data Centre Campus").first()).toBeVisible();
 });
 
@@ -219,7 +219,7 @@ test("the MVP decision package is concise and downloads a valid PDF", async ({
   await page.getByRole("button", { name: "Create pipeline site", exact: true }).click();
   await page.getByRole("link", { name: "Open Site Workspace" }).first().click();
   await expect(page).toHaveURL(/tab=overview/);
-  await expect(page.getByRole("button", { name: "Summary", exact: true })).toHaveAttribute(
+  await expect(page.getByRole("button", { name: "Overview", exact: true })).toHaveAttribute(
     "aria-current",
     "page",
   );
@@ -283,9 +283,9 @@ test("the release workbook passes the browser import preview", async ({ page }, 
   );
   await page.getByRole("link", { name: "Return to Site Workspace" }).first().click();
   await expect(page.getByRole("heading", { name: "Brandenburg South Campus" })).toBeVisible();
-  await page.getByRole("button", { name: "Readiness", exact: true }).click();
-  await page.getByRole("button", { name: "Grid", exact: true }).click();
-  await page.getByRole("button", { name: "Evidence", exact: true }).click();
+  await page.getByRole("button", { name: "Site Checks", exact: true }).click();
+  await page.getByRole("button", { name: "Power Options", exact: true }).click();
+  await page.getByRole("button", { name: "Sources", exact: true }).click();
   await page.getByRole("button", { name: /Enrich site|Retry incomplete sources/i }).click();
   await expect(page.getByText(/sources completed/i)).toBeVisible({ timeout: 25_000 });
   await page.getByText("Add Client or Operator Evidence", { exact: true }).click();
@@ -296,11 +296,11 @@ test("the release workbook passes the browser import preview", async ({ page }, 
   await page.getByLabel("Category").selectOption("property");
   await page.getByRole("button", { name: /Add evidence/i }).click();
   await expect(page.getByText("Client site declaration")).toBeVisible();
-  await page.getByRole("button", { name: "Operator", exact: true }).click();
+  await page.getByRole("button", { name: "Enquiries", exact: true }).click();
   await page.getByRole("textbox", { name: "Operator", exact: true }).fill("Example Netz GmbH");
   await page.getByLabel("Enquiry status").selectOption("submitted");
   await page.getByLabel("Enquiry reference").fill("GP-DE-005-ENQUIRY");
-  await page.getByRole("button", { name: /Save operator engagement/i }).click();
+  await page.getByRole("button", { name: /Save enquiry/i }).click();
   await page.getByRole("button", { name: "Decision", exact: true }).click();
   await page.getByRole("radio", { name: "Hold" }).check();
   await page
@@ -321,7 +321,7 @@ test("legacy portfolio destinations redirect into unified Sites views", async ({
   await expect(page.getByRole("heading", { name: "Sites", exact: true })).toBeVisible();
   await page.goto("/reports?view=qualification");
   await expect(page).toHaveURL(/\/portfolio\?view=readiness/);
-  await expect(page.getByRole("button", { name: "Readiness" })).toHaveClass(/active/);
+  await expect(page.getByRole("button", { name: "Comparison" })).toHaveClass(/active/);
 });
 
 test("Sites remains usable without horizontal page overflow on mobile", async ({ page }) => {
