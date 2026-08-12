@@ -206,7 +206,7 @@ test("a stale site link cannot trap a new Power Finder screening in saving state
   await page.getByRole("button", { name: "Create pipeline site", exact: true }).click();
   await expect(page.getByRole("button", { name: "Screening saved", exact: true })).toBeDisabled();
   await expect(page).not.toHaveURL(new RegExp(`propertyId=${staleId}`));
-  await expect(page.getByRole("link", { name: "Return to Site Workspace" }).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "Open Site Workspace" }).first()).toBeVisible();
 });
 
 test("the MVP decision package is concise and downloads a valid PDF", async ({
@@ -217,7 +217,12 @@ test("the MVP decision package is concise and downloads a valid PDF", async ({
     timeout: 15_000,
   });
   await page.getByRole("button", { name: "Create pipeline site", exact: true }).click();
-  await page.getByRole("link", { name: "Return to Site Workspace" }).first().click();
+  await page.getByRole("link", { name: "Open Site Workspace" }).first().click();
+  await expect(page).toHaveURL(/tab=overview/);
+  await expect(page.getByRole("button", { name: "Summary", exact: true })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
   await page.getByRole("button", { name: "Decision", exact: true }).click();
   await page.getByRole("link", { name: "Open client decision record" }).click();
   await expect(page.getByRole("heading", { name: "Essential Qualification" })).toBeVisible();

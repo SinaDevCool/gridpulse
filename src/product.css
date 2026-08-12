@@ -19277,6 +19277,95 @@ tbody tr:last-child td {
     grid-column: auto;
   }
 }
+
+.finder-workspace-return-card {
+  display: grid;
+  gap: 10px;
+  grid-column: 1 / -1;
+  margin-top: 4px;
+  padding: 12px;
+  border: 1px solid #2b5369;
+  border-radius: 8px;
+  background: #0a2130;
+}
+.finder-workspace-return-card > div {
+  display: grid;
+  gap: 3px;
+}
+.finder-workspace-return-card strong {
+  color: #e8f6fa;
+  font-size: 12px;
+}
+.finder-workspace-return-card span {
+  color: #8da8b7;
+  font-size: 11px;
+  line-height: 1.4;
+}
+.finder-workspace-return-card .finder-return-to-workspace {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 8px 12px;
+  border-color: #2c93aa;
+  background: #0d3445;
+  color: #92ebfa;
+  font-weight: 800;
+}
+.readiness-source-import {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  margin-bottom: 22px;
+  padding: 22px 24px;
+  border: 1px solid #275166;
+  border-radius: 10px;
+  background: linear-gradient(105deg, #0b2635, #091a27);
+}
+.readiness-source-import h3 {
+  margin: 5px 0 7px;
+  color: #e9f5f8;
+  font-size: 18px;
+}
+.readiness-source-import p:not(.context-label) {
+  max-width: 720px;
+  margin: 0 0 8px;
+  color: #9ab0bd;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.readiness-source-import small {
+  color: #72ddec;
+}
+.readiness-source-import button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex: none;
+  min-width: 210px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid #2c93aa;
+  border-radius: 7px;
+  background: #0e3545;
+  color: #91eafb;
+  font-weight: 800;
+}
+.readiness-source-import button svg {
+  width: 17px;
+}
+@media (max-width: 760px) {
+  .readiness-source-import {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .readiness-source-import button {
+    width: 100%;
+  }
+}
 @media (max-width: 640px) {
   .site-decision-record-page {
     padding: 22px 14px 48px;

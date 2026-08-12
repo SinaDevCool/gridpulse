@@ -1273,14 +1273,20 @@ function PowerFinderPage() {
                 </button>
               </div>
               {activeProperty && propertySaveStatus === "saved" ? (
-                <Link
-                  className="finder-return-to-workspace"
-                  to="/portfolio/$id"
-                  params={{ id: activeProperty.id }}
-                  search={{ tab: "grid" }}
-                >
-                  Return to Site Workspace
-                </Link>
+                <div className="finder-workspace-return-card">
+                  <div>
+                    <strong>Pipeline site created</strong>
+                    <span>Continue from Summary, then review each workspace step.</span>
+                  </div>
+                  <Link
+                    className="finder-return-to-workspace"
+                    to="/portfolio/$id"
+                    params={{ id: activeProperty.id }}
+                    search={{ tab: "overview" }}
+                  >
+                    Open Site Workspace
+                  </Link>
+                </div>
               ) : null}
             </div>
           </div>
@@ -3080,7 +3086,7 @@ function PowerFinderPage() {
                           className="secondary-button candidate-return-action"
                           to="/portfolio/$id"
                           params={{ id: activeProperty.id }}
-                          search={{ tab: "grid" }}
+                          search={{ tab: "overview" }}
                         >
                           Return to Site Workspace
                         </Link>

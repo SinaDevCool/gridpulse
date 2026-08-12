@@ -6,10 +6,12 @@ import {
   FileText,
   Gauge,
   Gavel,
+  LoaderCircle,
   Map,
   RadioTower,
   Paperclip,
   Plus,
+  RefreshCw,
   ShieldAlert,
   Trash2,
   Upload,
@@ -40,6 +42,7 @@ import {
 } from "@/features/anonymous-workspace/data-centre-qualification";
 import { preferredCandidate } from "@/features/anonymous-workspace/portfolio-projection";
 import { PropertyEnrichmentPanel } from "@/features/properties/PropertyEnrichmentPanel";
+import { screenProperty } from "@/features/properties/property-screening-workflow";
 
 const tabs = ["overview", "qualification", "grid", "evidence", "operator", "decision"] as const;
 type Tab = (typeof tabs)[number];
@@ -447,6 +450,8 @@ function Qualification({
   onSave: (p: AnonymousProperty, m?: string) => Promise<void>;
 }) {
   const result = deriveQualification(property);
+  const [screening, setScreening] = useState(false);
+  const latestRun = property.enrichmentRuns?.[0];
   const primaryKeys: QualificationDimensionKey[] = [
     "land",
     "planning",
@@ -563,6 +568,52 @@ function Qualification({
           </p>
         </div>
       </header>
+      <section className="readiness-source-import" aria-label="Public context import">
+        <div>
+          <p className="context-label">Step 1 · Import available context</p>
+          <h3>Prefill readiness from accepted public sources</h3>
+          <p>
+            Adds screened context for review. It does not confirm land control, planning, grid
+            capacity, fibre service, or development feasibility.
+          </p>
+          {latestRun ? (
+            <small>
+              {latestRun.completedSources.length} sources completed ·{" "}
+              {latestRun.failedSources.length} incomplete
+            </small>
+          ) : (
+            <small>No public-source screening has been run for this site.</small>
+          )}
+        </div>
+        <button
+          type="button"
+          disabled={screening}
+          onClick={async () => {
+            setScreening(true);
+            try {
+              const screened = await screenProperty(property, "manual_refresh");
+              await onSave(screened, "Available public context imported");
+            } catch (error) {
+              toast.error(
+                error instanceof Error ? error.message : "Public context could not be imported.",
+              );
+            } finally {
+              setScreening(false);
+            }
+          }}
+        >
+          {screening ? (
+            <LoaderCircle className="spin" aria-hidden="true" />
+          ) : (
+            <RefreshCw aria-hidden="true" />
+          )}
+          {screening
+            ? "Importing…"
+            : latestRun
+              ? "Refresh Public Context"
+              : "Import Public Context"}
+        </button>
+      </section>
       <div className="qualification-list">
         {result.dimensions.filter((item) => primaryKeys.includes(item.key)).map(renderDimension)}
         <details className="additional-readiness-checks">
