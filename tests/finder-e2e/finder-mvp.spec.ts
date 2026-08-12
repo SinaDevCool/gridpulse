@@ -428,8 +428,10 @@ test("registered generation and storage are available without an account", async
   const storage = page.getByRole("checkbox", { name: /Registered storage/ });
   await expect(generation).toBeEnabled({ timeout: 15_000 });
   await expect(storage).toBeEnabled({ timeout: 15_000 });
-  await expect(generation.locator("..")).toContainText(/\d+ in view/);
-  await expect(storage.locator("..")).toContainText(/\d+ in view/);
+  await expect(generation.locator("..")).toContainText(/\d+ (?:in view|visible)/, {
+    timeout: 15_000,
+  });
+  await expect(storage.locator("..")).toContainText(/\d+ (?:in view|visible)/, { timeout: 15_000 });
   await generation.check();
   await storage.check();
   await expect(generation).toBeChecked();

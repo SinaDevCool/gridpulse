@@ -2602,7 +2602,7 @@ function PowerFinderPage() {
                 {mapMode === "capacity"
                   ? `${capacityMetricLabels[capacityMetric]} · MW`
                   : mapMode === "voltage"
-                    ? "Voltage context"
+                    ? "Map legend"
                     : "Evidence authority"}
               </strong>
               {legendOpen ? <ChevronDown aria-hidden="true" /> : <ChevronUp aria-hidden="true" />}
@@ -2680,6 +2680,12 @@ function PowerFinderPage() {
                   <span>
                     <i className="legend-storage" /> Registered storage
                   </span>
+                  <small>
+                    At wider views, bubbles aggregate nearby registered assets; bubble area
+                    represents summed known registered MW and the label shows MW or asset count.
+                    Zoom in to split clusters into individual assets. Unknown MW is never added to a
+                    total.
+                  </small>
                 </>
               ))}
           </div>

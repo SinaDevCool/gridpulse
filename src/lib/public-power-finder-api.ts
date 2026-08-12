@@ -1,7 +1,7 @@
 const PUBLIC_VIEWPORT_PATH = "/api/power-finder/viewport";
 const PUBLIC_TILE_PATTERN = /^\/api\/power-finder\/tile\/(\d+)\/(\d+)\/(\d+)$/;
 const CACHE_SECONDS = 300;
-const TILE_CACHE_RELEASE = "20260810-national-mastr-exact-v3";
+const TILE_CACHE_RELEASE = "20260812-capacity-clusters-v1";
 const TILE_EDGE_CACHE_SECONDS = 2_592_000;
 
 export type PublicFinderEnv = {
@@ -261,13 +261,17 @@ export async function handlePublicPowerFinderTileRequest(
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 25_000);
   try {
-    const rpc = registryOnly
-      ? "power_finder_public_registry_tile"
-      : "power_finder_public_tile";
+    const rpc = registryOnly ? "power_finder_public_registry_tile" : "power_finder_public_tile";
     const response = await fetch(`${supabaseUrl}/rest/v1/rpc/${rpc}`, {
       method: "POST",
       headers,
-      body: JSON.stringify({ z, x, y, include_generation: includeGeneration, include_storage: includeStorage }),
+      body: JSON.stringify({
+        z,
+        x,
+        y,
+        include_generation: includeGeneration,
+        include_storage: includeStorage,
+      }),
       signal: controller.signal,
     });
     if (!response.ok) return jsonResponse({ error: "Tile origin unavailable." }, 502);

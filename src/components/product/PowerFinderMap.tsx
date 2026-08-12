@@ -60,7 +60,11 @@ function generationAssetFilter(group: string, minimumMw: number): ExpressionSpec
   const conditions: ExpressionSpecification[] = [["==", ["get", "kind"], "generation_asset"]];
   if (group !== "all") conditions.push(["==", ["get", "generation_group"], group]);
   if (minimumMw > 0)
-    conditions.push([">=", ["coalesce", ["get", "net_capacity_mw"], -1], minimumMw]);
+    conditions.push([
+      ">=",
+      ["coalesce", ["get", "registered_mw"], ["get", "net_capacity_mw"], -1],
+      minimumMw,
+    ]);
   return ["all", ...conditions] as ExpressionSpecification;
 }
 
@@ -70,7 +74,7 @@ function storageAssetFilter(minimumMw: number): ExpressionSpecification {
       ? [
           "all",
           ["==", ["get", "kind"], "storage_asset"],
-          [">=", ["coalesce", ["get", "net_capacity_mw"], -1], minimumMw],
+          [">=", ["coalesce", ["get", "registered_mw"], ["get", "net_capacity_mw"], -1], minimumMw],
         ]
       : ["==", ["get", "kind"], "storage_asset"]
   ) as ExpressionSpecification;
@@ -90,6 +94,44 @@ const registeredCapacityRadius: ExpressionSpecification = [
   13,
   31.7,
   19,
+];
+const nationalRegisteredCapacityRadius: ExpressionSpecification = [
+  "interpolate",
+  ["linear"],
+  ["sqrt", ["max", 0.01, ["coalesce", ["get", "registered_mw"], ["get", "net_capacity_mw"], 0.01]]],
+  0.1,
+  6,
+  3.2,
+  12,
+  10,
+  18,
+  31.7,
+  28,
+  100,
+  38,
+];
+
+const generationClusterColour: ExpressionSpecification = [
+  "case",
+  [">=", ["get", "solar_count"], ["max", ["get", "wind_count"], ["get", "other_count"]]],
+  "#facc15",
+  [">=", ["get", "wind_count"], ["get", "other_count"]],
+  "#38bdf8",
+  "#94a3b8",
+];
+
+const registeredClusterRadius: ExpressionSpecification = [
+  "interpolate",
+  ["linear"],
+  ["sqrt", ["max", 1, ["get", "registered_mw"]]],
+  1,
+  14,
+  10,
+  20,
+  32,
+  28,
+  100,
+  38,
 ];
 const localGenerationColour: ExpressionSpecification = [
   "match",
@@ -372,6 +414,16 @@ export function PowerFinderMap({
           cluster: true,
           clusterMaxZoom: 12,
           clusterRadius: 34,
+          clusterProperties: {
+            registered_mw: ["+", ["number", ["get", "net_capacity_mw"], 0]],
+            known_mw_count: ["+", ["case", ["has", "net_capacity_mw"], 1, 0]],
+            solar_count: ["+", ["case", ["==", ["get", "generation_group"], "solar"], 1, 0]],
+            wind_count: ["+", ["case", ["==", ["get", "generation_group"], "wind"], 1, 0]],
+            other_count: [
+              "+",
+              ["case", ["in", ["get", "generation_group"], ["literal", ["solar", "wind"]]], 0, 1],
+            ],
+          },
         });
         map.addSource(sourceIds.storage_asset, {
           type: "geojson",
@@ -379,6 +431,10 @@ export function PowerFinderMap({
           cluster: true,
           clusterMaxZoom: 12,
           clusterRadius: 34,
+          clusterProperties: {
+            registered_mw: ["+", ["number", ["get", "net_capacity_mw"], 0]],
+            known_mw_count: ["+", ["case", ["has", "net_capacity_mw"], 1, 0]],
+          },
         });
         map.addSource("berlin-capacity-coverage", {
           type: "geojson",
@@ -538,11 +594,38 @@ export function PowerFinderMap({
             visibility: enabledLayersRef.current.generation_asset ? "visible" : "none",
           },
           paint: {
-            "circle-radius": registeredCapacityRadius,
+            "circle-radius": nationalRegisteredCapacityRadius,
             "circle-color": generationColour,
             "circle-opacity": ["interpolate", ["linear"], ["zoom"], 6, 0.72, 9, 0.9],
             "circle-stroke-color": "rgba(255, 255, 255, 0.7)",
             "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 6, 0.25, 9, 0.7],
+          },
+        });
+        map.addLayer({
+          id: "national-generation-overview-label",
+          type: "symbol",
+          source: "power-finder-registry-tiles",
+          "source-layer": "power_finder",
+          minzoom: 6,
+          maxzoom: 9,
+          filter: generationAssetFilter(
+            assetFilterRef.current.generationGroup,
+            assetFilterRef.current.minimumGenerationMw,
+          ),
+          layout: {
+            visibility: enabledLayersRef.current.generation_asset ? "visible" : "none",
+            "text-field": [
+              "case",
+              [">", ["get", "known_mw_count"], 0],
+              ["concat", ["round", ["get", "registered_mw"]], " MW"],
+              ["concat", ["get", "asset_count"], " assets"],
+            ],
+            "text-size": 10,
+          },
+          paint: {
+            "text-color": "#07111f",
+            "text-halo-color": "rgba(255,255,255,0.9)",
+            "text-halo-width": 1,
           },
         });
         map.addLayer({
@@ -663,8 +746,8 @@ export function PowerFinderMap({
           layout: { visibility: "none" },
           filter: ["has", "point_count"],
           paint: {
-            "circle-radius": ["step", ["get", "point_count"], 12, 20, 16, 100, 20],
-            "circle-color": localGenerationColour,
+            "circle-radius": registeredClusterRadius,
+            "circle-color": generationClusterColour,
             "circle-stroke-color": "#dcfce7",
             "circle-stroke-width": 2,
           },
@@ -675,11 +758,20 @@ export function PowerFinderMap({
           source: sourceIds.generation_asset,
           layout: {
             visibility: "none",
-            "text-field": ["get", "point_count_abbreviated"],
+            "text-field": [
+              "case",
+              [">", ["get", "known_mw_count"], 0],
+              ["concat", ["round", ["get", "registered_mw"]], " MW"],
+              ["concat", ["get", "point_count_abbreviated"], " assets"],
+            ],
             "text-size": 10,
           },
           filter: ["has", "point_count"],
-          paint: { "text-color": "#052e16" },
+          paint: {
+            "text-color": "#07111f",
+            "text-halo-color": "rgba(255,255,255,0.85)",
+            "text-halo-width": 1,
+          },
         });
         map.addLayer({
           id: "generation-assets",
@@ -701,7 +793,7 @@ export function PowerFinderMap({
           layout: { visibility: "none" },
           filter: ["has", "point_count"],
           paint: {
-            "circle-radius": ["step", ["get", "point_count"], 13, 10, 17, 50, 21],
+            "circle-radius": registeredClusterRadius,
             "circle-color": "#a855f7",
             "circle-stroke-color": "#f3e8ff",
             "circle-stroke-width": 2,
@@ -713,7 +805,12 @@ export function PowerFinderMap({
           source: sourceIds.storage_asset,
           layout: {
             visibility: "none",
-            "text-field": ["get", "point_count_abbreviated"],
+            "text-field": [
+              "case",
+              [">", ["get", "known_mw_count"], 0],
+              ["concat", ["round", ["get", "registered_mw"]], " MW"],
+              ["concat", ["get", "point_count_abbreviated"], " assets"],
+            ],
             "text-size": 10,
           },
           filter: ["has", "point_count"],
@@ -924,10 +1021,23 @@ export function PowerFinderMap({
       "national-industrial-sites": enabledLayers.industrial_site,
       "national-industrial-overview": enabledLayers.industrial_site,
       "national-generation-overview": enabledLayers.generation_asset,
+      "national-generation-overview-label": enabledLayers.generation_asset,
       "national-generation-assets": enabledLayers.generation_asset,
       "national-storage-assets": enabledLayers.storage_asset,
     } as const;
     for (const [layer, visible] of Object.entries(nationalLayers)) {
+      if (map.getLayer(layer))
+        map.setLayoutProperty(layer, "visibility", visible ? "visible" : "none");
+    }
+    const localLayers = {
+      "generation-clusters": enabledLayers.generation_asset,
+      "generation-cluster-count": enabledLayers.generation_asset,
+      "generation-assets": enabledLayers.generation_asset,
+      "storage-clusters": enabledLayers.storage_asset,
+      "storage-cluster-count": enabledLayers.storage_asset,
+      "storage-assets": enabledLayers.storage_asset,
+    } as const;
+    for (const [layer, visible] of Object.entries(localLayers)) {
       if (map.getLayer(layer))
         map.setLayoutProperty(layer, "visibility", visible ? "visible" : "none");
     }
@@ -1188,7 +1298,11 @@ export function PowerFinderMap({
     if (!map) return;
     const generationFilter = generationAssetFilter(generationGroup, minimumGenerationMw);
     const storageFilter = storageAssetFilter(minimumStorageMw);
-    for (const layer of ["national-generation-overview", "national-generation-assets"])
+    for (const layer of [
+      "national-generation-overview",
+      "national-generation-overview-label",
+      "national-generation-assets",
+    ])
       if (map.getLayer(layer)) map.setFilter(layer, generationFilter);
     if (map.getLayer("national-storage-assets"))
       map.setFilter("national-storage-assets", storageFilter);
