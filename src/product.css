@@ -19456,6 +19456,16 @@ tbody tr:last-child td {
   border-color: #54d0e8;
   color: #e9fbff;
 }
+.workspace-step-actions a.primary-action {
+  border-color: #24cce8;
+  background: #24cce8;
+  color: #03141c;
+}
+.workspace-step-actions a.primary-action:hover,
+.workspace-step-actions a.primary-action:focus-visible {
+  background: #63ddf0;
+  color: #03141c;
+}
 .workspace-step-actions svg {
   width: 17px;
 }
