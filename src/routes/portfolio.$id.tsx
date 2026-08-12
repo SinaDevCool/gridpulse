@@ -458,7 +458,7 @@ function Qualification({
   const renderDimension = (dimension: (typeof result.dimensions)[number]) => (
     <form
       key={dimension.key}
-      className={`qualification-row status-${dimension.status}`}
+      className={`qualification-review-card status-${dimension.status}`}
       onSubmit={(event) => {
         event.preventDefault();
         const form = new FormData(event.currentTarget);
@@ -477,65 +477,78 @@ function Qualification({
         );
       }}
     >
-      <div>
-        <strong>{qualificationLabels[dimension.key]}</strong>
+      <div className="qualification-review-summary">
+        <div className="qualification-review-title">
+          <strong>{qualificationLabels[dimension.key]}</strong>
+          <span className={`review-state state-${dimension.status}`}>{dimension.status}</span>
+        </div>
+        {property.screeningAssessments?.find((item) => item.dimensionKey === dimension.key) ? (
+          <div className="screening-fact">
+            <span>Screened Context</span>
+            <p>
+              {
+                property.screeningAssessments.find((item) => item.dimensionKey === dimension.key)!
+                  .summary
+              }
+            </p>
+            <small>Requires client, document, or operator confirmation.</small>
+          </div>
+        ) : (
+          <div className="screening-fact screening-fact-empty">
+            <span>Information Needed</span>
+            <p>No traceable source currently establishes this check.</p>
+          </div>
+        )}
         <small>
           {dimension.unsupported
-            ? "Finding needs accepted evidence"
+            ? "A finding was entered without accepted confirming evidence."
             : dimension.acceptedEvidence
-              ? `${dimension.acceptedEvidence} accepted evidence item(s)`
-              : "Not evidenced"}
+              ? `${dimension.acceptedEvidence} confirming evidence item(s) linked.`
+              : "No confirming evidence linked."}
         </small>
-        {property.screeningAssessments?.find((item) => item.dimensionKey === dimension.key) ? (
-          <small className="screening-assessment-note">
-            Screening:{" "}
-            {property.screeningAssessments
-              .find((item) => item.dimensionKey === dimension.key)!
-              .state.replaceAll("_", " ")}{" "}
-            —{" "}
-            {
-              property.screeningAssessments.find((item) => item.dimensionKey === dimension.key)!
-                .summary
-            }
-          </small>
-        ) : null}
       </div>
-      <select
-        name="status"
-        defaultValue={dimension.status}
-        aria-label={`${qualificationLabels[dimension.key]} status`}
-      >
-        <option value="unknown">Unknown</option>
-        <option value="favourable">Favourable</option>
-        <option value="conditional">Conditional</option>
-        <option value="adverse">Adverse</option>
-      </select>
-      <textarea
-        name="summary"
-        rows={2}
-        aria-label={`${qualificationLabels[dimension.key]} finding`}
-        placeholder="Concise finding and implications"
-        defaultValue={dimension.summary ?? ""}
-      />
-      <details>
-        <summary>Link evidence</summary>
-        {(property.evidenceRegister ?? []).length ? (
-          property.evidenceRegister!.map((evidence) => (
-            <label key={evidence.id} className="check-label">
-              <input
-                type="checkbox"
-                name="evidence"
-                value={evidence.id}
-                defaultChecked={dimension.evidenceIds.includes(evidence.id)}
-              />
-              {evidence.title}
-            </label>
-          ))
-        ) : (
-          <p>Add evidence in Evidence & operator.</p>
-        )}
-      </details>
-      <button type="submit">Save</button>
+      <div className="qualification-review-controls">
+        <label>
+          Review outcome
+          <select name="status" defaultValue={dimension.status}>
+            <option value="unknown">Keep unknown</option>
+            <option value="favourable">Confirmed favourable</option>
+            <option value="conditional">Confirmed with conditions</option>
+            <option value="adverse">Confirmed adverse</option>
+          </select>
+        </label>
+        <label>
+          Reviewer note
+          <textarea
+            name="summary"
+            rows={2}
+            placeholder="Add the confirmed finding and implications…"
+            defaultValue={dimension.summary ?? ""}
+          />
+        </label>
+        <details>
+          <summary>
+            Link confirming evidence
+            {dimension.evidenceIds.length ? ` (${dimension.evidenceIds.length})` : ""}
+          </summary>
+          {(property.evidenceRegister ?? []).length ? (
+            property.evidenceRegister!.map((evidence) => (
+              <label key={evidence.id} className="check-label">
+                <input
+                  type="checkbox"
+                  name="evidence"
+                  value={evidence.id}
+                  defaultChecked={dimension.evidenceIds.includes(evidence.id)}
+                />
+                {evidence.title}
+              </label>
+            ))
+          ) : (
+            <p>Add evidence in the Evidence tab first.</p>
+          )}
+        </details>
+        <button type="submit">Save Review</button>
+      </div>
     </form>
   );
   return (
@@ -545,8 +558,8 @@ function Qualification({
           <p className="context-label">Evidence-led review</p>
           <h2>Data-centre readiness</h2>
           <p>
-            Record the current finding for each development dimension. Non-unknown findings need
-            linked evidence to count towards readiness.
+            Review prefilled screening context, link confirming evidence, and change an outcome only
+            when the source supports it. Missing information remains unknown.
           </p>
         </div>
       </header>
@@ -736,9 +749,25 @@ function EvidenceOperator({
       {mode === "evidence" ? <PropertyEnrichmentPanel property={property} onSave={onSave} /> : null}
       <div hidden={mode !== "operator"}>
         <section className="operator-panel">
-          <h3>Operator enquiry</h3>
+          <header className="operator-panel-heading">
+            <div>
+              <p className="context-label">Prefilled from the shortlisted grid hypothesis</p>
+              <h3>Operator enquiry</h3>
+              <p>Confirm the suggested operator, then record only information sent or received.</p>
+            </div>
+            <div className="operator-context-facts">
+              <span>
+                Requested load
+                <b>{property.requiredTotalSiteLoadMw ?? property.project.importMw} MW</b>
+              </span>
+              <span>
+                Suggested operator
+                <b>{engagement.operatorName ?? "Unknown"}</b>
+              </span>
+            </div>
+          </header>
           <form
-            className="form-grid"
+            className="form-grid operator-review-form"
             onSubmit={(event) => {
               event.preventDefault();
               const form = new FormData(event.currentTarget);
@@ -847,7 +876,7 @@ function EvidenceOperator({
               <input name="due" type="date" defaultValue={engagement.nextActionDueAt ?? ""} />
             </label>
             <button type="submit" className="primary-action">
-              Save operator engagement
+              Save Operator Engagement
             </button>
           </form>
         </section>
@@ -855,71 +884,82 @@ function EvidenceOperator({
       </div>
       <div className="evidence-grid" hidden={mode !== "evidence"}>
         <section>
-          <h3>Evidence register</h3>
-          <form className="evidence-add-form" onSubmit={addEvidence}>
-            <input name="title" required placeholder="Evidence title" />
-            <textarea name="claim" required placeholder="Claim supported by this evidence" />
-            <div className="form-grid">
-              <label>
-                Category
-                <select name="category">
-                  <option value="grid">Grid</option>
-                  <option value="operator">Operator</option>
-                  <option value="planning">Planning</option>
-                  <option value="property">Property</option>
-                  <option value="fibre">Fibre</option>
-                  <option value="environment">Environment</option>
-                  <option value="municipality">Municipality</option>
-                  <option value="commercial">Commercial</option>
-                </select>
-              </label>
-              <label>
-                Class
-                <select name="class">
-                  <option value="customer_declared">Customer declared</option>
-                  <option value="public_source">Public source</option>
-                  <option value="derived">Derived</option>
-                  <option value="operator_confirmed">Operator confirmed</option>
-                </select>
-              </label>
-              <label>
-                Validation
-                <select name="validation">
-                  <option value="unverified">Unverified</option>
-                  <option value="collected">Collected</option>
-                  <option value="validated">Validated</option>
-                  <option value="rejected">Rejected</option>
-                  <option value="expired">Expired</option>
-                </select>
-              </label>
-              <label>
-                Source organisation
-                <input name="organisation" />
-              </label>
-              <label>
-                Reference
-                <input name="reference" />
-              </label>
-              <label>
-                Valid to
-                <input name="validTo" type="date" />
-              </label>
-              <label>
-                Document
-                <select name="document">
-                  <option value="">No document</option>
-                  {documents.map((document) => (
-                    <option value={document.id} key={document.id}>
-                      {document.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+          <div className="evidence-register-heading">
+            <div>
+              <h3>Evidence register</h3>
+              <p>Public screening, client declarations, and operator evidence remain distinct.</p>
             </div>
-            <button type="submit">
-              <Plus /> Add evidence
-            </button>
-          </form>
+            <span>{(property.evidenceRegister ?? []).length} items</span>
+          </div>
+          <details className="evidence-add-disclosure">
+            <summary>
+              <Plus aria-hidden="true" /> Add Client or Operator Evidence
+            </summary>
+            <form className="evidence-add-form" onSubmit={addEvidence}>
+              <input name="title" required placeholder="Evidence title…" />
+              <textarea name="claim" required placeholder="Claim supported by this evidence…" />
+              <div className="form-grid">
+                <label>
+                  Category
+                  <select name="category">
+                    <option value="grid">Grid</option>
+                    <option value="operator">Operator</option>
+                    <option value="planning">Planning</option>
+                    <option value="property">Property</option>
+                    <option value="fibre">Fibre</option>
+                    <option value="environment">Environment</option>
+                    <option value="municipality">Municipality</option>
+                    <option value="commercial">Commercial</option>
+                  </select>
+                </label>
+                <label>
+                  Class
+                  <select name="class">
+                    <option value="customer_declared">Customer declared</option>
+                    <option value="public_source">Public source</option>
+                    <option value="derived">Derived</option>
+                    <option value="operator_confirmed">Operator confirmed</option>
+                  </select>
+                </label>
+                <label>
+                  Validation
+                  <select name="validation">
+                    <option value="unverified">Unverified</option>
+                    <option value="collected">Collected</option>
+                    <option value="validated">Validated</option>
+                    <option value="rejected">Rejected</option>
+                    <option value="expired">Expired</option>
+                  </select>
+                </label>
+                <label>
+                  Source organisation
+                  <input name="organisation" />
+                </label>
+                <label>
+                  Reference
+                  <input name="reference" />
+                </label>
+                <label>
+                  Valid to
+                  <input name="validTo" type="date" />
+                </label>
+                <label>
+                  Document
+                  <select name="document">
+                    <option value="">No document</option>
+                    {documents.map((document) => (
+                      <option value={document.id} key={document.id}>
+                        {document.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <button type="submit">
+                <Plus /> Add evidence
+              </button>
+            </form>
+          </details>
           <div className="evidence-register">
             {(property.evidenceRegister ?? []).map((item) => (
               <article key={item.id}>
@@ -1096,6 +1136,8 @@ function Decision({
   onSave: (p: AnonymousProperty, m?: string) => Promise<void>;
 }) {
   const nonReviewable = property.decisionStatus !== "unreviewed";
+  const [saving, setSaving] = useState(false);
+  const [savedAt, setSavedAt] = useState<string | null>(null);
   return (
     <>
       <header className="workspace-section-heading">
@@ -1122,7 +1164,7 @@ function Decision({
       )}
       <form
         className="decision-form"
-        onSubmit={(event) => {
+        onSubmit={async (event) => {
           event.preventDefault();
           const form = new FormData(event.currentTarget);
           const status = String(form.get("decision")) as AnonymousProperty["decisionStatus"];
@@ -1146,17 +1188,25 @@ function Decision({
                 recordedAt: new Date().toISOString(),
               }
             : null;
-          void onSave(
-            {
-              ...property,
-              decisionStatus: status,
-              decisionRationale: rationale || null,
-              decisionEvents: decisionEvent
-                ? [...(property.decisionEvents ?? []), decisionEvent]
-                : property.decisionEvents,
-            },
-            "Decision recorded",
-          );
+          setSaving(true);
+          try {
+            await onSave(
+              {
+                ...property,
+                decisionStatus: status,
+                decisionRationale: rationale || null,
+                decisionEvents: decisionEvent
+                  ? [...(property.decisionEvents ?? []), decisionEvent]
+                  : property.decisionEvents,
+              },
+              "Decision recorded",
+            );
+            setSavedAt(new Date().toISOString());
+          } catch (error) {
+            toast.error(error instanceof Error ? error.message : "Decision could not be saved.");
+          } finally {
+            setSaving(false);
+          }
         }}
       >
         <fieldset>
@@ -1169,7 +1219,7 @@ function Decision({
                 value={status}
                 defaultChecked={property.decisionStatus === status}
               />
-              <span>{status}</span>
+              <span>{status.charAt(0).toUpperCase() + status.slice(1)}</span>
             </label>
           ))}
         </fieldset>
@@ -1180,12 +1230,20 @@ function Decision({
             rows={6}
             required={nonReviewable}
             defaultValue={property.decisionRationale ?? ""}
-            placeholder="State the evidence, material risks and reason for this recommendation."
+            placeholder="State the evidence, material risks, and reason for this recommendation…"
           />
         </label>
-        <button className="primary-action" type="submit">
-          <CheckCircle2 /> Save recommendation
+        <button className="primary-action" type="submit" disabled={saving}>
+          <CheckCircle2 aria-hidden="true" /> {saving ? "Saving…" : "Save Recommendation"}
         </button>
+        <p className="decision-save-status" aria-live="polite">
+          {savedAt
+            ? `Saved in this browser at ${new Intl.DateTimeFormat(undefined, {
+                hour: "2-digit",
+                minute: "2-digit",
+              }).format(new Date(savedAt))}. Reloading will preserve this recommendation.`
+            : "Not saved in this review session yet."}
+        </p>
         <Link className="secondary-action" to="/capacity-dossiers/$id" params={{ id: property.id }}>
           <Paperclip /> Open client decision record
         </Link>

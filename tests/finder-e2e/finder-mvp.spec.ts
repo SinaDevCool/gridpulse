@@ -113,6 +113,7 @@ test("anonymous site workspace qualifies a site and records operator evidence", 
   await page.getByLabel("Enquiry reference").fill("NVP-2026-001");
   await page.getByRole("button", { name: /Save operator engagement/i }).click();
   await page.getByRole("button", { name: "Evidence", exact: true }).click();
+  await page.getByText("Add Client or Operator Evidence", { exact: true }).click();
   await page.getByPlaceholder("Evidence title").fill("Operator acknowledgement");
   await page
     .getByPlaceholder("Claim supported by this evidence")
@@ -126,6 +127,7 @@ test("anonymous site workspace qualifies a site and records operator evidence", 
 });
 
 test("site decisions flow into the unified Decision Review view", async ({ page }) => {
+  test.setTimeout(60_000);
   await page.goto("/power-finder?lat=52.52&lng=13.405&mw=65&projectType=data_centre");
   await expect(page.getByText(/candidate site-to-node matches/i).first()).toBeVisible({
     timeout: 15_000,
@@ -136,17 +138,24 @@ test("site decisions flow into the unified Decision Review view", async ({ page 
   await page.getByRole("link", { name: /Untitled screening project/i }).click();
   await expect(page).toHaveURL(/selected=[0-9a-f-]{36}/);
   await page.getByRole("link", { name: "Review Decision" }).click();
-  await page.getByRole("radio", { name: "Hold" }).check();
+  await page.getByRole("radio", { name: "Advance" }).check();
   await page
     .getByLabel("Decision rationale")
-    .fill("Hold until the responsible operator and evidence are confirmed.");
+    .fill("Advance for investigation while operator capacity remains unconfirmed.");
   await page.getByRole("button", { name: "Save recommendation" }).click();
-  await expect(page.getByText("hold", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText(/Saved in this browser/i)).toBeVisible();
+  await expect(page.getByText(/Provisional advance/i).first()).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("radio", { name: "Advance" })).toBeChecked();
+  await expect(page.getByLabel("Decision rationale")).toHaveValue(
+    "Advance for investigation while operator capacity remains unconfirmed.",
+  );
+  await expect(page.getByText(/Provisional advance/i).first()).toBeVisible();
   await page.getByRole("link", { name: /Sites Manage portfolio decisions/i }).click();
   await page.getByRole("button", { name: "Decision Review" }).click();
   await expect(page.getByRole("heading", { name: "Decision Review" }).first()).toBeVisible();
   await expect(page.getByText("Untitled screening project").first()).toBeVisible();
-  await expect(page.getByText("hold", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("advance", { exact: true }).first()).toBeVisible();
 });
 
 test("portfolio views are URL-backed and the site workspace is directly discoverable", async ({
@@ -267,9 +276,11 @@ test("the release workbook passes the browser import preview", async ({ page }, 
   );
   await page.getByRole("link", { name: "Return to Site Workspace" }).first().click();
   await expect(page.getByRole("heading", { name: "Brandenburg South Campus" })).toBeVisible();
+  await page.getByRole("button", { name: "Readiness", exact: true }).click();
   await page.getByRole("button", { name: "Evidence", exact: true }).click();
   await page.getByRole("button", { name: /Enrich site|Retry incomplete sources/i }).click();
   await expect(page.getByText(/sources completed/i)).toBeVisible({ timeout: 25_000 });
+  await page.getByText("Add Client or Operator Evidence", { exact: true }).click();
   await page.getByPlaceholder("Evidence title").fill("Client site declaration");
   await page
     .getByPlaceholder("Claim supported by this evidence")
@@ -288,7 +299,7 @@ test("the release workbook passes the browser import preview", async ({ page }, 
     .getByLabel("Decision rationale")
     .fill("Hold pending operator confirmation of capacity, connection point, cost and programme.");
   await page.getByRole("button", { name: "Save recommendation" }).click();
-  await expect(page.getByText("hold", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("Hold", { exact: true }).first()).toBeVisible();
   await page.getByRole("link", { name: /Open client decision record/i }).click();
   const decisionDownload = page.waitForEvent("download");
   await page.getByRole("button", { name: "Download PDF" }).click();
