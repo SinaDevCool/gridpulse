@@ -91,6 +91,7 @@ import {
   type DiscoveryLocation,
   type DiscoveryStrategy,
 } from "@/features/power-finder/location-discovery";
+import { loadRegionalDiscoverySamples } from "@/features/power-finder/regional-discovery-sampling";
 import { canonicalOperatorName } from "@/features/power-finder/operator-normalization";
 import {
   loadGridOperatorCatalog,
@@ -1411,23 +1412,10 @@ function PowerFinderPage() {
                             north: south + (row + 1) * latitudeStep,
                           };
                         });
-                        const samples: Awaited<ReturnType<typeof loadPowerFinderViewport>>[] = [];
-                        let failedSampleCount = 0;
-                        // Keep regional discovery below the public endpoint's burst limit and
-                        // preserve usable tiles when one part of a Bundesland is unavailable.
-                        for (let offset = 0; offset < sampleBounds.length; offset += 2) {
-                          const batch = await Promise.allSettled(
-                            sampleBounds.slice(offset, offset + 2).map((bounds) =>
-                              loadPowerFinderViewport(bounds, undefined, {
-                                fallbackAllowed: false,
-                              }),
-                            ),
+                        const { samples, fullContextCount, gridOnlyCount, unavailableCount } =
+                          await loadRegionalDiscoverySamples(sampleBounds, (bounds, options) =>
+                            loadPowerFinderViewport(bounds, undefined, options),
                           );
-                          for (const sample of batch) {
-                            if (sample.status === "fulfilled") samples.push(sample.value);
-                            else failedSampleCount += 1;
-                          }
-                        }
                         if (samples.length === 0) {
                           throw new Error("No regional samples were available.");
                         }
@@ -1466,11 +1454,15 @@ function PowerFinderPage() {
                         setInteractionNotice(
                           results.length
                             ? `${results.length} geographically distinct investigation locations found${
-                                failedSampleCount > 0
-                                  ? ` from ${samples.length} of ${sampleBounds.length} available regional samples`
+                                gridOnlyCount > 0 || unavailableCount > 0
+                                  ? ` from ${samples.length} of ${sampleBounds.length} available regional samples (${fullContextCount} with energy context, ${gridOnlyCount} grid-only)`
                                   : " after regional sampling and local refinement"
                               }. ${
-                                failedSampleCount > 0 ? "Unavailable areas remain unassessed." : ""
+                                unavailableCount > 0
+                                  ? `${unavailableCount} unavailable area${unavailableCount === 1 ? " remains" : "s remain"} unassessed.`
+                                  : gridOnlyCount > 0
+                                    ? "Energy-ecosystem context was unavailable for some areas; their scores use grid context only."
+                                    : ""
                               }`
                             : "No investigation locations met the current mapped-data criteria. Try a wider node distance.",
                         );
