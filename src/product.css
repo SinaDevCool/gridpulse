@@ -18398,15 +18398,18 @@ tbody tr:last-child td {
 }
 .site-queue-row > svg {
   width: 16px;
+  min-width: 16px;
+  justify-self: end;
   color: var(--dw-accent);
 }
 .decision-chip {
   display: inline-flex;
   width: fit-content;
+  min-width: 96px;
   align-items: center;
   justify-content: center;
-  min-height: 24px;
-  padding: 0.2rem 0.48rem;
+  min-height: 28px;
+  padding: 0.3rem 0.75rem;
   border: 1px solid #3b5867;
   border-radius: 999px;
   color: #a9bfca;
@@ -20040,7 +20043,10 @@ tbody tr:last-child td {
 }
 @media (max-width: 1180px) {
   .site-queue-row {
-    grid-template-columns: minmax(180px, 1.4fr) 85px 130px minmax(160px, 1fr) auto 18px;
+    grid-template-columns: minmax(180px, 1.4fr) 85px 130px minmax(160px, 1fr) minmax(
+        96px,
+        auto
+      ) 18px;
   }
   .site-queue-row > span:nth-child(5) {
     display: none;
