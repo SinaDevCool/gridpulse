@@ -159,27 +159,29 @@ export async function handlePublicPowerFinderRequest(
     };
     if (publishableKey.startsWith("eyJ")) headers.authorization = `Bearer ${publishableKey}`;
     const rankingOnly = url.searchParams.get("ranking") === "true";
-    const response = await fetch(
-      `${supabaseUrl}/rest/v1/rpc/${rankingOnly ? "power_finder_public_candidate_nodes" : "power_finder_public_viewport"}`,
-      {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          west: parameters.west,
-          south: parameters.south,
-          east: parameters.east,
-          north: parameters.north,
-          ...(rankingOnly
-            ? { max_features: 1000 }
-            : {
-                include_generation: parameters.includeGeneration,
-                include_storage: parameters.includeStorage,
-                max_features: 2500,
-              }),
-        }),
-        signal: controller.signal,
-      },
-    );
+    const originUrl = `${supabaseUrl}/rest/v1/rpc/${rankingOnly ? "power_finder_public_candidate_nodes" : "power_finder_public_viewport"}`;
+    const requestOptions = {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        west: parameters.west,
+        south: parameters.south,
+        east: parameters.east,
+        north: parameters.north,
+        ...(rankingOnly
+          ? { max_features: 1000 }
+          : {
+              include_generation: parameters.includeGeneration,
+              include_storage: parameters.includeStorage,
+              max_features: 2500,
+            }),
+      }),
+      signal: controller.signal,
+    } satisfies RequestInit;
+    let response = await fetch(originUrl, requestOptions);
+    if (response.status >= 500 && !controller.signal.aborted) {
+      response = await fetch(originUrl, requestOptions);
+    }
     if (!response.ok) {
       console.error(`Public Finder origin returned ${response.status}.`);
       return jsonResponse({ error: "Public Finder data is temporarily unavailable." }, 502);

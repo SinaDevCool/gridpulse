@@ -129,6 +129,31 @@ describe("public Power Finder API", () => {
     });
   });
 
+  it("retries one transient public-origin failure", async () => {
+    const origin = vi
+      .fn()
+      .mockResolvedValueOnce(new Response("temporary", { status: 503 }))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            type: "FeatureCollection",
+            metadata: { record_count: 1 },
+            features: [{ type: "Feature", geometry: null, properties: { kind: "node" } }],
+          }),
+          { status: 200 },
+        ),
+      );
+    vi.stubGlobal("fetch", origin);
+
+    const response = await handlePublicPowerFinderRequest(new Request(viewportUrl), {
+      SUPABASE_URL: "https://example.supabase.co",
+      SUPABASE_PUBLISHABLE_KEY: "sb_publishable_test",
+    });
+
+    expect(response?.status).toBe(200);
+    expect(origin).toHaveBeenCalledTimes(2);
+  });
+
   it("enforces the optional edge rate limiter before the database call", async () => {
     const origin = vi.fn();
     vi.stubGlobal("fetch", origin);
