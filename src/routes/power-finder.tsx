@@ -1447,6 +1447,7 @@ function PowerFinderPage() {
                           },
                         };
                         const results = discoverLocations(regionalCollection, {
+                          regionCode: activeCoverage.regionCode,
                           requiredMw: project.importMw,
                           preferredVoltageKv: project.preferredVoltageKv,
                           maxNodeDistanceKm: project.maxDistanceKm,

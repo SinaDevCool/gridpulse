@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { discoverLocations } from "./location-discovery";
+import { isPointInGermanState } from "./german-state-boundaries";
 import type { PowerFinderCollection, PowerFinderFeature } from "./fixture-data";
 
 const feature = (
@@ -55,5 +56,42 @@ describe("regional location discovery", () => {
     expect(result.renewableMw).toBe(120);
     expect(result.technologyCount).toBe(2);
     expect(result.node.properties.capacity_state).toBeUndefined();
+  });
+
+  it("recognises both Bremen and Bremerhaven while excluding surrounding Lower Saxony", () => {
+    expect(isPointInGermanState("DE-HB", [8.807, 53.075])).toBe(true);
+    expect(isPointInGermanState("DE-HB", [8.58, 53.54])).toBe(true);
+    expect(isPointInGermanState("DE-HB", [8.63, 53.05])).toBe(false);
+    expect(isPointInGermanState("DE-HB", [9.4, 53.1])).toBe(false);
+  });
+
+  it("removes otherwise highly ranked origins outside the selected Bundesland", () => {
+    const regionalCollection = {
+      ...collection,
+      features: [
+        feature("bremen-land", "industrial_site", [8.807, 53.075]),
+        feature("bremen-node", "node", [8.81, 53.075], {
+          voltage_kv: [110],
+          operator: "Operator",
+        }),
+        feature("lower-saxony-land", "industrial_site", [8.63, 53.05]),
+        feature("lower-saxony-node", "node", [8.631, 53.05], {
+          voltage_kv: [110],
+          operator: "Operator",
+        }),
+      ],
+    } as PowerFinderCollection;
+
+    const results = discoverLocations(regionalCollection, {
+      regionCode: "DE-HB",
+      requiredMw: 100,
+      preferredVoltageKv: 110,
+      maxNodeDistanceKm: 20,
+      resultCount: 10,
+      strategy: "balanced",
+    });
+
+    expect(results.map((result) => result.name)).toEqual(["bremen-land"]);
+    expect(results.every((result) => isPointInGermanState("DE-HB", result.coordinates))).toBe(true);
   });
 });

@@ -5,10 +5,12 @@ import {
   type PowerFinderFeature,
 } from "./fixture-data";
 import { mappedVoltageRelevance } from "./candidate-intelligence";
+import { isPointInGermanState } from "./german-state-boundaries";
 
 export type DiscoveryStrategy = "connection" | "balanced" | "energy";
 
 export type DiscoveryParameters = {
+  regionCode?: string;
   requiredMw: number;
   preferredVoltageKv: number | null;
   maxNodeDistanceKm: number;
@@ -74,6 +76,9 @@ export function discoverLocations(
   const candidates = origins.flatMap((origin) => {
     const coordinates = pointCoordinates(origin);
     if (!coordinates) return [];
+    if (parameters.regionCode && !isPointInGermanState(parameters.regionCode, coordinates)) {
+      return [];
+    }
     const nearest = nodes
       .map((node) => ({ node, distance: distanceKm(coordinates, pointCoordinates(node)!) }))
       .filter((item) => item.distance <= parameters.maxNodeDistanceKm)
