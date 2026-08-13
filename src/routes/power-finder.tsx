@@ -1281,6 +1281,11 @@ function PowerFinderPage() {
                   aria-pressed={finderWorkflow === "discover"}
                   onClick={() => {
                     setFinderWorkflow("discover");
+                    setEnabled((current) => ({
+                      ...current,
+                      generation_asset: true,
+                      storage_asset: true,
+                    }));
                     if (regionCode === "DE") void updateSearch({ region: "DE-BB" });
                   }}
                 >
@@ -1480,6 +1485,63 @@ function PowerFinderPage() {
                     : `Find ${discoveryResultCount} investigation locations`}
                 </button>
                 <small>Recommended for investigation only. Capacity remains unknown.</small>
+                <details className="finder-discovery-energy-filters" open>
+                  <summary>Energy context filters</summary>
+                  <p>
+                    Filter registered generation and storage shown on the map. These assets provide
+                    nearby ecosystem context, not available grid capacity.
+                  </p>
+                  <div className="finder-discovery-filter-grid">
+                    <label>
+                      <span>Generation technology</span>
+                      <select
+                        aria-label="Discovery generation technology"
+                        value={generationGroup}
+                        onChange={(event) => setGenerationGroup(event.target.value)}
+                      >
+                        <option value="all">All technologies</option>
+                        <option value="solar">Solar</option>
+                        <option value="wind">Wind</option>
+                        <option value="biomass">Biomass</option>
+                        <option value="hydro">Hydro</option>
+                        <option value="geothermal">Geothermal</option>
+                        <option value="nuclear">Nuclear</option>
+                        <option value="gas">Gas</option>
+                        <option value="fossil_other">Other fossil</option>
+                        <option value="other">Other / unknown</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Minimum generation</span>
+                      <select
+                        aria-label="Discovery minimum registered generation"
+                        value={minimumGenerationMw}
+                        onChange={(event) => setMinimumGenerationMw(Number(event.target.value))}
+                      >
+                        <option value="0">Any MW, including unknown</option>
+                        <option value="1">1+ MW</option>
+                        <option value="10">10+ MW</option>
+                        <option value="50">50+ MW</option>
+                        <option value="100">100+ MW</option>
+                        <option value="500">500+ MW</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Minimum storage power</span>
+                      <select
+                        aria-label="Discovery minimum registered storage power"
+                        value={minimumStorageMw}
+                        onChange={(event) => setMinimumStorageMw(Number(event.target.value))}
+                      >
+                        <option value="0">Any MW, including unknown</option>
+                        <option value="1">1+ MW</option>
+                        <option value="10">10+ MW</option>
+                        <option value="50">50+ MW</option>
+                        <option value="100">100+ MW</option>
+                      </select>
+                    </label>
+                  </div>
+                </details>
                 {discoveryResults.length > 0 ? (
                   <ol className="finder-discovery-results">
                     {discoveryResults.map((result, index) => (

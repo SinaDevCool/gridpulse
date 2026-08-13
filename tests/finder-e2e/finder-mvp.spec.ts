@@ -442,6 +442,25 @@ test("registered generation and storage are available without an account", async
   await page.getByLabel("Minimum registered storage power").selectOption("10");
 });
 
+test("discover locations exposes generation and storage context filters", async ({ page }) => {
+  await page.goto("/power-finder?region=DE-BE");
+  const discoverMode = page
+    .getByRole("group", { name: "Power Finder modes" })
+    .getByRole("button", { name: /Discover locations/ });
+  await expect(discoverMode).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText("Loading map context…")).toHaveCount(0, { timeout: 20_000 });
+  await discoverMode.click();
+  await expect(discoverMode).toHaveAttribute("aria-pressed", "true");
+
+  await expect(page.getByLabel("Discovery generation technology")).toBeVisible();
+  await page.getByLabel("Discovery generation technology").selectOption("solar");
+  await page.getByLabel("Discovery minimum registered generation").selectOption("10");
+  await page.getByLabel("Discovery minimum registered storage power").selectOption("1");
+  await expect(page.getByLabel("Discovery generation technology")).toHaveValue("solar");
+  await expect(page.getByLabel("Discovery minimum registered generation")).toHaveValue("10");
+  await expect(page.getByLabel("Discovery minimum registered storage power")).toHaveValue("1");
+});
+
 test("candidate detail and map legend can be dismissed on a laptop viewport", async ({ page }) => {
   await page.setViewportSize({ width: 1366, height: 768 });
   await page.goto("/power-finder?lat=52.31&lng=13.36&mw=100&projectType=data_centre");

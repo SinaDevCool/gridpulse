@@ -18815,6 +18815,52 @@ tbody tr:last-child td {
   font-size: 9px;
   line-height: 1.4;
 }
+.finder-discovery-energy-filters {
+  overflow: hidden;
+  border: 1px solid #24475a;
+  border-radius: 8px;
+  background: #081925;
+}
+.finder-discovery-energy-filters summary {
+  padding: 10px 11px;
+  color: #dff6fb;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.finder-discovery-energy-filters[open] summary {
+  border-bottom: 1px solid rgb(124 163 181 / 16%);
+}
+.finder-discovery-energy-filters > p {
+  padding: 10px 11px 0;
+  color: #87a3b3 !important;
+  font-size: 9px !important;
+  line-height: 1.45 !important;
+}
+.finder-discovery-filter-grid {
+  display: grid;
+  gap: 8px;
+  padding: 10px 11px 12px;
+}
+.finder-discovery-filter-grid label {
+  display: grid;
+  gap: 5px;
+}
+.finder-discovery-filter-grid label > span {
+  color: #86a2b2;
+  font-size: 9px;
+  font-weight: 700;
+}
+.finder-discovery-filter-grid select {
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 9px;
+  border: 1px solid #24475a;
+  border-radius: 6px;
+  background: #071722;
+  color: #e6f5f8;
+  font-size: 10px;
+}
 .finder-discovery-form {
   display: grid;
   grid-template-columns: 1fr 1fr;
