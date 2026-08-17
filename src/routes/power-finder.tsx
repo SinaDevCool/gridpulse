@@ -2950,6 +2950,21 @@ function PowerFinderPage() {
               </strong>
               {legendOpen ? <ChevronDown aria-hidden="true" /> : <ChevronUp aria-hidden="true" />}
             </button>
+            {legendOpen ? (
+              <div className="power-finder-data-legend" aria-label="Data-centre location precision">
+                <b>RZReg data centres · 319 records</b>
+                <span>
+                  <i className="legend-data-centre-exact" /> Verified published address · 38
+                </span>
+                <span>
+                  <i className="legend-data-centre-approximate" /> Postcode area only · 281
+                </span>
+                <small>
+                  Amber rings show an area, not a building location. Neither marker indicates
+                  available grid capacity.
+                </small>
+              </div>
+            ) : null}
             {legendOpen &&
               (mapMode === "capacity" ? (
                 <>

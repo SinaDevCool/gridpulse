@@ -335,7 +335,7 @@ export function PowerFinderMap({
     if (!containerRef.current || mapRef.current) return;
     let cancelled = false;
 
-    void import("maplibre-gl").then(({ Map, NavigationControl }) => {
+    void import("maplibre-gl").then(({ Map, NavigationControl, Popup }) => {
       if (cancelled || !containerRef.current) return;
       const map = new Map({
         container: containerRef.current,
@@ -482,6 +482,130 @@ export function PowerFinderMap({
           type: "geojson",
           data: discoveryLocationsRef.current ?? { type: "FeatureCollection", features: [] },
         });
+        map.addSource("rzreg-data-centres", {
+          type: "geojson",
+          data: { type: "FeatureCollection", features: [] },
+          cluster: true,
+          clusterMaxZoom: 13,
+          clusterRadius: 38,
+          clusterProperties: {
+            exact_count: [
+              "+",
+              ["case", ["==", ["get", "location_precision"], "facility_address"], 1, 0],
+            ],
+          },
+        });
+        void fetch("/power-finder/rzreg-data-centres.json")
+          .then((response) => {
+            if (!response.ok) throw new Error(`RZReg map data returned ${response.status}`);
+            return response.json() as Promise<FeatureCollection<Point>>;
+          })
+          .then((data) => {
+            const source = map.getSource("rzreg-data-centres");
+            if (isGeoJsonSource(source)) source.setData(data);
+          })
+          .catch(() => {
+            // The grid map remains usable when this contextual public-data layer is unavailable.
+          });
+        map.addLayer({
+          id: "rzreg-data-centre-clusters",
+          type: "circle",
+          source: "rzreg-data-centres",
+          filter: ["has", "point_count"],
+          paint: {
+            "circle-radius": ["step", ["get", "point_count"], 15, 10, 19, 30, 24],
+            "circle-color": ["case", [">", ["get", "exact_count"], 0], "#14b8a6", "#f59e0b"],
+            "circle-opacity": 0.94,
+            "circle-stroke-color": "#ffffff",
+            "circle-stroke-width": 2,
+          },
+        });
+        map.addLayer({
+          id: "rzreg-data-centre-cluster-count",
+          type: "symbol",
+          source: "rzreg-data-centres",
+          filter: ["has", "point_count"],
+          layout: { "text-field": ["get", "point_count_abbreviated"], "text-size": 11 },
+          paint: { "text-color": "#07111f" },
+        });
+        map.addLayer({
+          id: "rzreg-data-centres-approximate-area",
+          type: "circle",
+          source: "rzreg-data-centres",
+          filter: [
+            "all",
+            ["!", ["has", "point_count"]],
+            ["==", ["get", "location_precision"], "postcode_area"],
+          ],
+          paint: {
+            "circle-radius": ["interpolate", ["linear"], ["zoom"], 6, 7, 10, 13, 14, 24],
+            "circle-color": "rgba(245, 158, 11, 0.08)",
+            "circle-stroke-color": "rgba(245, 158, 11, 0.48)",
+            "circle-stroke-width": 1.25,
+          },
+        });
+        map.addLayer({
+          id: "rzreg-data-centres-approximate",
+          type: "circle",
+          source: "rzreg-data-centres",
+          filter: [
+            "all",
+            ["!", ["has", "point_count"]],
+            ["==", ["get", "location_precision"], "postcode_area"],
+          ],
+          paint: {
+            "circle-radius": 6,
+            "circle-color": "rgba(245, 158, 11, 0.16)",
+            "circle-stroke-color": "#f59e0b",
+            "circle-stroke-width": 2,
+          },
+        });
+        map.addLayer({
+          id: "rzreg-data-centres-exact",
+          type: "circle",
+          source: "rzreg-data-centres",
+          filter: [
+            "all",
+            ["!", ["has", "point_count"]],
+            ["==", ["get", "location_precision"], "facility_address"],
+          ],
+          paint: {
+            "circle-radius": 7,
+            "circle-color": "#14b8a6",
+            "circle-stroke-color": "#ecfeff",
+            "circle-stroke-width": 2.5,
+          },
+        });
+        const showDataCentre = (event: MapLayerMouseEvent) => {
+          const feature = event.features?.[0];
+          if (!feature || feature.geometry.type !== "Point") return;
+          const properties = feature.properties ?? {};
+          const exact = properties.location_precision === "facility_address";
+          const content = document.createElement("div");
+          content.className = "rzreg-map-popup";
+          const title = document.createElement("strong");
+          title.textContent = String(properties.name ?? "RZReg data centre");
+          const operator = document.createElement("span");
+          operator.textContent = String(properties.operator ?? "Operator not published");
+          const location = document.createElement("span");
+          location.textContent = exact
+            ? `Validated facility address: ${String(properties.address ?? "")}`
+            : `Approximate location for postcode ${String(properties.postcode ?? "")}`;
+          const warning = document.createElement("small");
+          warning.textContent = exact
+            ? "Address evidence does not establish available grid capacity."
+            : "This marker represents a postcode area, not the data-centre building or available grid capacity.";
+          content.append(title, operator, location, warning);
+          new Popup({ closeButton: true, maxWidth: "340px" })
+            .setLngLat(feature.geometry.coordinates as [number, number])
+            .setDOMContent(content)
+            .addTo(map);
+        };
+        for (const layer of ["rzreg-data-centres-exact", "rzreg-data-centres-approximate"]) {
+          map.on("click", layer, showDataCentre);
+          map.on("mouseenter", layer, () => (map.getCanvas().style.cursor = "pointer"));
+          map.on("mouseleave", layer, () => (map.getCanvas().style.cursor = ""));
+        }
         map.addLayer({
           id: "finder-discovery-halos",
           type: "circle",
@@ -965,6 +1089,15 @@ export function PowerFinderMap({
             "text-halo-width": 2,
           },
         });
+        for (const layer of [
+          "rzreg-data-centre-clusters",
+          "rzreg-data-centre-cluster-count",
+          "rzreg-data-centres-approximate-area",
+          "rzreg-data-centres-approximate",
+          "rzreg-data-centres-exact",
+        ]) {
+          map.moveLayer(layer);
+        }
 
         const selectFeature = (event: MapLayerMouseEvent) => {
           const rendered = event.features?.[0];
@@ -1018,6 +1151,7 @@ export function PowerFinderMap({
         registerClusterExpansion("node-clusters", sourceIds.node);
         registerClusterExpansion("generation-clusters", sourceIds.generation_asset);
         registerClusterExpansion("storage-clusters", sourceIds.storage_asset);
+        registerClusterExpansion("rzreg-data-centre-clusters", "rzreg-data-centres");
         map.on("click", (event) => {
           if (!onSitePlacementRef.current) return;
           const interactive = map.queryRenderedFeatures(event.point, {
@@ -1036,6 +1170,10 @@ export function PowerFinderMap({
               "national-generation-overview",
               "national-generation-assets",
               "national-storage-assets",
+              "rzreg-data-centre-clusters",
+              "rzreg-data-centres-approximate-area",
+              "rzreg-data-centres-exact",
+              "rzreg-data-centres-approximate",
             ],
           });
           if (!interactive.length) {

@@ -13057,6 +13057,68 @@ tbody tr:last-child td {
   height: 9px;
   width: 14px;
 }
+
+.power-finder-legend i.legend-data-centre-exact,
+.power-finder-legend i.legend-data-centre-approximate {
+  border-radius: 999px;
+}
+
+.power-finder-legend i.legend-data-centre-exact {
+  background: #14b8a6;
+  border: 2px solid #ecfeff;
+}
+
+.power-finder-legend i.legend-data-centre-approximate {
+  background: rgb(245 158 11 / 16%);
+  border: 2px solid #f59e0b;
+  box-shadow: 0 0 0 4px rgb(245 158 11 / 10%);
+}
+
+.power-finder-data-legend {
+  border-top: 1px solid #26364d;
+  display: grid;
+  gap: 6px;
+  margin-top: 4px;
+  padding-top: 8px;
+}
+
+.power-finder-data-legend b {
+  color: #eef6ff;
+  font-size: 0.69rem;
+  letter-spacing: 0.02em;
+}
+
+.power-finder-data-legend small {
+  color: #8299b1;
+  line-height: 1.35;
+  max-width: 260px;
+}
+
+@media (max-width: 720px) {
+  .power-finder-legend.is-open {
+    max-height: 46%;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+}
+
+.rzreg-map-popup {
+  display: grid;
+  gap: 0.35rem;
+  color: #07111f;
+  line-height: 1.35;
+}
+
+.rzreg-map-popup strong,
+.rzreg-map-popup span,
+.rzreg-map-popup small {
+  display: block;
+}
+
+.rzreg-map-popup small {
+  color: #475569;
+}
 .legend-node {
   background: #f59e0b;
   border: 1px solid #fff7d6;
@@ -20043,10 +20105,9 @@ tbody tr:last-child td {
 }
 @media (max-width: 1180px) {
   .site-queue-row {
-    grid-template-columns: minmax(180px, 1.4fr) 85px 130px minmax(160px, 1fr) minmax(
-        96px,
-        auto
-      ) 18px;
+    grid-template-columns:
+      minmax(180px, 1.4fr) 85px 130px minmax(160px, 1fr) minmax(96px, auto)
+      18px;
   }
   .site-queue-row > span:nth-child(5) {
     display: none;
