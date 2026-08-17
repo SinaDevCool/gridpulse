@@ -22,12 +22,19 @@ import {
 import {
   peerStatistic,
   selectPeers,
+  validMetricValues,
   type RzregPerformanceRecord,
 } from "@/features/data-centre-planner/benchmark";
 import {
   calculateFlexibilityEconomics,
   type FlexibilityEconomicsInput,
 } from "@/features/data-centre-planner/flexibility-economics";
+import {
+  BarComparison,
+  EvidenceLegend,
+  SensitivityMatrix,
+  WaterfallChart,
+} from "@/features/data-centre-planner/analytics-charts";
 
 type Artifact = {
   metadata: { record_count: number; validation_warning_count: number };
@@ -138,6 +145,25 @@ const TECHNOLOGIES = [
   },
 ] as const;
 type TechId = (typeof TECHNOLOGIES)[number]["id"];
+type TechnologyScenario = {
+  inputs: FlexibilityEconomicsInput;
+  evidenceType: "customer_assumption" | "supplier_quote" | "published_reference";
+  sourceReference: string;
+  priceYear: number | null;
+};
+type TechnologyScenarios = Record<TechId, TechnologyScenario>;
+const emptyScenarios = Object.fromEntries(
+  TECHNOLOGIES.map((technology) => [
+    technology.id,
+    {
+      inputs: { ...emptyEconomics },
+      evidenceType: "customer_assumption",
+      sourceReference: "",
+      priceYear: null,
+    },
+  ]),
+) as TechnologyScenarios;
+const STORAGE_KEY = "gridpulse:data-centre-analytics:v2";
 const fmt = new Intl.NumberFormat("en-DE", { maximumFractionDigits: 1 });
 const eur = new Intl.NumberFormat("en-DE", {
   style: "currency",
@@ -151,7 +177,8 @@ function DataCentreAnalytics() {
     [artifact, setArtifact] = useState<Artifact | null>(null),
     [project, setProject] = useState<Project>(emptyProject),
     [tech, setTech] = useState<TechId>("li-ion"),
-    [cost, setCost] = useState(emptyEconomics),
+    [scenarios, setScenarios] = useState<TechnologyScenarios>(emptyScenarios),
+    [persistenceReady, setPersistenceReady] = useState(false),
     [drawer, setDrawer] = useState(false);
   useEffect(() => {
     fetch("/power-finder/rzreg-performance.json")
@@ -159,6 +186,39 @@ function DataCentreAnalytics() {
       .then(setArtifact)
       .catch(() => setArtifact(null));
   }, []);
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved) as {
+          project?: Project;
+          scenarios?: TechnologyScenarios;
+          view?: View;
+        };
+        if (parsed.project) setProject(parsed.project);
+        if (parsed.scenarios) setScenarios({ ...emptyScenarios, ...parsed.scenarios });
+        if (parsed.view) setView(parsed.view);
+      }
+      const requestedView = new URL(window.location.href).searchParams.get("view");
+      if (
+        ["overview", "energy", "benchmark", "flexibility", "economics"].includes(
+          requestedView ?? "",
+        )
+      )
+        setView(requestedView as View);
+    } catch {
+      // Corrupt browser state fails closed to empty inputs.
+    } finally {
+      setPersistenceReady(true);
+    }
+  }, []);
+  useEffect(() => {
+    if (!persistenceReady) return;
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ project, scenarios, view }));
+    const url = new URL(window.location.href);
+    url.searchParams.set("view", view);
+    window.history.replaceState(null, "", url);
+  }, [persistenceReady, project, scenarios, view]);
   const design = useMemo(
     () =>
       Object.values({
@@ -185,7 +245,16 @@ function DataCentreAnalytics() {
     () => (project.it === null ? [] : selectPeers(artifact?.records ?? [], project.it)),
     [artifact, project.it],
   );
-  const flex = useMemo(() => calculateFlexibilityEconomics(cost), [cost]);
+  const results = useMemo(
+    () =>
+      Object.fromEntries(
+        TECHNOLOGIES.map((technology) => [
+          technology.id,
+          calculateFlexibilityEconomics(scenarios[technology.id].inputs),
+        ]),
+      ) as Record<TechId, FlexResult>,
+    [scenarios],
+  );
   const annualCost =
     design && project.price !== null ? design.annualFacilityEnergyGwh * 1000 * project.price : null;
   const gap =
@@ -252,14 +321,20 @@ function DataCentreAnalytics() {
             <Flexibility
               tech={tech}
               setTech={setTech}
-              cost={cost}
-              setCost={setCost}
-              result={flex}
+              scenarios={scenarios}
+              setScenarios={setScenarios}
+              results={results}
               gap={gap}
+              design={design}
             />
           )}{" "}
           {view === "economics" && (
-            <Economics design={design} project={project} annualCost={annualCost} flex={flex} />
+            <Economics
+              design={design}
+              project={project}
+              annualCost={annualCost}
+              results={results}
+            />
           )}
         </section>
         <footer className="dca-boundary">
@@ -269,7 +344,7 @@ function DataCentreAnalytics() {
             not establish available grid capacity. Only the responsible operator can confirm a
             connection envelope.
           </span>
-          <small>Calculation v1.0</small>
+          <small>Calculation v2.0</small>
         </footer>
       </main>
       {drawer && (
@@ -389,6 +464,34 @@ function Overview({
         title="What requires a decision?"
         copy="Demand, evidence, connection exposure and economic readiness in one concise view."
       />
+      <EvidenceLegend />
+      <article className="dca-card dca-primary-chart">
+        <WaterfallChart
+          title="Project demand and entered connection envelope"
+          unit="MW"
+          items={[
+            { label: "Connected IT", value: project.it, color: "#49d3ff", note: "Customer input" },
+            {
+              label: "Facility peak",
+              value: design?.facilityPeakMw ?? null,
+              color: "#8b75ff",
+              note: "Calculated with PUE",
+            },
+            {
+              label: "Entered firm offer",
+              value: project.firm,
+              color: "#54d6a6",
+              note: "Customer/operator scenario",
+            },
+            {
+              label: "Unresolved gap",
+              value: gap,
+              color: "#efb743",
+              note: "Not available capacity",
+            },
+          ]}
+        />
+      </article>
       <div className="dca-metrics">
         <Metric
           label="Facility peak"
@@ -411,6 +514,22 @@ function Overview({
           note="RZReg; not site capacity"
         />
       </div>
+      <DecisionNote
+        title={
+          gap === null
+            ? "Connection exposure cannot be evaluated"
+            : gap > 0
+              ? `${fmt.format(gap)} MW remains above the entered offer`
+              : "Entered offer covers the calculated planning peak"
+        }
+        copy={
+          gap === null
+            ? "Enter a documented or hypothetical firm-import envelope. The result will remain a scenario until operator confirmation."
+            : gap > 0
+              ? "Compare time-limited flexibility options, then obtain an hourly operator envelope. Instantaneous power coverage alone is insufficient."
+              : "Confirm the offer, operating restrictions, N-1 basis and delivery date with the responsible operator."
+        }
+      />
       <div className="dca-grid-2">
         <article className="dca-card">
           <header>
@@ -479,22 +598,29 @@ function Energy({ design, annualCost }: { design: Design; annualCost: number | n
               <h3>{fmt.format(design.annualFacilityEnergyGwh)} GWh</h3>
             </div>
           </header>
-          <div className="dca-stacked">
-            <i
-              style={{
-                width: `${(design.annualItEnergyGwh / design.annualFacilityEnergyGwh) * 100}%`,
-              }}
-            />
-            <i
-              style={{
-                width: `${(design.annualOverheadEnergyGwh / design.annualFacilityEnergyGwh) * 100}%`,
-              }}
-            />
-          </div>
-          <Line label="IT energy" value={`${fmt.format(design.annualItEnergyGwh)} GWh`} />
-          <Line
-            label="Facility overhead"
-            value={`${fmt.format(design.annualOverheadEnergyGwh)} GWh`}
+          <WaterfallChart
+            title="Annual facility energy"
+            unit="GWh"
+            items={[
+              {
+                label: "IT energy",
+                value: design.annualItEnergyGwh,
+                color: "#49d3ff",
+                note: "IT load × load factor",
+              },
+              {
+                label: "PUE overhead",
+                value: design.annualOverheadEnergyGwh,
+                color: "#8b75ff",
+                note: "Cooling and electrical overhead",
+              },
+              {
+                label: "Facility total",
+                value: design.annualFacilityEnergyGwh,
+                color: "#54d6a6",
+                note: "Calculated annual demand",
+              },
+            ]}
           />
         </article>
         <article className="dca-card">
@@ -523,6 +649,25 @@ function Energy({ design, annualCost }: { design: Design; annualCost: number | n
           </div>
         </article>
       </div>
+      <article className="dca-card dca-wide-chart">
+        <BarComparison
+          title="Annual resource exposure"
+          unit="GWh"
+          items={[
+            { label: "Facility energy", value: design.annualFacilityEnergyGwh, color: "#49d3ff" },
+            { label: "Renewable target", value: design.annualRenewableEnergyGwh, color: "#54d6a6" },
+            {
+              label: "Reusable heat scenario",
+              value: design.annualReusableHeatGwh,
+              color: "#efb743",
+            },
+          ]}
+        />
+      </article>
+      <DecisionNote
+        title="Efficiency is a first-order commercial lever"
+        copy="Use an interval load profile next. Without real hourly demand, the workspace will not manufacture monthly or hourly operating charts."
+      />
     </>
   );
 }
@@ -548,6 +693,14 @@ function Benchmark({
     ["Energy reuse", project.erf, "energy_reuse_factor_pct", "%"],
     ["WUE", project.wue, "wue_l_per_kwh_it", " L/kWh"],
   ] as const;
+  const percentileItems = items.map(([label, value, key]) => {
+    const values = validMetricValues(peers, key).sort((a, b) => a - b);
+    const percentile =
+      value === null || values.length === 0
+        ? null
+        : (values.filter((candidate) => candidate <= value).length / values.length) * 100;
+    return { label, value: percentile, color: "#8b75ff", note: "Rank within valid cohort" };
+  });
   return (
     <>
       <Title
@@ -591,27 +744,64 @@ function Benchmark({
           {artifact?.metadata.validation_warning_count ?? 0} quarantined warnings
         </span>
       </div>
+      <div className="dca-grid-2 dca-section-gap">
+        <article className="dca-card">
+          <BarComparison
+            title="Project percentile within selected cohort"
+            unit="percentile"
+            items={percentileItems}
+          />
+        </article>
+        <article className="dca-card dca-callout">
+          <BarChart3 />
+          <h3>Benchmark interpretation</h3>
+          <p>
+            Renewable-factor results clustered at 100% provide little differentiation. PUE and WUE
+            provide more useful design context; ERF highlights a potential heat-reuse opportunity
+            but not technical feasibility.
+          </p>
+        </article>
+      </div>
+      <DecisionNote
+        title="Use peer data as context, not a site forecast"
+        copy="RZReg describes reporting facilities. It does not establish Berlin grid capacity, local energy prices or the operating performance of the proposed facility."
+      />
     </>
   );
 }
 function Flexibility({
   tech,
   setTech,
-  cost,
-  setCost,
-  result,
+  scenarios,
+  setScenarios,
+  results,
   gap,
+  design,
 }: {
   tech: TechId;
   setTech: Dispatch<SetStateAction<TechId>>;
-  cost: FlexibilityEconomicsInput;
-  setCost: Dispatch<SetStateAction<FlexibilityEconomicsInput>>;
-  result: FlexResult;
+  scenarios: TechnologyScenarios;
+  setScenarios: Dispatch<SetStateAction<TechnologyScenarios>>;
+  results: Record<TechId, FlexResult>;
   gap: number | null;
+  design: Design;
 }) {
   const chosen = TECHNOLOGIES.find((t) => t.id === tech)!;
+  const scenario = scenarios[tech];
+  const cost = scenario.inputs;
+  const result = results[tech];
   const set = (key: keyof FlexibilityEconomicsInput, value: number | null) =>
-    setCost((c: FlexibilityEconomicsInput) => ({ ...c, [key]: value }));
+    setScenarios((current) => ({
+      ...current,
+      [tech]: { ...current[tech], inputs: { ...current[tech].inputs, [key]: value } },
+    }));
+  const updateEvidence = (patch: Partial<TechnologyScenario>) =>
+    setScenarios((current) => ({ ...current, [tech]: { ...current[tech], ...patch } }));
+  const comparable = TECHNOLOGIES.map((technology) => ({
+    technology,
+    scenario: scenarios[technology.id],
+    result: results[technology.id],
+  }));
   return (
     <>
       <Title
@@ -619,6 +809,66 @@ function Flexibility({
         title="Compare flexibility technology economics"
         copy="Technical evidence describes suitability. Economics use only costs and operating assumptions you enter."
       />
+      <EvidenceLegend />
+      <article className="dca-card dca-primary-chart">
+        <WaterfallChart
+          title="Peak connection-gap coverage"
+          unit="MW"
+          items={[
+            {
+              label: "Facility peak",
+              value: design?.facilityPeakMw ?? null,
+              color: "#8b75ff",
+              note: "Calculated demand",
+            },
+            {
+              label: "Entered firm offer",
+              value: design && gap !== null ? design.facilityPeakMw - gap : null,
+              color: "#54d6a6",
+              note: "Entered scenario",
+            },
+            { label: "Peak gap", value: gap, color: "#efb743", note: "Not available capacity" },
+            {
+              label: `${chosen.name} power`,
+              value: cost.powerMw,
+              color: "#49d3ff",
+              note: "Customer / supplier input",
+            },
+            {
+              label: "Residual instantaneous gap",
+              value: gap === null || cost.powerMw === null ? null : Math.max(0, gap - cost.powerMw),
+              color: "#f27a8a",
+              note: "Chronology not validated",
+            },
+          ]}
+        />
+      </article>
+      <div className="dca-grid-2 dca-section-gap">
+        <article className="dca-card">
+          <BarComparison
+            title="Installed-cost comparison"
+            unit="M€"
+            items={comparable.map(({ technology, result }) => ({
+              label: technology.name,
+              value: result ? result.installedCostEur / 1_000_000 : null,
+              color: technology.id === tech ? "#49d3ff" : "#8b75ff",
+              note: result ? "Complete entered scenario" : "Missing inputs",
+            }))}
+          />
+        </article>
+        <article className="dca-card">
+          <BarComparison
+            title="Levelized cost of storage"
+            unit="€/MWh"
+            items={comparable.map(({ technology, result }) => ({
+              label: technology.name,
+              value: result?.lcosEurPerMwh ?? null,
+              color: technology.id === tech ? "#49d3ff" : "#54d6a6",
+              note: result ? "Calculated from entered costs" : "Not comparable",
+            }))}
+          />
+        </article>
+      </div>
       <div className="dca-flex-layout">
         <aside className="dca-tech-list">
           {TECHNOLOGIES.map((t) => (
@@ -629,7 +879,7 @@ function Flexibility({
               onClick={() => setTech(t.id)}
             >
               <strong>{t.name}</strong>
-              <small>{t.maturity}</small>
+              <small>{results[t.id] ? "Comparable · entered evidence" : t.maturity}</small>
             </button>
           ))}
         </aside>
@@ -681,6 +931,33 @@ function Flexibility({
                     change={(v) => set(key, v)}
                   />
                 ))}
+                <label className="dca-field" htmlFor="flex-evidence-type">
+                  <span>Evidence type</span>
+                  <select
+                    id="flex-evidence-type"
+                    name="flex-evidence-type"
+                    value={scenario.evidenceType}
+                    onChange={(event) =>
+                      updateEvidence({
+                        evidenceType: event.target.value as TechnologyScenario["evidenceType"],
+                      })
+                    }
+                  >
+                    <option value="customer_assumption">Customer assumption</option>
+                    <option value="supplier_quote">Supplier quotation</option>
+                    <option value="published_reference">Published reference</option>
+                  </select>
+                </label>
+                <TextField
+                  label="Source or quotation reference"
+                  value={scenario.sourceReference}
+                  change={(sourceReference) => updateEvidence({ sourceReference })}
+                />
+                <N
+                  label="Price year"
+                  value={scenario.priceYear}
+                  change={(priceYear) => updateEvidence({ priceYear })}
+                />
               </div>
             </article>
             <article className="dca-card dca-result-card">
@@ -725,6 +1002,59 @@ function Flexibility({
           </div>
         </section>
       </div>
+      <article className="dca-card dca-comparison-table">
+        <header>
+          <BarChart3 />
+          <div>
+            <span>Comparable scenarios</span>
+            <h3>Technology decision table</h3>
+          </div>
+        </header>
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Technology</th>
+              <th scope="col">Power</th>
+              <th scope="col">Duration</th>
+              <th scope="col">Efficiency</th>
+              <th scope="col">Installed cost</th>
+              <th scope="col">LCOS</th>
+              <th scope="col">Evidence</th>
+            </tr>
+          </thead>
+          <tbody>
+            {comparable.map(({ technology, scenario: entry, result: entryResult }) => (
+              <tr key={technology.id}>
+                <th scope="row">{technology.name}</th>
+                <td>
+                  {entry.inputs.powerMw === null
+                    ? "Missing"
+                    : `${fmt.format(entry.inputs.powerMw)} MW`}
+                </td>
+                <td>
+                  {entry.inputs.durationHours === null
+                    ? "Missing"
+                    : `${fmt.format(entry.inputs.durationHours)} h`}
+                </td>
+                <td>
+                  {entry.inputs.roundTripEfficiencyPct === null
+                    ? "Missing"
+                    : `${fmt.format(entry.inputs.roundTripEfficiencyPct)}%`}
+                </td>
+                <td>{entryResult ? eur.format(entryResult.installedCostEur) : "Not comparable"}</td>
+                <td>
+                  {entryResult ? `${eur.format(entryResult.lcosEurPerMwh)}/MWh` : "Not comparable"}
+                </td>
+                <td>{entry.evidenceType.replaceAll("_", " ")}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </article>
+      <DecisionNote
+        title="Instantaneous coverage is not chronological feasibility"
+        copy="Upload a real interval demand profile and obtain a time-varying operator envelope before assessing constrained hours, state of charge, recharge, rebound or service continuity."
+      />
       <Sources />
     </>
   );
@@ -733,12 +1063,12 @@ function Economics({
   design,
   project,
   annualCost,
-  flex,
+  results,
 }: {
   design: Design;
   project: Project;
   annualCost: number | null;
-  flex: FlexResult;
+  results: Record<TechId, FlexResult>;
 }) {
   if (!design)
     return (
@@ -747,6 +1077,23 @@ function Economics({
         copy="Complete Energy inputs before reviewing operating economics."
       />
     );
+  const completed = TECHNOLOGIES.map((technology) => ({
+    technology,
+    result: results[technology.id],
+  })).filter(
+    (
+      entry,
+    ): entry is { technology: (typeof TECHNOLOGIES)[number]; result: NonNullable<FlexResult> } =>
+      entry.result !== null,
+  );
+  const lowestLcos = completed.length
+    ? [...completed].sort((a, b) => a.result.lcosEurPerMwh - b.result.lcosEurPerMwh)[0]
+    : null;
+  const basePue = project.pue!;
+  const basePrice = project.price;
+  const sensitivityRows = [Math.max(1, basePue - 0.1), basePue, basePue + 0.1];
+  const sensitivityColumns =
+    basePrice === null ? [] : [Math.max(0, basePrice - 30), basePrice, basePrice + 30];
   return (
     <>
       <Title
@@ -754,6 +1101,7 @@ function Economics({
         title="Known exposure vs missing evidence"
         copy="No financial result appears until its required customer input exists."
       />
+      <EvidenceLegend />
       <div className="dca-metrics">
         <Metric
           label="Annual electricity"
@@ -772,10 +1120,68 @@ function Economics({
         />
         <Metric
           label="Flexibility LCOS"
-          value={flex ? `${eur.format(flex.lcosEurPerMwh)}/MWh` : "Unavailable"}
+          value={lowestLcos ? `${eur.format(lowestLcos.result.lcosEurPerMwh)}/MWh` : "Unavailable"}
           note="Complete supplier inputs required"
         />
       </div>
+      <div className="dca-grid-2">
+        <article className="dca-card">
+          <BarComparison
+            title="Known annual cost exposure"
+            unit="M€/year"
+            items={[
+              {
+                label: "Commodity electricity",
+                value: annualCost === null ? null : annualCost / 1_000_000,
+                color: "#49d3ff",
+                note: "Customer price × calculated demand",
+              },
+              { label: "Grid charges and levies", value: null, note: "Missing evidence" },
+              {
+                label: "Connection and reinforcement",
+                value: null,
+                note: "Missing operator/project evidence",
+              },
+              {
+                label: "Lowest complete flexibility case",
+                value: lowestLcos ? lowestLcos.result.annualCostEur / 1_000_000 : null,
+                color: "#8b75ff",
+                note: lowestLcos?.technology.name ?? "No complete scenario",
+              },
+            ]}
+          />
+        </article>
+        {sensitivityColumns.length > 0 ? (
+          <SensitivityMatrix
+            title="Annual electricity-cost sensitivity"
+            rows={sensitivityRows}
+            columns={sensitivityColumns}
+            calculate={(pue, price) =>
+              ((project.it! * project.load!) / 100) * 8.76 * pue * 1000 * price
+            }
+          />
+        ) : (
+          <article className="dca-card">
+            <Empty
+              title="Sensitivity unavailable"
+              copy="Enter an electricity price to calculate the PUE and price matrix."
+            />
+          </article>
+        )}
+      </div>
+      {completed.length > 0 && (
+        <article className="dca-card dca-wide-chart">
+          <BarComparison
+            title="Flexibility annual-cost comparison"
+            unit="M€/year"
+            items={completed.map(({ technology, result }) => ({
+              label: technology.name,
+              value: result.annualCostEur / 1_000_000,
+              color: "#54d6a6",
+            }))}
+          />
+        </article>
+      )}
       <article className="dca-card dca-callout">
         <Leaf />
         <h3>Investment decision unavailable</h3>
@@ -784,6 +1190,18 @@ function Economics({
           taxes, financing, revenues and chronological dispatch. RZReg cannot supply them.
         </p>
       </article>
+      <DecisionNote
+        title={
+          lowestLcos
+            ? `${lowestLcos.technology.name} is the lowest-LCOS complete scenario—not yet a recommendation`
+            : "Complete at least 1 supplier-backed flexibility scenario"
+        }
+        copy={
+          lowestLcos
+            ? "Compare site feasibility, reliability role, warranty, degradation and chronological dispatch before selecting a technology."
+            : "Add technology costs and evidence references. NPV and payback remain unavailable until the wider commercial case is complete."
+        }
+      />
     </>
   );
 }
@@ -802,6 +1220,17 @@ function Line({ label, value }: { label: string; value: string }) {
       <span>{label}</span>
       <strong>{value}</strong>
     </div>
+  );
+}
+function DecisionNote({ title, copy }: { title: string; copy: string }) {
+  return (
+    <section className="dca-decision-note">
+      <div>
+        <span>Decision interpretation</span>
+        <h3>{title}</h3>
+      </div>
+      <p>{copy}</p>
+    </section>
   );
 }
 function Sources() {
