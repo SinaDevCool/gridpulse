@@ -1262,7 +1262,9 @@ function PowerFinderPage() {
         className={`power-finder-page ${sidebarOpen ? "" : "is-sidebar-collapsed"}`}
       >
         <section className="power-finder-sidebar" aria-label="Power Finder controls">
-          <div className="finder-rail-sticky">
+          <div
+            className={`finder-rail-sticky ${finderWorkflow === "discover" ? "is-discovery" : ""}`}
+          >
             <div className="finder-workflow-switch" aria-label="Power Finder workflow">
               <p>Choose your starting point</p>
               <div role="group" aria-label="Power Finder modes">
@@ -1545,31 +1547,6 @@ function PowerFinderPage() {
                     </label>
                   </div>
                 </details>
-                {discoveryResults.length > 0 ? (
-                  <ol className="finder-discovery-results">
-                    {discoveryResults.map((result, index) => (
-                      <li key={result.id}>
-                        <button
-                          type="button"
-                          className={selectedDiscoveryId === result.id ? "is-active" : ""}
-                          onClick={() => {
-                            setSelectedDiscoveryId(result.id);
-                            navigateMapToPoint(result.coordinates);
-                          }}
-                        >
-                          <span>{index + 1}</span>
-                          <div>
-                            <strong>{result.name}</strong>
-                            <small>
-                              {result.score}/100 investigation fit · {result.nodeDistanceKm} km to{" "}
-                              {result.node.properties.voltage_kv?.join("/") || "unknown"} kV node
-                            </small>
-                          </div>
-                        </button>
-                      </li>
-                    ))}
-                  </ol>
-                ) : null}
               </section>
             ) : (
               <div className="finder-project-summary">
@@ -2628,6 +2605,49 @@ function PowerFinderPage() {
                 </p>
               )}
           </details>
+
+          {finderWorkflow === "discover" && discoveryResults.length > 0 ? (
+            <section
+              className="finder-discovery-results-panel"
+              aria-labelledby="finder-discovery-results-title"
+            >
+              <header>
+                <div>
+                  <p className="context-label">Investigation shortlist</p>
+                  <h2 id="finder-discovery-results-title">Ranked areas</h2>
+                </div>
+                <span>{discoveryResults.length}</span>
+              </header>
+              <p>
+                Select an area to inspect it on the map. These are screening leads, not confirmed
+                sites or available capacity.
+              </p>
+              <ol className="finder-discovery-results">
+                {discoveryResults.map((result, index) => (
+                  <li key={result.id}>
+                    <button
+                      type="button"
+                      className={selectedDiscoveryId === result.id ? "is-active" : ""}
+                      aria-current={selectedDiscoveryId === result.id ? "true" : undefined}
+                      onClick={() => {
+                        setSelectedDiscoveryId(result.id);
+                        navigateMapToPoint(result.coordinates);
+                      }}
+                    >
+                      <span>{index + 1}</span>
+                      <div>
+                        <strong>{result.name}</strong>
+                        <small>
+                          {result.score}/100 investigation fit · {result.nodeDistanceKm} km to{" "}
+                          {result.node.properties.voltage_kv?.join("/") || "unknown"} kV node
+                        </small>
+                      </div>
+                    </button>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          ) : null}
 
           <section className="power-finder-candidates">
             <header>

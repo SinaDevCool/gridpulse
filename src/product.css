@@ -19171,6 +19171,72 @@ tbody tr:last-child td {
   padding: 0;
   list-style: none;
 }
+.finder-discovery-results-panel {
+  display: grid;
+  gap: 9px;
+  margin-top: 10px !important;
+  padding: 12px !important;
+  border: 1px solid #24475a !important;
+  border-radius: 9px;
+  background: #091a27;
+}
+.finder-discovery-results-panel > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0;
+}
+.finder-discovery-results-panel > header div {
+  min-width: 0;
+}
+.finder-discovery-results-panel > header .context-label {
+  margin: 0 0 4px;
+}
+.finder-discovery-results-panel > header h2 {
+  margin: 0;
+  color: #e7f5f8;
+  font-family: inherit;
+  font-size: 13px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.finder-discovery-results-panel > header > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 27px;
+  height: 27px;
+  padding: 0 8px;
+  border: 1px solid #2f7085;
+  border-radius: 999px;
+  background: #0d3040;
+  color: #8ce9f7;
+  font-size: 10px;
+  font-weight: 800;
+}
+.finder-discovery-results-panel > p {
+  margin: 0;
+  color: #87a3b3 !important;
+  font-size: 9px !important;
+  line-height: 1.45 !important;
+}
+.finder-discovery-results-panel .finder-discovery-results {
+  max-height: clamp(190px, 30vh, 320px);
+  padding-right: 4px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: #31596b transparent;
+  scrollbar-width: thin;
+}
+.finder-discovery-results-panel .finder-discovery-results:focus-within {
+  scrollbar-color: #53c8df transparent;
+}
+@media (min-width: 761px) {
+  .finder-rail-sticky.is-discovery {
+    position: static;
+  }
+}
 .finder-discovery-results button {
   display: grid;
   grid-template-columns: 24px minmax(0, 1fr);
