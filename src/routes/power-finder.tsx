@@ -18,11 +18,12 @@ import {
   ChevronDown,
   ChevronUp,
   Zap,
+  X,
 } from "lucide-react";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { z } from "zod";
 import { AppShell } from "@/components/product/AppShell";
-import { PowerFinderMap } from "@/components/product/PowerFinderMap";
+import { PowerFinderMap, type RzRegDataCentre } from "@/components/product/PowerFinderMap";
 import type { ActivationStudyTab } from "@/components/product/ActivationStudyPanel";
 import type { VisibleLayerCounts } from "@/components/product/power-finder-map-data";
 import {
@@ -426,6 +427,8 @@ function PowerFinderPage() {
   const [secondaryControlsOpen, setSecondaryControlsOpen] = useState(Boolean(search.propertyId));
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [legendOpen, setLegendOpen] = useState(true);
+  const [showDataCentres, setShowDataCentres] = useState(true);
+  const [selectedDataCentre, setSelectedDataCentre] = useState<RzRegDataCentre | null>(null);
   const [finderWorkflow, setFinderWorkflow] = useState<"screen" | "discover">("screen");
   const [discoveryStrategy, setDiscoveryStrategy] = useState<DiscoveryStrategy>("balanced");
   const [discoveryResultCount, setDiscoveryResultCount] = useState<10 | 20>(10);
@@ -2498,6 +2501,23 @@ function PowerFinderPage() {
           <details className="finder-layers-menu" suppressHydrationWarning>
             <summary>Map Layers</summary>
             <div className="power-finder-layer-list">
+              <label title="German data-centre register records, shown at their validated location precision.">
+                <input
+                  name="layer-rzreg-data-centres"
+                  type="checkbox"
+                  checked={showDataCentres}
+                  onChange={(event) => {
+                    const checked = event.target.checked;
+                    setShowDataCentres(checked);
+                    if (!checked) setSelectedDataCentre(null);
+                    setInteractionNotice(
+                      `RZReg data-centre layer ${checked ? "enabled" : "disabled"}.`,
+                    );
+                  }}
+                />
+                <span>RZReg Data Centres</span>
+                <small>319 total</small>
+              </label>
               {(Object.keys(kindLabels) as PowerFinderKind[]).map((kind) => (
                 <label
                   key={kind}
@@ -2931,8 +2951,95 @@ function PowerFinderPage() {
                   `${result.name}: ${result.score}/100 investigation fit. Capacity remains unknown.`,
                 );
               }}
+              showDataCentres={showDataCentres}
+              onDataCentreSelect={(dataCentre) => {
+                setSelectedDataCentre(dataCentre);
+                setInteractionNotice(`${dataCentre.name} selected from the RZReg layer.`);
+              }}
             />
           )}
+          {selectedDataCentre ? (
+            <aside className="rzreg-detail-card" aria-label="Selected RZReg data centre">
+              <header>
+                <div className="rzreg-detail-card__eyebrow">
+                  <Database aria-hidden="true" />
+                  <span>German Data Centre Register</span>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Close data-centre details"
+                  onClick={() => setSelectedDataCentre(null)}
+                >
+                  <X aria-hidden="true" />
+                </button>
+              </header>
+              <div className="rzreg-detail-card__body">
+                <span
+                  className={`rzreg-precision-badge rzreg-precision-badge--${
+                    selectedDataCentre.locationPrecision === "facility_address"
+                      ? "exact"
+                      : "approximate"
+                  }`}
+                >
+                  {selectedDataCentre.locationPrecision === "facility_address"
+                    ? "Published Facility Address"
+                    : "Postcode Area Only"}
+                </span>
+                <h2>{selectedDataCentre.name}</h2>
+                <p className="rzreg-detail-card__operator">{selectedDataCentre.operator}</p>
+
+                <dl className="rzreg-detail-card__facts">
+                  <div>
+                    <dt>Published location</dt>
+                    <dd>
+                      {selectedDataCentre.address ??
+                        `Postcode ${selectedDataCentre.postcode}, Germany`}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Map precision</dt>
+                    <dd>
+                      {selectedDataCentre.locationPrecision === "facility_address"
+                        ? "Address-level geocode"
+                        : "Approximate postcode centroid"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Register record</dt>
+                    <dd>RZReg row {selectedDataCentre.rzregRow}</dd>
+                  </div>
+                </dl>
+
+                <div className="rzreg-detail-card__boundary">
+                  <ShieldCheck aria-hidden="true" />
+                  <div>
+                    <strong>Evidence boundary</strong>
+                    <p>
+                      {selectedDataCentre.locationPrecision === "facility_address"
+                        ? "The published address was validated against admitted public evidence."
+                        : "The marker represents a postcode area—not the data-centre building."}{" "}
+                      Grid capacity, headroom and connection feasibility remain unknown.
+                    </p>
+                  </div>
+                </div>
+
+                {selectedDataCentre.sourceUrl ? (
+                  <a
+                    className="rzreg-detail-card__source"
+                    href={selectedDataCentre.sourceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Open Published Evidence <ExternalLink aria-hidden="true" />
+                  </a>
+                ) : (
+                  <p className="rzreg-detail-card__source-missing">
+                    Record-level public address evidence is not available for this location.
+                  </p>
+                )}
+              </div>
+            </aside>
+          ) : null}
           <div className={`power-finder-legend ${legendOpen ? "is-open" : "is-collapsed"}`}>
             <button
               type="button"
@@ -2950,11 +3057,11 @@ function PowerFinderPage() {
               </strong>
               {legendOpen ? <ChevronDown aria-hidden="true" /> : <ChevronUp aria-hidden="true" />}
             </button>
-            {legendOpen ? (
+            {legendOpen && showDataCentres ? (
               <div className="power-finder-data-legend" aria-label="Data-centre location precision">
                 <b>RZReg data centres · 319 records</b>
                 <span>
-                  <i className="legend-data-centre-exact" /> Verified published address · 38
+                  <i className="legend-data-centre-exact" /> Published facility address · 38
                 </span>
                 <span>
                   <i className="legend-data-centre-approximate" /> Postcode area only · 281

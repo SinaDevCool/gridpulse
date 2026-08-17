@@ -198,6 +198,23 @@ type PowerFinderMapProps = {
   onVisibleLayerCounts?: (counts: VisibleLayerCounts) => void;
   discoveryLocations?: FeatureCollection<Point> | null;
   onDiscoverySelect?: (id: string) => void;
+  showDataCentres?: boolean;
+  onDataCentreSelect?: (dataCentre: RzRegDataCentre) => void;
+};
+
+export type RzRegDataCentre = {
+  id: string;
+  rzregRow: number;
+  name: string;
+  operator: string;
+  postcode: string;
+  address: string | null;
+  locationPrecision: "facility_address" | "postcode_area";
+  coordinateMethod: string;
+  truthLabel: string;
+  sourceUrl: string | null;
+  warning: string | null;
+  coordinates: [number, number];
 };
 
 function isGeoJsonSource(source: Source | undefined): source is GeoJSONSource {
@@ -293,6 +310,8 @@ export function PowerFinderMap({
   onVisibleLayerCounts,
   discoveryLocations = null,
   onDiscoverySelect,
+  showDataCentres = true,
+  onDataCentreSelect,
 }: PowerFinderMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -304,6 +323,8 @@ export function PowerFinderMap({
   const onVisibleLayerCountsRef = useRef(onVisibleLayerCounts);
   const onDiscoverySelectRef = useRef(onDiscoverySelect);
   const discoveryLocationsRef = useRef(discoveryLocations);
+  const onDataCentreSelectRef = useRef(onDataCentreSelect);
+  const showDataCentresRef = useRef(showDataCentres);
   const selectedFeatureRef = useRef(selectedFeature);
   const previewFeatureRef = useRef(previewFeature);
   const capacityNodesRef = useRef(capacityNodes);
@@ -321,6 +342,8 @@ export function PowerFinderMap({
   onVisibleLayerCountsRef.current = onVisibleLayerCounts;
   onDiscoverySelectRef.current = onDiscoverySelect;
   discoveryLocationsRef.current = discoveryLocations;
+  onDataCentreSelectRef.current = onDataCentreSelect;
+  showDataCentresRef.current = showDataCentres;
   selectedFeatureRef.current = selectedFeature;
   previewFeatureRef.current = previewFeature;
   capacityNodesRef.current = capacityNodes;
@@ -335,7 +358,7 @@ export function PowerFinderMap({
     if (!containerRef.current || mapRef.current) return;
     let cancelled = false;
 
-    void import("maplibre-gl").then(({ Map, NavigationControl, Popup }) => {
+    void import("maplibre-gl").then(({ Map, NavigationControl }) => {
       if (cancelled || !containerRef.current) return;
       const map = new Map({
         container: containerRef.current,
@@ -512,6 +535,7 @@ export function PowerFinderMap({
           type: "circle",
           source: "rzreg-data-centres",
           filter: ["has", "point_count"],
+          layout: { visibility: showDataCentresRef.current ? "visible" : "none" },
           paint: {
             "circle-radius": ["step", ["get", "point_count"], 15, 10, 19, 30, 24],
             "circle-color": ["case", [">", ["get", "exact_count"], 0], "#14b8a6", "#f59e0b"],
@@ -525,7 +549,11 @@ export function PowerFinderMap({
           type: "symbol",
           source: "rzreg-data-centres",
           filter: ["has", "point_count"],
-          layout: { "text-field": ["get", "point_count_abbreviated"], "text-size": 11 },
+          layout: {
+            visibility: showDataCentresRef.current ? "visible" : "none",
+            "text-field": ["get", "point_count_abbreviated"],
+            "text-size": 11,
+          },
           paint: { "text-color": "#07111f" },
         });
         map.addLayer({
@@ -537,6 +565,7 @@ export function PowerFinderMap({
             ["!", ["has", "point_count"]],
             ["==", ["get", "location_precision"], "postcode_area"],
           ],
+          layout: { visibility: showDataCentresRef.current ? "visible" : "none" },
           paint: {
             "circle-radius": ["interpolate", ["linear"], ["zoom"], 6, 7, 10, 13, 14, 24],
             "circle-color": "rgba(245, 158, 11, 0.08)",
@@ -553,6 +582,7 @@ export function PowerFinderMap({
             ["!", ["has", "point_count"]],
             ["==", ["get", "location_precision"], "postcode_area"],
           ],
+          layout: { visibility: showDataCentresRef.current ? "visible" : "none" },
           paint: {
             "circle-radius": 6,
             "circle-color": "rgba(245, 158, 11, 0.16)",
@@ -569,6 +599,7 @@ export function PowerFinderMap({
             ["!", ["has", "point_count"]],
             ["==", ["get", "location_precision"], "facility_address"],
           ],
+          layout: { visibility: showDataCentresRef.current ? "visible" : "none" },
           paint: {
             "circle-radius": 7,
             "circle-color": "#14b8a6",
@@ -580,26 +611,23 @@ export function PowerFinderMap({
           const feature = event.features?.[0];
           if (!feature || feature.geometry.type !== "Point") return;
           const properties = feature.properties ?? {};
-          const exact = properties.location_precision === "facility_address";
-          const content = document.createElement("div");
-          content.className = "rzreg-map-popup";
-          const title = document.createElement("strong");
-          title.textContent = String(properties.name ?? "RZReg data centre");
-          const operator = document.createElement("span");
-          operator.textContent = String(properties.operator ?? "Operator not published");
-          const location = document.createElement("span");
-          location.textContent = exact
-            ? `Validated facility address: ${String(properties.address ?? "")}`
-            : `Approximate location for postcode ${String(properties.postcode ?? "")}`;
-          const warning = document.createElement("small");
-          warning.textContent = exact
-            ? "Address evidence does not establish available grid capacity."
-            : "This marker represents a postcode area, not the data-centre building or available grid capacity.";
-          content.append(title, operator, location, warning);
-          new Popup({ closeButton: true, maxWidth: "340px" })
-            .setLngLat(feature.geometry.coordinates as [number, number])
-            .setDOMContent(content)
-            .addTo(map);
+          onDataCentreSelectRef.current?.({
+            id: String(properties.id ?? feature.id ?? "rzreg-data-centre"),
+            rzregRow: Number(properties.rzreg_row ?? 0),
+            name: String(properties.name ?? "RZReg data centre"),
+            operator: String(properties.operator ?? "Operator not published"),
+            postcode: String(properties.postcode ?? ""),
+            address: properties.address ? String(properties.address) : null,
+            locationPrecision:
+              properties.location_precision === "facility_address"
+                ? "facility_address"
+                : "postcode_area",
+            coordinateMethod: String(properties.coordinate_method ?? "unknown"),
+            truthLabel: String(properties.truth_label ?? "withheld_or_unknown"),
+            sourceUrl: properties.source_url ? String(properties.source_url) : null,
+            warning: properties.warning ? String(properties.warning) : null,
+            coordinates: feature.geometry.coordinates as [number, number],
+          });
         };
         for (const layer of ["rzreg-data-centres-exact", "rzreg-data-centres-approximate"]) {
           map.on("click", layer, showDataCentre);
@@ -1284,6 +1312,21 @@ export function PowerFinderMap({
     }
     map.once("idle", () => publishVisibleLayerCounts(map, onVisibleLayerCountsRef.current));
   }, [enabledLayers]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    for (const layer of [
+      "rzreg-data-centre-clusters",
+      "rzreg-data-centre-cluster-count",
+      "rzreg-data-centres-approximate-area",
+      "rzreg-data-centres-approximate",
+      "rzreg-data-centres-exact",
+    ]) {
+      if (map.getLayer(layer))
+        map.setLayoutProperty(layer, "visibility", showDataCentres ? "visible" : "none");
+    }
+  }, [showDataCentres]);
 
   useEffect(() => {
     const source = mapRef.current?.getSource("finder-project-site");
