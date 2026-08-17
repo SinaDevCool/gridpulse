@@ -3004,10 +3004,6 @@ function PowerFinderPage() {
                         : "Approximate postcode centroid"}
                     </dd>
                   </div>
-                  <div>
-                    <dt>Register record</dt>
-                    <dd>RZReg row {selectedDataCentre.rzregRow}</dd>
-                  </div>
                 </dl>
 
                 <div className="rzreg-detail-card__boundary">
