@@ -31,6 +31,12 @@ supabase/.temp/
 test-results/
 playwright-report/
 
+# Codex-local attachments and generated working artifacts
+/.codex-remote-attachments/
+/.codex-tmp/
+/tmp/
+/video-assets/
+
 # Python geospatial service
 __pycache__/
 *.py[cod]
