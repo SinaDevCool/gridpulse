@@ -14,6 +14,7 @@
     "test:e2e:finder": "playwright test --config playwright.finder.config.ts",
     "grid:test": "powershell -NoProfile -Command \"$env:PYTHONPATH=(Resolve-Path 'services/grid-data/src').Path; python -m unittest discover -s services/grid-data/tests\"",
     "grid:fetch:brandenburg": "powershell -NoProfile -Command \"$env:PYTHONPATH=(Resolve-Path 'services/grid-data/src').Path; python -m grid_data.cli fetch-osm --bbox 52.22,13.15,52.40,13.55 --endpoint https://overpass.kumi.systems/api/interpreter --output public/power-finder/brandenburg-osm.json\"",
+    "grid:build:rzreg-performance": "python scripts/build-rzreg-performance.py",
     "grid:write-sql": "powershell -NoProfile -Command \"$env:PYTHONPATH=(Resolve-Path 'services/grid-data/src').Path; python -m grid_data.cli write-sql --input public/power-finder/brandenburg-osm.json --output services/grid-data/releases/brandenburg-osm-load.sql\"",
     "grid:audit:release": "powershell -NoProfile -Command \"$env:PYTHONPATH=(Resolve-Path 'services/grid-data/src').Path; python -m grid_data.cli audit-release --input public/power-finder/brandenburg-osm.json --output output/brandenburg-osm-audit.json\"",
     "grid:warm:tiles": "python scripts/warm_power_finder_tiles.py",

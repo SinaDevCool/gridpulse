@@ -2,6 +2,11 @@ import { Link, useRouterState } from "@tanstack/react-router";
 const workspaceLinks = [
   { label: "Sites", detail: "Manage portfolio decisions", to: "/portfolio" },
   { label: "Power Finder", detail: "Investigate grid hypotheses", to: "/power-finder" },
+  {
+    label: "Data Centre Planner",
+    detail: "Design energy and flexibility",
+    to: "/data-centre-planner",
+  },
 ] as const;
 
 export function ProductHeader() {

@@ -27,6 +27,7 @@ import { Route as EnergyStorageRouteImport } from './routes/energy-storage'
 import { Route as DemoRouteImport } from './routes/demo'
 import { Route as DataSourcesRouteImport } from './routes/data-sources'
 import { Route as DataCentresRouteImport } from './routes/data-centres'
+import { Route as DataCentrePlannerRouteImport } from './routes/data-centre-planner'
 import { Route as ActivationRouteImport } from './routes/activation'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SubmissionPackageIdRouteImport } from './routes/submission-package.$id'
@@ -134,6 +135,11 @@ const DataCentresRoute = DataCentresRouteImport.update({
   path: '/data-centres',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DataCentrePlannerRoute = DataCentrePlannerRouteImport.update({
+  id: '/data-centre-planner',
+  path: '/data-centre-planner',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ActivationRoute = ActivationRouteImport.update({
   id: '/activation',
   path: '/activation',
@@ -218,6 +224,7 @@ const ApiPowerFinderTileZXYRoute = ApiPowerFinderTileZXYRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/activation': typeof ActivationRouteWithChildren
+  '/data-centre-planner': typeof DataCentrePlannerRoute
   '/data-centres': typeof DataCentresRoute
   '/data-sources': typeof DataSourcesRoute
   '/demo': typeof DemoRoute
@@ -254,6 +261,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/activation': typeof ActivationRouteWithChildren
+  '/data-centre-planner': typeof DataCentrePlannerRoute
   '/data-centres': typeof DataCentresRoute
   '/data-sources': typeof DataSourcesRoute
   '/demo': typeof DemoRoute
@@ -291,6 +299,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/activation': typeof ActivationRouteWithChildren
+  '/data-centre-planner': typeof DataCentrePlannerRoute
   '/data-centres': typeof DataCentresRoute
   '/data-sources': typeof DataSourcesRoute
   '/demo': typeof DemoRoute
@@ -329,6 +338,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/activation'
+    | '/data-centre-planner'
     | '/data-centres'
     | '/data-sources'
     | '/demo'
@@ -365,6 +375,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/activation'
+    | '/data-centre-planner'
     | '/data-centres'
     | '/data-sources'
     | '/demo'
@@ -401,6 +412,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/activation'
+    | '/data-centre-planner'
     | '/data-centres'
     | '/data-sources'
     | '/demo'
@@ -438,6 +450,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ActivationRoute: typeof ActivationRouteWithChildren
+  DataCentrePlannerRoute: typeof DataCentrePlannerRoute
   DataCentresRoute: typeof DataCentresRoute
   DataSourcesRoute: typeof DataSourcesRoute
   DemoRoute: typeof DemoRoute
@@ -597,6 +610,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DataCentresRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/data-centre-planner': {
+      id: '/data-centre-planner'
+      path: '/data-centre-planner'
+      fullPath: '/data-centre-planner'
+      preLoaderRoute: typeof DataCentrePlannerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/activation': {
       id: '/activation'
       path: '/activation'
@@ -751,6 +771,7 @@ const PortfolioRouteWithChildren = PortfolioRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ActivationRoute: ActivationRouteWithChildren,
+  DataCentrePlannerRoute: DataCentrePlannerRoute,
   DataCentresRoute: DataCentresRoute,
   DataSourcesRoute: DataSourcesRoute,
   DemoRoute: DemoRoute,

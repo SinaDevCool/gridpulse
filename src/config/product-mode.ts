@@ -36,6 +36,7 @@ const finderRoutes = new Set([
   "/synthetic-network-study",
   "/data-sources",
   "/data-centres",
+  "/data-centre-planner",
   "/energy-storage",
   "/hydrogen-industry",
   "/portfolio",
