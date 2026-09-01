@@ -34,9 +34,9 @@ const checks = [
     url: `${baseUrl}/data-sources`,
     expectedStatus: 200,
     validate: async (response) => {
-      const finalUrl = new URL(response.url);
-      if (finalUrl.pathname !== "/") {
-        throw new Error("retired methodology page did not redirect to the current landing page");
+      const html = await response.text();
+      if (!html.includes("See how mapped evidence becomes a governed capacity decision")) {
+        throw new Error("public methodology page is missing its evidence-boundary heading");
       }
     },
   },
