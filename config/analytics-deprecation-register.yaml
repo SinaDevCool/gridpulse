@@ -1,0 +1,51 @@
+schema_version: gridpulse-analytics-deprecation-v1
+canonical_engine: gridpulse-capacity-backtest
+items:
+  browser_fca_dispatch:
+    status: retired
+    path: src/lib/fca-engine.ts
+    symbols:
+      - simulateFlexibleConnection
+    replacement: facility_planning_job
+    permitted_until: completed
+    permitted_mode: removed
+    completed_in: gridpulse-fca-interval-v1
+  simple_envelope_ranking:
+    status: retired
+    path: services/grid-data/src/grid_data/flexibility_optimizer.py
+    symbols:
+      - rank_operating_envelopes
+    replacement: facility_planning_job
+    permitted_until: completed
+    permitted_mode: removed
+    completed_in: canonical-facility-plan-job-v1
+  illustrative_activation_timeline:
+    status: retired
+    path: src/features/activation/workspace-model.ts
+    symbols:
+      - buildActivationWorkspaceModel
+    replacement: persisted_facility_plan
+    permitted_until: completed
+    permitted_mode: removed
+    completed_in: canonical-facility-plan-activation-ui-v1
+  illustrative_operations_timeline:
+    status: retired
+    path: src/features/operations/workspace-model.ts
+    symbols:
+      - buildOperationsModel
+    replacement: shadow_operations_snapshot
+    permitted_until: completed
+    permitted_mode: removed
+    completed_in: canonical-shadow-verification-v1
+  copied_grid_data:
+    status: retired
+    path: ../GridPulse-Fullb/src/grid_data
+    symbols: []
+    replacement: gridpulse-grid-core_package
+    permitted_until: completed
+    permitted_mode: removed
+    completed_in: gridpulse-grid-core-0.2.0
+rules:
+  - Every item must name one replacement and one removal milestone.
+  - A deprecated calculator cannot be used for an authoritative customer result.
+  - Removing an item requires a parity test against the canonical replacement.

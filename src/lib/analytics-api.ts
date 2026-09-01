@@ -1,4 +1,26 @@
 import { supabase } from "../integrations/supabase/client";
+import {
+  capacityRequirementRequestSchema,
+  facilityPlanRequestSchema,
+  fcaIntervalRequestSchema,
+  fcaProfileRequestSchema,
+  facilityUncertaintyRequestSchema,
+  facilityHistoricalReplayRequestSchema,
+  marketQualificationRequestSchema,
+  rollingFacilityPlanRequestSchema,
+  operatorEnquiryPackageRequestSchema,
+  shadowVerificationRequestSchema,
+  type CapacityRequirementRequest,
+  type FacilityPlanRequest,
+  type FcaIntervalRequest,
+  type FcaProfileRequest,
+  type FacilityUncertaintyRequest,
+  type FacilityHistoricalReplayRequest,
+  type MarketQualificationRequest,
+  type RollingFacilityPlanRequest,
+  type OperatorEnquiryPackageRequest,
+  type ShadowVerificationRequest,
+} from "../features/analytics/contracts";
 
 export type AnalyticsJobStatus = "queued" | "running" | "succeeded" | "failed" | "cancelled";
 
@@ -74,8 +96,104 @@ export function startGraphGuidedStudy(input: GraphGuidedStudyRequest): Promise<J
   });
 }
 
+export function startFacilityPlan(input: FacilityPlanRequest): Promise<JobAccepted> {
+  const payload = facilityPlanRequestSchema.parse(input);
+  return authenticatedRequest<JobAccepted>("/v1/jobs/facility-plan", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function startFcaInterval(input: FcaIntervalRequest): Promise<JobAccepted> {
+  const payload = fcaIntervalRequestSchema.parse(input);
+  return authenticatedRequest<JobAccepted>("/v1/jobs/fca-interval", {
+    method: "POST", body: JSON.stringify(payload),
+  });
+}
+
+export function startFcaProfile(input: FcaProfileRequest): Promise<JobAccepted> {
+  const payload = fcaProfileRequestSchema.parse(input);
+  return authenticatedRequest<JobAccepted>("/v1/jobs/fca-interval", {
+    method: "POST", body: JSON.stringify(payload),
+  });
+}
+
+export function startCapacityRequirement(input: CapacityRequirementRequest): Promise<JobAccepted> {
+  const payload = capacityRequirementRequestSchema.parse(input);
+  return authenticatedRequest<JobAccepted>("/v1/jobs/capacity-requirement", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function startFacilityUncertainty(input: FacilityUncertaintyRequest): Promise<JobAccepted> {
+  const payload = facilityUncertaintyRequestSchema.parse(input);
+  return authenticatedRequest<JobAccepted>("/v1/jobs/facility-uncertainty", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function startFacilityHistoricalReplay(input: FacilityHistoricalReplayRequest): Promise<JobAccepted> {
+  const payload = facilityHistoricalReplayRequestSchema.parse(input);
+  return authenticatedRequest<JobAccepted>("/v1/jobs/facility-historical-replay", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function startMarketQualification(input: MarketQualificationRequest): Promise<JobAccepted> {
+  const payload = marketQualificationRequestSchema.parse(input);
+  return authenticatedRequest<JobAccepted>("/v1/jobs/market-qualification", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function startRollingFacilityPlan(input: RollingFacilityPlanRequest): Promise<JobAccepted> {
+  const payload = rollingFacilityPlanRequestSchema.parse(input);
+  return authenticatedRequest<JobAccepted>("/v1/jobs/rolling-facility-plan", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function startOperatorEnquiryPackage(input: OperatorEnquiryPackageRequest): Promise<JobAccepted> {
+  const payload = operatorEnquiryPackageRequestSchema.parse(input);
+  return authenticatedRequest<JobAccepted>("/v1/jobs/operator-enquiry-package", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function startShadowVerification(input: ShadowVerificationRequest): Promise<JobAccepted> {
+  const payload = shadowVerificationRequestSchema.parse(input);
+  return authenticatedRequest<JobAccepted>("/v1/jobs/shadow-verification", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function waitForAnalyticsJob(
+  jobId: string,
+  onUpdate?: (job: AnalyticsJob) => void,
+  intervalMs = 1500,
+): Promise<AnalyticsJob> {
+  for (let attempt = 0; attempt < 200; attempt += 1) {
+    const job = await loadAnalyticsJob(jobId);
+    onUpdate?.(job);
+    if (["succeeded", "failed", "cancelled"].includes(job.status)) return job;
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
+  }
+  throw new Error("Analytics job polling timed out");
+}
+
 export function loadAnalyticsJob(jobId: string): Promise<AnalyticsJob> {
   return authenticatedRequest<AnalyticsJob>(`/v1/jobs/${encodeURIComponent(jobId)}`);
+}
+
+export function listAnalyticsJobs(limit = 100): Promise<AnalyticsJob[]> {
+  return authenticatedRequest<AnalyticsJob[]>(`/v1/jobs?limit=${Math.min(Math.max(limit, 1), 200)}`);
 }
 
 export function cancelAnalyticsJob(jobId: string): Promise<AnalyticsJob> {

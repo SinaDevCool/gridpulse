@@ -72,11 +72,11 @@ import {
   type StudyRun,
 } from "@/lib/assessment-model";
 import {
-  analyseFca,
   summarizeProfile,
   type IntervalPoint,
   type RestrictionWindow,
 } from "@/lib/fca-engine";
+import { runCanonicalFcaProfile } from "@/features/analytics/fca-client";
 import { screenGermanOperator } from "@/lib/german-grid-screening";
 
 export const Route = createFileRoute("/assessments/$id")({
@@ -2248,7 +2248,7 @@ function Scenarios({
           }
         : null;
     const analysis = profile
-      ? analyseFca(profile.points, mode, importLimit, exportLimit, restrictionWindow, energyValue)
+      ? await runCanonicalFcaProfile(profile.points, mode, importLimit, exportLimit, restrictionWindow, energyValue)
       : null;
     const { error } = await supabase.from("connection_scenarios").insert({
       site_id: site.id,

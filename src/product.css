@@ -13494,6 +13494,22 @@ tbody tr:last-child td {
   height: 17px;
 }
 
+.power-finder-basemap-notice {
+  position: absolute;
+  z-index: 4;
+  top: 60px;
+  right: 16px;
+  width: min(360px, calc(100% - 32px));
+  box-sizing: border-box;
+  padding: 9px 12px;
+  border: 1px solid #b9852d;
+  border-radius: 8px;
+  background: rgb(35 27 13 / 94%);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 28%);
+  color: #ffe9b8;
+  font: 600 0.72rem/1.4 "Geist", sans-serif;
+}
+
 @media (max-width: 760px) {
   .power-finder-page.is-sidebar-collapsed {
     grid-template-columns: minmax(0, 1fr);
@@ -13791,7 +13807,7 @@ tbody tr:last-child td {
   position: absolute;
   transform: none;
   width: max-content;
-  z-index: 1;
+  z-index: 3;
 }
 
 .finder-scenario-inputs {
@@ -17414,10 +17430,11 @@ tbody tr:last-child td {
   backdrop-filter: blur(12px);
 }
 .product-stage-navigation > div {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  width: min(900px, calc(100% - 48px));
+  display: flex;
+  width: min(1280px, calc(100% - 48px));
   margin: 0 auto;
+  overflow-x: auto;
+  scrollbar-width: thin;
 }
 .product-stage-navigation a {
   position: relative;
@@ -17427,6 +17444,7 @@ tbody tr:last-child td {
   gap: 8px;
   min-height: 52px;
   padding: 6px 14px;
+  flex: 1 0 148px;
   color: #7f96a5;
   text-decoration: none;
 }

@@ -26,21 +26,22 @@ import {
   type RzregPerformanceRecord,
 } from "@/features/data-centre-planner/benchmark";
 import {
-  calculateFlexibilityEconomics,
-  type FlexibilityEconomicsInput,
-} from "@/features/data-centre-planner/flexibility-economics";
+  calculateStorageLcos,
+  type StorageLcosInput,
+} from "@/features/data-centre-planner/storage-lcos";
 import {
   BarComparison,
   EvidenceLegend,
   SensitivityMatrix,
   WaterfallChart,
 } from "@/features/data-centre-planner/analytics-charts";
+import { CanonicalPlanningWorkbench } from "@/features/analytics/CanonicalPlanningWorkbench";
 
 type Artifact = {
   metadata: { record_count: number; validation_warning_count: number };
   records: RzregPerformanceRecord[];
 };
-type View = "overview" | "energy" | "benchmark" | "flexibility" | "economics";
+type View = "overview" | "energy" | "benchmark" | "flexibility" | "economics" | "canonical";
 type Project = {
   name: string;
   location: string;
@@ -65,7 +66,7 @@ const emptyProject: Project = {
   firm: null,
   price: null,
 };
-const emptyEconomics: FlexibilityEconomicsInput = {
+const emptyEconomics: StorageLcosInput = {
   powerMw: null,
   durationHours: null,
   cyclesPerYear: null,
@@ -146,7 +147,7 @@ const TECHNOLOGIES = [
 ] as const;
 type TechId = (typeof TECHNOLOGIES)[number]["id"];
 type TechnologyScenario = {
-  inputs: FlexibilityEconomicsInput;
+  inputs: StorageLcosInput;
   evidenceType: "customer_assumption" | "supplier_quote" | "published_reference";
   sourceReference: string;
   priceYear: number | null;
@@ -201,7 +202,7 @@ function DataCentreAnalytics() {
       }
       const requestedView = new URL(window.location.href).searchParams.get("view");
       if (
-        ["overview", "energy", "benchmark", "flexibility", "economics"].includes(
+        ["overview", "energy", "benchmark", "flexibility", "economics", "canonical"].includes(
           requestedView ?? "",
         )
       )
@@ -250,7 +251,7 @@ function DataCentreAnalytics() {
       Object.fromEntries(
         TECHNOLOGIES.map((technology) => [
           technology.id,
-          calculateFlexibilityEconomics(scenarios[technology.id].inputs),
+          calculateStorageLcos(scenarios[technology.id].inputs),
         ]),
       ) as Record<TechId, FlexResult>,
     [scenarios],
@@ -289,6 +290,7 @@ function DataCentreAnalytics() {
               ["benchmark", "Benchmark", BarChart3],
               ["flexibility", "Flexibility economics", BatteryCharging],
               ["economics", "Economics", CircleDollarSign],
+              ["canonical", "Canonical runs", Activity],
             ] as const
           ).map(([id, label, Icon]) => (
             <button
@@ -336,6 +338,7 @@ function DataCentreAnalytics() {
               results={results}
             />
           )}
+          {view === "canonical" && <CanonicalPlanningWorkbench />}
         </section>
         <footer className="dca-boundary">
           <ShieldAlert />
@@ -443,7 +446,7 @@ const Metric = ({ label, value, note }: { label: string; value: string; note: st
   </article>
 );
 type Design = DataCentreDesignResult | null;
-type FlexResult = NonNullable<ReturnType<typeof calculateFlexibilityEconomics>> | null;
+type FlexResult = NonNullable<ReturnType<typeof calculateStorageLcos>> | null;
 function Overview({
   design,
   project,
@@ -790,7 +793,7 @@ function Flexibility({
   const scenario = scenarios[tech];
   const cost = scenario.inputs;
   const result = results[tech];
-  const set = (key: keyof FlexibilityEconomicsInput, value: number | null) =>
+  const set = (key: keyof StorageLcosInput, value: number | null) =>
     setScenarios((current) => ({
       ...current,
       [tech]: { ...current[tech], inputs: { ...current[tech].inputs, [key]: value } },

@@ -14,7 +14,11 @@ class JobStore(Protocol):
     def create(self, job: AnalyticsJob) -> AnalyticsJob: ...
 
     def get(self, job_id: UUID, owner_id: UUID) -> AnalyticsJob | None: ...
+    def list_for_owner(self, owner_id: UUID, limit: int = 100) -> list[AnalyticsJob]: ...
     def get_internal(self, job_id: UUID) -> AnalyticsJob: ...
+    def find_by_fingerprint(
+        self, owner_id: UUID, job_type: str, input_fingerprint: str
+    ) -> AnalyticsJob | None: ...
 
     def update(
         self,
@@ -55,6 +59,28 @@ class InMemoryJobStore:
     def get_internal(self, job_id: UUID) -> AnalyticsJob:
         with self._lock:
             return self._jobs[job_id].model_copy(deep=True)
+
+    def list_for_owner(self, owner_id: UUID, limit: int = 100) -> list[AnalyticsJob]:
+        with self._lock:
+            jobs = sorted(
+                (job for job in self._jobs.values() if job.owner_id == owner_id),
+                key=lambda job: job.created_at,
+                reverse=True,
+            )
+            return [job.model_copy(deep=True) for job in jobs[:limit]]
+
+    def find_by_fingerprint(
+        self, owner_id: UUID, job_type: str, input_fingerprint: str
+    ) -> AnalyticsJob | None:
+        with self._lock:
+            matches = [
+                job for job in self._jobs.values()
+                if job.owner_id == owner_id and job.job_type == job_type
+                and job.input_fingerprint == input_fingerprint
+            ]
+            if not matches:
+                return None
+            return max(matches, key=lambda job: job.created_at).model_copy(deep=True)
 
     def update(
         self,
@@ -195,6 +221,27 @@ class SupabaseJobStore:
             raise KeyError(f"analytics job {job_id} does not exist")
         return AnalyticsJob.model_validate(rows[0])
 
+    def list_for_owner(self, owner_id: UUID, limit: int = 100) -> list[AnalyticsJob]:
+        safe_limit = min(max(limit, 1), 200)
+        rows = self._publisher.request(
+            "GET",
+            "/analytics_jobs?select=*&owner_id=eq."
+            f"{urllib.parse.quote(str(owner_id))}&order=created_at.desc&limit={safe_limit}",
+        )
+        return [AnalyticsJob.model_validate(row) for row in rows]
+
+    def find_by_fingerprint(
+        self, owner_id: UUID, job_type: str, input_fingerprint: str
+    ) -> AnalyticsJob | None:
+        rows = self._publisher.request(
+            "GET",
+            "/analytics_jobs?select=*&owner_id=eq."
+            f"{urllib.parse.quote(str(owner_id))}&job_type=eq.{urllib.parse.quote(job_type)}"
+            f"&input_fingerprint=eq.{urllib.parse.quote(input_fingerprint)}"
+            "&order=created_at.desc&limit=1",
+        )
+        return AnalyticsJob.model_validate(rows[0]) if rows else None
+
     def update(
         self,
         job_id: UUID,
@@ -280,6 +327,7 @@ def _job_row(job: AnalyticsJob) -> dict:
         "job_type": job.job_type,
         "status": job.status.value,
         "input_payload": job.input_payload,
+        "input_fingerprint": job.input_fingerprint,
         "result_payload": job.result_payload,
         "error": job.error,
         "created_at": job.created_at.isoformat(),

@@ -1,9 +1,4 @@
-import {
-  simulateFlexibleConnection,
-  type DispatchAnalysis,
-  type DispatchSettings,
-  type IntervalPoint,
-} from "../../lib/fca-engine";
+import type { DispatchAnalysis, DispatchSettings, IntervalPoint } from "../../lib/fca-engine";
 
 export type OptionKind =
   | "requested_firm"
@@ -33,6 +28,7 @@ export type ConnectionOptionInput = {
   conditionalImportMw: number;
   operatorSupported: boolean;
   profile: IntervalPoint[] | null;
+  canonicalAnalyses?: Partial<Record<OptionKind, DispatchAnalysis>>;
   dispatch: Omit<
     DispatchSettings,
     "firmImportMw" | "conditionalImportMw" | "minimumViableImportMw"
@@ -72,6 +68,7 @@ const operatorQuestions = {
 
 function analyse(
   input: ConnectionOptionInput,
+  kind: OptionKind,
   firmImportMw: number,
   conditionalImportMw = 0,
   capabilities: { flexibleLoad: boolean; battery: boolean } = {
@@ -79,16 +76,12 @@ function analyse(
     battery: false,
   },
 ) {
-  if (!input.profile?.length) return null;
-  return simulateFlexibleConnection(input.profile, {
-    ...input.dispatch,
-    shiftableLoadMw: capabilities.flexibleLoad ? input.dispatch.shiftableLoadMw : 0,
-    batteryPowerMw: capabilities.battery ? input.dispatch.batteryPowerMw : 0,
-    batteryEnergyMwh: capabilities.battery ? input.dispatch.batteryEnergyMwh : 0,
-    firmImportMw,
-    conditionalImportMw,
-    minimumViableImportMw: input.minimumViableImportMw,
-  });
+  void firmImportMw;
+  void conditionalImportMw;
+  void capabilities;
+  // Canonical interval analyses are created by durable jobs and injected into
+  // this pure option composer. Never recreate the dispatch calculation here.
+  return input.canonicalAnalyses?.[kind] ?? null;
 }
 
 export function buildConnectionOptions(input: ConnectionOptionInput): ConnectionOptionResult[] {
@@ -128,7 +121,7 @@ export function buildConnectionOptions(input: ConnectionOptionInput): Connection
       "Requested firm",
       input.requestedImportMw,
       input.requestedImportMw,
-      analyse(input, input.requestedImportMw),
+      analyse(input, "requested_firm", input.requestedImportMw),
       [
         "No routine curtailment assumed",
         "Maintain declared power-quality and technical compliance",
@@ -140,7 +133,7 @@ export function buildConnectionOptions(input: ConnectionOptionInput): Connection
       "Reduced firm",
       input.reducedFirmImportMw,
       input.reducedFirmImportMw,
-      analyse(input, input.reducedFirmImportMw),
+      analyse(input, "reduced_firm", input.reducedFirmImportMw),
       ["Accept a smaller initial operating envelope", "Keep demand within the firm limit"],
       operatorQuestions.reduced,
     ),
@@ -149,7 +142,7 @@ export function buildConnectionOptions(input: ConnectionOptionInput): Connection
       "Staged connection",
       input.reducedFirmImportMw,
       input.requestedImportMw,
-      analyse(input, input.reducedFirmImportMw),
+      analyse(input, "staged", input.reducedFirmImportMw),
       [
         "Commission at the initial limit",
         "Do not rely on later capacity before a written milestone",
@@ -161,7 +154,7 @@ export function buildConnectionOptions(input: ConnectionOptionInput): Connection
       "Static flexible agreement",
       input.reducedFirmImportMw,
       input.requestedImportMw,
-      analyse(input, input.reducedFirmImportMw, input.conditionalImportMw * 0.6, {
+      analyse(input, "static_flexible", input.reducedFirmImportMw, input.conditionalImportMw * 0.6, {
         flexibleLoad: true,
         battery: false,
       }),
@@ -173,7 +166,7 @@ export function buildConnectionOptions(input: ConnectionOptionInput): Connection
       "Dynamic flexible agreement",
       input.reducedFirmImportMw,
       input.requestedImportMw,
-      analyse(input, input.reducedFirmImportMw, input.conditionalImportMw, {
+      analyse(input, "dynamic_flexible", input.reducedFirmImportMw, input.conditionalImportMw, {
         flexibleLoad: true,
         battery: false,
       }),
@@ -189,7 +182,7 @@ export function buildConnectionOptions(input: ConnectionOptionInput): Connection
       input.reducedFirmImportMw,
       input.requestedImportMw,
       input.dispatch.batteryPowerMw > 0
-        ? analyse(input, input.reducedFirmImportMw, input.conditionalImportMw * 0.6, {
+        ? analyse(input, "storage_supported", input.reducedFirmImportMw, input.conditionalImportMw * 0.6, {
             flexibleLoad: false,
             battery: true,
           })

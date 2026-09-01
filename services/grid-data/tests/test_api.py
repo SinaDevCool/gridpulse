@@ -11,7 +11,6 @@ from grid_data.api.app import create_app
 from grid_data.api.models import AnalyticsJob, JobStatus, UserIdentity
 from grid_data.api.store import InMemoryJobStore
 from grid_data.c2_hourly import HourlyOperatingCase, calculate_hourly_envelopes
-from grid_data.flexibility_optimizer import rank_operating_envelopes
 from grid_data.network_model import screen_reference_topology
 from grid_data.network_study import NetworkModelInput, PandapowerProvider
 from grid_data.release_b_network import screen_release_b_network
@@ -37,12 +36,108 @@ class SuccessfulExecutor:
             result_payload=screen_reference_topology(job.input_payload),
         )
 
-    def execute_flexibility_optimization(self, job_id: UUID) -> None:
+    def execute_facility_plan(self, job_id: UUID) -> None:
         job = self.store.get_internal(job_id)
         self.store.update(
             job_id,
             status=JobStatus.SUCCEEDED,
-            result_payload=rank_operating_envelopes(job.input_payload),
+            result_payload={
+                "schema_version": "gridpulse-facility-plan-application-result-v1",
+                "input_schema": job.input_payload["schema_version"],
+                "capacity_claim": False,
+                "automatic_live_dispatch_authorized": False,
+            },
+        )
+
+    def execute_fca_interval(self, job_id: UUID) -> None:
+        self.store.update(
+            job_id, status=JobStatus.SUCCEEDED,
+            result_payload={
+                "schema_version": "gridpulse-fca-interval-application-result-v1",
+                "capacity_claim": False,
+                "automatic_live_dispatch_authorized": False,
+            },
+        )
+
+    def execute_capacity_requirement(self, job_id: UUID) -> None:
+        job = self.store.get_internal(job_id)
+        self.store.update(
+            job_id,
+            status=JobStatus.SUCCEEDED,
+            result_payload={
+                "schema_version": "gridpulse-capacity-requirement-application-result-v1",
+                "input_schema": job.input_payload["schema_version"],
+                "capacity_claim": False,
+                "automatic_live_dispatch_authorized": False,
+            },
+        )
+
+    def execute_facility_uncertainty(self, job_id: UUID) -> None:
+        job = self.store.get_internal(job_id)
+        self.store.update(
+            job_id,
+            status=JobStatus.SUCCEEDED,
+            result_payload={
+                "schema_version": "gridpulse-facility-uncertainty-application-result-v1",
+                "input_schema": job.input_payload["schema_version"],
+                "capacity_claim": False,
+                "automatic_live_dispatch_authorized": False,
+            },
+        )
+
+    def execute_market_qualification(self, job_id: UUID) -> None:
+        self.store.update(
+            job_id, status=JobStatus.SUCCEEDED,
+            result_payload={
+                "schema_version": "gridpulse-market-qualification-application-result-v1",
+                "capacity_claim": False,
+                "automatic_live_dispatch_authorized": False,
+            },
+        )
+
+    def execute_rolling_facility_plan(self, job_id: UUID) -> None:
+        self.store.update(
+            job_id, status=JobStatus.SUCCEEDED,
+            result_payload={
+                "schema_version": "gridpulse-rolling-facility-plan-application-result-v1",
+                "capacity_claim": False,
+                "automatic_live_dispatch_authorized": False,
+            },
+        )
+
+    def execute_facility_historical_replay(self, job_id: UUID) -> None:
+        job = self.store.get_internal(job_id)
+        self.store.update(
+            job_id, status=JobStatus.SUCCEEDED,
+            result_payload={
+                "schema_version": "gridpulse-facility-historical-replay-application-result-v1",
+                "input_schema": job.input_payload["schema_version"],
+                "capacity_claim": False,
+                "automatic_live_dispatch_authorized": False,
+            },
+        )
+
+    def execute_operator_enquiry_package(self, job_id: UUID) -> None:
+        job = self.store.get_internal(job_id)
+        self.store.update(
+            job_id, status=JobStatus.SUCCEEDED,
+            result_payload={
+                "schema_version": "gridpulse-operator-enquiry-package-application-result-v1",
+                "input_schema": job.input_payload["schema_version"],
+                "capacity_claim": False,
+                "automatic_live_dispatch_authorized": False,
+            },
+        )
+
+    def execute_shadow_verification(self, job_id: UUID) -> None:
+        self.store.update(
+            job_id, status=JobStatus.SUCCEEDED,
+            result_payload={
+                "schema_version": "gridpulse-shadow-verification-application-result-v1",
+                "read_only": True,
+                "capacity_claim": False,
+                "automatic_live_dispatch_authorized": False,
+            },
         )
 
     def execute_synthetic_capacity(self, job_id: UUID) -> None:
@@ -120,8 +215,31 @@ class AnalyticsApiTests(unittest.TestCase):
     def test_health_does_not_expose_credentials(self) -> None:
         response = self.client.get("/health")
         self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["grid_core_version"], "0.2.0")
+        self.assertIn(
+            "gridpulse-facility-plan-request-v1",
+            response.json()["canonical_job_schemas"],
+        )
         self.assertEqual(response.json()["status"], "ok")
         self.assertEqual(response.json()["job_store"], "InMemoryJobStore")
+
+    def test_contract_manifest_exposes_versioned_canonical_jobs(self) -> None:
+        response = self.client.get("/v1/contracts")
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["schema_version"], "gridpulse-analytics-contract-manifest-v1")
+        self.assertEqual(len(payload["fingerprint"]), 64)
+        self.assertEqual(
+            {item["operation"] for item in payload["contracts"]},
+            {
+                "capacity_requirement", "facility_plan", "facility_uncertainty",
+                "facility_historical_replay", "operator_enquiry_package",
+                "shadow_verification",
+                "fca_interval",
+                "market_qualification",
+                "rolling_facility_plan",
+            },
+        )
 
     def test_operator_health_job_reuses_job_boundary(self) -> None:
         accepted = self.client.post("/v1/jobs/operator-source-health")
@@ -137,6 +255,15 @@ class AnalyticsApiTests(unittest.TestCase):
         )
         response = self.client.get(f"/v1/jobs/{other_job.id}")
         self.assertEqual(response.status_code, 404)
+
+    def test_job_index_is_tenant_isolated(self) -> None:
+        own = self.store.create(AnalyticsJob(owner_id=self.owner.id, job_type="facility_plan"))
+        other = self.store.create(AnalyticsJob(owner_id=uuid4(), job_type="facility_plan"))
+        response = self.client.get("/v1/jobs")
+        self.assertEqual(response.status_code, 200)
+        ids = {item["id"] for item in response.json()}
+        self.assertIn(str(own.id), ids)
+        self.assertNotIn(str(other.id), ids)
 
     def test_reference_topology_uses_existing_job_boundary(self) -> None:
         accepted = self.client.post(
@@ -156,24 +283,141 @@ class AnalyticsApiTests(unittest.TestCase):
         job = self.client.get(f"/v1/jobs/{accepted.json()['job_id']}")
         self.assertEqual(job.json()["result_payload"]["classification"], "topology_screening_only")
 
-    def test_flexibility_optimizer_uses_existing_job_boundary(self) -> None:
-        accepted = self.client.post(
-            "/v1/jobs/flexibility-optimization",
-            json={
-                "demand_mw": [70, 80],
-                "minimum_critical_load_mw": 50,
-                "candidates": [
-                    {"id": "firm-60", "firm_import_mw": 60},
-                    {"id": "firm-80", "firm_import_mw": 80},
-                ],
-            },
-        )
+    def test_canonical_facility_plan_uses_existing_job_boundary(self) -> None:
+        payload = {
+                "schema_version": "gridpulse-facility-plan-request-v1",
+                "portfolio_id": "portfolio-a",
+                "requirement": {"requirement_id": "requirement-a"},
+                "intervals": [{"index": 0}],
+                "facility": {"facility_id": "facility-a"},
+                "workloads": [{"workload_id": "job-a"}],
+                "profiles": [{"profile_id": "profile-a"}],
+                "policy": {"event_intervals": [True]},
+                "economics": {"import_price_eur_per_mwh": [100]},
+                "cooling": {"baseline_power_mw": 1},
+            }
+        accepted = self.client.post("/v1/jobs/facility-plan", json=payload)
         self.assertEqual(accepted.status_code, 202)
         job = self.client.get(f"/v1/jobs/{accepted.json()['job_id']}")
-        self.assertEqual(
-            job.json()["result_payload"]["classification"],
-            "customer_side_candidate_ranking",
-        )
+        result = job.json()["result_payload"]
+        self.assertEqual(result["input_schema"], "gridpulse-facility-plan-request-v1")
+        self.assertFalse(result["capacity_claim"])
+        self.assertFalse(result["automatic_live_dispatch_authorized"])
+        repeated = self.client.post("/v1/jobs/facility-plan", json=payload)
+        self.assertEqual(repeated.status_code, 202)
+        self.assertEqual(repeated.json()["job_id"], accepted.json()["job_id"])
+
+    def test_canonical_fca_interval_is_idempotent_and_nonclaiming(self) -> None:
+        payload = {
+            "schema_version": "gridpulse-fca-interval-request-v1",
+            "analysis_kind": "dispatch",
+            "points": [{"timestamp": "2026-01-01T00:00:00+00:00", "import_mw": 60, "export_mw": 0}],
+            "settings": {
+                "firm_import_mw": 50, "conditional_import_mw": 0,
+                "minimum_critical_load_mw": 40, "shiftable_load_mw": 5,
+                "battery_power_mw": 10, "battery_energy_mwh": 5,
+                "battery_round_trip_efficiency": 1, "battery_minimum_soc": 0,
+                "initial_battery_soc": 1, "energy_value_eur_mwh": 200,
+                "battery_degradation_eur_mwh": 20,
+            },
+        }
+        accepted = self.client.post("/v1/jobs/fca-interval", json=payload)
+        self.assertEqual(accepted.status_code, 202)
+        repeated = self.client.post("/v1/jobs/fca-interval", json=payload)
+        self.assertEqual(repeated.json()["job_id"], accepted.json()["job_id"])
+        result = self.client.get(f"/v1/jobs/{accepted.json()['job_id']}").json()["result_payload"]
+        self.assertFalse(result["capacity_claim"])
+        self.assertFalse(result["automatic_live_dispatch_authorized"])
+
+    def test_canonical_uncertainty_is_idempotent_and_non_operational(self) -> None:
+        plan = {
+            "schema_version": "gridpulse-facility-plan-request-v1",
+            "portfolio_id": "portfolio-a",
+            "requirement": {"requirement_id": "requirement-a"},
+            "intervals": [{"index": 0}],
+            "facility": {"facility_id": "facility-a"},
+            "workloads": [{"workload_id": "job-a"}],
+            "profiles": [{"profile_id": "profile-a"}],
+            "policy": {"event_intervals": [True]},
+            "economics": {"import_price_eur_per_mwh": [100]},
+            "cooling": {"baseline_power_mw": 1},
+        }
+        payload = {
+            "schema_version": "gridpulse-facility-uncertainty-request-v1",
+            "facility_plan": plan,
+            "bounds": {
+                "temperature_min_c": 20,
+                "temperature_max_c": 30,
+                "onsite_generation_min_mw": 0,
+                "onsite_generation_max_mw": 5,
+            },
+            "scenario_count": 10,
+            "seed": 42,
+            "risk_policy": "chance_constrained",
+            "confidence": 0.9,
+        }
+        accepted = self.client.post("/v1/jobs/facility-uncertainty", json=payload)
+        self.assertEqual(accepted.status_code, 202)
+        repeated = self.client.post("/v1/jobs/facility-uncertainty", json=payload)
+        self.assertEqual(repeated.json()["job_id"], accepted.json()["job_id"])
+        job = self.client.get(f"/v1/jobs/{accepted.json()['job_id']}").json()
+        self.assertFalse(job["result_payload"]["capacity_claim"])
+        self.assertFalse(job["result_payload"]["automatic_live_dispatch_authorized"])
+
+    def test_operator_enquiry_package_uses_canonical_durable_job(self) -> None:
+        payload = {
+            "schema_version": "gridpulse-operator-enquiry-package-request-v1",
+            "package_id": "package-a",
+            "artifacts": {"capacity_requirement": {"fingerprint": "a" * 64}},
+            "blockers": ["operator_confirmation_required"],
+            "assumption_ids": ["assumption-a"],
+        }
+        accepted = self.client.post("/v1/jobs/operator-enquiry-package", json=payload)
+        self.assertEqual(accepted.status_code, 202)
+        repeated = self.client.post("/v1/jobs/operator-enquiry-package", json=payload)
+        self.assertEqual(repeated.json()["job_id"], accepted.json()["job_id"])
+        job = self.client.get(f"/v1/jobs/{accepted.json()['job_id']}").json()
+        self.assertFalse(job["result_payload"]["capacity_claim"])
+
+    def test_market_and_rolling_jobs_are_idempotent_non_operational_contracts(self) -> None:
+        market = {
+            "schema_version": "gridpulse-market-qualification-request-v1",
+            "product": {"product_id": "p"},
+            "requirement": {"requirement_id": "r"},
+            "uncertainty": {"fingerprint": "a" * 64},
+            "settlement": None,
+        }
+        accepted = self.client.post("/v1/jobs/market-qualification", json=market)
+        self.assertEqual(accepted.status_code, 202)
+        repeated = self.client.post("/v1/jobs/market-qualification", json=market)
+        self.assertEqual(repeated.json()["job_id"], accepted.json()["job_id"])
+        result = self.client.get(f"/v1/jobs/{accepted.json()['job_id']}").json()["result_payload"]
+        self.assertFalse(result["capacity_claim"])
+        self.assertFalse(result["automatic_live_dispatch_authorized"])
+
+        plan = {
+            "schema_version": "gridpulse-facility-plan-request-v1",
+            "portfolio_id": "portfolio-a",
+            "requirement": {"requirement_id": "requirement-a"},
+            "intervals": [{"index": 0}],
+            "facility": {"facility_id": "facility-a"},
+            "workloads": [{"workload_id": "job-a"}],
+            "profiles": [{"profile_id": "profile-a"}],
+            "policy": {"event_intervals": [True]},
+            "economics": {"import_price_eur_per_mwh": [100]},
+            "cooling": {"baseline_power_mw": 1},
+        }
+        rolling = {
+            "schema_version": "gridpulse-rolling-facility-plan-request-v1",
+            "facility_plan": plan,
+            "windows": [{"window_id": "w1"}],
+            "confidence": 0.9,
+        }
+        accepted = self.client.post("/v1/jobs/rolling-facility-plan", json=rolling)
+        self.assertEqual(accepted.status_code, 202)
+        result = self.client.get(f"/v1/jobs/{accepted.json()['job_id']}").json()["result_payload"]
+        self.assertFalse(result["capacity_claim"])
+        self.assertFalse(result["automatic_live_dispatch_authorized"])
 
     def test_synthetic_capacity_job_preserves_provenance(self) -> None:
         accepted = self.client.post(

@@ -99,6 +99,7 @@ import {
   type GridOperatorOption,
 } from "@/features/power-finder/operator-catalog";
 import { operatorBoundsIntersect } from "@/features/power-finder/operator-map-navigation";
+import type { BasemapStatus } from "@/features/power-finder/basemap-config";
 import {
   suggestOperatorFilters,
   suggestScreeningVoltage,
@@ -442,6 +443,7 @@ function PowerFinderPage() {
   const [minimumStorageMw, setMinimumStorageMw] = useState(0);
   const detailDismissedRef = useRef(false);
   const [basemapMode, setBasemapMode] = useState<"dark" | "light">("dark");
+  const [basemapStatus, setBasemapStatus] = useState<BasemapStatus>("loading");
   const [basemapHydrated, setBasemapHydrated] = useState(false);
   useEffect(() => {
     if (window.localStorage.getItem("gridpulse-basemap") === "light") setBasemapMode("light");
@@ -728,7 +730,11 @@ function PowerFinderPage() {
 
   useEffect(() => {
     setRankingCollection(null);
-    if (project.latitude == null || project.longitude == null) return;
+    if (project.latitude == null || project.longitude == null) {
+      setRanking(null);
+      setRankingState("ready");
+      return;
+    }
     const controller = new AbortController();
     const latitudeRadius = Math.max(0.08, maxDistanceKm / 111);
     const longitudeRadius = Math.max(
@@ -743,7 +749,7 @@ function PowerFinderPage() {
         north: project.latitude + latitudeRadius,
       },
       controller.signal,
-      { fallbackAllowed: false, includeRegistryAssets: false },
+      { fallbackAllowed: true, includeRegistryAssets: false },
     )
       .then(({ collection: siteCollection }) => setRankingCollection(siteCollection))
       .catch(() => {
@@ -2848,7 +2854,7 @@ function PowerFinderPage() {
           )}
         </section>
 
-        <section className="power-finder-stage">
+        <section className="power-finder-stage" data-basemap-status={basemapStatus}>
           <button
             type="button"
             className="power-finder-sidebar-toggle"
@@ -2876,6 +2882,12 @@ function PowerFinderPage() {
             {basemapMode === "dark" ? <Sun aria-hidden="true" /> : <Moon aria-hidden="true" />}
             <span>{basemapMode === "dark" ? "Light Map" : "Dark Map"}</span>
           </button>
+          {basemapStatus === "fallback" && (
+            <div className="power-finder-basemap-notice" role="status" aria-live="polite">
+              Background map is temporarily unavailable. Grid infrastructure and screening data
+              remain available.
+            </div>
+          )}
           {error && <div className="power-finder-error">{error}</div>}
           {!visibleCollection && !error && (
             <div className="power-finder-loading">Loading map context…</div>
@@ -2888,6 +2900,7 @@ function PowerFinderPage() {
               previewFeature={previewFeature}
               mapMode={mapMode}
               basemapMode={basemapMode}
+              onBasemapStatusChange={setBasemapStatus}
               generationGroup={generationGroup}
               minimumGenerationMw={minimumGenerationMw}
               minimumStorageMw={minimumStorageMw}

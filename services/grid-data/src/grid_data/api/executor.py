@@ -13,7 +13,6 @@ from grid_data.api.store import JobStore
 from grid_data.c2_hourly import HourlyOperatingCase, calculate_hourly_envelopes
 from grid_data.c3_security_flexibility import run_c3_assessment
 from grid_data.c4_operator_pilot import ScadaObservation, reconcile_measurements
-from grid_data.flexibility_optimizer import rank_operating_envelopes
 from grid_data.graph.pipeline import run_graph_guided_study
 from grid_data.graph.publish import publish_graph_study
 from grid_data.network_model import screen_reference_topology
@@ -37,7 +36,15 @@ LOGGER = logging.getLogger("grid_data.jobs")
 class JobExecutor(Protocol):
     def execute_operator_source_health(self, job_id: UUID) -> None: ...
     def execute_reference_topology(self, job_id: UUID) -> None: ...
-    def execute_flexibility_optimization(self, job_id: UUID) -> None: ...
+    def execute_facility_plan(self, job_id: UUID) -> None: ...
+    def execute_fca_interval(self, job_id: UUID) -> None: ...
+    def execute_facility_uncertainty(self, job_id: UUID) -> None: ...
+    def execute_market_qualification(self, job_id: UUID) -> None: ...
+    def execute_rolling_facility_plan(self, job_id: UUID) -> None: ...
+    def execute_facility_historical_replay(self, job_id: UUID) -> None: ...
+    def execute_operator_enquiry_package(self, job_id: UUID) -> None: ...
+    def execute_shadow_verification(self, job_id: UUID) -> None: ...
+    def execute_capacity_requirement(self, job_id: UUID) -> None: ...
     def execute_synthetic_capacity(self, job_id: UUID) -> None: ...
     def execute_release_b_network(self, job_id: UUID) -> None: ...
     def execute_c1_network_study(self, job_id: UUID) -> None: ...
@@ -117,22 +124,160 @@ class OperatorHealthExecutor:
                 completed_at=datetime.now(timezone.utc),
             )
 
-    def execute_flexibility_optimization(self, job_id: UUID) -> None:
+    def execute_facility_plan(self, job_id: UUID) -> None:
         job = self._store.get_internal(job_id)
         self._store.update(job_id, status=JobStatus.RUNNING, started_at=datetime.now(timezone.utc))
         try:
-            result = rank_operating_envelopes(job.input_payload)
+            from capacity_backtest.application import run_facility_plan
+
+            result = run_facility_plan(job.input_payload)
             self._store.update(
                 job_id,
                 status=JobStatus.SUCCEEDED,
                 result_payload=result,
                 completed_at=datetime.now(timezone.utc),
             )
-        except Exception as error:  # noqa: BLE001 - job boundary records a safe failure
+        except Exception as error:  # noqa: BLE001 - canonical job fails closed
             self._store.update(
                 job_id,
                 status=JobStatus.FAILED,
                 error=str(error)[:2000],
+                completed_at=datetime.now(timezone.utc),
+            )
+
+    def execute_fca_interval(self, job_id: UUID) -> None:
+        job = self._store.get_internal(job_id)
+        self._store.update(job_id, status=JobStatus.RUNNING, started_at=datetime.now(timezone.utc))
+        try:
+            from capacity_backtest.application import run_fca_interval
+
+            result = run_fca_interval(job.input_payload)
+            self._store.update(
+                job_id, status=JobStatus.SUCCEEDED, result_payload=result,
+                completed_at=datetime.now(timezone.utc),
+            )
+        except Exception as error:  # noqa: BLE001 - canonical job fails closed
+            self._store.update(
+                job_id, status=JobStatus.FAILED, error=str(error)[:2000],
+                completed_at=datetime.now(timezone.utc),
+            )
+
+    def execute_facility_uncertainty(self, job_id: UUID) -> None:
+        job = self._store.get_internal(job_id)
+        self._store.update(job_id, status=JobStatus.RUNNING, started_at=datetime.now(timezone.utc))
+        try:
+            from capacity_backtest.application import run_facility_uncertainty
+
+            result = run_facility_uncertainty(job.input_payload)
+            self._store.update(
+                job_id, status=JobStatus.SUCCEEDED, result_payload=result,
+                completed_at=datetime.now(timezone.utc),
+            )
+        except Exception as error:  # noqa: BLE001 - canonical job fails closed
+            self._store.update(
+                job_id, status=JobStatus.FAILED, error=str(error)[:2000],
+                completed_at=datetime.now(timezone.utc),
+            )
+
+    def execute_market_qualification(self, job_id: UUID) -> None:
+        job = self._store.get_internal(job_id)
+        self._store.update(job_id, status=JobStatus.RUNNING, started_at=datetime.now(timezone.utc))
+        try:
+            from capacity_backtest.application import run_market_qualification
+
+            result = run_market_qualification(job.input_payload)
+            self._store.update(
+                job_id, status=JobStatus.SUCCEEDED, result_payload=result,
+                completed_at=datetime.now(timezone.utc),
+            )
+        except Exception as error:  # noqa: BLE001 - canonical job fails closed
+            self._store.update(
+                job_id, status=JobStatus.FAILED, error=str(error)[:2000],
+                completed_at=datetime.now(timezone.utc),
+            )
+
+    def execute_rolling_facility_plan(self, job_id: UUID) -> None:
+        job = self._store.get_internal(job_id)
+        self._store.update(job_id, status=JobStatus.RUNNING, started_at=datetime.now(timezone.utc))
+        try:
+            from capacity_backtest.application import run_rolling_facility_plan
+
+            result = run_rolling_facility_plan(job.input_payload)
+            self._store.update(
+                job_id, status=JobStatus.SUCCEEDED, result_payload=result,
+                completed_at=datetime.now(timezone.utc),
+            )
+        except Exception as error:  # noqa: BLE001 - canonical job fails closed
+            self._store.update(
+                job_id, status=JobStatus.FAILED, error=str(error)[:2000],
+                completed_at=datetime.now(timezone.utc),
+            )
+
+    def execute_facility_historical_replay(self, job_id: UUID) -> None:
+        job = self._store.get_internal(job_id)
+        self._store.update(job_id, status=JobStatus.RUNNING, started_at=datetime.now(timezone.utc))
+        try:
+            from capacity_backtest.application import run_facility_historical_replay
+
+            result = run_facility_historical_replay(job.input_payload)
+            self._store.update(
+                job_id, status=JobStatus.SUCCEEDED, result_payload=result,
+                completed_at=datetime.now(timezone.utc),
+            )
+        except Exception as error:  # noqa: BLE001 - canonical job fails closed
+            self._store.update(
+                job_id, status=JobStatus.FAILED, error=str(error)[:2000],
+                completed_at=datetime.now(timezone.utc),
+            )
+
+    def execute_operator_enquiry_package(self, job_id: UUID) -> None:
+        job = self._store.get_internal(job_id)
+        self._store.update(job_id, status=JobStatus.RUNNING, started_at=datetime.now(timezone.utc))
+        try:
+            from capacity_backtest.application import run_evidence_package
+
+            result = run_evidence_package(job.input_payload)
+            self._store.update(
+                job_id, status=JobStatus.SUCCEEDED, result_payload=result,
+                completed_at=datetime.now(timezone.utc),
+            )
+        except Exception as error:  # noqa: BLE001 - canonical job fails closed
+            self._store.update(
+                job_id, status=JobStatus.FAILED, error=str(error)[:2000],
+                completed_at=datetime.now(timezone.utc),
+            )
+
+    def execute_shadow_verification(self, job_id: UUID) -> None:
+        job = self._store.get_internal(job_id)
+        self._store.update(job_id, status=JobStatus.RUNNING, started_at=datetime.now(timezone.utc))
+        try:
+            from capacity_backtest.application import run_shadow_verification
+
+            result = run_shadow_verification(job.input_payload)
+            self._store.update(
+                job_id, status=JobStatus.SUCCEEDED, result_payload=result,
+                completed_at=datetime.now(timezone.utc),
+            )
+        except Exception as error:  # noqa: BLE001 - canonical job fails closed
+            self._store.update(
+                job_id, status=JobStatus.FAILED, error=str(error)[:2000],
+                completed_at=datetime.now(timezone.utc),
+            )
+
+    def execute_capacity_requirement(self, job_id: UUID) -> None:
+        job = self._store.get_internal(job_id)
+        self._store.update(job_id, status=JobStatus.RUNNING, started_at=datetime.now(timezone.utc))
+        try:
+            from capacity_backtest.application import run_capacity_requirement
+
+            result = run_capacity_requirement(job.input_payload)
+            self._store.update(
+                job_id, status=JobStatus.SUCCEEDED, result_payload=result,
+                completed_at=datetime.now(timezone.utc),
+            )
+        except Exception as error:  # noqa: BLE001 - canonical job fails closed
+            self._store.update(
+                job_id, status=JobStatus.FAILED, error=str(error)[:2000],
                 completed_at=datetime.now(timezone.utc),
             )
 

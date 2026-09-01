@@ -269,7 +269,7 @@ class PandapowerProvider:
         net["_gridpulse_bus_indices"] = bus_indices
         return net
 
-    def _solve(self, net) -> dict[str, Any]:
+    def _solve(self, net, *, detailed: bool = False) -> dict[str, Any]:
         try:
             self._pp.runpp(
                 net,
@@ -323,7 +323,7 @@ class PandapowerProvider:
             violations.append("line_thermal_loading")
         if trafo_loadings and max(trafo_loadings) > self._max_loading:
             violations.append("transformer_thermal_loading")
-        return {
+        result = {
             "converged": True,
             "passes": not violations,
             "violations": violations,
@@ -334,6 +334,23 @@ class PandapowerProvider:
             if trafo_loadings
             else 0.0,
         }
+        if detailed:
+            result["bus_voltage_pu"] = {
+                str(net.bus.at[index, "name"]): round(float(value), 6)
+                for index, value in net.res_bus.vm_pu.items()
+                if math.isfinite(float(value))
+            }
+            result["line_loading_percent"] = {
+                str(net.line.at[index, "name"]): round(float(value), 6)
+                for index, value in net.res_line.loading_percent.items()
+                if math.isfinite(float(value))
+            }
+            result["transformer_loading_percent"] = {
+                str(net.trafo.at[index, "name"]): round(float(value), 6)
+                for index, value in net.res_trafo.loading_percent.items()
+                if math.isfinite(float(value))
+            }
+        return result
 
     def _result(self, model: NetworkModelInput, study_type, values: dict[str, Any]) -> StudyResult:
         return StudyResult(
@@ -359,6 +376,29 @@ class PandapowerProvider:
 
     def run_base_case(self, model: NetworkModelInput) -> StudyResult:
         return self._result(model, "base_case", self._solve(self._build_network(model)))
+
+    def run_detailed_base_case(self, model: NetworkModelInput) -> StudyResult:
+        """Solve one state with per-asset results for bounded audit workloads."""
+        return self._result(
+            model, "base_case", self._solve(self._build_network(model), detailed=True)
+        )
+
+    def run_detailed_contingency_analysis(self, model: NetworkModelInput) -> StudyResult:
+        cases = []
+        for contingency in model.contingencies:
+            net = self._build_network(model)
+            self._apply_contingency(net, contingency)
+            cases.append({"id": str(contingency["id"]), **self._solve(net, detailed=True)})
+        return self._result(
+            model,
+            "contingency",
+            {
+                "converged": bool(cases) and all(case["converged"] for case in cases),
+                "passes": bool(cases) and all(case.get("passes", False) for case in cases),
+                "case_count": len(cases),
+                "cases": cases,
+            },
+        )
 
     def run_voltage_assessment(self, model: NetworkModelInput) -> StudyResult:
         return self._result(model, "voltage", self._solve(self._build_network(model)))

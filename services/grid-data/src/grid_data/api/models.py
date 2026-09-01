@@ -22,6 +22,7 @@ class AnalyticsJob(BaseModel):
     job_type: str
     status: JobStatus = JobStatus.QUEUED
     input_payload: dict[str, Any] = Field(default_factory=dict)
+    input_fingerprint: str | None = Field(default=None, pattern="^[a-f0-9]{64}$")
     result_payload: dict[str, Any] | None = None
     error: str | None = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -48,15 +49,123 @@ class ReferenceTopologyRequest(BaseModel):
     lineage: dict[str, Any] = Field(default_factory=dict)
 
 
-class FlexibilityOptimizationRequest(BaseModel):
-    demand_mw: list[float] = Field(min_length=1, max_length=35_040)
-    candidates: list[dict[str, Any]] = Field(min_length=1, max_length=100)
-    minimum_critical_load_mw: float = Field(ge=0)
-    shiftable_load_mw: float = Field(default=0, ge=0)
-    battery_power_mw: float = Field(default=0, ge=0)
-    battery_usable_energy_mwh: float = Field(default=0, ge=0)
-    interval_minutes: int = Field(default=15, ge=1, le=60)
-    energy_value_eur_mwh: float = Field(default=0, ge=0)
+class FacilityPlanRequest(BaseModel):
+    """Strict transport shell; the canonical engine validates every nested domain contract."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["gridpulse-facility-plan-request-v1"]
+    portfolio_id: str = Field(min_length=1, max_length=200)
+    requirement: dict[str, Any]
+    intervals: list[dict[str, Any]] = Field(min_length=1, max_length=35_040)
+    facility: dict[str, Any]
+    workloads: list[dict[str, Any]] = Field(min_length=1, max_length=5_000)
+    profiles: list[dict[str, Any]] = Field(min_length=1, max_length=5_000)
+    policy: dict[str, Any]
+    economics: dict[str, Any]
+    cooling: dict[str, Any]
+
+
+class FcaIntervalRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["gridpulse-fca-interval-request-v1"]
+    analysis_kind: Literal["dispatch", "envelope_profile"] = "dispatch"
+    points: list[dict[str, Any]] = Field(min_length=1, max_length=40_000)
+    settings: dict[str, Any]
+
+
+class FacilityUncertaintyRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["gridpulse-facility-uncertainty-request-v1"]
+    facility_plan: FacilityPlanRequest
+    bounds: dict[str, Any]
+    scenario_count: int = Field(ge=1, le=1_000)
+    seed: int
+    risk_policy: Literal["chance_constrained", "distributionally_robust", "cvar"] = "chance_constrained"
+    confidence: float = Field(default=0.9, gt=0, lt=1)
+
+
+class MarketQualificationRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["gridpulse-market-qualification-request-v1"]
+    product: dict[str, Any]
+    requirement: dict[str, Any]
+    uncertainty: dict[str, Any]
+    settlement: dict[str, Any] | None = None
+
+
+class RollingFacilityPlanRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["gridpulse-rolling-facility-plan-request-v1"]
+    facility_plan: FacilityPlanRequest
+    windows: list[dict[str, Any]] = Field(min_length=1, max_length=100)
+    confidence: float = Field(default=0.9, gt=0, lt=1)
+
+
+class FacilityHistoricalReplayRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["gridpulse-facility-historical-replay-request-v1"]
+    planning_cutoff: str
+    intervals: list[dict[str, Any]] = Field(min_length=1, max_length=35_040)
+    baseline: dict[str, Any]
+    planned: dict[str, Any]
+    portfolio: dict[str, Any]
+    observations: list[dict[str, Any]] = Field(min_length=1, max_length=35_040)
+    tariff: dict[str, Any]
+    event_intervals: list[bool] = Field(min_length=1, max_length=35_040)
+    required_reduction_mw: float = Field(ge=0, le=2_000)
+    battery_throughput_mwh: float = Field(default=0, ge=0)
+
+
+class OperatorEnquiryPackageRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["gridpulse-operator-enquiry-package-request-v1"]
+    package_id: str = Field(min_length=1, max_length=200)
+    artifacts: dict[str, Any]
+    blockers: list[str] = Field(default_factory=list, max_length=1_000)
+    assumption_ids: list[str] = Field(default_factory=list, max_length=1_000)
+
+
+class ShadowVerificationRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["gridpulse-shadow-verification-request-v1"]
+    facility_id: str = Field(min_length=1, max_length=200)
+    generated_at: str
+    plan_fingerprint: str = Field(pattern="^[a-fA-F0-9]{64}$")
+    planned_grid_import_mw: list[float] = Field(min_length=1, max_length=35_040)
+    observed_grid_import_mw: list[float] = Field(min_length=1, max_length=35_040)
+    uncertainty_band_mw: list[float] = Field(min_length=1, max_length=35_040)
+    observations: list[dict[str, Any]] = Field(min_length=1, max_length=200_000)
+    reference_times: list[str] = Field(min_length=1, max_length=35_040)
+    supplied_energy_mwh: float = Field(ge=0)
+    consumed_energy_mwh: float = Field(ge=0)
+    required_reduction_mw: float = Field(ge=0, le=2_000)
+    delivered_reduction_mw: float = Field(ge=0, le=2_000)
+    security_controls: dict[str, bool]
+    quality_thresholds: dict[str, float] = Field(default_factory=dict)
+    warning_consecutive_intervals: int = Field(default=2, ge=1)
+    safe_limit_consecutive_intervals: int = Field(default=3, ge=1)
+
+
+class CapacityRequirementRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal["gridpulse-capacity-requirement-request-v1"]
+    capacity_result: dict[str, Any]
+    site_id: str = Field(min_length=1, max_length=200)
+    pcc_id: str = Field(min_length=1, max_length=200)
+    requested_import_mw: float = Field(gt=0, le=2_000)
+    expected_provenance_fingerprint: str = Field(pattern="^[a-fA-F0-9]{64}$")
+    operating_terms: dict[str, Any] = Field(default_factory=dict)
+    assumption_ids: list[str] = Field(default_factory=list, max_length=1_000)
+    capacity_is_lower_bound: bool = False
 
 
 class SyntheticCapacityRequest(BaseModel):
@@ -164,3 +273,6 @@ class HealthReport(BaseModel):
     service: str
     version: str
     job_store: str
+    grid_core_version: str
+    capacity_engine_version: str | None = None
+    canonical_job_schemas: list[str] = Field(default_factory=list)

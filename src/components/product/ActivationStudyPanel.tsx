@@ -12,6 +12,7 @@ import {
   activationStatusLabel,
   activationStudySnapshot,
   calculateRepresentativeCommercialValue,
+  createCanonicalActivationStudyContext,
   createActivationStudyContext,
   defaultRepresentativeCommercialAssumptions,
   type ActivationStudyContext,
@@ -1040,7 +1041,7 @@ function StrategiesWorkspace({
 
 export function ActivationStudyPanel(props: Props) {
   const panelRef = useRef<HTMLElement>(null);
-  const context = useMemo(
+  const baselineContext = useMemo(
     () =>
       createActivationStudyContext({
         project: props.project,
@@ -1050,11 +1051,37 @@ export function ActivationStudyPanel(props: Props) {
       }),
     [props.project, props.candidate, props.referenceCapacity, props.registeredStudy],
   );
+  const [context, setContext] = useState(baselineContext);
+  const [analysisState, setAnalysisState] = useState<"loading" | "ready" | "error">(
+    "loading",
+  );
   const [selectedKind, setSelectedKind] = useState<string | null>(null);
   const [commercialAssumptions, setCommercialAssumptions] = useState(
     defaultRepresentativeCommercialAssumptions,
   );
   const [commercialEnabled, setCommercialEnabled] = useState(false);
+  useEffect(() => {
+    let active = true;
+    setContext(baselineContext);
+    setAnalysisState("loading");
+    void createCanonicalActivationStudyContext({
+      project: props.project,
+      candidate: props.candidate,
+      registeredStudy: props.registeredStudy,
+      referenceCapacity: props.referenceCapacity,
+    })
+      .then((next) => {
+        if (!active) return;
+        setContext(next);
+        setAnalysisState("ready");
+      })
+      .catch(() => {
+        if (active) setAnalysisState("error");
+      });
+    return () => {
+      active = false;
+    };
+  }, [baselineContext, props.candidate, props.project, props.referenceCapacity, props.registeredStudy]);
   useEffect(() => {
     const previousFocus = document.activeElement as HTMLElement | null;
     const panel = panelRef.current;
@@ -1187,6 +1214,15 @@ export function ActivationStudyPanel(props: Props) {
         tabIndex={0}
         aria-label="Activation Study content"
       >
+        {analysisState === "loading" && (
+          <p role="status">Running the six connection strategies in the canonical engine…</p>
+        )}
+        {analysisState === "error" && (
+          <p role="alert">
+            Canonical strategy analysis is unavailable. Options remain unanalysed and cannot be
+            recommended.
+          </p>
+        )}
         {primaryTab === "overview" && <OverviewView context={context} />}
         {primaryTab === "options" && (
           <StrategiesWorkspace

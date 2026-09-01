@@ -17,7 +17,6 @@ def executor_for(job_type: str, executor: JobExecutor) -> Callable[[UUID], None]
     methods = {
         "operator_source_health": executor.execute_operator_source_health,
         "reference_topology": executor.execute_reference_topology,
-        "flexibility_optimization": executor.execute_flexibility_optimization,
         "synthetic_capacity": executor.execute_synthetic_capacity,
         "release_b_network": executor.execute_release_b_network,
         "c1_network_study": executor.execute_c1_network_study,

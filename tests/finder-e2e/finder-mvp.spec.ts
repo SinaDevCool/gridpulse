@@ -14,7 +14,7 @@ test("Finder exploration and local property portfolio are anonymous", async ({ p
   await expect(page.getByText("No declared site yet")).toBeVisible();
   await expect(page.getByText(/Operator questions & report/i)).toHaveCount(0);
   await expect(page.getByRole("button", { name: /Show .* on map, .*\/100/ })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: /Create pipeline site/i })).toBeDisabled();
+  await expect(page.getByRole("button", { name: /Create pipeline site/i })).toHaveCount(0);
   expect(requests.some((url) => /\/auth\/v1\/(token|signup)/.test(url))).toBe(false);
 });
 
@@ -68,7 +68,7 @@ test("a Finder project saves locally, survives navigation, and opens a dossier",
   await expect(save).toBeEnabled();
   await save.click();
   await expect(page).toHaveURL(/propertyId=/);
-  await page.getByRole("link", { name: /Sites Manage portfolio decisions/i }).click();
+  await page.getByRole("link", { name: /Sites Portfolio decisions/i }).click();
   await expect(page.getByRole("heading", { name: "Sites", exact: true })).toBeVisible();
   await expect(page.getByText("Untitled screening project").first()).toBeVisible();
   await page.getByRole("link", { name: /Untitled screening project/i }).click();
@@ -123,7 +123,7 @@ test("anonymous site workspace qualifies a site and records operator evidence", 
   await page.getByLabel("Category").selectOption("operator");
   await page.getByRole("button", { name: /Add evidence/i }).click();
   await expect(page.getByText("Operator acknowledgement")).toBeVisible();
-  await page.getByRole("link", { name: /Sites Manage portfolio decisions/i }).click();
+  await page.getByRole("link", { name: /Sites Portfolio decisions/i }).click();
   await page.getByRole("button", { name: "Comparison" }).click();
   await expect(page.getByText("Bremen Data Centre Campus").first()).toBeVisible();
 });
@@ -136,7 +136,7 @@ test("site decisions flow into the unified Decision Review view", async ({ page 
   });
   await page.getByRole("button", { name: "Create pipeline site", exact: true }).click();
   await expect(page.getByRole("button", { name: /Screening saved/i })).toBeDisabled();
-  await page.getByRole("link", { name: /Sites Manage portfolio decisions/i }).click();
+  await page.getByRole("link", { name: /Sites Portfolio decisions/i }).click();
   await page.getByRole("link", { name: /Untitled screening project/i }).click();
   await expect(page).toHaveURL(/selected=[0-9a-f-]{36}/);
   await page.getByRole("link", { name: "Review Decision" }).click();
@@ -153,7 +153,7 @@ test("site decisions flow into the unified Decision Review view", async ({ page 
     "Advance for investigation while operator capacity remains unconfirmed.",
   );
   await expect(page.getByText(/Provisional advance/i).first()).toBeVisible();
-  await page.getByRole("link", { name: /Sites Manage portfolio decisions/i }).click();
+  await page.getByRole("link", { name: /Sites Portfolio decisions/i }).click();
   await page.getByRole("button", { name: "Decision Review" }).click();
   await expect(page.getByRole("heading", { name: "Decision Review" }).first()).toBeVisible();
   await expect(page.getByText("Untitled screening project").first()).toBeVisible();
@@ -168,7 +168,7 @@ test("portfolio views are URL-backed and the site workspace is directly discover
     timeout: 15_000,
   });
   await page.getByRole("button", { name: "Create pipeline site", exact: true }).click();
-  await page.getByRole("link", { name: /Sites Manage portfolio decisions/i }).click();
+  await page.getByRole("link", { name: /Sites Portfolio decisions/i }).click();
   await page.getByLabel("Stage").selectOption("draft");
   await expect(page).toHaveURL(/stage=draft/);
   await expect(page.getByRole("heading", { name: "No Sites Match This View" })).toBeVisible();
@@ -327,13 +327,13 @@ test("the release workbook passes the browser import preview", async ({ page }, 
   await decisionPdf.saveAs(testInfo.outputPath("brandenburg-south-decision-record.pdf"));
 });
 
-test("legacy portfolio destinations redirect into unified Sites views", async ({ page }) => {
+test("legacy workspaces redirect into Sites while Reports remains a canonical workflow", async ({ page }) => {
   await page.goto("/workspaces");
   await expect(page).toHaveURL(/\/portfolio\?view=pipeline/);
   await expect(page.getByRole("heading", { name: "Sites", exact: true })).toBeVisible();
   await page.goto("/reports?view=qualification");
-  await expect(page).toHaveURL(/\/portfolio\?view=readiness/);
-  await expect(page.getByRole("button", { name: "Comparison" })).toHaveClass(/active/);
+  await expect(page).toHaveURL(/\/reports\?view=qualification/);
+  await expect(page.getByRole("heading", { name: "Operator enquiry package" })).toBeVisible();
 });
 
 test("Sites remains usable without horizontal page overflow on mobile", async ({ page }) => {
@@ -428,10 +428,16 @@ test("registered generation and storage are available without an account", async
   const storage = page.getByRole("checkbox", { name: /Registered storage/ });
   await expect(generation).toBeEnabled({ timeout: 15_000 });
   await expect(storage).toBeEnabled({ timeout: 15_000 });
-  await expect(generation.locator("..")).toContainText(/\d+ (?:in view|visible)/, {
+  await expect(generation.locator("..")).toContainText(
+    /\d+ (?:in view|visible|in current detail view)/,
+    {
     timeout: 15_000,
-  });
-  await expect(storage.locator("..")).toContainText(/\d+ (?:in view|visible)/, { timeout: 15_000 });
+    },
+  );
+  await expect(storage.locator("..")).toContainText(
+    /\d+ (?:in view|visible|in current detail view)/,
+    { timeout: 15_000 },
+  );
   await generation.check();
   await storage.check();
   await expect(generation).toBeChecked();
@@ -480,10 +486,11 @@ test("editing the screening brief refreshes candidates before pipeline creation"
   page,
 }) => {
   await page.goto("/power-finder");
+  await expect(page.getByText("Loading map context…")).toHaveCount(0, { timeout: 20_000 });
   const latitude = page.getByRole("spinbutton", { name: "Latitude" });
   const openBrief = page.getByRole("button", { name: "Screening brief", exact: true });
   await expect(openBrief.or(latitude)).toBeVisible();
-  if (await openBrief.isVisible()) {
+  if ((await latitude.count()) === 0) {
     await openBrief.click();
   }
   await expect(latitude).toBeVisible();
@@ -640,10 +647,26 @@ test("Finder controls and comparison remain usable on a narrow viewport", async 
 });
 
 test("Power Finder switches and remembers the light basemap", async ({ page }) => {
+  const cartoRequests: string[] = [];
+  const openFreeMapRequests: string[] = [];
+  page.on("request", (request) => {
+    if (request.url().includes("cartocdn.com")) cartoRequests.push(request.url());
+    if (request.url().includes("tiles.openfreemap.org")) openFreeMapRequests.push(request.url());
+  });
   await page.goto("/power-finder?lat=52.31&lng=13.36&mw=50");
   const map = page.getByRole("application", { name: /Interactive grid/ });
+  await expect(map).toBeVisible({ timeout: 15_000 });
   await expect(map).toHaveAttribute("data-basemap", "dark");
-  await page.getByRole("button", { name: "Use light map" }).click();
+  await expect(page.locator(".maplibregl-ctrl-attrib")).toContainText(/OpenStreetMap/);
+  await expect(page.locator(".power-finder-stage")).toHaveAttribute(
+    "data-basemap-status",
+    /available|fallback/,
+  );
+  for (let index = 0; index < 5; index += 1) {
+    const nextMode = index % 2 === 0 ? "light" : "dark";
+    await page.getByRole("button", { name: `Use ${nextMode} map` }).click();
+    await expect(map).toHaveAttribute("data-basemap", nextMode);
+  }
   await expect(map).toHaveAttribute("data-basemap", "light");
   await expect(page.getByRole("button", { name: "Use dark map" })).toHaveAttribute(
     "aria-pressed",
@@ -654,6 +677,25 @@ test("Power Finder switches and remembers the light basemap", async ({ page }) =
     "data-basemap",
     "light",
   );
+  expect(cartoRequests).toEqual([]);
+  expect(openFreeMapRequests.length).toBeGreaterThan(0);
+  await expect(page.getByText("API KEY REQUIRED")).toHaveCount(0);
+});
+
+test("Power Finder keeps grid screening usable when OpenFreeMap is unavailable", async ({
+  page,
+}) => {
+  await page.route("https://tiles.openfreemap.org/**", (route) => route.abort("failed"));
+  await page.goto("/power-finder?lat=52.31&lng=13.36&mw=50");
+  await expect(page.locator(".power-finder-stage")).toHaveAttribute(
+    "data-basemap-status",
+    "fallback",
+  );
+  await expect(page.getByText(/Background map is temporarily unavailable/)).toBeVisible();
+  await expect(page.getByRole("application", { name: /Interactive grid/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Show .* on map, .*\/100/ }).first()).toBeVisible({
+    timeout: 15_000,
+  });
 });
 
 test("candidate detail prioritises decisions, contains its layout and omits candidate contact", async ({

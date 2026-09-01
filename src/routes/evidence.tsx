@@ -41,6 +41,7 @@ function EvidencePage() {
           eyebrow="Evidence room"
           title="Evidence ledger"
           description="One traceable record for public sources, customer inputs, assumptions, calculations, and operator validation."
+          action={<Link to="/data-sources" className="secondary-button">Open source catalog</Link>}
         />
         <div className="summary-grid">
           <div>

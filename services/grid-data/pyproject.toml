@@ -3,9 +3,9 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "gridpulse-grid-data"
-version = "0.1.0"
-description = "Source-aware geospatial ingestion for the GridPulse Power Finder."
+name = "gridpulse-grid-core"
+version = "0.2.0"
+description = "Canonical grid contracts, source ingestion, and electrical-study providers for GridPulse."
 requires-python = ">=3.10"
 dependencies = []
 
@@ -22,6 +22,7 @@ api = [
   "fastapi>=0.115,<1",
   "uvicorn[standard]>=0.30,<1",
 ]
+analytics = ["gridpulse-capacity-backtest>=0.2,<0.3"]
 study = [
   "pandapower>=3,<4",
   "simbench>=1.6,<2",
@@ -36,7 +37,7 @@ ml = [
   "scikit-learn>=1.5,<2",
   "joblib>=1.4,<2",
 ]
-dev = ["pytest>=8,<9", "ruff>=0.6,<1", "httpx2>=2,<3"]
+dev = ["pytest>=8,<9", "ruff>=0.6,<1", "httpx2>=2,<3", "PyYAML>=6,<7"]
 
 [project.scripts]
 grid-data = "grid_data.cli:main"

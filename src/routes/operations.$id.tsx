@@ -5,6 +5,8 @@ import { AppShell, PageHeading } from "@/components/product/AppShell";
 import { OperationsWorkspace } from "@/features/operations/OperationsWorkspace";
 import { useAuth } from "@/context/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { listAnalyticsJobs } from "@/lib/analytics-api";
+import { shadowVerificationResultSchema } from "@/features/analytics/contracts";
 export const Route = createFileRoute("/operations/$id")({ component: OperationsProject });
 function OperationsProject() {
   const { id } = Route.useParams();
@@ -13,32 +15,22 @@ function OperationsProject() {
     queryKey: ["operations-workspace", id],
     enabled: Boolean(user),
     queryFn: async () => {
-      const [site, envelopes, events] = await Promise.all([
+      const [site, jobs] = await Promise.all([
         supabase
           .from("candidate_sites")
           .select("id,name,requested_import_mw,likely_network_operator")
           .eq("id", id)
           .single(),
-        supabase
-          .from("fca_envelopes")
-          .select("max_import_mw,version,status")
-          .eq("site_id", id)
-          .order("version", { ascending: false })
-          .limit(1),
-        supabase
-          .from("integration_events")
-          .select("id,kind,evidence_state,organization,valid_from,payload")
-          .eq("site_id", id)
-          .order("valid_from", { ascending: false })
-          .limit(100),
+        listAnalyticsJobs(200),
       ]);
       if (site.error) throw site.error;
-      if (envelopes.error) throw envelopes.error;
-      if (events.error) throw events.error;
+      const result = jobs
+        .filter((job) => job.status === "succeeded" && job.job_type === "shadow_verification")
+        .map((job) => shadowVerificationResultSchema.safeParse(job.result_payload))
+        .find((parsed) => parsed.success && parsed.data.snapshot.facility_id === id);
       return {
         site: site.data,
-        firmMw: envelopes.data?.[0]?.max_import_mw ?? site.data.requested_import_mw * 0.84,
-        events: events.data ?? [],
+        shadow: result?.success ? result.data : null,
       };
     },
   });
@@ -74,11 +66,7 @@ function OperationsProject() {
                 </Link>
               }
             />
-            <OperationsWorkspace
-              requestedMw={query.data.site.requested_import_mw}
-              firmMw={query.data.firmMw}
-              events={query.data.events}
-            />
+            <OperationsWorkspace result={query.data.shadow} />
           </>
         )}
       </main>

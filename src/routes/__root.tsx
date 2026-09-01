@@ -128,17 +128,10 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
-      {productCapabilities.authentication ? (
-        <AuthProvider>
-          <Outlet />
-          <Toaster theme="dark" position="bottom-right" />
-        </AuthProvider>
-      ) : (
-        <>
-          <Outlet />
-          <Toaster theme="dark" position="bottom-right" />
-        </>
-      )}
+      <AuthProvider enabled={productCapabilities.authentication}>
+        <Outlet />
+        <Toaster theme="dark" position="bottom-right" />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

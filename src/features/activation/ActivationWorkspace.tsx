@@ -1,230 +1,33 @@
-import { useMemo, type ReactNode } from "react";
-import { Activity, BatteryCharging, CalendarClock, ChevronDown, ShieldCheck } from "lucide-react";
-import type { ActivationEnvelope, ActivationSite } from "./workspace-model";
-import { buildActivationWorkspaceModel } from "./workspace-model";
+import { Activity, ShieldCheck } from "lucide-react";
+import type { FacilityPlanResult } from "@/features/analytics/contracts";
 
-const numberFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
-const integerFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
-const dateFormatter = new Intl.DateTimeFormat(undefined, { dateStyle: "medium" });
+type Envelope = { id: string; name: string; version: number; status: string; mode: string; max_import_mw: number | null };
+type Assessment = { feasible?: boolean; required_reduction_mw?: number; delivered_reduction_mw?: number; shortfall_mw?: number; blockers?: string[] };
+type Facility = { maximum_grid_import_mw?: number; import_limit_violation_count?: number; points?: Array<{ interval_index: number; grid_import_mw: number; import_limit_violation_mw: number }> };
+const fmt = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 });
 
-function path(values: number[], maximum: number) {
-  return values
-    .map(
-      (value, index) =>
-        `${index ? "L" : "M"} ${(index / (values.length - 1)) * 1000} ${240 - (value / maximum) * 210}`,
-    )
-    .join(" ");
-}
-
-export function ActivationWorkspace({
-  site,
-  envelopes,
-}: {
-  site: ActivationSite;
-  envelopes: ActivationEnvelope[];
-}) {
-  const model = useMemo(() => buildActivationWorkspaceModel(site, envelopes), [site, envelopes]);
-  const maximum = Math.max(1, model.requestedMw);
+export function ActivationWorkspace({ plan, envelopes }: { plan: FacilityPlanResult | null; envelopes: Envelope[] }) {
+  if (!plan) return <section className="activation-workspace"><article className="workspace-card compact-empty"><Activity aria-hidden="true" /><h2>No canonical facility plan</h2><p>Run a versioned facility plan from the Planner. GridPulse will not infer firm, flexible, activated, or annual capacity from percentages.</p></article></section>;
+  const result = plan.result as { status?: string; assessment?: Assessment | null; facility?: Facility; model_fingerprint?: string };
+  const assessment = result.assessment;
+  const facility = result.facility;
   return (
     <section className="activation-workspace" aria-label="Power Activation study">
-      <div className="activation-status-line">
-        <span
-          className={`evidence-pill ${model.envelope?.status === "agreed" ? "verified" : "illustrative"}`}
-        >
-          <ShieldCheck size={14} aria-hidden="true" /> {model.evidenceLabel}
-        </span>
-        <span>{model.evidenceDetail}</span>
-      </div>
-
+      <div className="activation-status-line"><span className="evidence-pill illustrative"><ShieldCheck aria-hidden="true" /> Canonical plan · {plan.truth_class.replaceAll("_", " ")}</span><span>Capacity claim: No · Live dispatch: Not authorized</span></div>
       <div className="activation-kpis">
-        <Metric label="Requested" value={model.requestedMw} note="Customer target" />
-        <Metric label="Firm" value={model.firmMw} note="Always-on baseline" />
-        <Metric label="Flexible" value={model.flexibleMw} note="Conditional envelope" accent />
-        <Metric label="Activated" value={model.activatedMw} note="With on-site flexibility" />
-        <Metric
-          label="Restrictions"
-          value={model.restrictionHours}
-          unit="h/yr"
-          note="Modelled exposure"
-        />
+        <Metric label="Plan status" value={result.status ?? "unknown"} />
+        <Metric label="Required reduction" value={assessment?.required_reduction_mw} unit="MW" />
+        <Metric label="Delivered reduction" value={assessment?.delivered_reduction_mw} unit="MW" />
+        <Metric label="Shortfall" value={assessment?.shortfall_mw} unit="MW" />
+        <Metric label="Maximum import" value={facility?.maximum_grid_import_mw} unit="MW" />
       </div>
-
-      <article className="activation-chart-card">
-        <header>
-          <div>
-            <p className="context-label">Representative Week</p>
-            <h2>How the Connection Is Activated</h2>
-          </div>
-          <div className="activation-legend">
-            <span className="demand">Demand</span>
-            <span className="envelope">Flexible envelope</span>
-            <span className="firm">Firm floor</span>
-          </div>
-        </header>
-        <svg
-          viewBox="0 0 1000 260"
-          role="img"
-          aria-label="Demand, flexible envelope, firm capacity and activated demand over one representative week"
-        >
-          {[0, 1, 2, 3, 4].map((line) => (
-            <line
-              key={line}
-              x1="0"
-              x2="1000"
-              y1={30 + line * 52}
-              y2={30 + line * 52}
-              className="chart-grid"
-            />
-          ))}
-          <path
-            d={path(
-              model.timeline.map((point) => point.flexibleMw),
-              maximum,
-            )}
-            className="chart-envelope"
-          />
-          <path
-            d={path(
-              model.timeline.map((point) => point.firmMw),
-              maximum,
-            )}
-            className="chart-firm"
-          />
-          <path
-            d={path(
-              model.timeline.map((point) => point.requestedMw),
-              maximum,
-            )}
-            className="chart-demand"
-          />
-          <path
-            d={path(
-              model.timeline.map((point) => point.activatedMw),
-              maximum,
-            )}
-            className="chart-activated"
-          />
-        </svg>
-        <div className="chart-days">
-          <span>Mon</span>
-          <span>Tue</span>
-          <span>Wed</span>
-          <span>Thu</span>
-          <span>Fri</span>
-          <span>Sat</span>
-          <span>Sun</span>
-        </div>
-      </article>
-
-      <div className="activation-recommendation">
-        <Activity aria-hidden="true" />
-        <div>
-          <p className="context-label">Selected Strategy</p>
-          <h2>Firm Baseline + Flexible Envelope</h2>
-          <p>
-            Use the {numberFormatter.format(model.firmMw)} MW floor for critical load and coordinate
-            up to {numberFormatter.format(model.flexibleMw)} MW against the current envelope. The
-            final step to {numberFormatter.format(model.activatedMw)} MW is supported by the
-            declared battery.
-          </p>
-        </div>
-        <strong>{numberFormatter.format(model.flexibleMw - model.firmMw)} MW flexible</strong>
-      </div>
-
-      <details className="activation-disclosure" suppressHydrationWarning>
-        <summary className="activation-details-toggle">
-          Calculation & Evidence Details
-          <ChevronDown aria-hidden="true" />
-        </summary>
-        <div className="activation-details">
-          <Detail
-            icon={<CalendarClock />}
-            label="Estimated restrictions"
-            value={`${integerFormatter.format(model.restrictionHours)} h/year`}
-          />
-          <Detail
-            icon={<BatteryCharging />}
-            label="Declared battery"
-            value={`${numberFormatter.format(site.bess_power_mw ?? 0)} MW / ${numberFormatter.format(site.bess_energy_mwh ?? 0)} MWh`}
-          />
-          <Detail
-            icon={<Activity />}
-            label="Flexible energy potential"
-            value={`${integerFormatter.format(model.annualFlexibleMwh)} MWh/year`}
-          />
-          {model.envelope ? (
-            <Detail
-              icon={<ShieldCheck />}
-              label="Envelope validity"
-              value={`${model.envelope.valid_from ? dateFormatter.format(new Date(model.envelope.valid_from)) : "Open"} → ${model.envelope.valid_to ? dateFormatter.format(new Date(model.envelope.valid_to)) : "Open"}`}
-            />
-          ) : null}
-          <p>
-            {model.envelope
-              ? "The latest versioned envelope is used ahead of planning assumptions. Dates, status and restrictions still require operator validation."
-              : "Firm capacity is modelled as 84% of requested power, the flexible band as 95%, and battery support is capped at the declared power. These assumptions are deliberately visible and replaceable."}
-          </p>
-        </div>
-      </details>
-      {envelopes.length ? (
-        <article className="envelope-history">
-          <header>
-            <h2>Envelope History</h2>
-            <span>Latest version is applied automatically</span>
-          </header>
-          {[...envelopes]
-            .sort((a, b) => b.version - a.version)
-            .map((item) => (
-              <div key={item.id}>
-                <strong>
-                  v{item.version} · {item.name}
-                </strong>
-                <span>
-                  {item.mode} · {item.status}
-                </span>
-                <span>
-                  {item.max_import_mw == null ? "—" : numberFormatter.format(item.max_import_mw)} MW
-                </span>
-              </div>
-            ))}
-        </article>
-      ) : null}
+      <article className={`control-readiness ${assessment?.feasible ? "within_envelope" : "blocked"}`}><header><Activity aria-hidden="true" /><div><p className="context-label">Canonical facility assessment</p><h2>{assessment?.feasible ? "Plan satisfies the modelled requirement" : "Plan remains blocked"}</h2></div><span>SCREENING ONLY</span></header><p>Model fingerprint: <code>{result.model_fingerprint ?? plan.result_fingerprint}</code></p>{assessment?.blockers?.length ? <ul>{assessment.blockers.map((item) => <li key={item}>{item.replaceAll("_", " ")}</li>)}</ul> : null}</article>
+      {facility?.points?.length ? <div className="table-scroll"><table className="product-table"><thead><tr><th>Interval</th><th>Grid import</th><th>Limit violation</th></tr></thead><tbody>{facility.points.map((point) => <tr key={point.interval_index}><td>{point.interval_index}</td><td>{fmt.format(point.grid_import_mw)} MW</td><td>{fmt.format(point.import_limit_violation_mw)} MW</td></tr>)}</tbody></table></div> : null}
+      {envelopes.length ? <article className="envelope-history"><header><h2>Recorded envelope evidence</h2><span>Shown for provenance; never recalculated here</span></header>{envelopes.map((item) => <div key={item.id}><strong>v{item.version} · {item.name}</strong><span>{item.mode} · {item.status}</span><span>{item.max_import_mw == null ? "—" : `${fmt.format(item.max_import_mw)} MW`}</span></div>)}</article> : null}
     </section>
   );
 }
 
-function Metric({
-  label,
-  value,
-  note,
-  accent = false,
-  unit = "MW",
-}: {
-  label: string;
-  value: number;
-  note: string;
-  accent?: boolean;
-  unit?: string;
-}) {
-  return (
-    <article className={accent ? "accent" : undefined}>
-      <p>{label}</p>
-      <strong>
-        {numberFormatter.format(value)} <small>{unit}</small>
-      </strong>
-      <span>{note}</span>
-    </article>
-  );
-}
-
-function Detail({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
-  return (
-    <div className="activation-detail">
-      <span aria-hidden="true">{icon}</span>
-      <span>
-        {label}
-        <strong>{value}</strong>
-      </span>
-    </div>
-  );
+function Metric({ label, value, unit = "" }: { label: string; value: number | string | undefined; unit?: string }) {
+  return <article><p>{label}</p><strong>{typeof value === "number" ? fmt.format(value) : value ?? "—"} {unit ? <small>{unit}</small> : null}</strong></article>;
 }

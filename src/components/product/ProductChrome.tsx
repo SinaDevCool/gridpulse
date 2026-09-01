@@ -1,13 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-const workspaceLinks = [
-  { label: "Sites", detail: "Manage portfolio decisions", to: "/portfolio" },
-  { label: "Power Finder", detail: "Investigate grid hypotheses", to: "/power-finder" },
-  {
-    label: "Data Centre Planner",
-    detail: "Design energy and flexibility",
-    to: "/data-centre-planner",
-  },
-] as const;
+import { isWorkspaceDestinationActive, workspaceLinks } from "./product-navigation";
 
 export function ProductHeader() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
@@ -60,13 +52,7 @@ export function ProductStageNavigation() {
     <nav className="product-stage-navigation" aria-label="Grid workspace navigation">
       <div>
         {links.map((item, index) => {
-          const active =
-            item.to === "/portfolio"
-              ? pathname.startsWith("/portfolio") ||
-                pathname === "/workspaces" ||
-                pathname === "/reports" ||
-                pathname.startsWith("/capacity-dossiers/")
-              : pathname.startsWith(item.to);
+          const active = isWorkspaceDestinationActive(pathname, item.to);
           return (
             <Link
               key={item.to}
@@ -74,7 +60,7 @@ export function ProductStageNavigation() {
               className={active ? "active" : undefined}
               aria-current={active ? "page" : undefined}
             >
-              <span>0{index + 1}</span>
+              <span>{String(index + 1).padStart(2, "0")}</span>
               <span>
                 <strong>{item.label}</strong>
                 <small>{item.detail}</small>

@@ -1,7 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   buildRepresentativeProfile,
   calculateRepresentativeCommercialValue,
+  createCanonicalActivationStudyContext,
   createActivationStudyContext,
   resolveActivationStudyMode,
 } from "./activation-study";
@@ -9,6 +10,9 @@ import { calculateCapacityScenario } from "./capacity-scenario";
 import type { CandidateOpportunity } from "./candidate-intelligence";
 import { defaultFinderProject } from "./finder-project";
 import { calculateReleaseBNetwork } from "./release-b-network";
+
+const runCanonicalFcaInterval = vi.hoisted(() => vi.fn());
+vi.mock("../analytics/fca-client", () => ({ runCanonicalFcaInterval }));
 
 const candidate: CandidateOpportunity = {
   id: "site:node",
@@ -31,6 +35,31 @@ const candidate: CandidateOpportunity = {
 };
 
 describe("Activation Study orchestration", () => {
+  beforeEach(() => {
+    runCanonicalFcaInterval.mockImplementation(async (_profile, settings) => ({
+      calculationVersion: "canonical-test",
+      intervalMinutes: 60,
+      intervalCount: 8760,
+      peakBaselineImportMw: 20,
+      restrictedIntervals: settings.firmImportMw < 20 ? 10 : 0,
+      restrictedHours: settings.firmImportMw < 20 ? 10 : 0,
+      restrictionEvents: 1,
+      longestRestrictionHours: 10,
+      minimumViableBreaches: 0,
+      maximumShortfallMw: Math.max(0, 20 - settings.firmImportMw),
+      residualUnservedMwh: Math.max(0, 20 - settings.firmImportMw),
+      constrainedEnergyMwh: 10,
+      shiftedWorkloadMwh: settings.shiftableLoadMw,
+      batteryDischargeMwh: settings.batteryEnergyMwh,
+      equivalentBatteryCycles: 1,
+      demandServedPercent: settings.firmImportMw,
+      estimatedAnnualExposureEur: 0,
+      classification: "operator_validation_required",
+      timeline: [],
+      warnings: ["canonical"],
+    }));
+  });
+
   it("keeps synthetic option fit separate from public investigation priority", () => {
     const capacityScenario = calculateCapacityScenario(defaultFinderProject, candidate);
     const networkScenario = calculateReleaseBNetwork(
@@ -87,7 +116,7 @@ describe("Activation Study orchestration", () => {
     expect(context.options.some((option) => option.initialImportMw <= 4.66)).toBe(true);
   });
 
-  it("uses one deterministic annual profile and produces differentiated strategies", () => {
+  it("uses one deterministic annual profile without fabricating synchronous strategy results", () => {
     const project = {
       ...defaultFinderProject,
       importMw: 20,
@@ -101,9 +130,27 @@ describe("Activation Study orchestration", () => {
     const context = createActivationStudyContext({ project, candidate, registeredStudy: null });
     expect(profile).toHaveLength(8760);
     expect(buildRepresentativeProfile(project)).toEqual(profile);
-    expect(
-      new Set(context.options.map((option) => option.analysis?.residualUnservedMwh)).size,
-    ).toBeGreaterThan(1);
+    expect(context.options.every((option) => option.analysis === null)).toBe(true);
+    expect(context.recommendedOption).toBeNull();
+  });
+
+  it("hydrates every strategy from canonical durable-job results", async () => {
+    const project = {
+      ...defaultFinderProject,
+      importMw: 20,
+      ultimateImportMw: 20,
+      minimumFirmMw: 10,
+      flexibleLoadMw: 4,
+      batteryPowerMw: 8,
+      batteryEnergyMwh: 24,
+    };
+    const context = await createCanonicalActivationStudyContext({
+      project,
+      candidate,
+      registeredStudy: null,
+    });
+    expect(runCanonicalFcaInterval).toHaveBeenCalledTimes(6);
+    expect(context.options.every((option) => option.analysis !== null)).toBe(true);
     expect(context.recommendedOption).not.toBeNull();
   });
 

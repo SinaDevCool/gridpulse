@@ -3,7 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Check, Download, Info, MapPin, ShieldAlert, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { simulateFlexibleConnection, type DispatchAnalysis } from "@/lib/fca-engine";
+import type { DispatchAnalysis } from "@/lib/fca-engine";
+import { runCanonicalFcaInterval } from "@/features/analytics/fca-client";
 import type {
   CandidateSite,
   Evidence,
@@ -711,7 +712,7 @@ export function StrategyWorkbench({ site, evidence, scenarios, profiles, refresh
       return;
     }
     try {
-      const analysis = simulateFlexibleConnection(profile.points, {
+      const analysis = await runCanonicalFcaInterval(profile.points, {
         firmImportMw: input.firmImportMw,
         conditionalImportMw: input.conditionalImportMw,
         minimumCriticalLoadMw: input.minimumCriticalLoadMw,

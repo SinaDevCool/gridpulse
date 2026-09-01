@@ -25,6 +25,12 @@ import {
   voltageWidthExpression,
 } from "@/features/power-finder/voltage-style";
 import type { CapacityMetric } from "@/features/power-finder/calculated-capacity";
+import {
+  applyBasemapVisibility,
+  loadBasemapStyle,
+  type BasemapLayerIds,
+  type BasemapStatus,
+} from "@/features/power-finder/basemap-config";
 
 const sourceIds = {
   node: "power-finder-nodes",
@@ -200,6 +206,7 @@ type PowerFinderMapProps = {
   onDiscoverySelect?: (id: string) => void;
   showDataCentres?: boolean;
   onDataCentreSelect?: (dataCentre: RzRegDataCentre) => void;
+  onBasemapStatusChange?: (status: BasemapStatus) => void;
 };
 
 export type RzRegDataCentre = {
@@ -312,6 +319,7 @@ export function PowerFinderMap({
   onDiscoverySelect,
   showDataCentres = true,
   onDataCentreSelect,
+  onBasemapStatusChange,
 }: PowerFinderMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -332,6 +340,8 @@ export function PowerFinderMap({
   const requiredCapacityMwRef = useRef(requiredCapacityMw);
   const capacityCoverageRef = useRef(capacityCoverage);
   const basemapModeRef = useRef(basemapMode);
+  const basemapLayerIdsRef = useRef<BasemapLayerIds>({ dark: [], light: [] });
+  const onBasemapStatusChangeRef = useRef(onBasemapStatusChange);
   const enabledLayersRef = useRef(enabledLayers);
   const assetFilterRef = useRef({ generationGroup, minimumGenerationMw, minimumStorageMw });
   onSelectRef.current = onSelect;
@@ -351,6 +361,7 @@ export function PowerFinderMap({
   requiredCapacityMwRef.current = requiredCapacityMw;
   capacityCoverageRef.current = capacityCoverage;
   basemapModeRef.current = basemapMode;
+  onBasemapStatusChangeRef.current = onBasemapStatusChange;
   enabledLayersRef.current = enabledLayers;
   assetFilterRef.current = { generationGroup, minimumGenerationMw, minimumStorageMw };
 
@@ -358,55 +369,33 @@ export function PowerFinderMap({
     if (!containerRef.current || mapRef.current) return;
     let cancelled = false;
 
-    void import("maplibre-gl").then(({ Map, NavigationControl }) => {
+    onBasemapStatusChangeRef.current?.("loading");
+    void Promise.all([import("maplibre-gl"), loadBasemapStyle(basemapModeRef.current)]).then(
+      ([{ Map, NavigationControl }, basemap]) => {
       if (cancelled || !containerRef.current) return;
+      basemapLayerIdsRef.current = basemap.layerIds;
+      onBasemapStatusChangeRef.current?.(basemap.status);
       const map = new Map({
         container: containerRef.current,
         center: projectSiteRef.current ?? [13.36, 52.31],
         zoom: projectSiteRef.current ? 11.2 : 9.1,
         attributionControl: {},
-        style: {
-          version: 8,
-          sources: {
-            "carto-dark": {
-              type: "raster",
-              tiles: [
-                "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
-                "https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
-                "https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
-              ],
-              tileSize: 256,
-              attribution: "© OpenStreetMap contributors © CARTO",
-            },
-            "carto-light": {
-              type: "raster",
-              tiles: [
-                "https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
-                "https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
-                "https://c.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
-              ],
-              tileSize: 256,
-              attribution: "© OpenStreetMap contributors © CARTO",
-            },
-          },
-          layers: [
-            {
-              id: "carto-dark",
-              type: "raster",
-              source: "carto-dark",
-              layout: { visibility: basemapModeRef.current === "dark" ? "visible" : "none" },
-            },
-            {
-              id: "carto-light",
-              type: "raster",
-              source: "carto-light",
-              layout: { visibility: basemapModeRef.current === "light" ? "visible" : "none" },
-            },
-          ],
-        },
+        style: basemap.style,
       });
       mapRef.current = map;
       map.addControl(new NavigationControl({ showCompass: false }), "top-right");
+      let basemapErrorCount = 0;
+      map.on("error", (event) => {
+        const sourceId = "sourceId" in event ? String(event.sourceId ?? "") : "";
+        const message = event.error?.message ?? "";
+        const openFreeMapFailure =
+          sourceId === "openmaptiles" ||
+          sourceId === "ne2_shaded" ||
+          message.includes("tiles.openfreemap.org");
+        if (!openFreeMapFailure) return;
+        basemapErrorCount += 1;
+        if (basemapErrorCount >= 3) onBasemapStatusChangeRef.current?.("fallback");
+      });
       map.on("load", () => {
         const split = splitMapCollection(
           withCapacityResults(
@@ -552,6 +541,7 @@ export function PowerFinderMap({
           layout: {
             visibility: showDataCentresRef.current ? "visible" : "none",
             "text-field": ["get", "point_count_abbreviated"],
+            "text-font": ["Noto Sans Regular"],
             "text-size": 11,
           },
           paint: { "text-color": "#07111f" },
@@ -665,7 +655,7 @@ export function PowerFinderMap({
           layout: {
             "text-field": ["to-string", ["get", "rank"]],
             "text-size": 12,
-            "text-font": ["Open Sans Bold"],
+            "text-font": ["Noto Sans Bold"],
             "text-allow-overlap": true,
           },
           paint: { "text-color": "#04131d" },
@@ -815,6 +805,7 @@ export function PowerFinderMap({
           layout: {
             visibility: enabledLayersRef.current.generation_asset ? "visible" : "none",
             "text-field": registeredMwLabel,
+            "text-font": ["Noto Sans Regular"],
             "text-size": 10,
             "text-allow-overlap": false,
           },
@@ -859,6 +850,7 @@ export function PowerFinderMap({
           layout: {
             visibility: enabledLayersRef.current.generation_asset ? "visible" : "none",
             "text-field": registeredMwLabel,
+            "text-font": ["Noto Sans Regular"],
             "text-size": 10,
             "text-allow-overlap": false,
           },
@@ -897,6 +889,7 @@ export function PowerFinderMap({
           layout: {
             visibility: enabledLayersRef.current.storage_asset ? "visible" : "none",
             "text-field": registeredMwLabel,
+            "text-font": ["Noto Sans Regular"],
             "text-size": 10,
             "text-allow-overlap": false,
           },
@@ -960,6 +953,7 @@ export function PowerFinderMap({
           layout: {
             visibility: "none",
             "text-field": ["get", "point_count_abbreviated"],
+            "text-font": ["Noto Sans Regular"],
             "text-size": 11,
           },
           paint: { "text-color": "#07111f" },
@@ -1008,6 +1002,7 @@ export function PowerFinderMap({
               ],
               ["concat", ["get", "point_count_abbreviated"], " assets"],
             ],
+            "text-font": ["Noto Sans Regular"],
             "text-size": 10,
           },
           filter: ["has", "point_count"],
@@ -1060,6 +1055,7 @@ export function PowerFinderMap({
               ],
               ["concat", ["get", "point_count_abbreviated"], " assets"],
             ],
+            "text-font": ["Noto Sans Regular"],
             "text-size": 10,
           },
           filter: ["has", "point_count"],
@@ -1107,6 +1103,7 @@ export function PowerFinderMap({
           source: "finder-selected-candidate",
           layout: {
             "text-field": ["get", "name"],
+            "text-font": ["Noto Sans Regular"],
             "text-size": 12,
             "text-anchor": "top",
             "text-offset": [0, 1.8],
@@ -1224,7 +1221,8 @@ export function PowerFinderMap({
         });
         map.on("idle", () => publishVisibleLayerCounts(map, onVisibleLayerCountsRef.current));
       });
-    });
+      },
+    );
 
     return () => {
       cancelled = true;
@@ -1575,13 +1573,8 @@ export function PowerFinderMap({
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map?.getLayer("carto-dark") || !map.getLayer("carto-light")) return;
-    map.setLayoutProperty("carto-dark", "visibility", basemapMode === "dark" ? "visible" : "none");
-    map.setLayoutProperty(
-      "carto-light",
-      "visibility",
-      basemapMode === "light" ? "visible" : "none",
-    );
+    if (!map) return;
+    applyBasemapVisibility(map, basemapMode, basemapLayerIdsRef.current);
   }, [basemapMode]);
 
   useEffect(() => {

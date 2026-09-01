@@ -5,6 +5,8 @@ import { AppShell, PageHeading } from "@/components/product/AppShell";
 import { ActivationWorkspace } from "@/features/activation/ActivationWorkspace";
 import { useAuth } from "@/context/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { listAnalyticsJobs } from "@/lib/analytics-api";
+import { facilityPlanResultSchema } from "@/features/analytics/contracts";
 
 export const Route = createFileRoute("/activation/$id")({ component: ActivationProject });
 function ActivationProject() {
@@ -14,7 +16,7 @@ function ActivationProject() {
     queryKey: ["activation-workspace", id],
     enabled: Boolean(user),
     queryFn: async () => {
-      const [site, envelopes] = await Promise.all([
+      const [site, envelopes, jobs] = await Promise.all([
         supabase
           .from("candidate_sites")
           .select(
@@ -29,10 +31,21 @@ function ActivationProject() {
           )
           .eq("site_id", id)
           .order("version", { ascending: false }),
+        listAnalyticsJobs(200),
       ]);
       if (site.error) throw site.error;
       if (envelopes.error) throw envelopes.error;
-      return { site: site.data, envelopes: envelopes.data ?? [] };
+      const plan = jobs
+        .filter((job) => job.status === "succeeded" && job.job_type === "facility_plan")
+        .filter((job) => {
+          const facility = job.input_payload.facility;
+          const requirement = job.input_payload.requirement;
+          return (typeof facility === "object" && facility !== null && (facility as Record<string, unknown>).site_id === id) ||
+            (typeof requirement === "object" && requirement !== null && (requirement as Record<string, unknown>).site_id === id);
+        })
+        .map((job) => facilityPlanResultSchema.safeParse(job.result_payload))
+        .find((parsed) => parsed.success);
+      return { site: site.data, envelopes: envelopes.data ?? [], plan: plan?.success ? plan.data : null };
     },
   });
   return (
@@ -60,7 +73,7 @@ function ActivationProject() {
               title={query.data.site.name || "Untitled Activation Project"}
               description={`Connection activation strategy for ${query.data.site.likely_network_operator ?? "the responsible network operator"}. Evidence labels distinguish operator inputs from illustrative assumptions.`}
             />
-            <ActivationWorkspace site={query.data.site} envelopes={query.data.envelopes} />
+            <ActivationWorkspace plan={query.data.plan} envelopes={query.data.envelopes} />
           </>
         )}
       </main>

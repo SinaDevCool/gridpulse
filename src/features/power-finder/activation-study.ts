@@ -1,9 +1,11 @@
 import {
   buildConnectionOptions,
   rankConnectionOptions,
+  type OptionKind,
 } from "../grid-connection/connection-options";
 import { buildDecisionMatrix, type DecisionMatrixRow } from "../grid-connection/decision-matrix";
-import type { IntervalPoint } from "../../lib/fca-engine";
+import type { DispatchAnalysis, DispatchSettings, IntervalPoint } from "../../lib/fca-engine";
+import { runCanonicalFcaInterval } from "../analytics/fca-client";
 import {
   calculateCapacityScenario,
   syntheticProjectLoadFactor,
@@ -81,8 +83,15 @@ export function createActivationStudyContext(input: {
   candidate: CandidateOpportunity;
   registeredStudy: C1StudyPayload | null;
   referenceCapacity?: ReferenceCapacityResult | null;
+  canonicalAnalyses?: Partial<Record<OptionKind, DispatchAnalysis>>;
 }): ActivationStudyContext {
-  const { project, candidate, registeredStudy, referenceCapacity = null } = input;
+  const {
+    project,
+    candidate,
+    registeredStudy,
+    referenceCapacity = null,
+    canonicalAnalyses,
+  } = input;
   const mode = referenceCapacity
     ? "reference_network_calculated"
     : resolveActivationStudyMode(registeredStudy);
@@ -122,6 +131,7 @@ export function createActivationStudyContext(input: {
       conditionalImportMw: conditional,
       operatorSupported: mode === "operator_confirmed",
       profile: buildRepresentativeProfile(project),
+      canonicalAnalyses,
       dispatch: {
         minimumCriticalLoadMw: Math.min(requested, Math.max(0, project.minimumFirmMw)),
         shiftableLoadMw: Math.min(requested, Math.max(0, project.flexibleLoadMw)),
@@ -165,6 +175,57 @@ export function createActivationStudyContext(input: {
     hasViableOption: Boolean(recommendedOption),
     bestInvestigativeHypothesis,
   };
+}
+
+/**
+ * Resolve every strategy through the canonical Python engine, then inject the
+ * immutable results into the synchronous view model. This is the only path
+ * that may turn an Activation Study option into an analysed option.
+ */
+export async function createCanonicalActivationStudyContext(input: {
+  project: FinderProject;
+  candidate: CandidateOpportunity;
+  registeredStudy: C1StudyPayload | null;
+  referenceCapacity?: ReferenceCapacityResult | null;
+}): Promise<ActivationStudyContext> {
+  const preliminary = createActivationStudyContext(input);
+  const profile = buildRepresentativeProfile(input.project);
+  const minimumCriticalLoadMw = Math.min(
+    Math.max(input.project.importMw, input.project.ultimateImportMw),
+    Math.max(0, input.project.minimumFirmMw),
+  );
+  const canonicalAnalyses = Object.fromEntries(
+    await Promise.all(
+      preliminary.options.map(async (option) => {
+        const flexible =
+          option.kind === "static_flexible" || option.kind === "dynamic_flexible";
+        const storage = option.kind === "storage_supported";
+        const conditionalFraction =
+          option.kind === "dynamic_flexible"
+            ? 1
+            : option.kind === "static_flexible" || storage
+              ? 0.6
+              : 0;
+        const settings: DispatchSettings = {
+          firmImportMw: option.initialImportMw,
+          conditionalImportMw:
+            Math.max(0, option.eventualImportMw - option.initialImportMw) * conditionalFraction,
+          minimumCriticalLoadMw,
+          shiftableLoadMw: flexible ? Math.max(0, input.project.flexibleLoadMw) : 0,
+          batteryPowerMw: storage ? Math.max(0, input.project.batteryPowerMw) : 0,
+          batteryEnergyMwh: storage ? Math.max(0, input.project.batteryEnergyMwh) : 0,
+          batteryRoundTripEfficiency: input.project.batteryRoundTripEfficiencyPct / 100,
+          batteryMinimumSoc: input.project.batteryReservePct / 100,
+          initialBatterySoc: 1,
+          energyValueEurMwh: 200,
+          batteryDegradationEurMwh: 20,
+          minimumViableImportMw: Math.max(0, input.project.minimumFirmMw),
+        };
+        return [option.kind, await runCanonicalFcaInterval(profile, settings)] as const;
+      }),
+    ),
+  ) as Record<OptionKind, DispatchAnalysis>;
+  return createActivationStudyContext({ ...input, canonicalAnalyses });
 }
 
 export function activationStatusLabel(status: DecisionMatrixRow["operationalStatus"]) {
