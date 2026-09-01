@@ -1,20 +1,20 @@
-import { Moon, Monitor, Sun } from "lucide-react";
+import { Moon, Sun } from "lucide-react";
 import { useTheme } from "./use-theme";
 
 export function ThemeControl() {
-  const { preference, setPreference } = useTheme();
-  const next = preference === "system" ? "light" : preference === "light" ? "dark" : "system";
-  const Icon = preference === "system" ? Monitor : preference === "light" ? Sun : Moon;
+  const { resolved, setPreference } = useTheme();
+  const next = resolved === "light" ? "dark" : "light";
+  const Icon = resolved === "light" ? Sun : Moon;
   return (
     <button
       className="theme-control"
       type="button"
       onClick={() => setPreference(next)}
-      aria-label={`Theme: ${preference}. Switch to ${next}.`}
-      title={`Theme: ${preference}`}
+      aria-label={`Theme: ${resolved}. Switch to ${next}.`}
+      title={`Switch to ${next} theme`}
     >
       <Icon aria-hidden="true" />
-      <span>{preference}</span>
+      <span>{resolved}</span>
     </button>
   );
 }

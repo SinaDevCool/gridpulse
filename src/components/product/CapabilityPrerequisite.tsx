@@ -7,16 +7,19 @@ export function CapabilityPrerequisite({
   title,
   description,
   requirements,
+  children,
 }: {
   eyebrow: string;
   title: string;
   description: string;
   requirements: string[];
+  children?: React.ReactNode;
 }) {
   return (
     <AppShell>
       <main id="main-content" className="section-page">
         <PageHeading eyebrow={eyebrow} title={title} description={description} />
+        {children}
         <section
           className="data-panel capability-prerequisite"
           aria-labelledby="prerequisite-title"

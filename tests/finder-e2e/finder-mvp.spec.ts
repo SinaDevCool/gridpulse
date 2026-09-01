@@ -650,13 +650,15 @@ test("Finder controls and comparison remain usable on a narrow viewport", async 
   await expect(page.getByRole("button", { name: /Remove .* from comparison/ })).toBeVisible();
 });
 
-test("Power Finder switches and remembers the light basemap", async ({ page }) => {
+test("the global theme switches and remembers the matching Power Finder basemap", async ({ page }) => {
   const cartoRequests: string[] = [];
   const openFreeMapRequests: string[] = [];
   page.on("request", (request) => {
     if (request.url().includes("cartocdn.com")) cartoRequests.push(request.url());
     if (request.url().includes("tiles.openfreemap.org")) openFreeMapRequests.push(request.url());
   });
+  await page.goto("/");
+  await page.evaluate(() => window.localStorage.setItem("gridpulse-theme", "dark"));
   await page.goto("/power-finder?lat=52.31&lng=13.36&mw=50");
   const map = page.getByRole("application", { name: /Interactive grid/ });
   await expect(map).toBeVisible({ timeout: 15_000 });
@@ -666,16 +668,9 @@ test("Power Finder switches and remembers the light basemap", async ({ page }) =
     "data-basemap-status",
     /available|fallback/,
   );
-  for (let index = 0; index < 5; index += 1) {
-    const nextMode = index % 2 === 0 ? "light" : "dark";
-    await page.getByRole("button", { name: `Use ${nextMode} map` }).click();
-    await expect(map).toHaveAttribute("data-basemap", nextMode);
-  }
+  await page.getByRole("button", { name: "Theme: dark. Switch to light." }).click();
   await expect(map).toHaveAttribute("data-basemap", "light");
-  await expect(page.getByRole("button", { name: "Use dark map" })).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
+  await expect(page.getByRole("button", { name: /Use (dark|light) map/ })).toHaveCount(0);
   await page.reload();
   await expect(page.getByRole("application", { name: /Interactive grid/ })).toHaveAttribute(
     "data-basemap",

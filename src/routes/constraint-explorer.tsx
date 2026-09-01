@@ -1,11 +1,21 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
-import { AlertTriangle, Database, Map, ShieldCheck } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { AlertTriangle, Database, ShieldCheck } from "lucide-react";
 import { z } from "zod";
 import { AppShell, PageHeading } from "@/components/product/AppShell";
 import { evidenceClassLabel } from "@/features/grid-connection/evidence";
 import { layersForExperience } from "@/features/map/map-layer-registry";
 import { enquiryReadiness } from "@/features/operator-enquiry/readiness";
+import { PowerFinderMap } from "@/components/product/PowerFinderMap";
+import {
+  loadPowerFinderViewport,
+  type PowerFinderBounds,
+} from "@/features/power-finder/data-source";
+import type {
+  PowerFinderCollection,
+  PowerFinderFeature,
+} from "@/features/power-finder/fixture-data";
+import { useTheme } from "@/features/theme/use-theme";
 
 const searchSchema = z.object({
   severity: z.enum(["all", "moderate", "high", "critical"]).optional().catch(undefined),
@@ -70,6 +80,7 @@ const illustrative = [
 ] as const;
 
 function ConstraintExplorerPage() {
+  const { resolved: basemapMode } = useTheme();
   const search = Route.useSearch();
   const [severity, setSeverity] = useState(search.severity ?? "all");
   const [evidence, setEvidence] = useState(search.evidence ?? "all");
@@ -92,6 +103,37 @@ function ConstraintExplorerPage() {
     [evidence, severity],
   );
   const selected = illustrative.find((item) => item.id === selectedId) ?? filtered[0];
+  const [mapCollection, setMapCollection] = useState<PowerFinderCollection | null>(null);
+  const [mapError, setMapError] = useState<string | null>(null);
+  const [bounds, setBounds] = useState<PowerFinderBounds>({
+    west: 7.9,
+    south: 52.7,
+    east: 9.4,
+    north: 53.5,
+  });
+  const [mapFeature, setMapFeature] = useState<PowerFinderFeature | null>(null);
+  useEffect(() => {
+    if ((bounds.east - bounds.west) * (bounds.north - bounds.south) > 6) return;
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => {
+      void loadPowerFinderViewport(bounds, controller.signal, {
+        fallbackAllowed: true,
+        includeRegistryAssets: false,
+      })
+        .then(({ collection }) => {
+          setMapCollection(collection);
+          setMapError(null);
+        })
+        .catch((reason: unknown) => {
+          if (!controller.signal.aborted)
+            setMapError(reason instanceof Error ? reason.message : "Map context could not load.");
+        });
+    }, 250);
+    return () => {
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [bounds]);
   const layers = layersForExperience("constraint_explorer");
   const readiness = enquiryReadiness({
     site: false,
@@ -166,22 +208,39 @@ function ConstraintExplorerPage() {
               ))}
             </ul>
           </aside>
-          <section
-            className="constraint-map-placeholder"
-            aria-label="Accessible constraint map summary"
-          >
-            <Map aria-hidden="true" />
-            <h2>Germany constraint context</h2>
-            <p>
-              The production map reuses the Power Finder map platform. Regional and postcode
-              evidence is aggregated; only published exact locations may appear as points.
-            </p>
-            <div className="constraint-corridors" aria-hidden="true">
-              <i />
-              <i />
-              <i />
+          <section className="constraint-map" aria-label="Germany constraint context map">
+            <div className="constraint-map-caption">
+              <strong>Grid context</strong>
+              <span>Public infrastructure · selected exposure remains screening evidence</span>
             </div>
-            <span>Map findings are fully available in the ranked list.</span>
+            {mapCollection ? (
+              <PowerFinderMap
+                collection={mapCollection}
+                enabledLayers={{
+                  node: true,
+                  line: true,
+                  industrial_site: false,
+                  generation_asset: false,
+                  storage_asset: false,
+                }}
+                selectedFeature={mapFeature}
+                mapMode="evidence"
+                basemapMode={basemapMode}
+                onSelect={setMapFeature}
+                onViewportChange={setBounds}
+              />
+            ) : (
+              <div className="constraint-map-state" role="status" aria-live="polite">
+                {mapError ?? "Loading grid context…"}
+              </div>
+            )}
+            <div className="constraint-map-evidence">
+              <span className={`constraint-severity ${selected?.severity ?? "moderate"}`}>
+                {selected?.severity ?? "moderate"}
+              </span>
+              <strong>{selected?.name ?? "Select an exposure"}</strong>
+              <small>{mapFeature ? `Map selection: ${mapFeature.properties.name}` : selected?.region}</small>
+            </div>
           </section>
           <section className="constraint-results" aria-labelledby="constraint-results-title">
             <header>

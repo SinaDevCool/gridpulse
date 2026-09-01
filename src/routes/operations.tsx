@@ -4,6 +4,7 @@ import { OutcomeProjectIndex } from "@/components/product/OutcomeProjectIndex";
 import { listAnalyticsJobs } from "@/lib/analytics-api";
 import { productCapabilities } from "@/config/product-mode";
 import { CapabilityPrerequisite } from "@/components/product/CapabilityPrerequisite";
+import { WorkflowShowcase } from "@/components/product/WorkflowShowcase";
 
 export const Route = createFileRoute("/operations")({
   component: OperationsIndex,
@@ -27,7 +28,9 @@ function OperationsIndex() {
           "Read-only telemetry connection",
           "Shadow-operation access",
         ]}
-      />
+      >
+        <WorkflowShowcase kind="operations" />
+      </CapabilityPrerequisite>
     );
   const shadow = (jobs.data ?? []).filter((job) => job.job_type === "shadow_verification");
   return (

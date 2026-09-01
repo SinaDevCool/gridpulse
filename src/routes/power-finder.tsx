@@ -13,8 +13,6 @@ import {
   PanelLeftOpen,
   Search,
   ShieldCheck,
-  Sun,
-  Moon,
   ChevronDown,
   ChevronUp,
   Zap,
@@ -100,6 +98,7 @@ import {
 } from "@/features/power-finder/operator-catalog";
 import { operatorBoundsIntersect } from "@/features/power-finder/operator-map-navigation";
 import type { BasemapStatus } from "@/features/power-finder/basemap-config";
+import { useTheme } from "@/features/theme/use-theme";
 import {
   suggestOperatorFilters,
   suggestScreeningVoltage,
@@ -273,6 +272,7 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string)
 }
 
 function PowerFinderPage() {
+  const { resolved: basemapMode } = useTheme();
   const navigate = useNavigate();
   const search = Route.useSearch();
   const [collection, setCollection] = useState<PowerFinderCollection | null>(null);
@@ -442,17 +442,7 @@ function PowerFinderPage() {
   const [minimumGenerationMw, setMinimumGenerationMw] = useState(0);
   const [minimumStorageMw, setMinimumStorageMw] = useState(0);
   const detailDismissedRef = useRef(false);
-  const [basemapMode, setBasemapMode] = useState<"dark" | "light">("dark");
   const [basemapStatus, setBasemapStatus] = useState<BasemapStatus>("loading");
-  const [basemapHydrated, setBasemapHydrated] = useState(false);
-  useEffect(() => {
-    if (window.localStorage.getItem("gridpulse-basemap") === "light") setBasemapMode("light");
-    setBasemapHydrated(true);
-  }, []);
-  useEffect(() => {
-    if (!basemapHydrated) return;
-    window.localStorage.setItem("gridpulse-basemap", basemapMode);
-  }, [basemapHydrated, basemapMode]);
   const [mapNavigationTarget, setMapNavigationTarget] = useState<
     | { requestId: number; kind: "point"; center: [number, number]; zoom?: number }
     | {
@@ -2871,16 +2861,6 @@ function PowerFinderPage() {
               <PanelLeftOpen aria-hidden="true" />
             )}
             <span>{sidebarOpen ? "Hide panel" : "Show panel"}</span>
-          </button>
-          <button
-            type="button"
-            className="power-finder-basemap-toggle"
-            aria-label={`Use ${basemapMode === "dark" ? "light" : "dark"} map`}
-            aria-pressed={basemapMode === "light"}
-            onClick={() => setBasemapMode((current) => (current === "dark" ? "light" : "dark"))}
-          >
-            {basemapMode === "dark" ? <Sun aria-hidden="true" /> : <Moon aria-hidden="true" />}
-            <span>{basemapMode === "dark" ? "Light Map" : "Dark Map"}</span>
           </button>
           {basemapStatus === "fallback" && (
             <div className="power-finder-basemap-notice" role="status" aria-live="polite">

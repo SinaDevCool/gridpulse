@@ -66,6 +66,18 @@ const emptyProject: Project = {
   firm: null,
   price: null,
 };
+const illustrativeProject: Project = {
+  name: "Bremen Edge Campus · illustrative",
+  location: "Bremen, Germany",
+  it: 120,
+  pue: 1.28,
+  load: 72,
+  ref: 45,
+  erf: 18,
+  wue: 0.35,
+  firm: 120,
+  price: 108,
+};
 const emptyEconomics: StorageLcosInput = {
   powerMw: null,
   durationHours: null,
@@ -276,6 +288,16 @@ function DataCentreAnalytics() {
               <ShieldAlert />
               Planning evidence only
             </span>
+            <button
+              type="button"
+              onClick={() => {
+                setProject(illustrativeProject);
+                setView("overview");
+              }}
+            >
+              <Database aria-hidden="true" />
+              Load illustrative example
+            </button>
             <button type="button" onClick={() => setDrawer(true)}>
               <SlidersHorizontal />
               Inputs & assumptions
@@ -285,12 +307,12 @@ function DataCentreAnalytics() {
         <nav className="dca-tabs" aria-label="Analytics views">
           {(
             [
-              ["overview", "Overview", Building2],
-              ["energy", "Energy", Zap],
-              ["benchmark", "Benchmark", BarChart3],
-              ["flexibility", "Flexibility economics", BatteryCharging],
-              ["economics", "Economics", CircleDollarSign],
-              ["canonical", "Canonical runs", Activity],
+              ["overview", "Decision brief", Building2],
+              ["energy", "Demand & energy", Zap],
+              ["benchmark", "Peer evidence", BarChart3],
+              ["flexibility", "Flexibility plan", BatteryCharging],
+              ["economics", "Business case", CircleDollarSign],
+              ["canonical", "Evidence & runs", Activity],
             ] as const
           ).map(([id, label, Icon]) => (
             <button

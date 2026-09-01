@@ -11,6 +11,7 @@ import {
   type AnalyticsJob,
 } from "@/lib/analytics-api";
 import { productCapabilities } from "@/config/product-mode";
+import { WorkflowShowcase } from "@/components/product/WorkflowShowcase";
 
 export const Route = createFileRoute("/reports")({
   head: () => ({
@@ -95,16 +96,19 @@ function ReportsPage() {
           description="Select canonical analytical results and generate one deterministic JSON and Markdown package. Results remain screening evidence until confirmed by the responsible operator."
         />
         {!productCapabilities.workspace ? (
-          <section className="constraint-truth-banner">
-            <FileCheck2 aria-hidden="true" />
-            <p>
-              <strong>Package preview.</strong> Save a project and complete its canonical
-              assessments to unlock deterministic package generation. Public screening never creates
-              an operator-confirmed capacity claim.
-            </p>
-          </section>
+          <>
+            <section className="constraint-truth-banner">
+              <FileCheck2 aria-hidden="true" />
+              <p>
+                <strong>Package preview.</strong> Save a project and complete its canonical
+                assessments to unlock deterministic package generation. Public screening never
+                creates an operator-confirmed capacity claim.
+              </p>
+            </section>
+            <WorkflowShowcase kind="reports" />
+          </>
         ) : null}
-        <section className="data-panel" aria-labelledby="package-inputs-title">
+        {productCapabilities.workspace ? <section className="data-panel" aria-labelledby="package-inputs-title">
           <div className="section-toolbar">
             <div>
               <h2 id="package-inputs-title">Canonical artifacts</h2>
@@ -179,7 +183,7 @@ function ReportsPage() {
             Generate canonical package
           </button>
           {error ? <p role="alert">{error}</p> : null}
-        </section>
+        </section> : null}
         {result?.success ? (
           <section className="data-panel" aria-labelledby="package-result-title">
             <h2 id="package-result-title">Package ready</h2>

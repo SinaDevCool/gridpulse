@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { OutcomeProjectIndex } from "@/components/product/OutcomeProjectIndex";
 import { productCapabilities } from "@/config/product-mode";
 import { CapabilityPrerequisite } from "@/components/product/CapabilityPrerequisite";
+import { WorkflowShowcase } from "@/components/product/WorkflowShowcase";
 
 export const Route = createFileRoute("/activation")({
   component: ActivationIndex,
@@ -20,7 +21,9 @@ function ActivationIndex() {
           "A reviewed connection strategy",
           "Operator workflow access",
         ]}
-      />
+      >
+        <WorkflowShowcase kind="activation" />
+      </CapabilityPrerequisite>
     );
   return (
     <OutcomeProjectIndex
