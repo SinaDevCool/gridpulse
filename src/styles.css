@@ -75,6 +75,417 @@
   --grid-line: oklch(0.3 0.02 260 / 0.6);
 }
 
+:root[data-theme="light"] {
+  --background: #f6f8fa;
+  --foreground: #101828;
+  --surface: #ffffff;
+  --surface-elevated: #f8fafc;
+  --card: #ffffff;
+  --card-foreground: #101828;
+  --popover: #ffffff;
+  --popover-foreground: #101828;
+  --primary: #0e7490;
+  --primary-foreground: #ffffff;
+  --secondary: #e8eef2;
+  --secondary-foreground: #1d2939;
+  --muted: #edf2f5;
+  --muted-foreground: #667085;
+  --accent: #0e7490;
+  --accent-foreground: #ffffff;
+  --border: #d0d5dd;
+  --input: #b8c2cc;
+  --ring: #1570ef;
+  --grid-line: rgb(102 112 133 / 35%);
+}
+
+:root[data-theme="dark"] {
+  --background: #07131f;
+  --foreground: #eaf3f7;
+  --surface: #0b1d2b;
+  --surface-elevated: #102838;
+  --card: #0b1d2b;
+  --card-foreground: #eaf3f7;
+  --popover: #0b1d2b;
+  --popover-foreground: #eaf3f7;
+  --border: #274356;
+  --muted-foreground: #91a7b5;
+}
+
+.theme-control {
+  align-items: center;
+  background: var(--surface-elevated);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--foreground);
+  display: inline-flex;
+  gap: 0.4rem;
+  margin-left: auto;
+  min-height: 2.25rem;
+  padding: 0.35rem 0.7rem;
+  text-transform: capitalize;
+}
+.theme-control svg {
+  height: 1rem;
+  width: 1rem;
+}
+.theme-control:focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.product-stage-navigation a[data-availability="prerequisite"] {
+  opacity: 0.68;
+}
+.product-stage-navigation a em {
+  color: #f3c654;
+  display: block;
+  font-size: 0.58rem;
+  font-style: normal;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.capability-prerequisite {
+  align-items: flex-start;
+  display: flex;
+  gap: 1.25rem;
+  max-width: 58rem;
+}
+.capability-prerequisite > svg {
+  color: var(--amber-accent);
+  flex: 0 0 auto;
+  height: 2rem;
+  width: 2rem;
+}
+.capability-prerequisite ul {
+  display: grid;
+  gap: 0.65rem;
+  list-style: none;
+  margin: 1rem 0;
+  padding: 0;
+}
+.capability-prerequisite li {
+  align-items: center;
+  display: flex;
+  gap: 0.6rem;
+}
+.capability-prerequisite li svg {
+  height: 1rem;
+  width: 1rem;
+}
+
+.constraint-explorer {
+  background: var(--background);
+  color: var(--foreground);
+}
+.constraint-truth-banner {
+  align-items: center;
+  background: color-mix(in srgb, var(--surface) 92%, var(--primary));
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding: 0.8rem 1rem;
+}
+.constraint-truth-banner svg {
+  color: var(--primary);
+  flex: 0 0 auto;
+}
+.constraint-truth-banner p {
+  margin: 0;
+}
+.constraint-workbench {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(13rem, 17rem) minmax(24rem, 1fr) minmax(17rem, 23rem);
+  min-height: 34rem;
+}
+.constraint-filters,
+.constraint-results,
+.constraint-map-placeholder,
+.constraint-detail {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.8rem;
+  color: var(--foreground);
+}
+.constraint-filters {
+  padding: 1rem;
+}
+.constraint-filters label {
+  display: grid;
+  font-size: 0.8rem;
+  gap: 0.35rem;
+  margin: 0.8rem 0;
+}
+.constraint-filters select {
+  background: var(--surface-elevated);
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  color: var(--foreground);
+  min-height: 2.6rem;
+  padding: 0.45rem;
+}
+.constraint-filters ul {
+  display: grid;
+  gap: 0.45rem;
+  list-style: none;
+  padding: 0;
+}
+.constraint-filters li {
+  display: grid;
+  font-size: 0.78rem;
+  grid-template-columns: 2rem 1fr;
+}
+.constraint-filters li span {
+  color: var(--primary);
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.constraint-filters li small {
+  color: var(--muted-foreground);
+  grid-column: 2;
+}
+.constraint-map-placeholder {
+  align-items: center;
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--surface) 80%, var(--primary)),
+    var(--surface)
+  );
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+  padding: 2rem;
+  position: relative;
+  text-align: center;
+}
+.constraint-map-placeholder > svg {
+  color: var(--primary);
+  height: 2.5rem;
+  width: 2.5rem;
+}
+.constraint-map-placeholder p {
+  color: var(--muted-foreground);
+  max-width: 34rem;
+}
+.constraint-map-placeholder > span {
+  bottom: 1rem;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  position: absolute;
+}
+.constraint-corridors {
+  inset: 0;
+  opacity: 0.3;
+  pointer-events: none;
+  position: absolute;
+}
+.constraint-corridors i {
+  border: 3px solid var(--primary);
+  border-radius: 50%;
+  height: 40%;
+  left: 18%;
+  position: absolute;
+  top: 28%;
+  transform: rotate(25deg);
+  width: 65%;
+}
+.constraint-corridors i:nth-child(2) {
+  border-color: var(--amber-accent);
+  height: 55%;
+  left: 40%;
+  top: 5%;
+  transform: rotate(-35deg);
+  width: 25%;
+}
+.constraint-corridors i:nth-child(3) {
+  border-color: var(--red-accent);
+  height: 25%;
+  left: 35%;
+  top: 52%;
+  width: 40%;
+}
+.constraint-results {
+  overflow: hidden;
+}
+.constraint-results header {
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  padding: 1rem;
+}
+.constraint-results header h2,
+.constraint-results header p {
+  margin: 0;
+}
+.constraint-results header p {
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+}
+.constraint-results > button {
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  color: var(--foreground);
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.9rem 1rem;
+  text-align: left;
+  width: 100%;
+}
+.constraint-results > button:hover,
+.constraint-results > button.active {
+  background: var(--surface-elevated);
+  box-shadow: inset 3px 0 var(--primary);
+}
+.constraint-results > button:focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: -3px;
+}
+.constraint-results button small,
+.constraint-results button em {
+  color: var(--muted-foreground);
+  font-size: 0.7rem;
+  font-style: normal;
+}
+.constraint-severity {
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  justify-self: start;
+  padding: 0.2rem 0.5rem;
+  text-transform: uppercase;
+}
+.constraint-severity.moderate {
+  background: color-mix(in srgb, var(--amber-accent) 18%, transparent);
+  color: #9a6700;
+}
+.constraint-severity.high,
+.constraint-severity.critical {
+  background: color-mix(in srgb, var(--red-accent) 18%, transparent);
+  color: var(--red-accent);
+}
+.constraint-detail {
+  margin-top: 1rem;
+  padding: 1.25rem;
+}
+.constraint-detail dl {
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: repeat(4, 1fr);
+}
+.constraint-detail dl div {
+  background: var(--surface-elevated);
+  border-radius: 0.45rem;
+  padding: 0.7rem;
+}
+.constraint-detail dt {
+  color: var(--muted-foreground);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+}
+.constraint-detail dd {
+  margin: 0.25rem 0 0;
+  text-transform: capitalize;
+}
+.constraint-detail > p {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+}
+@media (max-width: 1100px) {
+  .constraint-workbench {
+    grid-template-columns: 15rem 1fr;
+  }
+  .constraint-results {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 720px) {
+  .constraint-workbench {
+    grid-template-columns: 1fr;
+  }
+  .constraint-results {
+    grid-column: auto;
+  }
+  .constraint-map-placeholder {
+    min-height: 22rem;
+  }
+  .constraint-detail dl {
+    grid-template-columns: 1fr 1fr;
+  }
+  .theme-control span {
+    display: none;
+  }
+}
+
+:root[data-theme="light"] .finder-shell,
+:root[data-theme="light"] .product-shell,
+:root[data-theme="light"] .section-page {
+  background-color: var(--background);
+  color: var(--foreground);
+}
+:root[data-theme="light"] body {
+  background: var(--background);
+  color: var(--foreground);
+}
+:root[data-theme="light"] .product-shell--focused.finder-shell--workspace,
+:root[data-theme="light"] .product-shell--focused.product-shell--workspace {
+  background: var(--background);
+  color: var(--foreground);
+  color-scheme: light;
+}
+:root[data-theme="light"] .app-header,
+:root[data-theme="light"] .product-stage-navigation,
+:root[data-theme="light"] .product-footer {
+  background: var(--surface);
+  color: var(--foreground);
+}
+:root[data-theme="light"] .product-stage-navigation a,
+:root[data-theme="light"] .product-header-label {
+  color: var(--foreground);
+}
+:root[data-theme="light"] .brand > span {
+  color: #344054;
+}
+:root[data-theme="light"] .brand > strong {
+  color: #08758a;
+}
+:root[data-theme="light"] .product-stage-navigation a > span:first-child {
+  color: #0e6678;
+}
+:root[data-theme="light"] .product-stage-navigation a:hover,
+:root[data-theme="light"] .product-stage-navigation a:focus-visible,
+:root[data-theme="light"] .product-stage-navigation a.active {
+  color: #101828;
+}
+:root[data-theme="light"] .product-stage-navigation a[data-availability="prerequisite"] {
+  color: #475467;
+  opacity: 1;
+}
+:root[data-theme="light"]
+  .product-stage-navigation
+  a[data-availability="prerequisite"]
+  > span:first-child {
+  color: #475467;
+}
+:root[data-theme="light"] .product-stage-navigation a em {
+  color: #854a0e;
+  font-weight: 700;
+}
+:root[data-theme="light"] .data-panel,
+:root[data-theme="light"] .page-heading,
+:root[data-theme="light"] .power-finder-panel,
+:root[data-theme="light"] .map-legend {
+  background-color: var(--surface);
+  color: var(--foreground);
+  border-color: var(--border);
+}
+
 @layer base {
   * {
     border-color: var(--color-border);

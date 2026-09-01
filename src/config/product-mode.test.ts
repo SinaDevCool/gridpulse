@@ -13,6 +13,7 @@ describe("Finder MVP route boundary", () => {
     expect(productCapabilities.authentication).toBe(false);
     expect(isRouteEnabled("/")).toBe(true);
     expect(isRouteEnabled("/power-finder")).toBe(true);
+    expect(isRouteEnabled("/constraint-explorer")).toBe(true);
     // Legacy roots remain routable only to execute their safe redirects.
     expect(isRouteEnabled("/activation")).toBe(true);
     expect(isRouteEnabled("/operations")).toBe(true);
@@ -26,6 +27,7 @@ describe("Finder MVP route boundary", () => {
     expect(isRouteEnabled("/workspaces")).toBe(true);
     expect(isRouteEnabled("/portfolio/00000000-0000-4000-8000-000000000000")).toBe(true);
     expect(isRouteEnabled("/reports")).toBe(true);
+    expect(isRouteEnabled("/evidence")).toBe(true);
     expect(isRouteEnabled("/capacity-dossiers/00000000-0000-4000-8000-000000000000")).toBe(true);
     expect(isRouteEnabled("/assessments/new")).toBe(false);
   });

@@ -33,6 +33,7 @@ export const finderContactEmail = "kshitijjindal1@gmail.com";
 const finderRoutes = new Set([
   "/",
   "/power-finder",
+  "/constraint-explorer",
   "/synthetic-network-study",
   "/data-sources",
   "/data-centres",
@@ -42,6 +43,7 @@ const finderRoutes = new Set([
   "/portfolio",
   "/workspaces",
   "/reports",
+  "/evidence",
 ]);
 
 const finderApiRoutes = new Set([

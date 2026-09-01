@@ -14,7 +14,7 @@ test("Finder exploration and local property portfolio are anonymous", async ({ p
   await expect(page.getByText("No declared site yet")).toBeVisible();
   await expect(page.getByText(/Operator questions & report/i)).toHaveCount(0);
   await expect(page.getByRole("button", { name: /Show .* on map, .*\/100/ })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: /Create pipeline site/i })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /Create pipeline site/i })).toBeDisabled();
   expect(requests.some((url) => /\/auth\/v1\/(token|signup)/.test(url))).toBe(false);
 });
 
@@ -42,9 +42,11 @@ test("Finder landing, sector pages and methodology form the public product site"
   }
 
   await page.goto("/data-sources");
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/data-sources$/);
   await expect(
-    page.getByRole("heading", { name: /See which sites are worth advancing/i }),
+    page.getByRole("heading", {
+      name: /See how mapped evidence becomes a governed capacity decision/i,
+    }),
   ).toBeVisible();
 
   for (const pathname of ["/portfolio", "/reports"]) {
@@ -327,7 +329,9 @@ test("the release workbook passes the browser import preview", async ({ page }, 
   await decisionPdf.saveAs(testInfo.outputPath("brandenburg-south-decision-record.pdf"));
 });
 
-test("legacy workspaces redirect into Sites while Reports remains a canonical workflow", async ({ page }) => {
+test("legacy workspaces redirect into Sites while Reports remains a canonical workflow", async ({
+  page,
+}) => {
   await page.goto("/workspaces");
   await expect(page).toHaveURL(/\/portfolio\?view=pipeline/);
   await expect(page.getByRole("heading", { name: "Sites", exact: true })).toBeVisible();
@@ -431,7 +435,7 @@ test("registered generation and storage are available without an account", async
   await expect(generation.locator("..")).toContainText(
     /\d+ (?:in view|visible|in current detail view)/,
     {
-    timeout: 15_000,
+      timeout: 15_000,
     },
   );
   await expect(storage.locator("..")).toContainText(

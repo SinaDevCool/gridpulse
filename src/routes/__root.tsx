@@ -12,6 +12,8 @@ import { Toaster } from "sonner";
 import appCss from "../styles.css?url";
 import { AuthProvider } from "@/context/AuthContext";
 import { isRouteEnabled, productCapabilities } from "@/config/product-mode";
+import { ThemeProvider } from "@/features/theme/ThemeProvider";
+import { useTheme } from "@/features/theme/use-theme";
 
 const siteUrl = "https://gridpulseinsights.com";
 const siteTitle = "GridPulse Power Finder | German Grid Screening";
@@ -97,8 +99,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     ],
   }),
   shellComponent: ({ children }: { children: ReactNode }) => (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var p=localStorage.getItem('gridpulse-theme')||'system';var d=p==='dark'||(p==='system'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.dataset.theme=d?'dark':'light';document.documentElement.style.colorScheme=d?'dark':'light'}catch(e){}})()`,
+          }}
+        />
         <HeadContent />
         <script
           type="application/ld+json"
@@ -127,10 +134,19 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
+    <ThemeProvider>
+      <RootProviders queryClient={queryClient} />
+    </ThemeProvider>
+  );
+}
+
+function RootProviders({ queryClient }: { queryClient: QueryClient }) {
+  const { resolved } = useTheme();
+  return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider enabled={productCapabilities.authentication}>
         <Outlet />
-        <Toaster theme="dark" position="bottom-right" />
+        <Toaster theme={resolved} position="bottom-right" />
       </AuthProvider>
     </QueryClientProvider>
   );

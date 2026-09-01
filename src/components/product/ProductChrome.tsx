@@ -1,5 +1,11 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { isWorkspaceDestinationActive, workspaceLinks } from "./product-navigation";
+import {
+  capabilityAvailable,
+  isWorkspaceDestinationActive,
+  workspaceLinksForMode,
+} from "./product-navigation";
+import { productMode } from "@/config/product-mode";
+import { ThemeControl } from "@/features/theme/ThemeControl";
 
 export function ProductHeader() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
@@ -41,29 +47,38 @@ export function ProductHeader() {
       ) : (
         <span className="product-header-label">Grid Intelligence Workspace</span>
       )}
+      <ThemeControl />
     </header>
   );
 }
 
 export function ProductStageNavigation() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const links = workspaceLinks;
+  const links = workspaceLinksForMode(productMode);
   return (
     <nav className="product-stage-navigation" aria-label="Grid workspace navigation">
       <div>
         {links.map((item, index) => {
           const active = isWorkspaceDestinationActive(pathname, item.to);
+          const available = capabilityAvailable(item.capability, productMode);
           return (
             <Link
               key={item.to}
               to={item.to}
               className={active ? "active" : undefined}
               aria-current={active ? "page" : undefined}
+              data-availability={available ? "available" : "prerequisite"}
+              title={
+                available
+                  ? undefined
+                  : `${item.label} prerequisites are not enabled in this product mode`
+              }
             >
               <span>{String(index + 1).padStart(2, "0")}</span>
               <span>
                 <strong>{item.label}</strong>
                 <small>{item.detail}</small>
+                {!available ? <em>Prerequisites</em> : null}
               </span>
             </Link>
           );

@@ -1,4 +1,4 @@
-import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   AlertTriangle,
   ArrowRight,
@@ -18,9 +18,6 @@ import { isFinderMvp } from "@/config/product-mode";
 import { germanGridEvidenceGaps, germanGridSources } from "@/lib/german-grid-sources";
 
 export const Route = createFileRoute("/data-sources")({
-  beforeLoad: () => {
-    if (isFinderMvp()) throw redirect({ to: "/" });
-  },
   head: () => ({
     meta: [
       { title: "German Grid Data Methodology & Sources | GridPulse" },

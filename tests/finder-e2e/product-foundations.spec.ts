@@ -1,0 +1,37 @@
+import { expect, test } from "@playwright/test";
+
+test("every visible workflow destination resolves to meaningful content", async ({ page }) => {
+  await page.goto("/power-finder");
+  const navigation = page.getByRole("navigation", { name: "Grid workspace navigation" });
+  await expect(navigation).toBeVisible();
+  const expectations = [
+    ["Sites", /Sites|portfolio/i],
+    ["Power Finder", /Germany connection context/i],
+    ["Constraints", /Understand what may constrain/i],
+    ["Planner", /Untitled Data Centre/i],
+    ["Activation", /Activation prerequisites/i],
+    ["Operations", /Shadow verification prerequisites/i],
+    ["Evidence", /Evidence ledger/i],
+    ["Reports", /Operator enquiry package/i],
+  ] as const;
+  for (const [label, heading] of expectations) {
+    await navigation.getByRole("link", { name: new RegExp(label) }).click();
+    await expect(page.getByRole("heading", { name: heading }).first()).toBeVisible();
+  }
+});
+
+test("theme persists and constraint filters are URL-addressable", async ({ page }) => {
+  await page.goto("/constraint-explorer");
+  await expect(
+    page.getByRole("heading", { name: "Understand what may constrain a site" }),
+  ).toBeVisible();
+  const theme = page.getByRole("button", { name: /Theme:/ });
+  await theme.click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await page.goto("/constraint-explorer?severity=critical");
+  await expect(page).toHaveURL(/severity=critical/);
+  await expect(page.getByText("Equipment rating gap")).toBeVisible();
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await expect(page.getByLabel("Severity")).toHaveValue("critical");
+});

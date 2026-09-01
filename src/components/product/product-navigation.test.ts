@@ -6,6 +6,7 @@ describe("workspace outcome navigation", () => {
     expect(workspaceLinks.map((item) => item.to)).toEqual([
       "/portfolio",
       "/power-finder",
+      "/constraint-explorer",
       "/data-centre-planner",
       "/activation",
       "/operations",

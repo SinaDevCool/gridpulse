@@ -28,6 +28,7 @@ import { Route as DemoRouteImport } from './routes/demo'
 import { Route as DataSourcesRouteImport } from './routes/data-sources'
 import { Route as DataCentresRouteImport } from './routes/data-centres'
 import { Route as DataCentrePlannerRouteImport } from './routes/data-centre-planner'
+import { Route as ConstraintExplorerRouteImport } from './routes/constraint-explorer'
 import { Route as ActivationRouteImport } from './routes/activation'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SubmissionPackageIdRouteImport } from './routes/submission-package.$id'
@@ -140,6 +141,11 @@ const DataCentrePlannerRoute = DataCentrePlannerRouteImport.update({
   path: '/data-centre-planner',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ConstraintExplorerRoute = ConstraintExplorerRouteImport.update({
+  id: '/constraint-explorer',
+  path: '/constraint-explorer',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ActivationRoute = ActivationRouteImport.update({
   id: '/activation',
   path: '/activation',
@@ -224,6 +230,7 @@ const ApiPowerFinderTileZXYRoute = ApiPowerFinderTileZXYRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/activation': typeof ActivationRouteWithChildren
+  '/constraint-explorer': typeof ConstraintExplorerRoute
   '/data-centre-planner': typeof DataCentrePlannerRoute
   '/data-centres': typeof DataCentresRoute
   '/data-sources': typeof DataSourcesRoute
@@ -261,6 +268,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/activation': typeof ActivationRouteWithChildren
+  '/constraint-explorer': typeof ConstraintExplorerRoute
   '/data-centre-planner': typeof DataCentrePlannerRoute
   '/data-centres': typeof DataCentresRoute
   '/data-sources': typeof DataSourcesRoute
@@ -299,6 +307,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/activation': typeof ActivationRouteWithChildren
+  '/constraint-explorer': typeof ConstraintExplorerRoute
   '/data-centre-planner': typeof DataCentrePlannerRoute
   '/data-centres': typeof DataCentresRoute
   '/data-sources': typeof DataSourcesRoute
@@ -338,6 +347,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/activation'
+    | '/constraint-explorer'
     | '/data-centre-planner'
     | '/data-centres'
     | '/data-sources'
@@ -375,6 +385,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/activation'
+    | '/constraint-explorer'
     | '/data-centre-planner'
     | '/data-centres'
     | '/data-sources'
@@ -412,6 +423,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/activation'
+    | '/constraint-explorer'
     | '/data-centre-planner'
     | '/data-centres'
     | '/data-sources'
@@ -450,6 +462,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ActivationRoute: typeof ActivationRouteWithChildren
+  ConstraintExplorerRoute: typeof ConstraintExplorerRoute
   DataCentrePlannerRoute: typeof DataCentrePlannerRoute
   DataCentresRoute: typeof DataCentresRoute
   DataSourcesRoute: typeof DataSourcesRoute
@@ -617,6 +630,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DataCentrePlannerRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/constraint-explorer': {
+      id: '/constraint-explorer'
+      path: '/constraint-explorer'
+      fullPath: '/constraint-explorer'
+      preLoaderRoute: typeof ConstraintExplorerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/activation': {
       id: '/activation'
       path: '/activation'
@@ -771,6 +791,7 @@ const PortfolioRouteWithChildren = PortfolioRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ActivationRoute: ActivationRouteWithChildren,
+  ConstraintExplorerRoute: ConstraintExplorerRoute,
   DataCentrePlannerRoute: DataCentrePlannerRoute,
   DataCentresRoute: DataCentresRoute,
   DataSourcesRoute: DataSourcesRoute,
