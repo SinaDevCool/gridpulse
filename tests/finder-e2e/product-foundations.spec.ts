@@ -21,12 +21,19 @@ test("every visible workflow destination resolves to meaningful content", async 
 });
 
 test("theme persists and constraint filters are URL-addressable", async ({ page }) => {
+  await page.addInitScript(() => {
+    if (!localStorage.getItem("gridpulse-theme")) localStorage.setItem("gridpulse-theme", "dark");
+  });
   await page.goto("/constraint-explorer");
   await expect(
     page.getByRole("heading", { name: "Understand what may constrain a site" }),
   ).toBeVisible();
-  const theme = page.getByRole("button", { name: /Theme:/ });
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect.poll(() => page.evaluate(() => localStorage.getItem("gridpulse-theme"))).toBe("dark");
+  const theme = page.getByRole("button", { name: "Theme: dark. Switch to light." });
+  await expect(theme).toBeVisible();
   await theme.click();
+  await expect.poll(() => page.evaluate(() => localStorage.getItem("gridpulse-theme"))).toBe("light");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
   await page.goto("/constraint-explorer?severity=critical");
   await expect(page).toHaveURL(/severity=critical/);
@@ -44,10 +51,28 @@ test("Power Finder rail follows the resolved light theme", async ({ page }) => {
     "background-color",
     "rgb(255, 255, 255)",
   );
+  await expect(page.locator(".finder-rail-sticky")).toHaveCSS(
+    "background-color",
+    "rgba(255, 255, 255, 0.96)",
+  );
   await page.getByText("Map Layers", { exact: true }).click();
   await expect(page.locator(".power-finder-layer-list label").first()).toHaveCSS(
     "color",
     "rgb(16, 24, 40)",
+  );
+});
+
+test("Constraint Explorer reuses the Germany-wide generation registry", async ({ page }) => {
+  await page.goto("/constraint-explorer");
+  await expect(
+    page.getByRole("application", { name: "Interactive grid and industrial-site screening map" }),
+  ).toBeVisible();
+  await expect(page.getByText("MaStR public asset context").first()).toBeVisible();
+  await page.getByRole("button", { name: "Show only Solar" }).click();
+  await expect(page).toHaveURL(/isolateTechnology=solar/);
+  await expect(page.getByRole("button", { name: "Show all Solar" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
   );
 });
 

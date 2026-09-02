@@ -9,6 +9,8 @@ export type InteractiveLegendItem = {
   count?: number | null;
   unavailable?: boolean;
   unavailableReason?: string;
+  glyph?: string;
+  status?: string;
 };
 
 export type InteractiveLegendSection = {
@@ -29,6 +31,7 @@ type InteractiveMapLegendProps = {
   onReset?: () => void;
   children?: ReactNode;
   className?: string;
+  sourceSummary?: string;
 };
 
 export function InteractiveMapLegend({
@@ -41,6 +44,7 @@ export function InteractiveMapLegend({
   onReset,
   children,
   className = "",
+  sourceSummary,
 }: InteractiveMapLegendProps) {
   return (
     <aside
@@ -71,6 +75,11 @@ export function InteractiveMapLegend({
       </header>
       {open ? (
         <div className="interactive-map-legend__body">
+          {sourceSummary ? (
+            <p className="interactive-map-legend__source" role="status">
+              {sourceSummary}
+            </p>
+          ) : null}
           {children}
           {sections.map((section) => (
             <section key={section.id} aria-labelledby={`legend-${section.id}`}>
@@ -88,8 +97,13 @@ export function InteractiveMapLegend({
                         className={`interactive-map-legend__symbol is-${item.shape ?? "dot"}`}
                         style={{ "--legend-color": item.color } as CSSProperties}
                         aria-hidden="true"
-                      />
+                      >
+                        {item.glyph && item.shape !== "line" ? item.glyph : null}
+                      </span>
                       <span className="interactive-map-legend__label">{item.label}</span>
+                      {item.status ? (
+                        <span className="interactive-map-legend__status">{item.status}</span>
+                      ) : null}
                       {typeof item.count === "number" ? (
                         <span className="interactive-map-legend__count">{item.count}</span>
                       ) : null}

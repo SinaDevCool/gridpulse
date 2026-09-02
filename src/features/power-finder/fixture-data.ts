@@ -81,10 +81,57 @@ export type PowerFinderCollection = Omit<
     available_kinds?: PowerFinderKind[];
     kind_counts?: Partial<Record<PowerFinderKind, number>>;
     coverage_status?: "accepted_partial" | "accepted_static_fallback" | "unavailable";
+    voltage_coverage?: Partial<
+      Record<
+        "ehv" | "220kv" | "110kv" | "distribution" | "unknown",
+        | "accepted_complete"
+        | "accepted_partial"
+        | "regional_only"
+        | "modelled"
+        | "not_covered"
+        | "unknown"
+      >
+    >;
     evidence_boundary: string;
   };
   features: PowerFinderFeature[];
 };
+
+/**
+ * A truthful, asset-free shell used while independent public map sources load.
+ * It lets the shared vector-tile layers mount immediately without inventing
+ * viewport features or coupling their availability to the GeoJSON endpoint.
+ */
+export function emptyGermanyPowerFinderCollection(): PowerFinderCollection {
+  return {
+    type: "FeatureCollection",
+    metadata: {
+      title: "Germany public grid context",
+      source_id: "gridpulse-empty-map-shell",
+      publisher: "GridPulse",
+      licence: "No asset data",
+      attribution: "No viewport assets loaded",
+      published_at: "",
+      geographic_scope: "Germany",
+      freshness: "loading",
+      artifact_sha256: "",
+      record_count: 0,
+      available_kinds: [],
+      kind_counts: {},
+      coverage_status: "unavailable",
+      voltage_coverage: {
+        ehv: "unknown",
+        "220kv": "unknown",
+        "110kv": "unknown",
+        distribution: "unknown",
+        unknown: "unknown",
+      },
+      evidence_boundary:
+        "Empty loading shell. It contains no asset evidence and makes no capacity claim.",
+    },
+    features: [],
+  };
+}
 
 export function parsePowerFinderCollection(value: unknown): PowerFinderCollection {
   if (!value || typeof value !== "object") throw new Error("Power Finder data is missing.");

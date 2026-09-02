@@ -1841,7 +1841,6 @@
   border-bottom: 1px solid #20364a;
   box-shadow: 0 8px 22px rgb(0 0 0 / 24%);
 }
-
 .finder-view-switch {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -10545,6 +10544,34 @@ tbody tr:last-child td {
   .landing-footer p {
     justify-self: start;
   }
+}
+
+/* Shared map-workspace theme contract. Power Finder and Constraint Explorer consume
+   these semantic tokens; page-local dark colours must not leak into light mode. */
+:root {
+  --map-panel: #081827;
+  --map-panel-raised: #0d2234;
+  --map-panel-selected: #15384d;
+  --map-panel-border: #29475d;
+  --map-control-bg: #0b1e2e;
+  --map-control-text: #e6f7fc;
+  --map-control-muted: #91aabc;
+  --map-control-hover: #163b50;
+  --map-focus: #55d6f5;
+  --map-shadow: rgb(0 0 0 / 28%);
+}
+
+:root[data-theme="light"] {
+  --map-panel: #ffffff;
+  --map-panel-raised: #f7fafc;
+  --map-panel-selected: #e5f6fb;
+  --map-panel-border: #cbd5df;
+  --map-control-bg: #ffffff;
+  --map-control-text: #101828;
+  --map-control-muted: #526476;
+  --map-control-hover: #edf7fa;
+  --map-focus: #087f99;
+  --map-shadow: rgb(15 23 42 / 14%);
 }
 
 /* Data Centre Analytics */
@@ -22179,5 +22206,111 @@ tbody tr:last-child td {
   .dc-benchmark-grid,
   .dc-option-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Final shared map-workspace surfaces intentionally follow all legacy component
+   rules until those components are progressively simplified. */
+.power-finder-sidebar,
+.finder-rail-sticky,
+.finder-screening-controls,
+.finder-question-panel,
+.finder-layers-menu,
+.finder-ranking-method,
+.constraint-control-rail,
+.constraint-control-section,
+.constraint-results,
+.interactive-map-legend {
+  border-color: var(--map-panel-border);
+  background: var(--map-panel);
+  color: var(--map-control-text);
+}
+.finder-rail-sticky {
+  background: color-mix(in srgb, var(--map-panel) 96%, transparent);
+  border-color: var(--map-panel-border);
+  box-shadow: 0 8px 22px var(--map-shadow);
+}
+:root[data-theme="light"] .finder-rail-sticky {
+  background: rgb(255 255 255 / 96%);
+}
+.finder-view-switch,
+.finder-workflow-switch,
+.finder-map-presets,
+.power-finder-layer-list label,
+.registered-capacity-filters,
+.constraint-mode-tabs,
+.constraint-toggle-row {
+  border-color: var(--map-panel-border);
+  background: var(--map-control-bg);
+  color: var(--map-control-text);
+}
+.finder-view-switch button,
+.finder-workflow-switch button,
+.finder-map-presets button,
+.power-finder-sidebar :is(p, small),
+.constraint-control-rail :is(p, small),
+.interactive-map-legend p,
+.interactive-map-legend__source {
+  color: var(--map-control-muted);
+}
+.interactive-map-legend.power-finder-interactive-legend {
+  right: auto;
+  left: 0.8rem;
+  width: min(18rem, calc(100% - 1.6rem));
+}
+.interactive-map-legend.power-finder-interactive-legend.is-collapsed {
+  right: auto;
+  width: max-content;
+  max-width: calc(100% - 1.6rem);
+}
+.interactive-map-legend__symbol.is-dot,
+.interactive-map-legend__symbol.is-ring {
+  display: inline-grid;
+  place-items: center;
+  color: #07111f;
+  font-size: 0.48rem;
+  font-weight: 900;
+  line-height: 1;
+}
+.finder-view-switch button:hover,
+.finder-view-switch button.is-active,
+.finder-workflow-switch button:hover,
+.finder-workflow-switch button.is-active,
+.finder-map-presets button:hover,
+.finder-map-presets button.is-active,
+.power-finder-layer-list label:hover,
+.constraint-toggle-row:hover,
+.interactive-map-legend li:hover,
+.interactive-map-legend li:focus-within,
+.interactive-map-legend li.is-isolated {
+  border-color: color-mix(in srgb, var(--map-focus) 55%, var(--map-panel-border));
+  background: var(--map-panel-selected);
+  color: var(--map-control-text);
+}
+.power-finder-sidebar :is(input, select, button),
+.constraint-control-rail :is(input, select, button) {
+  border-color: var(--map-panel-border);
+  background-color: var(--map-control-bg);
+  color: var(--map-control-text);
+}
+.power-finder-sidebar :is(input, select, button):focus-visible,
+.constraint-control-rail :is(input, select, button):focus-visible {
+  outline: 3px solid var(--map-focus);
+  outline-offset: 2px;
+}
+.interactive-map-legend__source {
+  margin: 0 !important;
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--map-panel-border);
+  background: var(--map-panel-raised);
+  font-weight: 700;
+}
+@media (max-width: 720px) {
+  .interactive-map-legend.is-open {
+    right: max(0.6rem, env(safe-area-inset-right));
+    bottom: max(0.6rem, env(safe-area-inset-bottom));
+    left: max(0.6rem, env(safe-area-inset-left));
+    width: auto;
+    max-height: min(70vh, 34rem);
   }
 }

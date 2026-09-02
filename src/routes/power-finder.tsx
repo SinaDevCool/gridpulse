@@ -60,6 +60,12 @@ import {
   type GenerationTechnologyId,
 } from "@/features/map/map-visual-registry";
 import {
+  resolveMapSourceSummary,
+  sourceStatusLabel,
+  sourceSupportsKind,
+  type MapRuntimeSourceStatus,
+} from "@/features/map/map-source-registry";
+import {
   initialSharedMapFilterState,
   sharedMapFilterReducer,
   type MapPreset,
@@ -374,6 +380,7 @@ function PowerFinderPage() {
   const [error, setError] = useState("");
   const [bounds, setBounds] = useState(initialBounds);
   const [dataMode, setDataMode] = useState<PowerFinderDataMode | null>(null);
+  const [runtimeSourceStatus, setRuntimeSourceStatus] = useState<MapRuntimeSourceStatus>({});
   const query = search.q ?? "";
   const minimumVoltage = search.voltage ?? 0;
   const legacyOperator = search.operator ?? "all";
@@ -629,9 +636,13 @@ function PowerFinderPage() {
   const [capacityState, setCapacityState] = useState<"idle" | "loading" | "ready" | "error">(
     "idle",
   );
-  const registryAssetsUnavailable =
-    dataMode === "published_artifact" ||
-    collection?.metadata.coverage_status === "accepted_static_fallback";
+  const mapSourceSummary = collection
+    ? resolveMapSourceSummary(collection, runtimeSourceStatus)
+    : null;
+  const registryAssetsUnavailable = mapSourceSummary
+    ? !sourceSupportsKind(mapSourceSummary, "generation_asset") &&
+      runtimeSourceStatus.registry !== "ready"
+    : true;
   const isolatedVoltageClass =
     mapFilters.isolation?.dimension === "voltage" ? mapFilters.isolation.value : null;
   const isolatedTechnology =
@@ -704,6 +715,12 @@ function PowerFinderPage() {
           label: item.label,
           color: item.color,
           shape: "line" as const,
+          status: item.id === "distribution" ? "Partial" : undefined,
+          unavailable: mapSourceSummary?.voltageCoverage[item.id] === "not_covered",
+          unavailableReason:
+            item.id === "distribution"
+              ? "German distribution topology is incomplete. An empty view is not evidence that no network exists."
+              : undefined,
         })),
       },
     ];
@@ -741,6 +758,7 @@ function PowerFinderPage() {
     mapFilters.preset,
     mapMode,
     registryAssetsUnavailable,
+    mapSourceSummary,
   ]);
   const isolateMapLegendItem = (dimension: string, value: string) => {
     if (dimension === "voltage") {
@@ -1176,7 +1194,7 @@ function PowerFinderPage() {
 
   const candidateSelection = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase();
-    const baseItems = (ranking?.candidates ?? []).filter((candidate) => {
+    const eligibleItems = (ranking?.candidates ?? []).filter((candidate) => {
       const node =
         opportunityNode(candidate, rankingCollection) ?? opportunityNode(candidate, collection);
       const maximumVoltage = Math.max(0, ...candidate.voltageKv);
@@ -1186,10 +1204,16 @@ function PowerFinderPage() {
         candidate.nodeName.toLocaleLowerCase().includes(normalizedQuery) ||
         candidate.operator?.toLocaleLowerCase().includes(normalizedQuery);
       const matchesVoltage = minimumVoltage === 0 || maximumVoltage >= minimumVoltage;
-      const canonicalCandidateOperator = canonicalOperatorName(candidate.operator);
-      const matchesDso = selectedDso === "all" || canonicalCandidateOperator === selectedDso;
-      return matchesQuery && matchesVoltage && matchesDso && Boolean(node);
+      return matchesQuery && matchesVoltage && Boolean(node);
     });
+    const dsoItems =
+      selectedDso === "all"
+        ? eligibleItems
+        : eligibleItems.filter(
+            (candidate) => canonicalOperatorName(candidate.operator) === selectedDso,
+          );
+    const dsoFallback = selectedDso !== "all" && dsoItems.length === 0 && eligibleItems.length > 0;
+    const baseItems = dsoFallback ? eligibleItems : dsoItems;
     const tsoItems =
       selectedTso === "all"
         ? baseItems
@@ -1234,7 +1258,7 @@ function PowerFinderPage() {
       }
       return right.screeningRank - left.screeningRank;
     });
-    return { items, tsoFallback };
+    return { items, tsoFallback, dsoFallback };
   }, [
     candidateSort,
     capacityMetric,
@@ -3052,11 +3076,10 @@ function PowerFinderPage() {
                 Candidate ranking is unavailable. Change the map view or try again.
               </p>
             )}
-            {candidateSelection.tsoFallback && (
+            {(candidateSelection.tsoFallback || candidateSelection.dsoFallback) && (
               <p className="candidate-boundary" role="status">
-                No nearby candidate has a confirmed {selectedTso} relationship. Showing valid
-                distance, voltage and DSO matches; verify the TSO with the operator before relying
-                on it.
+                No nearby candidate matches the selected mapped operator context. Showing valid
+                distance and voltage matches; verify operator responsibility before relying on it.
               </p>
             )}
             {project.latitude != null &&
@@ -3247,6 +3270,7 @@ function PowerFinderPage() {
               mapMode={mapMode}
               basemapMode={basemapMode}
               onBasemapStatusChange={setBasemapStatus}
+              onDataSourceStatusChange={setRuntimeSourceStatus}
               generationGroup={effectiveGenerationGroup}
               minimumGenerationMw={minimumGenerationMw}
               maximumGenerationMw={mapFilters.maximumGenerationMw}
@@ -3438,6 +3462,14 @@ function PowerFinderPage() {
               setInteractionNotice("Legend isolation cleared.");
             }}
             className="power-finder-interactive-legend"
+            sourceSummary={
+              mapSourceSummary
+                ? sourceStatusLabel(
+                    mapSourceSummary,
+                    mapFilters.preset === "generation" ? "registry" : "grid",
+                  )
+                : undefined
+            }
           >
             {showDataCentres ? (
               <div className="interactive-map-legend__custom power-finder-data-legend">

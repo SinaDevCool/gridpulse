@@ -24,16 +24,28 @@ import {
   loadPowerFinderViewport,
   type PowerFinderBounds,
 } from "@/features/power-finder/data-source";
-import type {
-  PowerFinderCollection,
-  PowerFinderFeature,
+import {
+  emptyGermanyPowerFinderCollection,
+  type PowerFinderCollection,
+  type PowerFinderFeature,
 } from "@/features/power-finder/fixture-data";
 import { useTheme } from "@/features/theme/use-theme";
 import {
   GRID_VOLTAGE_CLASSES,
   type GridVoltageClassId,
 } from "@/features/power-finder/voltage-style";
-import { EVIDENCE_CLASSES } from "@/features/map/map-visual-registry";
+import {
+  EVIDENCE_CLASSES,
+  GENERATION_TECHNOLOGY_CLASSES,
+  STORAGE_TECHNOLOGY,
+  type GenerationTechnologyId,
+} from "@/features/map/map-visual-registry";
+import {
+  resolveMapSourceSummary,
+  sourceStatusLabel,
+  sourceSupportsKind,
+  type MapRuntimeSourceStatus,
+} from "@/features/map/map-source-registry";
 import {
   initialSharedMapFilterState,
   sharedMapFilterReducer,
@@ -51,6 +63,21 @@ const searchSchema = z.object({
   constraint: z.string().optional().catch(undefined),
   isolateVoltage: z
     .enum(["ehv", "220kv", "110kv", "distribution", "unknown"])
+    .optional()
+    .catch(undefined),
+  isolateTechnology: z
+    .enum([
+      "solar",
+      "wind",
+      "biomass",
+      "hydro",
+      "geothermal",
+      "nuclear",
+      "gas",
+      "fossil_other",
+      "other",
+      "storage",
+    ])
     .optional()
     .catch(undefined),
 });
@@ -77,6 +104,8 @@ type Layers = {
   constraintExposure: boolean;
   outages: boolean;
   phaseShifters: boolean;
+  registeredGeneration: boolean;
+  registeredStorage: boolean;
 };
 const equipment = [
   ["Transmission Lines", "Public topology"],
@@ -130,8 +159,12 @@ function ConstraintExplorerPage() {
     constraintExposure: true,
     outages: true,
     phaseShifters: false,
+    registeredGeneration: true,
+    registeredStorage: true,
   });
-  const [mapCollection, setMapCollection] = useState<PowerFinderCollection | null>(null);
+  const [mapCollection, setMapCollection] = useState<PowerFinderCollection>(() =>
+    emptyGermanyPowerFinderCollection(),
+  );
   const [mapError, setMapError] = useState<string | null>(null);
   const [bounds, setBounds] = useState<PowerFinderBounds>({
     west: 7.9,
@@ -141,6 +174,7 @@ function ConstraintExplorerPage() {
   });
   const [mapFeature, setMapFeature] = useState<PowerFinderFeature | null>(null);
   const [legendOpen, setLegendOpen] = useState(true);
+  const [runtimeSourceStatus, setRuntimeSourceStatus] = useState<MapRuntimeSourceStatus>({});
   const [mapFilters, dispatchMapFilter] = useReducer(sharedMapFilterReducer, {
     ...initialSharedMapFilterState,
     preset: "infrastructure",
@@ -170,13 +204,18 @@ function ConstraintExplorerPage() {
     setLayers((current) => ({ ...current, [key]: value }));
   const isolatedVoltageClass =
     mapFilters.isolation?.dimension === "voltage" ? mapFilters.isolation.value : null;
+  const isolatedTechnology =
+    mapFilters.isolation?.dimension === "technology" ? mapFilters.isolation.value : null;
   const isolatedLegend = isolatedVoltageClass
     ? { dimension: "voltage", value: isolatedVoltageClass }
-    : severity !== "all"
-      ? { dimension: "severity", value: severity }
-      : evidence !== "all"
-        ? { dimension: "evidence", value: evidence }
-        : null;
+    : isolatedTechnology
+      ? { dimension: "technology", value: isolatedTechnology }
+      : severity !== "all"
+        ? { dimension: "severity", value: severity }
+        : evidence !== "all"
+          ? { dimension: "evidence", value: evidence }
+          : null;
+  const sourceSummary = resolveMapSourceSummary(mapCollection, runtimeSourceStatus);
   const legendSections: InteractiveLegendSection[] = [
     {
       id: "severity",
@@ -200,6 +239,12 @@ function ConstraintExplorerPage() {
         label: item.label,
         color: item.color,
         shape: "line",
+        status: item.id === "distribution" ? "Partial" : undefined,
+        unavailable: sourceSummary?.voltageCoverage[item.id] === "not_covered",
+        unavailableReason:
+          item.id === "distribution"
+            ? "German distribution topology is incomplete. An empty view is not evidence that no network exists."
+            : undefined,
       })),
     },
     {
@@ -207,6 +252,26 @@ function ConstraintExplorerPage() {
       title: "Evidence",
       isolatable: true,
       items: EVIDENCE_CLASSES.map((item) => ({ ...item, shape: "dot" })),
+    },
+    {
+      id: "technology",
+      title: "Generation & Storage",
+      description: "MaStR registered capacity is asset context—not grid headroom.",
+      isolatable: true,
+      items: [
+        ...GENERATION_TECHNOLOGY_CLASSES.map((item) => ({
+          ...item,
+          shape: "dot" as const,
+          unavailable: sourceSummary
+            ? !sourceSupportsKind(sourceSummary, "generation_asset")
+            : true,
+        })),
+        {
+          ...STORAGE_TECHNOLOGY,
+          shape: "ring" as const,
+          unavailable: sourceSummary ? !sourceSupportsKind(sourceSummary, "storage_asset") : true,
+        },
+      ],
     },
   ];
   const isolateLegendItem = (dimension: string, value: string) => {
@@ -224,6 +289,15 @@ function ConstraintExplorerPage() {
         severity: undefined,
         evidence: undefined,
       });
+    } else if (dimension === "technology") {
+      const next =
+        isolatedTechnology === value ? null : (value as GenerationTechnologyId | "storage");
+      dispatchMapFilter(
+        next
+          ? { type: "isolate", isolation: { dimension: "technology", value: next } }
+          : { type: "clear_isolation" },
+      );
+      updateUrl({ isolateTechnology: next ?? undefined });
     } else if (dimension === "severity") {
       const next = severity === value ? "all" : (value as typeof severity);
       setSeverity(next);
@@ -246,7 +320,7 @@ function ConstraintExplorerPage() {
       () =>
         void loadPowerFinderViewport(bounds, controller.signal, {
           fallbackAllowed: true,
-          includeRegistryAssets: false,
+          includeRegistryAssets: true,
         })
           .then(({ collection }) => {
             setMapCollection(collection);
@@ -464,30 +538,58 @@ function ConstraintExplorerPage() {
                 />
               </div>
             </details>
+            <details className="constraint-control-section" open>
+              <summary>
+                <span>
+                  <Database aria-hidden="true" /> Generation &amp; Storage
+                </span>
+                <ChevronDown aria-hidden="true" />
+              </summary>
+              <div className="constraint-control-body">
+                <ToggleRow
+                  checked={layers.registeredGeneration}
+                  label="Registered Generation"
+                  hint="MaStR public asset context"
+                  onChange={(value) => setLayer("registeredGeneration", value)}
+                />
+                <ToggleRow
+                  checked={layers.registeredStorage}
+                  label="Registered Storage"
+                  hint="MaStR public asset context"
+                  onChange={(value) => setLayer("registeredStorage", value)}
+                />
+              </div>
+            </details>
           </aside>
           <section className="constraint-map" aria-label="Germany constraint context map">
-            {mapCollection ? (
-              <PowerFinderMap
-                collection={mapCollection}
-                enabledLayers={{
-                  node: layers.gridNodes,
-                  line: layers.gridLines,
-                  industrial_site: false,
-                  generation_asset: false,
-                  storage_asset: false,
-                }}
-                selectedFeature={mapFeature}
-                mapMode="evidence"
-                basemapMode={basemapMode}
-                isolatedVoltageClass={isolatedVoltageClass}
-                onSelect={setMapFeature}
-                onViewportChange={setBounds}
-              />
-            ) : (
-              <div className="constraint-map-state" role="status" aria-live="polite">
-                {mapError ?? "Loading grid context…"}
+            <PowerFinderMap
+              collection={mapCollection}
+              enabledLayers={{
+                node: layers.gridNodes,
+                line: layers.gridLines,
+                industrial_site: false,
+                generation_asset: layers.registeredGeneration && isolatedTechnology !== "storage",
+                storage_asset:
+                  layers.registeredStorage &&
+                  (!isolatedTechnology || isolatedTechnology === "storage"),
+              }}
+              selectedFeature={mapFeature}
+              mapMode="evidence"
+              basemapMode={basemapMode}
+              isolatedVoltageClass={isolatedVoltageClass}
+              generationGroup={
+                isolatedTechnology && isolatedTechnology !== "storage" ? isolatedTechnology : "all"
+              }
+              onDataSourceStatusChange={setRuntimeSourceStatus}
+              onSelect={setMapFeature}
+              onViewportChange={setBounds}
+            />
+            {mapError ? (
+              <div className="constraint-map-source-warning" role="status" aria-live="polite">
+                Viewport overlay unavailable. National registry and grid tile sources remain
+                independent.
               </div>
-            )}
+            ) : null}
             <div className="constraint-map-caption">
               <strong>
                 {period === "current"
@@ -515,8 +617,10 @@ function ConstraintExplorerPage() {
                   isolateVoltage: undefined,
                   severity: undefined,
                   evidence: undefined,
+                  isolateTechnology: undefined,
                 });
               }}
+              sourceSummary={sourceSummary ? sourceStatusLabel(sourceSummary, "all") : undefined}
             />
             {layers.constraintExposure ? (
               <div className="constraint-map-evidence">

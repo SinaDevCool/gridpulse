@@ -26,7 +26,11 @@ import {
   voltageWidthExpression,
   type GridVoltageClassId,
 } from "@/features/power-finder/voltage-style";
-import { generationColourExpression } from "@/features/map/map-visual-registry";
+import {
+  generationColourExpression,
+  generationGlyphExpression,
+} from "@/features/map/map-visual-registry";
+import type { MapRuntimeSourceStatus } from "@/features/map/map-source-registry";
 import type { CapacityMetric } from "@/features/power-finder/calculated-capacity";
 import {
   applyBasemapVisibility,
@@ -210,6 +214,7 @@ type PowerFinderMapProps = {
   showDataCentres?: boolean;
   onDataCentreSelect?: (dataCentre: RzRegDataCentre) => void;
   onBasemapStatusChange?: (status: BasemapStatus) => void;
+  onDataSourceStatusChange?: (status: MapRuntimeSourceStatus) => void;
 };
 
 export type RzRegDataCentre = {
@@ -327,6 +332,7 @@ export function PowerFinderMap({
   showDataCentres = true,
   onDataCentreSelect,
   onBasemapStatusChange,
+  onDataSourceStatusChange,
 }: PowerFinderMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -349,6 +355,11 @@ export function PowerFinderMap({
   const basemapModeRef = useRef(basemapMode);
   const basemapLayerIdsRef = useRef<BasemapLayerIds>({ dark: [], light: [] });
   const onBasemapStatusChangeRef = useRef(onBasemapStatusChange);
+  const onDataSourceStatusChangeRef = useRef(onDataSourceStatusChange);
+  const runtimeSourceStatusRef = useRef<MapRuntimeSourceStatus>({
+    grid: "loading",
+    registry: "loading",
+  });
   const enabledLayersRef = useRef(enabledLayers);
   const assetFilterRef = useRef({
     generationGroup,
@@ -377,6 +388,7 @@ export function PowerFinderMap({
   capacityCoverageRef.current = capacityCoverage;
   basemapModeRef.current = basemapMode;
   onBasemapStatusChangeRef.current = onBasemapStatusChange;
+  onDataSourceStatusChangeRef.current = onDataSourceStatusChange;
   enabledLayersRef.current = enabledLayers;
   assetFilterRef.current = {
     generationGroup,
@@ -415,6 +427,14 @@ export function PowerFinderMap({
             sourceId === "openmaptiles" ||
             sourceId === "ne2_shaded" ||
             message.includes("tiles.openfreemap.org");
+          if (
+            sourceId === "power-finder-national-tiles" ||
+            sourceId === "power-finder-registry-tiles"
+          ) {
+            const key = sourceId === "power-finder-national-tiles" ? "grid" : "registry";
+            runtimeSourceStatusRef.current = { ...runtimeSourceStatusRef.current, [key]: "error" };
+            onDataSourceStatusChangeRef.current?.(runtimeSourceStatusRef.current);
+          }
           if (!openFreeMapFailure) return;
           basemapErrorCount += 1;
           if (basemapErrorCount >= 3) onBasemapStatusChangeRef.current?.("fallback");
@@ -493,10 +513,22 @@ export function PowerFinderMap({
           map.addSource("power-finder-registry-tiles", {
             type: "vector",
             tiles: [`${window.location.origin}/api/power-finder/tile/{z}/{x}/{y}?content=registry`],
-            minzoom: 8,
+            minzoom: 4,
             // Request finer registry tiles so dense exact-location assets do not
             // remain packed into an overzoomed country-scale z8 tile.
             maxzoom: 10,
+          });
+          onDataSourceStatusChangeRef.current?.(runtimeSourceStatusRef.current);
+          map.on("sourcedata", (event) => {
+            if (!event.isSourceLoaded) return;
+            if (
+              event.sourceId !== "power-finder-national-tiles" &&
+              event.sourceId !== "power-finder-registry-tiles"
+            )
+              return;
+            const key = event.sourceId === "power-finder-national-tiles" ? "grid" : "registry";
+            runtimeSourceStatusRef.current = { ...runtimeSourceStatusRef.current, [key]: "ready" };
+            onDataSourceStatusChangeRef.current?.(runtimeSourceStatusRef.current);
           });
           map.addSource("finder-project-site", {
             type: "geojson",
@@ -863,6 +895,31 @@ export function PowerFinderMap({
               "text-color": "#07111f",
               "text-halo-color": "rgba(255,255,255,0.92)",
               "text-halo-width": 1.5,
+            },
+          });
+          map.addLayer({
+            id: "national-generation-technology-glyph",
+            type: "symbol",
+            source: "power-finder-registry-tiles",
+            "source-layer": "power_finder",
+            minzoom: 8,
+            maxzoom: 24,
+            filter: generationAssetFilter(
+              assetFilterRef.current.generationGroup,
+              assetFilterRef.current.minimumGenerationMw,
+              assetFilterRef.current.maximumGenerationMw,
+            ),
+            layout: {
+              visibility: enabledLayersRef.current.generation_asset ? "visible" : "none",
+              "text-field": generationGlyphExpression,
+              "text-font": ["Noto Sans Bold"],
+              "text-size": ["interpolate", ["linear"], ["zoom"], 8, 7, 12, 9],
+              "text-allow-overlap": false,
+            },
+            paint: {
+              "text-color": "#07111f",
+              "text-halo-color": "rgba(255,255,255,0.55)",
+              "text-halo-width": 0.5,
             },
           });
           map.addLayer({
@@ -1347,6 +1404,7 @@ export function PowerFinderMap({
       "national-industrial-overview": enabledLayers.industrial_site,
       "national-generation-overview": enabledLayers.generation_asset,
       "national-generation-overview-label": enabledLayers.generation_asset,
+      "national-generation-technology-glyph": enabledLayers.generation_asset,
       "national-generation-assets": enabledLayers.generation_asset,
       "national-generation-asset-labels": enabledLayers.generation_asset,
       "national-storage-assets": enabledLayers.storage_asset,
@@ -1678,6 +1736,7 @@ export function PowerFinderMap({
     for (const layer of [
       "national-generation-overview",
       "national-generation-overview-label",
+      "national-generation-technology-glyph",
       "national-generation-assets",
       "national-generation-asset-labels",
     ])

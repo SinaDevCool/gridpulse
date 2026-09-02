@@ -585,18 +585,16 @@ test("anonymous MVP hides synthetic capacity controls even when requested by URL
   await expect(page.getByText(/candidate site-to-node matches/i).first()).toBeVisible();
 });
 
-test("static fallback remains honest when the public viewport is unavailable", async ({ page }) => {
+test("viewport fallback does not disable the independent registry source", async ({ page }) => {
   await page.route("**/api/power-finder/viewport?**", (route) =>
     route.fulfill({ status: 503, contentType: "application/json", body: '{"error":"offline"}' }),
   );
   await page.goto("/power-finder");
   await page.getByText("Map Layers", { exact: true }).click();
-  await expect(
-    page.getByRole("checkbox", { name: /Registered generation.*Source unavailable/ }),
-  ).not.toBeChecked({ timeout: 15_000 });
-  await expect(
-    page.getByRole("checkbox", { name: /Registered storage.*Source unavailable/ }),
-  ).not.toBeChecked();
+  await expect(page.getByRole("checkbox", { name: /Registered generation/ })).toBeEnabled({
+    timeout: 15_000,
+  });
+  await expect(page.getByRole("checkbox", { name: /Registered storage/ })).toBeEnabled();
 });
 
 test("unclustered grid lines and industrial polygons render in the Brandenburg view", async ({
