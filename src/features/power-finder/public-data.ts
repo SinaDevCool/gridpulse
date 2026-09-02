@@ -59,6 +59,7 @@ export function toPublicPowerFinderCollection(
       record_count: collection.features.length,
       available_kinds: collection.metadata.available_kinds,
       kind_counts: collection.metadata.kind_counts,
+      coverage_status: collection.metadata.coverage_status,
       evidence_boundary: collection.metadata.evidence_boundary,
     },
     features: collection.features.map(

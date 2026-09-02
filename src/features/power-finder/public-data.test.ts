@@ -75,4 +75,30 @@ describe("public Power Finder data contract", () => {
       "wind",
     );
   });
+
+  it("preserves coverage status so unavailable registry data is not presented as zero", () => {
+    const collection = {
+      type: "FeatureCollection",
+      metadata: {
+        title: "Fallback",
+        source_id: "test",
+        publisher: "Test",
+        licence: "Test",
+        attribution: "Test",
+        published_at: "2026-08-08T00:00:00Z",
+        geographic_scope: "Test",
+        freshness: "Test",
+        artifact_sha256: "test",
+        record_count: 0,
+        available_kinds: ["node"],
+        coverage_status: "accepted_static_fallback",
+        evidence_boundary: "Screening only",
+      },
+      features: [],
+    } as PowerFinderCollection;
+
+    expect(toPublicPowerFinderCollection(collection).metadata.coverage_status).toBe(
+      "accepted_static_fallback",
+    );
+  });
 });
