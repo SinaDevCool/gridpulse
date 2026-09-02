@@ -118,10 +118,9 @@ describe("public Power Finder API", () => {
   });
 
   it("serves the accepted static artifact when the public origin is unavailable", async () => {
-    const origin = vi
-      .fn()
-      .mockResolvedValueOnce(new Response("denied", { status: 403 }))
-      .mockResolvedValueOnce(
+    const origin = vi.fn().mockResolvedValue(new Response("denied", { status: 403 }));
+    const assets = {
+      fetch: vi.fn().mockResolvedValue(
         new Response(
           JSON.stringify({
             type: "FeatureCollection",
@@ -133,13 +132,16 @@ describe("public Power Finder API", () => {
           }),
           { status: 200 },
         ),
-      );
+      ),
+    };
     vi.stubGlobal("fetch", origin);
     const response = await handlePublicPowerFinderRequest(new Request(viewportUrl), {
+      ASSETS: assets,
       SUPABASE_URL: "https://example.supabase.co",
       SUPABASE_PUBLISHABLE_KEY: "sb_publishable_test",
     });
     expect(response?.status).toBe(200);
+    expect(assets.fetch).toHaveBeenCalledOnce();
     expect(response?.headers.get("x-gridpulse-data-mode")).toBe("accepted-static-fallback");
     await expect(response?.json()).resolves.toMatchObject({
       metadata: {

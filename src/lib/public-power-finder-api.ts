@@ -6,6 +6,7 @@ const TILE_CACHE_RELEASE = "20260812-progressive-technology-v1";
 const TILE_EDGE_CACHE_SECONDS = 2_592_000;
 
 export type PublicFinderEnv = {
+  ASSETS?: { fetch: (request: Request) => Promise<Response> };
   SUPABASE_URL?: string;
   SUPABASE_PUBLISHABLE_KEY?: string;
   VITE_SUPABASE_URL?: string;
@@ -94,9 +95,12 @@ function jsonResponse(body: unknown, status: number, extraHeaders?: HeadersInit)
   });
 }
 
-async function acceptedStaticFallback(requestUrl: URL) {
+async function acceptedStaticFallback(requestUrl: URL, env: PublicFinderEnv) {
   try {
-    const response = await fetch(new URL(ACCEPTED_STATIC_FALLBACK_PATH, requestUrl.origin));
+    const fallbackRequest = new Request(new URL(ACCEPTED_STATIC_FALLBACK_PATH, requestUrl.origin));
+    const response = env.ASSETS
+      ? await env.ASSETS.fetch(fallbackRequest)
+      : await fetch(fallbackRequest);
     if (!response.ok) return null;
     const payload = (await response.json()) as {
       type?: string;
@@ -220,7 +224,7 @@ export async function handlePublicPowerFinderRequest(
     }
     if (!response.ok) {
       console.error(`Public Finder origin returned ${response.status}.`);
-      const fallback = await acceptedStaticFallback(url);
+      const fallback = await acceptedStaticFallback(url, env);
       if (fallback) return fallback;
       return jsonResponse({ error: "Public Finder data is temporarily unavailable." }, 502);
     }
@@ -258,7 +262,7 @@ export async function handlePublicPowerFinderRequest(
     return publicResponse;
   } catch (error) {
     console.error(error instanceof Error ? error.message : "Public Finder origin failed.");
-    const fallback = await acceptedStaticFallback(url);
+    const fallback = await acceptedStaticFallback(url, env);
     if (fallback) return fallback;
     return jsonResponse({ error: "Public Finder data is temporarily unavailable." }, 502);
   } finally {

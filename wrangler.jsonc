@@ -4,6 +4,7 @@
   "compatibility_date": "2026-07-18",
   "compatibility_flags": ["nodejs_compat"],
   "main": "@tanstack/react-start/server-entry",
+  "assets": { "binding": "ASSETS" },
   "vars": {
     "PUBLIC_FINDER_EXPERIMENTAL_MODE": "false",
   },
