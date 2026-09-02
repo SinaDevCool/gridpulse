@@ -21,9 +21,12 @@ import {
 import type { CalculatedCapacityNode } from "@/features/power-finder/calculated-capacity";
 import { classifyCapacityOpportunity } from "@/features/power-finder/capacity-opportunity";
 import {
+  voltageClassFilter,
   voltageColorExpression,
   voltageWidthExpression,
+  type GridVoltageClassId,
 } from "@/features/power-finder/voltage-style";
+import { generationColourExpression } from "@/features/map/map-visual-registry";
 import type { CapacityMetric } from "@/features/power-finder/calculated-capacity";
 import {
   applyBasemapVisibility,
@@ -40,29 +43,11 @@ const sourceIds = {
   storage_asset: "power-finder-storage-assets",
 } as const;
 
-const generationColour: ExpressionSpecification = [
-  "match",
-  ["get", "generation_group"],
-  "solar",
-  "#facc15",
-  "wind",
-  "#38bdf8",
-  "biomass",
-  "#22c55e",
-  "hydro",
-  "#06b6d4",
-  "geothermal",
-  "#f97316",
-  "gas",
-  "#a78bfa",
-  "fossil_other",
-  "#ef4444",
-  "nuclear",
-  "#f472b6",
-  "#94a3b8",
-];
-
-function generationAssetFilter(group: string, minimumMw: number): ExpressionSpecification {
+function generationAssetFilter(
+  group: string,
+  minimumMw: number,
+  maximumMw: number | null = null,
+): ExpressionSpecification {
   const conditions: ExpressionSpecification[] = [["==", ["get", "kind"], "generation_asset"]];
   if (group !== "all") conditions.push(["==", ["get", "generation_group"], group]);
   if (minimumMw > 0)
@@ -71,19 +56,33 @@ function generationAssetFilter(group: string, minimumMw: number): ExpressionSpec
       ["coalesce", ["get", "registered_mw"], ["get", "net_capacity_mw"], -1],
       minimumMw,
     ]);
+  if (maximumMw !== null)
+    conditions.push([
+      "<=",
+      ["coalesce", ["get", "registered_mw"], ["get", "net_capacity_mw"], maximumMw + 1],
+      maximumMw,
+    ]);
   return ["all", ...conditions] as ExpressionSpecification;
 }
 
-function storageAssetFilter(minimumMw: number): ExpressionSpecification {
-  return (
-    minimumMw > 0
-      ? [
-          "all",
-          ["==", ["get", "kind"], "storage_asset"],
-          [">=", ["coalesce", ["get", "registered_mw"], ["get", "net_capacity_mw"], -1], minimumMw],
-        ]
-      : ["==", ["get", "kind"], "storage_asset"]
-  ) as ExpressionSpecification;
+function storageAssetFilter(
+  minimumMw: number,
+  maximumMw: number | null = null,
+): ExpressionSpecification {
+  const conditions: ExpressionSpecification[] = [["==", ["get", "kind"], "storage_asset"]];
+  if (minimumMw > 0)
+    conditions.push([
+      ">=",
+      ["coalesce", ["get", "registered_mw"], ["get", "net_capacity_mw"], -1],
+      minimumMw,
+    ]);
+  if (maximumMw !== null)
+    conditions.push([
+      "<=",
+      ["coalesce", ["get", "registered_mw"], ["get", "net_capacity_mw"], maximumMw + 1],
+      maximumMw,
+    ]);
+  return ["all", ...conditions] as ExpressionSpecification;
 }
 
 const registeredCapacityRadius: ExpressionSpecification = [
@@ -183,7 +182,11 @@ type PowerFinderMapProps = {
   basemapMode?: "dark" | "light";
   generationGroup?: string;
   minimumGenerationMw?: number;
+  maximumGenerationMw?: number | null;
   minimumStorageMw?: number;
+  maximumStorageMw?: number | null;
+  isolatedVoltageClass?: GridVoltageClassId | null;
+  scaleMarkersByCapacity?: boolean;
   capacityNodes?: CalculatedCapacityNode[];
   capacityMetric?: CapacityMetric;
   requiredCapacityMw?: number;
@@ -303,7 +306,11 @@ export function PowerFinderMap({
   basemapMode = "dark",
   generationGroup = "all",
   minimumGenerationMw = 0,
+  maximumGenerationMw = null,
   minimumStorageMw = 0,
+  maximumStorageMw = null,
+  isolatedVoltageClass = null,
+  scaleMarkersByCapacity = true,
   capacityNodes = [],
   capacityMetric = "firm_import_mw",
   requiredCapacityMw = 1,
@@ -343,7 +350,15 @@ export function PowerFinderMap({
   const basemapLayerIdsRef = useRef<BasemapLayerIds>({ dark: [], light: [] });
   const onBasemapStatusChangeRef = useRef(onBasemapStatusChange);
   const enabledLayersRef = useRef(enabledLayers);
-  const assetFilterRef = useRef({ generationGroup, minimumGenerationMw, minimumStorageMw });
+  const assetFilterRef = useRef({
+    generationGroup,
+    minimumGenerationMw,
+    maximumGenerationMw,
+    minimumStorageMw,
+    maximumStorageMw,
+  });
+  const isolatedVoltageClassRef = useRef(isolatedVoltageClass);
+  const scaleMarkersByCapacityRef = useRef(scaleMarkersByCapacity);
   onSelectRef.current = onSelect;
   onViewportChangeRef.current = onViewportChange;
   collectionRef.current = collection;
@@ -363,7 +378,15 @@ export function PowerFinderMap({
   basemapModeRef.current = basemapMode;
   onBasemapStatusChangeRef.current = onBasemapStatusChange;
   enabledLayersRef.current = enabledLayers;
-  assetFilterRef.current = { generationGroup, minimumGenerationMw, minimumStorageMw };
+  assetFilterRef.current = {
+    generationGroup,
+    minimumGenerationMw,
+    maximumGenerationMw,
+    minimumStorageMw,
+    maximumStorageMw,
+  };
+  isolatedVoltageClassRef.current = isolatedVoltageClass;
+  scaleMarkersByCapacityRef.current = scaleMarkersByCapacity;
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -372,855 +395,893 @@ export function PowerFinderMap({
     onBasemapStatusChangeRef.current?.("loading");
     void Promise.all([import("maplibre-gl"), loadBasemapStyle(basemapModeRef.current)]).then(
       ([{ Map, NavigationControl }, basemap]) => {
-      if (cancelled || !containerRef.current) return;
-      basemapLayerIdsRef.current = basemap.layerIds;
-      onBasemapStatusChangeRef.current?.(basemap.status);
-      const map = new Map({
-        container: containerRef.current,
-        center: projectSiteRef.current ?? [13.36, 52.31],
-        zoom: projectSiteRef.current ? 11.2 : 9.1,
-        attributionControl: {},
-        style: basemap.style,
-      });
-      mapRef.current = map;
-      map.addControl(new NavigationControl({ showCompass: false }), "top-right");
-      let basemapErrorCount = 0;
-      map.on("error", (event) => {
-        const sourceId = "sourceId" in event ? String(event.sourceId ?? "") : "";
-        const message = event.error?.message ?? "";
-        const openFreeMapFailure =
-          sourceId === "openmaptiles" ||
-          sourceId === "ne2_shaded" ||
-          message.includes("tiles.openfreemap.org");
-        if (!openFreeMapFailure) return;
-        basemapErrorCount += 1;
-        if (basemapErrorCount >= 3) onBasemapStatusChangeRef.current?.("fallback");
-      });
-      map.on("load", () => {
-        const split = splitMapCollection(
-          withCapacityResults(
-            collectionRef.current,
-            capacityNodesRef.current,
-            capacityMetricRef.current,
-            requiredCapacityMwRef.current,
-          ),
-        );
-        map.addSource(sourceIds.node, {
-          type: "geojson",
-          data: split.nodes,
-          cluster: true,
-          clusterMaxZoom: 12,
-          clusterRadius: 38,
-          clusterProperties: {
-            capacity_meets: ["+", ["number", ["get", "capacity_meets"], 0]],
-            capacity_activation: ["+", ["number", ["get", "capacity_activation"], 0]],
-          },
+        if (cancelled || !containerRef.current) return;
+        basemapLayerIdsRef.current = basemap.layerIds;
+        onBasemapStatusChangeRef.current?.(basemap.status);
+        const map = new Map({
+          container: containerRef.current,
+          center: projectSiteRef.current ?? [13.36, 52.31],
+          zoom: projectSiteRef.current ? 11.2 : 9.1,
+          attributionControl: {},
+          style: basemap.style,
         });
-        map.addSource(sourceIds.line, { type: "geojson", data: split.lines });
-        map.addSource(sourceIds.industrial_site, {
-          type: "geojson",
-          data: split.industrialSites,
+        mapRef.current = map;
+        map.addControl(new NavigationControl({ showCompass: false }), "top-right");
+        let basemapErrorCount = 0;
+        map.on("error", (event) => {
+          const sourceId = "sourceId" in event ? String(event.sourceId ?? "") : "";
+          const message = event.error?.message ?? "";
+          const openFreeMapFailure =
+            sourceId === "openmaptiles" ||
+            sourceId === "ne2_shaded" ||
+            message.includes("tiles.openfreemap.org");
+          if (!openFreeMapFailure) return;
+          basemapErrorCount += 1;
+          if (basemapErrorCount >= 3) onBasemapStatusChangeRef.current?.("fallback");
         });
-        map.addSource(sourceIds.generation_asset, {
-          type: "geojson",
-          data: split.generationAssets,
-          cluster: true,
-          // Registry records often share an official publication coordinate.
-          // Keep those co-located assets aggregated at close zooms so their
-          // summed registered MW does not collapse into overlapping points.
-          clusterMaxZoom: 18,
-          clusterRadius: 34,
-          clusterProperties: {
-            registered_mw: ["+", ["number", ["get", "net_capacity_mw"], 0]],
-            known_mw_count: ["+", ["case", ["has", "net_capacity_mw"], 1, 0]],
-            solar_count: ["+", ["case", ["==", ["get", "generation_group"], "solar"], 1, 0]],
-            wind_count: ["+", ["case", ["==", ["get", "generation_group"], "wind"], 1, 0]],
-            other_count: [
-              "+",
-              ["case", ["in", ["get", "generation_group"], ["literal", ["solar", "wind"]]], 0, 1],
-            ],
-          },
-        });
-        map.addSource(sourceIds.storage_asset, {
-          type: "geojson",
-          data: split.storageAssets,
-          cluster: true,
-          clusterMaxZoom: 18,
-          clusterRadius: 34,
-          clusterProperties: {
-            registered_mw: ["+", ["number", ["get", "net_capacity_mw"], 0]],
-            known_mw_count: ["+", ["case", ["has", "net_capacity_mw"], 1, 0]],
-          },
-        });
-        map.addSource("berlin-capacity-coverage", {
-          type: "geojson",
-          data: capacityCoverageRef.current ?? { type: "FeatureCollection", features: [] },
-        });
-        map.addSource("power-finder-national-tiles", {
-          type: "vector",
-          promoteId: "id",
-          tiles: [
-            `${window.location.origin}/api/power-finder/tile/{z}/{x}/{y}?content=grid&generation=false&storage=false`,
-          ],
-          minzoom: 4,
-          // Overzoom the cached national z8 tile immediately. Finer distribution
-          // detail is supplied by the bounded viewport GeoJSON source as it arrives.
-          maxzoom: 8,
-        });
-        map.addSource("power-finder-registry-tiles", {
-          type: "vector",
-          tiles: [`${window.location.origin}/api/power-finder/tile/{z}/{x}/{y}?content=registry`],
-          minzoom: 8,
-          // Request finer registry tiles so dense exact-location assets do not
-          // remain packed into an overzoomed country-scale z8 tile.
-          maxzoom: 10,
-        });
-        map.addSource("finder-project-site", {
-          type: "geojson",
-          data: {
-            type: "FeatureCollection",
-            features: projectSiteRef.current
-              ? [
-                  {
-                    type: "Feature",
-                    properties: { kind: "project_site" },
-                    geometry: { type: "Point", coordinates: projectSiteRef.current },
-                  },
-                ]
-              : [],
-          },
-        });
-        map.addSource("finder-discovery-locations", {
-          type: "geojson",
-          data: discoveryLocationsRef.current ?? { type: "FeatureCollection", features: [] },
-        });
-        map.addSource("rzreg-data-centres", {
-          type: "geojson",
-          data: { type: "FeatureCollection", features: [] },
-          cluster: true,
-          clusterMaxZoom: 13,
-          clusterRadius: 38,
-          clusterProperties: {
-            exact_count: [
-              "+",
-              ["case", ["==", ["get", "location_precision"], "facility_address"], 1, 0],
-            ],
-          },
-        });
-        void fetch("/power-finder/rzreg-data-centres.json")
-          .then((response) => {
-            if (!response.ok) throw new Error(`RZReg map data returned ${response.status}`);
-            return response.json() as Promise<FeatureCollection<Point>>;
-          })
-          .then((data) => {
-            const source = map.getSource("rzreg-data-centres");
-            if (isGeoJsonSource(source)) source.setData(data);
-          })
-          .catch(() => {
-            // The grid map remains usable when this contextual public-data layer is unavailable.
-          });
-        map.addLayer({
-          id: "rzreg-data-centre-clusters",
-          type: "circle",
-          source: "rzreg-data-centres",
-          filter: ["has", "point_count"],
-          layout: { visibility: showDataCentresRef.current ? "visible" : "none" },
-          paint: {
-            "circle-radius": ["step", ["get", "point_count"], 15, 10, 19, 30, 24],
-            "circle-color": ["case", [">", ["get", "exact_count"], 0], "#14b8a6", "#f59e0b"],
-            "circle-opacity": 0.94,
-            "circle-stroke-color": "#ffffff",
-            "circle-stroke-width": 2,
-          },
-        });
-        map.addLayer({
-          id: "rzreg-data-centre-cluster-count",
-          type: "symbol",
-          source: "rzreg-data-centres",
-          filter: ["has", "point_count"],
-          layout: {
-            visibility: showDataCentresRef.current ? "visible" : "none",
-            "text-field": ["get", "point_count_abbreviated"],
-            "text-font": ["Noto Sans Regular"],
-            "text-size": 11,
-          },
-          paint: { "text-color": "#07111f" },
-        });
-        map.addLayer({
-          id: "rzreg-data-centres-approximate-area",
-          type: "circle",
-          source: "rzreg-data-centres",
-          filter: [
-            "all",
-            ["!", ["has", "point_count"]],
-            ["==", ["get", "location_precision"], "postcode_area"],
-          ],
-          layout: { visibility: showDataCentresRef.current ? "visible" : "none" },
-          paint: {
-            "circle-radius": ["interpolate", ["linear"], ["zoom"], 6, 7, 10, 13, 14, 24],
-            "circle-color": "rgba(245, 158, 11, 0.08)",
-            "circle-stroke-color": "rgba(245, 158, 11, 0.48)",
-            "circle-stroke-width": 1.25,
-          },
-        });
-        map.addLayer({
-          id: "rzreg-data-centres-approximate",
-          type: "circle",
-          source: "rzreg-data-centres",
-          filter: [
-            "all",
-            ["!", ["has", "point_count"]],
-            ["==", ["get", "location_precision"], "postcode_area"],
-          ],
-          layout: { visibility: showDataCentresRef.current ? "visible" : "none" },
-          paint: {
-            "circle-radius": 6,
-            "circle-color": "rgba(245, 158, 11, 0.16)",
-            "circle-stroke-color": "#f59e0b",
-            "circle-stroke-width": 2,
-          },
-        });
-        map.addLayer({
-          id: "rzreg-data-centres-exact",
-          type: "circle",
-          source: "rzreg-data-centres",
-          filter: [
-            "all",
-            ["!", ["has", "point_count"]],
-            ["==", ["get", "location_precision"], "facility_address"],
-          ],
-          layout: { visibility: showDataCentresRef.current ? "visible" : "none" },
-          paint: {
-            "circle-radius": 7,
-            "circle-color": "#14b8a6",
-            "circle-stroke-color": "#ecfeff",
-            "circle-stroke-width": 2.5,
-          },
-        });
-        const showDataCentre = (event: MapLayerMouseEvent) => {
-          const feature = event.features?.[0];
-          if (!feature || feature.geometry.type !== "Point") return;
-          const properties = feature.properties ?? {};
-          onDataCentreSelectRef.current?.({
-            id: String(properties.id ?? feature.id ?? "rzreg-data-centre"),
-            rzregRow: Number(properties.rzreg_row ?? 0),
-            name: String(properties.name ?? "RZReg data centre"),
-            operator: String(properties.operator ?? "Operator not published"),
-            postcode: String(properties.postcode ?? ""),
-            address: properties.address ? String(properties.address) : null,
-            locationPrecision:
-              properties.location_precision === "facility_address"
-                ? "facility_address"
-                : "postcode_area",
-            coordinateMethod: String(properties.coordinate_method ?? "unknown"),
-            truthLabel: String(properties.truth_label ?? "withheld_or_unknown"),
-            sourceUrl: properties.source_url ? String(properties.source_url) : null,
-            warning: properties.warning ? String(properties.warning) : null,
-            coordinates: feature.geometry.coordinates as [number, number],
-          });
-        };
-        for (const layer of ["rzreg-data-centres-exact", "rzreg-data-centres-approximate"]) {
-          map.on("click", layer, showDataCentre);
-          map.on("mouseenter", layer, () => (map.getCanvas().style.cursor = "pointer"));
-          map.on("mouseleave", layer, () => (map.getCanvas().style.cursor = ""));
-        }
-        map.addLayer({
-          id: "finder-discovery-halos",
-          type: "circle",
-          source: "finder-discovery-locations",
-          paint: {
-            "circle-radius": ["interpolate", ["linear"], ["get", "score"], 0, 20, 100, 30],
-            "circle-color": "#07131c",
-            "circle-opacity": 0.92,
-            "circle-stroke-color": "#f8d34f",
-            "circle-stroke-width": 4,
-          },
-        });
-        map.addLayer({
-          id: "finder-discovery-locations",
-          type: "circle",
-          source: "finder-discovery-locations",
-          paint: {
-            "circle-radius": ["interpolate", ["linear"], ["get", "score"], 0, 14, 100, 22],
-            "circle-color": "#12c8e8",
-            "circle-opacity": 1,
-            "circle-stroke-color": "#ffffff",
-            "circle-stroke-width": 3,
-          },
-        });
-        map.addLayer({
-          id: "finder-discovery-labels",
-          type: "symbol",
-          source: "finder-discovery-locations",
-          layout: {
-            "text-field": ["to-string", ["get", "rank"]],
-            "text-size": 12,
-            "text-font": ["Noto Sans Bold"],
-            "text-allow-overlap": true,
-          },
-          paint: { "text-color": "#04131d" },
-        });
-        map.on("click", "finder-discovery-locations", (event) => {
-          const id = event.features?.[0]?.properties?.id;
-          if (id) onDiscoverySelectRef.current?.(String(id));
-        });
-        const highlighted = previewFeatureRef.current ?? selectedFeatureRef.current;
-        map.addSource("finder-selected-candidate", {
-          type: "geojson",
-          data: {
-            type: "FeatureCollection",
-            features: highlighted?.geometry.type === "Point" ? [highlighted] : [],
-          },
-        });
-        map.addLayer({
-          id: "berlin-capacity-coverage-fill",
-          type: "fill",
-          source: "berlin-capacity-coverage",
-          layout: { visibility: "none" },
-          paint: { "fill-color": "#38bdf8", "fill-opacity": 0.055 },
-        });
-        map.addLayer({
-          id: "berlin-capacity-coverage-line",
-          type: "line",
-          source: "berlin-capacity-coverage",
-          layout: { visibility: "none" },
-          paint: {
-            "line-color": "#38bdf8",
-            "line-width": 2,
-            "line-dasharray": [3, 2],
-            "line-opacity": 0.9,
-          },
-        });
-        map.addLayer({
-          id: "finder-project-site",
-          type: "circle",
-          source: "finder-project-site",
-          paint: {
-            "circle-radius": 10,
-            "circle-color": "#38d7f2",
-            "circle-stroke-color": "#ffffff",
-            "circle-stroke-width": 3,
-          },
-        });
-        map.addLayer({
-          id: "national-grid-lines",
-          type: "line",
-          source: "power-finder-national-tiles",
-          "source-layer": "power_finder",
-          minzoom: 4,
-          maxzoom: 24,
-          filter: ["==", ["get", "kind"], "line"],
-          layout: { visibility: enabledLayersRef.current.line ? "visible" : "none" },
-          paint: {
-            "line-color": voltageColorExpression(),
-            "line-width": voltageWidthExpression(),
-            "line-opacity": 0.82,
-          },
-        });
-        map.addLayer({
-          id: "national-grid-nodes",
-          type: "circle",
-          source: "power-finder-national-tiles",
-          "source-layer": "power_finder",
-          minzoom: 4,
-          maxzoom: 24,
-          filter: ["==", ["get", "kind"], "node"],
-          layout: { visibility: enabledLayersRef.current.node ? "visible" : "none" },
-          paint: {
-            "circle-radius": ["interpolate", ["linear"], ["zoom"], 4, 1, 7, 1.6, 8.5, 2.5, 11, 4.5],
-            "circle-color": "#f59e0b",
-            "circle-stroke-color": voltageColorExpression(),
-            "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 4, 0.4, 9, 1],
-          },
-        });
-        map.addLayer({
-          id: "national-industrial-sites",
-          type: "fill",
-          source: "power-finder-national-tiles",
-          "source-layer": "power_finder",
-          minzoom: 8,
-          maxzoom: 24,
-          filter: ["==", ["get", "kind"], "industrial_site"],
-          layout: {
-            visibility: enabledLayersRef.current.industrial_site ? "visible" : "none",
-          },
-          paint: {
-            "fill-color": "#17c3b2",
-            "fill-opacity": ["interpolate", ["linear"], ["zoom"], 10, 0.28, 16, 0.48],
-            "fill-outline-color": "#5eead4",
-          },
-        });
-        map.addLayer({
-          id: "national-industrial-overview",
-          type: "circle",
-          source: "power-finder-national-tiles",
-          "source-layer": "power_finder",
-          minzoom: 8,
-          maxzoom: 10,
-          filter: ["==", ["get", "kind"], "industrial_site"],
-          layout: {
-            visibility: enabledLayersRef.current.industrial_site ? "visible" : "none",
-          },
-          paint: {
-            "circle-radius": ["interpolate", ["linear"], ["zoom"], 8, 2.2, 10, 5],
-            "circle-color": "rgba(7, 17, 31, 0.75)",
-            "circle-stroke-color": "#99f6e4",
-            "circle-stroke-width": 1.5,
-            "circle-opacity": 0.95,
-          },
-        });
-        map.addLayer({
-          id: "national-generation-overview",
-          type: "circle",
-          source: "power-finder-registry-tiles",
-          "source-layer": "power_finder",
-          minzoom: 6,
-          maxzoom: 11,
-          filter: generationAssetFilter(
-            assetFilterRef.current.generationGroup,
-            assetFilterRef.current.minimumGenerationMw,
-          ),
-          layout: {
-            visibility: enabledLayersRef.current.generation_asset ? "visible" : "none",
-          },
-          paint: {
-            "circle-radius": registeredCapacityRadius,
-            "circle-color": generationColour,
-            "circle-opacity": ["interpolate", ["linear"], ["zoom"], 6, 0.72, 9, 0.9],
-            "circle-stroke-color": "rgba(255, 255, 255, 0.7)",
-            "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 6, 0.25, 9, 0.7],
-          },
-        });
-        map.addLayer({
-          id: "national-generation-overview-label",
-          type: "symbol",
-          source: "power-finder-registry-tiles",
-          "source-layer": "power_finder",
-          minzoom: 6,
-          maxzoom: 11,
-          filter: generationAssetFilter(
-            assetFilterRef.current.generationGroup,
-            assetFilterRef.current.minimumGenerationMw,
-          ),
-          layout: {
-            visibility: enabledLayersRef.current.generation_asset ? "visible" : "none",
-            "text-field": registeredMwLabel,
-            "text-font": ["Noto Sans Regular"],
-            "text-size": 10,
-            "text-allow-overlap": false,
-          },
-          paint: {
-            "text-color": "#07111f",
-            "text-halo-color": "rgba(255,255,255,0.92)",
-            "text-halo-width": 1.5,
-          },
-        });
-        map.addLayer({
-          id: "national-generation-assets",
-          type: "circle",
-          source: "power-finder-registry-tiles",
-          "source-layer": "power_finder",
-          minzoom: 11,
-          maxzoom: 24,
-          filter: generationAssetFilter(
-            assetFilterRef.current.generationGroup,
-            assetFilterRef.current.minimumGenerationMw,
-          ),
-          layout: {
-            visibility: enabledLayersRef.current.generation_asset ? "visible" : "none",
-          },
-          paint: {
-            "circle-radius": registeredCapacityRadius,
-            "circle-color": generationColour,
-            "circle-stroke-color": "#ffffff",
-            "circle-stroke-width": 1.25,
-          },
-        });
-        map.addLayer({
-          id: "national-generation-asset-labels",
-          type: "symbol",
-          source: "power-finder-registry-tiles",
-          "source-layer": "power_finder",
-          minzoom: 11,
-          maxzoom: 24,
-          filter: generationAssetFilter(
-            assetFilterRef.current.generationGroup,
-            assetFilterRef.current.minimumGenerationMw,
-          ),
-          layout: {
-            visibility: enabledLayersRef.current.generation_asset ? "visible" : "none",
-            "text-field": registeredMwLabel,
-            "text-font": ["Noto Sans Regular"],
-            "text-size": 10,
-            "text-allow-overlap": false,
-          },
-          paint: {
-            "text-color": "#07111f",
-            "text-halo-color": "rgba(255,255,255,0.92)",
-            "text-halo-width": 1.5,
-          },
-        });
-        map.addLayer({
-          id: "national-storage-assets",
-          type: "circle",
-          source: "power-finder-registry-tiles",
-          "source-layer": "power_finder",
-          minzoom: 6,
-          maxzoom: 24,
-          filter: storageAssetFilter(assetFilterRef.current.minimumStorageMw),
-          layout: {
-            visibility: enabledLayersRef.current.storage_asset ? "visible" : "none",
-          },
-          paint: {
-            "circle-radius": registeredCapacityRadius,
-            "circle-color": "#a855f7",
-            "circle-stroke-color": "#f3e8ff",
-            "circle-stroke-width": 1,
-          },
-        });
-        map.addLayer({
-          id: "national-storage-asset-labels",
-          type: "symbol",
-          source: "power-finder-registry-tiles",
-          "source-layer": "power_finder",
-          minzoom: 6,
-          maxzoom: 24,
-          filter: storageAssetFilter(assetFilterRef.current.minimumStorageMw),
-          layout: {
-            visibility: enabledLayersRef.current.storage_asset ? "visible" : "none",
-            "text-field": registeredMwLabel,
-            "text-font": ["Noto Sans Regular"],
-            "text-size": 10,
-            "text-allow-overlap": false,
-          },
-          paint: {
-            "text-color": "#2e1065",
-            "text-halo-color": "rgba(255,255,255,0.92)",
-            "text-halo-width": 1.5,
-          },
-        });
-        map.addLayer({
-          id: "industrial-sites",
-          type: "fill",
-          source: sourceIds.industrial_site,
-          layout: { visibility: "none" },
-          paint: {
-            "fill-color": "#17c3b2",
-            "fill-opacity": 0.2,
-            "fill-outline-color": "#5eead4",
-          },
-        });
-        map.addLayer({
-          id: "grid-lines",
-          type: "line",
-          source: sourceIds.line,
-          minzoom: 8,
-          layout: { visibility: "none" },
-          paint: {
-            "line-color": voltageColorExpression(),
-            "line-width": voltageWidthExpression(),
-            "line-opacity": 0.85,
-          },
-        });
-        map.addLayer({
-          id: "node-clusters",
-          type: "circle",
-          source: sourceIds.node,
-          minzoom: 8,
-          layout: { visibility: "none" },
-          filter: ["has", "point_count"],
-          paint: {
-            "circle-radius": ["step", ["get", "point_count"], 15, 25, 19, 100, 24],
-            "circle-color": [
-              "step",
-              ["get", "point_count"],
-              "#f59e0b",
-              25,
-              "#f97316",
-              100,
-              "#ef4444",
-            ],
-            "circle-stroke-color": "#fff7d6",
-            "circle-stroke-width": 2,
-          },
-        });
-        map.addLayer({
-          id: "node-cluster-count",
-          type: "symbol",
-          source: sourceIds.node,
-          minzoom: 8,
-          filter: ["has", "point_count"],
-          layout: {
-            visibility: "none",
-            "text-field": ["get", "point_count_abbreviated"],
-            "text-font": ["Noto Sans Regular"],
-            "text-size": 11,
-          },
-          paint: { "text-color": "#07111f" },
-        });
-        map.addLayer({
-          id: "grid-nodes",
-          type: "circle",
-          source: sourceIds.node,
-          minzoom: 8,
-          layout: { visibility: "none" },
-          filter: ["!", ["has", "point_count"]],
-          paint: {
-            "circle-radius": 7,
-            "circle-color": "#f59e0b",
-            "circle-stroke-color": "#fff7d6",
-            "circle-stroke-width": 2,
-          },
-        });
-        map.addLayer({
-          id: "generation-clusters",
-          type: "circle",
-          source: sourceIds.generation_asset,
-          layout: { visibility: "none" },
-          filter: ["has", "point_count"],
-          paint: {
-            "circle-radius": registeredClusterRadius,
-            "circle-color": generationClusterColour,
-            "circle-stroke-color": "#dcfce7",
-            "circle-stroke-width": 2,
-          },
-        });
-        map.addLayer({
-          id: "generation-cluster-count",
-          type: "symbol",
-          source: sourceIds.generation_asset,
-          layout: {
-            visibility: "none",
-            "text-field": [
-              "case",
-              [">", ["get", "known_mw_count"], 0],
-              [
-                "case",
-                ["<", ["get", "registered_mw"], 1],
-                "<1 MW",
-                ["concat", ["round", ["get", "registered_mw"]], " MW"],
-              ],
-              ["concat", ["get", "point_count_abbreviated"], " assets"],
-            ],
-            "text-font": ["Noto Sans Regular"],
-            "text-size": 10,
-          },
-          filter: ["has", "point_count"],
-          paint: {
-            "text-color": "#07111f",
-            "text-halo-color": "rgba(255,255,255,0.85)",
-            "text-halo-width": 1,
-          },
-        });
-        map.addLayer({
-          id: "generation-assets",
-          type: "circle",
-          source: sourceIds.generation_asset,
-          layout: { visibility: "none" },
-          filter: ["!", ["has", "point_count"]],
-          paint: {
-            "circle-radius": registeredCapacityRadius,
-            "circle-color": localGenerationColour,
-            "circle-stroke-color": "#dcfce7",
-            "circle-stroke-width": 1,
-          },
-        });
-        map.addLayer({
-          id: "storage-clusters",
-          type: "circle",
-          source: sourceIds.storage_asset,
-          layout: { visibility: "none" },
-          filter: ["has", "point_count"],
-          paint: {
-            "circle-radius": registeredClusterRadius,
-            "circle-color": "#a855f7",
-            "circle-stroke-color": "#f3e8ff",
-            "circle-stroke-width": 2,
-          },
-        });
-        map.addLayer({
-          id: "storage-cluster-count",
-          type: "symbol",
-          source: sourceIds.storage_asset,
-          layout: {
-            visibility: "none",
-            "text-field": [
-              "case",
-              [">", ["get", "known_mw_count"], 0],
-              [
-                "case",
-                ["<", ["get", "registered_mw"], 1],
-                "<1 MW",
-                ["concat", ["round", ["get", "registered_mw"]], " MW"],
-              ],
-              ["concat", ["get", "point_count_abbreviated"], " assets"],
-            ],
-            "text-font": ["Noto Sans Regular"],
-            "text-size": 10,
-          },
-          filter: ["has", "point_count"],
-          paint: { "text-color": "#2e1065" },
-        });
-        map.addLayer({
-          id: "storage-assets",
-          type: "circle",
-          source: sourceIds.storage_asset,
-          layout: { visibility: "none" },
-          filter: ["!", ["has", "point_count"]],
-          paint: {
-            "circle-radius": registeredCapacityRadius,
-            "circle-color": "#a855f7",
-            "circle-stroke-color": "#f3e8ff",
-            "circle-stroke-width": 1,
-          },
-        });
-        map.addLayer({
-          id: "selected-candidate-halo",
-          type: "circle",
-          source: "finder-selected-candidate",
-          paint: {
-            "circle-radius": 18,
-            "circle-color": "rgba(56, 215, 242, 0.18)",
-            "circle-stroke-color": "#ffffff",
-            "circle-stroke-width": 4,
-            "circle-blur": 0.15,
-          },
-        });
-        map.addLayer({
-          id: "selected-candidate-core",
-          type: "circle",
-          source: "finder-selected-candidate",
-          paint: {
-            "circle-radius": 7,
-            "circle-color": "#38d7f2",
-            "circle-stroke-color": "#07111f",
-            "circle-stroke-width": 2,
-          },
-        });
-        map.addLayer({
-          id: "selected-candidate-label",
-          type: "symbol",
-          source: "finder-selected-candidate",
-          layout: {
-            "text-field": ["get", "name"],
-            "text-font": ["Noto Sans Regular"],
-            "text-size": 12,
-            "text-anchor": "top",
-            "text-offset": [0, 1.8],
-          },
-          paint: {
-            "text-color": "#ffffff",
-            "text-halo-color": "#07111f",
-            "text-halo-width": 2,
-          },
-        });
-        for (const layer of [
-          "rzreg-data-centre-clusters",
-          "rzreg-data-centre-cluster-count",
-          "rzreg-data-centres-approximate-area",
-          "rzreg-data-centres-approximate",
-          "rzreg-data-centres-exact",
-        ]) {
-          map.moveLayer(layer);
-        }
-
-        const selectFeature = (event: MapLayerMouseEvent) => {
-          const rendered = event.features?.[0];
-          const id = rendered?.id ?? rendered?.properties?.id;
-          const feature = collectionRef.current.features.find(
-            (item) => String(item.id) === String(id),
+        map.on("load", () => {
+          const split = splitMapCollection(
+            withCapacityResults(
+              collectionRef.current,
+              capacityNodesRef.current,
+              capacityMetricRef.current,
+              requiredCapacityMwRef.current,
+            ),
           );
-          if (feature) onSelectRef.current(feature);
-        };
-        for (const layer of [
-          "grid-nodes",
-          "industrial-sites",
-          "grid-lines",
-          "generation-assets",
-          "storage-assets",
-          "national-grid-nodes",
-          "national-industrial-sites",
-          "national-industrial-overview",
-          "national-generation-overview",
-          "national-generation-assets",
-          "national-storage-assets",
-        ]) {
-          map.on("click", layer, selectFeature);
-          map.on("mouseenter", layer, () => {
-            map.getCanvas().style.cursor = "pointer";
+          map.addSource(sourceIds.node, {
+            type: "geojson",
+            data: split.nodes,
+            cluster: true,
+            clusterMaxZoom: 12,
+            clusterRadius: 38,
+            clusterProperties: {
+              capacity_meets: ["+", ["number", ["get", "capacity_meets"], 0]],
+              capacity_activation: ["+", ["number", ["get", "capacity_activation"], 0]],
+            },
           });
-          map.on("mouseleave", layer, () => {
-            map.getCanvas().style.cursor = "";
+          map.addSource(sourceIds.line, { type: "geojson", data: split.lines });
+          map.addSource(sourceIds.industrial_site, {
+            type: "geojson",
+            data: split.industrialSites,
           });
-        }
-        const registerClusterExpansion = (layer: string, sourceId: string) => {
-          map.on("click", layer, (event) => {
-            const cluster = event.features?.[0];
-            const clusterId = cluster?.properties?.cluster_id;
-            if (!cluster || typeof clusterId !== "number" || cluster.geometry.type !== "Point")
-              return;
-            const coordinates = cluster.geometry.coordinates as [number, number];
-            const source = map.getSource(sourceId);
-            if (!isGeoJsonSource(source)) return;
-            void source.getClusterExpansionZoom(clusterId).then((zoom) => {
-              map.easeTo({ center: coordinates, zoom, duration: 450 });
-            });
+          map.addSource(sourceIds.generation_asset, {
+            type: "geojson",
+            data: split.generationAssets,
+            cluster: true,
+            // Registry records often share an official publication coordinate.
+            // Keep those co-located assets aggregated at close zooms so their
+            // summed registered MW does not collapse into overlapping points.
+            clusterMaxZoom: 17,
+            clusterRadius: 34,
+            clusterProperties: {
+              registered_mw: ["+", ["number", ["get", "net_capacity_mw"], 0]],
+              known_mw_count: ["+", ["case", ["has", "net_capacity_mw"], 1, 0]],
+              solar_count: ["+", ["case", ["==", ["get", "generation_group"], "solar"], 1, 0]],
+              wind_count: ["+", ["case", ["==", ["get", "generation_group"], "wind"], 1, 0]],
+              other_count: [
+                "+",
+                ["case", ["in", ["get", "generation_group"], ["literal", ["solar", "wind"]]], 0, 1],
+              ],
+            },
           });
-          map.on("mouseenter", layer, () => {
-            map.getCanvas().style.cursor = "pointer";
+          map.addSource(sourceIds.storage_asset, {
+            type: "geojson",
+            data: split.storageAssets,
+            cluster: true,
+            clusterMaxZoom: 17,
+            clusterRadius: 34,
+            clusterProperties: {
+              registered_mw: ["+", ["number", ["get", "net_capacity_mw"], 0]],
+              known_mw_count: ["+", ["case", ["has", "net_capacity_mw"], 1, 0]],
+            },
           });
-          map.on("mouseleave", layer, () => {
-            map.getCanvas().style.cursor = "";
+          map.addSource("berlin-capacity-coverage", {
+            type: "geojson",
+            data: capacityCoverageRef.current ?? { type: "FeatureCollection", features: [] },
           });
-        };
-        registerClusterExpansion("node-clusters", sourceIds.node);
-        registerClusterExpansion("generation-clusters", sourceIds.generation_asset);
-        registerClusterExpansion("storage-clusters", sourceIds.storage_asset);
-        registerClusterExpansion("rzreg-data-centre-clusters", "rzreg-data-centres");
-        map.on("click", (event) => {
-          if (!onSitePlacementRef.current) return;
-          const interactive = map.queryRenderedFeatures(event.point, {
-            layers: [
-              "grid-nodes",
-              "industrial-sites",
-              "grid-lines",
-              "generation-assets",
-              "storage-assets",
-              "node-clusters",
-              "generation-clusters",
-              "storage-clusters",
-              "national-grid-nodes",
-              "national-industrial-sites",
-              "national-industrial-overview",
-              "national-generation-overview",
-              "national-generation-assets",
-              "national-storage-assets",
-              "rzreg-data-centre-clusters",
-              "rzreg-data-centres-approximate-area",
-              "rzreg-data-centres-exact",
-              "rzreg-data-centres-approximate",
+          map.addSource("power-finder-national-tiles", {
+            type: "vector",
+            promoteId: "id",
+            tiles: [
+              `${window.location.origin}/api/power-finder/tile/{z}/{x}/{y}?content=grid&generation=false&storage=false`,
             ],
+            minzoom: 4,
+            // Overzoom the cached national z8 tile immediately. Finer distribution
+            // detail is supplied by the bounded viewport GeoJSON source as it arrives.
+            maxzoom: 8,
           });
-          if (!interactive.length) {
-            onSitePlacementRef.current([event.lngLat.lng, event.lngLat.lat]);
+          map.addSource("power-finder-registry-tiles", {
+            type: "vector",
+            tiles: [`${window.location.origin}/api/power-finder/tile/{z}/{x}/{y}?content=registry`],
+            minzoom: 8,
+            // Request finer registry tiles so dense exact-location assets do not
+            // remain packed into an overzoomed country-scale z8 tile.
+            maxzoom: 10,
+          });
+          map.addSource("finder-project-site", {
+            type: "geojson",
+            data: {
+              type: "FeatureCollection",
+              features: projectSiteRef.current
+                ? [
+                    {
+                      type: "Feature",
+                      properties: { kind: "project_site" },
+                      geometry: { type: "Point", coordinates: projectSiteRef.current },
+                    },
+                  ]
+                : [],
+            },
+          });
+          map.addSource("finder-discovery-locations", {
+            type: "geojson",
+            data: discoveryLocationsRef.current ?? { type: "FeatureCollection", features: [] },
+          });
+          map.addSource("rzreg-data-centres", {
+            type: "geojson",
+            data: { type: "FeatureCollection", features: [] },
+            cluster: true,
+            clusterMaxZoom: 13,
+            clusterRadius: 38,
+            clusterProperties: {
+              exact_count: [
+                "+",
+                ["case", ["==", ["get", "location_precision"], "facility_address"], 1, 0],
+              ],
+            },
+          });
+          void fetch("/power-finder/rzreg-data-centres.json")
+            .then((response) => {
+              if (!response.ok) throw new Error(`RZReg map data returned ${response.status}`);
+              return response.json() as Promise<FeatureCollection<Point>>;
+            })
+            .then((data) => {
+              const source = map.getSource("rzreg-data-centres");
+              if (isGeoJsonSource(source)) source.setData(data);
+            })
+            .catch(() => {
+              // The grid map remains usable when this contextual public-data layer is unavailable.
+            });
+          map.addLayer({
+            id: "rzreg-data-centre-clusters",
+            type: "circle",
+            source: "rzreg-data-centres",
+            filter: ["has", "point_count"],
+            layout: { visibility: showDataCentresRef.current ? "visible" : "none" },
+            paint: {
+              "circle-radius": ["step", ["get", "point_count"], 15, 10, 19, 30, 24],
+              "circle-color": ["case", [">", ["get", "exact_count"], 0], "#14b8a6", "#f59e0b"],
+              "circle-opacity": 0.94,
+              "circle-stroke-color": "#ffffff",
+              "circle-stroke-width": 2,
+            },
+          });
+          map.addLayer({
+            id: "rzreg-data-centre-cluster-count",
+            type: "symbol",
+            source: "rzreg-data-centres",
+            filter: ["has", "point_count"],
+            layout: {
+              visibility: showDataCentresRef.current ? "visible" : "none",
+              "text-field": ["get", "point_count_abbreviated"],
+              "text-font": ["Noto Sans Regular"],
+              "text-size": 11,
+            },
+            paint: { "text-color": "#07111f" },
+          });
+          map.addLayer({
+            id: "rzreg-data-centres-approximate-area",
+            type: "circle",
+            source: "rzreg-data-centres",
+            filter: [
+              "all",
+              ["!", ["has", "point_count"]],
+              ["==", ["get", "location_precision"], "postcode_area"],
+            ],
+            layout: { visibility: showDataCentresRef.current ? "visible" : "none" },
+            paint: {
+              "circle-radius": ["interpolate", ["linear"], ["zoom"], 6, 7, 10, 13, 14, 24],
+              "circle-color": "rgba(245, 158, 11, 0.08)",
+              "circle-stroke-color": "rgba(245, 158, 11, 0.48)",
+              "circle-stroke-width": 1.25,
+            },
+          });
+          map.addLayer({
+            id: "rzreg-data-centres-approximate",
+            type: "circle",
+            source: "rzreg-data-centres",
+            filter: [
+              "all",
+              ["!", ["has", "point_count"]],
+              ["==", ["get", "location_precision"], "postcode_area"],
+            ],
+            layout: { visibility: showDataCentresRef.current ? "visible" : "none" },
+            paint: {
+              "circle-radius": 6,
+              "circle-color": "rgba(245, 158, 11, 0.16)",
+              "circle-stroke-color": "#f59e0b",
+              "circle-stroke-width": 2,
+            },
+          });
+          map.addLayer({
+            id: "rzreg-data-centres-exact",
+            type: "circle",
+            source: "rzreg-data-centres",
+            filter: [
+              "all",
+              ["!", ["has", "point_count"]],
+              ["==", ["get", "location_precision"], "facility_address"],
+            ],
+            layout: { visibility: showDataCentresRef.current ? "visible" : "none" },
+            paint: {
+              "circle-radius": 7,
+              "circle-color": "#14b8a6",
+              "circle-stroke-color": "#ecfeff",
+              "circle-stroke-width": 2.5,
+            },
+          });
+          const showDataCentre = (event: MapLayerMouseEvent) => {
+            const feature = event.features?.[0];
+            if (!feature || feature.geometry.type !== "Point") return;
+            const properties = feature.properties ?? {};
+            onDataCentreSelectRef.current?.({
+              id: String(properties.id ?? feature.id ?? "rzreg-data-centre"),
+              rzregRow: Number(properties.rzreg_row ?? 0),
+              name: String(properties.name ?? "RZReg data centre"),
+              operator: String(properties.operator ?? "Operator not published"),
+              postcode: String(properties.postcode ?? ""),
+              address: properties.address ? String(properties.address) : null,
+              locationPrecision:
+                properties.location_precision === "facility_address"
+                  ? "facility_address"
+                  : "postcode_area",
+              coordinateMethod: String(properties.coordinate_method ?? "unknown"),
+              truthLabel: String(properties.truth_label ?? "withheld_or_unknown"),
+              sourceUrl: properties.source_url ? String(properties.source_url) : null,
+              warning: properties.warning ? String(properties.warning) : null,
+              coordinates: feature.geometry.coordinates as [number, number],
+            });
+          };
+          for (const layer of ["rzreg-data-centres-exact", "rzreg-data-centres-approximate"]) {
+            map.on("click", layer, showDataCentre);
+            map.on("mouseenter", layer, () => (map.getCanvas().style.cursor = "pointer"));
+            map.on("mouseleave", layer, () => (map.getCanvas().style.cursor = ""));
           }
-        });
-        map.moveLayer("finder-project-site");
-        map.moveLayer("selected-candidate-halo");
-        map.moveLayer("selected-candidate-core");
-        map.moveLayer("selected-candidate-label");
-        map.on("moveend", () => {
-          const bounds = map.getBounds();
-          onViewportChangeRef.current?.({
-            west: bounds.getWest(),
-            south: bounds.getSouth(),
-            east: bounds.getEast(),
-            north: bounds.getNorth(),
+          map.addLayer({
+            id: "finder-discovery-halos",
+            type: "circle",
+            source: "finder-discovery-locations",
+            paint: {
+              "circle-radius": ["interpolate", ["linear"], ["get", "score"], 0, 20, 100, 30],
+              "circle-color": "#07131c",
+              "circle-opacity": 0.92,
+              "circle-stroke-color": "#f8d34f",
+              "circle-stroke-width": 4,
+            },
           });
-          publishVisibleLayerCounts(map, onVisibleLayerCountsRef.current);
+          map.addLayer({
+            id: "finder-discovery-locations",
+            type: "circle",
+            source: "finder-discovery-locations",
+            paint: {
+              "circle-radius": ["interpolate", ["linear"], ["get", "score"], 0, 14, 100, 22],
+              "circle-color": "#12c8e8",
+              "circle-opacity": 1,
+              "circle-stroke-color": "#ffffff",
+              "circle-stroke-width": 3,
+            },
+          });
+          map.addLayer({
+            id: "finder-discovery-labels",
+            type: "symbol",
+            source: "finder-discovery-locations",
+            layout: {
+              "text-field": ["to-string", ["get", "rank"]],
+              "text-size": 12,
+              "text-font": ["Noto Sans Bold"],
+              "text-allow-overlap": true,
+            },
+            paint: { "text-color": "#04131d" },
+          });
+          map.on("click", "finder-discovery-locations", (event) => {
+            const id = event.features?.[0]?.properties?.id;
+            if (id) onDiscoverySelectRef.current?.(String(id));
+          });
+          const highlighted = previewFeatureRef.current ?? selectedFeatureRef.current;
+          map.addSource("finder-selected-candidate", {
+            type: "geojson",
+            data: {
+              type: "FeatureCollection",
+              features: highlighted?.geometry.type === "Point" ? [highlighted] : [],
+            },
+          });
+          map.addLayer({
+            id: "berlin-capacity-coverage-fill",
+            type: "fill",
+            source: "berlin-capacity-coverage",
+            layout: { visibility: "none" },
+            paint: { "fill-color": "#38bdf8", "fill-opacity": 0.055 },
+          });
+          map.addLayer({
+            id: "berlin-capacity-coverage-line",
+            type: "line",
+            source: "berlin-capacity-coverage",
+            layout: { visibility: "none" },
+            paint: {
+              "line-color": "#38bdf8",
+              "line-width": 2,
+              "line-dasharray": [3, 2],
+              "line-opacity": 0.9,
+            },
+          });
+          map.addLayer({
+            id: "finder-project-site",
+            type: "circle",
+            source: "finder-project-site",
+            paint: {
+              "circle-radius": 10,
+              "circle-color": "#38d7f2",
+              "circle-stroke-color": "#ffffff",
+              "circle-stroke-width": 3,
+            },
+          });
+          map.addLayer({
+            id: "national-grid-lines",
+            type: "line",
+            source: "power-finder-national-tiles",
+            "source-layer": "power_finder",
+            minzoom: 4,
+            maxzoom: 24,
+            filter: (() => {
+              const voltage = voltageClassFilter(isolatedVoltageClassRef.current);
+              return voltage
+                ? (["all", ["==", ["get", "kind"], "line"], voltage] as ExpressionSpecification)
+                : ["==", ["get", "kind"], "line"];
+            })(),
+            layout: { visibility: enabledLayersRef.current.line ? "visible" : "none" },
+            paint: {
+              "line-color": voltageColorExpression(),
+              "line-width": voltageWidthExpression(),
+              "line-opacity": 0.82,
+            },
+          });
+          map.addLayer({
+            id: "national-grid-nodes",
+            type: "circle",
+            source: "power-finder-national-tiles",
+            "source-layer": "power_finder",
+            minzoom: 4,
+            maxzoom: 24,
+            filter: (() => {
+              const voltage = voltageClassFilter(isolatedVoltageClassRef.current);
+              return voltage
+                ? (["all", ["==", ["get", "kind"], "node"], voltage] as ExpressionSpecification)
+                : ["==", ["get", "kind"], "node"];
+            })(),
+            layout: { visibility: enabledLayersRef.current.node ? "visible" : "none" },
+            paint: {
+              "circle-radius": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                4,
+                1,
+                7,
+                1.6,
+                8.5,
+                2.5,
+                11,
+                4.5,
+              ],
+              "circle-color": "#f59e0b",
+              "circle-stroke-color": voltageColorExpression(),
+              "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 4, 0.4, 9, 1],
+            },
+          });
+          map.addLayer({
+            id: "national-industrial-sites",
+            type: "fill",
+            source: "power-finder-national-tiles",
+            "source-layer": "power_finder",
+            minzoom: 8,
+            maxzoom: 24,
+            filter: ["==", ["get", "kind"], "industrial_site"],
+            layout: {
+              visibility: enabledLayersRef.current.industrial_site ? "visible" : "none",
+            },
+            paint: {
+              "fill-color": "#17c3b2",
+              "fill-opacity": ["interpolate", ["linear"], ["zoom"], 10, 0.28, 16, 0.48],
+              "fill-outline-color": "#5eead4",
+            },
+          });
+          map.addLayer({
+            id: "national-industrial-overview",
+            type: "circle",
+            source: "power-finder-national-tiles",
+            "source-layer": "power_finder",
+            minzoom: 8,
+            maxzoom: 10,
+            filter: ["==", ["get", "kind"], "industrial_site"],
+            layout: {
+              visibility: enabledLayersRef.current.industrial_site ? "visible" : "none",
+            },
+            paint: {
+              "circle-radius": ["interpolate", ["linear"], ["zoom"], 8, 2.2, 10, 5],
+              "circle-color": "rgba(7, 17, 31, 0.75)",
+              "circle-stroke-color": "#99f6e4",
+              "circle-stroke-width": 1.5,
+              "circle-opacity": 0.95,
+            },
+          });
+          map.addLayer({
+            id: "national-generation-overview",
+            type: "circle",
+            source: "power-finder-registry-tiles",
+            "source-layer": "power_finder",
+            minzoom: 6,
+            maxzoom: 11,
+            filter: generationAssetFilter(
+              assetFilterRef.current.generationGroup,
+              assetFilterRef.current.minimumGenerationMw,
+              assetFilterRef.current.maximumGenerationMw,
+            ),
+            layout: {
+              visibility: enabledLayersRef.current.generation_asset ? "visible" : "none",
+            },
+            paint: {
+              "circle-radius": scaleMarkersByCapacityRef.current ? registeredCapacityRadius : 6,
+              "circle-color": generationColourExpression,
+              "circle-opacity": ["interpolate", ["linear"], ["zoom"], 6, 0.72, 9, 0.9],
+              "circle-stroke-color": "rgba(255, 255, 255, 0.7)",
+              "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 6, 0.25, 9, 0.7],
+            },
+          });
+          map.addLayer({
+            id: "national-generation-overview-label",
+            type: "symbol",
+            source: "power-finder-registry-tiles",
+            "source-layer": "power_finder",
+            minzoom: 6,
+            maxzoom: 11,
+            filter: generationAssetFilter(
+              assetFilterRef.current.generationGroup,
+              assetFilterRef.current.minimumGenerationMw,
+              assetFilterRef.current.maximumGenerationMw,
+            ),
+            layout: {
+              visibility: enabledLayersRef.current.generation_asset ? "visible" : "none",
+              "text-field": registeredMwLabel,
+              "text-font": ["Noto Sans Regular"],
+              "text-size": 10,
+              "text-allow-overlap": false,
+            },
+            paint: {
+              "text-color": "#07111f",
+              "text-halo-color": "rgba(255,255,255,0.92)",
+              "text-halo-width": 1.5,
+            },
+          });
+          map.addLayer({
+            id: "national-generation-assets",
+            type: "circle",
+            source: "power-finder-registry-tiles",
+            "source-layer": "power_finder",
+            minzoom: 11,
+            maxzoom: 24,
+            filter: generationAssetFilter(
+              assetFilterRef.current.generationGroup,
+              assetFilterRef.current.minimumGenerationMw,
+              assetFilterRef.current.maximumGenerationMw,
+            ),
+            layout: {
+              visibility: enabledLayersRef.current.generation_asset ? "visible" : "none",
+            },
+            paint: {
+              "circle-radius": scaleMarkersByCapacityRef.current ? registeredCapacityRadius : 6,
+              "circle-color": generationColourExpression,
+              "circle-stroke-color": "#ffffff",
+              "circle-stroke-width": 1.25,
+            },
+          });
+          map.addLayer({
+            id: "national-generation-asset-labels",
+            type: "symbol",
+            source: "power-finder-registry-tiles",
+            "source-layer": "power_finder",
+            minzoom: 11,
+            maxzoom: 24,
+            filter: generationAssetFilter(
+              assetFilterRef.current.generationGroup,
+              assetFilterRef.current.minimumGenerationMw,
+              assetFilterRef.current.maximumGenerationMw,
+            ),
+            layout: {
+              visibility: enabledLayersRef.current.generation_asset ? "visible" : "none",
+              "text-field": registeredMwLabel,
+              "text-font": ["Noto Sans Regular"],
+              "text-size": 10,
+              "text-allow-overlap": false,
+            },
+            paint: {
+              "text-color": "#07111f",
+              "text-halo-color": "rgba(255,255,255,0.92)",
+              "text-halo-width": 1.5,
+            },
+          });
+          map.addLayer({
+            id: "national-storage-assets",
+            type: "circle",
+            source: "power-finder-registry-tiles",
+            "source-layer": "power_finder",
+            minzoom: 6,
+            maxzoom: 24,
+            filter: storageAssetFilter(
+              assetFilterRef.current.minimumStorageMw,
+              assetFilterRef.current.maximumStorageMw,
+            ),
+            layout: {
+              visibility: enabledLayersRef.current.storage_asset ? "visible" : "none",
+            },
+            paint: {
+              "circle-radius": scaleMarkersByCapacityRef.current ? registeredCapacityRadius : 6,
+              "circle-color": "#a855f7",
+              "circle-stroke-color": "#f3e8ff",
+              "circle-stroke-width": 1,
+            },
+          });
+          map.addLayer({
+            id: "national-storage-asset-labels",
+            type: "symbol",
+            source: "power-finder-registry-tiles",
+            "source-layer": "power_finder",
+            minzoom: 6,
+            maxzoom: 24,
+            filter: storageAssetFilter(
+              assetFilterRef.current.minimumStorageMw,
+              assetFilterRef.current.maximumStorageMw,
+            ),
+            layout: {
+              visibility: enabledLayersRef.current.storage_asset ? "visible" : "none",
+              "text-field": registeredMwLabel,
+              "text-font": ["Noto Sans Regular"],
+              "text-size": 10,
+              "text-allow-overlap": false,
+            },
+            paint: {
+              "text-color": "#2e1065",
+              "text-halo-color": "rgba(255,255,255,0.92)",
+              "text-halo-width": 1.5,
+            },
+          });
+          map.addLayer({
+            id: "industrial-sites",
+            type: "fill",
+            source: sourceIds.industrial_site,
+            layout: { visibility: "none" },
+            paint: {
+              "fill-color": "#17c3b2",
+              "fill-opacity": 0.2,
+              "fill-outline-color": "#5eead4",
+            },
+          });
+          map.addLayer({
+            id: "grid-lines",
+            type: "line",
+            source: sourceIds.line,
+            minzoom: 8,
+            layout: { visibility: "none" },
+            filter: voltageClassFilter(isolatedVoltageClassRef.current) ?? ["has", "kind"],
+            paint: {
+              "line-color": voltageColorExpression(),
+              "line-width": voltageWidthExpression(),
+              "line-opacity": 0.85,
+            },
+          });
+          map.addLayer({
+            id: "node-clusters",
+            type: "circle",
+            source: sourceIds.node,
+            minzoom: 8,
+            layout: { visibility: "none" },
+            filter: ["has", "point_count"],
+            paint: {
+              "circle-radius": ["step", ["get", "point_count"], 15, 25, 19, 100, 24],
+              "circle-color": [
+                "step",
+                ["get", "point_count"],
+                "#f59e0b",
+                25,
+                "#f97316",
+                100,
+                "#ef4444",
+              ],
+              "circle-stroke-color": "#fff7d6",
+              "circle-stroke-width": 2,
+            },
+          });
+          map.addLayer({
+            id: "node-cluster-count",
+            type: "symbol",
+            source: sourceIds.node,
+            minzoom: 8,
+            filter: ["has", "point_count"],
+            layout: {
+              visibility: "none",
+              "text-field": ["get", "point_count_abbreviated"],
+              "text-font": ["Noto Sans Regular"],
+              "text-size": 11,
+            },
+            paint: { "text-color": "#07111f" },
+          });
+          map.addLayer({
+            id: "grid-nodes",
+            type: "circle",
+            source: sourceIds.node,
+            minzoom: 8,
+            layout: { visibility: "none" },
+            filter: (() => {
+              const voltage = voltageClassFilter(isolatedVoltageClassRef.current);
+              return voltage
+                ? (["all", ["!", ["has", "point_count"]], voltage] as ExpressionSpecification)
+                : ["!", ["has", "point_count"]];
+            })(),
+            paint: {
+              "circle-radius": 7,
+              "circle-color": "#f59e0b",
+              "circle-stroke-color": "#fff7d6",
+              "circle-stroke-width": 2,
+            },
+          });
+          map.addLayer({
+            id: "generation-clusters",
+            type: "circle",
+            source: sourceIds.generation_asset,
+            layout: { visibility: "none" },
+            filter: ["has", "point_count"],
+            paint: {
+              "circle-radius": registeredClusterRadius,
+              "circle-color": generationClusterColour,
+              "circle-stroke-color": "#dcfce7",
+              "circle-stroke-width": 2,
+            },
+          });
+          map.addLayer({
+            id: "generation-cluster-count",
+            type: "symbol",
+            source: sourceIds.generation_asset,
+            layout: {
+              visibility: "none",
+              "text-field": [
+                "case",
+                [">", ["get", "known_mw_count"], 0],
+                [
+                  "case",
+                  ["<", ["get", "registered_mw"], 1],
+                  "<1 MW",
+                  ["concat", ["round", ["get", "registered_mw"]], " MW"],
+                ],
+                ["concat", ["get", "point_count_abbreviated"], " assets"],
+              ],
+              "text-font": ["Noto Sans Regular"],
+              "text-size": 10,
+            },
+            filter: ["has", "point_count"],
+            paint: {
+              "text-color": "#07111f",
+              "text-halo-color": "rgba(255,255,255,0.85)",
+              "text-halo-width": 1,
+            },
+          });
+          map.addLayer({
+            id: "generation-assets",
+            type: "circle",
+            source: sourceIds.generation_asset,
+            layout: { visibility: "none" },
+            filter: ["!", ["has", "point_count"]],
+            paint: {
+              "circle-radius": registeredCapacityRadius,
+              "circle-color": localGenerationColour,
+              "circle-stroke-color": "#dcfce7",
+              "circle-stroke-width": 1,
+            },
+          });
+          map.addLayer({
+            id: "storage-clusters",
+            type: "circle",
+            source: sourceIds.storage_asset,
+            layout: { visibility: "none" },
+            filter: ["has", "point_count"],
+            paint: {
+              "circle-radius": registeredClusterRadius,
+              "circle-color": "#a855f7",
+              "circle-stroke-color": "#f3e8ff",
+              "circle-stroke-width": 2,
+            },
+          });
+          map.addLayer({
+            id: "storage-cluster-count",
+            type: "symbol",
+            source: sourceIds.storage_asset,
+            layout: {
+              visibility: "none",
+              "text-field": [
+                "case",
+                [">", ["get", "known_mw_count"], 0],
+                [
+                  "case",
+                  ["<", ["get", "registered_mw"], 1],
+                  "<1 MW",
+                  ["concat", ["round", ["get", "registered_mw"]], " MW"],
+                ],
+                ["concat", ["get", "point_count_abbreviated"], " assets"],
+              ],
+              "text-font": ["Noto Sans Regular"],
+              "text-size": 10,
+            },
+            filter: ["has", "point_count"],
+            paint: { "text-color": "#2e1065" },
+          });
+          map.addLayer({
+            id: "storage-assets",
+            type: "circle",
+            source: sourceIds.storage_asset,
+            layout: { visibility: "none" },
+            filter: ["!", ["has", "point_count"]],
+            paint: {
+              "circle-radius": registeredCapacityRadius,
+              "circle-color": "#a855f7",
+              "circle-stroke-color": "#f3e8ff",
+              "circle-stroke-width": 1,
+            },
+          });
+          map.addLayer({
+            id: "selected-candidate-halo",
+            type: "circle",
+            source: "finder-selected-candidate",
+            paint: {
+              "circle-radius": 18,
+              "circle-color": "rgba(56, 215, 242, 0.18)",
+              "circle-stroke-color": "#ffffff",
+              "circle-stroke-width": 4,
+              "circle-blur": 0.15,
+            },
+          });
+          map.addLayer({
+            id: "selected-candidate-core",
+            type: "circle",
+            source: "finder-selected-candidate",
+            paint: {
+              "circle-radius": 7,
+              "circle-color": "#38d7f2",
+              "circle-stroke-color": "#07111f",
+              "circle-stroke-width": 2,
+            },
+          });
+          map.addLayer({
+            id: "selected-candidate-label",
+            type: "symbol",
+            source: "finder-selected-candidate",
+            layout: {
+              "text-field": ["get", "name"],
+              "text-font": ["Noto Sans Regular"],
+              "text-size": 12,
+              "text-anchor": "top",
+              "text-offset": [0, 1.8],
+            },
+            paint: {
+              "text-color": "#ffffff",
+              "text-halo-color": "#07111f",
+              "text-halo-width": 2,
+            },
+          });
+          for (const layer of [
+            "rzreg-data-centre-clusters",
+            "rzreg-data-centre-cluster-count",
+            "rzreg-data-centres-approximate-area",
+            "rzreg-data-centres-approximate",
+            "rzreg-data-centres-exact",
+          ]) {
+            map.moveLayer(layer);
+          }
+
+          const selectFeature = (event: MapLayerMouseEvent) => {
+            const rendered = event.features?.[0];
+            const id = rendered?.id ?? rendered?.properties?.id;
+            const feature = collectionRef.current.features.find(
+              (item) => String(item.id) === String(id),
+            );
+            if (feature) onSelectRef.current(feature);
+          };
+          for (const layer of [
+            "grid-nodes",
+            "industrial-sites",
+            "grid-lines",
+            "generation-assets",
+            "storage-assets",
+            "national-grid-nodes",
+            "national-industrial-sites",
+            "national-industrial-overview",
+            "national-generation-overview",
+            "national-generation-assets",
+            "national-storage-assets",
+          ]) {
+            map.on("click", layer, selectFeature);
+            map.on("mouseenter", layer, () => {
+              map.getCanvas().style.cursor = "pointer";
+            });
+            map.on("mouseleave", layer, () => {
+              map.getCanvas().style.cursor = "";
+            });
+          }
+          const registerClusterExpansion = (layer: string, sourceId: string) => {
+            map.on("click", layer, (event) => {
+              const cluster = event.features?.[0];
+              const clusterId = cluster?.properties?.cluster_id;
+              if (!cluster || typeof clusterId !== "number" || cluster.geometry.type !== "Point")
+                return;
+              const coordinates = cluster.geometry.coordinates as [number, number];
+              const source = map.getSource(sourceId);
+              if (!isGeoJsonSource(source)) return;
+              void source.getClusterExpansionZoom(clusterId).then((zoom) => {
+                map.easeTo({ center: coordinates, zoom, duration: 450 });
+              });
+            });
+            map.on("mouseenter", layer, () => {
+              map.getCanvas().style.cursor = "pointer";
+            });
+            map.on("mouseleave", layer, () => {
+              map.getCanvas().style.cursor = "";
+            });
+          };
+          registerClusterExpansion("node-clusters", sourceIds.node);
+          registerClusterExpansion("generation-clusters", sourceIds.generation_asset);
+          registerClusterExpansion("storage-clusters", sourceIds.storage_asset);
+          registerClusterExpansion("rzreg-data-centre-clusters", "rzreg-data-centres");
+          map.on("click", (event) => {
+            if (!onSitePlacementRef.current) return;
+            const interactive = map.queryRenderedFeatures(event.point, {
+              layers: [
+                "grid-nodes",
+                "industrial-sites",
+                "grid-lines",
+                "generation-assets",
+                "storage-assets",
+                "node-clusters",
+                "generation-clusters",
+                "storage-clusters",
+                "national-grid-nodes",
+                "national-industrial-sites",
+                "national-industrial-overview",
+                "national-generation-overview",
+                "national-generation-assets",
+                "national-storage-assets",
+                "rzreg-data-centre-clusters",
+                "rzreg-data-centres-approximate-area",
+                "rzreg-data-centres-exact",
+                "rzreg-data-centres-approximate",
+              ],
+            });
+            if (!interactive.length) {
+              onSitePlacementRef.current([event.lngLat.lng, event.lngLat.lat]);
+            }
+          });
+          map.moveLayer("finder-project-site");
+          map.moveLayer("selected-candidate-halo");
+          map.moveLayer("selected-candidate-core");
+          map.moveLayer("selected-candidate-label");
+          map.on("moveend", () => {
+            const bounds = map.getBounds();
+            onViewportChangeRef.current?.({
+              west: bounds.getWest(),
+              south: bounds.getSouth(),
+              east: bounds.getEast(),
+              north: bounds.getNorth(),
+            });
+            publishVisibleLayerCounts(map, onVisibleLayerCountsRef.current);
+          });
+          map.on("idle", () => publishVisibleLayerCounts(map, onVisibleLayerCountsRef.current));
         });
-        map.on("idle", () => publishVisibleLayerCounts(map, onVisibleLayerCountsRef.current));
-      });
       },
     );
 
@@ -1310,6 +1371,31 @@ export function PowerFinderMap({
     }
     map.once("idle", () => publishVisibleLayerCounts(map, onVisibleLayerCountsRef.current));
   }, [enabledLayers]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const voltage = voltageClassFilter(isolatedVoltageClass);
+    const nationalLineFilter = voltage
+      ? (["all", ["==", ["get", "kind"], "line"], voltage] as ExpressionSpecification)
+      : (["==", ["get", "kind"], "line"] as ExpressionSpecification);
+    const nationalNodeFilter = voltage
+      ? (["all", ["==", ["get", "kind"], "node"], voltage] as ExpressionSpecification)
+      : (["==", ["get", "kind"], "node"] as ExpressionSpecification);
+    const localNodeFilter = voltage
+      ? (["all", ["!", ["has", "point_count"]], voltage] as ExpressionSpecification)
+      : (["!", ["has", "point_count"]] as ExpressionSpecification);
+    if (map.getLayer("national-grid-lines"))
+      map.setFilter("national-grid-lines", nationalLineFilter);
+    if (map.getLayer("national-grid-nodes"))
+      map.setFilter("national-grid-nodes", nationalNodeFilter);
+    if (map.getLayer("grid-lines")) map.setFilter("grid-lines", voltage ?? ["has", "kind"]);
+    if (map.getLayer("grid-nodes")) map.setFilter("grid-nodes", localNodeFilter);
+    for (const layer of ["node-clusters", "node-cluster-count"]) {
+      if (map.getLayer(layer)) map.setLayoutProperty(layer, "visibility", "none");
+    }
+    map.once("idle", () => publishVisibleLayerCounts(map, onVisibleLayerCountsRef.current));
+  }, [isolatedVoltageClass]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -1580,8 +1666,12 @@ export function PowerFinderMap({
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    const generationFilter = generationAssetFilter(generationGroup, minimumGenerationMw);
-    const storageFilter = storageAssetFilter(minimumStorageMw);
+    const generationFilter = generationAssetFilter(
+      generationGroup,
+      minimumGenerationMw,
+      maximumGenerationMw,
+    );
+    const storageFilter = storageAssetFilter(minimumStorageMw, maximumStorageMw);
     for (const layer of [
       "national-generation-overview",
       "national-generation-overview-label",
@@ -1591,7 +1681,28 @@ export function PowerFinderMap({
       if (map.getLayer(layer)) map.setFilter(layer, generationFilter);
     for (const layer of ["national-storage-assets", "national-storage-asset-labels"])
       if (map.getLayer(layer)) map.setFilter(layer, storageFilter);
-  }, [generationGroup, minimumGenerationMw, minimumStorageMw]);
+  }, [
+    generationGroup,
+    maximumGenerationMw,
+    maximumStorageMw,
+    minimumGenerationMw,
+    minimumStorageMw,
+  ]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const radius = scaleMarkersByCapacity ? registeredCapacityRadius : 6;
+    for (const layer of [
+      "national-generation-overview",
+      "national-generation-assets",
+      "national-storage-assets",
+      "generation-assets",
+      "storage-assets",
+    ]) {
+      if (map.getLayer(layer)) map.setPaintProperty(layer, "circle-radius", radius);
+    }
+  }, [scaleMarkersByCapacity]);
 
   return (
     <div

@@ -80,6 +80,7 @@ export type PowerFinderCollection = Omit<
     record_count: number;
     available_kinds?: PowerFinderKind[];
     kind_counts?: Partial<Record<PowerFinderKind, number>>;
+    coverage_status?: "accepted_partial" | "accepted_static_fallback" | "unavailable";
     evidence_boundary: string;
   };
   features: PowerFinderFeature[];

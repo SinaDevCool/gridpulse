@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   AlertTriangle,
   BookmarkPlus,
@@ -13,15 +13,26 @@ import {
   PanelLeftOpen,
   Search,
   ShieldCheck,
-  ChevronDown,
-  ChevronUp,
   Zap,
   X,
 } from "lucide-react";
-import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+  type ChangeEvent,
+} from "react";
 import { z } from "zod";
 import { AppShell } from "@/components/product/AppShell";
 import { PowerFinderMap, type RzRegDataCentre } from "@/components/product/PowerFinderMap";
+import {
+  InteractiveMapLegend,
+  type InteractiveLegendSection,
+} from "@/components/product/InteractiveMapLegend";
 import type { ActivationStudyTab } from "@/components/product/ActivationStudyPanel";
 import type { VisibleLayerCounts } from "@/components/product/power-finder-map-data";
 import {
@@ -39,7 +50,21 @@ import {
 import { saveFinderProjectToPortfolio } from "@/features/power-finder/property-handoff";
 import { getAnonymousProperty } from "@/features/anonymous-workspace/repository";
 import type { AnonymousProperty } from "@/features/anonymous-workspace/schema";
-import { GRID_VOLTAGE_CLASSES } from "@/features/power-finder/voltage-style";
+import {
+  GRID_VOLTAGE_CLASSES,
+  type GridVoltageClassId,
+} from "@/features/power-finder/voltage-style";
+import {
+  GENERATION_TECHNOLOGY_CLASSES,
+  STORAGE_TECHNOLOGY,
+  type GenerationTechnologyId,
+} from "@/features/map/map-visual-registry";
+import {
+  initialSharedMapFilterState,
+  sharedMapFilterReducer,
+  type MapPreset,
+} from "@/features/map/map-filter-state";
+import { mapIsolationFromSearch, mapIsolationSearchPatch } from "@/features/map/map-url-state";
 import { layerAvailability } from "@/features/power-finder/layer-availability";
 import {
   loadPowerFinderViewport,
@@ -168,6 +193,30 @@ export const Route = createFileRoute("/power-finder")({
       .optional()
       .catch(undefined),
     mapMode: z.enum(["voltage", "evidence", "capacity"]).optional().catch(undefined),
+    mapView: z.enum(["connection", "infrastructure", "generation"]).optional().catch(undefined),
+    isolateVoltage: z
+      .enum(["ehv", "220kv", "110kv", "distribution", "unknown"])
+      .optional()
+      .catch(undefined),
+    isolateTechnology: z
+      .enum([
+        "solar",
+        "wind",
+        "biomass",
+        "hydro",
+        "geothermal",
+        "nuclear",
+        "gas",
+        "fossil_other",
+        "other",
+        "storage",
+      ])
+      .optional()
+      .catch(undefined),
+    generationMinMw: safeNumber(0, 100_000),
+    generationMaxMw: safeNumber(0, 100_000),
+    storageMinMw: safeNumber(0, 100_000),
+    storageMaxMw: safeNumber(0, 100_000),
     capacitySource: z
       .enum(["reference", "private", "demo", "berlin_synthetic"])
       .optional()
@@ -273,7 +322,7 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string)
 
 function PowerFinderPage() {
   const { resolved: basemapMode } = useTheme();
-  const navigate = useNavigate();
+  const navigate = Route.useNavigate();
   const search = Route.useSearch();
   const [collection, setCollection] = useState<PowerFinderCollection | null>(null);
   const [project, setProject] = useState<FinderProject>(() => {
@@ -297,12 +346,30 @@ function PowerFinderPage() {
   const [selected, setSelected] = useState<PowerFinderFeature | null>(null);
   const [selectedOpportunitySnapshot, setSelectedOpportunitySnapshot] =
     useState<CandidateOpportunity | null>(null);
-  const [enabled, setEnabled] = useState<Record<PowerFinderKind, boolean>>({
-    node: true,
-    line: true,
-    industrial_site: true,
-    generation_asset: false,
-    storage_asset: false,
+  const [enabled, setEnabled] = useState<Record<PowerFinderKind, boolean>>(() => {
+    if (search.mapView === "generation")
+      return {
+        node: false,
+        line: true,
+        industrial_site: false,
+        generation_asset: true,
+        storage_asset: true,
+      };
+    if (search.mapView === "infrastructure")
+      return {
+        node: true,
+        line: true,
+        industrial_site: false,
+        generation_asset: false,
+        storage_asset: false,
+      };
+    return {
+      node: true,
+      line: true,
+      industrial_site: true,
+      generation_asset: false,
+      storage_asset: false,
+    };
   });
   const [error, setError] = useState("");
   const [bounds, setBounds] = useState(initialBounds);
@@ -428,7 +495,9 @@ function PowerFinderPage() {
   const [secondaryControlsOpen, setSecondaryControlsOpen] = useState(Boolean(search.propertyId));
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [legendOpen, setLegendOpen] = useState(true);
-  const [showDataCentres, setShowDataCentres] = useState(true);
+  const [showDataCentres, setShowDataCentres] = useState(
+    !search.mapView || search.mapView === "connection",
+  );
   const [selectedDataCentre, setSelectedDataCentre] = useState<RzRegDataCentre | null>(null);
   const [finderWorkflow, setFinderWorkflow] = useState<"screen" | "discover">("screen");
   const [discoveryStrategy, setDiscoveryStrategy] = useState<DiscoveryStrategy>("balanced");
@@ -438,9 +507,54 @@ function PowerFinderPage() {
   const [discoveryState, setDiscoveryState] = useState<"idle" | "loading" | "ready" | "error">(
     "idle",
   );
-  const [generationGroup, setGenerationGroup] = useState("all");
-  const [minimumGenerationMw, setMinimumGenerationMw] = useState(0);
-  const [minimumStorageMw, setMinimumStorageMw] = useState(0);
+  const [generationGroup, setGenerationGroup] = useState<string>(
+    search.isolateTechnology && search.isolateTechnology !== "storage"
+      ? search.isolateTechnology
+      : "all",
+  );
+  const [mapFilters, dispatchMapFilter] = useReducer(sharedMapFilterReducer, {
+    ...initialSharedMapFilterState,
+    preset: search.mapView ?? "connection",
+    isolation: mapIsolationFromSearch(search),
+    minimumGenerationMw: search.generationMinMw ?? 0,
+    maximumGenerationMw: search.generationMaxMw ?? null,
+    minimumStorageMw: search.storageMinMw ?? 0,
+    maximumStorageMw: search.storageMaxMw ?? null,
+  });
+  const minimumGenerationMw = mapFilters.minimumGenerationMw;
+  const minimumStorageMw = mapFilters.minimumStorageMw;
+  const setMinimumGenerationMw = (minimum: number) => {
+    dispatchMapFilter({
+      type: "set_generation_range",
+      minimum,
+      maximum: mapFilters.maximumGenerationMw,
+    });
+    void updateSearch({ generationMinMw: minimum || undefined });
+  };
+  const setMaximumGenerationMw = (maximum: number | null) => {
+    dispatchMapFilter({
+      type: "set_generation_range",
+      minimum: mapFilters.minimumGenerationMw,
+      maximum,
+    });
+    void updateSearch({ generationMaxMw: maximum ?? undefined });
+  };
+  const setMinimumStorageMw = (minimum: number) => {
+    dispatchMapFilter({
+      type: "set_storage_range",
+      minimum,
+      maximum: mapFilters.maximumStorageMw,
+    });
+    void updateSearch({ storageMinMw: minimum || undefined });
+  };
+  const setMaximumStorageMw = (maximum: number | null) => {
+    dispatchMapFilter({
+      type: "set_storage_range",
+      minimum: mapFilters.minimumStorageMw,
+      maximum,
+    });
+    void updateSearch({ storageMaxMw: maximum ?? undefined });
+  };
   const detailDismissedRef = useRef(false);
   const [basemapStatus, setBasemapStatus] = useState<BasemapStatus>("loading");
   const [mapNavigationTarget, setMapNavigationTarget] = useState<
@@ -515,6 +629,165 @@ function PowerFinderPage() {
   const [capacityState, setCapacityState] = useState<"idle" | "loading" | "ready" | "error">(
     "idle",
   );
+  const registryAssetsUnavailable =
+    dataMode === "published_artifact" ||
+    collection?.metadata.coverage_status === "accepted_static_fallback";
+  const isolatedVoltageClass =
+    mapFilters.isolation?.dimension === "voltage" ? mapFilters.isolation.value : null;
+  const isolatedTechnology =
+    mapFilters.isolation?.dimension === "technology" ? mapFilters.isolation.value : null;
+  const effectiveGenerationGroup =
+    isolatedTechnology && isolatedTechnology !== "storage" ? isolatedTechnology : generationGroup;
+  const effectiveEnabled = useMemo(
+    () => ({
+      ...enabled,
+      generation_asset: isolatedTechnology === "storage" ? false : enabled.generation_asset,
+      storage_asset:
+        isolatedTechnology && isolatedTechnology !== "storage" ? false : enabled.storage_asset,
+    }),
+    [enabled, isolatedTechnology],
+  );
+  const applyMapPreset = (preset: MapPreset) => {
+    dispatchMapFilter({ type: "set_preset", preset });
+    setMapMode("voltage");
+    if (preset === "connection") {
+      setEnabled({
+        node: true,
+        line: true,
+        industrial_site: true,
+        generation_asset: false,
+        storage_asset: false,
+      });
+      setShowDataCentres(true);
+    } else if (preset === "infrastructure") {
+      setEnabled({
+        node: true,
+        line: true,
+        industrial_site: false,
+        generation_asset: false,
+        storage_asset: false,
+      });
+      setShowDataCentres(false);
+    } else {
+      setEnabled({
+        node: false,
+        line: true,
+        industrial_site: false,
+        generation_asset: true,
+        storage_asset: true,
+      });
+      setShowDataCentres(false);
+    }
+    void navigate({
+      to: "/power-finder",
+      search: {
+        ...search,
+        mapView: preset === "connection" ? undefined : preset,
+        mapMode: "voltage",
+        isolateVoltage: undefined,
+        isolateTechnology: undefined,
+      },
+      replace: true,
+    });
+    setInteractionNotice(`${preset.replaceAll("_", " ")} map view selected.`);
+  };
+  const legendSections = useMemo(() => {
+    if (mapMode === "capacity") return [];
+    const sections: InteractiveLegendSection[] = [
+      {
+        id: "voltage",
+        title: "Voltage",
+        description: "Mapped public topology; voltage is not available connection capacity.",
+        isolatable: true,
+        items: GRID_VOLTAGE_CLASSES.map((item) => ({
+          id: item.id,
+          label: item.label,
+          color: item.color,
+          shape: "line" as const,
+        })),
+      },
+    ];
+    if (mapFilters.preset === "generation" || enabled.generation_asset || enabled.storage_asset) {
+      sections.push({
+        id: "technology",
+        title: "Generation & Storage",
+        description:
+          "Marker area represents registered capacity where published—not grid headroom.",
+        isolatable: true,
+        items: [
+          ...GENERATION_TECHNOLOGY_CLASSES.map((item) => ({
+            ...item,
+            shape: "dot" as const,
+            unavailable: registryAssetsUnavailable,
+            unavailableReason: registryAssetsUnavailable
+              ? "Registry assets are unavailable in the accepted static fallback."
+              : undefined,
+          })),
+          {
+            ...STORAGE_TECHNOLOGY,
+            shape: "ring" as const,
+            unavailable: registryAssetsUnavailable,
+            unavailableReason: registryAssetsUnavailable
+              ? "Registry assets are unavailable in the accepted static fallback."
+              : undefined,
+          },
+        ],
+      });
+    }
+    return sections;
+  }, [
+    enabled.generation_asset,
+    enabled.storage_asset,
+    mapFilters.preset,
+    mapMode,
+    registryAssetsUnavailable,
+  ]);
+  const isolateMapLegendItem = (dimension: string, value: string) => {
+    if (dimension === "voltage") {
+      const next = isolatedVoltageClass === value ? null : (value as GridVoltageClassId);
+      dispatchMapFilter(
+        next
+          ? { type: "isolate", isolation: { dimension: "voltage", value: next } }
+          : { type: "clear_isolation" },
+      );
+      void updateSearch(
+        mapIsolationSearchPatch(next ? { dimension: "voltage", value: next } : null),
+      );
+      setInteractionNotice(
+        next
+          ? `Showing only ${GRID_VOLTAGE_CLASSES.find((item) => item.id === next)?.label}.`
+          : "Voltage isolation cleared.",
+      );
+      return;
+    }
+    if (dimension === "technology") {
+      const next = isolatedTechnology === value ? null : value;
+      dispatchMapFilter(
+        next
+          ? {
+              type: "isolate",
+              isolation: {
+                dimension: "technology",
+                value: next as GenerationTechnologyId | "storage",
+              },
+            }
+          : { type: "clear_isolation" },
+      );
+      void updateSearch(
+        mapIsolationSearchPatch(
+          next
+            ? {
+                dimension: "technology",
+                value: next as GenerationTechnologyId | "storage",
+              }
+            : null,
+        ),
+      );
+      setInteractionNotice(
+        next ? `Showing only ${next.replaceAll("_", " ")}.` : "Technology isolation cleared.",
+      );
+    }
+  };
   const activeCoverage =
     coverage.find((item) => item.regionCode === regionCode) ?? fallbackCoverage[1];
   const viewportTarget = useMemo(
@@ -777,13 +1050,21 @@ function PowerFinderPage() {
           : matchesTso && matchesDso;
       const matchesRegisteredCapacity =
         properties.kind === "generation_asset"
-          ? (generationGroup === "all" || properties.generation_group === generationGroup) &&
-            (minimumGenerationMw === 0 || (properties.net_capacity_mw ?? -1) >= minimumGenerationMw)
+          ? (effectiveGenerationGroup === "all" ||
+              properties.generation_group === effectiveGenerationGroup) &&
+            (minimumGenerationMw === 0 ||
+              (properties.net_capacity_mw ?? -1) >= minimumGenerationMw) &&
+            (mapFilters.maximumGenerationMw === null ||
+              (properties.net_capacity_mw ?? mapFilters.maximumGenerationMw + 1) <=
+                mapFilters.maximumGenerationMw)
           : properties.kind === "storage_asset"
-            ? minimumStorageMw === 0 || (properties.net_capacity_mw ?? -1) >= minimumStorageMw
+            ? (minimumStorageMw === 0 || (properties.net_capacity_mw ?? -1) >= minimumStorageMw) &&
+              (mapFilters.maximumStorageMw === null ||
+                (properties.net_capacity_mw ?? mapFilters.maximumStorageMw + 1) <=
+                  mapFilters.maximumStorageMw)
             : true;
       return (
-        enabled[properties.kind] &&
+        effectiveEnabled[properties.kind] &&
         matchesQuery &&
         matchesVoltage &&
         matchesOperator &&
@@ -797,8 +1078,10 @@ function PowerFinderPage() {
     };
   }, [
     collection,
-    enabled,
-    generationGroup,
+    effectiveEnabled,
+    effectiveGenerationGroup,
+    mapFilters.maximumGenerationMw,
+    mapFilters.maximumStorageMw,
     minimumGenerationMw,
     minimumStorageMw,
     minimumVoltage,
@@ -2473,6 +2756,31 @@ function PowerFinderPage() {
 
           <details className="finder-layers-menu" suppressHydrationWarning>
             <summary>Map Layers</summary>
+            <div className="finder-map-presets" role="group" aria-label="Map view">
+              {(
+                [
+                  ["connection", "Connection"],
+                  ["infrastructure", "Infrastructure"],
+                  ["generation", "Generation & Storage"],
+                ] as const
+              ).map(([preset, label]) => (
+                <button
+                  key={preset}
+                  type="button"
+                  className={mapFilters.preset === preset ? "is-active" : ""}
+                  aria-pressed={mapFilters.preset === preset}
+                  onClick={() => applyMapPreset(preset)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {mapFilters.preset === "generation" && registryAssetsUnavailable ? (
+              <p className="layer-visibility-note" role="status">
+                Registered generation and storage are unavailable in this fallback release. Grid
+                infrastructure remains available; no empty map is being presented as zero assets.
+              </p>
+            ) : null}
             <div className="power-finder-layer-list">
               <label title="German data-centre register records, shown at their validated location precision.">
                 <input
@@ -2568,24 +2876,76 @@ function PowerFinderPage() {
                         <option value="500">500+ MW</option>
                       </select>
                     </label>
+                    <label>
+                      <span>Maximum Registered Generation</span>
+                      <select
+                        aria-label="Maximum registered generation"
+                        value={mapFilters.maximumGenerationMw ?? ""}
+                        onChange={(event) =>
+                          setMaximumGenerationMw(
+                            event.target.value ? Number(event.target.value) : null,
+                          )
+                        }
+                      >
+                        <option value="">No Maximum</option>
+                        <option value="10">Up to 10 MW</option>
+                        <option value="50">Up to 50 MW</option>
+                        <option value="100">Up to 100 MW</option>
+                        <option value="500">Up to 500 MW</option>
+                        <option value="1000">Up to 1,000 MW</option>
+                      </select>
+                    </label>
                   </>
                 ) : null}
                 {enabled.storage_asset ? (
-                  <label>
-                    <span>Minimum Registered Storage Power</span>
-                    <select
-                      aria-label="Minimum registered storage power"
-                      value={minimumStorageMw}
-                      onChange={(event) => setMinimumStorageMw(Number(event.target.value))}
-                    >
-                      <option value="0">Any MW, Including Unknown</option>
-                      <option value="1">1+ MW</option>
-                      <option value="10">10+ MW</option>
-                      <option value="50">50+ MW</option>
-                      <option value="100">100+ MW</option>
-                    </select>
-                  </label>
+                  <>
+                    <label>
+                      <span>Minimum Registered Storage Power</span>
+                      <select
+                        aria-label="Minimum registered storage power"
+                        value={minimumStorageMw}
+                        onChange={(event) => setMinimumStorageMw(Number(event.target.value))}
+                      >
+                        <option value="0">Any MW, Including Unknown</option>
+                        <option value="1">1+ MW</option>
+                        <option value="10">10+ MW</option>
+                        <option value="50">50+ MW</option>
+                        <option value="100">100+ MW</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Maximum Registered Storage Power</span>
+                      <select
+                        aria-label="Maximum registered storage power"
+                        value={mapFilters.maximumStorageMw ?? ""}
+                        onChange={(event) =>
+                          setMaximumStorageMw(
+                            event.target.value ? Number(event.target.value) : null,
+                          )
+                        }
+                      >
+                        <option value="">No Maximum</option>
+                        <option value="10">Up to 10 MW</option>
+                        <option value="50">Up to 50 MW</option>
+                        <option value="100">Up to 100 MW</option>
+                        <option value="500">Up to 500 MW</option>
+                      </select>
+                    </label>
+                  </>
                 ) : null}
+                <label className="registered-capacity-scale-toggle">
+                  <input
+                    type="checkbox"
+                    checked={mapFilters.scaleMarkersByCapacity}
+                    onChange={(event) =>
+                      dispatchMapFilter({
+                        type: "set_capacity_scaling",
+                        enabled: event.currentTarget.checked,
+                      })
+                    }
+                  />
+                  <span>Scale markers by registered capacity</span>
+                </label>
                 <p className="layer-visibility-note">
                   Circle area represents registered net capacity where published. Small circles may
                   mean low or unknown MW. This is nearby asset context, not available power or grid
@@ -2875,15 +3235,19 @@ function PowerFinderPage() {
           {visibleCollection && (
             <PowerFinderMap
               collection={visibleCollection}
-              enabledLayers={enabled}
+              enabledLayers={effectiveEnabled}
               selectedFeature={selected}
               previewFeature={previewFeature}
               mapMode={mapMode}
               basemapMode={basemapMode}
               onBasemapStatusChange={setBasemapStatus}
-              generationGroup={generationGroup}
+              generationGroup={effectiveGenerationGroup}
               minimumGenerationMw={minimumGenerationMw}
+              maximumGenerationMw={mapFilters.maximumGenerationMw}
               minimumStorageMw={minimumStorageMw}
+              maximumStorageMw={mapFilters.maximumStorageMw}
+              isolatedVoltageClass={isolatedVoltageClass}
+              scaleMarkersByCapacity={mapFilters.scaleMarkersByCapacity}
               capacityNodes={activeCapacityNodes}
               capacityCoverage={
                 capacitySource === "berlin_synthetic" ? (berlinCapacity?.coverage ?? null) : null
@@ -3049,26 +3413,29 @@ function PowerFinderPage() {
               </div>
             </aside>
           ) : null}
-          <div className={`power-finder-legend ${legendOpen ? "is-open" : "is-collapsed"}`}>
-            <button
-              type="button"
-              className="power-finder-legend-toggle"
-              aria-expanded={legendOpen}
-              aria-label={legendOpen ? "Hide map legend" : "Show map legend"}
-              onClick={() => setLegendOpen((current) => !current)}
-            >
-              <strong>
-                {mapMode === "capacity"
-                  ? `${capacityMetricLabels[capacityMetric]} · MW`
-                  : mapMode === "voltage"
-                    ? "Map legend"
-                    : "Evidence authority"}
-              </strong>
-              {legendOpen ? <ChevronDown aria-hidden="true" /> : <ChevronUp aria-hidden="true" />}
-            </button>
-            {legendOpen && showDataCentres ? (
-              <div className="power-finder-data-legend" aria-label="Data-centre location precision">
-                <b>RZReg data centres · 319 records</b>
+          <InteractiveMapLegend
+            title={
+              mapMode === "capacity"
+                ? `${capacityMetricLabels[capacityMetric]} · MW`
+                : mapFilters.preset === "generation"
+                  ? "Generation & Storage"
+                  : "Map Legend"
+            }
+            open={legendOpen}
+            onOpenChange={setLegendOpen}
+            sections={legendSections}
+            isolated={mapFilters.isolation}
+            onIsolate={isolateMapLegendItem}
+            onReset={() => {
+              dispatchMapFilter({ type: "clear_isolation" });
+              void updateSearch(mapIsolationSearchPatch(null));
+              setInteractionNotice("Legend isolation cleared.");
+            }}
+            className="power-finder-interactive-legend"
+          >
+            {showDataCentres ? (
+              <div className="interactive-map-legend__custom power-finder-data-legend">
+                <b>RZReg Data Centres · 319 Records</b>
                 <span>
                   <i className="legend-data-centre-exact" /> Published facility address · 38
                 </span>
@@ -3081,87 +3448,30 @@ function PowerFinderPage() {
                 </small>
               </div>
             ) : null}
-            {legendOpen &&
-              (mapMode === "capacity" ? (
-                <>
-                  <span>
-                    <i className="legend-capacity-high" /> Meets {requiredCapacityMw} MW
-                  </span>
-                  <span>
-                    <i className="legend-capacity-activation" /> Alternative pathway
-                  </span>
-                  <span>
-                    <i className="legend-capacity-low" /> Below {requiredCapacityMw} MW
-                  </span>
-                  <span>
-                    <i className="legend-capacity-stale" /> Stale · recalculate
-                  </span>
-                  <small>
-                    {capacitySource === "berlin_synthetic"
-                      ? "Berlin pocket · real mapped nodes, synthetic 110 kV model; not operator headroom"
-                      : capacityViewport?.nodes[0]
-                        ? `${capacityViewport.nodes[0].scenarioLabel} · ${capacityViewport.nodes[0].modelVersion}`
-                        : "No reviewed results in this workspace view"}
-                  </small>
-                </>
-              ) : (
-                <>
-                  {finderWorkflow === "discover" && discoveryResults.length > 0 ? (
-                    <span className="legend-discovery-location">
-                      <i>1</i> Ranked investigation location
-                    </span>
-                  ) : null}
-                  <span>
-                    <i className="legend-node" /> Grid node · orange marker, voltage outline
-                  </span>
-                  {GRID_VOLTAGE_CLASSES.map((voltageClass) => (
-                    <span key={voltageClass.id}>
-                      <i
-                        className="legend-voltage-line"
-                        style={{ borderColor: voltageClass.color }}
-                      />
-                      {voltageClass.label}
-                    </span>
-                  ))}
-                  <span>
-                    <i className="legend-site" /> Industrial land
-                  </span>
-                  <span>
-                    <i className="legend-generation" style={{ background: "#facc15" }} /> Solar
-                  </span>
-                  <span>
-                    <i className="legend-generation" style={{ background: "#38bdf8" }} /> Wind
-                  </span>
-                  <span>
-                    <i className="legend-generation" style={{ background: "#22c55e" }} /> Biomass
-                  </span>
-                  <span>
-                    <i className="legend-generation" style={{ background: "#06b6d4" }} /> Hydro
-                  </span>
-                  <span>
-                    <i className="legend-generation" style={{ background: "#f97316" }} />
-                    Geothermal
-                  </span>
-                  <span>
-                    <i className="legend-generation" style={{ background: "#f472b6" }} /> Nuclear
-                  </span>
-                  <span>
-                    <i className="legend-generation" style={{ background: "#a78bfa" }} /> Gas
-                  </span>
-                  <span>
-                    <i className="legend-generation" style={{ background: "#ef4444" }} /> Coal, oil
-                    &amp; other fossil
-                  </span>
-                  <span>
-                    <i className="legend-generation" style={{ background: "#94a3b8" }} /> Other /
-                    unknown
-                  </span>
-                  <span>
-                    <i className="legend-storage" /> Registered storage
-                  </span>
-                </>
-              ))}
-          </div>
+            {mapMode === "capacity" ? (
+              <div className="interactive-map-legend__custom power-finder-data-legend">
+                <span>
+                  <i className="legend-capacity-high" /> Meets {requiredCapacityMw} MW
+                </span>
+                <span>
+                  <i className="legend-capacity-activation" /> Alternative pathway
+                </span>
+                <span>
+                  <i className="legend-capacity-low" /> Below {requiredCapacityMw} MW
+                </span>
+                <span>
+                  <i className="legend-capacity-stale" /> Stale · recalculate
+                </span>
+                <small>
+                  {capacitySource === "berlin_synthetic"
+                    ? "Berlin pocket · mapped nodes, synthetic 110 kV model; not operator headroom"
+                    : capacityViewport?.nodes[0]
+                      ? `${capacityViewport.nodes[0].scenarioLabel} · ${capacityViewport.nodes[0].modelVersion}`
+                      : "No reviewed results in this workspace view"}
+                </small>
+              </div>
+            ) : null}
+          </InteractiveMapLegend>
 
           {finderMvpFeatures.activationStudy && activationOpen && selectedOpportunity && (
             <Suspense

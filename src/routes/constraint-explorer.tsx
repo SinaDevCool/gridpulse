@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useReducer, useState } from "react";
 import {
   AlertTriangle,
   CalendarDays,
@@ -13,6 +13,10 @@ import {
 import { z } from "zod";
 import { AppShell, PageHeading } from "@/components/product/AppShell";
 import { PowerFinderMap } from "@/components/product/PowerFinderMap";
+import {
+  InteractiveMapLegend,
+  type InteractiveLegendSection,
+} from "@/components/product/InteractiveMapLegend";
 import { publicConstraintScreening } from "@/features/constraint-exposure/public-screening";
 import { evidenceClassLabel } from "@/features/grid-connection/evidence";
 import { enquiryReadiness } from "@/features/operator-enquiry/readiness";
@@ -25,6 +29,16 @@ import type {
   PowerFinderFeature,
 } from "@/features/power-finder/fixture-data";
 import { useTheme } from "@/features/theme/use-theme";
+import {
+  GRID_VOLTAGE_CLASSES,
+  type GridVoltageClassId,
+} from "@/features/power-finder/voltage-style";
+import { EVIDENCE_CLASSES } from "@/features/map/map-visual-registry";
+import {
+  initialSharedMapFilterState,
+  sharedMapFilterReducer,
+} from "@/features/map/map-filter-state";
+import { mapIsolationFromSearch } from "@/features/map/map-url-state";
 
 const searchSchema = z.object({
   severity: z.enum(["all", "moderate", "high", "critical"]).optional().catch(undefined),
@@ -35,6 +49,10 @@ const searchSchema = z.object({
   metric: z.enum(["exposure", "redispatch", "outage", "confidence"]).optional().catch(undefined),
   period: z.enum(["current", "historical", "scenario"]).optional().catch(undefined),
   constraint: z.string().optional().catch(undefined),
+  isolateVoltage: z
+    .enum(["ehv", "220kv", "110kv", "distribution", "unknown"])
+    .optional()
+    .catch(undefined),
 });
 export const Route = createFileRoute("/constraint-explorer")({
   validateSearch: searchSchema,
@@ -98,6 +116,7 @@ function ToggleRow({
 function ConstraintExplorerPage() {
   const { resolved: basemapMode } = useTheme();
   const search = Route.useSearch();
+  const navigate = Route.useNavigate();
   const [severity, setSeverity] = useState(search.severity ?? "all");
   const [evidence, setEvidence] = useState(search.evidence ?? "all");
   const [metric, setMetric] = useState(search.metric ?? "exposure");
@@ -121,16 +140,19 @@ function ConstraintExplorerPage() {
     north: 53.5,
   });
   const [mapFeature, setMapFeature] = useState<PowerFinderFeature | null>(null);
+  const [legendOpen, setLegendOpen] = useState(true);
+  const [mapFilters, dispatchMapFilter] = useReducer(sharedMapFilterReducer, {
+    ...initialSharedMapFilterState,
+    preset: "infrastructure",
+    isolation: mapIsolationFromSearch(search),
+  });
 
-  const updateUrl = (patch: Record<string, string>) => {
-    const url = new URL(window.location.href);
-    Object.entries(patch).forEach(([key, value]) =>
-      value === "all" || value === "current"
-        ? url.searchParams.delete(key)
-        : url.searchParams.set(key, value),
-    );
-    window.history.replaceState(window.history.state, "", url);
-  };
+  const updateUrl = (patch: Partial<typeof search>) =>
+    void navigate({
+      to: "/constraint-explorer",
+      search: (current) => ({ ...current, ...patch }),
+      replace: true,
+    });
   const filtered = useMemo(
     () =>
       findings.filter(
@@ -146,6 +168,76 @@ function ConstraintExplorerPage() {
   const selected = findings.find((item) => item.id === selectedId) ?? filtered[0];
   const setLayer = (key: keyof Layers, value: boolean) =>
     setLayers((current) => ({ ...current, [key]: value }));
+  const isolatedVoltageClass =
+    mapFilters.isolation?.dimension === "voltage" ? mapFilters.isolation.value : null;
+  const isolatedLegend = isolatedVoltageClass
+    ? { dimension: "voltage", value: isolatedVoltageClass }
+    : severity !== "all"
+      ? { dimension: "severity", value: severity }
+      : evidence !== "all"
+        ? { dimension: "evidence", value: evidence }
+        : null;
+  const legendSections: InteractiveLegendSection[] = [
+    {
+      id: "severity",
+      title: "Constraint Exposure",
+      description:
+        "Severity combines available signals and evidence quality; it is not available capacity.",
+      isolatable: true,
+      items: [
+        { id: "moderate", label: "Moderate", color: "#facc15", shape: "dot" },
+        { id: "high", label: "High", color: "#f97316", shape: "dot" },
+        { id: "critical", label: "Critical", color: "#ef4444", shape: "dot" },
+      ],
+    },
+    {
+      id: "voltage",
+      title: "Voltage",
+      description: "Voltage-styled public topology; unknown remains an explicit evidence class.",
+      isolatable: true,
+      items: GRID_VOLTAGE_CLASSES.map((item) => ({
+        id: item.id,
+        label: item.label,
+        color: item.color,
+        shape: "line",
+      })),
+    },
+    {
+      id: "evidence",
+      title: "Evidence",
+      isolatable: true,
+      items: EVIDENCE_CLASSES.map((item) => ({ ...item, shape: "dot" })),
+    },
+  ];
+  const isolateLegendItem = (dimension: string, value: string) => {
+    if (dimension === "voltage") {
+      const next = isolatedVoltageClass === value ? null : (value as GridVoltageClassId);
+      dispatchMapFilter(
+        next
+          ? { type: "isolate", isolation: { dimension: "voltage", value: next } }
+          : { type: "clear_isolation" },
+      );
+      setSeverity("all");
+      setEvidence("all");
+      updateUrl({
+        isolateVoltage: next ?? undefined,
+        severity: undefined,
+        evidence: undefined,
+      });
+    } else if (dimension === "severity") {
+      const next = severity === value ? "all" : (value as typeof severity);
+      setSeverity(next);
+      setEvidence("all");
+      dispatchMapFilter({ type: "clear_isolation" });
+      updateUrl({ severity: next, evidence: undefined, isolateVoltage: undefined });
+    } else if (dimension === "evidence") {
+      const next = evidence === value ? "all" : (value as typeof evidence);
+      setEvidence(next);
+      setSeverity("all");
+      dispatchMapFilter({ type: "clear_isolation" });
+      updateUrl({ evidence: next, severity: undefined, isolateVoltage: undefined });
+    }
+  };
 
   useEffect(() => {
     if ((bounds.east - bounds.west) * (bounds.north - bounds.south) > 6) return;
@@ -387,6 +479,7 @@ function ConstraintExplorerPage() {
                 selectedFeature={mapFeature}
                 mapMode="evidence"
                 basemapMode={basemapMode}
+                isolatedVoltageClass={isolatedVoltageClass}
                 onSelect={setMapFeature}
                 onViewportChange={setBounds}
               />
@@ -407,67 +500,24 @@ function ConstraintExplorerPage() {
                 {metric.replaceAll("_", " ")} · {analysisDate} · {timeline}:00
               </span>
             </div>
-            <aside className="constraint-map-legend" aria-label="Map legend">
-              <header>
-                <span className="context-label">Legend</span>
-                <h2>Constraint &amp; Grid Layers</h2>
-              </header>
-              <section>
-                <h3>Constraint Exposure</h3>
-                <div className="constraint-gradient" aria-hidden="true" />
-                <div className="constraint-gradient-labels">
-                  <span>Lower</span>
-                  <span>Indicative</span>
-                  <span>Higher</span>
-                </div>
-                <p>
-                  Severity combines available public signals and evidence quality; it is not
-                  available capacity.
-                </p>
-              </section>
-              <section>
-                <h3>Voltage</h3>
-                <ul>
-                  <li>
-                    <i className="voltage-380" />
-                    380 kV &amp; above
-                  </li>
-                  <li>
-                    <i className="voltage-220" />
-                    220–&lt;380 kV
-                  </li>
-                  <li>
-                    <i className="voltage-110" />
-                    110–&lt;220 kV
-                  </li>
-                  <li>
-                    <i className="voltage-low" />
-                    Below 110 kV
-                  </li>
-                  <li>
-                    <i className="voltage-unknown" />
-                    Voltage not mapped
-                  </li>
-                </ul>
-              </section>
-              <section>
-                <h3>Evidence</h3>
-                <ul>
-                  <li>
-                    <i className="evidence-public" />
-                    Observed public
-                  </li>
-                  <li>
-                    <i className="evidence-derived" />
-                    Modelled / derived
-                  </li>
-                  <li>
-                    <i className="evidence-confirmed" />
-                    Operator confirmed
-                  </li>
-                </ul>
-              </section>
-            </aside>
+            <InteractiveMapLegend
+              title="Constraint & Grid Layers"
+              open={legendOpen}
+              onOpenChange={setLegendOpen}
+              sections={legendSections}
+              isolated={isolatedLegend}
+              onIsolate={isolateLegendItem}
+              onReset={() => {
+                setSeverity("all");
+                setEvidence("all");
+                dispatchMapFilter({ type: "clear_isolation" });
+                updateUrl({
+                  isolateVoltage: undefined,
+                  severity: undefined,
+                  evidence: undefined,
+                });
+              }}
+            />
             {layers.constraintExposure ? (
               <div className="constraint-map-evidence">
                 <span className={`constraint-severity ${selected?.severity ?? "moderate"}`}>

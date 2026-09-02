@@ -452,6 +452,36 @@ test("registered generation and storage are available without an account", async
   await page.getByLabel("Minimum registered storage power").selectOption("10");
 });
 
+test("map presets and voltage isolation are reproducible", async ({ page }) => {
+  await page.goto("/power-finder");
+  await expect(
+    page.getByRole("application", { name: "Interactive grid and industrial-site screening map" }),
+  ).toBeVisible();
+  await page.getByText("Map Layers", { exact: true }).click();
+  await page.getByRole("button", { name: "Infrastructure", exact: true }).click();
+  await expect(page).toHaveURL(/mapView=infrastructure/);
+  await page.getByRole("button", { name: "Show only 220–<380 kV" }).click();
+  await expect(page).toHaveURL(/isolateVoltage=220kv/);
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Show all 220–<380 kV" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+});
+
+test("generation preset exposes governed capacity controls", async ({ page }) => {
+  await page.goto("/power-finder");
+  await expect(
+    page.getByRole("application", { name: "Interactive grid and industrial-site screening map" }),
+  ).toBeVisible();
+  await page.getByText("Map Layers", { exact: true }).click();
+  await page.getByRole("button", { name: "Generation & Storage", exact: true }).click();
+  await expect(page).toHaveURL(/mapView=generation/);
+  await expect(page.getByLabel("Maximum registered generation")).toBeVisible();
+  await expect(page.getByLabel("Maximum registered storage power")).toBeVisible();
+  await expect(page.getByText(/Registered asset context|not grid headroom/i).first()).toBeVisible();
+});
+
 test("discover locations exposes generation and storage context filters", async ({ page }) => {
   await page.goto("/power-finder?region=DE-BE");
   const discoverMode = page
@@ -650,7 +680,9 @@ test("Finder controls and comparison remain usable on a narrow viewport", async 
   await expect(page.getByRole("button", { name: /Remove .* from comparison/ })).toBeVisible();
 });
 
-test("the global theme switches and remembers the matching Power Finder basemap", async ({ page }) => {
+test("the global theme switches and remembers the matching Power Finder basemap", async ({
+  page,
+}) => {
   const cartoRequests: string[] = [];
   const openFreeMapRequests: string[] = [];
   page.on("request", (request) => {

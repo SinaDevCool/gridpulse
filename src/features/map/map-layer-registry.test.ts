@@ -20,4 +20,12 @@ describe("canonical map layer registry", () => {
       "operator_only",
     );
   });
+  it("registers generation and storage once in the production Power Finder", () => {
+    const finder = layersForExperience("power_finder");
+    expect(finder.filter((layer) => layer.id === "registered-generation")).toHaveLength(1);
+    expect(finder.filter((layer) => layer.id === "registered-storage")).toHaveLength(1);
+    expect(layersForExperience("constraint_explorer")).not.toContainEqual(
+      expect.objectContaining({ id: "registered-generation" }),
+    );
+  });
 });

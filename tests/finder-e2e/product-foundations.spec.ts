@@ -35,3 +35,21 @@ test("theme persists and constraint filters are URL-addressable", async ({ page 
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
   await expect(page.getByLabel("Severity")).toHaveValue("critical");
 });
+
+test("constraint legend isolates voltage and severity through shareable state", async ({
+  page,
+}) => {
+  await page.goto("/constraint-explorer");
+  await expect(
+    page.getByRole("application", { name: "Interactive grid and industrial-site screening map" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Show only 380 kV and above" }).click();
+  await expect(page).toHaveURL(/isolateVoltage=ehv/);
+  await expect(page.getByRole("button", { name: "Show all 380 kV and above" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await page.getByRole("button", { name: "Show only Critical" }).click();
+  await expect(page).toHaveURL(/severity=critical/);
+  await expect(page).not.toHaveURL(/isolateVoltage/);
+});
