@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   AlertTriangle,
   BookmarkPlus,
@@ -7,15 +7,39 @@ import {
   Database,
   ExternalLink,
   MapPin,
+  MapPinned,
   Network,
+  PanelLeftClose,
+  PanelLeftOpen,
   Search,
   ShieldCheck,
   Zap,
+  X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+  type ChangeEvent,
+} from "react";
 import { z } from "zod";
 import { AppShell } from "@/components/product/AppShell";
-import { PowerFinderMap } from "@/components/product/PowerFinderMap";
+import { PowerFinderMap, type RzRegDataCentre } from "@/components/product/PowerFinderMap";
+import {
+  InteractiveMapLegend,
+  type InteractiveLegendSection,
+} from "@/components/product/InteractiveMapLegend";
+import type { ActivationStudyTab } from "@/components/product/ActivationStudyPanel";
+import type { VisibleLayerCounts } from "@/components/product/power-finder-map-data";
+import {
+  finderMvpFeatures,
+  integratedActivationStudyEnabled,
+  productCapabilities,
+} from "@/config/product-mode";
 import {
   featureSummary,
   pointCoordinates,
@@ -23,8 +47,34 @@ import {
   type PowerFinderFeature,
   type PowerFinderKind,
 } from "@/features/power-finder/fixture-data";
+import { saveFinderProjectToPortfolio } from "@/features/power-finder/property-handoff";
+import { getAnonymousProperty } from "@/features/anonymous-workspace/repository";
+import type { AnonymousProperty } from "@/features/anonymous-workspace/schema";
+import {
+  GRID_VOLTAGE_CLASSES,
+  type GridVoltageClassId,
+} from "@/features/power-finder/voltage-style";
+import {
+  GENERATION_TECHNOLOGY_CLASSES,
+  STORAGE_TECHNOLOGY,
+  type GenerationTechnologyId,
+} from "@/features/map/map-visual-registry";
+import {
+  resolveMapSourceSummary,
+  sourceStatusLabel,
+  sourceSupportsKind,
+  type MapRuntimeSourceStatus,
+} from "@/features/map/map-source-registry";
+import {
+  initialSharedMapFilterState,
+  sharedMapFilterReducer,
+  type MapPreset,
+} from "@/features/map/map-filter-state";
+import { mapIsolationFromSearch, mapIsolationSearchPatch } from "@/features/map/map-url-state";
+import { layerAvailability } from "@/features/power-finder/layer-availability";
 import {
   loadPowerFinderViewport,
+  type PowerFinderDataMode,
   type PowerFinderBounds,
 } from "@/features/power-finder/data-source";
 import {
@@ -32,47 +82,213 @@ import {
   loadPowerFinderCoverage,
   type PowerFinderCoverage,
 } from "@/features/power-finder/coverage";
-import { scoreFeature } from "@/features/power-finder/screening-score";
 import { savePowerFinderCandidate } from "@/features/power-finder/shortlist";
 import {
   loadOperatorEvidence,
   type OperatorEvidenceResult,
 } from "@/features/power-finder/operator-evidence";
 import {
-  candidateEvidenceBoundary,
+  applyPreferredVoltageContext,
+  highestRankedOpportunityForNode,
   opportunityNode,
+  rankCandidatesForLocation,
+  voltageFitLabels,
   type CandidateOpportunity,
   type RankedCandidateResult,
 } from "@/features/power-finder/candidate-intelligence";
-import { loadRankedCandidates } from "@/features/power-finder/ranked-candidates";
+import {
+  defaultFinderProject,
+  finderProjectTypes,
+  isStorageProject,
+  type FinderProject,
+  type FinderProjectType,
+} from "@/features/power-finder/finder-project";
+import { loadFinderProject, saveFinderProject } from "@/features/power-finder/project-store";
+import {
+  addComparisonCandidate,
+  parseComparison,
+  removeComparisonCandidate,
+  serializeComparison,
+} from "@/features/power-finder/candidate-comparison";
+import {
+  validateFinderNumber,
+  type FinderNumericField,
+} from "@/features/power-finder/project-validation";
+import { loadC1Study, type C1StudyPayload } from "@/features/power-finder/c1-study";
+import {
+  discoverLocations,
+  discoveryGeoJson,
+  type DiscoveryLocation,
+  type DiscoveryStrategy,
+} from "@/features/power-finder/location-discovery";
+import { loadRegionalDiscoverySamples } from "@/features/power-finder/regional-discovery-sampling";
+import { canonicalOperatorName } from "@/features/power-finder/operator-normalization";
+import {
+  loadGridOperatorCatalog,
+  type GridOperatorOption,
+} from "@/features/power-finder/operator-catalog";
+import { operatorBoundsIntersect } from "@/features/power-finder/operator-map-navigation";
+import type { BasemapStatus } from "@/features/power-finder/basemap-config";
+import { useTheme } from "@/features/theme/use-theme";
+import {
+  suggestOperatorFilters,
+  suggestScreeningVoltage,
+} from "@/features/power-finder/site-screening-context";
+import {
+  activationStudySnapshot,
+  createActivationStudyContext,
+} from "@/features/power-finder/activation-study";
+import {
+  capacityMetricLabels,
+  loadBerlinSyntheticCapacity,
+  loadCalculatedCapacityViewport,
+  type BerlinSyntheticCapacityArtifact,
+  type CalculatedCapacityViewport,
+  type CapacityMetric,
+} from "@/features/power-finder/calculated-capacity";
+import {
+  classifyCapacityOpportunity,
+  summariseCapacityOpportunities,
+} from "@/features/power-finder/capacity-opportunity";
+
+const safeNumber = (minimum: number, maximum: number) =>
+  z.coerce.number().min(minimum).max(maximum).optional().catch(undefined);
+
+const ActivationStudyPanel = lazy(() =>
+  import("@/components/product/ActivationStudyPanel").then((module) => ({
+    default: module.ActivationStudyPanel,
+  })),
+);
 
 export const Route = createFileRoute("/power-finder")({
   validateSearch: z.object({
-    q: z.string().max(160).optional(),
+    q: z.string().max(160).optional().catch(undefined),
     voltage: z.coerce
       .number()
       .refine((value) => [0, 20, 110, 220, 380].includes(value))
-      .optional(),
-    operator: z.string().max(160).optional(),
-    sort: z.enum(["context", "voltage", "name"]).optional(),
-    mw: z.coerce.number().min(0.1).max(1000).optional(),
-    distance: z.coerce.number().min(1).max(100).optional(),
-    candidate: z.string().max(200).optional(),
-    compare: z.string().max(700).optional(),
-    region: z.enum(["DE", "DE-BB"]).optional(),
-    mapMode: z.enum(["voltage", "evidence", "capacity"]).optional(),
+      .optional()
+      .catch(undefined),
+    operator: z.string().max(160).optional().catch(undefined),
+    tso: z.string().max(160).optional().catch(undefined),
+    dso: z.string().max(160).optional().catch(undefined),
+    sort: z.enum(["context", "voltage", "name"]).optional().catch(undefined),
+    mw: safeNumber(0.1, 1000),
+    distance: safeNumber(1, 100),
+    candidate: z.string().max(200).optional().catch(undefined),
+    compare: z.string().max(700).optional().catch(undefined),
+    region: z
+      .enum([
+        "DE",
+        "DE-BB",
+        "DE-BW",
+        "DE-BY",
+        "DE-BE",
+        "DE-HB",
+        "DE-HH",
+        "DE-HE",
+        "DE-MV",
+        "DE-NI",
+        "DE-NW",
+        "DE-RP",
+        "DE-SL",
+        "DE-SN",
+        "DE-ST",
+        "DE-SH",
+        "DE-TH",
+      ])
+      .optional()
+      .catch(undefined),
+    mapMode: z.enum(["voltage", "evidence", "capacity"]).optional().catch(undefined),
+    mapView: z.enum(["connection", "infrastructure", "generation"]).optional().catch(undefined),
+    isolateVoltage: z
+      .enum(["ehv", "220kv", "110kv", "distribution", "unknown"])
+      .optional()
+      .catch(undefined),
+    isolateTechnology: z
+      .enum([
+        "solar",
+        "wind",
+        "biomass",
+        "hydro",
+        "geothermal",
+        "nuclear",
+        "gas",
+        "fossil_other",
+        "other",
+        "storage",
+      ])
+      .optional()
+      .catch(undefined),
+    generationMinMw: safeNumber(0, 100_000),
+    generationMaxMw: safeNumber(0, 100_000),
+    storageMinMw: safeNumber(0, 100_000),
+    storageMaxMw: safeNumber(0, 100_000),
+    capacitySource: z
+      .enum(["reference", "private", "demo", "berlin_synthetic"])
+      .optional()
+      .catch(undefined),
+    capacityMetric: z
+      .enum([
+        "n0_import_mw",
+        "firm_import_mw",
+        "flexible_import_mw",
+        "bess_assisted_import_mw",
+        "staged_initial_import_mw",
+        "eventual_import_mw",
+      ])
+      .optional()
+      .catch(undefined),
+    requiredMw: safeNumber(0.1, 1000),
+    workspaceId: z.string().uuid().optional().catch(undefined),
+    study: z.enum(["activation"]).optional().catch(undefined),
+    studyTab: z
+      .enum(["geographic", "overview", "topology", "hourly", "options", "commercial", "evidence"])
+      .optional()
+      .catch(undefined),
+    lat: safeNumber(47, 56),
+    lng: safeNumber(5, 16),
+    projectType: z
+      .enum([
+        "data_centre",
+        "industrial_load",
+        "battery_storage",
+        "co_location",
+        "electrolyser",
+        "charging_hub",
+      ])
+      .optional()
+      .catch(undefined),
+    exportMw: safeNumber(0, 1000),
+    flexibleMw: safeNumber(0, 1000),
+    batteryMw: safeNumber(0, 1000),
+    batteryMwh: safeNumber(0, 20_000),
+    preferredVoltage: z.coerce
+      .number()
+      .refine((value) => [0, 20, 110, 220, 380].includes(value))
+      .optional()
+      .catch(undefined),
+    propertyId: z.string().uuid().optional().catch(undefined),
   }),
   head: () => ({
-    meta: [{ title: "Power Finder | GridPulse" }, { name: "robots", content: "noindex, nofollow" }],
+    meta: [
+      { title: "Power Finder | GridPulse" },
+      {
+        name: "description",
+        content:
+          "Screen German grid nodes, mapped voltage, industrial sites and source evidence without creating an account.",
+      },
+      { name: "robots", content: "index, follow" },
+    ],
+    links: [{ rel: "canonical", href: "https://gridpulseinsights.com/power-finder" }],
   }),
   component: PowerFinderPage,
 });
 
 const kindLabels: Record<PowerFinderKind, string> = {
   node: "Grid nodes",
-  line: "Grid lines",
+  line: "Mapped grid corridors",
   industrial_site: "Industrial sites",
-  generation_asset: "Registered generation",
+  generation_asset: "Registered generation · exact public locations",
   storage_asset: "Registered storage",
 };
 const initialBounds: PowerFinderBounds = {
@@ -83,47 +299,679 @@ const initialBounds: PowerFinderBounds = {
 };
 type CandidateSort = "context" | "voltage" | "name";
 const distanceFormatter = new Intl.NumberFormat("en-GB", { maximumFractionDigits: 1 });
+const scoreFormatter = new Intl.NumberFormat("en-GB", { maximumFractionDigits: 1 });
+const mwFormatter = new Intl.NumberFormat("en-GB", { maximumFractionDigits: 1 });
+
+function formatScore(value: number) {
+  return scoreFormatter.format(value);
+}
+
+function formatMw(value: number) {
+  return `${mwFormatter.format(value)} MW`;
+}
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timeout = window.setTimeout(() => reject(new Error(message)), timeoutMs);
+    promise.then(
+      (value) => {
+        window.clearTimeout(timeout);
+        resolve(value);
+      },
+      (reason) => {
+        window.clearTimeout(timeout);
+        reject(reason);
+      },
+    );
+  });
+}
 
 function PowerFinderPage() {
-  const navigate = useNavigate();
+  const { resolved: basemapMode } = useTheme();
+  const navigate = Route.useNavigate();
   const search = Route.useSearch();
   const [collection, setCollection] = useState<PowerFinderCollection | null>(null);
+  const [project, setProject] = useState<FinderProject>(() => {
+    return {
+      ...defaultFinderProject,
+      type: search.projectType ?? defaultFinderProject.type,
+      latitude: search.lat ?? defaultFinderProject.latitude,
+      longitude: search.lng ?? defaultFinderProject.longitude,
+      importMw: search.mw ?? defaultFinderProject.importMw,
+      ultimateImportMw: search.mw ?? defaultFinderProject.ultimateImportMw,
+      minimumFirmMw: search.mw ?? defaultFinderProject.minimumFirmMw,
+      exportMw: search.exportMw ?? defaultFinderProject.exportMw,
+      flexibleLoadMw: search.flexibleMw ?? defaultFinderProject.flexibleLoadMw,
+      batteryPowerMw: search.batteryMw ?? defaultFinderProject.batteryPowerMw,
+      batteryEnergyMwh: search.batteryMwh ?? defaultFinderProject.batteryEnergyMwh,
+      maxDistanceKm: search.distance ?? defaultFinderProject.maxDistanceKm,
+      preferredVoltageKv: search.preferredVoltage ?? defaultFinderProject.preferredVoltageKv,
+    };
+  });
+  const [projectHydrated, setProjectHydrated] = useState(false);
   const [selected, setSelected] = useState<PowerFinderFeature | null>(null);
-  const [enabled, setEnabled] = useState<Record<PowerFinderKind, boolean>>({
-    node: true,
-    line: true,
-    industrial_site: true,
-    generation_asset: false,
-    storage_asset: false,
+  const [selectedOpportunitySnapshot, setSelectedOpportunitySnapshot] =
+    useState<CandidateOpportunity | null>(null);
+  const [enabled, setEnabled] = useState<Record<PowerFinderKind, boolean>>(() => {
+    if (search.mapView === "generation")
+      return {
+        node: false,
+        line: true,
+        industrial_site: false,
+        generation_asset: true,
+        storage_asset: true,
+      };
+    if (search.mapView === "infrastructure")
+      return {
+        node: true,
+        line: true,
+        industrial_site: false,
+        generation_asset: false,
+        storage_asset: false,
+      };
+    return {
+      node: true,
+      line: true,
+      industrial_site: true,
+      generation_asset: false,
+      storage_asset: false,
+    };
   });
   const [error, setError] = useState("");
   const [bounds, setBounds] = useState(initialBounds);
-  const [dataMode, setDataMode] = useState<"database" | "published_artifact" | null>(null);
+  const [dataMode, setDataMode] = useState<PowerFinderDataMode | null>(null);
+  const [runtimeSourceStatus, setRuntimeSourceStatus] = useState<MapRuntimeSourceStatus>({});
   const query = search.q ?? "";
   const minimumVoltage = search.voltage ?? 0;
-  const operator = search.operator ?? "all";
+  const legacyOperator = search.operator ?? "all";
+  const selectedTso = search.tso ?? "all";
+  const selectedDso = search.dso ?? "all";
   const candidateSort: CandidateSort = search.sort ?? "context";
-  const requiredImportMw = search.mw ?? 100;
-  const maxDistanceKm = search.distance ?? 20;
-  const updateSearch = (patch: Partial<typeof search>) =>
-    navigate({ to: "/power-finder", search: { ...search, ...patch }, replace: true });
+  const requiredImportMw = project.importMw;
+  const maxDistanceKm = project.maxDistanceKm;
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [shortlistId, setShortlistId] = useState<string | null>(null);
+  const [propertySaveStatus, setPropertySaveStatus] = useState<
+    "idle" | "saving" | "saved" | "error"
+  >("idle");
+  const [activeProperty, setActiveProperty] = useState<AnonymousProperty | null>(null);
+  const propertySaveRequest = useRef(0);
+  const [showAllCandidates, setShowAllCandidates] = useState(false);
   const [operatorEvidence, setOperatorEvidence] = useState<OperatorEvidenceResult | null>(null);
   const [operatorEvidenceState, setOperatorEvidenceState] = useState<
     "idle" | "loading" | "ready" | "unavailable"
   >("idle");
+  const [c1Study, setC1Study] = useState<C1StudyPayload | null>(null);
+  const updateSearch = (patch: Partial<typeof search>) =>
+    navigate({
+      to: "/power-finder",
+      search: (current) => ({ ...current, ...patch }),
+      replace: true,
+    });
+  const persistScreening = async (
+    candidatesToSave: CandidateOpportunity[],
+    shortlistedCandidateId: string | null = null,
+  ) => {
+    const requestId = ++propertySaveRequest.current;
+    setPropertySaveStatus("saving");
+    setInteractionNotice(
+      shortlistedCandidateId ? "Saving shortlisted candidate…" : "Saving screening…",
+    );
+    try {
+      const savedPropertyId = await withTimeout(
+        saveFinderProjectToPortfolio(
+          project,
+          candidatesToSave,
+          activeProperty?.id,
+          shortlistedCandidateId,
+        ),
+        10_000,
+        "Saving took too long. Please try again.",
+      );
+      if (requestId !== propertySaveRequest.current) return null;
+      const refreshed = await withTimeout(
+        getAnonymousProperty(savedPropertyId),
+        5_000,
+        "The site was saved, but could not be reloaded.",
+      );
+      if (requestId !== propertySaveRequest.current) return null;
+      setActiveProperty(refreshed);
+      setPropertySaveStatus("saved");
+      setInteractionNotice(
+        shortlistedCandidateId
+          ? "Candidate shortlisted and saved to the site workspace."
+          : "Screening saved to the site workspace.",
+      );
+      if (search.propertyId !== savedPropertyId) void updateSearch({ propertyId: savedPropertyId });
+      return savedPropertyId;
+    } catch (reason) {
+      if (requestId !== propertySaveRequest.current) return null;
+      setPropertySaveStatus("error");
+      setInteractionNotice(
+        reason instanceof Error ? reason.message : "The screening could not be saved.",
+      );
+      return null;
+    }
+  };
+  const updateProject = (patch: Partial<FinderProject>) => {
+    setProject((current) => ({ ...current, ...patch, updatedAt: new Date().toISOString() }));
+  };
+  const updateScenarioNumber =
+    (
+      field:
+        | "ultimateImportMw"
+        | "minimumFirmMw"
+        | "flexibleLoadMw"
+        | "targetEnergisationYear"
+        | "annualConsumptionGwh"
+        | "maxInterruptionHours"
+        | "annualInterruptionLimit"
+        | "batteryRoundTripEfficiencyPct"
+        | "batteryReservePct"
+        | "onsiteGenerationMw",
+      minimum: number,
+      maximum: number,
+    ) =>
+    (event: ChangeEvent<HTMLInputElement>) => {
+      const value = Number(event.target.value);
+      if (Number.isFinite(value))
+        updateProject({ [field]: Math.min(maximum, Math.max(minimum, value)) });
+    };
+  const [numericDrafts, setNumericDrafts] = useState<Record<FinderNumericField, string>>(() => ({
+    latitude: project.latitude?.toString() ?? "",
+    longitude: project.longitude?.toString() ?? "",
+    importMw: project.importMw.toString(),
+    exportMw: project.exportMw.toString(),
+    batteryPowerMw: project.batteryPowerMw.toString(),
+    batteryEnergyMwh: project.batteryEnergyMwh.toString(),
+  }));
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<FinderNumericField, string>>>({});
+  const [interactionNotice, setInteractionNotice] = useState("");
+  const [previewCandidateId, setPreviewCandidateId] = useState<string | null>(null);
+  const [visibleLayerCounts, setVisibleLayerCounts] = useState<VisibleLayerCounts>({
+    node: 0,
+    line: 0,
+    industrial_site: 0,
+    generation_asset: 0,
+    storage_asset: 0,
+  });
+  const [comparisonOpen, setComparisonOpen] = useState(false);
+  const [projectEditorOpen, setProjectEditorOpen] = useState(
+    Boolean(search.projectType || search.exportMw || search.batteryMw || search.batteryMwh),
+  );
+  const [secondaryControlsOpen, setSecondaryControlsOpen] = useState(Boolean(search.propertyId));
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [legendOpen, setLegendOpen] = useState(true);
+  const [showDataCentres, setShowDataCentres] = useState(
+    !search.mapView || search.mapView === "connection",
+  );
+  const [selectedDataCentre, setSelectedDataCentre] = useState<RzRegDataCentre | null>(null);
+  const [finderWorkflow, setFinderWorkflow] = useState<"screen" | "discover">("screen");
+  const [discoveryStrategy, setDiscoveryStrategy] = useState<DiscoveryStrategy>("balanced");
+  const [discoveryResultCount, setDiscoveryResultCount] = useState<10 | 20>(10);
+  const [discoveryResults, setDiscoveryResults] = useState<DiscoveryLocation[]>([]);
+  const [selectedDiscoveryId, setSelectedDiscoveryId] = useState<string | null>(null);
+  const [discoveryState, setDiscoveryState] = useState<"idle" | "loading" | "ready" | "error">(
+    "idle",
+  );
+  const [generationGroup, setGenerationGroup] = useState<string>(
+    search.isolateTechnology && search.isolateTechnology !== "storage"
+      ? search.isolateTechnology
+      : "all",
+  );
+  const [mapFilters, dispatchMapFilter] = useReducer(sharedMapFilterReducer, {
+    ...initialSharedMapFilterState,
+    preset: search.mapView ?? "connection",
+    isolation: mapIsolationFromSearch(search),
+    minimumGenerationMw: search.generationMinMw ?? 0,
+    maximumGenerationMw: search.generationMaxMw ?? null,
+    minimumStorageMw: search.storageMinMw ?? 0,
+    maximumStorageMw: search.storageMaxMw ?? null,
+  });
+  const minimumGenerationMw = mapFilters.minimumGenerationMw;
+  const minimumStorageMw = mapFilters.minimumStorageMw;
+  const setMinimumGenerationMw = (minimum: number) => {
+    dispatchMapFilter({
+      type: "set_generation_range",
+      minimum,
+      maximum: mapFilters.maximumGenerationMw,
+    });
+    void updateSearch({ generationMinMw: minimum || undefined });
+  };
+  const setMaximumGenerationMw = (maximum: number | null) => {
+    dispatchMapFilter({
+      type: "set_generation_range",
+      minimum: mapFilters.minimumGenerationMw,
+      maximum,
+    });
+    void updateSearch({ generationMaxMw: maximum ?? undefined });
+  };
+  const setMinimumStorageMw = (minimum: number) => {
+    dispatchMapFilter({
+      type: "set_storage_range",
+      minimum,
+      maximum: mapFilters.maximumStorageMw,
+    });
+    void updateSearch({ storageMinMw: minimum || undefined });
+  };
+  const setMaximumStorageMw = (maximum: number | null) => {
+    dispatchMapFilter({
+      type: "set_storage_range",
+      minimum: mapFilters.minimumStorageMw,
+      maximum,
+    });
+    void updateSearch({ storageMaxMw: maximum ?? undefined });
+  };
+  const detailDismissedRef = useRef(false);
+  const [basemapStatus, setBasemapStatus] = useState<BasemapStatus>("loading");
+  const [mapNavigationTarget, setMapNavigationTarget] = useState<
+    | { requestId: number; kind: "point"; center: [number, number]; zoom?: number }
+    | {
+        requestId: number;
+        kind: "bounds";
+        bounds: [number, number, number, number];
+        maxZoom?: number;
+      }
+    | undefined
+  >();
+  const navigateMapToPoint = (center: [number, number]) =>
+    setMapNavigationTarget({ requestId: Date.now(), kind: "point", center, zoom: 11 });
+  const navigateMapToOperator = (operatorName: string) => {
+    if (operatorName === "all") return;
+    const selectedOperator = operators.find((item) => item.name === operatorName);
+    if (!selectedOperator?.bounds) {
+      setInteractionNotice(
+        `${operatorName} was selected, but its mapped geographic extent is not available yet.`,
+      );
+      return;
+    }
+    setMapNavigationTarget({
+      requestId: Date.now(),
+      kind: "bounds",
+      bounds: selectedOperator.bounds,
+      maxZoom: selectedOperator.type === "TSO" ? 7.5 : 10,
+    });
+    setInteractionNotice(
+      `Map fitted to the mapped ${selectedOperator.type} extent for ${operatorName}.`,
+    );
+  };
+  const commitNumber = (
+    field: FinderNumericField,
+    raw: string,
+    commit: (value: number | null) => void,
+    optional = false,
+  ) => {
+    setNumericDrafts((current) => ({ ...current, [field]: raw }));
+    if (optional && !raw.trim()) {
+      setFieldErrors((current) => ({ ...current, [field]: undefined }));
+      commit(null);
+      return;
+    }
+    const result = validateFinderNumber(field, raw);
+    setFieldErrors((current) => ({ ...current, [field]: result.error ?? undefined }));
+    if (!result.error) commit(result.value);
+  };
   const [ranking, setRanking] = useState<RankedCandidateResult | null>(null);
+  const [rankingCollection, setRankingCollection] = useState<PowerFinderCollection | null>(null);
   const [rankingState, setRankingState] = useState<"loading" | "ready" | "error">("loading");
   const [coverage, setCoverage] = useState<PowerFinderCoverage[]>(fallbackCoverage);
-  const regionCode = search.region ?? "DE-BB";
-  const mapMode = search.mapMode ?? "voltage";
+  const [operatorCatalog, setOperatorCatalog] = useState<GridOperatorOption[]>([]);
+  const regionCode = search.region ?? "DE";
+  const [mapMode, setMapMode] = useState<"voltage" | "evidence" | "capacity">(
+    search.mapMode ?? "voltage",
+  );
+  const [capacityMetric, setCapacityMetric] = useState<CapacityMetric>(
+    search.capacityMetric ?? "firm_import_mw",
+  );
+  const [requiredCapacityMw, setRequiredCapacityMw] = useState(
+    search.requiredMw ?? project.importMw,
+  );
+  const [capacitySource, setCapacitySource] = useState<"private" | "berlin_synthetic">(
+    search.capacitySource === "private" && search.workspaceId ? "private" : "berlin_synthetic",
+  );
+  const [capacityViewport, setCapacityViewport] = useState<CalculatedCapacityViewport | null>(null);
+  const [berlinCapacity, setBerlinCapacity] = useState<BerlinSyntheticCapacityArtifact | null>(
+    null,
+  );
+  const [capacityState, setCapacityState] = useState<"idle" | "loading" | "ready" | "error">(
+    "idle",
+  );
+  const mapSourceSummary = collection
+    ? resolveMapSourceSummary(collection, runtimeSourceStatus)
+    : null;
+  const registryAssetsUnavailable = mapSourceSummary
+    ? !sourceSupportsKind(mapSourceSummary, "generation_asset") &&
+      runtimeSourceStatus.registry !== "ready"
+    : true;
+  const isolatedVoltageClass =
+    mapFilters.isolation?.dimension === "voltage" ? mapFilters.isolation.value : null;
+  const isolatedTechnology =
+    mapFilters.isolation?.dimension === "technology" ? mapFilters.isolation.value : null;
+  const effectiveGenerationGroup =
+    isolatedTechnology && isolatedTechnology !== "storage" ? isolatedTechnology : generationGroup;
+  const effectiveEnabled = useMemo(
+    () => ({
+      ...enabled,
+      generation_asset: isolatedTechnology === "storage" ? false : enabled.generation_asset,
+      storage_asset:
+        isolatedTechnology && isolatedTechnology !== "storage" ? false : enabled.storage_asset,
+    }),
+    [enabled, isolatedTechnology],
+  );
+  const applyMapPreset = (preset: MapPreset) => {
+    dispatchMapFilter({ type: "set_preset", preset });
+    setMapMode("voltage");
+    if (preset === "connection") {
+      setEnabled({
+        node: true,
+        line: true,
+        industrial_site: true,
+        generation_asset: false,
+        storage_asset: false,
+      });
+      setShowDataCentres(true);
+    } else if (preset === "infrastructure") {
+      setEnabled({
+        node: true,
+        line: true,
+        industrial_site: false,
+        generation_asset: false,
+        storage_asset: false,
+      });
+      setShowDataCentres(false);
+    } else {
+      setEnabled({
+        node: false,
+        line: true,
+        industrial_site: false,
+        generation_asset: true,
+        storage_asset: true,
+      });
+      setShowDataCentres(false);
+    }
+    void navigate({
+      to: "/power-finder",
+      search: {
+        ...search,
+        mapView: preset === "connection" ? undefined : preset,
+        mapMode: "voltage",
+        isolateVoltage: undefined,
+        isolateTechnology: undefined,
+      },
+      replace: true,
+    });
+    setInteractionNotice(`${preset.replaceAll("_", " ")} map view selected.`);
+  };
+  const legendSections = useMemo(() => {
+    if (mapMode === "capacity") return [];
+    const sections: InteractiveLegendSection[] = [
+      {
+        id: "voltage",
+        title: "Voltage",
+        description: "Mapped public topology; voltage is not available connection capacity.",
+        isolatable: true,
+        items: GRID_VOLTAGE_CLASSES.map((item) => ({
+          id: item.id,
+          label: item.label,
+          color: item.color,
+          shape: "line" as const,
+          status: item.id === "distribution" ? "Partial" : undefined,
+          unavailable: mapSourceSummary?.voltageCoverage[item.id] === "not_covered",
+          unavailableReason:
+            item.id === "distribution"
+              ? "German distribution topology is incomplete. An empty view is not evidence that no network exists."
+              : undefined,
+        })),
+      },
+    ];
+    if (mapFilters.preset === "generation" || enabled.generation_asset || enabled.storage_asset) {
+      sections.push({
+        id: "technology",
+        title: "Generation & Storage",
+        description:
+          "Marker area represents registered capacity where published—not grid headroom.",
+        isolatable: true,
+        items: [
+          ...GENERATION_TECHNOLOGY_CLASSES.map((item) => ({
+            ...item,
+            shape: "dot" as const,
+            unavailable: registryAssetsUnavailable,
+            unavailableReason: registryAssetsUnavailable
+              ? "Registry assets are unavailable in the accepted static fallback."
+              : undefined,
+          })),
+          {
+            ...STORAGE_TECHNOLOGY,
+            shape: "ring" as const,
+            unavailable: registryAssetsUnavailable,
+            unavailableReason: registryAssetsUnavailable
+              ? "Registry assets are unavailable in the accepted static fallback."
+              : undefined,
+          },
+        ],
+      });
+    }
+    return sections;
+  }, [
+    enabled.generation_asset,
+    enabled.storage_asset,
+    mapFilters.preset,
+    mapMode,
+    registryAssetsUnavailable,
+    mapSourceSummary,
+  ]);
+  const isolateMapLegendItem = (dimension: string, value: string) => {
+    if (dimension === "voltage") {
+      const next = isolatedVoltageClass === value ? null : (value as GridVoltageClassId);
+      dispatchMapFilter(
+        next
+          ? { type: "isolate", isolation: { dimension: "voltage", value: next } }
+          : { type: "clear_isolation" },
+      );
+      void updateSearch(
+        mapIsolationSearchPatch(next ? { dimension: "voltage", value: next } : null),
+      );
+      setInteractionNotice(
+        next
+          ? `Showing only ${GRID_VOLTAGE_CLASSES.find((item) => item.id === next)?.label}.`
+          : "Voltage isolation cleared.",
+      );
+      return;
+    }
+    if (dimension === "technology") {
+      const next = isolatedTechnology === value ? null : value;
+      dispatchMapFilter(
+        next
+          ? {
+              type: "isolate",
+              isolation: {
+                dimension: "technology",
+                value: next as GenerationTechnologyId | "storage",
+              },
+            }
+          : { type: "clear_isolation" },
+      );
+      void updateSearch(
+        mapIsolationSearchPatch(
+          next
+            ? {
+                dimension: "technology",
+                value: next as GenerationTechnologyId | "storage",
+              }
+            : null,
+        ),
+      );
+      setInteractionNotice(
+        next ? `Showing only ${next.replaceAll("_", " ")}.` : "Technology isolation cleared.",
+      );
+    }
+  };
   const activeCoverage =
     coverage.find((item) => item.regionCode === regionCode) ?? fallbackCoverage[1];
   const viewportTarget = useMemo(
     () => ({ center: activeCoverage.center, zoom: activeCoverage.zoom }),
     [activeCoverage.center, activeCoverage.zoom],
   );
+  const projectSite = useMemo<[number, number] | null>(
+    () =>
+      project.longitude != null && project.latitude != null
+        ? [project.longitude, project.latitude]
+        : null,
+    [project.latitude, project.longitude],
+  );
+
+  useEffect(() => {
+    void loadGridOperatorCatalog()
+      .then(setOperatorCatalog)
+      .catch(() => setOperatorCatalog([]));
+  }, []);
+
+  useEffect(() => {
+    const privateCapacitySelected =
+      search.capacitySource === "private" && Boolean(search.workspaceId);
+    const requestedMetric = search.capacityMetric ?? "firm_import_mw";
+    const safeMetric =
+      privateCapacitySelected ||
+      requestedMetric === "n0_import_mw" ||
+      requestedMetric === "firm_import_mw"
+        ? requestedMetric
+        : "firm_import_mw";
+    setMapMode(search.mapMode ?? "voltage");
+    setCapacitySource(privateCapacitySelected ? "private" : "berlin_synthetic");
+    setCapacityMetric(safeMetric);
+    setRequiredCapacityMw(search.requiredMw ?? project.importMw);
+  }, [
+    search.capacityMetric,
+    search.capacitySource,
+    search.mapMode,
+    search.requiredMw,
+    search.workspaceId,
+    project.importMw,
+  ]);
+
+  useEffect(() => {
+    if (mapMode !== "capacity") {
+      return;
+    }
+    setCapacityState("loading");
+    if (capacitySource === "berlin_synthetic") {
+      void loadBerlinSyntheticCapacity()
+        .then((result) => {
+          setBerlinCapacity(result);
+          setCapacityState("ready");
+        })
+        .catch(() => {
+          setBerlinCapacity(null);
+          setCapacityState("error");
+        });
+      return;
+    }
+    void loadCalculatedCapacityViewport({
+      workspaceId: search.workspaceId,
+      metric: capacityMetric,
+      mappedNodeCount:
+        collection?.features.filter((feature) => feature.properties.kind === "node").length ?? 0,
+    })
+      .then((result) => {
+        setCapacityViewport(result);
+        setCapacityState("ready");
+      })
+      .catch(() => {
+        setCapacityViewport(null);
+        setCapacityState("error");
+      });
+  }, [capacityMetric, capacitySource, collection, mapMode, search.workspaceId]);
+
+  useEffect(() => {
+    const saved = loadFinderProject();
+    setProject({
+      ...saved,
+      type: finderMvpFeatures.dataCentreOnly ? "data_centre" : (search.projectType ?? saved.type),
+      latitude: search.lat ?? saved.latitude,
+      longitude: search.lng ?? saved.longitude,
+      importMw: search.mw ?? saved.importMw,
+      ultimateImportMw: search.mw ?? saved.ultimateImportMw,
+      minimumFirmMw: search.mw ?? saved.minimumFirmMw,
+      exportMw: search.exportMw ?? saved.exportMw,
+      flexibleLoadMw: search.flexibleMw ?? saved.flexibleLoadMw,
+      batteryPowerMw: search.batteryMw ?? saved.batteryPowerMw,
+      batteryEnergyMwh: search.batteryMwh ?? saved.batteryEnergyMwh,
+      maxDistanceKm: search.distance ?? saved.maxDistanceKm,
+      preferredVoltageKv: search.preferredVoltage ?? saved.preferredVoltageKv,
+    });
+    setProjectHydrated(true);
+    // The persisted project is intentionally loaded after hydration so the server and first client
+    // render stay identical. URL values remain authoritative over device-local values.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (projectHydrated) void saveFinderProject(project);
+  }, [project, projectHydrated]);
+
+  useEffect(() => {
+    if (!search.propertyId) {
+      setActiveProperty(null);
+      return;
+    }
+    void getAnonymousProperty(search.propertyId).then((property) => {
+      if (!property) return;
+      const suggestedVoltage = suggestScreeningVoltage(
+        property.project.importMw,
+        property.project.type,
+        search.preferredVoltage ?? property.project.preferredVoltageKv,
+      );
+      setActiveProperty(property);
+      setProject({ ...property.project, preferredVoltageKv: suggestedVoltage });
+      setSecondaryControlsOpen(true);
+      setInteractionNotice(
+        `Loaded ${property.name} and focused its declared location. ${suggestedVoltage} kV is a screening suggestion, not a connection requirement.`,
+      );
+      if (search.voltage == null || search.preferredVoltage == null) {
+        void updateSearch({
+          voltage: search.voltage ?? suggestedVoltage,
+          preferredVoltage: search.preferredVoltage ?? suggestedVoltage,
+        });
+      }
+    });
+    // The property ID intentionally controls this one-time device-local lookup.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search.propertyId]);
+
+  useEffect(() => {
+    const raw = new URLSearchParams(window.location.search);
+    const patch: Partial<typeof search> = {};
+    let normalized = false;
+    for (const key of [
+      "lat",
+      "lng",
+      "mw",
+      "exportMw",
+      "flexibleMw",
+      "batteryMw",
+      "batteryMwh",
+      "distance",
+      "voltage",
+      "sort",
+      "region",
+      "mapMode",
+      "projectType",
+      "preferredVoltage",
+    ] as const) {
+      if (raw.has(key) && search[key] === undefined) {
+        Object.assign(patch, { [key]: undefined });
+        normalized = true;
+      }
+    }
+    if (normalized) {
+      setInteractionNotice("One or more invalid URL values were ignored.");
+      void navigate({
+        to: "/power-finder",
+        search: (current) => ({ ...current, ...patch }),
+        replace: true,
+      });
+    }
+  }, [navigate, search]);
 
   useEffect(() => {
     let active = true;
@@ -136,10 +984,11 @@ function PowerFinderPage() {
   }, []);
 
   useEffect(() => {
+    if ((bounds.east - bounds.west) * (bounds.north - bounds.south) > 6) return;
     const controller = new AbortController();
     const timeout = window.setTimeout(() => {
       void loadPowerFinderViewport(bounds, controller.signal, {
-        fallbackAllowed: regionCode === "DE-BB",
+        fallbackAllowed: true,
       })
         .then(({ collection: nextCollection, mode }) => {
           setCollection(nextCollection);
@@ -160,6 +1009,39 @@ function PowerFinderPage() {
     };
   }, [bounds, regionCode]);
 
+  useEffect(() => {
+    setRankingCollection(null);
+    if (project.latitude == null || project.longitude == null) {
+      setRanking(null);
+      setRankingState("ready");
+      return;
+    }
+    const controller = new AbortController();
+    const latitudeRadius = Math.max(0.08, maxDistanceKm / 111);
+    const longitudeRadius = Math.max(
+      0.08,
+      maxDistanceKm / (111 * Math.max(0.3, Math.cos((project.latitude * Math.PI) / 180))),
+    );
+    void loadPowerFinderViewport(
+      {
+        west: project.longitude - longitudeRadius,
+        south: project.latitude - latitudeRadius,
+        east: project.longitude + longitudeRadius,
+        north: project.latitude + latitudeRadius,
+      },
+      controller.signal,
+      { fallbackAllowed: true, includeRegistryAssets: false },
+    )
+      .then(({ collection: siteCollection }) => setRankingCollection(siteCollection))
+      .catch(() => {
+        if (!controller.signal.aborted) {
+          setRankingCollection(null);
+          setRankingState("error");
+        }
+      });
+    return () => controller.abort();
+  }, [maxDistanceKm, project.latitude, project.longitude, regionCode]);
+
   const visibleCollection = useMemo<PowerFinderCollection | null>(() => {
     if (!collection) return null;
     const normalizedQuery = query.trim().toLocaleLowerCase();
@@ -173,32 +1055,148 @@ function PowerFinderPage() {
         feature.id.toLocaleLowerCase().includes(normalizedQuery);
       const matchesVoltage =
         properties.kind !== "node" || minimumVoltage === 0 || voltage >= minimumVoltage;
-      const matchesOperator = operator === "all" || properties.operator === operator;
-      return enabled[properties.kind] && matchesQuery && matchesVoltage && matchesOperator;
+      const canonicalOperator = canonicalOperatorName(properties.operator);
+      const operatorContext = operatorCatalog.find((item) => item.name === canonicalOperator);
+      const matchesTso =
+        selectedTso === "all" ||
+        canonicalOperator === selectedTso ||
+        operatorContext?.tsoNames.includes(selectedTso);
+      const matchesDso = selectedDso === "all" || canonicalOperator === selectedDso;
+      const matchesOperator =
+        selectedTso !== "all" && selectedDso !== "all"
+          ? canonicalOperator === selectedTso || canonicalOperator === selectedDso
+          : matchesTso && matchesDso;
+      const matchesRegisteredCapacity =
+        properties.kind === "generation_asset"
+          ? (effectiveGenerationGroup === "all" ||
+              properties.generation_group === effectiveGenerationGroup) &&
+            (minimumGenerationMw === 0 ||
+              (properties.net_capacity_mw ?? -1) >= minimumGenerationMw) &&
+            (mapFilters.maximumGenerationMw === null ||
+              (properties.net_capacity_mw ?? mapFilters.maximumGenerationMw + 1) <=
+                mapFilters.maximumGenerationMw)
+          : properties.kind === "storage_asset"
+            ? (minimumStorageMw === 0 || (properties.net_capacity_mw ?? -1) >= minimumStorageMw) &&
+              (mapFilters.maximumStorageMw === null ||
+                (properties.net_capacity_mw ?? mapFilters.maximumStorageMw + 1) <=
+                  mapFilters.maximumStorageMw)
+            : true;
+      return (
+        effectiveEnabled[properties.kind] &&
+        matchesQuery &&
+        matchesVoltage &&
+        matchesOperator &&
+        matchesRegisteredCapacity
+      );
     });
     return {
       ...collection,
       features,
       metadata: { ...collection.metadata, record_count: features.length },
     };
-  }, [collection, enabled, minimumVoltage, operator, query]);
+  }, [
+    collection,
+    effectiveEnabled,
+    effectiveGenerationGroup,
+    mapFilters.maximumGenerationMw,
+    mapFilters.maximumStorageMw,
+    minimumGenerationMw,
+    minimumStorageMw,
+    minimumVoltage,
+    operatorCatalog,
+    query,
+    selectedDso,
+    selectedTso,
+  ]);
 
-  const operators = useMemo(
+  const operators = useMemo(() => {
+    if (operatorCatalog.length) return operatorCatalog;
+    return Array.from(
+      new Set(
+        collection?.features
+          .map((feature) => canonicalOperatorName(feature.properties.operator))
+          .filter((value): value is string => Boolean(value)) ?? [],
+      ),
+    )
+      .sort((left, right) => left.localeCompare(right))
+      .map((name) => ({
+        name,
+        type: "DSO / other" as const,
+        featureCount: 0,
+        bounds: null,
+        tsoNames: [],
+      }));
+  }, [collection, operatorCatalog]);
+  const regionalOperators = useMemo(
     () =>
-      Array.from(
-        new Set(
-          collection?.features
-            .map((feature) => feature.properties.operator)
-            .filter((value): value is string => Boolean(value)) ?? [],
-        ),
-      ).sort((left, right) => left.localeCompare(right)),
-    [collection],
+      operators.filter(
+        (item) => !item.bounds || operatorBoundsIntersect(item.bounds, activeCoverage.bounds),
+      ),
+    [activeCoverage.bounds, operators],
+  );
+  const transmissionOperators = useMemo(
+    () => regionalOperators.filter((item) => item.type === "TSO"),
+    [regionalOperators],
+  );
+  const distributionOperators = useMemo(() => {
+    const regional = regionalOperators.filter((item) => item.type === "DSO / other");
+    return selectedTso !== "all"
+      ? regional.filter((item) => item.tsoNames.includes(selectedTso))
+      : regional;
+  }, [regionalOperators, selectedTso]);
+  useEffect(() => {
+    const tsoAvailable = transmissionOperators.some((item) => item.name === selectedTso);
+    const dsoAvailable = distributionOperators.some((item) => item.name === selectedDso);
+    if (selectedTso !== "all" && !tsoAvailable) {
+      void updateSearch({
+        tso: undefined,
+        dso: undefined,
+        candidate: undefined,
+        compare: undefined,
+      });
+    } else if (selectedDso !== "all" && !dsoAvailable) {
+      void updateSearch({ dso: undefined, candidate: undefined, compare: undefined });
+    }
+    // updateSearch is a render-local router helper; availability changes are the intended trigger.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [distributionOperators, selectedDso, selectedTso, transmissionOperators]);
+
+  useEffect(() => {
+    if (search.propertyId) return;
+    if (selectedDso !== "all" && operators.some((item) => item.name === selectedDso)) {
+      navigateMapToOperator(selectedDso);
+    } else if (selectedTso !== "all" && operators.some((item) => item.name === selectedTso)) {
+      navigateMapToOperator(selectedTso);
+    }
+    // URL selection and late catalog hydration should both focus the accepted mapped extent.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [operators, selectedDso, selectedTso]);
+
+  useEffect(() => {
+    if (legacyOperator === "all" || !operators.length) return;
+    const legacyType = operators.find((item) => item.name === legacyOperator)?.type;
+    void updateSearch({
+      operator: undefined,
+      tso: legacyType === "TSO" ? legacyOperator : undefined,
+      dso: legacyType === "DSO / other" ? legacyOperator : undefined,
+    });
+    // One-time compatibility migration for shared links from the previous filter contract.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [legacyOperator, operators]);
+
+  const activeCapacityNodes = useMemo(
+    () =>
+      capacitySource === "berlin_synthetic"
+        ? (berlinCapacity?.results ?? [])
+        : (capacityViewport?.nodes ?? []),
+    [berlinCapacity?.results, capacitySource, capacityViewport?.nodes],
   );
 
-  const candidates = useMemo(() => {
+  const candidateSelection = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase();
-    const items = (ranking?.candidates ?? []).filter((candidate) => {
-      const node = opportunityNode(candidate, collection);
+    const eligibleItems = (ranking?.candidates ?? []).filter((candidate) => {
+      const node =
+        opportunityNode(candidate, rankingCollection) ?? opportunityNode(candidate, collection);
       const maximumVoltage = Math.max(0, ...candidate.voltageKv);
       const matchesQuery =
         !normalizedQuery ||
@@ -206,63 +1204,261 @@ function PowerFinderPage() {
         candidate.nodeName.toLocaleLowerCase().includes(normalizedQuery) ||
         candidate.operator?.toLocaleLowerCase().includes(normalizedQuery);
       const matchesVoltage = minimumVoltage === 0 || maximumVoltage >= minimumVoltage;
-      const matchesOperator = operator === "all" || candidate.operator === operator;
-      return matchesQuery && matchesVoltage && matchesOperator && Boolean(node);
+      return matchesQuery && matchesVoltage && Boolean(node);
     });
-    return items.sort((left, right) => {
+    const dsoItems =
+      selectedDso === "all"
+        ? eligibleItems
+        : eligibleItems.filter(
+            (candidate) => canonicalOperatorName(candidate.operator) === selectedDso,
+          );
+    const dsoFallback = selectedDso !== "all" && dsoItems.length === 0 && eligibleItems.length > 0;
+    const baseItems = dsoFallback ? eligibleItems : dsoItems;
+    const tsoItems =
+      selectedTso === "all"
+        ? baseItems
+        : baseItems.filter((candidate) => {
+            const canonicalCandidateOperator = canonicalOperatorName(candidate.operator);
+            const operatorContext = operatorCatalog.find(
+              (item) => item.name === canonicalCandidateOperator,
+            );
+            return (
+              canonicalCandidateOperator === selectedTso ||
+              operatorContext?.tsoNames.includes(selectedTso)
+            );
+          });
+    const tsoFallback = selectedTso !== "all" && tsoItems.length === 0 && baseItems.length > 0;
+    const items = tsoFallback ? baseItems : tsoItems;
+    items.sort((left, right) => {
+      if (mapMode === "capacity") {
+        const byNode = new Map(activeCapacityNodes.map((node) => [node.publicNodeId, node]));
+        const order = { meets: 0, activation: 1, below: 2, stale: 3, unknown: 4 } as const;
+        const leftFit = classifyCapacityOpportunity(
+          byNode.get(left.nodeId),
+          capacityMetric,
+          requiredCapacityMw,
+        );
+        const rightFit = classifyCapacityOpportunity(
+          byNode.get(right.nodeId),
+          capacityMetric,
+          requiredCapacityMw,
+        );
+        const fitDifference = order[leftFit.fit] - order[rightFit.fit];
+        if (fitDifference) return fitDifference;
+        const marginDifference = (rightFit.marginMw ?? -Infinity) - (leftFit.marginMw ?? -Infinity);
+        if (marginDifference) return marginDifference;
+      }
       if (candidateSort === "name") {
-        return left.siteName.localeCompare(right.siteName);
+        return (
+          left.siteName.localeCompare(right.siteName) || left.nodeName.localeCompare(right.nodeName)
+        );
       }
       if (candidateSort === "voltage") {
         return Math.max(0, ...right.voltageKv) - Math.max(0, ...left.voltageKv);
       }
       return right.screeningRank - left.screeningRank;
     });
-  }, [candidateSort, collection, minimumVoltage, operator, query, ranking]);
-  const selectedOpportunity =
-    candidates.find((candidate) => candidate.id === search.candidate) ?? null;
-  const comparisonIds = useMemo(
-    () => (search.compare ?? "").split(",").filter(Boolean).slice(0, 3),
-    [search.compare],
+    return { items, tsoFallback, dsoFallback };
+  }, [
+    candidateSort,
+    capacityMetric,
+    activeCapacityNodes,
+    collection,
+    mapMode,
+    minimumVoltage,
+    operatorCatalog,
+    query,
+    ranking,
+    rankingCollection,
+    requiredCapacityMw,
+    selectedDso,
+    selectedTso,
+  ]);
+  const candidates = candidateSelection.items;
+  const visibleCandidates = showAllCandidates ? candidates : candidates.slice(0, 5);
+  const capacitySummary = useMemo(
+    () =>
+      summariseCapacityOpportunities(
+        activeCapacityNodes,
+        capacityMetric,
+        requiredCapacityMw,
+        collection?.features.filter((feature) => feature.properties.kind === "node").length ?? 0,
+      ),
+    [activeCapacityNodes, capacityMetric, collection, requiredCapacityMw],
   );
-  const comparedCandidates = comparisonIds
-    .map((id) => candidates.find((candidate) => candidate.id === id))
-    .filter((candidate): candidate is CandidateOpportunity => Boolean(candidate));
+  const selectedOpportunity =
+    (selectedOpportunitySnapshot?.nodeId === String(selected?.id)
+      ? selectedOpportunitySnapshot
+      : null) ?? candidates.find((candidate) => candidate.id === search.candidate);
+  useEffect(() => {
+    if (!search.propertyId || search.candidate || !candidates.length || detailDismissedRef.current)
+      return;
+    const recommended = candidates[0];
+    setInteractionNotice(
+      `${recommended.nodeName} is the highest-ranked connection hypothesis for investigation. Capacity remains unconfirmed.`,
+    );
+    void updateSearch({ candidate: recommended.id });
+    // Only recommend automatically when a saved site enters Finder without a durable selection.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [candidates, search.candidate, search.propertyId]);
+  useEffect(() => {
+    if (
+      !search.propertyId ||
+      search.tso ||
+      search.dso ||
+      !ranking?.candidates.length ||
+      !operatorCatalog.length
+    )
+      return;
+    const suggestion = suggestOperatorFilters(ranking.candidates[0], operatorCatalog);
+    if (!suggestion.tso && !suggestion.dso) {
+      setInteractionNotice(
+        "The site is focused and grid candidates were queried, but no unambiguous mapped operator filter could be suggested. Operator responsibility requires confirmation.",
+      );
+      return;
+    }
+    void updateSearch({ tso: suggestion.tso, dso: suggestion.dso });
+    const context = [
+      suggestion.dso ? `likely DSO ${suggestion.dso}` : null,
+      suggestion.tso ? `mapped TSO context ${suggestion.tso}` : null,
+    ]
+      .filter(Boolean)
+      .join(" and ");
+    setInteractionNotice(
+      `The site is focused and candidates were queried. Filters now show ${context}; this is mapped screening context and requires operator confirmation.`,
+    );
+    // Only derive context when a saved site has no explicit operator filters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [operatorCatalog, ranking?.candidates, search.dso, search.propertyId, search.tso]);
+  // URL search is the durable selection source. A viewport refresh can replace the
+  // feature collection between a card click and navigation completion, so rebuild
+  // the detail feature from the selected opportunity instead of briefly closing it.
+  const selectedDetailFeature =
+    selected ??
+    (selectedOpportunity
+      ? (opportunityNode(selectedOpportunity, rankingCollection) ??
+        opportunityNode(selectedOpportunity, collection) ?? {
+          type: "Feature" as const,
+          id: selectedOpportunity.nodeId,
+          geometry: {
+            type: "Point" as const,
+            // This fallback is detail-only. The node's mapped position remains represented
+            // by the ranked pathway distance and is never replaced with a capacity claim.
+            coordinates: [project.longitude ?? 0, project.latitude ?? 0],
+          },
+          properties: {
+            kind: "node" as const,
+            name: selectedOpportunity.nodeName,
+            operator: selectedOpportunity.operator ?? undefined,
+            voltage_kv: selectedOpportunity.voltageKv,
+            max_voltage_kv: Math.max(0, ...selectedOpportunity.voltageKv),
+            evidence_class: "open_mapping" as const,
+            capacity_state: "not_established" as const,
+            source_published_at: selectedOpportunity.sourcePublishedAt ?? undefined,
+          },
+        })
+      : null);
+  const selectedCapacity = selectedDetailFeature
+    ? (activeCapacityNodes.find(
+        (result) => result.publicNodeId === String(selectedDetailFeature.id),
+      ) ?? null)
+    : null;
+  const selectedCapacityOpportunity = classifyCapacityOpportunity(
+    selectedCapacity,
+    capacityMetric,
+    requiredCapacityMw,
+  );
+  const selectedNodePathways = selected
+    ? candidates.filter((candidate) => candidate.nodeId === String(selected.id))
+    : [];
+  const previewOpportunity =
+    candidates.find((candidate) => candidate.id === previewCandidateId) ?? null;
+  const previewFeature = previewOpportunity
+    ? (opportunityNode(previewOpportunity, rankingCollection) ??
+      opportunityNode(previewOpportunity, collection))
+    : null;
+  const comparisonIds = useMemo(() => parseComparison(search.compare), [search.compare]);
+  const comparedCandidates = useMemo(
+    () =>
+      comparisonIds
+        .map(
+          (id) =>
+            candidates.find((candidate) => candidate.id === id) ??
+            (selectedOpportunitySnapshot?.id === id ? selectedOpportunitySnapshot : undefined),
+        )
+        .filter((candidate): candidate is CandidateOpportunity => Boolean(candidate)),
+    [candidates, comparisonIds, selectedOpportunitySnapshot],
+  );
+  const comparedActivation = useMemo(
+    () =>
+      new Map(
+        comparedCandidates.map((candidate) => [
+          candidate.id,
+          createActivationStudyContext({ project, candidate, registeredStudy: null }),
+        ]),
+      ),
+    [comparedCandidates, project],
+  );
   const coordinates = selected ? pointCoordinates(selected) : null;
-  const score = selected ? scoreFeature(selected) : null;
-
-  useEffect(() => {
-    if (!collection || !dataMode) return;
-    let active = true;
-    setRankingState("loading");
-    void loadRankedCandidates(collection, requiredImportMw, maxDistanceKm, dataMode)
-      .then((result) => {
-        if (!active) return;
-        setRanking(result);
-        setRankingState("ready");
-      })
-      .catch(() => {
-        if (!active) return;
-        setRanking(null);
-        setRankingState("error");
+  const activationOpen =
+    productCapabilities.workspace &&
+    integratedActivationStudyEnabled &&
+    search.study === "activation" &&
+    Boolean(selectedOpportunity);
+  const activationTab: ActivationStudyTab =
+    search.studyTab === "geographic" ? "overview" : (search.studyTab ?? "overview");
+  const startPrivateAssessment = async (studyInput?: {
+    selectedOptionKind: string | null;
+    commercialAssumptions: import("@/features/power-finder/activation-study").RepresentativeCommercialAssumptions;
+  }) => {
+    if (!selected || !coordinates) return;
+    setSaveStatus("saving");
+    try {
+      const activation = selectedOpportunity
+        ? activationStudySnapshot(
+            createActivationStudyContext({
+              project,
+              candidate: selectedOpportunity,
+              registeredStudy: c1Study,
+            }),
+            studyInput,
+          )
+        : null;
+      const id = await savePowerFinderCandidate(
+        selected,
+        selectedOpportunity,
+        requiredImportMw,
+        activation,
+      );
+      setShortlistId(id);
+      setSaveStatus("saved");
+      await navigate({
+        to: "/assessments/new",
+        search: {
+          shortlistId: id,
+          name: selectedOpportunity?.siteName ?? selected.properties.name,
+          projectType: "large_load",
+          importMw: requiredImportMw,
+          latitude: coordinates[1],
+          longitude: coordinates[0],
+          federalState: "Brandenburg",
+          challenge: selectedOpportunity
+            ? `${selectedOpportunity.siteName} screened against ${selectedOpportunity.nodeName}. The saved Activation Study is a representative benchmark only; capacity, feasibility, cost and timing require operator confirmation.`
+            : `Screening candidate ${selected.id}; capacity and operator responsibility require confirmation.`,
+        },
       });
-    return () => {
-      active = false;
-    };
-  }, [collection, dataMode, maxDistanceKm, requiredImportMw]);
-
+    } catch {
+      setSaveStatus("error");
+    }
+  };
   useEffect(() => {
-    if (!selectedOpportunity || selected?.id === selectedOpportunity.nodeId) return;
-    const node = opportunityNode(selectedOpportunity, collection);
-    if (node) setSelected(node);
-  }, [collection, selected?.id, selectedOpportunity]);
-
-  useEffect(() => {
+    if (!productCapabilities.workspace) return;
     setSaveStatus("idle");
     setShortlistId(null);
   }, [selected?.id]);
 
   useEffect(() => {
+    if (!productCapabilities.workspace) return;
     setOperatorEvidence(null);
     if (!selected || selected.properties.kind !== "node" || dataMode !== "database") {
       setOperatorEvidenceState("idle");
@@ -284,16 +1480,483 @@ function PowerFinderPage() {
     return () => controller.abort();
   }, [dataMode, selected]);
 
+  useEffect(() => {
+    setC1Study(null);
+    if (!selected || selected.properties.kind !== "node") {
+      return;
+    }
+    const controller = new AbortController();
+    void loadC1Study(String(selected.id), controller.signal)
+      .then((result) => {
+        setC1Study(result);
+      })
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, [selected]);
+
+  useEffect(() => {
+    const sourceCollection = rankingCollection;
+    if (!sourceCollection || !dataMode) return;
+    if (project.latitude == null || project.longitude == null) {
+      setRanking(null);
+      setRankingState("ready");
+      setSelectedOpportunitySnapshot(null);
+      setSelected(null);
+      return;
+    }
+    let active = true;
+    const controller = new AbortController();
+    setRankingState("loading");
+    const resultPromise = Promise.resolve(
+      rankCandidatesForLocation(
+        sourceCollection,
+        project.longitude,
+        project.latitude,
+        requiredImportMw,
+        maxDistanceKm,
+        project.name,
+      ),
+    );
+    void resultPromise
+      .then((result) => ({
+        ...result,
+        candidates: applyPreferredVoltageContext(
+          result.candidates,
+          project.preferredVoltageKv,
+          project.type,
+        ),
+      }))
+      .then((result) => {
+        if (!active) return;
+        setRanking(result);
+        setRankingState("ready");
+      })
+      .catch(() => {
+        if (!active) return;
+        setRanking(null);
+        setRankingState("error");
+      });
+    return () => {
+      active = false;
+      controller.abort();
+    };
+  }, [rankingCollection, dataMode, maxDistanceKm, project, requiredImportMw]);
+
+  useEffect(() => {
+    if (!selectedOpportunity || selected?.id === selectedOpportunity.nodeId) return;
+    const node =
+      opportunityNode(selectedOpportunity, rankingCollection) ??
+      opportunityNode(selectedOpportunity, collection);
+    if (node) setSelected(node);
+  }, [collection, rankingCollection, selected?.id, selectedOpportunity]);
+
+  useEffect(() => {
+    if (!search.candidate) return;
+    const card = document.querySelector<HTMLElement>(
+      `[data-candidate-id="${CSS.escape(search.candidate)}"]`,
+    );
+    card?.scrollIntoView({ block: "nearest" });
+  }, [search.candidate]);
+
   return (
-    <AppShell requireAuth>
-      <main id="main-content" className="power-finder-page">
+    <AppShell>
+      <main
+        id="main-content"
+        className={`power-finder-page ${sidebarOpen ? "" : "is-sidebar-collapsed"}`}
+      >
         <section className="power-finder-sidebar" aria-label="Power Finder controls">
+          <div
+            className={`finder-rail-sticky ${finderWorkflow === "discover" ? "is-discovery" : ""}`}
+          >
+            <div className="finder-workflow-switch" aria-label="Power Finder workflow">
+              <p>Choose your starting point</p>
+              <div role="group" aria-label="Power Finder modes">
+                <button
+                  type="button"
+                  className={finderWorkflow === "screen" ? "is-active" : ""}
+                  aria-pressed={finderWorkflow === "screen"}
+                  onClick={() => setFinderWorkflow("screen")}
+                >
+                  <MapPin aria-hidden="true" />
+                  <span>
+                    <strong>Screen a site</strong>
+                    <small>Test a known property</small>
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  className={finderWorkflow === "discover" ? "is-active" : ""}
+                  aria-pressed={finderWorkflow === "discover"}
+                  onClick={() => {
+                    setFinderWorkflow("discover");
+                    setEnabled((current) => ({
+                      ...current,
+                      generation_asset: true,
+                      storage_asset: true,
+                    }));
+                    if (regionCode === "DE") void updateSearch({ region: "DE-BB" });
+                  }}
+                >
+                  <MapPinned aria-hidden="true" />
+                  <span>
+                    <strong>Discover locations</strong>
+                    <small>Search across a region</small>
+                  </span>
+                </button>
+              </div>
+            </div>
+            {finderWorkflow === "discover" ? (
+              <section className="finder-discovery-intro" aria-labelledby="finder-discovery-title">
+                <p className="context-label">Regional opportunity discovery</p>
+                <h2 id="finder-discovery-title">
+                  Find investigation areas in {activeCoverage.regionName}
+                </h2>
+                <p>
+                  Compare mapped grid context, industrial land and the surrounding energy ecosystem
+                  without treating public mapping as capacity or feasibility evidence.
+                </p>
+                <div className="finder-discovery-form">
+                  <label>
+                    <span>Bundesland</span>
+                    <select
+                      value={regionCode === "DE" ? "DE-BB" : regionCode}
+                      onChange={(event) => {
+                        const nextRegion = event.target.value as typeof search.region;
+                        setDiscoveryResults([]);
+                        setSelectedDiscoveryId(null);
+                        void updateSearch({ region: nextRegion });
+                      }}
+                    >
+                      {coverage
+                        .filter((item) => item.regionCode !== "DE")
+                        .map((item) => (
+                          <option key={item.regionCode} value={item.regionCode}>
+                            {item.regionName}
+                          </option>
+                        ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span>Required load (MW)</span>
+                    <input
+                      type="number"
+                      min="1"
+                      max="1000"
+                      value={project.importMw}
+                      onChange={(event) =>
+                        updateProject({ importMw: Number(event.target.value) || 1 })
+                      }
+                    />
+                  </label>
+                  <label>
+                    <span>Preferred voltage</span>
+                    <select
+                      value={project.preferredVoltageKv ?? 0}
+                      onChange={(event) =>
+                        updateProject({ preferredVoltageKv: Number(event.target.value) || null })
+                      }
+                    >
+                      <option value="0">Any / unknown</option>
+                      <option value="110">110 kV</option>
+                      <option value="220">220 kV</option>
+                      <option value="380">380 kV</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>Maximum node distance</span>
+                    <select
+                      value={project.maxDistanceKm}
+                      onChange={(event) =>
+                        updateProject({ maxDistanceKm: Number(event.target.value) })
+                      }
+                    >
+                      <option value="10">10 km</option>
+                      <option value="20">20 km</option>
+                      <option value="30">30 km</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>Ranking strategy</span>
+                    <select
+                      value={discoveryStrategy}
+                      onChange={(event) =>
+                        setDiscoveryStrategy(event.target.value as DiscoveryStrategy)
+                      }
+                    >
+                      <option value="connection">Connection-first</option>
+                      <option value="balanced">Balanced</option>
+                      <option value="energy">Energy ecosystem</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>Number of results</span>
+                    <select
+                      value={discoveryResultCount}
+                      onChange={(event) =>
+                        setDiscoveryResultCount(Number(event.target.value) as 10 | 20)
+                      }
+                    >
+                      <option value="10">10 locations</option>
+                      <option value="20">20 locations</option>
+                    </select>
+                  </label>
+                </div>
+                <button
+                  type="button"
+                  className="primary-button"
+                  disabled={discoveryState === "loading"}
+                  onClick={() => {
+                    void (async () => {
+                      setDiscoveryState("loading");
+                      setInteractionNotice("Sampling accepted mapped context across the region…");
+                      try {
+                        const [west, south, east, north] = activeCoverage.bounds;
+                        const columns = 4;
+                        const rows = 4;
+                        const longitudeStep = (east - west) / columns;
+                        const latitudeStep = (north - south) / rows;
+                        const sampleBounds = Array.from({ length: columns * rows }, (_, index) => {
+                          const column = index % columns;
+                          const row = Math.floor(index / columns);
+                          return {
+                            west: west + column * longitudeStep,
+                            south: south + row * latitudeStep,
+                            east: west + (column + 1) * longitudeStep,
+                            north: south + (row + 1) * latitudeStep,
+                          };
+                        });
+                        const { samples, fullContextCount, gridOnlyCount, unavailableCount } =
+                          await loadRegionalDiscoverySamples(sampleBounds, (bounds, options) =>
+                            loadPowerFinderViewport(bounds, undefined, options),
+                          );
+                        if (samples.length === 0) {
+                          throw new Error("No regional samples were available.");
+                        }
+                        const byId = new Map<string, PowerFinderFeature>();
+                        for (const sample of samples) {
+                          for (const feature of sample.collection.features)
+                            byId.set(feature.id, feature);
+                        }
+                        const regionalCollection: PowerFinderCollection = {
+                          ...samples[0].collection,
+                          features: [...byId.values()],
+                          metadata: {
+                            ...samples[0].collection.metadata,
+                            title: `${activeCoverage.regionName} discovery sample`,
+                            record_count: byId.size,
+                            geographic_scope: activeCoverage.bounds,
+                          },
+                        };
+                        const results = discoverLocations(regionalCollection, {
+                          regionCode: activeCoverage.regionCode,
+                          requiredMw: project.importMw,
+                          preferredVoltageKv: project.preferredVoltageKv,
+                          maxNodeDistanceKm: project.maxDistanceKm,
+                          resultCount: discoveryResultCount,
+                          strategy: discoveryStrategy,
+                        });
+                        setDiscoveryResults(results);
+                        setSelectedDiscoveryId(results[0]?.id ?? null);
+                        setMapNavigationTarget({
+                          requestId: Date.now(),
+                          kind: "bounds",
+                          bounds: activeCoverage.bounds,
+                          maxZoom: activeCoverage.zoom,
+                        });
+                        setDiscoveryState("ready");
+                        setInteractionNotice(
+                          results.length
+                            ? `${results.length} geographically distinct investigation locations found${
+                                gridOnlyCount > 0 || unavailableCount > 0
+                                  ? ` from ${samples.length} of ${sampleBounds.length} available regional samples (${fullContextCount} with energy context, ${gridOnlyCount} grid-only)`
+                                  : " after regional sampling and local refinement"
+                              }. ${
+                                unavailableCount > 0
+                                  ? `${unavailableCount} unavailable area${unavailableCount === 1 ? " remains" : "s remain"} unassessed.`
+                                  : gridOnlyCount > 0
+                                    ? "Energy-ecosystem context was unavailable for some areas; their scores use grid context only."
+                                    : ""
+                              }`
+                            : "No investigation locations met the current mapped-data criteria. Try a wider node distance.",
+                        );
+                      } catch {
+                        setDiscoveryState("error");
+                        setInteractionNotice(
+                          "Regional data sampling was incomplete. Please try again.",
+                        );
+                      }
+                    })();
+                  }}
+                >
+                  {discoveryState === "loading"
+                    ? "Scanning regional context…"
+                    : `Find ${discoveryResultCount} investigation locations`}
+                </button>
+                <small>Recommended for investigation only. Capacity remains unknown.</small>
+                <details className="finder-discovery-energy-filters" open>
+                  <summary>Energy context filters</summary>
+                  <p>
+                    Filter registered generation and storage shown on the map. These assets provide
+                    nearby ecosystem context, not available grid capacity.
+                  </p>
+                  <div className="finder-discovery-filter-grid">
+                    <label>
+                      <span>Generation technology</span>
+                      <select
+                        aria-label="Discovery generation technology"
+                        value={generationGroup}
+                        onChange={(event) => setGenerationGroup(event.target.value)}
+                      >
+                        <option value="all">All technologies</option>
+                        <option value="solar">Solar</option>
+                        <option value="wind">Wind</option>
+                        <option value="biomass">Biomass</option>
+                        <option value="hydro">Hydro</option>
+                        <option value="geothermal">Geothermal</option>
+                        <option value="nuclear">Nuclear</option>
+                        <option value="gas">Gas</option>
+                        <option value="fossil_other">Other fossil</option>
+                        <option value="other">Other / unknown</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Minimum generation</span>
+                      <select
+                        aria-label="Discovery minimum registered generation"
+                        value={minimumGenerationMw}
+                        onChange={(event) => setMinimumGenerationMw(Number(event.target.value))}
+                      >
+                        <option value="0">Any MW, including unknown</option>
+                        <option value="1">1+ MW</option>
+                        <option value="10">10+ MW</option>
+                        <option value="50">50+ MW</option>
+                        <option value="100">100+ MW</option>
+                        <option value="500">500+ MW</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Minimum storage power</span>
+                      <select
+                        aria-label="Discovery minimum registered storage power"
+                        value={minimumStorageMw}
+                        onChange={(event) => setMinimumStorageMw(Number(event.target.value))}
+                      >
+                        <option value="0">Any MW, including unknown</option>
+                        <option value="1">1+ MW</option>
+                        <option value="10">10+ MW</option>
+                        <option value="50">50+ MW</option>
+                        <option value="100">100+ MW</option>
+                      </select>
+                    </label>
+                  </div>
+                </details>
+              </section>
+            ) : (
+              <div className="finder-project-summary">
+                <div>
+                  <small>{activeProperty ? "Site under review" : "Current screening"}</small>
+                  <strong>{project.name}</strong>
+                  <span>
+                    {formatMw(project.importMw)} import · {project.preferredVoltageKv ?? "Any"} kV ·{" "}
+                    {project.maxDistanceKm} km
+                  </span>
+                </div>
+                <div className="finder-project-actions">
+                  <button
+                    type="button"
+                    aria-expanded={projectEditorOpen}
+                    aria-controls="finder-project-editor"
+                    onClick={() => {
+                      const opening = !projectEditorOpen;
+                      setProjectEditorOpen(opening);
+                      if (opening) {
+                        window.requestAnimationFrame(() =>
+                          document
+                            .getElementById("finder-project-editor")
+                            ?.scrollIntoView({ block: "nearest", behavior: "smooth" }),
+                        );
+                      }
+                    }}
+                  >
+                    {projectEditorOpen ? "Close brief" : "Screening brief"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (
+                        (project.latitude != null || project.name !== defaultFinderProject.name) &&
+                        !window.confirm(
+                          "Start a new screening? Save the current property first if you want to keep it.",
+                        )
+                      )
+                        return;
+                      propertySaveRequest.current += 1;
+                      setProject({ ...defaultFinderProject, updatedAt: new Date().toISOString() });
+                      setActiveProperty(null);
+                      setSelected(null);
+                      setSelectedOpportunitySnapshot(null);
+                      setComparisonOpen(false);
+                      setPropertySaveStatus("idle");
+                      setShowAllCandidates(false);
+                      void navigate({ to: "/power-finder", search: {}, replace: true });
+                      setInteractionNotice("New screening started.");
+                    }}
+                  >
+                    New site
+                  </button>
+                  <button
+                    type="button"
+                    className="primary-button"
+                    disabled={
+                      propertySaveStatus === "saving" ||
+                      propertySaveStatus === "saved" ||
+                      rankingState === "loading" ||
+                      project.latitude == null ||
+                      project.longitude == null
+                    }
+                    onClick={() => void persistScreening(candidates.slice(0, 3))}
+                  >
+                    <BookmarkPlus aria-hidden="true" />
+                    {propertySaveStatus === "saving"
+                      ? "Saving screening…"
+                      : rankingState === "loading"
+                        ? "Finding candidates…"
+                        : propertySaveStatus === "saved"
+                          ? "Screening saved"
+                          : propertySaveStatus === "error"
+                            ? "Try saving again"
+                            : activeProperty
+                              ? "Save screening to site"
+                              : "Create pipeline site"}
+                  </button>
+                </div>
+                {activeProperty && propertySaveStatus === "saved" ? (
+                  <div className="finder-workspace-return-card">
+                    <div>
+                      <strong>Pipeline site created</strong>
+                      <span>Continue from Summary, then review each workspace step.</span>
+                    </div>
+                    <Link
+                      className="finder-return-to-workspace"
+                      to="/portfolio/$id"
+                      params={{ id: activeProperty.id }}
+                      search={{ tab: "overview" }}
+                    >
+                      Open Site Workspace
+                    </Link>
+                  </div>
+                ) : null}
+              </div>
+            )}
+          </div>
           <header>
             <p className="context-label">Power Finder · Public-source screen</p>
-            <h1>{activeCoverage.regionName} connection context</h1>
+            <h1>
+              {activeProperty ? project.name : `${activeCoverage.regionName} connection context`}
+            </h1>
             <p>
-              Explore grid proximity and industrial land, then move a candidate into the
-              evidence-led connection workflow.
+              Explore grid proximity, mapped voltage, industrial land and the evidence behind each
+              screening candidate.
             </p>
           </header>
 
@@ -305,206 +1968,1250 @@ function PowerFinderPage() {
             </div>
           </aside>
 
-          <section className="power-finder-filter-panel" aria-label="Search and filter map">
-            <label className="power-finder-search">
-              <Search aria-hidden="true" />
-              <span className="sr-only">Search nodes, operators, or identifiers</span>
-              <input
-                type="search"
-                value={query}
-                name="grid-search"
-                autoComplete="off"
-                onChange={(event) => void updateSearch({ q: event.target.value || undefined })}
-                placeholder="Search node, operator, or ID…"
-              />
-            </label>
-            <div className="power-finder-filter-grid">
+          <div className="finder-screening-controls">
+            <section
+              id="finder-project-editor"
+              className={`finder-project-panel ${projectEditorOpen ? "is-open" : ""}`}
+              aria-labelledby="finder-project-title"
+              hidden={!projectEditorOpen}
+            >
+              <div className="finder-project-heading">
+                <div>
+                  <p className="context-label">Your screening project</p>
+                  <h2 id="finder-project-title">Define the site and power requirement</h2>
+                </div>
+                <small>Saved on this device</small>
+              </div>
               <label>
-                <span>Region</span>
-                <select
-                  value={regionCode}
-                  onChange={(event) =>
-                    void updateSearch({
-                      region: event.target.value as "DE" | "DE-BB",
-                      candidate: undefined,
-                    })
-                  }
-                >
-                  {coverage.map((item) => (
-                    <option key={item.regionCode} value={item.regionCode}>
-                      {item.regionName} · {item.status}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                <span>Map colour</span>
-                <select
-                  value={mapMode}
-                  onChange={(event) =>
-                    void updateSearch({
-                      mapMode: event.target.value as "voltage" | "evidence" | "capacity",
-                    })
-                  }
-                >
-                  <option value="voltage">Voltage</option>
-                  <option value="evidence">Evidence authority</option>
-                  <option value="capacity">Published capacity</option>
-                </select>
-              </label>
-              <label>
-                <span>Required import</span>
+                <span>Site opportunity</span>
                 <input
-                  type="number"
-                  name="required-import"
-                  min="0.1"
-                  max="1000"
-                  step="0.1"
+                  name="project-name"
                   autoComplete="off"
-                  value={requiredImportMw}
-                  onChange={(event) =>
-                    void updateSearch({ mw: Number(event.target.value) || undefined })
-                  }
+                  value={project.name}
+                  maxLength={160}
+                  onChange={(event) => updateProject({ name: event.target.value })}
                 />
               </label>
-              <label>
-                <span>Maximum distance</span>
-                <select
-                  name="maximum-distance"
-                  value={maxDistanceKm}
-                  onChange={(event) =>
-                    void updateSearch({ distance: Number(event.target.value) || undefined })
-                  }
-                >
-                  <option value={5}>5 km</option>
-                  <option value={10}>10 km</option>
-                  <option value={20}>20 km</option>
-                  <option value={50}>50 km</option>
-                </select>
-              </label>
-              <label>
-                <span>Minimum voltage</span>
-                <select
-                  value={minimumVoltage}
-                  onChange={(event) =>
-                    void updateSearch({ voltage: Number(event.target.value) || undefined })
-                  }
-                >
-                  <option value={0}>Any / unknown</option>
-                  <option value={20}>20+ kV</option>
-                  <option value={110}>110+ kV</option>
-                  <option value={220}>220+ kV</option>
-                  <option value={380}>380+ kV</option>
-                </select>
-              </label>
-              <label>
-                <span>Operator</span>
-                <select
-                  value={operator}
-                  onChange={(event) =>
-                    void updateSearch({
-                      operator: event.target.value === "all" ? undefined : event.target.value,
-                    })
-                  }
-                >
-                  <option value="all">All operators</option>
-                  {operators.map((item) => (
-                    <option key={item} value={item}>
-                      {item}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            <p className="candidate-boundary" role="status">
-              {activeCoverage.evidenceBoundary}
-              {activeCoverage.status !== "accepted" &&
-                " This view may be empty until an accepted release is promoted."}
-            </p>
-          </section>
-
-          <section>
-            <h2>Layers</h2>
-            <div className="power-finder-layer-list">
-              {(Object.keys(kindLabels) as PowerFinderKind[]).map((kind) => (
-                <label key={kind}>
+              {!finderMvpFeatures.dataCentreOnly ? (
+                <label>
+                  <span>Project type</span>
+                  <select
+                    name="project-type"
+                    value={project.type}
+                    onChange={(event) => {
+                      const type = event.target.value as FinderProjectType;
+                      updateProject({ type });
+                      void updateSearch({
+                        projectType: type,
+                        candidate: undefined,
+                        compare: undefined,
+                      });
+                    }}
+                  >
+                    {Object.entries(finderProjectTypes)
+                      .filter(
+                        ([value]) =>
+                          finderMvpFeatures.additionalProjectTypes || value === "data_centre",
+                      )
+                      .map(([value, profile]) => (
+                        <option value={value} key={value}>
+                          {profile.label}
+                        </option>
+                      ))}
+                  </select>
+                  <small>{finderProjectTypes[project.type].description}</small>
+                </label>
+              ) : null}
+              <div className="finder-project-grid">
+                <label>
+                  <span>Latitude</span>
                   <input
+                    name="site-latitude"
+                    type="number"
+                    min="47"
+                    max="56"
+                    step="0.000001"
+                    value={numericDrafts.latitude}
+                    inputMode="decimal"
+                    autoComplete="off"
+                    aria-invalid={Boolean(fieldErrors.latitude)}
+                    aria-describedby={fieldErrors.latitude ? "latitude-error" : undefined}
+                    placeholder="Click map…"
+                    onChange={(event) => {
+                      commitNumber(
+                        "latitude",
+                        event.target.value,
+                        (value) => {
+                          updateProject({ latitude: value });
+                          void updateSearch({
+                            lat: value ?? undefined,
+                            candidate: undefined,
+                            compare: undefined,
+                          });
+                        },
+                        true,
+                      );
+                    }}
+                  />
+                  {fieldErrors.latitude && (
+                    <small id="latitude-error" className="finder-field-error">
+                      {fieldErrors.latitude}
+                    </small>
+                  )}
+                </label>
+                <label>
+                  <span>Longitude</span>
+                  <input
+                    name="site-longitude"
+                    type="number"
+                    min="5"
+                    max="16"
+                    step="0.000001"
+                    value={numericDrafts.longitude}
+                    inputMode="decimal"
+                    autoComplete="off"
+                    aria-invalid={Boolean(fieldErrors.longitude)}
+                    aria-describedby={fieldErrors.longitude ? "longitude-error" : undefined}
+                    placeholder="Click map…"
+                    onChange={(event) => {
+                      commitNumber(
+                        "longitude",
+                        event.target.value,
+                        (value) => {
+                          updateProject({ longitude: value });
+                          void updateSearch({
+                            lng: value ?? undefined,
+                            candidate: undefined,
+                            compare: undefined,
+                          });
+                        },
+                        true,
+                      );
+                    }}
+                  />
+                  {fieldErrors.longitude && (
+                    <small id="longitude-error" className="finder-field-error">
+                      {fieldErrors.longitude}
+                    </small>
+                  )}
+                </label>
+                <label>
+                  <span>Total site load (MW)</span>
+                  <input
+                    name="import-mw"
+                    type="number"
+                    min="0.1"
+                    max="1000"
+                    step="0.1"
+                    value={numericDrafts.importMw}
+                    inputMode="decimal"
+                    autoComplete="off"
+                    aria-invalid={Boolean(fieldErrors.importMw)}
+                    aria-describedby={fieldErrors.importMw ? "import-mw-error" : undefined}
+                    onChange={(event) => {
+                      commitNumber("importMw", event.target.value, (value) => {
+                        if (value == null) return;
+                        updateProject({
+                          importMw: value,
+                          ultimateImportMw:
+                            project.ultimateImportMw === project.importMw
+                              ? value
+                              : Math.max(value, project.ultimateImportMw),
+                          minimumFirmMw:
+                            project.minimumFirmMw === project.importMw
+                              ? value
+                              : Math.min(value, project.minimumFirmMw),
+                        });
+                        if (mapMode === "capacity") setRequiredCapacityMw(value);
+                        void updateSearch({
+                          mw: value,
+                          requiredMw: mapMode === "capacity" ? value : search.requiredMw,
+                          candidate: undefined,
+                          compare: undefined,
+                        });
+                      });
+                    }}
+                  />
+                  {fieldErrors.importMw && (
+                    <small id="import-mw-error" className="finder-field-error">
+                      {fieldErrors.importMw}
+                    </small>
+                  )}
+                </label>
+                {isStorageProject(project.type) && (
+                  <label>
+                    <span>Export MW</span>
+                    <input
+                      name="export-mw"
+                      type="number"
+                      min="0"
+                      max="1000"
+                      step="0.1"
+                      value={numericDrafts.exportMw}
+                      inputMode="decimal"
+                      autoComplete="off"
+                      aria-invalid={Boolean(fieldErrors.exportMw)}
+                      aria-describedby={fieldErrors.exportMw ? "export-mw-error" : undefined}
+                      onChange={(event) => {
+                        commitNumber("exportMw", event.target.value, (value) => {
+                          if (value == null) return;
+                          updateProject({ exportMw: value });
+                          void updateSearch({
+                            exportMw: value || undefined,
+                            candidate: undefined,
+                            compare: undefined,
+                          });
+                        });
+                      }}
+                    />
+                    {fieldErrors.exportMw && (
+                      <small id="export-mw-error" className="finder-field-error">
+                        {fieldErrors.exportMw}
+                      </small>
+                    )}
+                  </label>
+                )}
+              </div>
+              <label>
+                <span>Voltage context</span>
+                <select
+                  name="preferred-voltage"
+                  value={project.preferredVoltageKv ?? 0}
+                  onChange={(event) => {
+                    const preferredVoltageKv = Number(event.target.value) || null;
+                    updateProject({ preferredVoltageKv });
+                    void updateSearch({
+                      preferredVoltage: preferredVoltageKv ?? undefined,
+                      candidate: undefined,
+                      compare: undefined,
+                    });
+                  }}
+                >
+                  <option value={0}>No preference</option>
+                  <option value={20}>20 kV</option>
+                  <option value={110}>110 kV</option>
+                  <option value={220}>220 kV</option>
+                  <option value={380}>380 kV</option>
+                </select>
+                <small>
+                  Screening assumption only. Adjust when a connection-voltage assumption is known.
+                </small>
+              </label>
+              {search.study === "activation" && (
+                <details className="finder-scenario-inputs">
+                  <summary>Activation Study assumptions</summary>
+                  <p>
+                    These inputs drive an explicitly synthetic, untrained hourly scenario. They do
+                    not request or establish network capacity.
+                  </p>
+                  <div className="finder-project-grid">
+                    <label>
+                      <span>Ultimate demand MW</span>
+                      <input
+                        type="number"
+                        min="0.1"
+                        max="1000"
+                        step="0.1"
+                        value={project.ultimateImportMw}
+                        onChange={updateScenarioNumber("ultimateImportMw", 0.1, 1000)}
+                      />
+                    </label>
+                    <label>
+                      <span>Minimum firm MW</span>
+                      <input
+                        type="number"
+                        min="0"
+                        max="1000"
+                        step="0.1"
+                        value={project.minimumFirmMw}
+                        onChange={updateScenarioNumber("minimumFirmMw", 0, 1000)}
+                      />
+                    </label>
+                    <label>
+                      <span>Interruptible load MW</span>
+                      <input
+                        type="number"
+                        min="0"
+                        max="1000"
+                        step="0.1"
+                        value={project.flexibleLoadMw}
+                        onChange={updateScenarioNumber("flexibleLoadMw", 0, 1000)}
+                      />
+                    </label>
+                    <label>
+                      <span>Target energisation year</span>
+                      <input
+                        type="number"
+                        min="2026"
+                        max="2050"
+                        step="1"
+                        value={project.targetEnergisationYear}
+                        onChange={updateScenarioNumber("targetEnergisationYear", 2026, 2050)}
+                      />
+                    </label>
+                    <label>
+                      <span>Supply redundancy</span>
+                      <select
+                        value={project.redundancy}
+                        onChange={(event) =>
+                          updateProject({
+                            redundancy: event.target.value as FinderProject["redundancy"],
+                          })
+                        }
+                      >
+                        <option value="single_feed">Single feed</option>
+                        <option value="dual_feed">Dual feed</option>
+                        <option value="n_minus_one">N-1 requirement</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Representative load shape</span>
+                      <select
+                        value={project.loadProfile}
+                        onChange={(event) =>
+                          updateProject({
+                            loadProfile: event.target.value as FinderProject["loadProfile"],
+                          })
+                        }
+                      >
+                        <option value="flat">Continuous / flat</option>
+                        <option value="business_hours">Business hours</option>
+                        <option value="managed_charging">Managed charging</option>
+                        <option value="flexible_process">Flexible process</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Annual consumption GWh</span>
+                      <input
+                        type="number"
+                        min="0"
+                        max="20000"
+                        step="1"
+                        value={project.annualConsumptionGwh}
+                        onChange={updateScenarioNumber("annualConsumptionGwh", 0, 20000)}
+                      />
+                    </label>
+                    <label>
+                      <span>Maximum interruption hours</span>
+                      <input
+                        type="number"
+                        min="0"
+                        max="8760"
+                        step="1"
+                        value={project.maxInterruptionHours}
+                        onChange={updateScenarioNumber("maxInterruptionHours", 0, 8760)}
+                      />
+                    </label>
+                    <label>
+                      <span>Annual interruption limit</span>
+                      <input
+                        type="number"
+                        min="0"
+                        max="8760"
+                        step="1"
+                        value={project.annualInterruptionLimit}
+                        onChange={updateScenarioNumber("annualInterruptionLimit", 0, 8760)}
+                      />
+                    </label>
+                    <label>
+                      <span>On-site generation MW</span>
+                      <input
+                        type="number"
+                        min="0"
+                        max="1000"
+                        step="0.1"
+                        value={project.onsiteGenerationMw}
+                        onChange={updateScenarioNumber("onsiteGenerationMw", 0, 1000)}
+                      />
+                    </label>
+                  </div>
+                </details>
+              )}
+              {isStorageProject(project.type) && search.study === "activation" && (
+                <div className="finder-project-grid">
+                  <label>
+                    <span>Battery MW</span>
+                    <input
+                      name="battery-power-mw"
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      value={numericDrafts.batteryPowerMw}
+                      inputMode="decimal"
+                      autoComplete="off"
+                      aria-invalid={Boolean(fieldErrors.batteryPowerMw)}
+                      onChange={(event) =>
+                        commitNumber("batteryPowerMw", event.target.value, (value) => {
+                          if (value != null) updateProject({ batteryPowerMw: value });
+                        })
+                      }
+                    />
+                    {fieldErrors.batteryPowerMw && (
+                      <small className="finder-field-error">{fieldErrors.batteryPowerMw}</small>
+                    )}
+                  </label>
+                  <label>
+                    <span>Battery MWh</span>
+                    <input
+                      name="battery-energy-mwh"
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      value={numericDrafts.batteryEnergyMwh}
+                      inputMode="decimal"
+                      autoComplete="off"
+                      aria-invalid={Boolean(fieldErrors.batteryEnergyMwh)}
+                      onChange={(event) =>
+                        commitNumber("batteryEnergyMwh", event.target.value, (value) => {
+                          if (value != null) updateProject({ batteryEnergyMwh: value });
+                        })
+                      }
+                    />
+                    {fieldErrors.batteryEnergyMwh && (
+                      <small className="finder-field-error">{fieldErrors.batteryEnergyMwh}</small>
+                    )}
+                  </label>
+                  <label>
+                    <span>Round-trip efficiency %</span>
+                    <input
+                      name="battery-round-trip-efficiency"
+                      type="number"
+                      min="1"
+                      max="100"
+                      step="1"
+                      inputMode="numeric"
+                      autoComplete="off"
+                      value={project.batteryRoundTripEfficiencyPct}
+                      onChange={updateScenarioNumber("batteryRoundTripEfficiencyPct", 1, 100)}
+                    />
+                  </label>
+                  <label>
+                    <span>Battery reserve %</span>
+                    <input
+                      name="battery-reserve"
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="1"
+                      inputMode="numeric"
+                      autoComplete="off"
+                      value={project.batteryReservePct}
+                      onChange={updateScenarioNumber("batteryReservePct", 0, 100)}
+                    />
+                  </label>
+                </div>
+              )}
+              <p className="candidate-boundary">
+                Click an empty point on the map or enter coordinates. The marker is a
+                customer-declared site, not network evidence.
+              </p>
+              {project.latitude != null && project.longitude != null && (
+                <button
+                  type="button"
+                  className="finder-clear-site"
+                  onClick={() => {
+                    updateProject({ latitude: null, longitude: null });
+                    setNumericDrafts((current) => ({ ...current, latitude: "", longitude: "" }));
+                    setSelected(null);
+                    setSelectedOpportunitySnapshot(null);
+                    setComparisonOpen(false);
+                    setInteractionNotice("Declared site cleared. Ranked pathways are hidden.");
+                    void updateSearch({
+                      lat: undefined,
+                      lng: undefined,
+                      candidate: undefined,
+                      compare: undefined,
+                    });
+                  }}
+                >
+                  Clear declared site
+                </button>
+              )}
+            </section>
+
+            <section className="power-finder-filter-panel" aria-label="Search and filter map">
+              <label className="power-finder-search">
+                <Search aria-hidden="true" />
+                <span className="sr-only">Search nodes, operators, or identifiers</span>
+                <input
+                  type="search"
+                  value={query}
+                  name="grid-search"
+                  autoComplete="off"
+                  onChange={(event) => void updateSearch({ q: event.target.value || undefined })}
+                  placeholder="Search node, operator, or ID…"
+                />
+              </label>
+              <button
+                type="button"
+                className="finder-more-filters"
+                aria-expanded={secondaryControlsOpen}
+                aria-controls="finder-secondary-controls"
+                onClick={() => setSecondaryControlsOpen((current) => !current)}
+              >
+                More Filters
+              </button>
+              <div
+                id="finder-secondary-controls"
+                className="power-finder-filter-grid"
+                hidden={!secondaryControlsOpen}
+              >
+                <label className="power-finder-filter-wide">
+                  <span>Region</span>
+                  <select
+                    name="region"
+                    value={regionCode}
+                    onChange={(event) =>
+                      void updateSearch({
+                        region: event.target.value as typeof regionCode,
+                        candidate: undefined,
+                        compare: undefined,
+                      })
+                    }
+                  >
+                    {coverage.map((item) => (
+                      <option key={item.regionCode} value={item.regionCode}>
+                        {item.regionCode === "DE"
+                          ? "Germany · accepted regional coverage"
+                          : `${item.regionName} · ${item.status}`}
+                      </option>
+                    ))}
+                  </select>
+                  <small>{activeCoverage.regionName}</small>
+                </label>
+                <label>
+                  <span>Maximum distance</span>
+                  <select
+                    name="maximum-distance"
+                    value={maxDistanceKm}
+                    onChange={(event) => {
+                      const maxDistanceKm = Number(event.target.value) || 20;
+                      updateProject({ maxDistanceKm });
+                      void updateSearch({
+                        distance: maxDistanceKm,
+                        candidate: undefined,
+                        compare: undefined,
+                      });
+                    }}
+                  >
+                    <option value={5}>5 km</option>
+                    <option value={10}>10 km</option>
+                    <option value={20}>20 km</option>
+                    <option value={50}>50 km</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Minimum voltage</span>
+                  <select
+                    name="minimum-voltage"
+                    value={minimumVoltage}
+                    onChange={(event) =>
+                      void updateSearch({
+                        voltage: Number(event.target.value) || undefined,
+                        candidate: undefined,
+                        compare: undefined,
+                      })
+                    }
+                  >
+                    <option value={0}>Any / unknown</option>
+                    <option value={20}>20+ kV</option>
+                    <option value={110}>110+ kV</option>
+                    <option value={220}>220+ kV</option>
+                    <option value={380}>380+ kV</option>
+                  </select>
+                  {search.propertyId && minimumVoltage > 0 && (
+                    <small>
+                      Suggested from the declared {formatMw(project.importMw)} load; screening only.
+                    </small>
+                  )}
+                </label>
+                <label className="power-finder-filter-wide">
+                  <span>Transmission operator (TSO)</span>
+                  <select
+                    name="transmission-operator"
+                    value={selectedTso}
+                    onChange={(event) => {
+                      const operatorName = event.target.value;
+                      void updateSearch({
+                        operator: undefined,
+                        tso: operatorName === "all" ? undefined : operatorName,
+                        dso: undefined,
+                        candidate: undefined,
+                        compare: undefined,
+                      });
+                    }}
+                  >
+                    <option value="all">All transmission operators</option>
+                    {transmissionOperators.map((item) => (
+                      <option key={item.name} value={item.name}>
+                        {item.name}
+                      </option>
+                    ))}
+                  </select>
+                  {selectedTso !== "all" && (
+                    <small>
+                      {selectedTso}
+                      {search.propertyId ? " · mapped context, confirmation required" : ""}
+                    </small>
+                  )}
+                </label>
+                <label className="power-finder-filter-wide">
+                  <span>Distribution operator (DSO / other)</span>
+                  <select
+                    name="distribution-operator"
+                    value={selectedDso}
+                    onChange={(event) => {
+                      const operatorName = event.target.value;
+                      void updateSearch({
+                        operator: undefined,
+                        dso: operatorName === "all" ? undefined : operatorName,
+                        candidate: undefined,
+                        compare: undefined,
+                      });
+                    }}
+                  >
+                    <option value="all">All distribution operators</option>
+                    {distributionOperators.map((item) => (
+                      <option key={item.name} value={item.name}>
+                        {item.name}
+                      </option>
+                    ))}
+                  </select>
+                  {selectedDso !== "all" && (
+                    <small>
+                      {selectedDso}
+                      {search.propertyId ? " · likely operator, confirmation required" : ""}
+                    </small>
+                  )}
+                </label>
+                <p className="operator-hierarchy-boundary power-finder-filter-wide">
+                  Region options intersect accepted mapped assets. DSO choices under a TSO use
+                  nearest mapped transmission context; this is a screening relationship, not an
+                  operator-confirmed control-area assignment.
+                </p>
+              </div>
+            </section>
+          </div>
+
+          <p className="sr-only" role="status" aria-live="polite">
+            {interactionNotice}
+          </p>
+
+          {finderMvpFeatures.syntheticCapacity ? (
+            <section
+              className="capacity-opportunity-card"
+              aria-labelledby="capacity-opportunity-title"
+            >
+              <label className="capacity-overlay-switch">
+                <span>
+                  <strong id="capacity-opportunity-title">Capacity opportunities</strong>
+                  <small>Compare available results with your required power</small>
+                </span>
+                <input
+                  name="capacity-overlay"
+                  type="checkbox"
+                  role="switch"
+                  checked={mapMode === "capacity"}
+                  onChange={(event) => {
+                    const isEnabled = event.target.checked;
+                    setMapMode(isEnabled ? "capacity" : "voltage");
+                    const nextSource = search.workspaceId ? "private" : "berlin_synthetic";
+                    setCapacitySource(nextSource);
+                    setInteractionNotice(
+                      `Capacity opportunities ${isEnabled ? "enabled" : "disabled"}.`,
+                    );
+                    void updateSearch({
+                      mapMode: isEnabled ? "capacity" : "voltage",
+                      capacitySource: isEnabled ? nextSource : undefined,
+                    });
+                  }}
+                />
+              </label>
+              {mapMode === "capacity" && (
+                <div className="capacity-opportunity-controls">
+                  <p className="capacity-source-status">
+                    {capacitySource === "berlin_synthetic"
+                      ? "Berlin synthetic calculation"
+                      : "Reviewed private calculation"}
+                  </p>
+                  <div className="capacity-required-heading">
+                    <label htmlFor="required-capacity-range">Required power</label>
+                    <span>
+                      {requiredCapacityMw.toLocaleString("en-GB", { maximumFractionDigits: 1 })} MW
+                    </span>
+                  </div>
+                  <input
+                    id="required-capacity-range"
+                    name="required-capacity-range"
+                    type="range"
+                    min={1}
+                    max={Math.min(1000, Math.max(100, Math.ceil((project.importMw * 3) / 25) * 25))}
+                    step={1}
+                    value={requiredCapacityMw}
+                    aria-valuetext={`${requiredCapacityMw} megawatts required power`}
+                    onChange={(event) => setRequiredCapacityMw(Number(event.target.value))}
+                    onPointerUp={(event) =>
+                      void updateSearch({ requiredMw: Number(event.currentTarget.value) })
+                    }
+                    onKeyUp={(event) =>
+                      void updateSearch({ requiredMw: Number(event.currentTarget.value) })
+                    }
+                  />
+                  <div className="capacity-control-row">
+                    <label>
+                      <span>Exact MW</span>
+                      <input
+                        type="number"
+                        min={0.1}
+                        max={1000}
+                        step={0.1}
+                        value={requiredCapacityMw}
+                        onChange={(event) => {
+                          const value = Math.min(
+                            1000,
+                            Math.max(0.1, Number(event.target.value) || 0.1),
+                          );
+                          setRequiredCapacityMw(value);
+                          void updateSearch({ requiredMw: value });
+                        }}
+                      />
+                    </label>
+                    <label>
+                      <span>Capacity basis</span>
+                      <select
+                        name="capacity-overlay-metric"
+                        value={capacityMetric}
+                        onChange={(event) => {
+                          const value = event.target.value as CapacityMetric;
+                          setCapacityMetric(value);
+                          void updateSearch({ capacityMetric: value });
+                        }}
+                      >
+                        {(Object.entries(capacityMetricLabels) as [CapacityMetric, string][]).map(
+                          ([value, label]) => {
+                            const unavailableInSynthetic =
+                              capacitySource === "berlin_synthetic" &&
+                              value !== "n0_import_mw" &&
+                              value !== "firm_import_mw";
+                            return (
+                              <option key={value} value={value} disabled={unavailableInSynthetic}>
+                                {label}
+                                {unavailableInSynthetic ? " · private study required" : ""}
+                              </option>
+                            );
+                          },
+                        )}
+                      </select>
+                    </label>
+                  </div>
+                  {Math.abs(requiredCapacityMw - project.importMw) > 0.01 && (
+                    <button
+                      type="button"
+                      className="capacity-reset-demand"
+                      onClick={() => {
+                        setRequiredCapacityMw(project.importMw);
+                        void updateSearch({ requiredMw: undefined });
+                      }}
+                    >
+                      Use project demand · {project.importMw} MW
+                    </button>
+                  )}
+                  <p className="capacity-data-basis">
+                    <ShieldCheck aria-hidden="true" />
+                    {capacitySource === "berlin_synthetic"
+                      ? "Berlin calculation pocket · real locations, synthetic electrical model"
+                      : `Private reviewed results · ${capacityViewport?.access === "ready" ? "workspace connected" : "no coverage"}`}
+                  </p>
+                  {capacitySource === "berlin_synthetic" && (
+                    <p className="capacity-overlay-empty">
+                      Release 2 AI routing does not colour these nodes. Every displayed Berlin value
+                      remains a Release 1 physics result.
+                    </p>
+                  )}
+                  <p className="capacity-overlay-empty">
+                    Move Required power to reclassify calculated nodes immediately: cyan meets the
+                    threshold, dark blue is below it, and grey is outside this calculation pocket.
+                  </p>
+                  <div className="capacity-threshold-key" aria-label="Capacity map colour key">
+                    <span>
+                      <i className="is-meets" />
+                      Meets {requiredCapacityMw} MW
+                    </span>
+                    <span>
+                      <i className="is-activation" />
+                      Activation pathway
+                    </span>
+                    <span>
+                      <i className="is-below" />
+                      Below requirement
+                    </span>
+                  </div>
+                  <div className="capacity-fit-summary" role="status" aria-live="polite">
+                    <span>
+                      <b>{capacitySummary.meets}</b> meet
+                    </span>
+                    {capacitySource === "private" && (
+                      <span>
+                        <b>{capacitySummary.activation}</b> activation paths
+                      </span>
+                    )}
+                    <span>
+                      <b>{capacitySummary.below}</b> below
+                    </span>
+                    <span>
+                      <b>{capacitySummary.unknown}</b> not calculated
+                    </span>
+                  </div>
+                  {capacityState === "error" && (
+                    <p className="capacity-overlay-empty">Capacity results could not be loaded.</p>
+                  )}
+                  {capacitySource === "private" &&
+                    capacityState !== "error" &&
+                    capacitySummary.meets === 0 &&
+                    capacitySummary.activation === 0 && (
+                      <p className="capacity-overlay-empty">
+                        No reviewed capacity results cover this map. Unknown is not zero.
+                      </p>
+                    )}
+                </div>
+              )}
+            </section>
+          ) : null}
+
+          <details className="finder-layers-menu" suppressHydrationWarning>
+            <summary>Map Layers</summary>
+            <div className="finder-map-presets" role="group" aria-label="Map view">
+              {(
+                [
+                  ["connection", "Connection"],
+                  ["infrastructure", "Infrastructure"],
+                  ["generation", "Generation & Storage"],
+                ] as const
+              ).map(([preset, label]) => (
+                <button
+                  key={preset}
+                  type="button"
+                  className={mapFilters.preset === preset ? "is-active" : ""}
+                  aria-pressed={mapFilters.preset === preset}
+                  onClick={() => applyMapPreset(preset)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {mapFilters.preset === "generation" && registryAssetsUnavailable ? (
+              <p className="layer-visibility-note" role="status">
+                Registered generation and storage are unavailable in this fallback release. Grid
+                infrastructure remains available; no empty map is being presented as zero assets.
+              </p>
+            ) : null}
+            <div className="power-finder-layer-list">
+              <label title="German data-centre register records, shown at their validated location precision.">
+                <input
+                  name="layer-rzreg-data-centres"
+                  type="checkbox"
+                  checked={showDataCentres}
+                  onChange={(event) => {
+                    const checked = event.target.checked;
+                    setShowDataCentres(checked);
+                    if (!checked) setSelectedDataCentre(null);
+                    setInteractionNotice(
+                      `RZReg data-centre layer ${checked ? "enabled" : "disabled"}.`,
+                    );
+                  }}
+                />
+                <span>RZReg Data Centres</span>
+                <small>319 total</small>
+              </label>
+              {(Object.keys(kindLabels) as PowerFinderKind[]).map((kind) => (
+                <label
+                  key={kind}
+                  title={`${kindLabels[kind]} is delivered from the accepted national tile release.`}
+                >
+                  <input
+                    name={`layer-${kind}`}
                     type="checkbox"
                     checked={enabled[kind]}
-                    onChange={(event) =>
-                      setEnabled((current) => ({ ...current, [kind]: event.target.checked }))
-                    }
+                    disabled={false}
+                    onChange={(event) => {
+                      const checked = event.target.checked;
+                      setEnabled((current) => ({ ...current, [kind]: checked }));
+                      setInteractionNotice(
+                        `${kindLabels[kind]} layer ${checked ? "enabled" : "disabled"}.`,
+                      );
+                    }}
                   />
                   <span>{kindLabels[kind]}</span>
                   <small>
-                    {collection?.features.filter((feature) => feature.properties.kind === kind)
-                      .length ?? "—"}
+                    {(() => {
+                      if (!collection) return "—";
+                      if (
+                        registryAssetsUnavailable &&
+                        (kind === "generation_asset" || kind === "storage_asset")
+                      ) {
+                        return "Source unavailable";
+                      }
+                      const total = collection.features.filter(
+                        (feature) => feature.properties.kind === kind,
+                      ).length;
+                      const visible = visibleLayerCounts[kind];
+                      if (visible > 0) return `${visible} visible`;
+                      const availability = layerAvailability(collection, kind);
+                      if (!availability.available) return "0 in current detail view";
+                      if (total === 0) return "0 in view";
+                      if (kind === "generation_asset" || kind === "storage_asset") {
+                        return `${total} in view`;
+                      }
+                      return `${total} total`;
+                    })()}
                   </small>
                 </label>
               ))}
             </div>
-          </section>
+            {(enabled.generation_asset || enabled.storage_asset) && !registryAssetsUnavailable && (
+              <div className="registered-capacity-filters">
+                {enabled.generation_asset ? (
+                  <>
+                    <label>
+                      <span>Generation Technology</span>
+                      <select
+                        aria-label="Generation technology"
+                        value={generationGroup}
+                        onChange={(event) => setGenerationGroup(event.target.value)}
+                      >
+                        <option value="all">All Technologies</option>
+                        <option value="solar">Solar</option>
+                        <option value="wind">Wind</option>
+                        <option value="biomass">Biomass</option>
+                        <option value="hydro">Hydro</option>
+                        <option value="geothermal">Geothermal</option>
+                        <option value="nuclear">Nuclear</option>
+                        <option value="gas">Gas</option>
+                        <option value="fossil_other">Other Fossil</option>
+                        <option value="other">Other / Unknown</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Minimum Registered Generation</span>
+                      <select
+                        aria-label="Minimum registered generation"
+                        value={minimumGenerationMw}
+                        onChange={(event) => setMinimumGenerationMw(Number(event.target.value))}
+                      >
+                        <option value="0">Any MW, Including Unknown</option>
+                        <option value="1">1+ MW</option>
+                        <option value="10">10+ MW</option>
+                        <option value="50">50+ MW</option>
+                        <option value="100">100+ MW</option>
+                        <option value="500">500+ MW</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Maximum Registered Generation</span>
+                      <select
+                        aria-label="Maximum registered generation"
+                        value={mapFilters.maximumGenerationMw ?? ""}
+                        onChange={(event) =>
+                          setMaximumGenerationMw(
+                            event.target.value ? Number(event.target.value) : null,
+                          )
+                        }
+                      >
+                        <option value="">No Maximum</option>
+                        <option value="10">Up to 10 MW</option>
+                        <option value="50">Up to 50 MW</option>
+                        <option value="100">Up to 100 MW</option>
+                        <option value="500">Up to 500 MW</option>
+                        <option value="1000">Up to 1,000 MW</option>
+                      </select>
+                    </label>
+                  </>
+                ) : null}
+                {enabled.storage_asset ? (
+                  <>
+                    <label>
+                      <span>Minimum Registered Storage Power</span>
+                      <select
+                        aria-label="Minimum registered storage power"
+                        value={minimumStorageMw}
+                        onChange={(event) => setMinimumStorageMw(Number(event.target.value))}
+                      >
+                        <option value="0">Any MW, Including Unknown</option>
+                        <option value="1">1+ MW</option>
+                        <option value="10">10+ MW</option>
+                        <option value="50">50+ MW</option>
+                        <option value="100">100+ MW</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Maximum Registered Storage Power</span>
+                      <select
+                        aria-label="Maximum registered storage power"
+                        value={mapFilters.maximumStorageMw ?? ""}
+                        onChange={(event) =>
+                          setMaximumStorageMw(
+                            event.target.value ? Number(event.target.value) : null,
+                          )
+                        }
+                      >
+                        <option value="">No Maximum</option>
+                        <option value="10">Up to 10 MW</option>
+                        <option value="50">Up to 50 MW</option>
+                        <option value="100">Up to 100 MW</option>
+                        <option value="500">Up to 500 MW</option>
+                      </select>
+                    </label>
+                  </>
+                ) : null}
+                <label className="registered-capacity-scale-toggle">
+                  <input
+                    type="checkbox"
+                    checked={mapFilters.scaleMarkersByCapacity}
+                    onChange={(event) =>
+                      dispatchMapFilter({
+                        type: "set_capacity_scaling",
+                        enabled: event.currentTarget.checked,
+                      })
+                    }
+                  />
+                  <span>Scale markers by registered capacity</span>
+                </label>
+                <p className="layer-visibility-note">
+                  Circle area represents registered net capacity where published. Small circles may
+                  mean low or unknown MW. This is nearby asset context, not available power or grid
+                  headroom.
+                </p>
+              </div>
+            )}
+            {(enabled.line || enabled.industrial_site) &&
+              visibleLayerCounts.line + visibleLayerCounts.industrial_site === 0 && (
+                <p className="layer-visibility-note" role="status">
+                  No enabled grid lines or industrial sites intersect the current map view. Pan or
+                  zoom out to inspect the regional layer.
+                </p>
+              )}
+          </details>
+
+          {finderWorkflow === "discover" && discoveryResults.length > 0 ? (
+            <section
+              className="finder-discovery-results-panel"
+              aria-labelledby="finder-discovery-results-title"
+            >
+              <header>
+                <div>
+                  <p className="context-label">Investigation shortlist</p>
+                  <h2 id="finder-discovery-results-title">Ranked areas</h2>
+                </div>
+                <span>{discoveryResults.length}</span>
+              </header>
+              <p>
+                Select an area to inspect it on the map. These are screening leads, not confirmed
+                sites or available capacity.
+              </p>
+              <ol className="finder-discovery-results">
+                {discoveryResults.map((result, index) => (
+                  <li key={result.id}>
+                    <button
+                      type="button"
+                      className={selectedDiscoveryId === result.id ? "is-active" : ""}
+                      aria-current={selectedDiscoveryId === result.id ? "true" : undefined}
+                      onClick={() => {
+                        setSelectedDiscoveryId(result.id);
+                        navigateMapToPoint(result.coordinates);
+                      }}
+                    >
+                      <span>{index + 1}</span>
+                      <div>
+                        <strong>{result.name}</strong>
+                        <small>
+                          {result.score}/100 investigation fit · {result.nodeDistanceKm} km to{" "}
+                          {result.node.properties.voltage_kv?.join("/") || "unknown"} kV node
+                        </small>
+                      </div>
+                    </button>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          ) : null}
 
           <section className="power-finder-candidates">
             <header>
               <span>
-                <h2>Ranked opportunities</h2>
+                <h2>Grid candidates</h2>
                 <small role="status" aria-live="polite">
-                  {rankingState === "loading"
-                    ? "Calculating…"
-                    : `${candidates.length} site-to-node pathways`}
+                  {project.latitude == null || project.longitude == null
+                    ? "Choose a site to rank candidates"
+                    : rankingState === "loading"
+                      ? "Calculating…"
+                      : `${candidates.length} candidate site-to-node matches`}
                 </small>
               </span>
               <label>
-                <span className="sr-only">Sort candidates</span>
+                <span>Sort by</span>
                 <select
+                  name="candidate-sort"
                   value={candidateSort}
                   onChange={(event) =>
                     void updateSearch({ sort: event.target.value as CandidateSort })
                   }
                 >
-                  <option value="context">Best context</option>
-                  <option value="voltage">Highest voltage</option>
+                  <option value="context">Best investigation match</option>
+                  <option value="voltage">Mapped voltage</option>
                   <option value="name">Name</option>
                 </select>
               </label>
             </header>
-            {rankingState === "error" && (
+            {(project.latitude == null || project.longitude == null) && (
+              <div className="finder-site-empty" role="status">
+                <strong>No declared site yet</strong>
+                <p>
+                  Click an empty map location or enter coordinates above. GridPulse will then rank
+                  mapped candidate connection points within your selected distance.
+                </p>
+              </div>
+            )}
+            {project.latitude != null && project.longitude != null && rankingState === "error" && (
               <p className="power-finder-no-results" role="status">
                 Candidate ranking is unavailable. Change the map view or try again.
               </p>
             )}
-            {rankingState === "ready" && candidates.length === 0 && (
-              <p className="power-finder-no-results">
-                No site-to-node pathways are within {maxDistanceKm} km in this view.
+            {(candidateSelection.tsoFallback || candidateSelection.dsoFallback) && (
+              <p className="candidate-boundary" role="status">
+                No nearby candidate matches the selected mapped operator context. Showing valid
+                distance and voltage matches; verify operator responsibility before relying on it.
               </p>
             )}
-            {candidates.map((candidate, index) => (
+            {project.latitude != null &&
+              project.longitude != null &&
+              rankingState === "ready" &&
+              candidates.length === 0 && (
+                <p className="power-finder-no-results">
+                  No candidate connection points are within {maxDistanceKm} km in this view.
+                </p>
+              )}
+            {visibleCandidates.map((candidate, index) => {
+              const capacityNode = activeCapacityNodes.find(
+                (node) => node.publicNodeId === candidate.nodeId,
+              );
+              const capacityFit = classifyCapacityOpportunity(
+                capacityNode,
+                capacityMetric,
+                requiredCapacityMw,
+              );
+              return (
+                <button
+                  type="button"
+                  key={candidate.id}
+                  data-candidate-id={candidate.id}
+                  className={selectedOpportunity?.id === candidate.id ? "active" : ""}
+                  aria-pressed={selectedOpportunity?.id === candidate.id}
+                  onClick={() => {
+                    const node =
+                      opportunityNode(candidate, rankingCollection) ??
+                      opportunityNode(candidate, collection);
+                    const detailNode =
+                      node ??
+                      ({
+                        type: "Feature",
+                        id: candidate.nodeId,
+                        geometry: {
+                          type: "Point",
+                          coordinates: [project.longitude ?? 0, project.latitude ?? 0],
+                        },
+                        properties: {
+                          kind: "node",
+                          name: candidate.nodeName,
+                          operator: candidate.operator ?? undefined,
+                          voltage_kv: candidate.voltageKv,
+                          max_voltage_kv: Math.max(0, ...candidate.voltageKv),
+                          evidence_class: "open_mapping",
+                          capacity_state: "not_established",
+                        },
+                      } satisfies PowerFinderFeature);
+                    setSelectedOpportunitySnapshot(candidate);
+                    setSelected(detailNode);
+                    if (detailNode.geometry.type === "Point") {
+                      navigateMapToPoint(detailNode.geometry.coordinates as [number, number]);
+                    }
+                    setInteractionNotice(
+                      `${candidate.nodeName} selected and highlighted on the map.`,
+                    );
+                    void updateSearch({ candidate: candidate.id }).then(() => {
+                      setSelectedOpportunitySnapshot(candidate);
+                      setSelected(detailNode);
+                    });
+                  }}
+                  onMouseEnter={() => setPreviewCandidateId(candidate.id)}
+                  onMouseLeave={() => setPreviewCandidateId(null)}
+                  onFocus={() => setPreviewCandidateId(candidate.id)}
+                  onBlur={() => setPreviewCandidateId(null)}
+                  aria-label={`Show ${candidate.nodeName} on map, ${formatScore(candidate.screeningRank)}/100`}
+                >
+                  <span className="candidate-rank">{index + 1}</span>
+                  <span>
+                    <b>{candidate.nodeName}</b>
+                    <small>
+                      {candidate.voltageKv.length
+                        ? `${Math.max(...candidate.voltageKv)} kV`
+                        : "Voltage unknown"}{" "}
+                      · {distanceFormatter.format(candidate.distanceKm)} km ·{" "}
+                      {candidate.operator
+                        ? canonicalOperatorName(candidate.operator)
+                        : "Operator unconfirmed"}
+                    </small>
+                    <span className="candidate-fit-summary">
+                      <strong>{formatScore(candidate.screeningRank)}/100</strong>
+                      <span>investigation fit</span>
+                      <small>Capacity unknown</small>
+                    </span>
+                    {mapMode === "capacity" && (
+                      <span className={`candidate-capacity-fit is-${capacityFit.fit}`}>
+                        {capacityFit.fit === "meets" &&
+                          `${capacityFit.valueMw?.toLocaleString("en-GB", { maximumFractionDigits: 1 })} MW · meets ${requiredCapacityMw} MW`}
+                        {capacityFit.fit === "activation" &&
+                          `${capacityFit.valueMw?.toLocaleString("en-GB", { maximumFractionDigits: 1 })} MW firm · ${capacityFit.alternative} pathway`}
+                        {capacityFit.fit === "below" &&
+                          `${capacityFit.valueMw?.toLocaleString("en-GB", { maximumFractionDigits: 1 })} MW · below requirement`}
+                        {capacityFit.fit === "stale" && "Recalculation required"}
+                        {capacityFit.fit === "unknown" && "Capacity not calculated"}
+                      </span>
+                    )}
+                  </span>
+                </button>
+              );
+            })}
+            {!showAllCandidates && candidates.length > 5 ? (
               <button
                 type="button"
-                key={candidate.id}
-                className={selectedOpportunity?.id === candidate.id ? "active" : ""}
-                onClick={() => {
-                  const node = opportunityNode(candidate, collection);
-                  if (node) setSelected(node);
-                  void updateSearch({ candidate: candidate.id });
-                }}
+                className="candidate-show-more"
+                onClick={() => setShowAllCandidates(true)}
               >
-                <span className="candidate-rank">{index + 1}</span>
-                <span>
-                  <b>{candidate.siteName}</b>
-                  <small>
-                    {candidate.nodeName} · {distanceFormatter.format(candidate.distanceKm)} km
-                  </small>
-                  <span className="candidate-badges">
-                    <i data-fit={candidate.voltageFit}>{candidate.voltageFit} voltage</i>
-                    <i data-confidence={candidate.confidence}>{candidate.confidence} confidence</i>
-                    <strong>{candidate.screeningRank}/100</strong>
-                  </span>
-                </span>
+                Show all {candidates.length} candidates
               </button>
-            ))}
-            {ranking && <p className="candidate-boundary">{ranking.evidenceBoundary}</p>}
+            ) : showAllCandidates && candidates.length > 5 ? (
+              <button
+                type="button"
+                className="candidate-show-more"
+                onClick={() => setShowAllCandidates(false)}
+              >
+                Show top 5 candidates
+              </button>
+            ) : null}
+            {ranking && project.latitude != null && project.longitude != null && (
+              <>
+                <details className="finder-ranking-method">
+                  <summary>How this ranking works</summary>
+                  <p>
+                    Data-centre investigation fit: proximity 30%, mapped-voltage relevance 25%,
+                    operator attribution 15%, asset specificity 15%, evidence readiness 10% and
+                    source freshness 5%. Capacity, cost and delivery timing are excluded because
+                    they require operator evidence.
+                  </p>
+                </details>
+                <p className="candidate-boundary">{ranking.evidenceBoundary}</p>
+              </>
+            )}
           </section>
 
           {collection && (
@@ -514,7 +3221,11 @@ function PowerFinderPage() {
                 <strong>{collection.metadata.publisher}</strong>
                 <span>
                   {collection.metadata.freshness} · {collection.metadata.record_count} records ·{" "}
-                  {dataMode === "database" ? "bounded database query" : "accepted static release"}
+                  {dataMode === "database"
+                    ? "private workspace database query"
+                    : dataMode === "public_database"
+                      ? "live public viewport"
+                      : "accepted static fallback"}
                 </span>
                 <small>{collection.metadata.attribution}</small>
               </div>
@@ -522,7 +3233,30 @@ function PowerFinderPage() {
           )}
         </section>
 
-        <section className="power-finder-stage">
+        <section className="power-finder-stage" data-basemap-status={basemapStatus}>
+          <button
+            type="button"
+            className="power-finder-sidebar-toggle"
+            aria-label={sidebarOpen ? "Hide map controls" : "Show map controls"}
+            aria-expanded={sidebarOpen}
+            onClick={() => {
+              setSidebarOpen((current) => !current);
+              window.setTimeout(() => window.dispatchEvent(new Event("resize")), 200);
+            }}
+          >
+            {sidebarOpen ? (
+              <PanelLeftClose aria-hidden="true" />
+            ) : (
+              <PanelLeftOpen aria-hidden="true" />
+            )}
+            <span>{sidebarOpen ? "Hide panel" : "Show panel"}</span>
+          </button>
+          {basemapStatus === "fallback" && (
+            <div className="power-finder-basemap-notice" role="status" aria-live="polite">
+              Background map is temporarily unavailable. Grid infrastructure and screening data
+              remain available.
+            </div>
+          )}
           {error && <div className="power-finder-error">{error}</div>}
           {!visibleCollection && !error && (
             <div className="power-finder-loading">Loading map context…</div>
@@ -530,349 +3264,1001 @@ function PowerFinderPage() {
           {visibleCollection && (
             <PowerFinderMap
               collection={visibleCollection}
-              selectedId={selected?.id ?? null}
+              enabledLayers={effectiveEnabled}
+              selectedFeature={selected}
+              previewFeature={previewFeature}
               mapMode={mapMode}
+              basemapMode={basemapMode}
+              onBasemapStatusChange={setBasemapStatus}
+              onDataSourceStatusChange={setRuntimeSourceStatus}
+              generationGroup={effectiveGenerationGroup}
+              minimumGenerationMw={minimumGenerationMw}
+              maximumGenerationMw={mapFilters.maximumGenerationMw}
+              minimumStorageMw={minimumStorageMw}
+              maximumStorageMw={mapFilters.maximumStorageMw}
+              isolatedVoltageClass={isolatedVoltageClass}
+              scaleMarkersByCapacity={mapFilters.scaleMarkersByCapacity}
+              capacityNodes={activeCapacityNodes}
+              capacityCoverage={
+                capacitySource === "berlin_synthetic" ? (berlinCapacity?.coverage ?? null) : null
+              }
+              capacityMetric={capacityMetric}
+              requiredCapacityMw={requiredCapacityMw}
               viewportTarget={viewportTarget}
+              navigationTarget={mapNavigationTarget}
               onSelect={(feature) => {
                 setSelected(feature);
+                if (feature.properties.kind === "node") {
+                  const matchingOpportunity = highestRankedOpportunityForNode(
+                    candidates,
+                    String(feature.id),
+                  );
+                  if (matchingOpportunity) {
+                    setSelectedOpportunitySnapshot(matchingOpportunity);
+                    const pathwayCount = candidates.filter(
+                      (candidate) => candidate.nodeId === String(feature.id),
+                    ).length;
+                    setInteractionNotice(
+                      pathwayCount > 1
+                        ? `${feature.properties.name} selected. Showing the highest-ranked of ${pathwayCount} pathways using this node.`
+                        : `${feature.properties.name} selected and matched to its ranked candidate.`,
+                    );
+                    void updateSearch({ candidate: matchingOpportunity.id });
+                    return;
+                  }
+                  setInteractionNotice(
+                    `${feature.properties.name} is outside the current ranked shortlist. Change the filters or project location to evaluate it.`,
+                  );
+                } else {
+                  setInteractionNotice(`${feature.properties.name} selected on the map.`);
+                }
                 void updateSearch({ candidate: undefined });
               }}
               onViewportChange={setBounds}
+              projectSite={projectSite}
+              onSitePlacement={([longitude, latitude]) => {
+                const containingRegion = coverage.find((item) => {
+                  if (item.regionCode === "DE") return false;
+                  const [west, south, east, north] = item.bounds;
+                  return (
+                    longitude >= west && longitude <= east && latitude >= south && latitude <= north
+                  );
+                });
+                updateProject({ longitude, latitude });
+                setNumericDrafts((current) => ({
+                  ...current,
+                  longitude: longitude.toFixed(6),
+                  latitude: latitude.toFixed(6),
+                }));
+                setFieldErrors((current) => ({
+                  ...current,
+                  longitude: undefined,
+                  latitude: undefined,
+                }));
+                setInteractionNotice(
+                  "Site changed. Candidate selection and comparison were reset.",
+                );
+                void updateSearch({
+                  lng: longitude,
+                  lat: latitude,
+                  region: containingRegion?.regionCode as typeof regionCode | undefined,
+                  candidate: undefined,
+                  compare: undefined,
+                });
+              }}
+              onVisibleLayerCounts={setVisibleLayerCounts}
+              discoveryLocations={
+                finderWorkflow === "discover" ? discoveryGeoJson(discoveryResults) : null
+              }
+              onDiscoverySelect={(id) => {
+                const result = discoveryResults.find((item) => item.id === id);
+                if (!result) return;
+                setSelectedDiscoveryId(id);
+                setInteractionNotice(
+                  `${result.name}: ${result.score}/100 investigation fit. Capacity remains unknown.`,
+                );
+              }}
+              showDataCentres={showDataCentres}
+              onDataCentreSelect={(dataCentre) => {
+                setSelectedDataCentre(dataCentre);
+                setInteractionNotice(`${dataCentre.name} selected from the RZReg layer.`);
+              }}
             />
           )}
-
-          <div className="power-finder-legend" aria-label="Map legend">
-            <strong>
-              {mapMode === "voltage"
-                ? "Voltage context"
-                : mapMode === "evidence"
-                  ? "Evidence authority"
-                  : "Published demand capacity"}
-            </strong>
-            <span>
-              <i className="legend-node" />{" "}
-              {mapMode === "capacity"
-                ? "Green only where a classified value is published"
-                : "Candidate grid node"}
-            </span>
-            <span>
-              <i className="legend-line" /> Mapped corridor
-            </span>
-            <span>
-              <i className="legend-site" /> Industrial land
-            </span>
-            <span>
-              <i className="legend-generation" /> Registered generation
-            </span>
-            <span>
-              <i className="legend-storage" /> Registered storage
-            </span>
-            {mapMode === "capacity" && <small>Grey means not established—not zero MW.</small>}
-          </div>
-
-          {comparedCandidates.length > 0 && (
-            <section className="candidate-comparison" aria-label="Candidate comparison">
+          {selectedDataCentre ? (
+            <aside className="rzreg-detail-card" aria-label="Selected RZReg data centre">
               <header>
-                <span>
-                  <GitCompareArrows aria-hidden="true" />
-                  <b>Compare {comparedCandidates.length} Candidates</b>
-                </span>
+                <div className="rzreg-detail-card__eyebrow">
+                  <Database aria-hidden="true" />
+                  <span>German Data Centre Register</span>
+                </div>
                 <button
                   type="button"
-                  onClick={() => void updateSearch({ compare: undefined })}
-                  aria-label="Clear candidate comparison"
+                  aria-label="Close data-centre details"
+                  onClick={() => setSelectedDataCentre(null)}
                 >
-                  Clear
+                  <X aria-hidden="true" />
                 </button>
               </header>
-              <div>
-                {comparedCandidates.map((candidate) => (
-                  <article key={candidate.id}>
-                    <strong>{candidate.siteName}</strong>
-                    <span>{candidate.nodeName}</span>
-                    <dl>
-                      <div>
-                        <dt>Rank</dt>
-                        <dd>{candidate.screeningRank}/100</dd>
-                      </div>
-                      <div>
-                        <dt>Distance</dt>
-                        <dd>{candidate.distanceKm} km</dd>
-                      </div>
-                      <div>
-                        <dt>Voltage fit</dt>
-                        <dd>{candidate.voltageFit}</dd>
-                      </div>
-                      <div>
-                        <dt>Confidence</dt>
-                        <dd>{candidate.confidence}</dd>
-                      </div>
-                    </dl>
-                  </article>
-                ))}
-              </div>
-            </section>
-          )}
-
-          <aside className={`power-finder-detail ${selected ? "open" : ""}`}>
-            {selected ? (
-              <>
-                <button
-                  className="detail-close"
-                  onClick={() => {
-                    setSelected(null);
-                    void updateSearch({ candidate: undefined });
-                  }}
-                  aria-label="Close detail"
+              <div className="rzreg-detail-card__body">
+                <span
+                  className={`rzreg-precision-badge rzreg-precision-badge--${
+                    selectedDataCentre.locationPrecision === "facility_address"
+                      ? "exact"
+                      : "approximate"
+                  }`}
                 >
-                  ×
-                </button>
-                <p className="context-label">{kindLabels[selected.properties.kind]}</p>
-                <h2>{selected.properties.name}</h2>
-                <p>{featureSummary(selected)}</p>
-                <dl>
+                  {selectedDataCentre.locationPrecision === "facility_address"
+                    ? "Published Facility Address"
+                    : "Postcode Area Only"}
+                </span>
+                <h2>{selectedDataCentre.name}</h2>
+                <p className="rzreg-detail-card__operator">{selectedDataCentre.operator}</p>
+
+                <dl className="rzreg-detail-card__facts">
                   <div>
-                    <dt>Evidence</dt>
-                    <dd>{selected.properties.evidence_class.replaceAll("_", " ")}</dd>
-                  </div>
-                  <div>
-                    <dt>Operator</dt>
-                    <dd>{selected.properties.operator ?? "Confirmation required"}</dd>
-                  </div>
-                  <div>
-                    <dt>Capacity</dt>
-                    <dd
-                      className={
-                        selected.properties.capacity_state === "published_exact" ||
-                        selected.properties.capacity_state === "published_band"
-                          ? ""
-                          : "is-warning"
-                      }
-                    >
-                      {selected.properties.capacity_state === "published_exact"
-                        ? `${selected.properties.exact_mw} MW published`
-                        : selected.properties.capacity_state === "published_band"
-                          ? `${selected.properties.band_min_mw}–${selected.properties.band_max_mw ?? "?"} MW published band`
-                          : "Not established"}
+                    <dt>Published location</dt>
+                    <dd>
+                      {selectedDataCentre.address ??
+                        `Postcode ${selectedDataCentre.postcode}, Germany`}
                     </dd>
                   </div>
                   <div>
-                    <dt>Planning status</dt>
-                    <dd>{selected.properties.planning_status ?? "Not established"}</dd>
+                    <dt>Map precision</dt>
+                    <dd>
+                      {selectedDataCentre.locationPrecision === "facility_address"
+                        ? "Address-level geocode"
+                        : "Approximate postcode centroid"}
+                    </dd>
                   </div>
                 </dl>
-                {score && (
-                  <section className="power-finder-score" aria-label="Screening context score">
-                    <header>
-                      <span>
-                        <strong>{score.total}/100</strong>
-                        <small>{score.label}</small>
-                      </span>
-                      <b>Context score</b>
-                    </header>
-                    <ul>
-                      {score.components.map((component) => (
-                        <li key={component.label} title={component.reason}>
-                          <span>{component.label}</span>
-                          <b>
-                            {component.points}/{component.maximum}
-                          </b>
-                        </li>
-                      ))}
-                    </ul>
-                    <p>{score.boundary}</p>
-                  </section>
-                )}
-                {selectedOpportunity && (
-                  <section className="candidate-intelligence" aria-label="Candidate intelligence">
-                    <header>
-                      <span>
-                        <strong>{selectedOpportunity.screeningRank}/100</strong>
-                        <small>screening rank</small>
-                      </span>
-                      <b>{selectedOpportunity.siteName}</b>
-                    </header>
-                    <dl>
-                      <div>
-                        <dt>Distance</dt>
-                        <dd>{selectedOpportunity.distanceKm} km straight-line</dd>
-                      </div>
-                      <div>
-                        <dt>Voltage fit</dt>
-                        <dd>{selectedOpportunity.voltageFit}</dd>
-                      </div>
-                      <div>
-                        <dt>Evidence confidence</dt>
-                        <dd>{selectedOpportunity.confidence}</dd>
-                      </div>
-                    </dl>
-                    <h3>Open constraints</h3>
-                    <ul>
-                      {selectedOpportunity.constraints.map((constraint) => (
-                        <li key={constraint}>{constraint}</li>
-                      ))}
-                    </ul>
-                    <h3>Evidence Still Required</h3>
-                    <ul className="candidate-evidence-gaps">
-                      {selectedOpportunity.missingEvidence.map((item) => (
-                        <li key={item}>{item}</li>
-                      ))}
-                    </ul>
-                    <small className="candidate-calculation-version">
-                      {selectedOpportunity.source === "database"
-                        ? "Live spatial metric"
-                        : "Accepted-release fallback"}{" "}
-                      · {selectedOpportunity.calculationVersion}
-                    </small>
-                    <p>{candidateEvidenceBoundary}</p>
-                    <button
-                      type="button"
-                      className="secondary-button"
-                      onClick={() => {
-                        const next = comparisonIds.includes(selectedOpportunity.id)
-                          ? comparisonIds.filter((id) => id !== selectedOpportunity.id)
-                          : [...comparisonIds, selectedOpportunity.id].slice(-3);
-                        void updateSearch({ compare: next.length ? next.join(",") : undefined });
-                      }}
-                    >
-                      <GitCompareArrows aria-hidden="true" />
-                      {comparisonIds.includes(selectedOpportunity.id)
-                        ? "Remove From Comparison"
-                        : "Add to Comparison"}
-                    </button>
-                  </section>
-                )}
-                {selected.properties.kind === "node" && (
-                  <section
-                    className="power-finder-operator-evidence"
-                    aria-label="Official operator evidence"
+
+                <div className="rzreg-detail-card__boundary">
+                  <ShieldCheck aria-hidden="true" />
+                  <div>
+                    <strong>Evidence boundary</strong>
+                    <p>
+                      {selectedDataCentre.locationPrecision === "facility_address"
+                        ? "The published address was validated against admitted public evidence."
+                        : "The marker represents a postcode area—not the data-centre building."}{" "}
+                      Grid capacity, headroom and connection feasibility remain unknown.
+                    </p>
+                  </div>
+                </div>
+
+                {selectedDataCentre.sourceUrl ? (
+                  <a
+                    className="rzreg-detail-card__source"
+                    href={selectedDataCentre.sourceUrl}
+                    target="_blank"
+                    rel="noreferrer"
                   >
-                    <header>
-                      <ShieldCheck aria-hidden="true" />
-                      <span>
-                        <b>Operator evidence</b>
-                        <small>
-                          {operatorEvidence?.match_state === "accepted_node_evidence"
-                            ? "Reviewed node match"
-                            : operatorEvidence?.match_state === "operator_context_only"
-                              ? "Operator-level context"
-                              : "No reviewed node evidence"}
-                        </small>
-                      </span>
-                    </header>
-                    {operatorEvidenceState === "loading" && <p>Checking accepted evidence…</p>}
-                    {operatorEvidenceState === "unavailable" && (
-                      <p>Evidence service is temporarily unavailable.</p>
-                    )}
-                    {operatorEvidenceState === "idle" && dataMode === "published_artifact" && (
-                      <p>Sign in to the live evidence release to inspect operator sources.</p>
-                    )}
-                    {operatorEvidenceState === "ready" &&
-                      (operatorEvidence?.items.length ? (
-                        <ul>
-                          {operatorEvidence.items.map((item) => (
-                            <li key={`${item.scope}-${item.url}`}>
-                              <span>
-                                {item.scope === "node_match" && (
-                                  <CheckCircle2 aria-label="Reviewed node match" />
-                                )}
-                                <a href={item.url} target="_blank" rel="noreferrer">
-                                  {item.title} <ExternalLink aria-hidden="true" />
-                                </a>
-                              </span>
-                              <small>
-                                {item.scope === "node_match" ? item.rationale : item.legal_boundary}
-                              </small>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p>
-                          No official publication is linked to this mapped node. Capacity remains
-                          unknown until the responsible operator responds.
-                        </p>
-                      ))}
-                    <footer>
-                      Operator-level pages explain process or network context. They do not establish
-                      capacity at this node.
-                    </footer>
-                  </section>
-                )}
-                {coordinates && (
-                  <button
-                    type="button"
-                    className="primary-button"
-                    disabled={saveStatus === "saving"}
-                    onClick={() => {
-                      setSaveStatus("saving");
-                      void savePowerFinderCandidate(selected, selectedOpportunity, requiredImportMw)
-                        .then((id) => {
-                          setShortlistId(id);
-                          setSaveStatus("saved");
-                          return navigate({
-                            to: "/assessments/new",
-                            search: {
-                              shortlistId: id,
-                              name: selectedOpportunity?.siteName ?? selected.properties.name,
-                              projectType: "large_load",
-                              importMw: requiredImportMw,
-                              latitude: coordinates[1],
-                              longitude: coordinates[0],
-                              federalState: "Brandenburg",
-                              challenge: selectedOpportunity
-                                ? `${selectedOpportunity.siteName} screened against ${selectedOpportunity.nodeName} at ${selectedOpportunity.distanceKm} km. Rank ${selectedOpportunity.screeningRank}/100 reflects context only; capacity, feasibility, cost, and timing require operator confirmation.`
-                                : `Screening candidate ${selected.id}; capacity and operator responsibility require confirmation.`,
-                            },
-                          });
-                        })
-                        .catch(() => setSaveStatus("error"));
-                    }}
-                  >
-                    <MapPin />{" "}
-                    {saveStatus === "saving" ? "Saving map context…" : "Start private assessment"}
-                  </button>
-                )}
-                {["node", "industrial_site"].includes(selected.properties.kind) && (
-                  <button
-                    type="button"
-                    className="secondary-button power-finder-save"
-                    disabled={saveStatus === "saving" || saveStatus === "saved"}
-                    onClick={() => {
-                      setSaveStatus("saving");
-                      void savePowerFinderCandidate(selected, selectedOpportunity, requiredImportMw)
-                        .then((id) => {
-                          setShortlistId(id);
-                          setSaveStatus("saved");
-                        })
-                        .catch(() => setSaveStatus("error"));
-                    }}
-                  >
-                    <BookmarkPlus aria-hidden="true" />
-                    {saveStatus === "saving"
-                      ? "Saving…"
-                      : saveStatus === "saved"
-                        ? "Saved to shortlist"
-                        : saveStatus === "error"
-                          ? "Try saving again"
-                          : shortlistId
-                            ? "Saved to shortlist"
-                            : "Save candidate"}
-                  </button>
-                )}
-                {!coordinates && (
-                  <p className="detail-help">
-                    Select a node to start an assessment. Industrial land remains site context only.
+                    Open Published Evidence <ExternalLink aria-hidden="true" />
+                  </a>
+                ) : (
+                  <p className="rzreg-detail-card__source-missing">
+                    Record-level public address evidence is not available for this location.
                   </p>
                 )}
-                <Link to="/data-sources" className="power-finder-method-link">
-                  Review evidence methodology <ExternalLink />
-                </Link>
-              </>
+              </div>
+            </aside>
+          ) : null}
+          <InteractiveMapLegend
+            title={
+              mapMode === "capacity"
+                ? `${capacityMetricLabels[capacityMetric]} · MW`
+                : mapFilters.preset === "generation"
+                  ? "Generation & Storage"
+                  : "Map Legend"
+            }
+            open={legendOpen}
+            onOpenChange={setLegendOpen}
+            sections={legendSections}
+            isolated={mapFilters.isolation}
+            onIsolate={isolateMapLegendItem}
+            onReset={() => {
+              dispatchMapFilter({ type: "clear_isolation" });
+              void updateSearch(mapIsolationSearchPatch(null));
+              setInteractionNotice("Legend isolation cleared.");
+            }}
+            className="power-finder-interactive-legend"
+            sourceSummary={
+              mapSourceSummary
+                ? sourceStatusLabel(
+                    mapSourceSummary,
+                    mapFilters.preset === "generation" ? "registry" : "grid",
+                  )
+                : undefined
+            }
+          >
+            {showDataCentres ? (
+              <div className="interactive-map-legend__custom power-finder-data-legend">
+                <div className="power-finder-data-legend__heading">
+                  <b>Data-centre locations</b>
+                  <span className="power-finder-data-legend__source">319 RZReg records</span>
+                </div>
+                <div className="power-finder-data-legend__row">
+                  <i className="legend-data-centre-exact" aria-hidden="true" />
+                  <span>Published facility address</span>
+                  <strong>38</strong>
+                </div>
+                <div className="power-finder-data-legend__row">
+                  <i className="legend-data-centre-approximate" aria-hidden="true" />
+                  <span>Approximate postcode area</span>
+                  <strong>281</strong>
+                </div>
+                <div className="power-finder-data-legend__boundary">
+                  <strong>Location evidence only</strong>
+                  <small>Markers do not indicate grid capacity or connection availability.</small>
+                </div>
+              </div>
+            ) : null}
+            {mapMode === "capacity" ? (
+              <div className="interactive-map-legend__custom power-finder-data-legend">
+                <span>
+                  <i className="legend-capacity-high" /> Meets {requiredCapacityMw} MW
+                </span>
+                <span>
+                  <i className="legend-capacity-activation" /> Alternative pathway
+                </span>
+                <span>
+                  <i className="legend-capacity-low" /> Below {requiredCapacityMw} MW
+                </span>
+                <span>
+                  <i className="legend-capacity-stale" /> Stale · recalculate
+                </span>
+                <small>
+                  {capacitySource === "berlin_synthetic"
+                    ? "Berlin pocket · mapped nodes, synthetic 110 kV model; not operator headroom"
+                    : capacityViewport?.nodes[0]
+                      ? `${capacityViewport.nodes[0].scenarioLabel} · ${capacityViewport.nodes[0].modelVersion}`
+                      : "No reviewed results in this workspace view"}
+                </small>
+              </div>
+            ) : null}
+          </InteractiveMapLegend>
+
+          {finderMvpFeatures.activationStudy && activationOpen && selectedOpportunity && (
+            <Suspense
+              fallback={<div className="activation-study-loading">Loading Activation Study…</div>}
+            >
+              <ActivationStudyPanel
+                project={project}
+                candidate={selectedOpportunity}
+                registeredStudy={c1Study}
+                referenceCapacity={null}
+                tab={activationTab}
+                onTabChange={(studyTab) => void updateSearch({ studyTab })}
+                onClose={() => void updateSearch({ study: undefined, studyTab: undefined })}
+                onStartAssessment={
+                  productCapabilities.workspace ? startPrivateAssessment : undefined
+                }
+              />
+            </Suspense>
+          )}
+
+          {comparedCandidates.length > 0 && (
+            <section
+              className={`candidate-comparison ${comparisonOpen ? "open" : ""}`}
+              aria-label="Candidate comparison"
+            >
+              <header>
+                <span>
+                  <GitCompareArrows aria-hidden="true" />
+                  <b>
+                    Compare {comparedCandidates.length}{" "}
+                    {comparedCandidates.length === 1 ? "Candidate" : "Candidates"}
+                  </b>
+                </span>
+                <button
+                  type="button"
+                  aria-expanded={comparisonOpen}
+                  onClick={() => setComparisonOpen((current) => !current)}
+                >
+                  {comparisonOpen ? "Close" : "Open comparison"}
+                </button>
+              </header>
+              {comparisonOpen && (
+                <div>
+                  {comparedCandidates.map((candidate) => (
+                    <article key={candidate.id}>
+                      <strong>{candidate.siteName}</strong>
+                      <span>{candidate.nodeName}</span>
+                      <button
+                        type="button"
+                        className="candidate-comparison-remove"
+                        aria-label={`Remove ${candidate.nodeName} from comparison`}
+                        onClick={() => {
+                          const next = removeComparisonCandidate(comparisonIds, candidate.id);
+                          setInteractionNotice("Candidate removed from comparison.");
+                          void updateSearch({ compare: serializeComparison(next) });
+                        }}
+                      >
+                        Remove
+                      </button>
+                      <dl>
+                        <div>
+                          <dt>Rank</dt>
+                          <dd>{formatScore(candidate.screeningRank)}/100</dd>
+                        </div>
+                        <div>
+                          <dt>Distance</dt>
+                          <dd>{candidate.distanceKm} km</dd>
+                        </div>
+                        <div>
+                          <dt>Voltage screen</dt>
+                          <dd>{voltageFitLabels[candidate.voltageFit]}</dd>
+                        </div>
+                        <div>
+                          <dt>Evidence</dt>
+                          <dd>{candidate.confidence} completeness</dd>
+                        </div>
+                        <div>
+                          <dt>Operator</dt>
+                          <dd>
+                            {candidate.operator
+                              ? canonicalOperatorName(candidate.operator)
+                              : "Confirm"}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>Import / export</dt>
+                          <dd>
+                            {project.importMw} / {project.exportMw} MW
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>Evidence gaps</dt>
+                          <dd>{candidate.missingEvidence.length}</dd>
+                        </div>
+                        <div>
+                          <dt>Activation strategy</dt>
+                          <dd>
+                            {comparedActivation.get(candidate.id)?.recommendedOption?.title ??
+                              "Not established"}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>Initial / eventual benchmark</dt>
+                          <dd>
+                            {(() => {
+                              const option = comparedActivation.get(
+                                candidate.id,
+                              )?.recommendedOption;
+                              return option
+                                ? `${option.initialImportMw.toFixed(1)} / ${option.eventualImportMw.toFixed(1)} MW`
+                                : "—";
+                            })()}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>Representative restrictions</dt>
+                          <dd>
+                            {comparedActivation.get(candidate.id)?.recommendedOption?.analysis
+                              ?.restrictedHours ?? "—"}{" "}
+                            h
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>Primary validation blocker</dt>
+                          <dd>
+                            {comparedActivation.get(candidate.id)?.recommendedOption?.nextAction ??
+                              "Confirm operator evidence"}
+                          </dd>
+                        </div>
+                      </dl>
+                    </article>
+                  ))}
+                </div>
+              )}
+              {comparisonOpen && (
+                <button
+                  type="button"
+                  className="candidate-comparison-clear"
+                  onClick={() => {
+                    if (!window.confirm("Clear every candidate from this comparison?")) return;
+                    setComparisonOpen(false);
+                    setInteractionNotice("Candidate comparison cleared.");
+                    void updateSearch({ compare: undefined });
+                  }}
+                >
+                  Clear comparison
+                </button>
+              )}
+            </section>
+          )}
+
+          <aside className={`power-finder-detail ${selectedDetailFeature ? "open" : ""}`}>
+            {selectedDetailFeature ? (
+              ((selected) => (
+                <>
+                  <button
+                    type="button"
+                    className="detail-close"
+                    onClick={async () => {
+                      detailDismissedRef.current = true;
+                      await updateSearch({ candidate: undefined });
+                      setSelectedOpportunitySnapshot(null);
+                      setSelected(null);
+                    }}
+                    aria-label="Close detail"
+                  >
+                    ×
+                  </button>
+                  <div className="detail-sticky-header">
+                    <p className="context-label">
+                      {selectedOpportunity && selected.properties.kind === "node"
+                        ? "Selected candidate connection point"
+                        : kindLabels[selected.properties.kind]}
+                    </p>
+                    <h2>{selected.properties.name}</h2>
+                    <p>{featureSummary(selected)}</p>
+                    {selectedOpportunity && (
+                      <p className="candidate-boundary">
+                        {selectedOpportunity.siteName} → {selectedOpportunity.nodeName} ·{" "}
+                        {distanceFormatter.format(selectedOpportunity.distanceKm)} km straight-line
+                        distance
+                      </p>
+                    )}
+                    {selected.properties.kind === "node" && selectedCapacity && (
+                      <span className="candidate-truth-status">
+                        {selectedCapacityOpportunity.valueMw == null
+                          ? `${capacityMetricLabels[capacityMetric]} · ${selectedCapacityOpportunity.fit === "stale" ? "recalculation required" : "not calculated"}`
+                          : `${capacityMetricLabels[capacityMetric]} · ${selectedCapacityOpportunity.valueMw} MW · ${selectedCapacity.validationState.replaceAll("_", " ")}`}
+                      </span>
+                    )}
+                  </div>
+                  {selectedOpportunity && selectedNodePathways.length > 1 && (
+                    <p className="node-pathway-notice" role="status">
+                      {selectedNodePathways.length} candidate matches use this node. The
+                      highest-ranked match is selected from the current list.
+                    </p>
+                  )}
+                  {selectedOpportunity ? (
+                    <div className="candidate-capacity-banner" role="status">
+                      <strong>
+                        {selected.properties.capacity_state === "published_exact" &&
+                        selected.properties.exact_mw != null
+                          ? `${selected.properties.exact_mw} MW published observation`
+                          : selected.properties.capacity_state === "published_band" &&
+                              selected.properties.band_min_mw != null
+                            ? `${selected.properties.band_min_mw}–${selected.properties.band_max_mw ?? "?"} MW published band`
+                            : "Capacity unknown"}
+                      </strong>
+                      <span>
+                        {selected.properties.capacity_state === "published_exact" ||
+                        selected.properties.capacity_state === "published_band"
+                          ? `Source-attributed observation${selected.properties.capacity_published_at ? ` · published ${selected.properties.capacity_published_at}` : ""}. It is not current available capacity or a connection offer.`
+                          : "Mapped voltage is not MW capacity. Operator confirmation and accepted evidence are required."}
+                      </span>
+                    </div>
+                  ) : null}
+                  {selectedCapacity &&
+                    selectedCapacityOpportunity.fit !== "stale" &&
+                    selectedCapacity.validationState !== "failed" && (
+                      <section
+                        className="finder-panel-card finder-panel-card--study"
+                        aria-label="Calculated capacity result"
+                      >
+                        <header>
+                          <span>Calculated capacity</span>
+                          <b>{selectedCapacity.validationState.replaceAll("_", " ")}</b>
+                        </header>
+                        <p>
+                          Node-specific electrical result for model {selectedCapacity.modelVersion},{" "}
+                          {selectedCapacity.scenarioLabel},{" "}
+                          {selectedCapacity.securityCase.replace("_", "-").toUpperCase()}.
+                        </p>
+                        <dl>
+                          <div>
+                            <dt>Firm import</dt>
+                            <dd>{selectedCapacity.firmCapacityMw ?? "—"} MW</dd>
+                          </div>
+                          <div>
+                            <dt>Flexible import</dt>
+                            <dd>{selectedCapacity.flexibleCapacityMw ?? "—"} MW</dd>
+                          </div>
+                          <div>
+                            <dt>BESS-assisted</dt>
+                            <dd>{selectedCapacity.bessAssistedCapacityMw ?? "—"} MW</dd>
+                          </div>
+                          <div>
+                            <dt>Staged initial / eventual</dt>
+                            <dd>
+                              {selectedCapacity.stagedInitialCapacityMw ?? "—"} /{" "}
+                              {selectedCapacity.eventualCapacityMw ?? "—"} MW
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>Restricted hours</dt>
+                            <dd>{selectedCapacity.restrictedHours ?? "—"} h/year</dd>
+                          </div>
+                          <div>
+                            <dt>Binding constraint</dt>
+                            <dd>
+                              {selectedCapacity.bindingCategory?.replaceAll("_", " ") ??
+                                "Not recorded"}
+                            </dd>
+                          </div>
+                        </dl>
+                        <small>
+                          Calculated {new Date(selectedCapacity.calculatedAt).toLocaleString()} ·
+                          not a connection offer or capacity reservation.
+                        </small>
+                      </section>
+                    )}
+                  {selected.properties.kind === "node" ? (
+                    <>
+                      <section
+                        className="candidate-fact-section"
+                        aria-labelledby="candidate-known-title"
+                      >
+                        <h3 id="candidate-known-title">Connection Context</h3>
+                        <dl>
+                          <div>
+                            <dt>Mapped Asset</dt>
+                            <dd>{selected.properties.name}</dd>
+                          </div>
+                          <div>
+                            <dt>Mapped Voltage</dt>
+                            <dd>
+                              {selected.properties.voltage_kv?.length
+                                ? `${Math.max(...selected.properties.voltage_kv)} kV`
+                                : "Unknown"}
+                            </dd>
+                          </div>
+                          {selectedOpportunity && (
+                            <div>
+                              <dt>Distance From Site</dt>
+                              <dd>
+                                {distanceFormatter.format(selectedOpportunity.distanceKm)} km
+                                straight-line
+                              </dd>
+                            </div>
+                          )}
+                          <div>
+                            <dt>Likely Network Operator</dt>
+                            <dd>
+                              {selected.properties.operator
+                                ? `${canonicalOperatorName(selected.properties.operator)} · confirmation required`
+                                : "Confirmation required"}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>Infrastructure Source</dt>
+                            <dd>
+                              {selected.properties.evidence_class === "open_mapping"
+                                ? "OpenStreetMap-derived mapping"
+                                : selected.properties.evidence_class.replaceAll("_", " ")}
+                            </dd>
+                          </div>
+                        </dl>
+                      </section>
+                      {selected.properties.planning_status &&
+                        selected.properties.planning_status !== "screening_only" && (
+                          <section className="candidate-fact-section">
+                            <h3>Published Development Context</h3>
+                            <p>{selected.properties.planning_status.replaceAll("_", " ")}</p>
+                          </section>
+                        )}
+                    </>
+                  ) : (
+                    <dl>
+                      <div>
+                        <dt>Evidence Source</dt>
+                        <dd>{selected.properties.evidence_class.replaceAll("_", " ")}</dd>
+                      </div>
+                      <div>
+                        <dt>Technology</dt>
+                        <dd>{selected.properties.technology ?? "Not published"}</dd>
+                      </div>
+                      <div>
+                        <dt>Registered Power</dt>
+                        <dd>
+                          {selected.properties.net_capacity_mw != null
+                            ? `${selected.properties.net_capacity_mw} MW`
+                            : "Not published"}
+                        </dd>
+                      </div>
+                      {selected.properties.kind === "storage_asset" && (
+                        <div>
+                          <dt>Registered Energy</dt>
+                          <dd>
+                            {selected.properties.storage_energy_mwh != null
+                              ? `${selected.properties.storage_energy_mwh} MWh`
+                              : "Not published"}
+                          </dd>
+                        </div>
+                      )}
+                    </dl>
+                  )}
+                  {(selected.properties.kind === "generation_asset" ||
+                    selected.properties.kind === "storage_asset") && (
+                    <p className="candidate-boundary">
+                      Registered asset data provides local market context. It does not establish
+                      grid headroom or connection availability.
+                    </p>
+                  )}
+                  {selectedOpportunity && (
+                    <section className="candidate-intelligence" aria-label="Candidate intelligence">
+                      <header>
+                        <span>
+                          <strong>
+                            {selectedOpportunity.confidence === "high"
+                              ? "Strong"
+                              : selectedOpportunity.confidence === "medium"
+                                ? "Medium"
+                                : "Limited"}
+                          </strong>
+                          <small>data-centre investigation fit</small>
+                        </span>
+                        <b>{selectedOpportunity.siteName}</b>
+                      </header>
+                      <section
+                        className="candidate-outcome"
+                        aria-labelledby="candidate-outcome-title"
+                      >
+                        <div>
+                          <span id="candidate-outcome-title">Investigation recommendation</span>
+                          <strong>
+                            {selectedOpportunity.screeningRank >= 70
+                              ? "Recommended for operator verification"
+                              : selectedOpportunity.screeningRank >= 40
+                                ? "Worth comparing"
+                                : "More evidence needed"}
+                          </strong>
+                          <small>
+                            Based on mapped voltage, proximity, operator context &amp; evidence
+                            coverage.
+                          </small>
+                        </div>
+                      </section>
+                      <section
+                        className="candidate-key-drivers"
+                        aria-labelledby="key-drivers-title"
+                      >
+                        <h3 id="key-drivers-title">
+                          {activeProperty?.preferredCandidateId === selectedOpportunity.id
+                            ? "Why this candidate was shortlisted"
+                            : "Why this candidate ranks highly"}
+                        </h3>
+                        <ul>
+                          <li>{voltageFitLabels[selectedOpportunity.voltageFit]}.</li>
+                          <li>
+                            {distanceFormatter.format(selectedOpportunity.distanceKm)} km
+                            straight-line proximity to the declared site.
+                          </li>
+                          <li>
+                            {selectedOpportunity.operator
+                              ? `Mapped operator tag: ${canonicalOperatorName(selectedOpportunity.operator)}.`
+                              : "Responsible operator requires confirmation."}
+                          </li>
+                        </ul>
+                      </section>
+                      <dl>
+                        <div>
+                          <dt>Distance</dt>
+                          <dd>{selectedOpportunity.distanceKm} km straight-line</dd>
+                        </div>
+                        <div>
+                          <dt>Voltage screen</dt>
+                          <dd>{voltageFitLabels[selectedOpportunity.voltageFit]}</dd>
+                        </div>
+                        <div>
+                          <dt>Evidence completeness</dt>
+                          <dd>{selectedOpportunity.confidence}</dd>
+                        </div>
+                      </dl>
+                      <section
+                        className="candidate-evidence-gaps"
+                        aria-labelledby="candidate-gaps-title"
+                      >
+                        <h3 id="candidate-gaps-title">Required before advance</h3>
+                        <ul>
+                          <li>Confirm the responsible network operator.</li>
+                          <li>Confirm a suitable connection point.</li>
+                          <li>Obtain an operator capacity indication.</li>
+                          <li>Request indicative programme, cost and reinforcement context.</li>
+                        </ul>
+                      </section>
+                      <section
+                        className="candidate-site-impact"
+                        aria-labelledby="candidate-site-impact-title"
+                      >
+                        <h3 id="candidate-site-impact-title">Site impact</h3>
+                        <dl>
+                          <div>
+                            <dt>Grid readiness</dt>
+                            <dd>Screening only</dd>
+                          </div>
+                          <div>
+                            <dt>Current decision</dt>
+                            <dd>{activeProperty?.decisionStatus ?? "Unreviewed"}</dd>
+                          </div>
+                          <div>
+                            <dt>Primary blocker</dt>
+                            <dd>No accepted capacity evidence</dd>
+                          </div>
+                          <div>
+                            <dt>Next step</dt>
+                            <dd>Prepare operator enquiry</dd>
+                          </div>
+                        </dl>
+                      </section>
+                      <button
+                        type="button"
+                        className="primary-button candidate-shortlist-action"
+                        disabled={
+                          propertySaveStatus === "saving" ||
+                          activeProperty?.preferredCandidateId === selectedOpportunity.id ||
+                          shortlistId === selectedOpportunity.id
+                        }
+                        onClick={async () => {
+                          const candidateSet = Array.from(
+                            new Map(
+                              [...comparedCandidates, selectedOpportunity].map((item) => [
+                                item.id,
+                                item,
+                              ]),
+                            ).values(),
+                          );
+                          const savedPropertyId = await persistScreening(
+                            candidateSet,
+                            selectedOpportunity.id,
+                          );
+                          if (savedPropertyId) {
+                            setShortlistId(selectedOpportunity.id);
+                            setInteractionNotice(
+                              `${selectedOpportunity.nodeName} shortlisted for ${project.name}.`,
+                            );
+                          }
+                        }}
+                      >
+                        <BookmarkPlus aria-hidden="true" />
+                        {activeProperty?.preferredCandidateId === selectedOpportunity.id ||
+                        shortlistId === selectedOpportunity.id
+                          ? "Preferred candidate saved"
+                          : `Shortlist for ${project.name}`}
+                      </button>
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={() => {
+                          if (comparisonIds.includes(selectedOpportunity.id)) {
+                            const next = removeComparisonCandidate(
+                              comparisonIds,
+                              selectedOpportunity.id,
+                            );
+                            setInteractionNotice("Candidate removed from comparison.");
+                            void updateSearch({ compare: serializeComparison(next) });
+                            return;
+                          }
+                          const result = addComparisonCandidate(
+                            comparisonIds,
+                            selectedOpportunity.id,
+                          );
+                          if (result.limitReached) {
+                            setInteractionNotice("You can compare up to 5 candidates.");
+                            return;
+                          }
+                          setInteractionNotice(
+                            `Candidate added. ${result.ids.length} of 5 comparison slots used.`,
+                          );
+                          setComparisonOpen(true);
+                          void updateSearch({ compare: serializeComparison(result.ids) });
+                        }}
+                      >
+                        <GitCompareArrows aria-hidden="true" />
+                        {comparisonIds.includes(selectedOpportunity.id)
+                          ? "Remove from comparison"
+                          : "Compare candidate"}
+                      </button>
+                      {activeProperty && propertySaveStatus === "saved" ? (
+                        <Link
+                          className="secondary-button candidate-return-action"
+                          to="/portfolio/$id"
+                          params={{ id: activeProperty.id }}
+                          search={{ tab: "overview" }}
+                        >
+                          Return to Site Workspace
+                        </Link>
+                      ) : null}
+                    </section>
+                  )}
+                  {selected.properties.kind === "node" && c1Study?.c3?.available && (
+                    <section className="finder-panel-card finder-panel-card--study">
+                      <header>
+                        <span>Security &amp; Flexibility Study</span>
+                        <b>Operator model linked</b>
+                      </header>
+                      <p>
+                        This result is linked to an operator-reviewed model for the selected node.
+                      </p>
+                      <dl>
+                        <div>
+                          <dt>Firm Import</dt>
+                          <dd>
+                            {c1Study.c3.security?.import_capacity?.values
+                              ?.firm_import_capacity_mw ?? "—"}{" "}
+                            MW
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>Firm Export</dt>
+                          <dd>
+                            {c1Study.c3.security?.export_capacity?.values
+                              ?.firm_export_capacity_mw ?? "—"}{" "}
+                            MW
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>Contingencies Assessed</dt>
+                          <dd>{c1Study.c3.security?.contingency_coverage?.assessed_count ?? 0}</dd>
+                        </div>
+                        <div>
+                          <dt>Constrained Hours</dt>
+                          <dd>
+                            {c1Study.c3.flexibilitySummary?.constrained_hours?.toLocaleString() ??
+                              "—"}
+                          </dd>
+                        </div>
+                      </dl>
+                    </section>
+                  )}
+                  {productCapabilities.workspace && selected.properties.kind === "node" && (
+                    <section
+                      className="power-finder-operator-evidence"
+                      aria-label="Official operator evidence"
+                    >
+                      <header>
+                        <ShieldCheck aria-hidden="true" />
+                        <span>
+                          <b>Operator evidence</b>
+                          <small>
+                            {operatorEvidence?.match_state === "accepted_node_evidence"
+                              ? "Reviewed node match"
+                              : operatorEvidence?.match_state === "operator_context_only"
+                                ? "Operator-level context"
+                                : "No reviewed node evidence"}
+                          </small>
+                        </span>
+                      </header>
+                      {operatorEvidenceState === "loading" && <p>Checking accepted evidence…</p>}
+                      {operatorEvidenceState === "unavailable" && (
+                        <p>Evidence service is temporarily unavailable.</p>
+                      )}
+                      {operatorEvidenceState === "idle" && dataMode === "published_artifact" && (
+                        <p>Operator source inspection is not included in the public Finder.</p>
+                      )}
+                      {operatorEvidenceState === "ready" &&
+                        (operatorEvidence?.items.length ? (
+                          <ul>
+                            {operatorEvidence.items.map((item) => (
+                              <li key={`${item.scope}-${item.url}`}>
+                                <span>
+                                  {item.scope === "node_match" && (
+                                    <CheckCircle2 aria-label="Reviewed node match" />
+                                  )}
+                                  <a href={item.url} target="_blank" rel="noreferrer">
+                                    {item.title} <ExternalLink aria-hidden="true" />
+                                  </a>
+                                </span>
+                                <small>
+                                  {item.scope === "node_match"
+                                    ? item.rationale
+                                    : item.legal_boundary}
+                                </small>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p>
+                            No official publication is linked to this mapped node. Capacity remains
+                            unknown until the responsible operator responds.
+                          </p>
+                        ))}
+                      <footer>
+                        Operator-level pages explain process or network context. They do not
+                        establish capacity at this node.
+                      </footer>
+                    </section>
+                  )}
+                  {productCapabilities.workspace && coordinates && (
+                    <button
+                      type="button"
+                      className="primary-button"
+                      disabled={saveStatus === "saving"}
+                      onClick={() => {
+                        setSaveStatus("saving");
+                        void savePowerFinderCandidate(
+                          selected,
+                          selectedOpportunity,
+                          requiredImportMw,
+                        )
+                          .then((id) => {
+                            setShortlistId(id);
+                            setSaveStatus("saved");
+                            return navigate({
+                              to: "/assessments/new",
+                              search: {
+                                shortlistId: id,
+                                name: selectedOpportunity?.siteName ?? selected.properties.name,
+                                projectType: "large_load",
+                                importMw: requiredImportMw,
+                                latitude: coordinates[1],
+                                longitude: coordinates[0],
+                                federalState: "Brandenburg",
+                                challenge: selectedOpportunity
+                                  ? `${selectedOpportunity.siteName} screened against ${selectedOpportunity.nodeName} at ${distanceFormatter.format(selectedOpportunity.distanceKm)} km. Rank ${formatScore(selectedOpportunity.screeningRank)}/100 reflects context only; capacity, feasibility, cost, and timing require operator confirmation.`
+                                  : `Screening candidate ${selected.id}; capacity and operator responsibility require confirmation.`,
+                              },
+                            });
+                          })
+                          .catch(() => setSaveStatus("error"));
+                      }}
+                    >
+                      <MapPin />{" "}
+                      {saveStatus === "saving" ? "Saving map context…" : "Start private assessment"}
+                    </button>
+                  )}
+                  {productCapabilities.workspace &&
+                    ["node", "industrial_site"].includes(selected.properties.kind) && (
+                      <button
+                        type="button"
+                        className="secondary-button power-finder-save"
+                        disabled={saveStatus === "saving" || saveStatus === "saved"}
+                        onClick={() => {
+                          setSaveStatus("saving");
+                          void savePowerFinderCandidate(
+                            selected,
+                            selectedOpportunity,
+                            requiredImportMw,
+                          )
+                            .then((id) => {
+                              setShortlistId(id);
+                              setSaveStatus("saved");
+                            })
+                            .catch(() => setSaveStatus("error"));
+                        }}
+                      >
+                        <BookmarkPlus aria-hidden="true" />
+                        {saveStatus === "saving"
+                          ? "Saving…"
+                          : saveStatus === "saved"
+                            ? "Saved to shortlist"
+                            : saveStatus === "error"
+                              ? "Try saving again"
+                              : shortlistId
+                                ? "Saved to shortlist"
+                                : "Save candidate"}
+                      </button>
+                    )}
+                  {productCapabilities.workspace && !coordinates && (
+                    <p className="detail-help">
+                      Select a node to start an assessment. Industrial land remains site context
+                      only.
+                    </p>
+                  )}
+                  {productCapabilities.workspace &&
+                    selectedOpportunity &&
+                    selected.properties.kind === "node" && (
+                      <button
+                        type="button"
+                        className="primary-button power-finder-activation-cta"
+                        onClick={() =>
+                          void updateSearch({ study: "activation", studyTab: "overview" })
+                        }
+                      >
+                        <Zap aria-hidden="true" /> Assess activation pathways
+                      </button>
+                    )}
+                </>
+              ))(selectedDetailFeature)
             ) : (
               <div className="power-finder-empty-detail">
                 <Network />
                 <h2>Select a node or site</h2>
-                <p>Inspect its source boundary and move a node into a private assessment.</p>
+                <p>Inspect its voltage, source boundary, operator context and investigation fit.</p>
               </div>
             )}
           </aside>

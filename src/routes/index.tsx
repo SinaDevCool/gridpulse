@@ -1,517 +1,118 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import {
-  ArrowRight,
-  BarChart3,
-  Building2,
-  Check,
-  ChevronRight,
-  ClipboardCheck,
-  FileCheck2,
-  MapPinned,
-  Network,
-  RadioTower,
-  Route as RouteIcon,
-  ShieldCheck,
-} from "lucide-react";
+import { ArrowRight, FileCheck2, MapPinned, Network } from "lucide-react";
 import { PublicLayout } from "@/components/public/PublicLayout";
-import { trackEvent } from "@/lib/analytics";
 import "../landing.css";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "GridPulse | Build a Credible Route to Power in Germany" },
+      { title: "GridPulse | Data-Centre Site Intelligence" },
       {
         name: "description",
         content:
-          "Qualify German project sites, compare firm and flexible grid-connection approaches, and prepare an operator-ready connection strategy with GridPulse.",
+          "Qualify data-centre property opportunities with evidence-led site context and German grid screening.",
       },
-      {
-        property: "og:title",
-        content: "Build a Credible Route to Power in Germany",
-      },
+      { property: "og:title", content: "GridPulse Data-Centre Site Intelligence" },
       {
         property: "og:description",
-        content:
-          "Grid-connection discovery, strategy, and operator preparation for German data centres, battery projects, and large industrial loads.",
+        content: "Move from property opportunity to a clear, evidence-led site decision.",
       },
       { property: "og:url", content: "https://gridpulseinsights.com/" },
-      { name: "twitter:title", content: "GridPulse | Build a Credible Route to Power in Germany" },
+      { name: "theme-color", content: "#05080f" },
     ],
     links: [
       { rel: "canonical", href: "https://gridpulseinsights.com/" },
       { rel: "preload", href: "/landing/german-grid-hero.webp", as: "image" },
     ],
   }),
-  component: LandingPage,
+  component: DataCentreLandingPage,
 });
 
-const processSteps = [
+const workflow = [
   {
-    number: "01",
     icon: MapPinned,
-    title: "Discover the route",
-    description:
-      "Screen candidate sites, power requirements, likely network responsibility, and missing information.",
-    output: "Site-screening brief",
+    title: "Bring the opportunity",
+    body: "Start with a single location or an existing property portfolio.",
   },
-  {
-    number: "02",
-    icon: RouteIcon,
-    title: "Design the connection strategy",
-    description:
-      "Compare firm, reduced, staged, and flexible approaches against the project’s operating constraints.",
-    output: "Connection-strategy comparison",
-  },
-  {
-    number: "03",
-    icon: ClipboardCheck,
-    title: "Prepare for activation",
-    description:
-      "Assemble the technical inputs, evidence package, and operator questions required to progress the connection.",
-    output: "Operator-engagement package",
-  },
-] as const;
-
-const regionRows = [
-  {
-    region: "Berlin",
-    context: "50Hertz transmission context",
-    responsibility: "Local operator confirmation required",
-  },
-  {
-    region: "Brandenburg",
-    context: "50Hertz transmission context",
-    responsibility: "Site-level DSO confirmation required",
-  },
-  {
-    region: "Hesse",
-    context: "Amprion / TenneT context",
-    responsibility: "Exact location and voltage required",
-  },
-  {
-    region: "North Rhine-Westphalia",
-    context: "Primarily Amprion context",
-    responsibility: "Site-level DSO confirmation required",
-  },
-] as const;
-
-const outcomes = [
   {
     icon: Network,
-    title: "Qualify sites with less uncertainty",
-    description:
-      "Identify missing evidence, likely responsibility, and project-specific blockers before committing further development effort.",
-  },
-  {
-    icon: RouteIcon,
-    title: "Keep more connection options open",
-    description:
-      "Compare firm, staged, and flexible approaches before treating network reinforcement as the only route.",
+    title: "Investigate the grid",
+    body: "Compare mapped connection hypotheses and their evidence context.",
   },
   {
     icon: FileCheck2,
-    title: "Engage the operator with a stronger case",
-    description:
-      "Bring structured technical inputs, evidence, and specific connection questions to the responsible operator.",
+    title: "Record the decision",
+    body: "Keep confirmed facts, screened context, and open questions distinct.",
   },
 ] as const;
 
-function LandingPage() {
+function DataCentreLandingPage() {
   return (
-    <PublicLayout>
-      <div className="landing-page">
+    <PublicLayout forcePublicChrome finderMarketingChrome>
+      <div className="landing-page minimal-landing">
         <main id="main-content">
-          <section className="landing-hero" aria-labelledby="hero-title">
+          <section className="minimal-hero" aria-labelledby="hero-title">
             <img
-              className="landing-hero-image"
+              className="minimal-hero-image"
               src="/landing/german-grid-hero.webp"
               width="1942"
               height="809"
-              alt="German electrical substation and industrial infrastructure at blue hour"
+              alt=""
               fetchPriority="high"
               decoding="async"
             />
-            <div className="landing-hero-overlay" />
-            <div className="landing-container landing-hero-content">
-              <p className="landing-eyebrow">German Grid-Connection Decision Support</p>
-              <h1 id="hero-title">Build a credible route to power in Germany.</h1>
-              <p className="landing-hero-lead">
-                GridPulse helps data centres, battery projects, and large industrial loads qualify
-                sites, compare firm and flexible connection approaches, and prepare for
-                network-operator engagement.
+            <div className="minimal-hero-overlay" />
+            <div className="landing-container minimal-hero-content">
+              <p className="landing-eyebrow">Data-Centre Site Intelligence</p>
+              <h1 id="hero-title">See which sites are worth advancing.</h1>
+              <p className="minimal-hero-lead">
+                Qualify property opportunities with mapped grid context, traceable evidence, and a
+                clear next decision.
               </p>
               <div className="landing-actions">
-                <Link
-                  to="/pilot"
-                  className="landing-button landing-button-primary"
-                  onClick={() => trackEvent("landing_start_pilot_clicked", { placement: "hero" })}
-                >
-                  Start a Pilot <ArrowRight aria-hidden="true" />
+                <Link to="/portfolio" className="landing-button landing-button-primary">
+                  Open Site Pipeline <ArrowRight aria-hidden="true" />
                 </Link>
-                <a href="#how-it-works" className="landing-button landing-button-secondary">
-                  See How It Works
-                </a>
+                <Link to="/power-finder" className="minimal-secondary-link">
+                  Explore Power Finder
+                </Link>
               </div>
-              <p className="landing-audience">
-                Built for German projects where location, power requirements, and operational
-                flexibility shape the connection strategy.
+              <p className="minimal-access-note">Anonymous workspace · No account required</p>
+            </div>
+          </section>
+
+          <section className="minimal-flow" id="how-it-works" aria-labelledby="flow-title">
+            <div className="landing-container">
+              <div className="minimal-section-heading">
+                <p className="landing-eyebrow">One focused workflow</p>
+                <h2 id="flow-title">From land opportunity to an informed next step.</h2>
+              </div>
+              <div className="minimal-flow-grid">
+                {workflow.map(({ icon: Icon, title, body }) => (
+                  <article key={title}>
+                    <Icon aria-hidden="true" />
+                    <h3>{title}</h3>
+                    <p>{body}</p>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <section className="minimal-positioning" aria-labelledby="positioning-title">
+            <div className="landing-container minimal-positioning-inner">
+              <p className="landing-eyebrow">Evidence before certainty</p>
+              <h2 id="positioning-title">
+                A practical bridge between real estate and grid diligence.
+              </h2>
+              <p>
+                GridPulse helps teams decide where deeper investigation is justified. Public mapping
+                supports screening; connection capacity and terms remain subject to network-operator
+                confirmation.
               </p>
-            </div>
-          </section>
-
-          <section className="landing-section landing-region" aria-labelledby="region-title">
-            <div className="landing-container">
-              <div className="landing-section-heading landing-section-heading-split">
-                <div>
-                  <p className="landing-eyebrow">Discover the Route</p>
-                  <h2 id="region-title">Start with the site and its network context.</h2>
-                </div>
-                <p>
-                  Location shapes the likely network responsibility, technical requirements, and
-                  connection options. Review indicative regional context before beginning a
-                  project-specific assessment.
-                </p>
-              </div>
-
-              <div className="landing-region-panel">
-                <div className="landing-table-wrap">
-                  <table>
-                    <caption className="sr-only">Indicative German regional grid context</caption>
-                    <thead>
-                      <tr>
-                        <th scope="col">Example region</th>
-                        <th scope="col">Indicative context</th>
-                        <th scope="col">What still needs confirmation</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {regionRows.map((row) => (
-                        <tr key={row.region}>
-                          <th scope="row">{row.region}</th>
-                          <td>{row.context}</td>
-                          <td>
-                            <span className="landing-status-dot" aria-hidden="true" />
-                            {row.responsibility}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <aside className="landing-region-aside">
-                  <MapPinned aria-hidden="true" />
-                  <h3>Regional context starts the investigation.</h3>
-                  <p>
-                    Public information can guide an early screen, but it cannot confirm available
-                    capacity, a connection point, or the responsible distribution operator for a
-                    specific project.
-                  </p>
-                  <Link
-                    to="/service"
-                    className="landing-text-link"
-                    onClick={() => trackEvent("homepage_assessment_clicked")}
-                  >
-                    Explore the Assessment <ArrowRight aria-hidden="true" />
-                  </Link>
-                </aside>
-              </div>
-            </div>
-          </section>
-
-          <section
-            className="landing-section landing-process"
-            id="how-it-works"
-            aria-labelledby="process-title"
-          >
-            <div className="landing-container">
-              <div className="landing-section-heading landing-section-heading-centered">
-                <p className="landing-eyebrow">The GridPulse Connection Journey</p>
-                <h2 id="process-title">From an uncertain site to an operator-ready strategy.</h2>
-                <p>
-                  Discover the route, design credible connection options, and prepare the evidence
-                  needed to progress the project.
-                </p>
-              </div>
-              <ol className="landing-process-grid">
-                {processSteps.map((step) => {
-                  const Icon = step.icon;
-                  return (
-                    <li key={step.number}>
-                      <div className="landing-step-visual" aria-hidden="true">
-                        <span>{step.number}</span>
-                        <Icon />
-                      </div>
-                      <h3>{step.title}</h3>
-                      <p>{step.description}</p>
-                      <div className="landing-step-output">
-                        <Check aria-hidden="true" />
-                        <span>
-                          <small>Result</small>
-                          <strong>{step.output}</strong>
-                        </span>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ol>
-              <div className="landing-centered-action">
-                <Link
-                  to="/demo"
-                  className="landing-text-link"
-                  onClick={() =>
-                    trackEvent("homepage_product_tour_clicked", { placement: "process" })
-                  }
-                >
-                  Explore the Interactive Product Tour <ArrowRight aria-hidden="true" />
-                </Link>
-              </div>
-            </div>
-          </section>
-
-          <section
-            className="landing-section landing-product"
-            id="product"
-            aria-labelledby="product-title"
-          >
-            <div className="landing-container landing-product-layout">
-              <div className="landing-product-copy">
-                <p className="landing-eyebrow">One Case. One Decision Record.</p>
-                <h2 id="product-title">
-                  Keep the connection strategy, evidence, and next actions connected.
-                </h2>
-                <p>
-                  GridPulse brings site requirements, connection options, operator evidence, and
-                  unresolved decisions into one traceable project record.
-                </p>
-                <ul>
-                  <li>
-                    <Check aria-hidden="true" /> Compare candidate-site readiness
-                  </li>
-                  <li>
-                    <Check aria-hidden="true" /> Test firm, staged, and flexible approaches
-                  </li>
-                  <li>
-                    <Check aria-hidden="true" /> Track operator evidence and activation dependencies
-                  </li>
-                </ul>
-                <Link
-                  to="/demo"
-                  className="landing-button landing-button-secondary"
-                  onClick={() =>
-                    trackEvent("homepage_product_tour_clicked", { placement: "product" })
-                  }
-                >
-                  View the Working Product <ArrowRight aria-hidden="true" />
-                </Link>
-              </div>
-
-              <div
-                className="landing-product-window"
-                aria-label="Illustrative GridPulse connection case"
-              >
-                <header>
-                  <div>
-                    <span className="landing-window-mark" aria-hidden="true" />
-                    <span>Connection Case</span>
-                  </div>
-                  <small>Illustrative assessment</small>
-                </header>
-                <div className="landing-product-case">
-                  <div className="landing-case-title">
-                    <div>
-                      <small>GP-DE-001</small>
-                      <strong>Berlin–Brandenburg Energy Project</strong>
-                    </div>
-                    <span>Review in progress</span>
-                  </div>
-                  <div className="landing-case-metrics">
-                    <div>
-                      <small>Requested capacity</small>
-                      <strong>60 MW requested</strong>
-                    </div>
-                    <div>
-                      <small>Likely responsibility</small>
-                      <strong>Confirmation required</strong>
-                    </div>
-                    <div>
-                      <small>Evidence recorded</small>
-                      <strong>5 of 7 items</strong>
-                    </div>
-                  </div>
-                  <div className="landing-case-action">
-                    <span>
-                      <ClipboardCheck aria-hidden="true" />
-                    </span>
-                    <div>
-                      <small>Recommended next action</small>
-                      <strong>
-                        Confirm operator responsibility and request capacity evidence.
-                      </strong>
-                    </div>
-                    <ChevronRight aria-hidden="true" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section className="landing-section landing-outcomes" aria-labelledby="outcomes-title">
-            <div className="landing-container">
-              <div className="landing-section-heading landing-section-heading-centered">
-                <p className="landing-eyebrow">What You Leave With</p>
-                <h2 id="outcomes-title">
-                  A stronger connection decision before operator confirmation.
-                </h2>
-              </div>
-              <div className="landing-outcomes-grid">
-                {outcomes.map((outcome) => {
-                  const Icon = outcome.icon;
-                  return (
-                    <article key={outcome.title}>
-                      <Icon aria-hidden="true" />
-                      <h3>{outcome.title}</h3>
-                      <p>{outcome.description}</p>
-                    </article>
-                  );
-                })}
-              </div>
-              <aside className="landing-trust-note">
-                <ShieldCheck aria-hidden="true" />
-                <p>
-                  <strong>Decision support, not a connection offer.</strong> GridPulse supports
-                  customer-side discovery, connection-strategy design, and operator preparation.
-                  Available capacity, connection point, restrictions, works, timing, and final terms
-                  remain subject to confirmation by the responsible network operator.
-                </p>
-              </aside>
-            </div>
-          </section>
-
-          <section
-            className="landing-section landing-direction"
-            id="direction"
-            aria-labelledby="direction-title"
-          >
-            <div className="landing-container">
-              <div className="landing-direction-heading">
-                <div>
-                  <p className="landing-eyebrow">Product Direction</p>
-                  <h2 id="direction-title">From connection preparation to flexible operation.</h2>
-                </div>
-                <p>
-                  GridPulse is being developed toward operator-evidenced operating envelopes,
-                  constraint monitoring, and flexible-connection compliance.
-                </p>
-              </div>
-
-              <div className="landing-direction-grid">
-                <article className="is-current">
-                  <header>
-                    <span>Available now</span>
-                    <ClipboardCheck aria-hidden="true" />
-                  </header>
-                  <h3>Operator-ready decision support</h3>
-                  <p>
-                    Site screening, connection-option comparison, evidence management, and
-                    operator-engagement preparation.
-                  </p>
-                </article>
-                <article className="is-development">
-                  <header>
-                    <span>Design-partner development</span>
-                    <BarChart3 aria-hidden="true" />
-                  </header>
-                  <h3>Flexibility economics</h3>
-                  <p>
-                    Compare agreed limits, operating restrictions, energy impacts, and the
-                    commercial implications of flexible connection structures.
-                  </p>
-                </article>
-                <article className="is-future">
-                  <header>
-                    <span>Future direction</span>
-                    <RadioTower aria-hidden="true" />
-                  </header>
-                  <h3>Flexible operation</h3>
-                  <p>
-                    Monitor operator-approved envelopes, constraints, instructions, and compliance
-                    through future customer and utility integrations.
-                  </p>
-                </article>
-              </div>
-
-              <div className="landing-direction-action">
-                <Link
-                  to="/pilot"
-                  search={{ interest: "design-partnership" }}
-                  className="landing-text-link"
-                  onClick={() => trackEvent("design_partnership_selected")}
-                >
-                  Discuss a Design Partnership <ArrowRight aria-hidden="true" />
-                </Link>
-              </div>
-            </div>
-          </section>
-
-          <section
-            className="landing-section landing-pilot"
-            id="pilot"
-            aria-labelledby="pilot-title"
-          >
-            <div className="landing-container landing-pilot-layout">
-              <div className="landing-pilot-copy">
-                <p className="landing-eyebrow">Start With One Real Connection Decision</p>
-                <h2 id="pilot-title">Test a credible route to power for your project.</h2>
-                <p>
-                  Bring 1 project and up to 3 candidate locations. GridPulse will structure the
-                  evidence, compare credible connection approaches, and prepare the unresolved
-                  questions for operator engagement.
-                </p>
-                <div className="landing-actions">
-                  <Link to="/pilot" className="landing-button landing-button-primary">
-                    Start a Pilot <ArrowRight aria-hidden="true" />
-                  </Link>
-                  <Link
-                    to="/pilot"
-                    hash="what-is-included"
-                    className="landing-text-link"
-                    onClick={() => trackEvent("homepage_pilot_scope_clicked")}
-                  >
-                    Review What the Pilot Includes
-                  </Link>
-                </div>
-              </div>
-              <div className="landing-pilot-brief">
-                <div>
-                  <h3>You provide</h3>
-                  <ul>
-                    <li>
-                      <MapPinned aria-hidden="true" /> Candidate locations
-                    </li>
-                    <li>
-                      <Building2 aria-hidden="true" /> Requested and minimum viable MW
-                    </li>
-                    <li>
-                      <FileCheck2 aria-hidden="true" /> Available technical and operator information
-                    </li>
-                  </ul>
-                </div>
-                <div>
-                  <h3>You receive</h3>
-                  <ul>
-                    <li>
-                      <Check aria-hidden="true" /> Candidate-site readiness comparison
-                    </li>
-                    <li>
-                      <Check aria-hidden="true" /> Firm, staged, and flexible connection review
-                    </li>
-                    <li>
-                      <Check aria-hidden="true" /> Operator-engagement package and decision memo
-                    </li>
-                  </ul>
-                </div>
-              </div>
+              <Link to="/portfolio" className="landing-button landing-button-primary">
+                Start Screening <ArrowRight aria-hidden="true" />
+              </Link>
             </div>
           </section>
         </main>

@@ -31,11 +31,26 @@ supabase/.temp/
 test-results/
 playwright-report/
 
+# Codex-local attachments and generated working artifacts
+/.codex-remote-attachments/
+/.codex-tmp/
+/tmp/
+/video-assets/
+
 # Python geospatial service
 __pycache__/
 *.py[cod]
+*.egg-info/
 .pytest_cache/
 .ruff_cache/
+
+# Local Worker diagnostics
+*.cpuprofile
+
+# Private Release 2 model and benchmark artifacts (never ship in the public bundle)
+output/models/
+output/release2-private-benchmark.json
+output/release3-private-shadow.json
 
 # Editor directories and files
 .claude/
@@ -48,3 +63,5 @@ __pycache__/
 *.njsproj
 *.sln
 *.sw?
+/tmp/migration-fetch/
+/tmp/migration-history.sql

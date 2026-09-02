@@ -1,0 +1,6 @@
+[
+  {"profile_id":"mock:de-pilot-01:profile:data-centre","project_type":"data_centre","peak_import_mw":20,"peak_export_mw":0,"critical_load_mw":16,"profile_generator":"deterministic_hourly_v1","is_synthetic":true},
+  {"profile_id":"mock:de-pilot-01:profile:bess","project_type":"bess","peak_import_mw":10,"peak_export_mw":10,"critical_load_mw":0,"profile_generator":"deterministic_market_v1","is_synthetic":true},
+  {"profile_id":"mock:de-pilot-01:profile:electrolyser","project_type":"electrolyser","peak_import_mw":15,"peak_export_mw":0,"critical_load_mw":3,"profile_generator":"deterministic_flexible_v1","is_synthetic":true},
+  {"profile_id":"mock:de-pilot-01:profile:industrial","project_type":"industrial_load","peak_import_mw":12,"peak_export_mw":0,"critical_load_mw":8,"profile_generator":"deterministic_shift_v1","is_synthetic":true}
+]

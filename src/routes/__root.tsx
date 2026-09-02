@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
   Link,
+  notFound,
   createRootRouteWithContext,
   HeadContent,
   Scripts,
@@ -10,11 +11,14 @@ import type { ReactNode } from "react";
 import { Toaster } from "sonner";
 import appCss from "../styles.css?url";
 import { AuthProvider } from "@/context/AuthContext";
+import { isRouteEnabled, productCapabilities } from "@/config/product-mode";
+import { ThemeProvider } from "@/features/theme/ThemeProvider";
+import { useTheme } from "@/features/theme/use-theme";
 
 const siteUrl = "https://gridpulseinsights.com";
-const siteTitle = "GridPulse | German Grid Connection Intelligence";
+const siteTitle = "GridPulse Power Finder | German Grid Screening";
 const siteDescription =
-  "GridPulse helps data centres, battery projects and industrial loads screen, prepare and execute evidence-based grid-connection strategies in Germany.";
+  "GridPulse Power Finder helps infrastructure developers screen German grid nodes, industrial sites, voltage context and source evidence without creating an account.";
 const socialImage = `${siteUrl}/gridpulse-og.png`;
 
 const structuredData = {
@@ -32,7 +36,7 @@ const structuredData = {
       "@type": "SoftwareApplication",
       "@id": `${siteUrl}/#software`,
       name: "GridPulse",
-      applicationCategory: "BusinessApplication",
+      applicationCategory: "UtilitiesApplication",
       operatingSystem: "Web",
       url: siteUrl,
       description: siteDescription,
@@ -51,6 +55,9 @@ const structuredData = {
 };
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  beforeLoad: ({ location }) => {
+    if (!isRouteEnabled(location.pathname)) throw notFound();
+  },
   head: () => ({
     meta: [
       { charSet: "utf-8" },
@@ -72,7 +79,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:image", content: socialImage },
       { property: "og:image:width", content: "1200" },
       { property: "og:image:height", content: "630" },
-      { property: "og:image:alt", content: "GridPulse grid connection intelligence platform" },
+      { property: "og:image:alt", content: "GridPulse Power Finder grid screening map" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: siteTitle },
       { name: "twitter:description", content: siteDescription },
@@ -92,8 +99,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     ],
   }),
   shellComponent: ({ children }: { children: ReactNode }) => (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var p=localStorage.getItem('gridpulse-theme')||'system';var d=p==='dark'||(p==='system'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.dataset.theme=d?'dark':'light';document.documentElement.style.colorScheme=d?'dark':'light'}catch(e){}})()`,
+          }}
+        />
         <HeadContent />
         <script
           type="application/ld+json"
@@ -122,10 +134,19 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
+    <ThemeProvider>
+      <RootProviders queryClient={queryClient} />
+    </ThemeProvider>
+  );
+}
+
+function RootProviders({ queryClient }: { queryClient: QueryClient }) {
+  const { resolved } = useTheme();
+  return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
+      <AuthProvider enabled={productCapabilities.authentication}>
         <Outlet />
-        <Toaster theme="dark" position="bottom-right" />
+        <Toaster theme={resolved} position="bottom-right" />
       </AuthProvider>
     </QueryClientProvider>
   );

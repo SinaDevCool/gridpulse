@@ -1,19 +1,15 @@
 import { expect, test } from "@playwright/test";
 
-test("homepage conversion links match their promised destinations", async ({ page }) => {
+test("homepage decision links match their promised destinations", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page.getByRole("link", { name: "Explore the Assessment" })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: "Open Site Pipeline" }).first()).toHaveAttribute(
     "href",
-    "/service",
+    "/portfolio",
   );
-  await expect(page.getByRole("link", { name: "Review What the Pilot Includes" })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: "Explore Power Finder" })).toHaveAttribute(
     "href",
-    "/pilot#what-is-included",
-  );
-  await expect(page.getByRole("link", { name: "Discuss a Design Partnership" })).toHaveAttribute(
-    "href",
-    "/pilot?interest=design-partnership",
+    "/power-finder",
   );
 });
 

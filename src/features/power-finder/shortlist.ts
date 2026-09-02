@@ -7,13 +7,14 @@ export async function savePowerFinderCandidate(
   feature: PowerFinderFeature,
   opportunity?: CandidateOpportunity | null,
   requiredImportMw?: number,
+  activationStudy?: Record<string, unknown> | null,
 ): Promise<string> {
   const {
     data: { user },
     error: userError,
   } = await supabase.auth.getUser();
   if (userError) throw userError;
-  if (!user) throw new Error("Sign in before saving a candidate.");
+  if (!user) throw new Error("Saved candidate storage is unavailable in the public Finder.");
 
   const score = scoreFeature(feature);
   const { data, error } = await supabase
@@ -35,6 +36,7 @@ export async function savePowerFinderCandidate(
           opportunity: opportunity
             ? { ...opportunity, requiredImportMw: requiredImportMw ?? null }
             : null,
+          activation_study: activationStudy ?? null,
           score: score
             ? {
                 score: score.total,

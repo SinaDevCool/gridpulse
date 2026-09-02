@@ -1,9 +1,21 @@
 import { describe, expect, it } from "vitest";
 import {
+  emptyGermanyPowerFinderCollection,
   featureSummary,
   parsePowerFinderCollection,
   type PowerFinderFeature,
 } from "./fixture-data";
+
+describe("empty Germany map shell", () => {
+  it("mounts independent tile sources without inventing asset evidence", () => {
+    const result = emptyGermanyPowerFinderCollection();
+    expect(result.features).toEqual([]);
+    expect(result.metadata.record_count).toBe(0);
+    expect(result.metadata.available_kinds).toEqual([]);
+    expect(result.metadata.coverage_status).toBe("unavailable");
+    expect(result.metadata.evidence_boundary).toContain("no capacity claim");
+  });
+});
 
 const collection = {
   type: "FeatureCollection",

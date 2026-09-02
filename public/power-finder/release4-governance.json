@@ -1,0 +1,66 @@
+{
+  "schema_version": "gridpulse-release4-governance-v1",
+  "release": "Release 4",
+  "validation_class": "synthetic_demonstration",
+  "public_visibility": "governance_summary_only",
+  "capacity_claim": false,
+  "operator_confirmed": false,
+  "display_as_capacity": false,
+  "repository_acceptance": {
+    "passed_gate_count": 16,
+    "total_gate_count": 16,
+    "all_repository_gates_passed": true,
+    "synthetic_replacement_rehearsal_complete": true
+  },
+  "graph_and_physics": {
+    "neo4j_provider_contract_exercised": true,
+    "physics_reference_contract_exercised": true,
+    "selected_case_count": 6,
+    "full_case_count": 10,
+    "compute_reduction": 0.4,
+    "infeasible_recall": 1.0,
+    "constraint_recall": 1.0,
+    "false_safe_rate": 0,
+    "reduced_search_qualified": true,
+    "authority_boundary": "Neo4j selects and explains study pathways; the electrical solver remains authoritative for MW."
+  },
+  "operator_replacement": {
+    "required_field_count": 11,
+    "operator_field_count": 0,
+    "missing_operator_fields": [
+      "network_model",
+      "equipment_ratings",
+      "switching_states",
+      "contingencies",
+      "measurements",
+      "connection_queue",
+      "reinforcements",
+      "planned_outages",
+      "security_criteria",
+      "data_use_agreement",
+      "capacity_representation_permission"
+    ],
+    "external_gates": [
+      "operator network and ratings package",
+      "operator SCADA reconciliation",
+      "operator security criteria",
+      "signed data-use and capacity-representation permission"
+    ]
+  },
+  "private_operator_data_published": false,
+  "private_physics_outcomes_published": false,
+  "report_sha256": "62d4222155e83b5f57b1abc76f9c3d3e04e2c07e70c59079a8f88f5fb96bec83",
+  "reproducibility": {
+    "command": "npm run grid:validate:synthetic-pilot",
+    "scenario_set_sha256": "03fb1db8754f8a4ff3aeb4342757a058ac25f04d95abbb324cad17c49eeb4aff",
+    "qualification_study_sha256": "e7f5fdf3ae93ba07a1bf60c01c05024122be5c39c61e52cee81518959d83fced"
+  },
+  "public_capacity_boundary": {
+    "graph_results_applied_to_public_capacity": false,
+    "map_values_remain_physics_results": true,
+    "operator_confirmation_created": false,
+    "status": "synthetic_operator_replacement_rehearsal_only"
+  },
+  "warning": "Synthetic German operator pilot \u2014 not actual or operator-confirmed grid capacity.",
+  "manifest_sha256": "5cbf6a1181b253e47826cf18ba8919529a4d5bc5c75c8e10f842652867a1f6be"
+}

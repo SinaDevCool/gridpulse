@@ -1,0 +1,86 @@
+{
+  "schema_version": "gridpulse-benchmark-e-v1",
+  "generated_at": "2026-08-10T22:33:31.981821+00:00",
+  "purpose": "Prospective holdout validation of firm capacity safety and calibration",
+  "mode": "synthetic_rehearsal",
+  "validation_class": "synthetic_demonstration",
+  "capacity_claim": false,
+  "display_as_capacity": false,
+  "prospective_numerical_validation_passed": true,
+  "operator_prospective_validation_passed": false,
+  "benchmark_execution_passed": true,
+  "metrics": {
+    "case_count": 20,
+    "site_count": 5,
+    "stratum_count": 4,
+    "coverage": 1.0,
+    "capacity_mae_mw": 0.05,
+    "capacity_p95_error_mw": 0.1,
+    "capacity_bias_mw": -0.025,
+    "unsafe_overstatement_count": 0,
+    "unsafe_overstatement_rate": 0.0,
+    "unsafe_rate_one_sided_95_upper": 0.119158,
+    "prediction_interval_coverage": 1.0,
+    "binding_constraint_accuracy": 1.0,
+    "unsafe_cases": [],
+    "temporal_violations": []
+  },
+  "thresholds": {
+    "minimum_cases": 20,
+    "minimum_sites": 4,
+    "minimum_strata": 4,
+    "minimum_coverage": 0.95,
+    "capacity_mae_limit_mw": 0.25,
+    "capacity_p95_limit_mw": 0.5,
+    "unsafe_overstatement_tolerance_mw": 0.25,
+    "unsafe_rate_one_sided_95_upper_limit": 0.15,
+    "minimum_interval_coverage": 0.9,
+    "minimum_constraint_accuracy": 0.95
+  },
+  "numerical_gates": {
+    "minimum_case_count": true,
+    "minimum_site_count": true,
+    "minimum_stratum_count": true,
+    "outcome_coverage": true,
+    "prediction_precedes_outcome": true,
+    "capacity_mae": true,
+    "capacity_p95": true,
+    "zero_unsafe_overstatements": true,
+    "unsafe_rate_confidence_bound": true,
+    "interval_calibration": true,
+    "binding_constraint_accuracy": true
+  },
+  "evidence_gates": {
+    "operator_supplied_origin": false,
+    "prospective_protocol": false,
+    "predictions_frozen": true,
+    "operator_approved": false,
+    "permission_to_use": true,
+    "preregistration_hash": true,
+    "prediction_hash": true,
+    "outcome_hash": true,
+    "trusted_authority_signature": false
+  },
+  "evidence": {
+    "evidence_origin": "synthetic_fixture",
+    "prospective_protocol": false,
+    "predictions_frozen_before_outcomes": true,
+    "operator_approved": false,
+    "permission_to_use": true,
+    "preregistration_protocol_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "frozen_predictions_sha256": "92b4f1d76cefc6ab31bda0d579a7230c4dbc7dd733c5fd16bd059c61c9846edb",
+    "operator_outcomes_sha256": "0fa8188267840a4c1be1c7a399fa04413f127e6fa4b7b8d5a300c589447e52b0",
+    "label": "Synthetic prospective rehearsal \u2014 no operator performance claim"
+  },
+  "input_sha256": {
+    "predictions": "92b4f1d76cefc6ab31bda0d579a7230c4dbc7dd733c5fd16bd059c61c9846edb",
+    "outcomes": "0fa8188267840a4c1be1c7a399fa04413f127e6fa4b7b8d5a300c589447e52b0",
+    "evidence": "4d03ac328a9bcf6fef64a4a65657af02bfaccc94f5f86bb1361f34e92c0ec842"
+  },
+  "limitations": [
+    "Synthetic prospective fixtures do not establish real-world generalization.",
+    "A passing pilot sample does not create a connection offer or capacity reservation.",
+    "Performance claims require a pre-registered representative multi-operator study."
+  ],
+  "benchmark_sha256": "a94d465f4e263cb91590d5a9cc93d2384c5852188d7a92ea642bb3227a8444c9"
+}

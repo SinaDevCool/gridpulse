@@ -13,27 +13,32 @@ const classes: EvidenceClass[] = [
   "operator_confirmed",
 ];
 
-export function ProductTruthNotice() {
+export function ProductTruthNotice({ compact = false }: { compact?: boolean }) {
   return (
-    <aside className="product-truth" aria-label="Evidence and product scope">
+    <aside
+      className={`product-truth${compact ? " product-truth--compact" : ""}`}
+      aria-label="Evidence and product scope"
+    >
       <div className="product-truth-heading">
-        <CircleAlert size={17} />
+        <CircleAlert size={17} aria-hidden="true" />
         <div>
           <strong>Evidence status controls every conclusion</strong>
           <p>{PRODUCT_SCOPE_NOTICE}</p>
         </div>
       </div>
-      <div className="product-truth-legend">
-        {classes.map((evidenceClass) => (
-          <div key={evidenceClass}>
-            <span className={`truth-dot is-${evidenceClass}`} />
-            <p>
-              <strong>{evidenceClassLabel[evidenceClass]}</strong>
-              <small>{evidenceClassDescription[evidenceClass]}</small>
-            </p>
-          </div>
-        ))}
-      </div>
+      {!compact ? (
+        <div className="product-truth-legend">
+          {classes.map((evidenceClass) => (
+            <div key={evidenceClass}>
+              <span className={`truth-dot is-${evidenceClass}`} />
+              <p>
+                <strong>{evidenceClassLabel[evidenceClass]}</strong>
+                <small>{evidenceClassDescription[evidenceClass]}</small>
+              </p>
+            </div>
+          ))}
+        </div>
+      ) : null}
     </aside>
   );
 }

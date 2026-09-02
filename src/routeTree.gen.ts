@@ -9,7 +9,9 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WorkspacesRouteImport } from './routes/workspaces'
 import { Route as ValidationCaseRouteImport } from './routes/validation-case'
+import { Route as SyntheticNetworkStudyRouteImport } from './routes/synthetic-network-study'
 import { Route as ServiceRouteImport } from './routes/service'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as PowerFinderRouteImport } from './routes/power-finder'
@@ -17,21 +19,46 @@ import { Route as PortfolioRouteImport } from './routes/portfolio'
 import { Route as PilotRequestsRouteImport } from './routes/pilot-requests'
 import { Route as PilotReadyRouteImport } from './routes/pilot-ready'
 import { Route as PilotRouteImport } from './routes/pilot'
+import { Route as OperationsRouteImport } from './routes/operations'
+import { Route as HydrogenIndustryRouteImport } from './routes/hydrogen-industry'
 import { Route as EvidenceReviewRouteImport } from './routes/evidence-review'
 import { Route as EvidenceRouteImport } from './routes/evidence'
+import { Route as EnergyStorageRouteImport } from './routes/energy-storage'
 import { Route as DemoRouteImport } from './routes/demo'
 import { Route as DataSourcesRouteImport } from './routes/data-sources'
-import { Route as AuthRouteImport } from './routes/auth'
+import { Route as DataCentresRouteImport } from './routes/data-centres'
+import { Route as DataCentrePlannerRouteImport } from './routes/data-centre-planner'
+import { Route as ConstraintExplorerRouteImport } from './routes/constraint-explorer'
+import { Route as ActivationRouteImport } from './routes/activation'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SubmissionPackageIdRouteImport } from './routes/submission-package.$id'
+import { Route as PortfolioIdRouteImport } from './routes/portfolio.$id'
 import { Route as PilotCaseIdRouteImport } from './routes/pilot-case.$id'
 import { Route as OperatorReviewIdRouteImport } from './routes/operator-review.$id'
+import { Route as OperationsIdRouteImport } from './routes/operations.$id'
+import { Route as CapacityDossiersIdRouteImport } from './routes/capacity-dossiers.$id'
 import { Route as AssessmentsNewRouteImport } from './routes/assessments.new'
 import { Route as AssessmentsIdRouteImport } from './routes/assessments.$id'
+import { Route as ActivationIdRouteImport } from './routes/activation.$id'
+import { Route as ApiPropertiesEnrichRouteImport } from './routes/api.properties.enrich'
+import { Route as ApiPowerFinderViewportRouteImport } from './routes/api.power-finder.viewport'
+import { Route as ApiPowerFinderStudyRouteImport } from './routes/api.power-finder.study'
+import { Route as ApiPowerFinderScenarioRouteImport } from './routes/api.power-finder.scenario'
+import { Route as ApiPowerFinderTileZXYRouteImport } from './routes/api.power-finder.tile.$z.$x.$y'
 
+const WorkspacesRoute = WorkspacesRouteImport.update({
+  id: '/workspaces',
+  path: '/workspaces',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ValidationCaseRoute = ValidationCaseRouteImport.update({
   id: '/validation-case',
   path: '/validation-case',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SyntheticNetworkStudyRoute = SyntheticNetworkStudyRouteImport.update({
+  id: '/synthetic-network-study',
+  path: '/synthetic-network-study',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ServiceRoute = ServiceRouteImport.update({
@@ -69,6 +96,16 @@ const PilotRoute = PilotRouteImport.update({
   path: '/pilot',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OperationsRoute = OperationsRouteImport.update({
+  id: '/operations',
+  path: '/operations',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HydrogenIndustryRoute = HydrogenIndustryRouteImport.update({
+  id: '/hydrogen-industry',
+  path: '/hydrogen-industry',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EvidenceReviewRoute = EvidenceReviewRouteImport.update({
   id: '/evidence-review',
   path: '/evidence-review',
@@ -77,6 +114,11 @@ const EvidenceReviewRoute = EvidenceReviewRouteImport.update({
 const EvidenceRoute = EvidenceRouteImport.update({
   id: '/evidence',
   path: '/evidence',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EnergyStorageRoute = EnergyStorageRouteImport.update({
+  id: '/energy-storage',
+  path: '/energy-storage',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DemoRoute = DemoRouteImport.update({
@@ -89,9 +131,24 @@ const DataSourcesRoute = DataSourcesRouteImport.update({
   path: '/data-sources',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
+const DataCentresRoute = DataCentresRouteImport.update({
+  id: '/data-centres',
+  path: '/data-centres',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DataCentrePlannerRoute = DataCentrePlannerRouteImport.update({
+  id: '/data-centre-planner',
+  path: '/data-centre-planner',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConstraintExplorerRoute = ConstraintExplorerRouteImport.update({
+  id: '/constraint-explorer',
+  path: '/constraint-explorer',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ActivationRoute = ActivationRouteImport.update({
+  id: '/activation',
+  path: '/activation',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -104,6 +161,11 @@ const SubmissionPackageIdRoute = SubmissionPackageIdRouteImport.update({
   path: '/submission-package/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PortfolioIdRoute = PortfolioIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => PortfolioRoute,
+} as any)
 const PilotCaseIdRoute = PilotCaseIdRouteImport.update({
   id: '/pilot-case/$id',
   path: '/pilot-case/$id',
@@ -112,6 +174,16 @@ const PilotCaseIdRoute = PilotCaseIdRouteImport.update({
 const OperatorReviewIdRoute = OperatorReviewIdRouteImport.update({
   id: '/operator-review/$id',
   path: '/operator-review/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OperationsIdRoute = OperationsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => OperationsRoute,
+} as any)
+const CapacityDossiersIdRoute = CapacityDossiersIdRouteImport.update({
+  id: '/capacity-dossiers/$id',
+  path: '/capacity-dossiers/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AssessmentsNewRoute = AssessmentsNewRouteImport.update({
@@ -124,80 +196,167 @@ const AssessmentsIdRoute = AssessmentsIdRouteImport.update({
   path: '/assessments/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ActivationIdRoute = ActivationIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ActivationRoute,
+} as any)
+const ApiPropertiesEnrichRoute = ApiPropertiesEnrichRouteImport.update({
+  id: '/api/properties/enrich',
+  path: '/api/properties/enrich',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPowerFinderViewportRoute = ApiPowerFinderViewportRouteImport.update({
+  id: '/api/power-finder/viewport',
+  path: '/api/power-finder/viewport',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPowerFinderStudyRoute = ApiPowerFinderStudyRouteImport.update({
+  id: '/api/power-finder/study',
+  path: '/api/power-finder/study',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPowerFinderScenarioRoute = ApiPowerFinderScenarioRouteImport.update({
+  id: '/api/power-finder/scenario',
+  path: '/api/power-finder/scenario',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPowerFinderTileZXYRoute = ApiPowerFinderTileZXYRouteImport.update({
+  id: '/api/power-finder/tile/$z/$x/$y',
+  path: '/api/power-finder/tile/$z/$x/$y',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
+  '/activation': typeof ActivationRouteWithChildren
+  '/constraint-explorer': typeof ConstraintExplorerRoute
+  '/data-centre-planner': typeof DataCentrePlannerRoute
+  '/data-centres': typeof DataCentresRoute
   '/data-sources': typeof DataSourcesRoute
   '/demo': typeof DemoRoute
+  '/energy-storage': typeof EnergyStorageRoute
   '/evidence': typeof EvidenceRoute
   '/evidence-review': typeof EvidenceReviewRoute
+  '/hydrogen-industry': typeof HydrogenIndustryRoute
+  '/operations': typeof OperationsRouteWithChildren
   '/pilot': typeof PilotRoute
   '/pilot-ready': typeof PilotReadyRoute
   '/pilot-requests': typeof PilotRequestsRoute
-  '/portfolio': typeof PortfolioRoute
+  '/portfolio': typeof PortfolioRouteWithChildren
   '/power-finder': typeof PowerFinderRoute
   '/reports': typeof ReportsRoute
   '/service': typeof ServiceRoute
+  '/synthetic-network-study': typeof SyntheticNetworkStudyRoute
   '/validation-case': typeof ValidationCaseRoute
+  '/workspaces': typeof WorkspacesRoute
+  '/activation/$id': typeof ActivationIdRoute
   '/assessments/$id': typeof AssessmentsIdRoute
   '/assessments/new': typeof AssessmentsNewRoute
+  '/capacity-dossiers/$id': typeof CapacityDossiersIdRoute
+  '/operations/$id': typeof OperationsIdRoute
   '/operator-review/$id': typeof OperatorReviewIdRoute
   '/pilot-case/$id': typeof PilotCaseIdRoute
+  '/portfolio/$id': typeof PortfolioIdRoute
   '/submission-package/$id': typeof SubmissionPackageIdRoute
+  '/api/power-finder/scenario': typeof ApiPowerFinderScenarioRoute
+  '/api/power-finder/study': typeof ApiPowerFinderStudyRoute
+  '/api/power-finder/viewport': typeof ApiPowerFinderViewportRoute
+  '/api/properties/enrich': typeof ApiPropertiesEnrichRoute
+  '/api/power-finder/tile/$z/$x/$y': typeof ApiPowerFinderTileZXYRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
+  '/activation': typeof ActivationRouteWithChildren
+  '/constraint-explorer': typeof ConstraintExplorerRoute
+  '/data-centre-planner': typeof DataCentrePlannerRoute
+  '/data-centres': typeof DataCentresRoute
   '/data-sources': typeof DataSourcesRoute
   '/demo': typeof DemoRoute
+  '/energy-storage': typeof EnergyStorageRoute
   '/evidence': typeof EvidenceRoute
   '/evidence-review': typeof EvidenceReviewRoute
+  '/hydrogen-industry': typeof HydrogenIndustryRoute
+  '/operations': typeof OperationsRouteWithChildren
   '/pilot': typeof PilotRoute
   '/pilot-ready': typeof PilotReadyRoute
   '/pilot-requests': typeof PilotRequestsRoute
-  '/portfolio': typeof PortfolioRoute
+  '/portfolio': typeof PortfolioRouteWithChildren
   '/power-finder': typeof PowerFinderRoute
   '/reports': typeof ReportsRoute
   '/service': typeof ServiceRoute
+  '/synthetic-network-study': typeof SyntheticNetworkStudyRoute
   '/validation-case': typeof ValidationCaseRoute
+  '/workspaces': typeof WorkspacesRoute
+  '/activation/$id': typeof ActivationIdRoute
   '/assessments/$id': typeof AssessmentsIdRoute
   '/assessments/new': typeof AssessmentsNewRoute
+  '/capacity-dossiers/$id': typeof CapacityDossiersIdRoute
+  '/operations/$id': typeof OperationsIdRoute
   '/operator-review/$id': typeof OperatorReviewIdRoute
   '/pilot-case/$id': typeof PilotCaseIdRoute
+  '/portfolio/$id': typeof PortfolioIdRoute
   '/submission-package/$id': typeof SubmissionPackageIdRoute
+  '/api/power-finder/scenario': typeof ApiPowerFinderScenarioRoute
+  '/api/power-finder/study': typeof ApiPowerFinderStudyRoute
+  '/api/power-finder/viewport': typeof ApiPowerFinderViewportRoute
+  '/api/properties/enrich': typeof ApiPropertiesEnrichRoute
+  '/api/power-finder/tile/$z/$x/$y': typeof ApiPowerFinderTileZXYRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
+  '/activation': typeof ActivationRouteWithChildren
+  '/constraint-explorer': typeof ConstraintExplorerRoute
+  '/data-centre-planner': typeof DataCentrePlannerRoute
+  '/data-centres': typeof DataCentresRoute
   '/data-sources': typeof DataSourcesRoute
   '/demo': typeof DemoRoute
+  '/energy-storage': typeof EnergyStorageRoute
   '/evidence': typeof EvidenceRoute
   '/evidence-review': typeof EvidenceReviewRoute
+  '/hydrogen-industry': typeof HydrogenIndustryRoute
+  '/operations': typeof OperationsRouteWithChildren
   '/pilot': typeof PilotRoute
   '/pilot-ready': typeof PilotReadyRoute
   '/pilot-requests': typeof PilotRequestsRoute
-  '/portfolio': typeof PortfolioRoute
+  '/portfolio': typeof PortfolioRouteWithChildren
   '/power-finder': typeof PowerFinderRoute
   '/reports': typeof ReportsRoute
   '/service': typeof ServiceRoute
+  '/synthetic-network-study': typeof SyntheticNetworkStudyRoute
   '/validation-case': typeof ValidationCaseRoute
+  '/workspaces': typeof WorkspacesRoute
+  '/activation/$id': typeof ActivationIdRoute
   '/assessments/$id': typeof AssessmentsIdRoute
   '/assessments/new': typeof AssessmentsNewRoute
+  '/capacity-dossiers/$id': typeof CapacityDossiersIdRoute
+  '/operations/$id': typeof OperationsIdRoute
   '/operator-review/$id': typeof OperatorReviewIdRoute
   '/pilot-case/$id': typeof PilotCaseIdRoute
+  '/portfolio/$id': typeof PortfolioIdRoute
   '/submission-package/$id': typeof SubmissionPackageIdRoute
+  '/api/power-finder/scenario': typeof ApiPowerFinderScenarioRoute
+  '/api/power-finder/study': typeof ApiPowerFinderStudyRoute
+  '/api/power-finder/viewport': typeof ApiPowerFinderViewportRoute
+  '/api/properties/enrich': typeof ApiPropertiesEnrichRoute
+  '/api/power-finder/tile/$z/$x/$y': typeof ApiPowerFinderTileZXYRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/auth'
+    | '/activation'
+    | '/constraint-explorer'
+    | '/data-centre-planner'
+    | '/data-centres'
     | '/data-sources'
     | '/demo'
+    | '/energy-storage'
     | '/evidence'
     | '/evidence-review'
+    | '/hydrogen-industry'
+    | '/operations'
     | '/pilot'
     | '/pilot-ready'
     | '/pilot-requests'
@@ -205,20 +364,37 @@ export interface FileRouteTypes {
     | '/power-finder'
     | '/reports'
     | '/service'
+    | '/synthetic-network-study'
     | '/validation-case'
+    | '/workspaces'
+    | '/activation/$id'
     | '/assessments/$id'
     | '/assessments/new'
+    | '/capacity-dossiers/$id'
+    | '/operations/$id'
     | '/operator-review/$id'
     | '/pilot-case/$id'
+    | '/portfolio/$id'
     | '/submission-package/$id'
+    | '/api/power-finder/scenario'
+    | '/api/power-finder/study'
+    | '/api/power-finder/viewport'
+    | '/api/properties/enrich'
+    | '/api/power-finder/tile/$z/$x/$y'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/auth'
+    | '/activation'
+    | '/constraint-explorer'
+    | '/data-centre-planner'
+    | '/data-centres'
     | '/data-sources'
     | '/demo'
+    | '/energy-storage'
     | '/evidence'
     | '/evidence-review'
+    | '/hydrogen-industry'
+    | '/operations'
     | '/pilot'
     | '/pilot-ready'
     | '/pilot-requests'
@@ -226,20 +402,37 @@ export interface FileRouteTypes {
     | '/power-finder'
     | '/reports'
     | '/service'
+    | '/synthetic-network-study'
     | '/validation-case'
+    | '/workspaces'
+    | '/activation/$id'
     | '/assessments/$id'
     | '/assessments/new'
+    | '/capacity-dossiers/$id'
+    | '/operations/$id'
     | '/operator-review/$id'
     | '/pilot-case/$id'
+    | '/portfolio/$id'
     | '/submission-package/$id'
+    | '/api/power-finder/scenario'
+    | '/api/power-finder/study'
+    | '/api/power-finder/viewport'
+    | '/api/properties/enrich'
+    | '/api/power-finder/tile/$z/$x/$y'
   id:
     | '__root__'
     | '/'
-    | '/auth'
+    | '/activation'
+    | '/constraint-explorer'
+    | '/data-centre-planner'
+    | '/data-centres'
     | '/data-sources'
     | '/demo'
+    | '/energy-storage'
     | '/evidence'
     | '/evidence-review'
+    | '/hydrogen-industry'
+    | '/operations'
     | '/pilot'
     | '/pilot-ready'
     | '/pilot-requests'
@@ -247,43 +440,82 @@ export interface FileRouteTypes {
     | '/power-finder'
     | '/reports'
     | '/service'
+    | '/synthetic-network-study'
     | '/validation-case'
+    | '/workspaces'
+    | '/activation/$id'
     | '/assessments/$id'
     | '/assessments/new'
+    | '/capacity-dossiers/$id'
+    | '/operations/$id'
     | '/operator-review/$id'
     | '/pilot-case/$id'
+    | '/portfolio/$id'
     | '/submission-package/$id'
+    | '/api/power-finder/scenario'
+    | '/api/power-finder/study'
+    | '/api/power-finder/viewport'
+    | '/api/properties/enrich'
+    | '/api/power-finder/tile/$z/$x/$y'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AuthRoute: typeof AuthRoute
+  ActivationRoute: typeof ActivationRouteWithChildren
+  ConstraintExplorerRoute: typeof ConstraintExplorerRoute
+  DataCentrePlannerRoute: typeof DataCentrePlannerRoute
+  DataCentresRoute: typeof DataCentresRoute
   DataSourcesRoute: typeof DataSourcesRoute
   DemoRoute: typeof DemoRoute
+  EnergyStorageRoute: typeof EnergyStorageRoute
   EvidenceRoute: typeof EvidenceRoute
   EvidenceReviewRoute: typeof EvidenceReviewRoute
+  HydrogenIndustryRoute: typeof HydrogenIndustryRoute
+  OperationsRoute: typeof OperationsRouteWithChildren
   PilotRoute: typeof PilotRoute
   PilotReadyRoute: typeof PilotReadyRoute
   PilotRequestsRoute: typeof PilotRequestsRoute
-  PortfolioRoute: typeof PortfolioRoute
+  PortfolioRoute: typeof PortfolioRouteWithChildren
   PowerFinderRoute: typeof PowerFinderRoute
   ReportsRoute: typeof ReportsRoute
   ServiceRoute: typeof ServiceRoute
+  SyntheticNetworkStudyRoute: typeof SyntheticNetworkStudyRoute
   ValidationCaseRoute: typeof ValidationCaseRoute
+  WorkspacesRoute: typeof WorkspacesRoute
   AssessmentsIdRoute: typeof AssessmentsIdRoute
   AssessmentsNewRoute: typeof AssessmentsNewRoute
+  CapacityDossiersIdRoute: typeof CapacityDossiersIdRoute
   OperatorReviewIdRoute: typeof OperatorReviewIdRoute
   PilotCaseIdRoute: typeof PilotCaseIdRoute
   SubmissionPackageIdRoute: typeof SubmissionPackageIdRoute
+  ApiPowerFinderScenarioRoute: typeof ApiPowerFinderScenarioRoute
+  ApiPowerFinderStudyRoute: typeof ApiPowerFinderStudyRoute
+  ApiPowerFinderViewportRoute: typeof ApiPowerFinderViewportRoute
+  ApiPropertiesEnrichRoute: typeof ApiPropertiesEnrichRoute
+  ApiPowerFinderTileZXYRoute: typeof ApiPowerFinderTileZXYRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/workspaces': {
+      id: '/workspaces'
+      path: '/workspaces'
+      fullPath: '/workspaces'
+      preLoaderRoute: typeof WorkspacesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/validation-case': {
       id: '/validation-case'
       path: '/validation-case'
       fullPath: '/validation-case'
       preLoaderRoute: typeof ValidationCaseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/synthetic-network-study': {
+      id: '/synthetic-network-study'
+      path: '/synthetic-network-study'
+      fullPath: '/synthetic-network-study'
+      preLoaderRoute: typeof SyntheticNetworkStudyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/service': {
@@ -335,6 +567,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PilotRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/operations': {
+      id: '/operations'
+      path: '/operations'
+      fullPath: '/operations'
+      preLoaderRoute: typeof OperationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/hydrogen-industry': {
+      id: '/hydrogen-industry'
+      path: '/hydrogen-industry'
+      fullPath: '/hydrogen-industry'
+      preLoaderRoute: typeof HydrogenIndustryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/evidence-review': {
       id: '/evidence-review'
       path: '/evidence-review'
@@ -347,6 +593,13 @@ declare module '@tanstack/react-router' {
       path: '/evidence'
       fullPath: '/evidence'
       preLoaderRoute: typeof EvidenceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/energy-storage': {
+      id: '/energy-storage'
+      path: '/energy-storage'
+      fullPath: '/energy-storage'
+      preLoaderRoute: typeof EnergyStorageRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/demo': {
@@ -363,11 +616,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DataSourcesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
+    '/data-centres': {
+      id: '/data-centres'
+      path: '/data-centres'
+      fullPath: '/data-centres'
+      preLoaderRoute: typeof DataCentresRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/data-centre-planner': {
+      id: '/data-centre-planner'
+      path: '/data-centre-planner'
+      fullPath: '/data-centre-planner'
+      preLoaderRoute: typeof DataCentrePlannerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/constraint-explorer': {
+      id: '/constraint-explorer'
+      path: '/constraint-explorer'
+      fullPath: '/constraint-explorer'
+      preLoaderRoute: typeof ConstraintExplorerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/activation': {
+      id: '/activation'
+      path: '/activation'
+      fullPath: '/activation'
+      preLoaderRoute: typeof ActivationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -384,6 +658,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SubmissionPackageIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/portfolio/$id': {
+      id: '/portfolio/$id'
+      path: '/$id'
+      fullPath: '/portfolio/$id'
+      preLoaderRoute: typeof PortfolioIdRouteImport
+      parentRoute: typeof PortfolioRoute
+    }
     '/pilot-case/$id': {
       id: '/pilot-case/$id'
       path: '/pilot-case/$id'
@@ -396,6 +677,20 @@ declare module '@tanstack/react-router' {
       path: '/operator-review/$id'
       fullPath: '/operator-review/$id'
       preLoaderRoute: typeof OperatorReviewIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/operations/$id': {
+      id: '/operations/$id'
+      path: '/$id'
+      fullPath: '/operations/$id'
+      preLoaderRoute: typeof OperationsIdRouteImport
+      parentRoute: typeof OperationsRoute
+    }
+    '/capacity-dossiers/$id': {
+      id: '/capacity-dossiers/$id'
+      path: '/capacity-dossiers/$id'
+      fullPath: '/capacity-dossiers/$id'
+      preLoaderRoute: typeof CapacityDossiersIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/assessments/new': {
@@ -412,29 +707,121 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AssessmentsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/activation/$id': {
+      id: '/activation/$id'
+      path: '/$id'
+      fullPath: '/activation/$id'
+      preLoaderRoute: typeof ActivationIdRouteImport
+      parentRoute: typeof ActivationRoute
+    }
+    '/api/properties/enrich': {
+      id: '/api/properties/enrich'
+      path: '/api/properties/enrich'
+      fullPath: '/api/properties/enrich'
+      preLoaderRoute: typeof ApiPropertiesEnrichRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/power-finder/viewport': {
+      id: '/api/power-finder/viewport'
+      path: '/api/power-finder/viewport'
+      fullPath: '/api/power-finder/viewport'
+      preLoaderRoute: typeof ApiPowerFinderViewportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/power-finder/study': {
+      id: '/api/power-finder/study'
+      path: '/api/power-finder/study'
+      fullPath: '/api/power-finder/study'
+      preLoaderRoute: typeof ApiPowerFinderStudyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/power-finder/scenario': {
+      id: '/api/power-finder/scenario'
+      path: '/api/power-finder/scenario'
+      fullPath: '/api/power-finder/scenario'
+      preLoaderRoute: typeof ApiPowerFinderScenarioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/power-finder/tile/$z/$x/$y': {
+      id: '/api/power-finder/tile/$z/$x/$y'
+      path: '/api/power-finder/tile/$z/$x/$y'
+      fullPath: '/api/power-finder/tile/$z/$x/$y'
+      preLoaderRoute: typeof ApiPowerFinderTileZXYRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
+interface ActivationRouteChildren {
+  ActivationIdRoute: typeof ActivationIdRoute
+}
+
+const ActivationRouteChildren: ActivationRouteChildren = {
+  ActivationIdRoute: ActivationIdRoute,
+}
+
+const ActivationRouteWithChildren = ActivationRoute._addFileChildren(
+  ActivationRouteChildren,
+)
+
+interface OperationsRouteChildren {
+  OperationsIdRoute: typeof OperationsIdRoute
+}
+
+const OperationsRouteChildren: OperationsRouteChildren = {
+  OperationsIdRoute: OperationsIdRoute,
+}
+
+const OperationsRouteWithChildren = OperationsRoute._addFileChildren(
+  OperationsRouteChildren,
+)
+
+interface PortfolioRouteChildren {
+  PortfolioIdRoute: typeof PortfolioIdRoute
+}
+
+const PortfolioRouteChildren: PortfolioRouteChildren = {
+  PortfolioIdRoute: PortfolioIdRoute,
+}
+
+const PortfolioRouteWithChildren = PortfolioRoute._addFileChildren(
+  PortfolioRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AuthRoute: AuthRoute,
+  ActivationRoute: ActivationRouteWithChildren,
+  ConstraintExplorerRoute: ConstraintExplorerRoute,
+  DataCentrePlannerRoute: DataCentrePlannerRoute,
+  DataCentresRoute: DataCentresRoute,
   DataSourcesRoute: DataSourcesRoute,
   DemoRoute: DemoRoute,
+  EnergyStorageRoute: EnergyStorageRoute,
   EvidenceRoute: EvidenceRoute,
   EvidenceReviewRoute: EvidenceReviewRoute,
+  HydrogenIndustryRoute: HydrogenIndustryRoute,
+  OperationsRoute: OperationsRouteWithChildren,
   PilotRoute: PilotRoute,
   PilotReadyRoute: PilotReadyRoute,
   PilotRequestsRoute: PilotRequestsRoute,
-  PortfolioRoute: PortfolioRoute,
+  PortfolioRoute: PortfolioRouteWithChildren,
   PowerFinderRoute: PowerFinderRoute,
   ReportsRoute: ReportsRoute,
   ServiceRoute: ServiceRoute,
+  SyntheticNetworkStudyRoute: SyntheticNetworkStudyRoute,
   ValidationCaseRoute: ValidationCaseRoute,
+  WorkspacesRoute: WorkspacesRoute,
   AssessmentsIdRoute: AssessmentsIdRoute,
   AssessmentsNewRoute: AssessmentsNewRoute,
+  CapacityDossiersIdRoute: CapacityDossiersIdRoute,
   OperatorReviewIdRoute: OperatorReviewIdRoute,
   PilotCaseIdRoute: PilotCaseIdRoute,
   SubmissionPackageIdRoute: SubmissionPackageIdRoute,
+  ApiPowerFinderScenarioRoute: ApiPowerFinderScenarioRoute,
+  ApiPowerFinderStudyRoute: ApiPowerFinderStudyRoute,
+  ApiPowerFinderViewportRoute: ApiPowerFinderViewportRoute,
+  ApiPropertiesEnrichRoute: ApiPropertiesEnrichRoute,
+  ApiPowerFinderTileZXYRoute: ApiPowerFinderTileZXYRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
