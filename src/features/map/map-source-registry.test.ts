@@ -33,6 +33,8 @@ describe("map source registry", () => {
       registry: "ready",
     });
     expect(result.health).toBe("live");
+    expect(sourceSupportsKind(result, "generation_asset")).toBe(true);
+    expect(sourceSupportsKind(result, "storage_asset")).toBe(true);
   });
 
   it("preserves explicit layer coverage", () => {

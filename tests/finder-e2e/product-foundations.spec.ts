@@ -29,11 +29,15 @@ test("theme persists and constraint filters are URL-addressable", async ({ page 
     page.getByRole("heading", { name: "Understand what may constrain a site" }),
   ).toBeVisible();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-  await expect.poll(() => page.evaluate(() => localStorage.getItem("gridpulse-theme"))).toBe("dark");
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem("gridpulse-theme")))
+    .toBe("dark");
   const theme = page.getByRole("button", { name: "Theme: dark. Switch to light." });
   await expect(theme).toBeVisible();
   await theme.click();
-  await expect.poll(() => page.evaluate(() => localStorage.getItem("gridpulse-theme"))).toBe("light");
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem("gridpulse-theme")))
+    .toBe("light");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
   await page.goto("/constraint-explorer?severity=critical");
   await expect(page).toHaveURL(/severity=critical/);

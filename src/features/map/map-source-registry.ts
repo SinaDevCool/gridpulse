@@ -71,7 +71,15 @@ export function resolveMapSourceSummary(
   collection: PowerFinderCollection,
   runtime: MapRuntimeSourceStatus = {},
 ): MapSourceSummary {
-  const availableKinds = collection.metadata.available_kinds ?? ALL_KINDS;
+  const availableKinds = new Set(collection.metadata.available_kinds ?? ALL_KINDS);
+  if (runtime.grid === "ready") {
+    availableKinds.add("node");
+    availableKinds.add("line");
+  }
+  if (runtime.registry === "ready") {
+    availableKinds.add("generation_asset");
+    availableKinds.add("storage_asset");
+  }
   const voltageCoverage = collection.metadata.voltage_coverage ?? {
     ehv: "accepted_partial",
     "220kv": "accepted_partial",
@@ -88,7 +96,7 @@ export function resolveMapSourceSummary(
     geographicScope: collection.metadata.geographic_scope,
     health: inferHealth(collection, runtime),
     evidenceBoundary: collection.metadata.evidence_boundary,
-    availableKinds,
+    availableKinds: [...availableKinds],
     kindCounts: collection.metadata.kind_counts ?? {},
     voltageCoverage,
     layerSources: GERMANY_MAP_SOURCES,

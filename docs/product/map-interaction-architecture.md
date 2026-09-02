@@ -32,3 +32,5 @@ is not a runtime dependency and must not be imported into the product applicatio
   not hide a healthy national registry source, and a tile failure remains explicit source status.
 - Germany-wide low-zoom generation and storage use deterministic aggregates owned by
   `power_finder_public_registry_tile`; exact published locations appear at investigable zooms.
+- The runtime aggregate is read from `power_finder_registry_overview`; the governed data-release
+  process refreshes that materialized projection after activating a new canonical MaStR release.
