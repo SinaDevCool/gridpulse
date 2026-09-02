@@ -117,15 +117,35 @@ describe("public Power Finder API", () => {
     });
   });
 
-  it("returns a controlled error when the public origin is unavailable", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("denied", { status: 403 })));
+  it("serves the accepted static artifact when the public origin is unavailable", async () => {
+    const origin = vi
+      .fn()
+      .mockResolvedValueOnce(new Response("denied", { status: 403 }))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            type: "FeatureCollection",
+            metadata: { evidence_boundary: "Open mapping for early screening only." },
+            features: [
+              { type: "Feature", geometry: null, properties: { kind: "node" } },
+              { type: "Feature", geometry: null, properties: { kind: "line" } },
+            ],
+          }),
+          { status: 200 },
+        ),
+      );
+    vi.stubGlobal("fetch", origin);
     const response = await handlePublicPowerFinderRequest(new Request(viewportUrl), {
       SUPABASE_URL: "https://example.supabase.co",
       SUPABASE_PUBLISHABLE_KEY: "sb_publishable_test",
     });
-    expect(response?.status).toBe(502);
-    await expect(response?.json()).resolves.toEqual({
-      error: "Public Finder data is temporarily unavailable.",
+    expect(response?.status).toBe(200);
+    expect(response?.headers.get("x-gridpulse-data-mode")).toBe("accepted-static-fallback");
+    await expect(response?.json()).resolves.toMatchObject({
+      metadata: {
+        available_kinds: ["node", "line"],
+        coverage_status: "accepted_static_fallback",
+      },
     });
   });
 

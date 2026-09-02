@@ -34,11 +34,11 @@ const availableKinds = new Set(collection.metadata?.available_kinds ?? []);
 if (!["node", "line", "industrial_site"].every((kind) => availableKinds.has(kind))) {
   throw new Error("Public viewport is missing required topology layers.");
 }
-if (!availableKinds.has("generation_asset")) {
-  throw new Error("Public viewport does not advertise registered generation.");
-}
-if (!availableKinds.has("storage_asset")) {
-  throw new Error("Public viewport does not advertise registered storage.");
+if (
+  collection.metadata?.coverage_status !== "accepted_static_fallback" &&
+  (!availableKinds.has("generation_asset") || !availableKinds.has("storage_asset"))
+) {
+  throw new Error("Live public viewport does not advertise registered generation and storage.");
 }
 
 const scenarioResponse = await fetch(new URL("/api/power-finder/scenario", baseUrl), {

@@ -1,4 +1,5 @@
 const PUBLIC_VIEWPORT_PATH = "/api/power-finder/viewport";
+const ACCEPTED_STATIC_FALLBACK_PATH = "/power-finder/brandenburg-osm.json";
 const PUBLIC_TILE_PATTERN = /^\/api\/power-finder\/tile\/(\d+)\/(\d+)\/(\d+)$/;
 const CACHE_SECONDS = 300;
 const TILE_CACHE_RELEASE = "20260812-progressive-technology-v1";
@@ -93,6 +94,41 @@ function jsonResponse(body: unknown, status: number, extraHeaders?: HeadersInit)
   });
 }
 
+async function acceptedStaticFallback(requestUrl: URL) {
+  try {
+    const response = await fetch(new URL(ACCEPTED_STATIC_FALLBACK_PATH, requestUrl.origin));
+    if (!response.ok) return null;
+    const payload = (await response.json()) as {
+      type?: string;
+      metadata?: Record<string, unknown>;
+      features?: Array<{ properties?: { kind?: string } }>;
+    };
+    if (payload.type !== "FeatureCollection" || !Array.isArray(payload.features)) return null;
+    const availableKinds = [
+      ...new Set(payload.features.map((feature) => feature.properties?.kind).filter(Boolean)),
+    ];
+    return jsonResponse(
+      {
+        ...payload,
+        metadata: {
+          ...payload.metadata,
+          record_count: payload.features.length,
+          available_kinds: availableKinds,
+          coverage_status: "accepted_static_fallback",
+          fallback_reason: "live_public_origin_unavailable",
+        },
+      },
+      200,
+      {
+        "cache-control": "public, max-age=60, s-maxage=300, stale-if-error=3600",
+        "x-gridpulse-data-mode": "accepted-static-fallback",
+      },
+    );
+  } catch {
+    return null;
+  }
+}
+
 function environmentValue(env: PublicFinderEnv, name: "SUPABASE_URL" | "SUPABASE_PUBLISHABLE_KEY") {
   if (name === "SUPABASE_URL") {
     return env.SUPABASE_URL || env.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL;
@@ -184,6 +220,8 @@ export async function handlePublicPowerFinderRequest(
     }
     if (!response.ok) {
       console.error(`Public Finder origin returned ${response.status}.`);
+      const fallback = await acceptedStaticFallback(url);
+      if (fallback) return fallback;
       return jsonResponse({ error: "Public Finder data is temporarily unavailable." }, 502);
     }
     const responseBody = await response.text();
@@ -220,6 +258,8 @@ export async function handlePublicPowerFinderRequest(
     return publicResponse;
   } catch (error) {
     console.error(error instanceof Error ? error.message : "Public Finder origin failed.");
+    const fallback = await acceptedStaticFallback(url);
+    if (fallback) return fallback;
     return jsonResponse({ error: "Public Finder data is temporarily unavailable." }, 502);
   } finally {
     clearTimeout(timeout);

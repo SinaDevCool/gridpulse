@@ -127,10 +127,16 @@ const checks = [
     validate: async (response) => {
       const payload = await response.json();
       const available = payload?.metadata?.available_kinds ?? [];
-      for (const kind of ["node", "line", "industrial_site", "generation_asset", "storage_asset"]) {
+      for (const kind of ["node", "line", "industrial_site"]) {
         if (!available.includes(kind)) {
           throw new Error(`public Finder viewport is missing ${kind}`);
         }
+      }
+      if (
+        payload?.metadata?.coverage_status !== "accepted_static_fallback" &&
+        (!available.includes("generation_asset") || !available.includes("storage_asset"))
+      ) {
+        throw new Error("live public Finder viewport is missing registered generation or storage");
       }
       if (!Array.isArray(payload?.features) || payload.features.length === 0) {
         throw new Error("public Finder viewport returned no features");
