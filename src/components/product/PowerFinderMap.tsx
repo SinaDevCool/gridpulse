@@ -842,7 +842,10 @@ export function PowerFinderMap({
             type: "symbol",
             source: "power-finder-registry-tiles",
             "source-layer": "power_finder",
-            minzoom: 6,
+            // Country and regional views should read as a technology map, not
+            // a wall of capacity labels. Reveal values only after the user
+            // has zoomed into an investigable area.
+            minzoom: 10,
             maxzoom: 11,
             filter: generationAssetFilter(
               assetFilterRef.current.generationGroup,
@@ -889,7 +892,7 @@ export function PowerFinderMap({
             type: "symbol",
             source: "power-finder-registry-tiles",
             "source-layer": "power_finder",
-            minzoom: 11,
+            minzoom: 12,
             maxzoom: 24,
             filter: generationAssetFilter(
               assetFilterRef.current.generationGroup,
@@ -935,7 +938,7 @@ export function PowerFinderMap({
             type: "symbol",
             source: "power-finder-registry-tiles",
             "source-layer": "power_finder",
-            minzoom: 6,
+            minzoom: 11,
             maxzoom: 24,
             filter: storageAssetFilter(
               assetFilterRef.current.minimumStorageMw,

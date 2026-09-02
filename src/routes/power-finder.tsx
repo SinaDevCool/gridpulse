@@ -2821,6 +2821,12 @@ function PowerFinderPage() {
                   <small>
                     {(() => {
                       if (!collection) return "—";
+                      if (
+                        registryAssetsUnavailable &&
+                        (kind === "generation_asset" || kind === "storage_asset")
+                      ) {
+                        return "Source unavailable";
+                      }
                       const total = collection.features.filter(
                         (feature) => feature.properties.kind === kind,
                       ).length;
@@ -2838,7 +2844,7 @@ function PowerFinderPage() {
                 </label>
               ))}
             </div>
-            {(enabled.generation_asset || enabled.storage_asset) && (
+            {(enabled.generation_asset || enabled.storage_asset) && !registryAssetsUnavailable && (
               <div className="registered-capacity-filters">
                 {enabled.generation_asset ? (
                   <>
@@ -3435,17 +3441,24 @@ function PowerFinderPage() {
           >
             {showDataCentres ? (
               <div className="interactive-map-legend__custom power-finder-data-legend">
-                <b>RZReg Data Centres · 319 Records</b>
-                <span>
-                  <i className="legend-data-centre-exact" /> Published facility address · 38
-                </span>
-                <span>
-                  <i className="legend-data-centre-approximate" /> Postcode area only · 281
-                </span>
-                <small>
-                  Amber rings show an area, not a building location. Neither marker indicates
-                  available grid capacity.
-                </small>
+                <div className="power-finder-data-legend__heading">
+                  <b>Data-centre locations</b>
+                  <span className="power-finder-data-legend__source">319 RZReg records</span>
+                </div>
+                <div className="power-finder-data-legend__row">
+                  <i className="legend-data-centre-exact" aria-hidden="true" />
+                  <span>Published facility address</span>
+                  <strong>38</strong>
+                </div>
+                <div className="power-finder-data-legend__row">
+                  <i className="legend-data-centre-approximate" aria-hidden="true" />
+                  <span>Approximate postcode area</span>
+                  <strong>281</strong>
+                </div>
+                <div className="power-finder-data-legend__boundary">
+                  <strong>Location evidence only</strong>
+                  <small>Markers do not indicate grid capacity or connection availability.</small>
+                </div>
               </div>
             ) : null}
             {mapMode === "capacity" ? (

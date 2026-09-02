@@ -36,6 +36,21 @@ test("theme persists and constraint filters are URL-addressable", async ({ page 
   await expect(page.getByLabel("Severity")).toHaveValue("critical");
 });
 
+test("Power Finder rail follows the resolved light theme", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("gridpulse-theme", "light"));
+  await page.goto("/power-finder");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await expect(page.locator(".finder-workflow-switch")).toHaveCSS(
+    "background-color",
+    "rgb(255, 255, 255)",
+  );
+  await page.getByText("Map Layers", { exact: true }).click();
+  await expect(page.locator(".power-finder-layer-list label").first()).toHaveCSS(
+    "color",
+    "rgb(16, 24, 40)",
+  );
+});
+
 test("constraint legend isolates voltage and severity through shareable state", async ({
   page,
 }) => {

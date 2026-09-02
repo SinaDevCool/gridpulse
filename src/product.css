@@ -13872,7 +13872,8 @@ tbody tr:last-child td {
 }
 .power-finder-filter-grid option,
 .power-finder-candidates option {
-  background: #111a28;
+  background: var(--surface);
+  color: var(--foreground);
 }
 .power-finder-layer-list {
   display: grid;
@@ -13880,10 +13881,10 @@ tbody tr:last-child td {
 }
 .power-finder-layer-list label {
   align-items: center;
-  background: #111a28;
-  border: 1px solid #26364d;
+  background: var(--surface-elevated);
+  border: 1px solid var(--border);
   border-radius: 6px;
-  color: #dbe7f5;
+  color: var(--foreground);
   cursor: pointer;
   display: grid;
   font-size: 0.76rem;
@@ -13899,11 +13900,11 @@ tbody tr:last-child td {
   opacity: 0.55;
 }
 .power-finder-layer-list small {
-  color: #64748b;
+  color: var(--muted-foreground);
   font-family: "JetBrains Mono", monospace;
 }
 .layer-visibility-note {
-  color: #8ea4bd;
+  color: var(--muted-foreground);
   font-size: 0.7rem;
   line-height: 1.45;
   margin: 8px 0 0;
@@ -14401,6 +14402,65 @@ tbody tr:last-child td {
   max-width: 260px;
 }
 
+.power-finder-data-legend__heading,
+.power-finder-data-legend__row,
+.power-finder-data-legend__boundary {
+  display: grid;
+}
+
+.power-finder-data-legend__heading {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.power-finder-data-legend__source {
+  padding: 0.18rem 0.38rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-elevated);
+  color: var(--muted-foreground);
+  font-size: 0.56rem;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.power-finder-data-legend__row {
+  grid-template-columns: 1rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 1.75rem;
+}
+
+.power-finder-data-legend__row span {
+  color: var(--foreground);
+}
+
+.power-finder-data-legend__row strong {
+  color: color-mix(in srgb, var(--foreground) 78%, var(--surface));
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.62rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.power-finder-data-legend__boundary {
+  gap: 0.12rem;
+  margin-top: 0.15rem;
+  padding: 0.48rem 0.55rem;
+  border-radius: 0.45rem;
+  background: color-mix(in srgb, var(--warning) 9%, var(--surface));
+}
+
+.power-finder-data-legend__boundary strong {
+  color: var(--warning);
+  font-size: 0.61rem;
+}
+
+.power-finder-data-legend__boundary small {
+  color: color-mix(in srgb, var(--foreground) 78%, var(--surface));
+}
+
 @media (max-width: 720px) {
   .power-finder-legend.is-open {
     max-height: 46%;
@@ -14821,9 +14881,14 @@ tbody tr:last-child td {
   outline: 3px solid var(--ring);
   outline-offset: 2px;
 }
-.power-finder-interactive-legend {
+.interactive-map-legend.power-finder-interactive-legend {
   right: auto;
   left: 15px;
+}
+
+.interactive-map-legend.power-finder-interactive-legend.is-collapsed {
+  width: max-content;
+  max-width: calc(100% - 30px);
 }
 .registered-capacity-scale-toggle {
   display: flex !important;
@@ -16898,7 +16963,7 @@ tbody tr:last-child td {
 
 /* Desktop Power Finder usability hardening */
 .power-finder-page {
-  color-scheme: dark;
+  color-scheme: inherit;
 }
 .power-finder-sidebar {
   padding: 22px;
@@ -20326,11 +20391,11 @@ tbody tr:last-child td {
 /* Client-focused Power Finder decision rails */
 .finder-workflow-switch {
   padding: 14px 14px 0;
-  background: linear-gradient(180deg, #0b1c2b 0%, #091724 100%);
+  background: var(--surface);
 }
 .finder-workflow-switch > p {
   margin: 0 0 8px;
-  color: #7895a7;
+  color: var(--muted-foreground);
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.1em;
@@ -20341,9 +20406,9 @@ tbody tr:last-child td {
   grid-template-columns: 1fr 1fr;
   gap: 6px;
   padding: 4px;
-  border: 1px solid rgb(114 169 191 / 20%);
+  border: 1px solid var(--border);
   border-radius: 10px;
-  background: #06121d;
+  background: var(--surface-elevated);
 }
 .finder-workflow-switch button {
   display: grid;
@@ -20356,22 +20421,22 @@ tbody tr:last-child td {
   border: 1px solid transparent;
   border-radius: 7px;
   background: transparent;
-  color: #7893a4;
+  color: var(--muted-foreground);
   text-align: left;
 }
 .finder-workflow-switch button:hover {
-  background: rgb(48 111 137 / 12%);
-  color: #d9edf3;
+  background: color-mix(in srgb, var(--primary) 9%, var(--surface));
+  color: var(--foreground);
 }
 .finder-workflow-switch button.is-active {
-  border-color: #287c94;
-  background: linear-gradient(145deg, #12364a, #0b2939);
-  color: #effcff;
-  box-shadow: 0 4px 14px rgb(0 0 0 / 18%);
+  border-color: color-mix(in srgb, var(--primary) 60%, var(--border));
+  background: color-mix(in srgb, var(--primary) 13%, var(--surface));
+  color: var(--foreground);
+  box-shadow: 0 4px 14px color-mix(in srgb, #000 12%, transparent);
 }
 .finder-workflow-switch button svg {
   width: 18px;
-  color: #5fd9f2;
+  color: var(--primary);
 }
 .finder-workflow-switch button span,
 .finder-workflow-switch button strong,
@@ -20385,7 +20450,7 @@ tbody tr:last-child td {
 }
 .finder-workflow-switch button small {
   margin-top: 2px;
-  color: #7895a7;
+  color: var(--muted-foreground);
   font-size: 9px;
   line-height: 1.25;
 }

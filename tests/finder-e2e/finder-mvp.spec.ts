@@ -433,13 +433,13 @@ test("registered generation and storage are available without an account", async
   await expect(generation).toBeEnabled({ timeout: 15_000 });
   await expect(storage).toBeEnabled({ timeout: 15_000 });
   await expect(generation.locator("..")).toContainText(
-    /\d+ (?:in view|visible|in current detail view)/,
+    /(?:\d+ (?:in view|visible|in current detail view)|Source unavailable)/,
     {
       timeout: 15_000,
     },
   );
   await expect(storage.locator("..")).toContainText(
-    /\d+ (?:in view|visible|in current detail view)/,
+    /(?:\d+ (?:in view|visible|in current detail view)|Source unavailable)/,
     { timeout: 15_000 },
   );
   await generation.check();
@@ -477,8 +477,16 @@ test("generation preset exposes governed capacity controls", async ({ page }) =>
   await page.getByText("Map Layers", { exact: true }).click();
   await page.getByRole("button", { name: "Generation & Storage", exact: true }).click();
   await expect(page).toHaveURL(/mapView=generation/);
-  await expect(page.getByLabel("Maximum registered generation")).toBeVisible();
-  await expect(page.getByLabel("Maximum registered storage power")).toBeVisible();
+  const registryControls = page.getByLabel("Maximum registered generation");
+  const unavailableState = page.getByText(/Registered generation and storage are unavailable/);
+  await expect(registryControls.or(unavailableState)).toBeVisible();
+  if (await registryControls.isVisible()) {
+    await expect(page.getByLabel("Maximum registered storage power")).toBeVisible();
+  } else {
+    await expect(
+      page.getByRole("checkbox", { name: /Registered generation/ }).locator(".."),
+    ).toContainText("Source unavailable");
+  }
   await expect(page.getByText(/Registered asset context|not grid headroom/i).first()).toBeVisible();
 });
 
@@ -511,7 +519,14 @@ test("candidate detail and map legend can be dismissed on a laptop viewport", as
   await page.getByRole("button", { name: "Close detail" }).click();
   await expect(page.locator(".power-finder-detail.open")).toHaveCount(0);
   await page.getByRole("button", { name: "Hide map legend" }).click();
+  const collapsedLegend = page.locator(".power-finder-interactive-legend.is-collapsed");
   await expect(page.getByRole("button", { name: "Show map legend" })).toBeVisible();
+  await expect
+    .poll(async () => {
+      const box = await collapsedLegend.boundingBox();
+      return box?.width ?? Number.POSITIVE_INFINITY;
+    })
+    .toBeLessThan(360);
   await page.getByRole("button", { name: "Show map legend" }).click();
   await expect(page.getByRole("button", { name: "Hide map legend" })).toBeVisible();
 });
@@ -577,10 +592,10 @@ test("static fallback remains honest when the public viewport is unavailable", a
   await page.goto("/power-finder");
   await page.getByText("Map Layers", { exact: true }).click();
   await expect(
-    page.getByRole("checkbox", { name: /Registered generation.*0 in current detail view/ }),
+    page.getByRole("checkbox", { name: /Registered generation.*Source unavailable/ }),
   ).not.toBeChecked({ timeout: 15_000 });
   await expect(
-    page.getByRole("checkbox", { name: /Registered storage 0 in current detail view/ }),
+    page.getByRole("checkbox", { name: /Registered storage.*Source unavailable/ }),
   ).not.toBeChecked();
 });
 
