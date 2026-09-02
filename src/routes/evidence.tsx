@@ -15,6 +15,10 @@ export const Route = createFileRoute("/evidence")({
   component: EvidencePage,
 });
 type EvidenceRow = Evidence & { candidate_sites: { name: string } | null };
+const evidenceDate = new Intl.DateTimeFormat("en-DE", {
+  dateStyle: "medium",
+  timeStyle: "short",
+});
 function EvidencePage() {
   const { user } = useAuth();
   const query = useQuery({
@@ -41,7 +45,11 @@ function EvidencePage() {
           eyebrow="Evidence room"
           title="Evidence ledger"
           description="One traceable record for public sources, customer inputs, assumptions, calculations, and operator validation."
-          action={<Link to="/data-sources" className="secondary-button">Open source catalog</Link>}
+          action={
+            <Link to="/data-sources" className="secondary-button">
+              Open source catalog
+            </Link>
+          }
         />
         <div className="summary-grid">
           <div>
@@ -75,17 +83,19 @@ function EvidencePage() {
                   <th>Project</th>
                   <th>Source</th>
                   <th>Classification</th>
+                  <th>Confidence</th>
+                  <th>Observed</th>
                   <th>Status</th>
                 </tr>
               </thead>
               <tbody>
                 {query.isLoading ? (
                   <tr>
-                    <td colSpan={5}>Loading evidence…</td>
+                    <td colSpan={7}>Loading evidence…</td>
                   </tr>
                 ) : query.error ? (
                   <tr>
-                    <td colSpan={5}>
+                    <td colSpan={7}>
                       {query.error instanceof Error
                         ? query.error.message
                         : "Unable to load evidence"}
@@ -93,7 +103,7 @@ function EvidencePage() {
                   </tr>
                 ) : rows.length === 0 ? (
                   <tr>
-                    <td colSpan={5}>No evidence yet. Open a project to add the first item.</td>
+                    <td colSpan={7}>No evidence yet. Open a project to add the first item.</td>
                   </tr>
                 ) : (
                   rows.map((row) => (
@@ -113,6 +123,12 @@ function EvidencePage() {
                       </td>
                       <td>
                         <span className="evidence evidence-input">{label(row.classification)}</span>
+                      </td>
+                      <td>{row.confidence ? label(row.confidence) : "Not recorded"}</td>
+                      <td>
+                        {row.observed_at
+                          ? evidenceDate.format(new Date(row.observed_at))
+                          : "Not recorded"}
                       </td>
                       <td>
                         <span

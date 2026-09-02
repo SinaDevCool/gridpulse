@@ -9,4 +9,15 @@ describe("canonical map layer registry", () => {
       ),
     ).toHaveLength(1);
   });
+  it("assigns one source, legend, evidence class, and availability policy to every layer", () => {
+    for (const layer of mapLayerRegistry) {
+      expect(layer.sourceOwner).toBeTruthy();
+      expect(layer.legendGroup).toBeTruthy();
+      expect(layer.evidenceClass).toBeTruthy();
+      expect(layer.availability).toBeTruthy();
+    }
+    expect(mapLayerRegistry.find((layer) => layer.id === "phase-shifters")?.availability).toBe(
+      "operator_only",
+    );
+  });
 });

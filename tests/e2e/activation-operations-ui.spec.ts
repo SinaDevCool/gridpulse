@@ -7,13 +7,17 @@ test("public product navigation focuses on property and grid qualification", asy
     "aria-current",
     "page",
   );
-  await expect(navigation.getByRole("link", { name: /Plan Activation|Run Operations/ })).toHaveCount(0);
+  await expect(
+    navigation.getByRole("link", { name: /Plan Activation|Run Operations/ }),
+  ).toHaveCount(0);
 });
 
 test("landing page presents the focused decision journey", async ({ page }) => {
   await page.goto("/");
-  await expect(page.locator("main").getByText(/activation strategy|operational envelope/i)).toHaveCount(0);
-  await page.getByRole("link", { name: "Open Grid Workspace" }).click();
+  await expect(
+    page.locator("main").getByText(/activation strategy|operational envelope/i),
+  ).toHaveCount(0);
+  await page.getByRole("link", { name: "Explore Power Finder" }).click();
   await expect(page).toHaveURL(/\/power-finder$/);
 });
 
@@ -29,5 +33,7 @@ test("focused workspace navigation fits mobile without overflow", async ({ page 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/power-finder");
   await expect(page.getByRole("navigation", { name: "Grid workspace navigation" })).toBeVisible();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)).toBe(false);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)).toBe(
+    false,
+  );
 });

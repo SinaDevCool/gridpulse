@@ -73,6 +73,12 @@
   --amber-accent: oklch(0.82 0.16 75);
   --red-accent: oklch(0.7 0.22 25);
   --grid-line: oklch(0.3 0.02 260 / 0.6);
+  --surface-overlay: rgb(11 29 43 / 94%);
+  --success: #20b26b;
+  --warning: #d98b00;
+  --danger: #e5484d;
+  --information: #20c4e8;
+  color-scheme: dark;
 }
 
 :root[data-theme="light"] {
@@ -96,6 +102,12 @@
   --input: #b8c2cc;
   --ring: #1570ef;
   --grid-line: rgb(102 112 133 / 35%);
+  --surface-overlay: rgb(255 255 255 / 94%);
+  --success: #087a48;
+  --warning: #8a4b08;
+  --danger: #b42318;
+  --information: #08758a;
+  color-scheme: light;
 }
 
 :root[data-theme="dark"] {
@@ -109,6 +121,12 @@
   --popover-foreground: #eaf3f7;
   --border: #274356;
   --muted-foreground: #91a7b5;
+  --surface-overlay: rgb(11 29 43 / 94%);
+  --success: #4dd4aa;
+  --warning: #efb743;
+  --danger: #ff7378;
+  --information: #49d3ff;
+  color-scheme: dark;
 }
 
 .theme-control {
@@ -542,7 +560,6 @@
     color: var(--color-foreground);
   }
   html {
-    color-scheme: dark;
     scroll-behavior: smooth;
   }
   body {
@@ -567,6 +584,598 @@
 @utility font-display {
   font-family: var(--font-display);
   letter-spacing: -0.02em;
+}
+
+/* Constraint workspace: one themed map shell shared with Power Finder. */
+.constraint-explorer {
+  --constraint-panel: color-mix(in srgb, var(--surface) 96%, transparent);
+  --constraint-panel-raised: var(--surface-elevated);
+  background: var(--background);
+  color: var(--foreground);
+}
+.product-shell .section-page.constraint-explorer {
+  max-width: 1920px;
+  width: min(100% - 32px, 1920px);
+}
+.constraint-explorer .page-heading :is(h1, p),
+.constraint-explorer :is(h2, h3, strong) {
+  color: var(--foreground);
+}
+.constraint-workbench {
+  display: grid;
+  grid-template-columns: minmax(17rem, 20rem) minmax(34rem, 1fr) minmax(17rem, 21rem);
+  min-height: 44rem;
+  overflow: hidden;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 0.9rem;
+  background: var(--surface);
+  box-shadow: 0 18px 48px color-mix(in srgb, #000 14%, transparent);
+}
+.constraint-control-rail,
+.constraint-results {
+  min-width: 0;
+  overflow: auto;
+  scrollbar-color: color-mix(in srgb, var(--muted-foreground) 55%, transparent) transparent;
+  scrollbar-width: thin;
+  background: var(--constraint-panel);
+  color: var(--foreground);
+}
+.constraint-control-rail {
+  border-right: 1px solid var(--border);
+}
+.constraint-control-rail > header,
+.constraint-results > header,
+.constraint-map-legend > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+.constraint-control-rail header h2,
+.constraint-results header h2,
+.constraint-map-legend header h2 {
+  margin: 0.15rem 0 0;
+  font-size: 0.96rem;
+}
+.constraint-control-rail header svg,
+.constraint-results header svg {
+  width: 1rem;
+  color: var(--muted-foreground);
+}
+.constraint-mode-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.25rem;
+  padding: 0.7rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--constraint-panel-raised);
+}
+.constraint-mode-tabs button {
+  min-height: 2.4rem;
+  padding: 0.4rem;
+  border: 1px solid transparent;
+  border-radius: 0.45rem;
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+  font-weight: 750;
+  text-transform: capitalize;
+}
+.constraint-mode-tabs button:hover,
+.constraint-mode-tabs button.active {
+  border-color: var(--border);
+  background: var(--surface);
+  color: var(--foreground);
+}
+.constraint-mode-tabs button.active {
+  box-shadow: inset 0 -2px var(--primary);
+}
+.constraint-control-section {
+  display: block;
+  margin: 0;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+}
+.constraint-control-section > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 3rem;
+  padding: 0.7rem 1rem;
+  cursor: pointer;
+  color: var(--foreground);
+  font-size: 0.78rem;
+  font-weight: 750;
+  list-style: none;
+}
+.constraint-control-section > summary::-webkit-details-marker {
+  display: none;
+}
+.constraint-control-section > summary span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+.constraint-control-section > summary svg {
+  width: 1rem;
+  color: var(--primary);
+}
+.constraint-control-section > summary > svg {
+  color: var(--muted-foreground);
+  transition: transform 160ms ease;
+}
+.constraint-control-section[open] > summary > svg {
+  transform: rotate(180deg);
+}
+.constraint-control-section > summary:hover {
+  background: var(--constraint-panel-raised);
+}
+.constraint-control-body,
+.constraint-time-controls {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0 1rem 1rem;
+}
+.constraint-time-controls {
+  padding-top: 1rem;
+}
+.constraint-control-body > label:not(.constraint-toggle-row),
+.constraint-time-controls > label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+.constraint-time-controls label svg {
+  width: 0.9rem;
+}
+.constraint-control-body select,
+.constraint-time-controls input[type="date"] {
+  width: 100%;
+  min-height: 2.5rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 0.45rem;
+  background: var(--surface);
+  color: var(--foreground);
+}
+.constraint-time-controls input[type="range"] {
+  width: 100%;
+  accent-color: var(--primary);
+}
+.constraint-toggle-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 2.8rem;
+  cursor: pointer;
+}
+.constraint-toggle-row > span {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+}
+.constraint-toggle-row strong {
+  font-size: 0.72rem;
+}
+.constraint-toggle-row small {
+  color: var(--muted-foreground);
+  font-size: 0.62rem;
+}
+.constraint-toggle-row input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+.constraint-toggle-row > i {
+  position: relative;
+  flex: 0 0 auto;
+  width: 2rem;
+  height: 1.15rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--muted);
+}
+.constraint-toggle-row > i::after {
+  position: absolute;
+  top: 0.14rem;
+  left: 0.16rem;
+  width: 0.74rem;
+  height: 0.74rem;
+  border-radius: 50%;
+  background: var(--muted-foreground);
+  content: "";
+  transition:
+    transform 160ms ease,
+    background-color 160ms ease;
+}
+.constraint-toggle-row input:checked + i {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 25%, var(--surface));
+}
+.constraint-toggle-row input:checked + i::after {
+  transform: translateX(0.82rem);
+  background: var(--primary);
+}
+.constraint-toggle-row input:focus-visible + i {
+  outline: 3px solid var(--ring);
+  outline-offset: 2px;
+}
+.constraint-equipment-list,
+.constraint-map-legend ul {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.constraint-equipment-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+.constraint-equipment-list li > span {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--primary);
+}
+.constraint-equipment-list li div {
+  display: grid;
+}
+.constraint-equipment-list strong {
+  font-size: 0.68rem;
+}
+.constraint-equipment-list small {
+  color: var(--muted-foreground);
+  font-size: 0.6rem;
+}
+.constraint-event-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.constraint-event-legend span {
+  padding: 0.2rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.58rem;
+  font-weight: 750;
+}
+.constraint-event-legend .planned {
+  background: color-mix(in srgb, #3b82f6 18%, transparent);
+  color: #3b82f6;
+}
+.constraint-event-legend .forced {
+  background: color-mix(in srgb, var(--red-accent) 18%, transparent);
+  color: var(--red-accent);
+}
+.constraint-event-legend .derated {
+  background: color-mix(in srgb, var(--amber-accent) 20%, transparent);
+  color: #b06b00;
+}
+.constraint-map {
+  position: relative;
+  min-width: 0;
+  min-height: 44rem;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background: var(--background);
+}
+.constraint-map .power-finder-map {
+  min-height: 44rem;
+  height: 100%;
+}
+.constraint-map-caption,
+.constraint-map-evidence,
+.constraint-map-legend {
+  position: absolute;
+  z-index: 3;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  color: var(--foreground);
+  box-shadow: 0 10px 30px color-mix(in srgb, #000 18%, transparent);
+  backdrop-filter: blur(12px);
+}
+.constraint-map-caption {
+  top: 0.8rem;
+  left: 0.8rem;
+  display: grid;
+  gap: 0.15rem;
+  max-width: calc(100% - 1.6rem);
+  padding: 0.65rem 0.8rem;
+  border-radius: 0.55rem;
+}
+.constraint-map-caption span,
+.constraint-map-evidence small {
+  color: var(--muted-foreground);
+  font-size: 0.66rem;
+}
+.constraint-map-evidence {
+  bottom: 0.8rem;
+  left: 0.8rem;
+  display: grid;
+  gap: 0.2rem;
+  max-width: calc(100% - 18rem);
+  padding: 0.75rem;
+  border-radius: 0.6rem;
+}
+.constraint-map-legend {
+  right: 0.8rem;
+  bottom: 0.8rem;
+  width: min(16rem, calc(100% - 1.6rem));
+  max-height: calc(100% - 5.5rem);
+  overflow: auto;
+  border-radius: 0.65rem;
+}
+.constraint-map-legend > header {
+  padding: 0.75rem;
+}
+.constraint-map-legend section {
+  padding: 0.7rem 0.75rem;
+  border-top: 1px solid var(--border);
+}
+.constraint-map-legend h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.7rem;
+}
+.constraint-map-legend p {
+  margin: 0.45rem 0 0;
+  color: var(--muted-foreground);
+  font-size: 0.58rem;
+  line-height: 1.45;
+}
+.constraint-map-legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--muted-foreground);
+  font-size: 0.62rem;
+}
+.constraint-map-legend li i {
+  flex: 0 0 auto;
+  width: 1.25rem;
+  height: 3px;
+  background: var(--muted-foreground);
+}
+.constraint-map-legend li .voltage-380 {
+  background: #a855f7;
+}
+.constraint-map-legend li .voltage-220 {
+  background: #4f7cff;
+}
+.constraint-map-legend li .voltage-110 {
+  background: #39bdf8;
+}
+.constraint-map-legend li .voltage-low {
+  background: #36cfc9;
+}
+.constraint-map-legend li .voltage-unknown {
+  background: #64748b;
+}
+.constraint-map-legend li :is(.evidence-public, .evidence-derived, .evidence-confirmed) {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+}
+.constraint-map-legend li .evidence-public {
+  background: #10b6c7;
+}
+.constraint-map-legend li .evidence-derived {
+  background: #f5a300;
+}
+.constraint-map-legend li .evidence-confirmed {
+  background: #20b26b;
+}
+.constraint-gradient {
+  height: 0.45rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #22c55e, #facc15 52%, #ef4444);
+}
+.constraint-gradient-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.2rem;
+  color: var(--muted-foreground);
+  font-size: 0.52rem;
+}
+.constraint-results {
+  border: 0;
+  border-left: 1px solid var(--border);
+  border-radius: 0;
+}
+.constraint-results > header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--constraint-panel);
+  backdrop-filter: blur(10px);
+}
+.constraint-results header p {
+  margin: 0.15rem 0 0;
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+}
+.constraint-results > button {
+  min-height: 7rem;
+}
+.constraint-empty {
+  padding: 1rem;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+}
+.constraint-detail {
+  background: var(--surface);
+  color: var(--foreground);
+}
+.constraint-detail :is(h2, dd, strong) {
+  color: var(--foreground);
+}
+.constraint-detail :is(p, dt, li) {
+  color: var(--muted-foreground);
+}
+:root[data-theme="light"] .constraint-explorer {
+  --constraint-panel: rgb(255 255 255 / 96%);
+}
+:root[data-theme="light"] .constraint-map-caption,
+:root[data-theme="light"] .constraint-map-evidence,
+:root[data-theme="light"] .constraint-map-legend {
+  background: rgb(255 255 255 / 94%);
+  box-shadow: 0 10px 28px rgb(16 24 40 / 14%);
+}
+:root[data-theme="dark"] .constraint-explorer {
+  --constraint-panel: rgb(11 29 43 / 96%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .constraint-control-section > summary > svg,
+  .constraint-toggle-row > i::after {
+    transition: none;
+  }
+}
+@media (max-width: 1280px) {
+  .constraint-workbench {
+    grid-template-columns: 18rem minmax(30rem, 1fr);
+  }
+  .constraint-results {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    border-top: 1px solid var(--border);
+    border-left: 0;
+  }
+  .constraint-results > header {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 800px) {
+  .product-shell .section-page.constraint-explorer {
+    width: 100%;
+    padding-inline: 0;
+  }
+  .constraint-explorer > :not(.constraint-workbench) {
+    margin-inline: 1rem;
+  }
+  .constraint-workbench {
+    grid-template-columns: 1fr;
+    border-inline: 0;
+    border-radius: 0;
+  }
+  .constraint-control-rail {
+    max-height: 32rem;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .constraint-map,
+  .constraint-map .power-finder-map {
+    min-height: 32rem;
+  }
+  .constraint-results {
+    grid-template-columns: 1fr;
+  }
+  .constraint-map-legend {
+    max-height: 18rem;
+  }
+  .constraint-map-evidence {
+    display: none;
+  }
+}
+
+/* Canonical workspace surfaces. Product pages inherit these tokens in both themes. */
+.product-shell {
+  background: var(--background);
+  color: var(--foreground);
+}
+.product-shell .power-finder-page {
+  background: var(--background);
+  color: var(--foreground);
+  color-scheme: inherit;
+}
+.product-shell :where(.section-page, .dca-shell) {
+  background-color: var(--background);
+  color: var(--foreground);
+}
+.product-shell
+  :where(
+    .data-panel,
+    .summary-grid > div,
+    .capability-prerequisite,
+    .workflow-showcase,
+    .dca-card,
+    .dca-metric,
+    .dca-empty,
+    .dca-drawer
+  ) {
+  border-color: var(--border);
+  background-color: var(--surface);
+  color: var(--foreground);
+}
+.product-shell
+  :where(
+    .data-panel,
+    .summary-grid,
+    .capability-prerequisite,
+    .workflow-showcase,
+    .dca-shell,
+    .dca-card,
+    .dca-metric,
+    .dca-drawer
+  )
+  :where(h1, h2, h3, strong, b, dd) {
+  color: var(--foreground);
+}
+.product-shell
+  :where(
+    .data-panel,
+    .summary-grid,
+    .capability-prerequisite,
+    .workflow-showcase,
+    .dca-shell,
+    .dca-card,
+    .dca-metric,
+    .dca-drawer
+  )
+  :where(p, small, dt) {
+  color: var(--muted-foreground);
+}
+.product-shell :where(.product-table th, .section-toolbar) {
+  border-color: var(--border);
+  background: var(--surface-elevated);
+  color: var(--foreground);
+}
+.product-shell .product-table :where(td, th) {
+  border-color: var(--border);
+}
+.product-shell .product-table td {
+  background: var(--surface);
+  color: var(--foreground);
+}
+.product-shell :where(input, select, textarea) {
+  border-color: var(--input);
+  background-color: var(--surface);
+  color: var(--foreground);
+}
+.product-shell :where(input, select, textarea)::placeholder {
+  color: var(--muted-foreground);
+}
+.product-shell :where(.app-header, .product-stage-navigation) {
+  border-color: var(--border);
+  background: color-mix(in srgb, var(--surface) 96%, transparent);
+  color: var(--foreground);
+}
+.product-shell .product-footer {
+  border-color: var(--border);
+  background: var(--surface-elevated);
+  color: var(--muted-foreground);
 }
 @utility font-mono-data {
   font-family: var(--font-mono);

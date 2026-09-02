@@ -1,12 +1,21 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Database, ShieldCheck } from "lucide-react";
+import {
+  AlertTriangle,
+  CalendarDays,
+  ChevronDown,
+  CircleDot,
+  Database,
+  Info,
+  Layers3,
+  ShieldCheck,
+} from "lucide-react";
 import { z } from "zod";
 import { AppShell, PageHeading } from "@/components/product/AppShell";
-import { evidenceClassLabel } from "@/features/grid-connection/evidence";
-import { layersForExperience } from "@/features/map/map-layer-registry";
-import { enquiryReadiness } from "@/features/operator-enquiry/readiness";
 import { PowerFinderMap } from "@/components/product/PowerFinderMap";
+import { publicConstraintScreening } from "@/features/constraint-exposure/public-screening";
+import { evidenceClassLabel } from "@/features/grid-connection/evidence";
+import { enquiryReadiness } from "@/features/operator-enquiry/readiness";
 import {
   loadPowerFinderViewport,
   type PowerFinderBounds,
@@ -23,6 +32,8 @@ const searchSchema = z.object({
     .enum(["all", "public_source", "derived", "operator_confirmed"])
     .optional()
     .catch(undefined),
+  metric: z.enum(["exposure", "redispatch", "outage", "confidence"]).optional().catch(undefined),
+  period: z.enum(["current", "historical", "scenario"]).optional().catch(undefined),
   constraint: z.string().optional().catch(undefined),
 });
 export const Route = createFileRoute("/constraint-explorer")({
@@ -40,69 +51,67 @@ export const Route = createFileRoute("/constraint-explorer")({
   }),
 });
 
-const illustrative = [
-  {
-    id: "regional-redispatch",
-    name: "Regional redispatch signal",
-    category: "generation",
-    severity: "high",
-    region: "North-west Germany",
-    direction: "unknown",
-    evidence: "public_source",
-    confidence: "indicative",
-    frequency: "Observed context",
-    action: "Request operator confirmation for the proposed connection point.",
-  },
-  {
-    id: "n1-corridor",
-    name: "N-1 corridor exposure",
-    category: "thermal",
-    severity: "moderate",
-    region: "Illustrative study corridor",
-    direction: "aggravating",
-    evidence: "derived",
-    confidence: "indicative",
-    frequency: "Scenario dependent",
-    action: "Run a project-specific canonical network assessment.",
-  },
-  {
-    id: "data-gap",
-    name: "Equipment rating gap",
-    category: "data_uncertainty",
-    severity: "critical",
-    region: "Candidate connection context",
-    direction: "unknown",
-    evidence: "derived",
-    confidence: "unverified",
-    frequency: "Not assessable",
-    action: "Obtain accepted ratings and applicable security criteria.",
-  },
+const findings = publicConstraintScreening;
+
+type Layers = {
+  gridLines: boolean;
+  gridNodes: boolean;
+  constraintExposure: boolean;
+  outages: boolean;
+  phaseShifters: boolean;
+};
+const equipment = [
+  ["Transmission Lines", "Public topology"],
+  ["Transformers", "Where published"],
+  ["Substations", "Public nodes"],
+  ["Phase-Shifting Transformers", "Evidence dependent"],
+  ["Generators", "Registry context"],
 ] as const;
+
+function ToggleRow({
+  checked,
+  label,
+  hint,
+  onChange,
+}: {
+  checked: boolean;
+  label: string;
+  hint: string;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <label className="constraint-toggle-row">
+      <span>
+        <strong>{label}</strong>
+        <small>{hint}</small>
+      </span>
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(event) => onChange(event.currentTarget.checked)}
+      />
+      <i aria-hidden="true" />
+    </label>
+  );
+}
 
 function ConstraintExplorerPage() {
   const { resolved: basemapMode } = useTheme();
   const search = Route.useSearch();
   const [severity, setSeverity] = useState(search.severity ?? "all");
   const [evidence, setEvidence] = useState(search.evidence ?? "all");
-  const updateUrl = (patch: { severity?: string; evidence?: string; constraint?: string }) => {
-    const url = new URL(window.location.href);
-    for (const [key, value] of Object.entries(patch)) {
-      if (!value || value === "all") url.searchParams.delete(key);
-      else url.searchParams.set(key, value);
-    }
-    window.history.replaceState(window.history.state, "", url);
-  };
-  const [selectedId, setSelectedId] = useState(search.constraint ?? illustrative[0].id);
-  const filtered = useMemo(
-    () =>
-      illustrative.filter(
-        (item) =>
-          (severity === "all" || item.severity === severity) &&
-          (evidence === "all" || item.evidence === evidence),
-      ),
-    [evidence, severity],
-  );
-  const selected = illustrative.find((item) => item.id === selectedId) ?? filtered[0];
+  const [metric, setMetric] = useState(search.metric ?? "exposure");
+  const [period, setPeriod] = useState(search.period ?? "current");
+  const [selectedId, setSelectedId] = useState(search.constraint ?? findings[0].id);
+  const [analysisDate, setAnalysisDate] = useState("2026-09-02");
+  const [timeline, setTimeline] = useState(72);
+  const [layers, setLayers] = useState<Layers>({
+    gridLines: true,
+    gridNodes: true,
+    constraintExposure: true,
+    outages: true,
+    phaseShifters: false,
+  });
   const [mapCollection, setMapCollection] = useState<PowerFinderCollection | null>(null);
   const [mapError, setMapError] = useState<string | null>(null);
   const [bounds, setBounds] = useState<PowerFinderBounds>({
@@ -112,29 +121,57 @@ function ConstraintExplorerPage() {
     north: 53.5,
   });
   const [mapFeature, setMapFeature] = useState<PowerFinderFeature | null>(null);
+
+  const updateUrl = (patch: Record<string, string>) => {
+    const url = new URL(window.location.href);
+    Object.entries(patch).forEach(([key, value]) =>
+      value === "all" || value === "current"
+        ? url.searchParams.delete(key)
+        : url.searchParams.set(key, value),
+    );
+    window.history.replaceState(window.history.state, "", url);
+  };
+  const filtered = useMemo(
+    () =>
+      findings.filter(
+        (item) =>
+          (severity === "all" || item.severity === severity) &&
+          (evidence === "all" || item.provenance.evidenceClass === evidence) &&
+          (period === "current" ||
+            (period === "historical" && item.provenance.evidenceClass === "public_source") ||
+            (period === "scenario" && item.provenance.evidenceClass === "derived")),
+      ),
+    [evidence, period, severity],
+  );
+  const selected = findings.find((item) => item.id === selectedId) ?? filtered[0];
+  const setLayer = (key: keyof Layers, value: boolean) =>
+    setLayers((current) => ({ ...current, [key]: value }));
+
   useEffect(() => {
     if ((bounds.east - bounds.west) * (bounds.north - bounds.south) > 6) return;
     const controller = new AbortController();
-    const timeout = window.setTimeout(() => {
-      void loadPowerFinderViewport(bounds, controller.signal, {
-        fallbackAllowed: true,
-        includeRegistryAssets: false,
-      })
-        .then(({ collection }) => {
-          setMapCollection(collection);
-          setMapError(null);
+    const timeout = window.setTimeout(
+      () =>
+        void loadPowerFinderViewport(bounds, controller.signal, {
+          fallbackAllowed: true,
+          includeRegistryAssets: false,
         })
-        .catch((reason: unknown) => {
-          if (!controller.signal.aborted)
-            setMapError(reason instanceof Error ? reason.message : "Map context could not load.");
-        });
-    }, 250);
+          .then(({ collection }) => {
+            setMapCollection(collection);
+            setMapError(null);
+          })
+          .catch((reason: unknown) => {
+            if (!controller.signal.aborted)
+              setMapError(reason instanceof Error ? reason.message : "Map context could not load.");
+          }),
+      250,
+    );
     return () => {
       window.clearTimeout(timeout);
       controller.abort();
     };
   }, [bounds]);
-  const layers = layersForExperience("constraint_explorer");
+
   const readiness = enquiryReadiness({
     site: false,
     requestedImport: false,
@@ -150,10 +187,10 @@ function ConstraintExplorerPage() {
         <PageHeading
           eyebrow="Constraint exposure"
           title="Understand what may constrain a site"
-          description="Explore observed public signals, modelled exposure, evidence gaps, and mitigations without presenting screening context as available capacity."
+          description="Explore public signals, modelled exposure, evidence gaps, and mitigations without presenting screening context as available capacity."
           action={
             <Link to="/data-sources" className="secondary-button">
-              Data & methodology
+              Data &amp; Methodology
             </Link>
           }
         />
@@ -165,60 +202,184 @@ function ConstraintExplorerPage() {
           </p>
         </section>
         <div className="constraint-workbench">
-          <aside className="constraint-filters" aria-label="Constraint filters">
-            <h2>Analysis view</h2>
-            <label>
-              Severity
-              <select
-                value={severity}
-                onChange={(event) => {
-                  setSeverity(event.currentTarget.value as typeof severity);
-                  updateUrl({ severity: event.currentTarget.value });
-                }}
-              >
-                <option value="all">All severities</option>
-                <option value="moderate">Moderate</option>
-                <option value="high">High</option>
-                <option value="critical">Critical</option>
-              </select>
-            </label>
-            <label>
-              Evidence
-              <select
-                value={evidence}
-                onChange={(event) => {
-                  setEvidence(event.currentTarget.value as typeof evidence);
-                  updateUrl({ evidence: event.currentTarget.value });
-                }}
-              >
-                <option value="all">All evidence</option>
-                <option value="public_source">Observed public</option>
-                <option value="derived">Modelled / derived</option>
-                <option value="operator_confirmed">Operator confirmed</option>
-              </select>
-            </label>
-            <h3>Active layers</h3>
-            <ul>
-              {layers.map((layer) => (
-                <li key={layer.id}>
-                  <span>{layer.defaultVisible ? "On" : "Off"}</span>
-                  {layer.label}
-                  <small>from zoom {layer.minimumZoom}</small>
-                </li>
+          <aside className="constraint-control-rail" aria-label="Constraint analysis controls">
+            <header>
+              <div>
+                <span className="context-label">Germany</span>
+                <h2>Constraint Analysis</h2>
+              </div>
+              <Info aria-hidden="true" />
+            </header>
+            <div className="constraint-mode-tabs" role="group" aria-label="Analysis period">
+              {(["current", "historical", "scenario"] as const).map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  className={period === value ? "active" : ""}
+                  aria-pressed={period === value}
+                  onClick={() => {
+                    setPeriod(value);
+                    updateUrl({ period: value });
+                  }}
+                >
+                  {value}
+                </button>
               ))}
-            </ul>
+            </div>
+            <div className="constraint-control-section constraint-time-controls">
+              <label htmlFor="constraint-date">
+                <CalendarDays aria-hidden="true" /> Analysis Date
+              </label>
+              <input
+                id="constraint-date"
+                name="constraint-date"
+                type="date"
+                value={analysisDate}
+                onChange={(event) => setAnalysisDate(event.currentTarget.value)}
+              />
+              <label htmlFor="constraint-time">
+                Time Window <output htmlFor="constraint-time">{timeline}:00</output>
+              </label>
+              <input
+                id="constraint-time"
+                name="constraint-time"
+                type="range"
+                min="0"
+                max="168"
+                step="6"
+                value={timeline}
+                onChange={(event) => setTimeline(Number(event.currentTarget.value))}
+              />
+            </div>
+            <details className="constraint-control-section" open>
+              <summary>
+                <span>
+                  <CircleDot aria-hidden="true" /> Constraints
+                </span>
+                <ChevronDown aria-hidden="true" />
+              </summary>
+              <div className="constraint-control-body">
+                <label htmlFor="constraint-metric">Exposure Metric</label>
+                <select
+                  id="constraint-metric"
+                  value={metric}
+                  onChange={(event) => {
+                    const value = event.currentTarget.value as typeof metric;
+                    setMetric(value);
+                    updateUrl({ metric: value });
+                  }}
+                >
+                  <option value="exposure">Composite exposure</option>
+                  <option value="redispatch">Redispatch signal</option>
+                  <option value="outage">Outage proximity</option>
+                  <option value="confidence">Evidence confidence</option>
+                </select>
+                <label htmlFor="constraint-severity">Severity</label>
+                <select
+                  id="constraint-severity"
+                  value={severity}
+                  onChange={(event) => {
+                    const value = event.currentTarget.value as typeof severity;
+                    setSeverity(value);
+                    updateUrl({ severity: value });
+                  }}
+                >
+                  <option value="all">All severities</option>
+                  <option value="moderate">Moderate</option>
+                  <option value="high">High</option>
+                  <option value="critical">Critical</option>
+                </select>
+                <label htmlFor="constraint-evidence">Evidence Class</label>
+                <select
+                  id="constraint-evidence"
+                  value={evidence}
+                  onChange={(event) => {
+                    const value = event.currentTarget.value as typeof evidence;
+                    setEvidence(value);
+                    updateUrl({ evidence: value });
+                  }}
+                >
+                  <option value="all">All evidence</option>
+                  <option value="public_source">Observed public</option>
+                  <option value="derived">Modelled / derived</option>
+                  <option value="operator_confirmed">Operator confirmed</option>
+                </select>
+                <ToggleRow
+                  checked={layers.constraintExposure}
+                  label="Constraint Exposure"
+                  hint="Illustrative screening layer"
+                  onChange={(value) => setLayer("constraintExposure", value)}
+                />
+              </div>
+            </details>
+            <details className="constraint-control-section" open>
+              <summary>
+                <span>
+                  <AlertTriangle aria-hidden="true" /> Outages &amp; Equipment
+                </span>
+                <ChevronDown aria-hidden="true" />
+              </summary>
+              <div className="constraint-control-body">
+                <ToggleRow
+                  checked={layers.outages}
+                  label="Outage Context"
+                  hint="Planned, forced & derated"
+                  onChange={(value) => setLayer("outages", value)}
+                />
+                <ul className="constraint-equipment-list">
+                  {equipment.map(([label, hint]) => (
+                    <li key={label}>
+                      <span aria-hidden="true" />
+                      <div>
+                        <strong>{label}</strong>
+                        <small>{hint}</small>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+                <div className="constraint-event-legend">
+                  <span className="planned">Planned</span>
+                  <span className="forced">Forced</span>
+                  <span className="derated">Derated</span>
+                </div>
+              </div>
+            </details>
+            <details className="constraint-control-section">
+              <summary>
+                <span>
+                  <Layers3 aria-hidden="true" /> Grid Infrastructure
+                </span>
+                <ChevronDown aria-hidden="true" />
+              </summary>
+              <div className="constraint-control-body">
+                <ToggleRow
+                  checked={layers.gridLines}
+                  label="Grid Lines"
+                  hint="Voltage-styled public topology"
+                  onChange={(value) => setLayer("gridLines", value)}
+                />
+                <ToggleRow
+                  checked={layers.gridNodes}
+                  label="Grid Nodes"
+                  hint="Published connection context"
+                  onChange={(value) => setLayer("gridNodes", value)}
+                />
+                <ToggleRow
+                  checked={layers.phaseShifters}
+                  label="Phase Shifters"
+                  hint="Shown only where evidenced"
+                  onChange={(value) => setLayer("phaseShifters", value)}
+                />
+              </div>
+            </details>
           </aside>
           <section className="constraint-map" aria-label="Germany constraint context map">
-            <div className="constraint-map-caption">
-              <strong>Grid context</strong>
-              <span>Public infrastructure · selected exposure remains screening evidence</span>
-            </div>
             {mapCollection ? (
               <PowerFinderMap
                 collection={mapCollection}
                 enabledLayers={{
-                  node: true,
-                  line: true,
+                  node: layers.gridNodes,
+                  line: layers.gridLines,
                   industrial_site: false,
                   generation_asset: false,
                   storage_asset: false,
@@ -234,18 +395,97 @@ function ConstraintExplorerPage() {
                 {mapError ?? "Loading grid context…"}
               </div>
             )}
-            <div className="constraint-map-evidence">
-              <span className={`constraint-severity ${selected?.severity ?? "moderate"}`}>
-                {selected?.severity ?? "moderate"}
+            <div className="constraint-map-caption">
+              <strong>
+                {period === "current"
+                  ? "Current public context"
+                  : period === "historical"
+                    ? "Historical evidence view"
+                    : "Illustrative scenario"}
+              </strong>
+              <span>
+                {metric.replaceAll("_", " ")} · {analysisDate} · {timeline}:00
               </span>
-              <strong>{selected?.name ?? "Select an exposure"}</strong>
-              <small>{mapFeature ? `Map selection: ${mapFeature.properties.name}` : selected?.region}</small>
             </div>
+            <aside className="constraint-map-legend" aria-label="Map legend">
+              <header>
+                <span className="context-label">Legend</span>
+                <h2>Constraint &amp; Grid Layers</h2>
+              </header>
+              <section>
+                <h3>Constraint Exposure</h3>
+                <div className="constraint-gradient" aria-hidden="true" />
+                <div className="constraint-gradient-labels">
+                  <span>Lower</span>
+                  <span>Indicative</span>
+                  <span>Higher</span>
+                </div>
+                <p>
+                  Severity combines available public signals and evidence quality; it is not
+                  available capacity.
+                </p>
+              </section>
+              <section>
+                <h3>Voltage</h3>
+                <ul>
+                  <li>
+                    <i className="voltage-380" />
+                    380 kV &amp; above
+                  </li>
+                  <li>
+                    <i className="voltage-220" />
+                    220–&lt;380 kV
+                  </li>
+                  <li>
+                    <i className="voltage-110" />
+                    110–&lt;220 kV
+                  </li>
+                  <li>
+                    <i className="voltage-low" />
+                    Below 110 kV
+                  </li>
+                  <li>
+                    <i className="voltage-unknown" />
+                    Voltage not mapped
+                  </li>
+                </ul>
+              </section>
+              <section>
+                <h3>Evidence</h3>
+                <ul>
+                  <li>
+                    <i className="evidence-public" />
+                    Observed public
+                  </li>
+                  <li>
+                    <i className="evidence-derived" />
+                    Modelled / derived
+                  </li>
+                  <li>
+                    <i className="evidence-confirmed" />
+                    Operator confirmed
+                  </li>
+                </ul>
+              </section>
+            </aside>
+            {layers.constraintExposure ? (
+              <div className="constraint-map-evidence">
+                <span className={`constraint-severity ${selected?.severity ?? "moderate"}`}>
+                  {selected?.severity ?? "moderate"}
+                </span>
+                <strong>{selected?.name ?? "Select an exposure"}</strong>
+                <small>
+                  {mapFeature
+                    ? `Map selection: ${mapFeature.properties.name}`
+                    : selected?.affectedAssetOrRegion}
+                </small>
+              </div>
+            ) : null}
           </section>
           <section className="constraint-results" aria-labelledby="constraint-results-title">
             <header>
               <div>
-                <h2 id="constraint-results-title">Ranked exposure</h2>
+                <h2 id="constraint-results-title">Ranked Exposure</h2>
                 <p>{filtered.length} illustrative findings</p>
               </div>
               <Database aria-hidden="true" />
@@ -263,12 +503,14 @@ function ConstraintExplorerPage() {
                 >
                   <span className={`constraint-severity ${item.severity}`}>{item.severity}</span>
                   <strong>{item.name}</strong>
-                  <small>{item.region}</small>
-                  <em>{item.frequency}</em>
+                  <small>{item.affectedAssetOrRegion}</small>
+                  <em>{item.scenario}</em>
                 </button>
               ))
             ) : (
-              <p>No constraints match these filters.</p>
+              <p className="constraint-empty">
+                No constraints match these filters. Adjust severity or evidence class.
+              </p>
             )}
           </section>
         </div>
@@ -280,7 +522,7 @@ function ConstraintExplorerPage() {
               </span>
               <h2 id="constraint-detail-title">{selected.name}</h2>
               <p>
-                {selected.region} · {selected.category.replaceAll("_", " ")}
+                {selected.affectedAssetOrRegion} · {selected.category.replaceAll("_", " ")}
               </p>
             </div>
             <dl>
@@ -290,25 +532,25 @@ function ConstraintExplorerPage() {
               </div>
               <div>
                 <dt>Evidence</dt>
-                <dd>{evidenceClassLabel[selected.evidence]}</dd>
+                <dd>{evidenceClassLabel[selected.provenance.evidenceClass]}</dd>
               </div>
               <div>
                 <dt>Confidence</dt>
-                <dd>{selected.confidence}</dd>
+                <dd>{selected.provenance.confidence}</dd>
               </div>
               <div>
-                <dt>Capacity claim</dt>
+                <dt>Capacity Claim</dt>
                 <dd>No</dd>
               </div>
             </dl>
             <p>
               <AlertTriangle aria-hidden="true" />
-              <strong>Next action:</strong> {selected.action}
+              <strong>Next Action:</strong> {selected.requiredAction}
             </p>
           </section>
         ) : null}
         <section className="constraint-detail" aria-labelledby="enquiry-readiness-title">
-          <h2 id="enquiry-readiness-title">Operator enquiry readiness</h2>
+          <h2 id="enquiry-readiness-title">Operator Enquiry Readiness</h2>
           <p>
             {readiness.completed} of {readiness.total} required inputs are present in this
             illustrative view.
@@ -319,7 +561,7 @@ function ConstraintExplorerPage() {
             ))}
           </ul>
           <Link to="/data-centre-planner" className="primary-button">
-            Complete project assumptions
+            Complete Project Assumptions
           </Link>
         </section>
       </main>

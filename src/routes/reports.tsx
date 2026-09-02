@@ -32,6 +32,10 @@ const packageInputs = new Set([
   "facility_historical_replay",
   "shadow_verification",
 ]);
+const reportDate = new Intl.DateTimeFormat("en-DE", {
+  dateStyle: "medium",
+  timeStyle: "short",
+});
 
 function saveText(name: string, text: string, type: string) {
   const url = URL.createObjectURL(new Blob([text], { type }));
@@ -108,82 +112,87 @@ function ReportsPage() {
             <WorkflowShowcase kind="reports" />
           </>
         ) : null}
-        {productCapabilities.workspace ? <section className="data-panel" aria-labelledby="package-inputs-title">
-          <div className="section-toolbar">
-            <div>
-              <h2 id="package-inputs-title">Canonical artifacts</h2>
+        {productCapabilities.workspace ? (
+          <section className="data-panel" aria-labelledby="package-inputs-title">
+            <div className="section-toolbar">
+              <div>
+                <h2 id="package-inputs-title">Canonical artifacts</h2>
+              </div>
+              <span>{candidates.length} available</span>
             </div>
-            <span>{candidates.length} available</span>
-          </div>
-          {jobs.isLoading ? (
-            <p>Loading analytical results…</p>
-          ) : jobs.error ? (
-            <p role="alert">Unable to load analytical results.</p>
-          ) : (
-            <div className="table-scroll">
-              <table className="product-table">
-                <thead>
-                  <tr>
-                    <th>Include</th>
-                    <th>Analysis</th>
-                    <th>Completed</th>
-                    <th>Fingerprint</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {candidates.length === 0 ? (
+            {jobs.isLoading ? (
+              <p>Loading analytical results…</p>
+            ) : jobs.error ? (
+              <p role="alert">Unable to load analytical results.</p>
+            ) : (
+              <div className="table-scroll">
+                <table className="product-table">
+                  <thead>
                     <tr>
-                      <td colSpan={4}>
-                        Run a capacity, facility, uncertainty, rolling, market, replay, or shadow
-                        study first.
-                      </td>
+                      <th>Include</th>
+                      <th>Analysis</th>
+                      <th>Completed</th>
+                      <th>Fingerprint</th>
                     </tr>
-                  ) : (
-                    candidates.map((job) => (
-                      <tr key={job.id}>
-                        <td>
-                          <input
-                            aria-label={`Include ${job.job_type} ${job.id}`}
-                            type="checkbox"
-                            checked={selected.includes(job.id)}
-                            onChange={(event) =>
-                              setSelected((current) =>
-                                event.target.checked
-                                  ? [...current, job.id]
-                                  : current.filter((id) => id !== job.id),
-                              )
-                            }
-                          />
-                        </td>
-                        <td>
-                          <b>{job.job_type.replaceAll("_", " ")}</b>
-                        </td>
-                        <td>
-                          {job.completed_at ? new Date(job.completed_at).toLocaleString() : "—"}
-                        </td>
-                        <td>
-                          <code>
-                            {String(job.result_payload?.result_fingerprint ?? job.id).slice(0, 12)}
-                          </code>
+                  </thead>
+                  <tbody>
+                    {candidates.length === 0 ? (
+                      <tr>
+                        <td colSpan={4}>
+                          Run a capacity, facility, uncertainty, rolling, market, replay, or shadow
+                          study first.
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
-          <button
-            className="primary-button"
-            type="button"
-            disabled={busy || selected.length === 0}
-            onClick={() => void buildPackage()}
-          >
-            {busy ? <LoaderCircle aria-hidden="true" /> : <FileCheck2 aria-hidden="true" />}{" "}
-            Generate canonical package
-          </button>
-          {error ? <p role="alert">{error}</p> : null}
-        </section> : null}
+                    ) : (
+                      candidates.map((job) => (
+                        <tr key={job.id}>
+                          <td>
+                            <input
+                              aria-label={`Include ${job.job_type} ${job.id}`}
+                              type="checkbox"
+                              checked={selected.includes(job.id)}
+                              onChange={(event) =>
+                                setSelected((current) =>
+                                  event.target.checked
+                                    ? [...current, job.id]
+                                    : current.filter((id) => id !== job.id),
+                                )
+                              }
+                            />
+                          </td>
+                          <td>
+                            <b>{job.job_type.replaceAll("_", " ")}</b>
+                          </td>
+                          <td>
+                            {job.completed_at ? reportDate.format(new Date(job.completed_at)) : "—"}
+                          </td>
+                          <td>
+                            <code>
+                              {String(job.result_payload?.result_fingerprint ?? job.id).slice(
+                                0,
+                                12,
+                              )}
+                            </code>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <button
+              className="primary-button"
+              type="button"
+              disabled={busy || selected.length === 0}
+              onClick={() => void buildPackage()}
+            >
+              {busy ? <LoaderCircle aria-hidden="true" /> : <FileCheck2 aria-hidden="true" />}{" "}
+              Generate canonical package
+            </button>
+            {error ? <p role="alert">{error}</p> : null}
+          </section>
+        ) : null}
         {result?.success ? (
           <section className="data-panel" aria-labelledby="package-result-title">
             <h2 id="package-result-title">Package ready</h2>
