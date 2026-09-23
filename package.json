@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "build": "vite build",
+    "prepare:maplibre-worker": "node scripts/prepare-maplibre-worker.mjs",
+    "build": "npm run prepare:maplibre-worker && vite build",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "test": "vitest run --config vitest.config.ts",
