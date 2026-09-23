@@ -1,0 +1,177 @@
+{"kind":"deck","id":"pr/2ub5zh","name":"Deck"}
+{"kind":"layout","layoutId":"79ba2566-191c-42b8-ae35-11ca53ecc0c6","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"570f1223-9b55-4301-b363-de38cf9545ac","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/c78z5i","slide":1,"title":"GRIDPULSE","textShapes":6}
+{"kind":"textbox","id":"sh/sfexwvul","slide":1,"text":"GRIDPULSE","textPreview":"GRIDPULSE","textChars":9,"textLines":1,"bbox":[60,55,300,30]}
+{"kind":"textbox","id":"sh/7e5gnadg","slide":1,"text":"Where a large load","textPreview":"Where a large load","textChars":18,"textLines":1,"bbox":[60,180,900,70]}
+{"kind":"textbox","id":"sh/6dwfu5cv","slide":1,"text":"can actually connect.","textPreview":"can actually connect.","textChars":21,"textLines":1,"bbox":[60,245,1000,75]}
+{"kind":"textbox","id":"sh/h47ytkvi","slide":1,"text":"Grid-capacity intelligence for data-centre site selection","textPreview":"Grid-capacity intelligence for data-centre site selection","textChars":57,"textLines":1,"bbox":[60,355,780,36]}
+{"kind":"textbox","id":"sh/g3yx0fux","slide":1,"text":"Screen candidate sites, quantify uncertainty, and prepare an evidence-backed path to operator validation.","textPreview":"Screen candidate sites, quantify uncertainty, and prepare an evidence-backed path to operator validation.","textChars":105,"textLines":1,"bbox":[60,405,870,65]}
+{"kind":"textbox","id":"sh/f25gradc","slide":1,"text":"GENERAL COMPANY DECK","textPreview":"GENERAL COMPANY DECK","textChars":20,"textLines":1,"bbox":[60,635,300,22]}
+{"kind":"notes","id":"nt/c78z5i","slide":1,"text":"Open with the outcome: GridPulse helps developers decide where to spend diligence effort before entering a long utility process.\n\n[Sources]\n- No external sources; company positioning and synthesis.\n[/Sources]"}
+{"kind":"slide","id":"sl/toe9br","slide":2,"title":"02   /   THE PROBLEM","textShapes":15}
+{"kind":"textbox","id":"sh/rm9onm9c","slide":2,"text":"02   /   THE PROBLEM","textPreview":"02   /   THE PROBLEM","textChars":20,"textLines":1,"bbox":[60,35,500,24]}
+{"kind":"textbox","id":"sh/cni5grax","slide":2,"text":"GRIDPULSE","textPreview":"GRIDPULSE","textChars":9,"textLines":1,"bbox":[1120,35,100,24]}
+{"kind":"textbox","id":"sh/dor6pwri","slide":2,"text":"The grid is not a late-stage check.","textPreview":"The grid is not a late-stage check.","textChars":35,"textLines":1,"bbox":[60,88,1160,55]}
+{"kind":"textbox","id":"sh/ep0ni1s3","slide":2,"text":"It decides whether the project exists.","textPreview":"It decides whether the project exists.","textChars":38,"textLines":1,"bbox":[60,136,1160,58]}
+{"kind":"shape","id":"sh/zqtor69o","slide":2,"bbox":[70,245,34,34]}
+{"kind":"textbox","id":"sh/0r25kba9","slide":2,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[70,245,34,34]}
+{"kind":"textbox","id":"sh/1sb6tgru","slide":2,"text":"Write to the relevant operator","textPreview":"Write to the relevant operator","textChars":30,"textLines":1,"bbox":[120,240,570,45]}
+{"kind":"shape","id":"sh/mtknml8f","slide":2,"bbox":[70,317,34,34]}
+{"kind":"textbox","id":"sh/nutovq9k","slide":2,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[70,317,34,34]}
+{"kind":"textbox","id":"sh/7u50bah8","slide":2,"text":"Wait while the request moves internally","textPreview":"Wait while the request moves internally","textChars":39,"textLines":1,"bbox":[120,312,570,45]}
+{"kind":"shape","id":"sh/6tcz250n","slide":2,"bbox":[70,389,34,34]}
+{"kind":"textbox","id":"sh/twnidkze","slide":2,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[70,389,34,34]}
+{"kind":"textbox","id":"sh/8veh4fit","slide":2,"text":"Network specialists test the connection","textPreview":"Network specialists test the connection","textChars":39,"textLines":1,"bbox":[120,384,570,45]}
+{"kind":"shape","id":"sh/jqlg7ahw","slide":2,"bbox":[70,461,34,34]}
+{"kind":"textbox","id":"sh/y5czy50r","slide":2,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[70,461,34,34]}
+{"kind":"textbox","id":"sh/ls3y90z2","slide":2,"text":"Receive an answer—often after site capital is committed","textPreview":"Receive an answer—often after site capital is committed","textChars":55,"textLines":1,"bbox":[120,456,570,45]}
+{"kind":"shape","id":"sh/kruh0vih","slide":2,"bbox":[755,235,465,210]}
+{"kind":"textbox","id":"sh/3mp0juhg","slide":2,"text":"THE COST OF UNCERTAINTY","textPreview":"THE COST OF UNCERTAINTY","textChars":23,"textLines":1,"bbox":[790,265,390,25]}
+{"kind":"textbox","id":"sh/i1gzap0v","slide":2,"text":"A “no” can mean a new site,\na new request, and the wait\nstarts again.","textPreview":"A “no” can mean a new site, | a new request, and the wait | starts again.","textChars":69,"textLines":3,"bbox":[790,310,390,110]}
+{"kind":"shape","id":"sh/eh03itk3","slide":2,"bbox":[755,475,465,105]}
+{"kind":"textbox","id":"sh/fi9kby1o","slide":2,"text":"GridPulse moves grid feasibility to the start of site selection.","textPreview":"GridPulse moves grid feasibility to the start of site selection.","textChars":64,"textLines":1,"bbox":[790,493,390,70]}
+{"kind":"notes","id":"nt/toe9br","slide":2,"text":"Explain that GridPulse does not replace the operator. It reduces wasted cycles by screening earlier.\n\n[Sources]\n- GridPulse.pdf, source slides 3–4 (user-provided deck)\n[/Sources]"}
+{"kind":"slide","id":"sl/lo6xg0","slide":3,"title":"03   /   THE PRODUCT","textShapes":24}
+{"kind":"textbox","id":"sh/a9sbmp03","slide":3,"text":"03   /   THE PRODUCT","textPreview":"03   /   THE PRODUCT","textChars":20,"textLines":1,"bbox":[60,35,500,24]}
+{"kind":"textbox","id":"sh/xc3ax4ze","slide":3,"text":"GRIDPULSE","textPreview":"GRIDPULSE","textChars":9,"textLines":1,"bbox":[1120,35,100,24]}
+{"kind":"textbox","id":"sh/wbutozit","slide":3,"text":"Drop a pin.","textPreview":"Drop a pin.","textChars":11,"textLines":1,"bbox":[60,88,1160,55]}
+{"kind":"textbox","id":"sh/jylszuhk","slide":3,"text":"We rank the grid around it.","textPreview":"We rank the grid around it.","textChars":27,"textLines":1,"bbox":[60,136,1160,58]}
+{"kind":"shape","id":"sh/yxcbq90z","slide":3,"bbox":[55,245,275,260]}
+{"kind":"shape","id":"sh/l03u14zq","slide":3,"bbox":[83,270,34,34]}
+{"kind":"textbox","id":"sh/kzutszi5","slide":3,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[83,270,34,34]}
+{"kind":"textbox","id":"sh/z21sna10","slide":3,"text":"SITE","textPreview":"SITE","textChars":4,"textLines":1,"bbox":[133,273,160,26]}
+{"kind":"textbox","id":"sh/eh8be50v","slide":3,"text":"Location","textPreview":"Location","textChars":8,"textLines":1,"bbox":[85,330,215,36]}
+{"kind":"textbox","id":"sh/obqlsfad","slide":3,"text":"Coordinates, land boundary and infrastructure context.","textPreview":"Coordinates, land boundary and infrastructure context.","textChars":54,"textLines":1,"bbox":[85,380,215,82]}
+{"kind":"textbox","id":"sh/9cz2lkry","slide":3,"text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[328,343,35,45]}
+{"kind":"shape","id":"sh/m983q5sn","slide":3,"bbox":[360,245,275,260]}
+{"kind":"shape","id":"sh/nahkja9s","slide":3,"bbox":[388,270,34,34]}
+{"kind":"textbox","id":"sh/wfalwfap","slide":3,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[388,270,34,34]}
+{"kind":"textbox","id":"sh/xgjmpkra","slide":3,"text":"LOAD","textPreview":"LOAD","textChars":4,"textLines":1,"bbox":[438,273,160,26]}
+{"kind":"textbox","id":"sh/ad83upsj","slide":3,"text":"Demand profile","textPreview":"Demand profile","textChars":14,"textLines":1,"bbox":[390,330,215,36]}
+{"kind":"textbox","id":"sh/behkna94","slide":3,"text":"MW requirement, timing, reliability and flexibility.","textPreview":"MW requirement, timing, reliability and flexibility.","textChars":52,"textLines":1,"bbox":[390,380,215,82]}
+{"kind":"textbox","id":"sh/cj6lkva5","slide":3,"text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[633,343,35,45]}
+{"kind":"shape","id":"sh/dkf2d0rq","slide":3,"bbox":[665,245,275,260]}
+{"kind":"shape","id":"sh/t07ihc3u","slide":3,"bbox":[693,270,34,34]}
+{"kind":"textbox","id":"sh/szy1or29","slide":3,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[693,270,34,34]}
+{"kind":"textbox","id":"sh/rep0fmlo","slide":3,"text":"MODEL","textPreview":"MODEL","textChars":5,"textLines":1,"bbox":[743,273,160,26]}
+{"kind":"textbox","id":"sh/6dgjmhk3","slide":3,"text":"Grid screening","textPreview":"Grid screening","textChars":14,"textLines":1,"bbox":[695,330,215,36]}
+{"kind":"textbox","id":"sh/14rilw3q","slide":3,"text":"Candidate nodes, scenarios, constraints and evidence quality.","textPreview":"Candidate nodes, scenarios, constraints and evidence quality.","textChars":61,"textLines":1,"bbox":[695,380,215,82]}
+{"kind":"textbox","id":"sh/g3i1sr25","slide":3,"text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[938,343,35,45]}
+{"kind":"shape","id":"sh/f2p0jmlk","slide":3,"bbox":[970,245,275,260]}
+{"kind":"shape","id":"sh/e1gjqhkf","slide":3,"bbox":[998,270,34,34]}
+{"kind":"textbox","id":"sh/p8r2pwj2","slide":3,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[998,270,34,34]}
+{"kind":"textbox","id":"sh/o7i1wb2h","slide":3,"text":"OUTPUT","textPreview":"OUTPUT","textChars":6,"textLines":1,"bbox":[1048,273,160,26]}
+{"kind":"textbox","id":"sh/m1s7u9wn","slide":3,"text":"Decision package","textPreview":"Decision package","textChars":16,"textLines":1,"bbox":[1000,330,215,36]}
+{"kind":"textbox","id":"sh/n21o3ex8","slide":3,"text":"Ranked options and a structured operator-enquiry package.","textPreview":"Ranked options and a structured operator-enquiry package.","textChars":57,"textLines":1,"bbox":[1000,380,215,82]}
+{"kind":"textbox","id":"sh/o3apwjet","slide":3,"text":"A repeatable screening workflow—before formal DSO/TSO confirmation.","textPreview":"A repeatable screening workflow—before formal DSO/TSO confirmation.","textChars":67,"textLines":1,"bbox":[60,580,1160,38]}
+{"kind":"notes","id":"nt/lo6xg0","slide":3,"text":"Walk left to right. Emphasize that the result is a prioritized investigation path, not a promise of connection capacity.\n\n[Sources]\n- GridPulse.pdf, source slide 5 and 7 (user-provided deck)\n[/Sources]"}
+{"kind":"slide","id":"sl/y1yx6n","slide":4,"title":"04   /   WHAT THE CUSTOMER RECEIVES","textShapes":17}
+{"kind":"textbox","id":"sh/r2d8ri9c","slide":4,"text":"04   /   WHAT THE CUSTOMER RECEIVES","textPreview":"04   /   WHAT THE CUSTOMER RECEIVES","textChars":35,"textLines":1,"bbox":[60,35,500,24]}
+{"kind":"textbox","id":"sh/snm90nax","slide":4,"text":"GRIDPULSE","textPreview":"GRIDPULSE","textChars":9,"textLines":1,"bbox":[1120,35,100,24]}
+{"kind":"textbox","id":"sh/tofqt8r2","slide":4,"text":"One answer is not enough.","textPreview":"One answer is not enough.","textChars":25,"textLines":1,"bbox":[60,88,1160,55]}
+{"kind":"textbox","id":"sh/epor2dsn","slide":4,"text":"We expose the range—and why it moves.","textPreview":"We expose the range—and why it moves.","textChars":37,"textLines":1,"bbox":[60,136,1160,58]}
+{"kind":"shape","id":"sh/fqxsvi98","slide":4,"bbox":[60,235,475,325]}
+{"kind":"textbox","id":"sh/gr694nat","slide":4,"text":"CAPACITY ENVELOPE","textPreview":"CAPACITY ENVELOPE","textChars":17,"textLines":1,"bbox":[95,265,390,25]}
+{"kind":"textbox","id":"sh/1sfaxsre","slide":4,"text":"Plausible MW range","textPreview":"Plausible MW range","textChars":18,"textLines":1,"bbox":[95,310,390,35]}
+{"kind":"textbox","id":"sh/utkrqtsj","slide":4,"text":"Conservative","textPreview":"Conservative","textChars":12,"textLines":1,"bbox":[95,375,135,25]}
+{"kind":"shape","id":"sh/vut8jy94","slide":4,"bbox":[235,379,245,14]}
+{"kind":"shape","id":"sh/ra9w7ed4","slide":4,"bbox":[235,379,102.9,14]}
+{"kind":"textbox","id":"sh/q90vytwj","slide":4,"text":"Base case","textPreview":"Base case","textChars":9,"textLines":1,"bbox":[95,433,135,25]}
+{"kind":"shape","id":"sh/dcbe9ovu","slide":4,"bbox":[235,437,245,14]}
+{"kind":"shape","id":"sh/sb2d0je9","slide":4,"bbox":[235,437,166.6,14]}
+{"kind":"textbox","id":"sh/369w3eds","slide":4,"text":"With flexibility","textPreview":"With flexibility","textChars":16,"textLines":1,"bbox":[95,491,135,25]}
+{"kind":"shape","id":"sh/il0vu9w7","slide":4,"bbox":[235,495,245,14]}
+{"kind":"shape","id":"sh/58re5ovy","slide":4,"bbox":[235,495,210.7,14]}
+{"kind":"shape","id":"sh/47idwjed","slide":4,"bbox":[575,235,645,67]}
+{"kind":"textbox","id":"sh/vipczudw","slide":4,"text":"Confidence","textPreview":"Confidence","textChars":10,"textLines":1,"bbox":[602,247,165,42]}
+{"kind":"textbox","id":"sh/uhgvqpwb","slide":4,"text":"How reliable the estimate is","textPreview":"How reliable the estimate is","textChars":28,"textLines":1,"bbox":[785,247,400,42]}
+{"kind":"shape","id":"sh/ydgf2pg3","slide":4,"bbox":[575,317,645,67]}
+{"kind":"textbox","id":"sh/jepwbuho","slide":4,"text":"Constraint map","textPreview":"Constraint map","textChars":14,"textLines":1,"bbox":[602,329,165,42]}
+{"kind":"textbox","id":"sh/kfyx4zy9","slide":4,"text":"What limits the connection","textPreview":"What limits the connection","textChars":26,"textLines":1,"bbox":[785,329,400,42]}
+{"kind":"shape","id":"sh/lg7ed4zu","slide":4,"bbox":[575,399,645,67]}
+{"kind":"textbox","id":"sh/6hgf69gz","slide":4,"text":"Evidence class","textPreview":"Evidence class","textChars":14,"textLines":1,"bbox":[602,411,165,42]}
+{"kind":"textbox","id":"sh/7ipwfehk","slide":4,"text":"Public, inferred, simulated or validated","textPreview":"Public, inferred, simulated or validated","textChars":40,"textLines":1,"bbox":[785,411,400,42]}
+{"kind":"shape","id":"sh/8jyx8jy5","slide":4,"bbox":[575,481,645,67]}
+{"kind":"textbox","id":"sh/t4reh4zq","slide":4,"text":"Next action","textPreview":"Next action","textChars":11,"textLines":1,"bbox":[602,493,165,42]}
+{"kind":"textbox","id":"sh/u50fa9gb","slide":4,"text":"What to ask the operator","textPreview":"What to ask the operator","textChars":24,"textLines":1,"bbox":[785,493,400,42]}
+{"kind":"notes","id":"nt/y1yx6n","slide":4,"text":"A single MW figure creates false precision. The core output is a scenario-aware envelope with confidence, limiting factors and evidence provenance.\n\n[Sources]\n- GridPulse.pdf, source slide 7 (user-provided deck)\n[/Sources]"}
+{"kind":"slide","id":"sl/yewayz","slide":5,"title":"05   /   HOW IT WORKS","textShapes":21}
+{"kind":"textbox","id":"sh/xgbqxkb6","slide":5,"text":"05   /   HOW IT WORKS","textPreview":"05   /   HOW IT WORKS","textChars":21,"textLines":1,"bbox":[60,35,500,24]}
+{"kind":"textbox","id":"sh/qd0r2pcf","slide":5,"text":"GRIDPULSE","textPreview":"GRIDPULSE","textChars":9,"textLines":1,"bbox":[1120,35,100,24]}
+{"kind":"textbox","id":"sh/be98vut0","slide":5,"text":"Physics first.","textPreview":"Physics first.","textChars":14,"textLines":1,"bbox":[60,88,1160,55]}
+{"kind":"textbox","id":"sh/obi90fup","slide":5,"text":"AI where it adds leverage.","textPreview":"AI where it adds leverage.","textChars":26,"textLines":1,"bbox":[60,136,1160,58]}
+{"kind":"shape","id":"sh/pcrqtkbu","slide":5,"bbox":[60,245,255,275]}
+{"kind":"textbox","id":"sh/2907y5cj","slide":5,"text":"EVIDENCE","textPreview":"EVIDENCE","textChars":8,"textLines":1,"bbox":[85,270,205,24]}
+{"kind":"textbox","id":"sh/3a98rat4","slide":5,"text":"Public + licensed data","textPreview":"Public + licensed data","textChars":22,"textLines":1,"bbox":[85,315,205,60]}
+{"kind":"textbox","id":"sh/87m9czut","slide":5,"text":"Territory, assets, demand, generation, outages, projects","textPreview":"Territory, assets, demand, generation, outages, projects","textChars":56,"textLines":1,"bbox":[85,395,205,85]}
+{"kind":"textbox","id":"sh/98vq54be","slide":5,"text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[310,350,45,40]}
+{"kind":"shape","id":"sh/lcbil4bi","slide":5,"bbox":[355,245,255,275]}
+{"kind":"textbox","id":"sh/0b2hczud","slide":5,"text":"ELECTRICAL","textPreview":"ELECTRICAL","textChars":10,"textLines":1,"bbox":[380,270,205,24]}
+{"kind":"textbox","id":"sh/zat0juts","slide":5,"text":"Network scenarios","textPreview":"Network scenarios","textChars":17,"textLines":1,"bbox":[380,315,205,60]}
+{"kind":"textbox","id":"sh/y9kza9c7","slide":5,"text":"AC power flow, N-0/N-1 stress, voltage and thermal limits","textPreview":"AC power flow, N-0/N-1 stress, voltage and thermal limits","textChars":57,"textLines":1,"bbox":[380,395,205,85]}
+{"kind":"textbox","id":"sh/d8rih4bm","slide":5,"text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[605,350,45,40]}
+{"kind":"shape","id":"sh/c7ih8zu1","slide":5,"bbox":[650,245,255,275]}
+{"kind":"textbox","id":"sh/b690futg","slide":5,"text":"UNCERTAINTY","textPreview":"UNCERTAINTY","textChars":11,"textLines":1,"bbox":[675,270,205,24]}
+{"kind":"textbox","id":"sh/q50z6pcv","slide":5,"text":"Chronology + probability","textPreview":"Chronology + probability","textChars":24,"textLines":1,"bbox":[675,315,205,60]}
+{"kind":"textbox","id":"sh/x4vitobq","slide":5,"text":"Missing-state reconstruction, forecast ranges and sensitivity","textPreview":"Missing-state reconstruction, forecast ranges and sensitivity","textChars":61,"textLines":1,"bbox":[675,395,205,85]}
+{"kind":"textbox","id":"sh/w3m1kjul","slide":5,"text":"→","textPreview":"→","textChars":1,"textLines":1,"bbox":[900,350,45,40]}
+{"kind":"shape","id":"sh/gjetcrmt","slide":5,"bbox":[945,245,255,275]}
+{"kind":"textbox","id":"sh/hknu5wne","slide":5,"text":"DECISION","textPreview":"DECISION","textChars":8,"textLines":1,"bbox":[970,270,205,24]}
+{"kind":"textbox","id":"sh/uxwbah4n","slide":5,"text":"Ranking + explanation","textPreview":"Ranking + explanation","textChars":21,"textLines":1,"bbox":[970,315,205,60]}
+{"kind":"textbox","id":"sh/fy5c3m58","slide":5,"text":"Candidate comparison, flexibility value and next-best action","textPreview":"Candidate comparison, flexibility value and next-best action","textChars":60,"textLines":1,"bbox":[970,395,205,85]}
+{"kind":"shape","id":"sh/svut8rmx","slide":5,"bbox":[60,560,1140,65]}
+{"kind":"textbox","id":"sh/tw3a1cn2","slide":5,"text":"BOUNDARY","textPreview":"BOUNDARY","textChars":8,"textLines":1,"bbox":[85,577,120,30]}
+{"kind":"textbox","id":"sh/6tcb6h4r","slide":5,"text":"AI does not invent available MW. Operator-grade network evidence is required before capacity is treated as confirmed.","textPreview":"AI does not invent available MW. Operator-grade network evidence is required before capacity is treated as confirmed.","textChars":117,"textLines":1,"bbox":[210,572,945,38]}
+{"kind":"notes","id":"nt/yewayz","slide":5,"text":"If asked about models: describe a hybrid stack—power-system simulation for feasibility, forecasting and probabilistic methods for uncertainty, and machine learning for ranking and pattern extraction. Never present a public-data result as operator-confirmed.\n\n[Sources]\n- GridPulse.pdf, source slide 7 (user-provided deck)\n[/Sources]"}
+{"kind":"slide","id":"sl/9rtt5q","slide":6,"title":"06   /   EARLY VALIDATION","textShapes":12}
+{"kind":"textbox","id":"sh/1wzm5wb2","slide":6,"text":"06   /   EARLY VALIDATION","textPreview":"06   /   EARLY VALIDATION","textChars":25,"textLines":1,"bbox":[60,35,500,24]}
+{"kind":"textbox","id":"sh/e983a1sr","slide":6,"text":"GRIDPULSE","textPreview":"GRIDPULSE","textChars":9,"textLines":1,"bbox":[1120,35,100,24]}
+{"kind":"textbox","id":"sh/fah436tc","slide":6,"text":"The pain is real.","textPreview":"The pain is real.","textChars":17,"textLines":1,"bbox":[60,88,1160,55]}
+{"kind":"textbox","id":"sh/s7ql8ral","slide":6,"text":"The buying signal is concrete.","textPreview":"The buying signal is concrete.","textChars":30,"textLines":1,"bbox":[60,136,1160,58]}
+{"kind":"shape","id":"sh/t8zm1wb6","slide":6,"bbox":[60,245,350,190]}
+{"kind":"textbox","id":"sh/65o36hsf","slide":6,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[88,285,294,55]}
+{"kind":"textbox","id":"sh/r6x4zmt0","slide":6,"text":"developer conversations","textPreview":"developer conversations","textChars":23,"textLines":1,"bbox":[88,355,294,50]}
+{"kind":"shape","id":"sh/436l4rap","slide":6,"bbox":[450,245,350,190]}
+{"kind":"textbox","id":"sh/54fmxcba","slide":6,"text":"€100–500M","textPreview":"€100–500M","textChars":9,"textLines":1,"bbox":[478,285,294,55]}
+{"kind":"textbox","id":"sh/5ozuhczy","slide":6,"text":"project-size range discussed","textPreview":"project-size range discussed","textChars":28,"textLines":1,"bbox":[478,355,294,50]}
+{"kind":"shape","id":"sh/knqt87id","slide":6,"bbox":[840,245,350,190]}
+{"kind":"textbox","id":"sh/jmhcf2hs","slide":6,"text":"€2,000 / month","textPreview":"€2,000 / month","textChars":14,"textLines":1,"bbox":[868,285,294,55]}
+{"kind":"textbox","id":"sh/ilob6h0n","slide":6,"text":"price point tested","textPreview":"price point tested","textChars":18,"textLines":1,"bbox":[868,355,294,50]}
+{"kind":"shape","id":"sh/x0fudcz2","slide":6,"bbox":[60,480,1130,95]}
+{"kind":"textbox","id":"sh/wz6t47ih","slide":6,"text":"The scarce asset is not another map—it is trusted, decision-grade evidence about where power is plausible.","textPreview":"The scarce asset is not another map—it is trusted, decision-grade evidence about where power is plausible.","textChars":106,"textLines":1,"bbox":[95,500,1060,55]}
+{"kind":"textbox","id":"sh/vyxcb2hw","slide":6,"text":"Customer conversations, August 2026 · Early validation · No revenue yet","textPreview":"Customer conversations, August 2026 · Early validation · No revenue yet","textChars":71,"textLines":1,"bbox":[60,625,600,20]}
+{"kind":"notes","id":"nt/9rtt5q","slide":6,"text":"State these as early interview signals, not booked revenue or contractual traction. Keep the claim precise.\n\n[Sources]\n- GridPulse.pdf, source slide 6 (user-provided deck)\n[/Sources]"}
+{"kind":"slide","id":"sl/bzeed7","slide":7,"title":"07   /   FOUNDING TEAM","textShapes":12}
+{"kind":"textbox","id":"sh/7u9w7ups","slide":7,"text":"07   /   FOUNDING TEAM","textPreview":"07   /   FOUNDING TEAM","textChars":22,"textLines":1,"bbox":[60,35,500,24]}
+{"kind":"textbox","id":"sh/svixgz6x","slide":7,"text":"GRIDPULSE","textPreview":"GRIDPULSE","textChars":9,"textLines":1,"bbox":[1120,35,100,24]}
+{"kind":"textbox","id":"sh/twre9k7i","slide":7,"text":"Built at the intersection of","textPreview":"Built at the intersection of","textChars":28,"textLines":1,"bbox":[60,88,1160,55]}
+{"kind":"textbox","id":"sh/ux0fipo3","slide":7,"text":"grid engineering and commercial execution.","textPreview":"grid engineering and commercial execution.","textChars":42,"textLines":1,"bbox":[60,136,1160,58]}
+{"kind":"shape","id":"sh/fy9wbupo","slide":7,"bbox":[60,245,545,310]}
+{"kind":"textbox","id":"sh/gjixkz69","slide":7,"text":"BUSINESS — CUSTOMERS, REVENUE, SALES","textPreview":"BUSINESS — CUSTOMERS, REVENUE, SALES","textChars":36,"textLines":1,"bbox":[95,275,470,22]}
+{"kind":"textbox","id":"sh/hkred47u","slide":7,"text":"Kshitij “Krish” Jindal","textPreview":"Kshitij “Krish” Jindal","textChars":22,"textLines":1,"bbox":[95,320,470,38]}
+{"kind":"textbox","id":"sh/2l0fm9of","slide":7,"text":"Co-founder","textPreview":"Co-founder","textChars":10,"textLines":1,"bbox":[95,360,470,24]}
+{"kind":"textbox","id":"sh/3mtwfepk","slide":7,"text":"Four businesses built over twelve years\nOne in energy efficiency in India\nMSc Entrepreneurship, TH OWL","textPreview":"Four businesses built over twelve years | One in energy efficiency in India | MSc Entrepreneurship, TH OWL","textChars":102,"textLines":3,"bbox":[95,410,455,95]}
+{"kind":"shape","id":"sh/fih4zyh0","slide":7,"bbox":[635,245,545,310]}
+{"kind":"textbox","id":"sh/uh8nqt0f","slide":7,"text":"PRODUCT — DATA AND MODEL","textPreview":"PRODUCT — DATA AND MODEL","textChars":24,"textLines":1,"bbox":[670,275,470,22]}
+{"kind":"textbox","id":"sh/h4zm18zq","slide":7,"text":"Sina Khedmati","textPreview":"Sina Khedmati","textChars":13,"textLines":1,"bbox":[670,320,470,38]}
+{"kind":"textbox","id":"sh/gjq5s3il","slide":7,"text":"Co-founder","textPreview":"Co-founder","textChars":10,"textLines":1,"bbox":[670,360,470,24]}
+{"kind":"textbox","id":"sh/7ex4veho","slide":7,"text":"MSc Power Engineering, TU Munich\nMSc Management, TUM\n~7 years in European power markets","textPreview":"MSc Power Engineering, TU Munich | MSc Management, TUM | ~7 years in European power markets","textChars":87,"textLines":3,"bbox":[670,410,455,95]}
+{"kind":"notes","id":"nt/bzeed7","slide":7,"text":"Use this slide as the founder-level CV summary. The application form asks for full CV uploads separately; do not treat this slide as a substitute for those documents.\n\n[Sources]\n- GridPulse.pdf, source slide 2 (user-provided deck)\n[/Sources]"}
+{"kind":"slide","id":"sl/6pbi5o","slide":8,"title":"08   /   WHAT WE ARE LOOKING FOR","textShapes":12}
+{"kind":"textbox","id":"sh/bmtsrup0","slide":8,"text":"08   /   WHAT WE ARE LOOKING FOR","textPreview":"08   /   WHAT WE ARE LOOKING FOR","textChars":32,"textLines":1,"bbox":[60,35,500,24]}
+{"kind":"textbox","id":"sh/cn2tkfql","slide":8,"text":"GRIDPULSE","textPreview":"GRIDPULSE","textChars":9,"textLines":1,"bbox":[1120,35,100,24]}
+{"kind":"textbox","id":"sh/xobatk76","slide":8,"text":"Turn promising sites into","textPreview":"Turn promising sites into","textChars":25,"textLines":1,"bbox":[60,88,1160,55]}
+{"kind":"textbox","id":"sh/2x0re58j","slide":8,"text":"defensible grid decisions.","textPreview":"defensible grid decisions.","textChars":26,"textLines":1,"bbox":[60,136,1160,58]}
+{"kind":"shape","id":"sh/ny9snap4","slide":8,"bbox":[60,245,350,245]}
+{"kind":"textbox","id":"sh/ozi9gfqp","slide":8,"text":"PILOT CUSTOMERS","textPreview":"PILOT CUSTOMERS","textChars":15,"textLines":1,"bbox":[88,275,294,25]}
+{"kind":"textbox","id":"sh/pkbapk7u","slide":8,"text":"Data-centre developers and site-selection teams with live candidate portfolios","textPreview":"Data-centre developers and site-selection teams with live candidate portfolios","textChars":78,"textLines":1,"bbox":[88,325,294,110]}
+{"kind":"shape","id":"sh/mt4bq98n","slide":8,"bbox":[450,245,350,245]}
+{"kind":"textbox","id":"sh/7udszep8","slide":8,"text":"GRID + DATA PARTNERS","textPreview":"GRID + DATA PARTNERS","textChars":20,"textLines":1,"bbox":[478,275,294,25]}
+{"kind":"textbox","id":"sh/ja50zmdc","slide":8,"text":"Operators, engineering partners and data providers who can strengthen validation","textPreview":"Operators, engineering partners and data providers who can strengthen validation","textChars":80,"textLines":1,"bbox":[478,325,294,110]}
+{"kind":"shape","id":"sh/y9wj6hwr","slide":8,"bbox":[840,245,350,245]}
+{"kind":"textbox","id":"sh/lcni1wvi","slide":8,"text":"EARLY-STAGE SUPPORT","textPreview":"EARLY-STAGE SUPPORT","textChars":19,"textLines":1,"bbox":[868,275,294,25]}
+{"kind":"textbox","id":"sh/kbe18rex","slide":8,"text":"Partners who can accelerate product validation, commercial access and scale","textPreview":"Partners who can accelerate product validation, commercial access and scale","textChars":75,"textLines":1,"bbox":[868,325,294,110]}
+{"kind":"textbox","id":"sh/7ep036d8","slide":8,"text":"Start with a site. Leave with a ranked, evidence-backed path to connection.","textPreview":"Start with a site. Leave with a ranked, evidence-backed path to connection.","textChars":75,"textLines":1,"bbox":[60,565,1160,45]}
+{"kind":"textbox","id":"sh/6dgja1w3","slide":8,"text":"GRIDPULSE","textPreview":"GRIDPULSE","textChars":9,"textLines":1,"bbox":[60,645,180,20]}
+{"kind":"notes","id":"nt/6pbi5o","slide":8,"text":"Close with a general invitation. This wording is deliberately program-neutral and works for investors, accelerators, partners and prospective customers.\n\n[Sources]\n- No external sources; company positioning and synthesis.\n[/Sources]"}

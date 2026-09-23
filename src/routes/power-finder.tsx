@@ -502,9 +502,7 @@ function PowerFinderPage() {
   const [secondaryControlsOpen, setSecondaryControlsOpen] = useState(Boolean(search.propertyId));
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [legendOpen, setLegendOpen] = useState(true);
-  const [showDataCentres, setShowDataCentres] = useState(
-    !search.mapView || search.mapView === "connection",
-  );
+  const [showDataCentres, setShowDataCentres] = useState(false);
   const [selectedDataCentre, setSelectedDataCentre] = useState<RzRegDataCentre | null>(null);
   const [finderWorkflow, setFinderWorkflow] = useState<"screen" | "discover">("screen");
   const [discoveryStrategy, setDiscoveryStrategy] = useState<DiscoveryStrategy>("balanced");
@@ -564,6 +562,12 @@ function PowerFinderPage() {
   };
   const detailDismissedRef = useRef(false);
   const [basemapStatus, setBasemapStatus] = useState<BasemapStatus>("loading");
+  const [mapRetryKey, setMapRetryKey] = useState(0);
+  useEffect(() => {
+    if (basemapStatus !== "loading") return;
+    const timeout = window.setTimeout(() => setBasemapStatus("fallback"), 3_500);
+    return () => window.clearTimeout(timeout);
+  }, [basemapStatus, mapRetryKey]);
   const [mapNavigationTarget, setMapNavigationTarget] = useState<
     | { requestId: number; kind: "point"; center: [number, number]; zoom?: number }
     | {
@@ -669,7 +673,7 @@ function PowerFinderPage() {
         generation_asset: false,
         storage_asset: false,
       });
-      setShowDataCentres(true);
+      setShowDataCentres(false);
     } else if (preset === "infrastructure") {
       setEnabled({
         node: true,
@@ -989,6 +993,9 @@ function PowerFinderPage() {
     const timeout = window.setTimeout(() => {
       void loadPowerFinderViewport(bounds, controller.signal, {
         fallbackAllowed: true,
+        // Registry context is delivered by the independent vector-tile source.
+        // Keep viewport GeoJSON focused on candidate geometry and evidence.
+        includeRegistryAssets: false,
       })
         .then(({ collection: nextCollection, mode }) => {
           setCollection(nextCollection);
@@ -3233,7 +3240,12 @@ function PowerFinderPage() {
           )}
         </section>
 
-        <section className="power-finder-stage" data-basemap-status={basemapStatus}>
+        <section
+          className="power-finder-stage"
+          data-basemap-status={basemapStatus}
+          data-grid-source-status={runtimeSourceStatus.grid ?? "loading"}
+          data-registry-source-status={runtimeSourceStatus.registry ?? "loading"}
+        >
           <button
             type="button"
             className="power-finder-sidebar-toggle"
@@ -3253,8 +3265,19 @@ function PowerFinderPage() {
           </button>
           {basemapStatus === "fallback" && (
             <div className="power-finder-basemap-notice" role="status" aria-live="polite">
-              Background map is temporarily unavailable. Grid infrastructure and screening data
-              remain available.
+              <span>
+                Background map is temporarily unavailable. Grid infrastructure and screening data
+                remain available.
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setBasemapStatus("loading");
+                  setMapRetryKey((current) => current + 1);
+                }}
+              >
+                Retry Background Map
+              </button>
             </div>
           )}
           {error && <div className="power-finder-error">{error}</div>}
@@ -3263,6 +3286,7 @@ function PowerFinderPage() {
           )}
           {visibleCollection && (
             <PowerFinderMap
+              key={mapRetryKey}
               collection={visibleCollection}
               enabledLayers={effectiveEnabled}
               selectedFeature={selected}

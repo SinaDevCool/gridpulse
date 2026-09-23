@@ -16,7 +16,7 @@ export default defineConfig({
   webServer: externalBaseUrl
     ? undefined
     : {
-        command: "npm run dev -- --mode finder --port 3003",
+        command: "npm run dev -- --force --mode finder --port 3003",
         url: "http://127.0.0.1:3003/power-finder",
         reuseExistingServer: true,
         timeout: 120_000,

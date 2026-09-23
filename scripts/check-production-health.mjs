@@ -24,9 +24,41 @@ const checks = [
     validate: async (response) => {
       const html = await response.text();
       if (!html.includes("Power Finder")) throw new Error("Finder heading is missing");
+      for (const header of [
+        "content-security-policy",
+        "strict-transport-security",
+        "referrer-policy",
+        "permissions-policy",
+        "x-content-type-options",
+      ]) {
+        if (!response.headers.get(header)) throw new Error(`Finder is missing ${header}`);
+      }
       if (/Sign In|Sign Up|Create account/i.test(html)) {
         throw new Error("Finder unexpectedly exposes account access");
       }
+    },
+  },
+  {
+    name: "public-grid-vector-tile",
+    url: `${baseUrl}/api/power-finder/tile/8/137/84?content=grid&generation=false&storage=false`,
+    expectedStatus: 200,
+    validate: async (response) => {
+      if (!String(response.headers.get("content-type")).includes("mapbox-vector-tile")) {
+        throw new Error("grid tile has the wrong content type");
+      }
+      if ((await response.arrayBuffer()).byteLength < 100) throw new Error("grid tile is empty");
+    },
+  },
+  {
+    name: "public-registry-vector-tile",
+    url: `${baseUrl}/api/power-finder/tile/8/137/84?content=registry`,
+    expectedStatus: 200,
+    validate: async (response) => {
+      if (!String(response.headers.get("content-type")).includes("mapbox-vector-tile")) {
+        throw new Error("registry tile has the wrong content type");
+      }
+      if ((await response.arrayBuffer()).byteLength < 100)
+        throw new Error("registry tile is empty");
     },
   },
   {

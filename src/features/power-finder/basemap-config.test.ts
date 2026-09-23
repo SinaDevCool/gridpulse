@@ -3,6 +3,7 @@ import type { StyleSpecification } from "maplibre-gl";
 import {
   OPEN_FREE_MAP_STYLE_URLS,
   applyBasemapVisibility,
+  activateDataOnlyBasemap,
   combineOpenFreeMapStyles,
   createFallbackBasemapStyle,
   loadBasemapStyle,
@@ -74,5 +75,32 @@ describe("Power Finder basemap configuration", () => {
     expect(result.style.sources).toEqual({});
     expect(result.layerIds.dark).toHaveLength(1);
     expect(result.layerIds.light).toHaveLength(1);
+  });
+
+  it("turns a loaded map into a real data-only fallback", () => {
+    const map = {
+      getLayer: vi.fn((id: string) => (id === "dark-a" ? {} : undefined)),
+      setLayoutProperty: vi.fn(),
+      getStyle: vi.fn(() => ({ layers: [{ id: "dark-a" }] })),
+      addLayer: vi.fn(),
+    };
+    activateDataOnlyBasemap(map as never, "dark", { dark: ["dark-a"], light: ["light-a"] });
+    expect(map.setLayoutProperty).toHaveBeenCalledWith("dark-a", "visibility", "none");
+    expect(map.addLayer).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "gridpulse-runtime-fallback-dark", type: "background" }),
+      "dark-a",
+    );
+  });
+
+  it("keeps the active style when only the inactive theme fails", async () => {
+    const result = await loadBasemapStyle("dark", {
+      fetchStyle: async (url) => {
+        if (url.includes("positron")) throw new Error("light unavailable");
+        return style("dark-base", "#000");
+      },
+    });
+    expect(result.status).toBe("available");
+    expect(result.layerIds.dark).toEqual(["openfreemap-dark-dark-base"]);
+    expect(result.layerIds.light).toEqual([]);
   });
 });

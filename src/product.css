@@ -14939,6 +14939,26 @@ tbody tr:last-child td {
   font:
     600 0.72rem/1.4 "Geist",
     sans-serif;
+  display: grid;
+  gap: 8px;
+}
+
+.power-finder-basemap-notice button {
+  min-height: 36px;
+  border: 1px solid rgb(255 233 184 / 55%);
+  border-radius: 6px;
+  background: rgb(255 233 184 / 10%);
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  touch-action: manipulation;
+}
+
+.power-finder-basemap-notice button:hover,
+.power-finder-basemap-notice button:focus-visible {
+  background: rgb(255 233 184 / 20%);
+  outline: 2px solid #ffe9b8;
+  outline-offset: 2px;
 }
 
 @media (max-width: 760px) {

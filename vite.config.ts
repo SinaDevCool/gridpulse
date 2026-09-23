@@ -31,5 +31,8 @@ export default defineConfig(({ mode }) => ({
     ),
   },
   resolve: { tsconfigPaths: true },
+  // MapLibre 6 resolves its worker relative to the package entry. Vite's dependency
+  // pre-bundler otherwise strands the worker outside the optimized dependency graph.
+  optimizeDeps: { exclude: ["maplibre-gl"] },
   server: { host: "127.0.0.1", port: 3000 },
 }));

@@ -1,5 +1,6 @@
 import { ChevronDown, ChevronUp, RotateCcw } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
+import { useEffect, useState } from "react";
 
 export type InteractiveLegendItem = {
   id: string;
@@ -46,6 +47,10 @@ export function InteractiveMapLegend({
   className = "",
   sourceSummary,
 }: InteractiveMapLegendProps) {
+  const [interactive, setInteractive] = useState(false);
+
+  useEffect(() => setInteractive(true), []);
+
   return (
     <aside
       className={`interactive-map-legend ${open ? "is-open" : "is-collapsed"} ${className}`.trim()}
@@ -57,6 +62,7 @@ export function InteractiveMapLegend({
           className="interactive-map-legend__toggle"
           aria-expanded={open}
           aria-label={open ? "Hide map legend" : "Show map legend"}
+          disabled={!interactive}
           onClick={() => onOpenChange(!open)}
         >
           <strong>{title}</strong>
@@ -67,7 +73,7 @@ export function InteractiveMapLegend({
             type="button"
             className="interactive-map-legend__reset"
             onClick={onReset}
-            disabled={!isolated}
+            disabled={!interactive || !isolated}
           >
             <RotateCcw aria-hidden="true" /> Reset
           </button>
@@ -113,7 +119,7 @@ export function InteractiveMapLegend({
                           className="interactive-map-legend__only"
                           aria-label={`${active ? "Show all" : "Show only"} ${item.label}`}
                           aria-pressed={active}
-                          disabled={item.unavailable}
+                          disabled={!interactive || item.unavailable}
                           onClick={() => onIsolate(section.id, item.id)}
                         >
                           {active ? "All" : "Only"}

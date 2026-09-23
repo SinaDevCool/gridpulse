@@ -184,7 +184,7 @@ function ConstraintExplorerPage() {
   const updateUrl = (patch: Partial<typeof search>) =>
     void navigate({
       to: "/constraint-explorer",
-      search: (current) => ({ ...current, ...patch }),
+      search: { ...search, ...patch },
       replace: true,
     });
   const filtered = useMemo(
@@ -320,7 +320,7 @@ function ConstraintExplorerPage() {
       () =>
         void loadPowerFinderViewport(bounds, controller.signal, {
           fallbackAllowed: true,
-          includeRegistryAssets: true,
+          includeRegistryAssets: false,
         })
           .then(({ collection }) => {
             setMapCollection(collection);

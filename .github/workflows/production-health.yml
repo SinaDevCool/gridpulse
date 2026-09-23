@@ -23,3 +23,9 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
         run: node scripts/check-production-health.mjs
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Check production map in a browser
+        env:
+          GRIDPULSE_HEALTH_BASE_URL: https://gridpulseinsights.com
+        run: node scripts/check-production-map.mjs

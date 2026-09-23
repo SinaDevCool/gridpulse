@@ -33,6 +33,7 @@ import {
 import type { MapRuntimeSourceStatus } from "@/features/map/map-source-registry";
 import type { CapacityMetric } from "@/features/power-finder/calculated-capacity";
 import {
+  activateDataOnlyBasemap,
   applyBasemapVisibility,
   loadBasemapStyle,
   type BasemapLayerIds,
@@ -354,6 +355,7 @@ export function PowerFinderMap({
   const capacityCoverageRef = useRef(capacityCoverage);
   const basemapModeRef = useRef(basemapMode);
   const basemapLayerIdsRef = useRef<BasemapLayerIds>({ dark: [], light: [] });
+  const basemapFallbackActiveRef = useRef(false);
   const onBasemapStatusChangeRef = useRef(onBasemapStatusChange);
   const onDataSourceStatusChangeRef = useRef(onDataSourceStatusChange);
   const runtimeSourceStatusRef = useRef<MapRuntimeSourceStatus>({
@@ -403,10 +405,16 @@ export function PowerFinderMap({
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
     let cancelled = false;
+    globalThis.performance?.mark("gridpulse-map-initialise");
 
     onBasemapStatusChangeRef.current?.("loading");
+    const startupDeadline = globalThis.setTimeout(
+      () => onBasemapStatusChangeRef.current?.("fallback"),
+      3_500,
+    );
     void Promise.all([import("maplibre-gl"), loadBasemapStyle(basemapModeRef.current)]).then(
       ([{ Map, NavigationControl }, basemap]) => {
+        globalThis.clearTimeout(startupDeadline);
         if (cancelled || !containerRef.current) return;
         basemapLayerIdsRef.current = basemap.layerIds;
         onBasemapStatusChangeRef.current?.(basemap.status);
@@ -437,9 +445,19 @@ export function PowerFinderMap({
           }
           if (!openFreeMapFailure) return;
           basemapErrorCount += 1;
-          if (basemapErrorCount >= 3) onBasemapStatusChangeRef.current?.("fallback");
+          if (basemapErrorCount >= 3 && !basemapFallbackActiveRef.current) {
+            basemapFallbackActiveRef.current = true;
+            activateDataOnlyBasemap(map, basemapModeRef.current, basemapLayerIdsRef.current);
+            onBasemapStatusChangeRef.current?.("fallback");
+          }
         });
         map.on("load", () => {
+          globalThis.performance?.mark("gridpulse-map-ready");
+          globalThis.performance?.measure(
+            "gridpulse-map-startup",
+            "gridpulse-map-initialise",
+            "gridpulse-map-ready",
+          );
           const split = splitMapCollection(
             withCapacityResults(
               collectionRef.current,
@@ -528,6 +546,7 @@ export function PowerFinderMap({
               return;
             const key = event.sourceId === "power-finder-national-tiles" ? "grid" : "registry";
             runtimeSourceStatusRef.current = { ...runtimeSourceStatusRef.current, [key]: "ready" };
+            globalThis.performance?.mark(`gridpulse-map-${key}-ready`);
             onDataSourceStatusChangeRef.current?.(runtimeSourceStatusRef.current);
           });
           map.addSource("finder-project-site", {
@@ -1347,6 +1366,7 @@ export function PowerFinderMap({
 
     return () => {
       cancelled = true;
+      globalThis.clearTimeout(startupDeadline);
       mapRef.current?.remove();
       mapRef.current = null;
     };
@@ -1508,7 +1528,7 @@ export function PowerFinderMap({
     const map = mapRef.current;
     if (!map?.getLayer("grid-nodes")) return;
     const voltageColour = voltageColorExpression();
-    const evidenceColour = [
+    const evidenceColour: ExpressionSpecification = [
       "match",
       ["get", "evidence_class"],
       "official_operator",
@@ -1521,7 +1541,7 @@ export function PowerFinderMap({
       "#f59e0b",
       "#64748b",
     ];
-    const capacityColour = [
+    const capacityColour: ExpressionSpecification = [
       "match",
       ["get", "capacity_fit"],
       "meets",
@@ -1534,7 +1554,7 @@ export function PowerFinderMap({
       "#f59e0b",
       "#475569",
     ];
-    const nationalCapacityColour = [
+    const nationalCapacityColour: ExpressionSpecification = [
       "match",
       ["feature-state", "capacity_fit"],
       "meets",
@@ -1545,7 +1565,7 @@ export function PowerFinderMap({
       "#1e526a",
       "#475569",
     ];
-    const voltageClusterColour = [
+    const voltageClusterColour: ExpressionSpecification = [
       "step",
       ["get", "point_count"],
       "#f59e0b",
@@ -1554,7 +1574,7 @@ export function PowerFinderMap({
       100,
       "#ef4444",
     ];
-    const capacityClusterColour = [
+    const capacityClusterColour: ExpressionSpecification = [
       "case",
       [
         ">=",
@@ -1721,6 +1741,10 @@ export function PowerFinderMap({
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
+    if (basemapFallbackActiveRef.current) {
+      activateDataOnlyBasemap(map, basemapMode, basemapLayerIdsRef.current);
+      return;
+    }
     applyBasemapVisibility(map, basemapMode, basemapLayerIdsRef.current);
   }, [basemapMode]);
 

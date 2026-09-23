@@ -30,6 +30,7 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      - run: npm run check:performance-budgets
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e:finder
         env:
@@ -47,3 +48,7 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
         run: node scripts/check-production-health.mjs
+      - name: Verify production map rendering
+        env:
+          GRIDPULSE_HEALTH_BASE_URL: https://gridpulseinsights.com
+        run: node scripts/check-production-map.mjs

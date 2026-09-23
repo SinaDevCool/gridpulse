@@ -85,10 +85,61 @@ export function createFallbackBasemapStyle(visibleMode: BasemapMode): LoadedBase
   };
 }
 
+export function activateDataOnlyBasemap(
+  map: MapLibreMap,
+  visibleMode: BasemapMode,
+  layerIds: BasemapLayerIds,
+) {
+  for (const layerId of [...layerIds.dark, ...layerIds.light]) {
+    if (map.getLayer(layerId)) map.setLayoutProperty(layerId, "visibility", "none");
+  }
+  const fallbackId = `gridpulse-runtime-fallback-${visibleMode}`;
+  const otherFallbackId = `gridpulse-runtime-fallback-${visibleMode === "dark" ? "light" : "dark"}`;
+  if (map.getLayer(otherFallbackId)) map.setLayoutProperty(otherFallbackId, "visibility", "none");
+  if (map.getLayer(fallbackId)) {
+    map.setLayoutProperty(fallbackId, "visibility", "visible");
+    return;
+  }
+  const firstLayerId = map.getStyle().layers?.[0]?.id;
+  map.addLayer(
+    {
+      id: fallbackId,
+      type: "background",
+      paint: { "background-color": visibleMode === "dark" ? "#071521" : "#eef3f5" },
+    },
+    firstLayerId,
+  );
+}
+
 async function fetchStyle(url: string, signal: AbortSignal): Promise<StyleSpecification> {
-  const response = await fetch(url, { signal });
-  if (!response.ok) throw new Error(`Basemap style returned ${response.status}`);
-  return (await response.json()) as StyleSpecification;
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const response = await fetch(url, { signal });
+      if (!response.ok) {
+        if (response.status < 500 || attempt === 1) {
+          throw new Error(`Basemap style returned ${response.status}`);
+        }
+      } else {
+        return (await response.json()) as StyleSpecification;
+      }
+    } catch (error) {
+      if (signal.aborted || attempt === 1) throw error;
+      lastError = error;
+    }
+    await new Promise<void>((resolve, reject) => {
+      const timer = globalThis.setTimeout(resolve, 150 + Math.round(Math.random() * 100));
+      signal.addEventListener(
+        "abort",
+        () => {
+          globalThis.clearTimeout(timer);
+          reject(signal.reason);
+        },
+        { once: true },
+      );
+    });
+  }
+  throw lastError ?? new Error("Basemap style is unavailable");
 }
 
 export async function loadBasemapStyle(
@@ -96,15 +147,33 @@ export async function loadBasemapStyle(
   options: { timeoutMs?: number; fetchStyle?: typeof fetchStyle } = {},
 ): Promise<LoadedBasemapStyle> {
   const controller = new AbortController();
-  const timeout = globalThis.setTimeout(() => controller.abort(), options.timeoutMs ?? 8_000);
+  const timeout = globalThis.setTimeout(() => controller.abort(), options.timeoutMs ?? 3_000);
   const loader = options.fetchStyle ?? fetchStyle;
 
   try {
-    const [dark, light] = await Promise.all([
+    const [darkResult, lightResult] = await Promise.allSettled([
       loader(OPEN_FREE_MAP_STYLE_URLS.dark, controller.signal),
       loader(OPEN_FREE_MAP_STYLE_URLS.light, controller.signal),
     ]);
-    return combineOpenFreeMapStyles(dark, light, visibleMode);
+    const activeResult = visibleMode === "dark" ? darkResult : lightResult;
+    if (activeResult.status === "rejected") return createFallbackBasemapStyle(visibleMode);
+    const inactiveResult = visibleMode === "dark" ? lightResult : darkResult;
+    if (inactiveResult.status === "rejected") {
+      const style = activeResult.value;
+      const layers = prefixedLayers(style, visibleMode, visibleMode);
+      return {
+        status: "available",
+        layerIds: {
+          dark: visibleMode === "dark" ? layers.map((layer) => layer.id) : [],
+          light: visibleMode === "light" ? layers.map((layer) => layer.id) : [],
+        },
+        style: { ...style, layers },
+      };
+    }
+    if (darkResult.status === "fulfilled" && lightResult.status === "fulfilled") {
+      return combineOpenFreeMapStyles(darkResult.value, lightResult.value, visibleMode);
+    }
+    return createFallbackBasemapStyle(visibleMode);
   } catch {
     return createFallbackBasemapStyle(visibleMode);
   } finally {
