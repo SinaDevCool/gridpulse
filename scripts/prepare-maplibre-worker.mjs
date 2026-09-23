@@ -3,9 +3,13 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const source = resolve(root, "node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs");
-const destination = resolve(root, "public/assets/maplibre-gl-worker.mjs");
+const assets = ["maplibre-gl-worker.mjs", "maplibre-gl-shared.mjs"];
+const destinationDirectory = resolve(root, "public/assets");
 
-await mkdir(dirname(destination), { recursive: true });
-await copyFile(source, destination);
-console.log(`Prepared ${destination}`);
+await mkdir(destinationDirectory, { recursive: true });
+for (const asset of assets) {
+  const source = resolve(root, "node_modules/maplibre-gl/dist", asset);
+  const destination = resolve(destinationDirectory, asset);
+  await copyFile(source, destination);
+  console.log(`Prepared ${destination}`);
+}
