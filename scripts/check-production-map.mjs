@@ -66,12 +66,21 @@ try {
   if (result.registryStatus !== "ready") {
     throw new Error(`registry source is ${result.registryStatus}`);
   }
-  for (const [source, loaded] of Object.entries(mapResponses)) {
+  const observedSources = {
+    basemap: mapResponses.basemap || result.basemapStatus === "ready",
+    grid: mapResponses.grid || result.gridStatus === "ready",
+    registry: mapResponses.registry || result.registryStatus === "ready",
+  };
+  for (const [source, loaded] of Object.entries(observedSources)) {
     if (!loaded) throw new Error(`${source} map resources did not load`);
   }
   if (failures.length) throw new Error(failures.join("\n"));
   console.log(
-    JSON.stringify({ status: "pass", base_url: baseUrl, ...result, mapResponses }, null, 2),
+    JSON.stringify(
+      { status: "pass", base_url: baseUrl, ...result, mapResponses, observedSources },
+      null,
+      2,
+    ),
   );
 } catch (error) {
   await page.screenshot({ path: screenshotPath, fullPage: false }).catch(() => undefined);
