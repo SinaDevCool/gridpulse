@@ -2,6 +2,9 @@ User-agent: *
 Allow: /
 Disallow: /auth
 Disallow: /portfolio
+Disallow: /data-centre-planner
+Disallow: /activation
+Disallow: /operations
 Disallow: /assessments
 Disallow: /evidence
 Disallow: /reports

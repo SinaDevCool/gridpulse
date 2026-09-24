@@ -8,15 +8,28 @@ test("every visible workflow destination resolves to meaningful content", async 
     ["Sites", /Sites|portfolio/i],
     ["Power Finder", /Germany connection context/i],
     ["Constraints", /Understand what may constrain/i],
-    ["Planner", /Untitled Data Centre/i],
-    ["Activation", /Activation prerequisites/i],
-    ["Operations", /Shadow verification prerequisites/i],
-    ["Evidence", /Evidence ledger/i],
-    ["Reports", /Operator enquiry package/i],
   ] as const;
+  await expect(navigation.getByRole("link")).toHaveCount(3);
+  for (const hidden of ["Planner", "Activation", "Operations", "Evidence", "Reports"]) {
+    await expect(navigation.getByRole("link", { name: new RegExp(hidden) })).toHaveCount(0);
+  }
   for (const [label, heading] of expectations) {
     await navigation.getByRole("link", { name: new RegExp(label) }).click();
     await expect(page.getByRole("heading", { name: heading }).first()).toBeVisible();
+  }
+});
+
+test("dormant workspace URLs redirect into the focused product", async ({ page }) => {
+  for (const [path, destination] of [
+    ["/data-centre-planner", "/constraint-explorer"],
+    ["/evidence", "/constraint-explorer"],
+    ["/evidence-review", "/constraint-explorer"],
+    ["/reports", "/portfolio"],
+    ["/activation", "/power-finder"],
+    ["/operations/site-1", "/power-finder"],
+  ] as const) {
+    await page.goto(path);
+    await expect(page).toHaveURL(new RegExp(`${destination.replace("/", "\\/")}$`));
   }
 });
 

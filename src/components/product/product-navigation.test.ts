@@ -1,17 +1,23 @@
 import { describe, expect, it } from "vitest";
-import { isWorkspaceDestinationActive, workspaceLinks } from "./product-navigation";
+import {
+  activeWorkspaceStageIds,
+  isWorkspaceDestinationActive,
+  workspaceLinks,
+  workspaceLinksForMode,
+} from "./product-navigation";
 
 describe("workspace outcome navigation", () => {
-  it("exposes each canonical workflow exactly once", () => {
-    expect(workspaceLinks.map((item) => item.to)).toEqual([
+  it("exposes only the focused three-stage workflow", () => {
+    expect(activeWorkspaceStageIds).toEqual(["sites", "finder", "constraints"]);
+    expect(workspaceLinksForMode("finder").map((item) => item.to)).toEqual([
       "/portfolio",
       "/power-finder",
       "/constraint-explorer",
-      "/data-centre-planner",
-      "/activation",
-      "/operations",
-      "/evidence",
-      "/reports",
+    ]);
+    expect(workspaceLinksForMode("full").map((item) => item.to)).toEqual([
+      "/portfolio",
+      "/power-finder",
+      "/constraint-explorer",
     ]);
     expect(new Set(workspaceLinks.map((item) => item.to)).size).toBe(workspaceLinks.length);
   });

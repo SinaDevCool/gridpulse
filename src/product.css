@@ -18882,10 +18882,9 @@ tbody tr:last-child td {
 }
 .product-stage-navigation > div {
   display: flex;
-  width: min(1280px, calc(100% - 48px));
+  width: min(760px, calc(100% - 48px));
   margin: 0 auto;
-  overflow-x: auto;
-  scrollbar-width: thin;
+  overflow-x: hidden;
 }
 .product-stage-navigation a {
   position: relative;
@@ -18895,7 +18894,7 @@ tbody tr:last-child td {
   gap: 8px;
   min-height: 52px;
   padding: 6px 14px;
-  flex: 1 0 148px;
+  flex: 1 1 0;
   color: #7f96a5;
   text-decoration: none;
 }
@@ -19152,6 +19151,7 @@ tbody tr:last-child td {
   }
   .product-stage-navigation > div {
     width: 100%;
+    overflow-x: hidden;
   }
   .product-stage-navigation a {
     grid-template-columns: 1fr;

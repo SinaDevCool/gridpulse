@@ -49,7 +49,7 @@ test("Finder landing, sector pages and methodology form the public product site"
     }),
   ).toBeVisible();
 
-  for (const pathname of ["/portfolio", "/reports"]) {
+  for (const pathname of ["/portfolio", "/constraint-explorer"]) {
     const response = await page.goto(pathname);
     expect(response?.status(), pathname).toBeLessThan(400);
     await expect(page.locator("main")).toBeVisible();
@@ -329,15 +329,15 @@ test("the release workbook passes the browser import preview", async ({ page }, 
   await decisionPdf.saveAs(testInfo.outputPath("brandenburg-south-decision-record.pdf"));
 });
 
-test("legacy workspaces redirect into Sites while Reports remains a canonical workflow", async ({
+test("legacy workspaces and dormant reports redirect into the focused workflow", async ({
   page,
 }) => {
   await page.goto("/workspaces");
   await expect(page).toHaveURL(/\/portfolio\?view=pipeline/);
   await expect(page.getByRole("heading", { name: "Sites", exact: true })).toBeVisible();
   await page.goto("/reports?view=qualification");
-  await expect(page).toHaveURL(/\/reports\?view=qualification/);
-  await expect(page.getByRole("heading", { name: "Operator enquiry package" })).toBeVisible();
+  await expect(page).toHaveURL(/\/portfolio$/);
+  await expect(page.getByRole("heading", { name: "Sites", exact: true })).toBeVisible();
 });
 
 test("Sites remains usable without horizontal page overflow on mobile", async ({ page }) => {

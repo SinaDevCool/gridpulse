@@ -36,6 +36,25 @@ const checks = [
       if (/Sign In|Sign Up|Create account/i.test(html)) {
         throw new Error("Finder unexpectedly exposes account access");
       }
+      for (const retiredLabel of ["Planner", "Activation", "Operations", "Reports"]) {
+        if (new RegExp(`<strong>${retiredLabel}</strong>`, "i").test(html)) {
+          throw new Error(`Finder navigation still exposes ${retiredLabel}`);
+        }
+      }
+    },
+  },
+  {
+    name: "public-constraints",
+    url: `${baseUrl}/constraint-explorer`,
+    expectedStatus: 200,
+    validate: async (response) => {
+      const html = await response.text();
+      if (!html.includes("Understand what may constrain a site")) {
+        throw new Error("Constraints heading is missing");
+      }
+      if (html.includes("Complete Project Assumptions")) {
+        throw new Error("Constraints still links to the dormant Planner stage");
+      }
     },
   },
   {
@@ -238,6 +257,26 @@ const checks = [
       if (!html.includes("Decision Review")) throw new Error("Decision Review heading is missing");
       if (/Sign In|Sign Up|Create account/i.test(html)) {
         throw new Error("Decision Review unexpectedly exposes account access");
+      }
+    },
+  },
+  {
+    name: "dormant-planner-redirect",
+    url: `${baseUrl}/data-centre-planner`,
+    expectedStatus: 200,
+    validate: async (response) => {
+      if (new URL(response.url).pathname !== "/constraint-explorer") {
+        throw new Error("dormant Planner URL did not redirect to Constraints");
+      }
+    },
+  },
+  {
+    name: "dormant-reports-redirect",
+    url: `${baseUrl}/reports`,
+    expectedStatus: 200,
+    validate: async (response) => {
+      if (new URL(response.url).pathname !== "/portfolio") {
+        throw new Error("dormant Reports URL did not redirect to Sites");
       }
     },
   },

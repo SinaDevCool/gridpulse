@@ -3,6 +3,9 @@ import type { ProductMode } from "@/config/product-mode";
 export type ProductCapability = "finder" | "workspace" | "connect" | "operate";
 export type UnavailableBehavior = "explain" | "hide";
 
+export const activeWorkspaceStageIds = ["sites", "finder", "constraints"] as const;
+const activeWorkspaceStages = new Set<string>(activeWorkspaceStageIds);
+
 export const workspaceLinks = [
   {
     id: "sites",
@@ -81,7 +84,9 @@ export function capabilityAvailable(capability: ProductCapability, mode: Product
 
 export function workspaceLinksForMode(mode: ProductMode) {
   return workspaceLinks.filter(
-    (item) => capabilityAvailable(item.capability, mode) || item.unavailableBehavior === "explain",
+    (item) =>
+      activeWorkspaceStages.has(item.id) &&
+      (capabilityAvailable(item.capability, mode) || item.unavailableBehavior === "explain"),
   );
 }
 

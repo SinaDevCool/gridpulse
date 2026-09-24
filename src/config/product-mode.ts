@@ -37,14 +37,39 @@ const finderRoutes = new Set([
   "/synthetic-network-study",
   "/data-sources",
   "/data-centres",
-  "/data-centre-planner",
   "/energy-storage",
   "/hydrogen-industry",
   "/portfolio",
   "/workspaces",
-  "/reports",
-  "/evidence",
 ]);
+
+const retiredWorkspaceRoots = [
+  "/data-centre-planner",
+  "/activation",
+  "/operations",
+  "/evidence",
+  "/evidence-review",
+  "/reports",
+] as const;
+
+function matchesRouteRoot(pathname: string, root: string) {
+  return pathname === root || pathname.startsWith(`${root}/`);
+}
+
+/** Customer-facing stages held outside the focused Sites -> Finder -> Constraints product. */
+export function retiredWorkspaceDestination(pathname: string): string | null {
+  const normalized = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
+  if (!retiredWorkspaceRoots.some((root) => matchesRouteRoot(normalized, root))) return null;
+  if (matchesRouteRoot(normalized, "/reports")) return "/portfolio";
+  if (
+    matchesRouteRoot(normalized, "/data-centre-planner") ||
+    matchesRouteRoot(normalized, "/evidence") ||
+    matchesRouteRoot(normalized, "/evidence-review")
+  ) {
+    return "/constraint-explorer";
+  }
+  return "/power-finder";
+}
 
 const finderApiRoutes = new Set([
   "/api/power-finder/viewport",
@@ -54,8 +79,7 @@ const finderApiRoutes = new Set([
 ]);
 
 export function isRouteEnabledForMode(pathname: string, mode: ProductMode): boolean {
-  // Legacy public URLs remain reachable only so their route loaders can redirect safely.
-  if (pathname === "/activation" || pathname === "/operations") return true;
+  if (retiredWorkspaceDestination(pathname)) return false;
   if (mode !== "finder") return true;
   const normalized = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
   return (

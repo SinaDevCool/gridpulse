@@ -3,6 +3,7 @@ import {
   Outlet,
   Link,
   notFound,
+  redirect,
   createRootRouteWithContext,
   HeadContent,
   Scripts,
@@ -11,7 +12,11 @@ import type { ReactNode } from "react";
 import { Toaster } from "sonner";
 import appCss from "../styles.css?url";
 import { AuthProvider } from "@/context/AuthContext";
-import { isRouteEnabled, productCapabilities } from "@/config/product-mode";
+import {
+  isRouteEnabled,
+  productCapabilities,
+  retiredWorkspaceDestination,
+} from "@/config/product-mode";
 import { ThemeProvider } from "@/features/theme/ThemeProvider";
 import { useTheme } from "@/features/theme/use-theme";
 
@@ -56,6 +61,8 @@ const structuredData = {
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   beforeLoad: ({ location }) => {
+    const retiredDestination = retiredWorkspaceDestination(location.pathname);
+    if (retiredDestination) throw redirect({ href: retiredDestination, replace: true });
     if (!isRouteEnabled(location.pathname)) throw notFound();
   },
   head: () => ({

@@ -714,8 +714,8 @@ function ConstraintExplorerPage() {
               <li key={item}>{item}</li>
             ))}
           </ul>
-          <Link to="/data-centre-planner" className="primary-button">
-            Complete Project Assumptions
+          <Link to="/power-finder" className="primary-button">
+            Review Candidate in Power Finder
           </Link>
         </section>
       </main>
