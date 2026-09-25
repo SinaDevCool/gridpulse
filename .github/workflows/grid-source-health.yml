@@ -11,7 +11,7 @@ permissions:
 jobs:
   mastr-source:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     env:
       SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -45,6 +45,14 @@ jobs:
         run: >-
           python -m grid_data.cli publish-operator-health
           --input grid-source-health/operator-evidence.json
+      - name: Refresh real SMARD forecast features
+        if: ${{ env.SUPABASE_URL != '' && env.SUPABASE_SERVICE_ROLE_KEY != '' }}
+        env:
+          PYTHONPATH: services/grid-data/src
+        run: >-
+          python -m grid_data.cli ingest-grid-stress-smard
+          --start-year "$(date -u +%Y)"
+          --end-year "$(date -u +%Y)"
       - uses: actions/upload-artifact@v4
         with:
           name: grid-source-health
