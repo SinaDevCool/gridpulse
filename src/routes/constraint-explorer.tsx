@@ -18,6 +18,9 @@ import {
   type InteractiveLegendSection,
 } from "@/components/product/InteractiveMapLegend";
 import { publicConstraintScreening } from "@/features/constraint-exposure/public-screening";
+import { RegionalGridOutlook } from "@/features/grid-forecast/RegionalGridOutlook";
+import { loadCurrentGridStressForecast } from "@/features/grid-forecast/client";
+import type { GridStressForecast } from "@/features/grid-forecast/contracts";
 import { evidenceClassLabel } from "@/features/grid-connection/evidence";
 import { enquiryReadiness } from "@/features/operator-enquiry/readiness";
 import {
@@ -166,6 +169,7 @@ function ConstraintExplorerPage() {
     emptyGermanyPowerFinderCollection(),
   );
   const [mapError, setMapError] = useState<string | null>(null);
+  const [gridOutlook, setGridOutlook] = useState<GridStressForecast | null>(null);
   const [bounds, setBounds] = useState<PowerFinderBounds>({
     west: 7.9,
     south: 52.7,
@@ -338,6 +342,14 @@ function ConstraintExplorerPage() {
     };
   }, [bounds]);
 
+  useEffect(() => {
+    const controller = new AbortController();
+    void loadCurrentGridStressForecast("DE", controller.signal)
+      .then(setGridOutlook)
+      .catch(() => setGridOutlook(null));
+    return () => controller.abort();
+  }, []);
+
   const readiness = enquiryReadiness({
     site: false,
     requestedImport: false,
@@ -367,6 +379,7 @@ function ConstraintExplorerPage() {
             operating terms require confirmation from the responsible network operator.
           </p>
         </section>
+        <RegionalGridOutlook forecast={gridOutlook} />
         <div className="constraint-workbench">
           <aside className="constraint-control-rail" aria-label="Constraint analysis controls">
             <header>

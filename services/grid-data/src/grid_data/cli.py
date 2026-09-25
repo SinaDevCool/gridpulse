@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import argparse
+import json
+import os
+from datetime import datetime, timezone
 from pathlib import Path
 
 from .benchmark_a import build_benchmark_a_artifact
@@ -10,16 +13,22 @@ from .benchmark_d import build_benchmark_d_artifact
 from .benchmark_e import build_benchmark_e_artifact
 from .benchmark_model import build_c1_validation_artifact
 from .berlin_synthetic_capacity import build_berlin_synthetic_capacity_artifact
-from .fifty_hertz_synthetic_capacity import build_fifty_hertz_synthetic_capacity_artifact
-from .fifty_hertz_regional_screening import build_regional_screening_artifact
-from .fifty_hertz_preapplication import build_preapplication_package
 from .c1_publish import publish_c1_artifact
 from .c2_benchmark import build_c2_benchmark_artifact
 from .c2_publish import publish_c2_artifact
+from .c2_sources import fetch_smard_hourly
 from .cgmes_import import import_cgmes_model
 from .download import download_artifact
 from .enrichment_sources import normalize_enrichment_geojson, publish_enrichment_release
+from .fifty_hertz_preapplication import build_preapplication_package
+from .fifty_hertz_regional_screening import build_regional_screening_artifact
+from .fifty_hertz_synthetic_capacity import build_fifty_hertz_synthetic_capacity_artifact
 from .fixture import build_fixture
+from .forecasting.adapters import observations_from_hourly_series
+from .forecasting.inference import predict as predict_grid_stress
+from .forecasting.pipeline import load_feature_snapshot, load_training_rows, run_backtest_file
+from .forecasting.publish import ForecastStore
+from .forecasting.training import load_promoted_model, train_promoted_model, write_model_manifest
 from .geofabrik import discover_germany_pbf, discover_state_manifest
 from .health import check_source, discover_mastr_export
 from .mastr import parse_mastr_export, stream_mastr_export
@@ -233,6 +242,25 @@ def parser() -> argparse.ArgumentParser:
     acceptance.add_argument("--input", type=Path, required=True)
     acceptance.add_argument("--output", type=Path, required=True)
     acceptance.add_argument("--public-output", type=Path)
+    forecast_backtest = subcommands.add_parser("backtest-grid-stress")
+    forecast_backtest.add_argument("--input", type=Path, required=True)
+    forecast_backtest.add_argument("--output", type=Path, required=True)
+    forecast_backtest.add_argument("--minimum-train-days", type=int, default=180)
+    forecast_backtest.add_argument("--test-days", type=int, default=30)
+    forecast_backtest.add_argument("--folds", type=int, default=3)
+    forecast_train = subcommands.add_parser("train-grid-stress")
+    forecast_train.add_argument("--input", type=Path, required=True)
+    forecast_train.add_argument("--artifact", type=Path, required=True)
+    forecast_train.add_argument("--manifest", type=Path, required=True)
+    forecast_train.add_argument("--version")
+    forecast_infer = subcommands.add_parser("infer-grid-stress")
+    forecast_infer.add_argument("--snapshot", type=Path, required=True)
+    forecast_infer.add_argument("--artifact", type=Path, required=True)
+    forecast_infer.add_argument("--manifest", type=Path, required=True)
+    forecast_infer.add_argument("--output", type=Path, required=True)
+    forecast_ingest = subcommands.add_parser("ingest-grid-stress-smard")
+    forecast_ingest.add_argument("--start-year", type=int, required=True)
+    forecast_ingest.add_argument("--end-year", type=int, required=True)
     return command
 
 
@@ -599,6 +627,61 @@ def main() -> None:
             f"Validated all synthetic pilot phases; reduction={reduction['compute_reduction']}; "
             f"report={report['report_sha256'][:12]}."
         )
+    elif args.command == "backtest-grid-stress":
+        report = run_backtest_file(
+            args.input, args.output,
+            minimum_train=args.minimum_train_days,
+            test_days=args.test_days,
+            folds=args.folds,
+        )
+        print(
+            f"Completed {len(report['folds'])} chronological grid-stress folds; "
+            f"promotion={'accepted' if report['promotion']['accepted'] else 'rejected'}."
+        )
+    elif args.command == "train-grid-stress":
+        artifact = train_promoted_model(
+            load_training_rows(args.input), args.artifact, version=args.version
+        )
+        write_model_manifest(artifact, args.manifest)
+        print(
+            f"Published accepted model artifact {artifact.version}; "
+            f"sha256={artifact.sha256[:12]}."
+        )
+    elif args.command == "infer-grid-stress":
+        bundle, manifest = load_promoted_model(args.artifact, args.manifest)
+        forecast = predict_grid_stress(
+            load_feature_snapshot(args.snapshot), bundle,
+            model_name=manifest["modelName"], model_version=manifest["version"],
+        )
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(
+            json.dumps(forecast.as_public_dict(), indent=2, sort_keys=True),
+            encoding="utf-8",
+        )
+        print(f"Wrote {forecast.delivery_day} grid-stress forecast to {args.output}.")
+    elif args.command == "ingest-grid-stress-smard":
+        if args.end_year < args.start_year:
+            raise SystemExit("end-year must be greater than or equal to start-year")
+        retrieved = datetime.now(timezone.utc)
+        specifications = (
+            (410, "actual_grid_load", "MW"),
+            (4067, "wind_onshore_generation", "MW"),
+            (4068, "solar_generation", "MW"),
+            (4169, "day_ahead_price", "EUR/MWh"),
+        )
+        store = ForecastStore(
+            os.environ["SUPABASE_URL"], os.environ["SUPABASE_SERVICE_ROLE_KEY"]
+        )
+        published = 0
+        for filter_id, metric, unit in specifications:
+            series = fetch_smard_hourly(
+                filter_id=filter_id, start_year=args.start_year, end_year=args.end_year,
+                metric=metric, unit=unit,
+            )
+            published += store.publish_observations(
+                observations_from_hourly_series(series, retrieved_at=retrieved)
+            )
+        print(f"Published {published} real SMARD observations for forecast training.")
 
 
 if __name__ == "__main__":

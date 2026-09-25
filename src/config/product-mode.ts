@@ -75,6 +75,7 @@ const finderApiRoutes = new Set([
   "/api/power-finder/viewport",
   "/api/power-finder/study",
   "/api/power-finder/scenario",
+  "/api/forecasts/grid-stress/current",
   "/api/properties/enrich",
 ]);
 

@@ -28,6 +28,9 @@ import {
 } from "react";
 import { z } from "zod";
 import { AppShell } from "@/components/product/AppShell";
+import { RegionalGridOutlook } from "@/features/grid-forecast/RegionalGridOutlook";
+import { loadCurrentGridStressForecast } from "@/features/grid-forecast/client";
+import type { GridStressForecast } from "@/features/grid-forecast/contracts";
 import { PowerFinderMap, type RzRegDataCentre } from "@/components/product/PowerFinderMap";
 import {
   InteractiveMapLegend,
@@ -620,6 +623,7 @@ function PowerFinderPage() {
   const [rankingState, setRankingState] = useState<"loading" | "ready" | "error">("loading");
   const [coverage, setCoverage] = useState<PowerFinderCoverage[]>(fallbackCoverage);
   const [operatorCatalog, setOperatorCatalog] = useState<GridOperatorOption[]>([]);
+  const [gridOutlook, setGridOutlook] = useState<GridStressForecast | null>(null);
   const regionCode = search.region ?? "DE";
   const [mapMode, setMapMode] = useState<"voltage" | "evidence" | "capacity">(
     search.mapMode ?? "voltage",
@@ -1502,6 +1506,14 @@ function PowerFinderPage() {
   }, [selected]);
 
   useEffect(() => {
+    const controller = new AbortController();
+    void loadCurrentGridStressForecast("DE", controller.signal)
+      .then(setGridOutlook)
+      .catch(() => setGridOutlook(null));
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
     const sourceCollection = rankingCollection;
     if (!sourceCollection || !dataMode) return;
     if (project.latitude == null || project.longitude == null) {
@@ -1612,6 +1624,7 @@ function PowerFinderPage() {
                 </button>
               </div>
             </div>
+            <RegionalGridOutlook forecast={gridOutlook} compact />
             {finderWorkflow === "discover" ? (
               <section className="finder-discovery-intro" aria-labelledby="finder-discovery-title">
                 <p className="context-label">Regional opportunity discovery</p>

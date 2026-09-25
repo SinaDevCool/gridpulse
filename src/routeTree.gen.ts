@@ -44,6 +44,7 @@ import { Route as ApiPropertiesEnrichRouteImport } from './routes/api.properties
 import { Route as ApiPowerFinderViewportRouteImport } from './routes/api.power-finder.viewport'
 import { Route as ApiPowerFinderStudyRouteImport } from './routes/api.power-finder.study'
 import { Route as ApiPowerFinderScenarioRouteImport } from './routes/api.power-finder.scenario'
+import { Route as ApiForecastsGridStressCurrentRouteImport } from './routes/api.forecasts.grid-stress.current'
 import { Route as ApiPowerFinderTileZXYRouteImport } from './routes/api.power-finder.tile.$z.$x.$y'
 
 const WorkspacesRoute = WorkspacesRouteImport.update({
@@ -221,6 +222,12 @@ const ApiPowerFinderScenarioRoute = ApiPowerFinderScenarioRouteImport.update({
   path: '/api/power-finder/scenario',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiForecastsGridStressCurrentRoute =
+  ApiForecastsGridStressCurrentRouteImport.update({
+    id: '/api/forecasts/grid-stress/current',
+    path: '/api/forecasts/grid-stress/current',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPowerFinderTileZXYRoute = ApiPowerFinderTileZXYRouteImport.update({
   id: '/api/power-finder/tile/$z/$x/$y',
   path: '/api/power-finder/tile/$z/$x/$y',
@@ -263,6 +270,7 @@ export interface FileRoutesByFullPath {
   '/api/power-finder/study': typeof ApiPowerFinderStudyRoute
   '/api/power-finder/viewport': typeof ApiPowerFinderViewportRoute
   '/api/properties/enrich': typeof ApiPropertiesEnrichRoute
+  '/api/forecasts/grid-stress/current': typeof ApiForecastsGridStressCurrentRoute
   '/api/power-finder/tile/$z/$x/$y': typeof ApiPowerFinderTileZXYRoute
 }
 export interface FileRoutesByTo {
@@ -301,6 +309,7 @@ export interface FileRoutesByTo {
   '/api/power-finder/study': typeof ApiPowerFinderStudyRoute
   '/api/power-finder/viewport': typeof ApiPowerFinderViewportRoute
   '/api/properties/enrich': typeof ApiPropertiesEnrichRoute
+  '/api/forecasts/grid-stress/current': typeof ApiForecastsGridStressCurrentRoute
   '/api/power-finder/tile/$z/$x/$y': typeof ApiPowerFinderTileZXYRoute
 }
 export interface FileRoutesById {
@@ -340,6 +349,7 @@ export interface FileRoutesById {
   '/api/power-finder/study': typeof ApiPowerFinderStudyRoute
   '/api/power-finder/viewport': typeof ApiPowerFinderViewportRoute
   '/api/properties/enrich': typeof ApiPropertiesEnrichRoute
+  '/api/forecasts/grid-stress/current': typeof ApiForecastsGridStressCurrentRoute
   '/api/power-finder/tile/$z/$x/$y': typeof ApiPowerFinderTileZXYRoute
 }
 export interface FileRouteTypes {
@@ -380,6 +390,7 @@ export interface FileRouteTypes {
     | '/api/power-finder/study'
     | '/api/power-finder/viewport'
     | '/api/properties/enrich'
+    | '/api/forecasts/grid-stress/current'
     | '/api/power-finder/tile/$z/$x/$y'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -418,6 +429,7 @@ export interface FileRouteTypes {
     | '/api/power-finder/study'
     | '/api/power-finder/viewport'
     | '/api/properties/enrich'
+    | '/api/forecasts/grid-stress/current'
     | '/api/power-finder/tile/$z/$x/$y'
   id:
     | '__root__'
@@ -456,6 +468,7 @@ export interface FileRouteTypes {
     | '/api/power-finder/study'
     | '/api/power-finder/viewport'
     | '/api/properties/enrich'
+    | '/api/forecasts/grid-stress/current'
     | '/api/power-finder/tile/$z/$x/$y'
   fileRoutesById: FileRoutesById
 }
@@ -492,6 +505,7 @@ export interface RootRouteChildren {
   ApiPowerFinderStudyRoute: typeof ApiPowerFinderStudyRoute
   ApiPowerFinderViewportRoute: typeof ApiPowerFinderViewportRoute
   ApiPropertiesEnrichRoute: typeof ApiPropertiesEnrichRoute
+  ApiForecastsGridStressCurrentRoute: typeof ApiForecastsGridStressCurrentRoute
   ApiPowerFinderTileZXYRoute: typeof ApiPowerFinderTileZXYRoute
 }
 
@@ -742,6 +756,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPowerFinderScenarioRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/forecasts/grid-stress/current': {
+      id: '/api/forecasts/grid-stress/current'
+      path: '/api/forecasts/grid-stress/current'
+      fullPath: '/api/forecasts/grid-stress/current'
+      preLoaderRoute: typeof ApiForecastsGridStressCurrentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/power-finder/tile/$z/$x/$y': {
       id: '/api/power-finder/tile/$z/$x/$y'
       path: '/api/power-finder/tile/$z/$x/$y'
@@ -821,6 +842,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPowerFinderStudyRoute: ApiPowerFinderStudyRoute,
   ApiPowerFinderViewportRoute: ApiPowerFinderViewportRoute,
   ApiPropertiesEnrichRoute: ApiPropertiesEnrichRoute,
+  ApiForecastsGridStressCurrentRoute: ApiForecastsGridStressCurrentRoute,
   ApiPowerFinderTileZXYRoute: ApiPowerFinderTileZXYRoute,
 }
 export const routeTree = rootRouteImport

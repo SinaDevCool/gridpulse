@@ -22334,3 +22334,29 @@ tbody tr:last-child td {
     max-height: min(70vh, 34rem);
   }
 }
+.regional-grid-outlook {
+  display: flex;
+  gap: 0.9rem;
+  align-items: flex-start;
+  margin: 0 0 1rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid color-mix(in srgb, var(--color-cyan, #38bdf8) 40%, transparent);
+  border-left: 4px solid var(--color-cyan, #38bdf8);
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--color-cyan, #38bdf8) 7%, var(--surface-raised, #0d2030));
+}
+
+.regional-grid-outlook > svg { flex: 0 0 auto; width: 1.25rem; color: var(--color-cyan, #38bdf8); }
+.regional-grid-outlook-copy { display: grid; gap: 0.25rem; }
+.regional-grid-outlook strong { font-size: 1rem; }
+.regional-grid-outlook p, .regional-grid-outlook small { margin: 0; color: var(--text-muted, #91a7b8); line-height: 1.45; }
+.regional-grid-outlook small { display: flex; gap: 0.35rem; align-items: center; }
+.regional-grid-outlook small svg { width: 0.85rem; }
+.regional-grid-outlook.severity-high { border-left-color: #f97316; }
+.regional-grid-outlook.severity-critical { border-left-color: #ef4444; }
+.regional-grid-outlook.severity-low { border-left-color: #34d399; }
+.regional-grid-outlook.is-unavailable { border-left-color: #64748b; }
+.regional-grid-outlook.is-compact { margin: 0.65rem 0.75rem; padding: 0.75rem; }
+.regional-grid-outlook.is-compact .context-label { display: none; }
+.regional-grid-outlook.is-compact strong { font-size: 0.78rem; }
+.regional-grid-outlook.is-compact p, .regional-grid-outlook.is-compact small { font-size: 0.68rem; }
