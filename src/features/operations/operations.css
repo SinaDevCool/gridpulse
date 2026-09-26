@@ -1,4 +1,13 @@
 .operations-v2 {
+  --ops-demand: #39c7e8;
+  --ops-demand-fill: color-mix(in srgb, var(--ops-demand) 13%, transparent);
+  --ops-response: #9b72ff;
+  --ops-compute: #d8a42a;
+  --ops-battery: #9b72ff;
+  --ops-soc: #efb43a;
+  --ops-target: #efb43a;
+  --ops-selection: #f4f8fb;
+  --ops-axis: color-mix(in srgb, var(--muted-foreground) 72%, transparent);
   --ops-measured: #34d6f5;
   --ops-measured-fill: color-mix(in srgb, var(--ops-measured) 18%, transparent);
   --ops-public-trace: #7796ff;
@@ -1966,6 +1975,15 @@
 /* Light mode is intentionally tuned as a distinct operating surface rather
    than a color-inverted version of the dark workspace. */
 :root[data-theme="light"] .operations-v2 {
+  --ops-demand: #087c98;
+  --ops-demand-fill: color-mix(in srgb, var(--ops-demand) 10%, transparent);
+  --ops-response: #7042c7;
+  --ops-compute: #765100;
+  --ops-battery: #7042c7;
+  --ops-soc: #8a5300;
+  --ops-target: #9a5a00;
+  --ops-selection: #163d55;
+  --ops-axis: #697a8d;
   --ops-measured: #087c98;
   --ops-measured-fill: color-mix(in srgb, var(--ops-measured) 12%, transparent);
   --ops-public-trace: #425ed0;
@@ -2324,4 +2342,252 @@
   .power-timeline {
     height: 20rem;
   }
+}
+
+/* Operations visualization language --------------------------------------- */
+.operations-chart-purpose {
+  max-width: 66rem;
+  margin: 0.7rem 0 0;
+  color: var(--muted-foreground);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+.operations-chart-purpose strong {
+  color: var(--foreground);
+}
+
+.operations-chart-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  margin-top: 0.85rem;
+  overflow: hidden;
+  border: 1px solid var(--ops-border-strong);
+  border-radius: 10px;
+  background: var(--ops-border-strong);
+}
+
+.operations-chart-summary > div {
+  min-width: 0;
+  padding: 0.65rem 0.75rem;
+  background: var(--ops-surface-raised);
+}
+
+.operations-chart-summary span,
+.operations-chart-summary strong {
+  display: block;
+}
+
+.operations-chart-summary span {
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+}
+
+.operations-chart-summary strong {
+  margin-top: 0.18rem;
+  overflow: hidden;
+  color: var(--foreground);
+  font-size: 0.92rem;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.operations-chart-summary .tone-response strong { color: var(--ops-response); }
+.operations-chart-summary .tone-positive strong { color: var(--ops-positive); }
+.operations-chart-summary .tone-limit strong { color: var(--ops-limit); }
+.operations-chart-summary .tone-demand strong { color: var(--ops-demand); }
+.operations-chart-summary .tone-battery strong { color: var(--ops-battery); }
+.operations-chart-summary .tone-soc strong { color: var(--ops-soc); }
+
+.operations-chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem 1rem;
+  margin: 0.9rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.operations-chart-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: min(12rem, 100%);
+}
+
+.operations-chart-legend li > span {
+  min-width: 0;
+}
+
+.operations-chart-legend strong,
+.operations-chart-legend small {
+  display: block;
+}
+
+.operations-chart-legend strong {
+  color: var(--foreground);
+  font-size: 0.75rem;
+  line-height: 1.2;
+}
+
+.operations-chart-legend small {
+  margin-top: 0.12rem;
+  color: var(--muted-foreground);
+  font-size: 0.65rem;
+  line-height: 1.2;
+}
+
+.operations-chart-mark {
+  --mark-color: var(--ops-reference);
+  position: relative;
+  flex: 0 0 auto;
+  display: inline-block;
+  width: 1.55rem;
+  height: 0.7rem;
+}
+
+.operations-chart-mark::before {
+  content: "";
+  position: absolute;
+  inset: calc(50% - 1.5px) 0 auto;
+  border-top: 3px solid var(--mark-color);
+}
+
+.operations-chart-mark.dash::before { border-top-style: dashed; }
+.operations-chart-mark.area { background: color-mix(in srgb, var(--mark-color) 14%, transparent); }
+.operations-chart-mark.bar {
+  width: 1rem;
+  height: 0.85rem;
+  border-radius: 2px;
+  background: var(--mark-color);
+}
+.operations-chart-mark.bar::before { content: none; }
+.operations-chart-mark.demand { --mark-color: var(--ops-demand); }
+.operations-chart-mark.response { --mark-color: var(--ops-response); }
+.operations-chart-mark.compute { --mark-color: var(--ops-compute); }
+.operations-chart-mark.battery { --mark-color: var(--ops-battery); }
+.operations-chart-mark.soc { --mark-color: var(--ops-soc); }
+.operations-chart-mark.limit { --mark-color: var(--ops-limit); }
+.operations-chart-mark.target { --mark-color: var(--ops-target); }
+.operations-chart-mark.positive { --mark-color: var(--ops-positive); }
+
+.operations-v2-tooltip > div {
+  display: grid;
+  gap: 0.2rem;
+  margin-top: 0.45rem;
+}
+
+.operations-tooltip-row {
+  display: grid;
+  grid-template-columns: 1.5rem minmax(7rem, 1fr) auto;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.operations-tooltip-row > span small,
+.operations-tooltip-row > span em {
+  display: block;
+}
+
+.operations-tooltip-row > span small {
+  color: var(--foreground);
+  font-size: 0.72rem;
+  font-style: normal;
+}
+
+.operations-tooltip-row > span em {
+  margin-top: 0.08rem;
+  color: var(--muted-foreground);
+  font-size: 0.62rem;
+  font-style: normal;
+}
+
+.operations-tooltip-row > strong {
+  font-size: 0.76rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.operations-v2-tooltip > em {
+  display: block;
+  margin-top: 0.5rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid var(--border);
+  color: var(--foreground);
+  font-size: 0.68rem;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.power-timeline {
+  display: grid;
+  grid-template-rows: minmax(17rem, 1.65fr) minmax(12rem, 1fr);
+  gap: 0.85rem;
+  height: clamp(34rem, 46vw, 44rem);
+  margin-top: 0.9rem;
+}
+
+.power-timeline-panel {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  padding-top: 1.7rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--ops-surface-raised) 72%, transparent);
+}
+
+.power-timeline-panel > header {
+  position: absolute;
+  z-index: 1;
+  inset: 0.6rem 0.8rem auto;
+  display: flex;
+  justify-content: space-between;
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+}
+
+.power-timeline-panel > header strong {
+  color: var(--foreground);
+  font-size: 0.72rem;
+}
+
+.power-timeline-panel--battery .recharts-bar-rectangle path {
+  stroke: color-mix(in srgb, var(--ops-battery) 75%, var(--foreground));
+  stroke-width: 0.5;
+}
+
+:root[data-theme="light"] .operations-chart-summary {
+  border-color: #b9c7d4;
+  background: #b9c7d4;
+}
+
+:root[data-theme="light"] .operations-chart-summary > div,
+:root[data-theme="light"] .power-timeline-panel {
+  background: #f7fafc;
+}
+
+@media (max-width: 1100px) {
+  .operations-chart-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .power-timeline { height: 38rem; }
+}
+
+@media (max-width: 620px) {
+  .operations-chart-summary { grid-template-columns: 1fr 1fr; }
+  .operations-chart-legend { display: grid; grid-template-columns: 1fr 1fr; }
+  .operations-chart-legend li { min-width: 0; }
+  .power-timeline {
+    grid-template-rows: 17rem 13rem;
+    height: 31rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .operations-chart-summary,
+  .operations-chart-legend { grid-template-columns: 1fr; }
 }

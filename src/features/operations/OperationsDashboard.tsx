@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import {
   Activity,
@@ -18,7 +18,6 @@ import {
   Area,
   CartesianGrid,
   ComposedChart,
-  Legend,
   Line,
   ReferenceLine,
   ResponsiveContainer,
@@ -38,6 +37,15 @@ import {
 import { ComputeWorkloadsView } from "./ComputeWorkloadsView";
 import { PowerBatteryView } from "./PowerBatteryView";
 import { fetchOperationsCapabilities, requestOperationsAssessment } from "@/lib/operations-api";
+import {
+  ChartSummaryMetric,
+  OperationsChartLegend,
+  OperationsChartSummary,
+  OperationsTooltipShell,
+  TooltipRow,
+  formatDurationFromIntervals,
+  formatMw,
+} from "./visualization";
 
 export type OperationsView = "overview" | "compute" | "power";
 
@@ -190,22 +198,28 @@ function OverviewView({
         />
         <MetricCard
           icon={<Gauge />}
-          label="Remaining Margin"
+          label="Headroom After Reserve"
           metric={model.metrics.remainingMargin}
           note="After safety reserve"
         />
         <MetricCard
           icon={<Cpu />}
-          label="Additional GPUs"
+          label="Additional GPUs Supportable"
           metric={model.metrics.additionalGpus}
-          note="Reference-power estimate"
+          note="Based on configured GPU power and PUE"
           format="integer"
         />
         <MetricCard
           icon={<AlertTriangle />}
           label="Limit Risk"
           metric={model.metrics.limitRisk}
-          note={`${model.summaries[0].violationIntervals} baseline intervals`}
+          note={
+            model.metrics.limitRisk.value === "Low"
+              ? "Baseline remains below the facility limit"
+              : model.metrics.limitRisk.value === "Moderate"
+                ? "Response resolves the baseline exceedance"
+                : "Response still exceeds the facility limit"
+          }
           tone={model.metrics.limitRisk.value === "High" ? "danger" : "warning"}
         />
       </div>
@@ -270,12 +284,54 @@ function DemandChart({
       : selected === "battery"
         ? "batteryDemandMw"
         : "combinedDemandMw";
+  const baseline = model.summaries[0];
+  const selectedSummary =
+    model.summaries.find((summary) => summary.kind === selected) ?? model.summaries[2];
+  const selectedName =
+    selected === "baseline"
+      ? "Baseline"
+      : selected === "battery"
+        ? "Battery response"
+        : "Battery + workload";
+  const targetMw = model.scenario.importLimitMw - model.scenario.safetyReserveMw;
   return (
     <article className={`operations-v2-chart-card${compact ? " compact" : ""}`}>
       <ChartHeader
         eyebrow="24-Hour Scenario"
-        title="Facility Demand & Operating Limit"
+        title="Facility Demand vs Operating Target"
         badge="Simulated"
+      />
+      <p className="operations-chart-purpose">
+        Baseline compared with <strong>{selectedName}</strong>. The safety target preserves the
+        configured reserve below the facility limit.
+      </p>
+      <OperationsChartSummary>
+        <ChartSummaryMetric label="Baseline Peak" value={formatMw(baseline.peakDemandMw)} />
+        <ChartSummaryMetric
+          label="Response Peak"
+          value={formatMw(selectedSummary.peakDemandMw)}
+          tone="response"
+        />
+        <ChartSummaryMetric
+          label="Peak Reduction"
+          value={formatMw(Math.max(0, baseline.peakDemandMw - selectedSummary.peakDemandMw))}
+          tone="positive"
+        />
+        <ChartSummaryMetric
+          label="Limit Exposure"
+          value={`${formatDurationFromIntervals(baseline.violationIntervals)} → ${formatDurationFromIntervals(selectedSummary.violationIntervals)}`}
+          tone={selectedSummary.violationIntervals ? "limit" : "positive"}
+        />
+      </OperationsChartSummary>
+      <OperationsChartLegend
+        items={[
+          { label: "Baseline demand", detail: "MW · before response", tone: "demand", mark: "area" },
+          ...(selected !== "baseline"
+            ? [{ label: selectedName, detail: "MW · selected response", tone: "response" as const }]
+            : []),
+          { label: "Safety target", detail: `${formatMw(targetMw)} · assumption`, tone: "target", mark: "dash" },
+          { label: "Facility limit", detail: `${formatMw(model.scenario.importLimitMw)} · assumption`, tone: "limit", mark: "dash" },
+        ]}
       />
       <div
         className="operations-v2-chart"
@@ -305,7 +361,16 @@ function DemandChart({
               axisLine={false}
             />
             <Tooltip content={<OperationsTooltip />} />
-            <Legend />
+            <ReferenceLine
+              y={targetMw}
+              stroke="var(--ops-target)"
+              strokeDasharray="3 5"
+              label={{
+                value: `${number.format(targetMw)} MW target`,
+                fill: "var(--ops-target)",
+                position: "insideTopRight",
+              }}
+            />
             <ReferenceLine
               y={model.scenario.importLimitMw}
               stroke="var(--ops-limit)"
@@ -313,22 +378,22 @@ function DemandChart({
               label={{
                 value: `${model.scenario.importLimitMw} MW limit`,
                 fill: "var(--ops-limit)",
-                position: "insideTopLeft",
+                position: "insideBottomLeft",
               }}
             />
             <Area
               dataKey="baselineDemandMw"
               name="Baseline Demand"
-              stroke="var(--ops-measured)"
-              fill="var(--ops-measured-fill)"
+              stroke="var(--ops-demand)"
+              fill="var(--ops-demand-fill)"
               strokeWidth={2}
             />
             {selected !== "baseline" ? (
               <Line
                 dataKey={selectedKey}
                 name={selected === "battery" ? "Battery Response" : "Battery + Workload"}
-                stroke="var(--ops-simulated)"
-                strokeWidth={2.5}
+                stroke="var(--ops-response)"
+                strokeWidth={3}
                 dot={false}
               />
             ) : null}
@@ -395,7 +460,7 @@ function ScenarioComparison({
               ) : null}
               <div>
                 <dt>GPU-Hours</dt>
-                <dd>{integer.format(summary.additionalGpuHours)}</dd>
+                <dd>{integer.format(summary.additionalGpuHours)} h</dd>
               </div>
             </dl>
           </button>
@@ -595,6 +660,9 @@ function MetricCard<T>({
       <strong>
         {value}
         {metric.value != null && metric.unit ? <small>&nbsp;{metric.unit}</small> : null}
+        {label === "Additional GPUs Supportable" && metric.value != null ? (
+          <small>&nbsp;GPU{Number(metric.value) === 1 ? "" : "s"}</small>
+        ) : null}
       </strong>
       <small>{note}</small>
     </article>
@@ -633,14 +701,17 @@ function OperationsTooltip({
 }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="operations-v2-tooltip" role="status" aria-live="polite">
-      <strong>{label}</strong>
+    <OperationsTooltipShell label={label}>
       {payload.map((item) => (
-        <span key={item.name} style={{ "--series": item.color } as CSSProperties}>
-          {item.name}: {number.format(item.value ?? 0)}
-        </span>
+        <TooltipRow
+          key={item.name}
+          label={item.name ?? "Series"}
+          value={formatMw(item.value ?? 0)}
+          tone={item.name === "Baseline Demand" ? "demand" : "response"}
+          detail="Simulated"
+        />
       ))}
-    </div>
+    </OperationsTooltipShell>
   );
 }
 
@@ -651,9 +722,6 @@ function AccessibleIntervalTable({
   model: OperationsOverviewModel;
   mode: "power" | "compute";
 }) {
-  const sampled = model.intervals.filter(
-    (_, index) => index % 8 === 0 || index === model.intervals.length - 1,
-  );
   return (
     <details className="operations-v2-chart-data">
       <summary>View Chart Data</summary>
@@ -664,21 +732,21 @@ function AccessibleIntervalTable({
               <th scope="col">Time</th>
               {mode === "power" ? (
                 <>
-                  <th scope="col">Baseline</th>
-                  <th scope="col">Battery</th>
-                  <th scope="col">Combined</th>
+                  <th scope="col">Baseline (MW)</th>
+                  <th scope="col">Battery Response (MW)</th>
+                  <th scope="col">Combined Response (MW)</th>
                 </>
               ) : (
                 <>
                   <th scope="col">Active GPUs</th>
-                  <th scope="col">Utilisation</th>
-                  <th scope="col">GPU Power</th>
+                  <th scope="col">Utilisation (%)</th>
+                  <th scope="col">GPU Power (MW)</th>
                 </>
               )}
             </tr>
           </thead>
           <tbody>
-            {sampled.map((point) => (
+            {model.intervals.map((point) => (
               <tr key={point.timestamp}>
                 <th scope="row">{point.label}</th>
                 {mode === "power" ? (

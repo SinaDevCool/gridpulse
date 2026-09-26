@@ -131,7 +131,9 @@ test("Power & Battery exposes dispatch physics and imports measured evidence", a
   await expect(
     page.getByText("Positive battery power means discharge; negative power means charge."),
   ).toBeVisible();
-  await expect(page.getByText("Demand, grid import, battery power and SOC")).toBeVisible();
+  await expect(page.getByText("Facility Power & Battery Response")).toBeVisible();
+  await expect(page.getByText("Facility Power", { exact: true })).toBeVisible();
+  await expect(page.getByText("Battery Dispatch & State of Charge", { exact: true })).toBeVisible();
   await expect(page.getByText("No live connectors configured")).toBeVisible();
   const connect = page.getByRole("button", { name: "Connect evidence" });
   await expect(connect).toBeEnabled();
@@ -157,6 +159,32 @@ test("Power & Battery exposes dispatch physics and imports measured evidence", a
     "true",
   );
   await expect(page.getByText("Measured", { exact: true }).first()).toBeVisible();
+});
+
+test("Operations charts expose explicit legends, units, targets, and full data alternatives", async ({
+  page,
+}) => {
+  await page.goto("/operations?view=overview");
+  await expect(page.getByText("Facility Demand vs Operating Target")).toBeVisible();
+  await expect(page.getByText("Safety target", { exact: true })).toBeVisible();
+  await expect(page.getByText("Facility limit", { exact: true })).toBeVisible();
+  await expect(page.getByText("Peak Reduction", { exact: true }).first()).toBeVisible();
+  await page.getByText("View Chart Data", { exact: true }).click();
+  await expect(page.getByRole("columnheader", { name: "Baseline (MW)" })).toBeVisible();
+  await expect(page.locator(".operations-v2-chart-data tbody tr")).toHaveCount(96);
+
+  await page.goto("/operations?view=compute");
+  await expect(page.getByText("GPU power", { exact: true })).toBeVisible();
+  await expect(page.getByText("MW · component of facility demand", { exact: true })).toBeVisible();
+  await page.getByText("View Full Chart Data", { exact: true }).click();
+  await expect(page.getByRole("columnheader", { name: "GPU Power (MW)" })).toBeVisible();
+
+  await page.goto("/operations?view=power");
+  await expect(page.getByText("+ discharge / − charge", { exact: false })).toBeVisible();
+  await expect(page.getByText("State of charge", { exact: true }).first()).toBeVisible();
+  await page.getByText("View Full Interval Data", { exact: true }).click();
+  await expect(page.getByRole("columnheader", { name: "Battery Dispatch (MW)" })).toBeVisible();
+  await expect(page.locator(".operations-v2-chart-data tbody tr")).toHaveCount(96);
 });
 
 test("Power & Battery remains usable on a mobile viewport", async ({ page }) => {

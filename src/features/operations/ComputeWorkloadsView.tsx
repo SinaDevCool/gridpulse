@@ -17,7 +17,6 @@ import {
   Area,
   CartesianGrid,
   ComposedChart,
-  Legend,
   Line,
   ReferenceLine,
   ResponsiveContainer,
@@ -40,6 +39,16 @@ import {
   type WorkloadAssessment,
 } from "./workload-intelligence";
 import { useOperationsCapabilities } from "./use-operations-capabilities";
+import {
+  ChartSummaryMetric,
+  OperationsChartLegend,
+  OperationsChartSummary,
+  OperationsTooltipShell,
+  TooltipRow,
+  formatDurationFromIntervals,
+  formatMw,
+  formatMwh,
+} from "./visualization";
 
 const number = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
 const integer = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
@@ -172,9 +181,9 @@ export function ComputeWorkloadsView({ model }: { model: OperationsOverviewModel
         <Metric
           icon={<AlertTriangle />}
           label="Power-Limit Exposure"
-          value={`${model.summaries[0].violationIntervals} intervals`}
+          value={formatDurationFromIntervals(model.summaries[0].violationIntervals)}
           evidence="simulated"
-          note="Facility scenario"
+          note={`${model.summaries[0].violationIntervals} × 15-minute intervals`}
           tone="warning"
         />
         <Metric
@@ -217,6 +226,40 @@ export function ComputeWorkloadsView({ model }: { model: OperationsOverviewModel
             </div>
             <EvidenceBadge kind="simulated" />
           </header>
+          <p className="operations-chart-purpose">
+            Whole-facility demand is compared with the response profile. GPU power is shown as a
+            component, not a separate facility total.
+          </p>
+          <OperationsChartSummary>
+            <ChartSummaryMetric
+              label="Baseline Exposure"
+              value={formatDurationFromIntervals(model.summaries[0].violationIntervals)}
+              tone="limit"
+            />
+            <ChartSummaryMetric
+              label="Recommended Response"
+              value={formatMw(assessment.recommendedPowerMw)}
+              tone="response"
+            />
+            <ChartSummaryMetric
+              label="Shiftable Energy"
+              value={formatMwh(assessment.recommendedEnergyMwh)}
+            />
+            <ChartSummaryMetric
+              label="Deadlines at Risk"
+              value={integer.format(assessment.deadlinesAtRisk)}
+              tone={assessment.deadlinesAtRisk ? "limit" : "positive"}
+            />
+          </OperationsChartSummary>
+          <OperationsChartLegend
+            items={[
+              { label: "Facility demand", detail: "MW · before response", tone: "demand", mark: "area" },
+              { label: "After response", detail: "MW · recommended profile", tone: "response" },
+              { label: "GPU power", detail: "MW · component of facility demand", tone: "compute" },
+              { label: "Safety target", detail: `${formatMw(model.scenario.importLimitMw - model.scenario.safetyReserveMw)} · assumption`, tone: "target", mark: "dash" },
+              { label: "Facility limit", detail: `${formatMw(model.scenario.importLimitMw)} · assumption`, tone: "limit", mark: "dash" },
+            ]}
+          />
           <div
             className="operations-v2-chart compute-timeline"
             role="img"
@@ -231,46 +274,53 @@ export function ComputeWorkloadsView({ model }: { model: OperationsOverviewModel
                 <CartesianGrid stroke="var(--ops-chart-grid)" vertical={false} />
                 <XAxis dataKey="label" minTickGap={36} tickLine={false} axisLine={false} />
                 <YAxis unit=" MW" tickLine={false} axisLine={false} />
-                <Tooltip
-                  contentStyle={{
-                    background: "var(--card)",
-                    border: "1px solid var(--border)",
-                    borderRadius: "10px",
-                    color: "var(--foreground)",
-                  }}
-                  labelStyle={{ color: "var(--foreground)", fontWeight: 800 }}
-                  itemStyle={{ color: "var(--muted-foreground)" }}
-                />
-                <Legend />
+                <Tooltip content={<ComputeTooltip />} />
                 <ReferenceLine
                   y={model.scenario.importLimitMw}
                   stroke="var(--ops-limit)"
                   strokeDasharray="7 5"
+                  label={{
+                    value: `${number.format(model.scenario.importLimitMw)} MW limit`,
+                    fill: "var(--ops-limit)",
+                    position: "insideBottomLeft",
+                  }}
+                />
+                <ReferenceLine
+                  y={model.scenario.importLimitMw - model.scenario.safetyReserveMw}
+                  stroke="var(--ops-target)"
+                  strokeDasharray="3 5"
+                  label={{
+                    value: `${number.format(model.scenario.importLimitMw - model.scenario.safetyReserveMw)} MW target`,
+                    fill: "var(--ops-target)",
+                    position: "insideTopRight",
+                  }}
                 />
                 <Area
                   dataKey="baselineDemandMw"
                   name="Facility demand"
-                  stroke="var(--ops-measured)"
-                  fill="var(--ops-measured-fill)"
+                  stroke="var(--ops-demand)"
+                  fill="var(--ops-demand-fill)"
                   strokeWidth={2}
                 />
                 <Line
                   dataKey="gpuPowerMw"
                   name="GPU power"
-                  stroke="var(--ops-assumption)"
+                  stroke="var(--ops-compute)"
                   strokeWidth={2}
+                  strokeDasharray="4 3"
                   dot={false}
                 />
                 <Line
                   dataKey="combinedDemandMw"
                   name="After response"
-                  stroke="var(--ops-simulated)"
-                  strokeWidth={2.5}
+                  stroke="var(--ops-response)"
+                  strokeWidth={3}
                   dot={false}
                 />
               </ComposedChart>
             </ResponsiveContainer>
           </div>
+          <ComputeChartData model={model} />
         </article>
         <article className="compute-recommendation">
           <header>
@@ -422,6 +472,67 @@ export function ComputeWorkloadsView({ model }: { model: OperationsOverviewModel
       </section>
       {selected ? <WorkloadDrawer workload={selected} onClose={() => setSelectedId(null)} /> : null}
     </section>
+  );
+}
+
+function ComputeTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: Array<{ name?: string; value?: number }>;
+  label?: string;
+}) {
+  if (!active || !payload?.length) return null;
+  return (
+    <OperationsTooltipShell label={label}>
+      {payload.map((item) => (
+        <TooltipRow
+          key={item.name}
+          label={item.name ?? "Series"}
+          value={formatMw(item.value ?? 0)}
+          tone={
+            item.name === "GPU power"
+              ? "compute"
+              : item.name === "After response"
+                ? "response"
+                : "demand"
+          }
+          detail="Simulated"
+        />
+      ))}
+    </OperationsTooltipShell>
+  );
+}
+
+function ComputeChartData({ model }: { model: OperationsOverviewModel }) {
+  return (
+    <details className="operations-v2-chart-data">
+      <summary>View Full Chart Data</summary>
+      <div>
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Time</th>
+              <th scope="col">Facility Demand (MW)</th>
+              <th scope="col">After Response (MW)</th>
+              <th scope="col">GPU Power (MW)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {model.intervals.map((point) => (
+              <tr key={point.timestamp}>
+                <th scope="row">{point.label}</th>
+                <td>{number.format(point.baselineDemandMw)}</td>
+                <td>{number.format(point.combinedDemandMw)}</td>
+                <td>{number.format(point.gpuPowerMw)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </details>
   );
 }
 
