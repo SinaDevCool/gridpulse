@@ -36,7 +36,7 @@ const checks = [
       if (/Sign In|Sign Up|Create account/i.test(html)) {
         throw new Error("Finder unexpectedly exposes account access");
       }
-      for (const retiredLabel of ["Planner", "Activation", "Operations", "Reports"]) {
+      for (const retiredLabel of ["Planner", "Activation", "Constraints", "Reports"]) {
         if (new RegExp(`<strong>${retiredLabel}</strong>`, "i").test(html)) {
           throw new Error(`Finder navigation still exposes ${retiredLabel}`);
         }
@@ -44,16 +44,19 @@ const checks = [
     },
   },
   {
-    name: "public-constraints",
-    url: `${baseUrl}/constraint-explorer`,
+    name: "public-operations",
+    url: `${baseUrl}/operations`,
     expectedStatus: 200,
     validate: async (response) => {
       const html = await response.text();
-      if (!html.includes("Understand what may constrain a site")) {
-        throw new Error("Constraints heading is missing");
+      if (!html.includes("Run more compute within the power limit")) {
+        throw new Error("Operations heading is missing");
       }
-      if (html.includes("Complete Project Assumptions")) {
-        throw new Error("Constraints still links to the dormant Planner stage");
+      if (!html.includes("Facility operations—not grid capacity")) {
+        throw new Error("Operations evidence boundary is missing");
+      }
+      if (html.includes("Understand what may constrain a site")) {
+        throw new Error("Operations still exposes the retired Constraints workspace");
       }
     },
   },
@@ -265,8 +268,8 @@ const checks = [
     url: `${baseUrl}/data-centre-planner`,
     expectedStatus: 200,
     validate: async (response) => {
-      if (new URL(response.url).pathname !== "/constraint-explorer") {
-        throw new Error("dormant Planner URL did not redirect to Constraints");
+      if (new URL(response.url).pathname !== "/operations") {
+        throw new Error("dormant Planner URL did not redirect to Operations");
       }
     },
   },
