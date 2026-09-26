@@ -184,9 +184,72 @@ const registeredClusterRadius: ExpressionSpecification = [
 const registeredMwLabel: ExpressionSpecification = [
   "case",
   [">=", ["coalesce", ["get", "registered_mw"], ["get", "net_capacity_mw"], -1], 1],
-  ["concat", ["round", ["coalesce", ["get", "registered_mw"], ["get", "net_capacity_mw"]]], " MW"],
+  [
+    "concat",
+    ["to-string", ["round", ["coalesce", ["get", "registered_mw"], ["get", "net_capacity_mw"]]]],
+    " MW",
+  ],
   [">", ["coalesce", ["get", "registered_mw"], ["get", "net_capacity_mw"], -1], 0],
   "<1 MW",
+  "MW unknown",
+];
+
+// Regional registry tiles already aggregate by technology. Size the aggregate by
+// its summed published capacity (area-like sqrt scaling) and fall back to the
+// number of records only when capacity is unavailable.
+const registeredAggregateMagnitude: ExpressionSpecification = [
+  "sqrt",
+  [
+    "max",
+    1,
+    ["coalesce", ["get", "registered_mw"], ["get", "net_capacity_mw"], ["get", "asset_count"], 1],
+  ],
+];
+
+const registeredAggregateRadius: ExpressionSpecification = [
+  "interpolate",
+  ["linear"],
+  registeredAggregateMagnitude,
+  1,
+  11,
+  4,
+  13,
+  10,
+  18,
+  32,
+  25,
+  100,
+  34,
+];
+
+const registeredAggregateIconSize: ExpressionSpecification = [
+  "interpolate",
+  ["linear"],
+  registeredAggregateMagnitude,
+  1,
+  1,
+  4,
+  1.08,
+  10,
+  1.2,
+  32,
+  1.4,
+  100,
+  1.75,
+];
+
+const registeredAggregateLabel: ExpressionSpecification = [
+  "case",
+  [">=", ["coalesce", ["get", "registered_mw"], ["get", "net_capacity_mw"], -1], 1],
+  [
+    "concat",
+    ["to-string", ["round", ["coalesce", ["get", "registered_mw"], ["get", "net_capacity_mw"]]]],
+    " MW",
+  ],
+  [">", ["coalesce", ["get", "registered_mw"], ["get", "net_capacity_mw"], -1], 0],
+  "<1 MW",
+  [">", ["coalesce", ["get", "asset_count"], 1], 1],
+  ["concat", ["to-string", ["get", "asset_count"]], " assets"],
   "MW unknown",
 ];
 const localGenerationColour: ExpressionSpecification = [
@@ -670,7 +733,7 @@ export function PowerFinderMap({
         map.addSource("power-finder-registry-tiles", {
           type: "vector",
           tiles: [
-            `${window.location.origin}/api/power-finder/tile/{z}/{x}/{y}?content=registry&v=20260926`,
+            `${window.location.origin}/api/power-finder/tile/{z}/{x}/{y}?content=registry&v=20260926-tech-clusters-v2`,
           ],
           minzoom: 4,
           // Request finer registry tiles so dense exact-location assets do not
@@ -1000,7 +1063,7 @@ export function PowerFinderMap({
           source: "power-finder-registry-tiles",
           "source-layer": "power_finder",
           minzoom: 4,
-          maxzoom: 11,
+          maxzoom: 14,
           filter: generationAssetFilter(
             assetFilterRef.current.generationGroup,
             assetFilterRef.current.minimumGenerationMw,
@@ -1010,19 +1073,7 @@ export function PowerFinderMap({
             visibility: enabledLayersRef.current.generation_asset ? "visible" : "none",
           },
           paint: {
-            "circle-radius": [
-              "interpolate",
-              ["linear"],
-              ["coalesce", ["get", "asset_count"], 1],
-              1,
-              7,
-              25,
-              11,
-              100,
-              15,
-              500,
-              21,
-            ],
+            "circle-radius": registeredAggregateRadius,
             "circle-color": generationColourExpression,
             "circle-opacity": ["interpolate", ["linear"], ["zoom"], 8.5, 0.34, 10.5, 0.82],
             "circle-stroke-color": "rgba(255, 255, 255, 0.7)",
@@ -1038,23 +1089,24 @@ export function PowerFinderMap({
           // a wall of capacity labels. Reveal values only after the user
           // has zoomed into an investigable area.
           minzoom: 7,
-          maxzoom: 11,
-          filter: generationAssetFilter(
-            assetFilterRef.current.generationGroup,
-            assetFilterRef.current.minimumGenerationMw,
-            assetFilterRef.current.maximumGenerationMw,
-          ),
+          maxzoom: 14,
+          filter: [
+            "all",
+            generationAssetFilter(
+              assetFilterRef.current.generationGroup,
+              assetFilterRef.current.minimumGenerationMw,
+              assetFilterRef.current.maximumGenerationMw,
+            ),
+            [">", ["coalesce", ["get", "asset_count"], 1], 1],
+          ],
           layout: {
             visibility: enabledLayersRef.current.generation_asset ? "visible" : "none",
-            "text-field": [
-              "case",
-              [">", ["coalesce", ["get", "asset_count"], 1], 1],
-              ["concat", ["get", "asset_count"], " assets"],
-              registeredMwLabel,
-            ],
+            "text-field": registeredAggregateLabel,
             "text-font": ["Noto Sans Regular"],
             "text-size": 10,
-            "text-allow-overlap": false,
+            "text-allow-overlap": true,
+            "text-anchor": "top",
+            "text-offset": [0, 1.45],
           },
           paint: {
             "text-color": "#07111f",
@@ -1077,21 +1129,10 @@ export function PowerFinderMap({
           layout: {
             visibility: enabledLayersRef.current.generation_asset ? "visible" : "none",
             "icon-image": generationIconExpression,
-            "icon-size": [
-              "interpolate",
-              ["linear"],
-              ["coalesce", ["get", "asset_count"], 1],
-              1,
-              0.82,
-              25,
-              1.05,
-              100,
-              1.3,
-              500,
-              1.65,
-            ],
-            "icon-allow-overlap": false,
-            "icon-padding": 4,
+            "icon-size": registeredAggregateIconSize,
+            "icon-allow-overlap": true,
+            "icon-ignore-placement": true,
+            "icon-padding": 3,
             "symbol-sort-key": [
               "-",
               0,
@@ -1104,7 +1145,7 @@ export function PowerFinderMap({
           type: "circle",
           source: "power-finder-registry-tiles",
           "source-layer": "power_finder",
-          minzoom: 11,
+          minzoom: 14,
           maxzoom: 24,
           filter: generationAssetFilter(
             assetFilterRef.current.generationGroup,
@@ -1121,12 +1162,16 @@ export function PowerFinderMap({
             "circle-stroke-width": 1.25,
           },
         });
+        // Keep the technology glyph above the exact-asset circle as users zoom
+        // through the aggregate-to-asset transition. Without this ordering the
+        // circle paint masks the turbine, panel, battery, or plant pictogram.
+        map.moveLayer("national-generation-technology-glyph");
         map.addLayer({
           id: "national-generation-asset-labels",
           type: "symbol",
           source: "power-finder-registry-tiles",
           "source-layer": "power_finder",
-          minzoom: 12,
+          minzoom: 14,
           maxzoom: 24,
           filter: generationAssetFilter(
             assetFilterRef.current.generationGroup,
