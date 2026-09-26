@@ -237,7 +237,7 @@ export function buildOperationsScenario(
       kind === "baseline"
         ? 0
         : intervals.reduce((total, point) => {
-            const reduction = point.baselineDemandMw - point[key];
+            const reduction = Math.max(0, point.baselineDemandMw - point[key]);
             return total + (incrementalGpuMw ? (reduction / incrementalGpuMw) * intervalHours : 0);
           }, 0);
     return {

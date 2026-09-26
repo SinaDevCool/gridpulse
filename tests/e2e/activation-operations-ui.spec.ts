@@ -40,11 +40,10 @@ test("Operations exposes the focused three-view facility workflow", async ({ pag
   await expect(navigation.getByRole("link", { name: "Compute & Workloads" })).toBeVisible();
   await expect(navigation.getByRole("link", { name: "Power & Battery" })).toBeVisible();
   await expect(navigation.getByRole("link")).toHaveCount(3);
-  await expect(
-    page.getByText(
-      "Scenario inputs and simulated results—not measured telemetry or operational instructions.",
-    ),
-  ).toBeVisible();
+  await expect(page.getByText("Scenario workspace", { exact: true })).toBeVisible();
+  await expect(page.getByText(/No control commands are issued/)).toBeVisible();
+  await expect(page.getByText("GPU-Hours Enabled").locator("xpath=..").locator("dd"))
+    .toHaveText(/^\d[\d,.]* h$/);
 });
 
 test("legacy Operations views resolve to a supported destination", async ({ page }) => {

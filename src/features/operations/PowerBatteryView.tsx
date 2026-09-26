@@ -456,14 +456,12 @@ function PowerTimeline({
             y={limitMw}
             stroke="var(--ops-limit)"
             strokeDasharray="7 5"
-            label={{ value: "Facility limit", fill: "var(--ops-limit)" }}
           />
           <ReferenceLine
             yAxisId="power"
             y={targetMw}
             stroke="var(--ops-assumption)"
             strokeDasharray="3 4"
-            label={{ value: "Safety target", fill: "var(--ops-assumption)" }}
           />
           {selectedLabel ? <ReferenceLine x={selectedLabel} stroke="var(--accent)" /> : null}
           <Area

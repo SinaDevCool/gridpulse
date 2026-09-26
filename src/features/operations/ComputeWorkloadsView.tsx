@@ -229,19 +229,23 @@ export function ComputeWorkloadsView({ model }: { model: OperationsOverviewModel
                 accessibilityLayer
               >
                 <CartesianGrid stroke="var(--ops-chart-grid)" vertical={false} />
-                <XAxis dataKey="label" interval={11} tickLine={false} axisLine={false} />
+                <XAxis dataKey="label" minTickGap={36} tickLine={false} axisLine={false} />
                 <YAxis unit=" MW" tickLine={false} axisLine={false} />
-                <Tooltip />
+                <Tooltip
+                  contentStyle={{
+                    background: "var(--card)",
+                    border: "1px solid var(--border)",
+                    borderRadius: "10px",
+                    color: "var(--foreground)",
+                  }}
+                  labelStyle={{ color: "var(--foreground)", fontWeight: 800 }}
+                  itemStyle={{ color: "var(--muted-foreground)" }}
+                />
                 <Legend />
                 <ReferenceLine
                   y={model.scenario.importLimitMw}
                   stroke="var(--ops-limit)"
                   strokeDasharray="7 5"
-                  label={{
-                    value: "Facility limit",
-                    fill: "var(--ops-limit)",
-                    position: "insideTopLeft",
-                  }}
                 />
                 <Area
                   dataKey="baselineDemandMw"

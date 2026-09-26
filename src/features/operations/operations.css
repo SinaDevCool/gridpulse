@@ -1543,3 +1543,527 @@
     animation-duration: 0.01ms !important;
   }
 }
+
+/* 2026 operations workspace: decision-first visual system */
+.operations-v2 {
+  --ops-surface: color-mix(in srgb, var(--card) 96%, var(--background));
+  --ops-surface-raised: color-mix(in srgb, var(--card) 88%, var(--accent) 2%);
+  --ops-border-strong: color-mix(in srgb, var(--border) 70%, var(--muted-foreground) 30%);
+  width: min(100% - 3.5rem, 116rem);
+  min-height: calc(100vh - 112px);
+  padding: clamp(1.75rem, 3vw, 3rem) 0 4rem;
+  overflow-x: clip;
+}
+
+.operations-v2-header {
+  align-items: flex-end;
+  gap: 2rem;
+}
+.operations-v2-header h1 {
+  margin: 0.35rem 0 0.45rem;
+  font-size: clamp(2.35rem, 3.25vw, 4rem);
+  line-height: 0.98;
+}
+.operations-v2-header > div:first-child > p:last-child {
+  max-width: 58rem;
+  font-size: 1rem;
+  line-height: 1.55;
+}
+.operations-v2-context {
+  max-width: 48rem;
+  gap: 0.65rem;
+}
+.operations-v2-facility,
+.operations-v2-configure {
+  min-height: 44px;
+  padding: 0.68rem 0.9rem;
+  border-radius: 11px;
+  background: var(--ops-surface);
+  font-size: 0.86rem;
+}
+.operations-v2-backend {
+  gap: 0.45rem;
+  min-height: 2.3rem;
+  padding: 0.48rem 0.72rem;
+  border-color: var(--border);
+  color: var(--muted-foreground);
+  font-size: 0.76rem;
+}
+.operations-v2-backend i {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 14%, transparent);
+}
+.operations-v2-backend.verified {
+  border-color: color-mix(in srgb, var(--ops-positive) 38%, var(--border));
+  color: var(--ops-positive);
+}
+.operations-v2-backend.unavailable {
+  border-color: color-mix(in srgb, var(--ops-assumption) 38%, var(--border));
+  color: var(--ops-assumption);
+}
+
+.operations-v2-nav-row {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 1.75rem;
+  padding: 0.3rem;
+  border-radius: 13px;
+  background: var(--ops-surface);
+  overflow: visible;
+}
+.operations-v2-tabs {
+  gap: 0.25rem;
+}
+.operations-v2-tabs a {
+  min-width: 11.5rem;
+  min-height: 46px;
+  padding: 0.7rem 1.2rem;
+  border: 0;
+  border-radius: 9px;
+  font-size: 0.86rem;
+  transition: background-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+.operations-v2-tabs a.active {
+  background: color-mix(in srgb, var(--accent) 14%, var(--card));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 46%, transparent);
+}
+.operations-v2-provenance {
+  align-items: flex-start;
+  max-width: 54rem;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+.operations-v2-provenance > span {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.45rem;
+}
+.operations-v2-provenance strong {
+  color: var(--foreground);
+}
+
+.operations-v2-view {
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+}
+.operations-v2-kpis,
+.power-kpis {
+  grid-template-columns: repeat(auto-fit, minmax(13.5rem, 1fr));
+  gap: 0.9rem;
+}
+.operations-v2-metric,
+.operations-v2-chart-card,
+.operations-v2-recommendation,
+.operations-v2-comparison,
+.operations-v2-detail-card,
+.operations-v2-balance-card,
+.operations-v2-battery-card,
+.power-decision-bar,
+.power-import,
+.power-timeline-card,
+.power-dispatch-card,
+.power-detail-card,
+.power-connectors,
+.compute-decision-bar,
+.compute-import,
+.compute-recommendation,
+.compute-queue-card,
+.compute-connectors {
+  border-color: var(--ops-border-strong);
+  border-radius: 15px;
+  background: var(--ops-surface);
+  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.07);
+}
+.operations-v2-metric {
+  min-height: 9rem;
+  padding: 1.15rem 1.2rem;
+}
+.operations-v2-metric > p {
+  margin-top: 0.95rem;
+  font-size: 0.82rem;
+}
+.operations-v2-metric > strong {
+  margin-top: 0.15rem;
+  font-size: clamp(1.75rem, 2vw, 2.45rem);
+}
+.operations-v2-metric > small {
+  margin-top: 0.5rem;
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+.operations-v2-evidence {
+  gap: 0.35rem;
+  padding: 0.32rem 0.55rem;
+  border-color: color-mix(in srgb, currentColor 58%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 8%, transparent);
+  font-size: 0.66rem;
+  letter-spacing: 0.025em;
+}
+.operations-v2-evidence::before {
+  content: "";
+  width: 0.38rem;
+  height: 0.38rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.operations-v2-overview-grid,
+.operations-v2-compute-grid,
+.operations-v2-power-grid,
+.operations-v2-power-lower,
+.compute-primary-grid,
+.power-primary-grid {
+  grid-template-columns: minmax(0, 3fr) minmax(20rem, 1fr);
+  gap: 1.25rem;
+}
+.operations-v2-chart-card,
+.power-timeline-card {
+  padding: 1.25rem;
+}
+.operations-v2-chart-header h3,
+.operations-v2-comparison h3,
+.operations-v2-recommendation h3,
+.operations-v2-detail-card h3,
+.operations-v2-battery-card h3,
+.compute-decision-bar h3,
+.compute-import h3,
+.compute-queue-card h3,
+.compute-connectors h3,
+.compute-recommendation h3 {
+  font-size: 1.12rem;
+  line-height: 1.3;
+  text-wrap: balance;
+}
+.operations-v2-chart {
+  height: clamp(22rem, 31vw, 31rem);
+  margin-top: 1rem;
+}
+.operations-v2-chart .recharts-text,
+.power-timeline .recharts-text {
+  fill: var(--muted-foreground);
+  font-size: 0.76rem;
+}
+.operations-v2-chart .recharts-default-legend,
+.power-timeline .recharts-default-legend {
+  font-size: 0.78rem;
+}
+.recharts-default-tooltip {
+  border-color: var(--border) !important;
+  border-radius: 10px !important;
+  background: var(--card) !important;
+  color: var(--foreground) !important;
+  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.28);
+}
+.operations-v2-tooltip {
+  min-width: 12rem;
+  padding: 0.85rem;
+  border-radius: 10px;
+  font-size: 0.8rem;
+}
+.operations-v2-recommendation,
+.operations-v2-detail-card,
+.operations-v2-battery-card,
+.compute-recommendation,
+.power-dispatch-card,
+.power-detail-card {
+  padding: 1.25rem;
+}
+.operations-v2-recommendation-copy,
+.compute-recommendation > p {
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+.operations-v2-recommendation dt,
+.operations-v2-detail-card dt,
+.operations-v2-battery-card dt,
+.compute-recommendation dt,
+.compute-drawer dt,
+.power-dispatch-card dt,
+.power-detail-card dt {
+  font-size: 0.8rem;
+}
+.operations-v2-recommendation dd,
+.operations-v2-detail-card dd,
+.operations-v2-battery-card dd,
+.compute-recommendation dd,
+.compute-drawer dd,
+.power-dispatch-card dd,
+.power-detail-card dd {
+  font-size: 0.84rem;
+}
+.operations-v2-readonly,
+.operations-v2-caveat,
+.power-readonly {
+  padding: 0.85rem;
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.operations-v2-comparison {
+  padding: 1.25rem;
+}
+.operations-v2-comparison > header small {
+  font-size: 0.76rem;
+}
+.operations-v2-comparison-grid {
+  gap: 0.9rem;
+  margin-top: 1rem;
+}
+.operations-v2-comparison-grid > button {
+  min-height: 8.5rem;
+  padding: 1rem;
+  border-radius: 11px;
+  transition: border-color 160ms ease, background-color 160ms ease, transform 160ms ease;
+}
+.operations-v2-comparison-grid > button:hover {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  transform: translateY(-1px);
+}
+.operations-v2-comparison-grid > button > span {
+  font-size: 0.9rem;
+}
+.operations-v2-comparison-grid dt {
+  font-size: 0.7rem;
+  line-height: 1.35;
+}
+.operations-v2-comparison-grid dd {
+  font-size: 0.9rem;
+}
+
+.compute-decision-bar,
+.power-decision-bar {
+  min-height: 6.5rem;
+  padding: 1.15rem 1.25rem;
+}
+.compute-decision-bar p:last-child,
+.power-decision-bar p:last-child {
+  max-width: 58rem;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+.compute-decision-actions,
+.power-decision-summary {
+  gap: 0.8rem;
+}
+.compute-primary-grid,
+.power-primary-grid {
+  align-items: stretch;
+}
+.compute-queue-card,
+.compute-connectors,
+.power-connectors {
+  padding: 1.25rem;
+}
+.compute-table-wrap {
+  margin-top: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.compute-table-wrap table {
+  font-size: 0.8rem;
+}
+.compute-table-wrap thead {
+  position: sticky;
+  z-index: 2;
+  top: 0;
+  background: var(--card);
+}
+.compute-table-wrap th,
+.compute-table-wrap td {
+  padding: 0.9rem 0.8rem;
+}
+.compute-table-wrap tbody tr {
+  transition: background-color 140ms ease;
+}
+.compute-table-wrap tbody tr:hover {
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
+}
+.compute-table-wrap tbody th {
+  background: var(--ops-surface);
+  color: var(--foreground);
+}
+.compute-table-wrap tbody tr:hover th,
+.compute-table-wrap tbody tr.selected th {
+  background: color-mix(in srgb, var(--accent) 8%, var(--ops-surface));
+}
+.decision-recommended {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+}
+.compute-table-wrap small,
+.compute-connectors small,
+.power-connectors small {
+  font-size: 0.7rem;
+  line-height: 1.35;
+}
+.compute-connectors section,
+.power-connectors section {
+  min-height: 4.5rem;
+  padding: 0.9rem;
+  border-radius: 10px;
+}
+.compute-connectors strong,
+.power-connectors strong {
+  font-size: 0.82rem;
+}
+.compute-connectors small,
+.power-connectors small {
+  white-space: normal;
+}
+
+.power-timeline {
+  height: clamp(24rem, 32vw, 32rem);
+  margin-top: 0.8rem;
+}
+.power-toolbar {
+  min-height: 3rem;
+}
+.power-mode button,
+.secondary-button {
+  min-height: 42px;
+}
+.power-import-grid span,
+.power-import-status,
+.power-empty span {
+  font-size: 0.76rem;
+}
+.power-decision-summary strong {
+  font-size: 1rem;
+}
+.power-decision-summary span {
+  font-size: 0.78rem;
+}
+
+.operations-v2-chart-data summary {
+  min-height: 40px;
+  padding: 0.8rem 0;
+  font-size: 0.78rem;
+}
+.operations-v2-chart-data table {
+  font-size: 0.76rem;
+}
+.operations-v2-editor-panel {
+  padding: 1.25rem;
+  border-radius: 15px;
+}
+.operations-v2-editor-grid label {
+  font-size: 0.76rem;
+}
+.operations-v2-editor-grid label > span {
+  min-height: 44px;
+  border-radius: 9px;
+}
+
+@media (max-width: 1400px) {
+  .operations-v2 {
+    width: min(100% - 2rem, 108rem);
+  }
+  .operations-v2-header {
+    align-items: flex-start;
+  }
+  .operations-v2-context {
+    max-width: 42rem;
+  }
+  .operations-v2-kpis,
+  .power-kpis {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1100px) {
+  .operations-v2-header {
+    flex-direction: column;
+  }
+  .operations-v2-context {
+    justify-content: flex-start;
+    max-width: none;
+  }
+  .operations-v2-overview-grid,
+  .operations-v2-compute-grid,
+  .operations-v2-power-grid,
+  .operations-v2-power-lower,
+  .compute-primary-grid,
+  .power-primary-grid {
+    grid-template-columns: 1fr;
+  }
+  .operations-v2-chart,
+  .power-timeline {
+    height: 24rem;
+  }
+}
+
+@media (max-width: 760px) {
+  .operations-v2 {
+    width: min(100% - 1.25rem, 116rem);
+    padding-top: 1.25rem;
+  }
+  .operations-v2-header h1 {
+    font-size: clamp(2.1rem, 12vw, 3rem);
+  }
+  .operations-v2-nav-row {
+    width: 100%;
+  }
+  .operations-v2-tabs {
+    display: grid;
+    grid-template-columns: 0.8fr 1.35fr 1fr;
+    width: 100%;
+    overflow: visible;
+  }
+  .operations-v2-tabs a {
+    min-width: 0;
+    padding-inline: 0.45rem;
+    font-size: 0.76rem;
+    text-align: center;
+  }
+  .operations-v2-provenance > span {
+    display: block;
+  }
+  .operations-v2-provenance strong {
+    display: block;
+    margin-bottom: 0.2rem;
+  }
+  .operations-v2-kpis,
+  .power-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .operations-v2-comparison-grid dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .compute-decision-bar,
+  .power-decision-bar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 520px) {
+  .operations-v2-kpis,
+  .power-kpis {
+    grid-template-columns: 1fr;
+  }
+  .operations-v2-metric {
+    min-height: 0;
+  }
+  .operations-v2-context {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+  .operations-v2-facility,
+  .operations-v2-configure {
+    justify-content: center;
+  }
+  .operations-v2-chart,
+  .power-timeline {
+    height: 20rem;
+  }
+}

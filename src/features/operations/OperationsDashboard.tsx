@@ -90,12 +90,13 @@ export function OperationsDashboard({ view }: { view: OperationsView }) {
             <Database aria-hidden="true" />
             {scenario.facilityName}
           </span>
-          <span className={`operations-v2-backend ${backendState}`}>
+          <span className={`operations-v2-backend ${backendState}`} role="status">
+            <i aria-hidden="true" />
             {backendState === "verified"
-              ? "Backend verified"
+              ? "Assessment service online"
               : backendState === "checking"
-                ? "Checking backend"
-                : "Backend unavailable"}
+                ? "Checking assessment service…"
+                : "Using browser fallback"}
           </span>
           <ScenarioEditor
             scenario={scenario}
@@ -113,11 +114,16 @@ export function OperationsDashboard({ view }: { view: OperationsView }) {
           <OperationsTab id="compute" label="Compute & Workloads" current={view} />
           <OperationsTab id="power" label="Power & Battery" current={view} />
         </nav>
-        <p className="operations-v2-provenance">
-          <Info aria-hidden="true" />
-          Scenario inputs and simulated results—not measured telemetry or operational instructions.
-        </p>
       </div>
+
+      <p className="operations-v2-provenance">
+        <Info aria-hidden="true" />
+        <span>
+          <strong>Scenario workspace</strong>
+          Results use configured assumptions until measured facility evidence is connected. No
+          control commands are issued.
+        </span>
+      </p>
 
       <p className="sr-only" aria-live="polite">
         {announcement}
@@ -283,7 +289,7 @@ function DemandChart({
             accessibilityLayer
           >
             <CartesianGrid stroke="var(--ops-chart-grid)" vertical={false} />
-            <XAxis dataKey="label" interval={11} tickLine={false} axisLine={false} />
+            <XAxis dataKey="label" minTickGap={36} tickLine={false} axisLine={false} />
             <YAxis
               domain={[
                 0,
