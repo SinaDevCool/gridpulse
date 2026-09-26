@@ -279,34 +279,24 @@ export function PowerBatteryView({ model }: { model: OperationsOverviewModel }) 
 
       <div className="power-kpis">
         <PowerMetric
-          icon={<Activity />}
-          label="Facility demand"
+          icon={<Cable />}
+          label="Grid import"
           value={
             selected
-              ? `${number.format(valueOf(selected, "facilityDemandMw", "baselineDemandMw"))} MW`
+              ? `${number.format(valueOf(selected, "gridImportMw", "batteryDemandMw"))} MW`
               : "Unavailable"
           }
           evidence={mode}
         />
         <PowerMetric
-          icon={<ShieldCheck />}
-          label="Safety target"
-          value={`${number.format(targetMw)} MW`}
+          icon={<Bolt />}
+          label="Facility limit"
+          value={`${number.format(model.scenario.importLimitMw)} MW`}
           evidence="assumption"
         />
         <PowerMetric
-          icon={<Gauge />}
-          label="Headroom after reserve"
-          value={
-            selected
-              ? `${number.format(targetMw - valueOf(selected, "gridImportMw", "batteryDemandMw"))} MW`
-              : "Unavailable"
-          }
-          evidence={mode}
-        />
-        <PowerMetric
           icon={<BatteryCharging />}
-          label="Battery state of charge"
+          label="Battery SOC"
           value={
             selected && valueOf(selected, "socPercent", "batterySocPercent") != null
               ? formatPercent(valueOf(selected, "socPercent", "batterySocPercent"))
@@ -321,9 +311,13 @@ export function PowerBatteryView({ model }: { model: OperationsOverviewModel }) 
           evidence={mode}
         />
         <PowerMetric
-          icon={<Cable />}
-          label="Sustainable duration"
-          value={mode === "scenario" ? durationLabel(model, selectedScenario) : "Not derivable"}
+          icon={<Gauge />}
+          label="Peak avoided"
+          value={
+            mode === "scenario"
+              ? `${number.format(Math.max(0, model.summaries[0].peakDemandMw - model.summaries[1].peakDemandMw))} MW`
+              : "Not derivable"
+          }
           evidence={mode}
         />
       </div>

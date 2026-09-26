@@ -62,6 +62,30 @@ export function OperationsDashboard({ view }: { view: OperationsView }) {
     "checking",
   );
   const model = serverModel ?? buildOperationsScenario(scenario);
+  const viewCopy =
+    view === "power"
+      ? {
+          eyebrow: "Data-Centre Power Operations",
+          title: "Power & Battery",
+          description: "Optimise facility power with battery storage and workload flexibility.",
+          evidence:
+            "Facility and battery values are scenario assumptions until measured evidence is connected.",
+        }
+      : view === "compute"
+        ? {
+            eyebrow: "Data-Centre Power Operations",
+            title: "Power Operations",
+            description: "Translate facility limits into compute and workload decisions.",
+            evidence:
+              "GPU workload behaviour uses the configured scenario until accepted telemetry is connected.",
+          }
+        : {
+            eyebrow: "Data-Centre Power Operations",
+            title: "Power Operations",
+            description: "Translate facility limits into compute, battery, and workload decisions.",
+            evidence:
+              "Public workload shape and configured assumptions produce simulated decision support.",
+          };
 
   useEffect(() => {
     let active = true;
@@ -84,14 +108,12 @@ export function OperationsDashboard({ view }: { view: OperationsView }) {
   }, [scenario]);
 
   return (
-    <main id="main-content" className="operations-v2">
+    <main id="main-content" className={`operations-v2 operations-v2--${view}`}>
       <header className="operations-v2-header">
         <div>
-          <p className="context-label">Data-Centre Power Operations</p>
-          <h1>Power Operations</h1>
-          <p>
-            Translate a defined facility power limit into compute, battery, and workload decisions.
-          </p>
+          <p className="context-label">{viewCopy.eyebrow}</p>
+          <h1>{viewCopy.title}</h1>
+          <p>{viewCopy.description}</p>
         </div>
         <div className="operations-v2-context">
           <OperationsEvidenceBadge kind="simulated" label="Scenario Simulation" />
@@ -123,16 +145,13 @@ export function OperationsDashboard({ view }: { view: OperationsView }) {
           <OperationsTab id="compute" label="Compute & Workloads" current={view} />
           <OperationsTab id="power" label="Power & Battery" current={view} />
         </nav>
+        <p className="operations-v2-provenance">
+          <Info aria-hidden="true" />
+          <span>
+            <strong>Scenario workspace</strong> {viewCopy.evidence} No control commands are issued.
+          </span>
+        </p>
       </div>
-
-      <p className="operations-v2-provenance">
-        <Info aria-hidden="true" />
-        <span>
-          <strong>Scenario workspace</strong>
-          Results use configured assumptions until measured facility evidence is connected. No
-          control commands are issued.
-        </span>
-      </p>
 
       <p className="sr-only" aria-live="polite">
         {announcement}
