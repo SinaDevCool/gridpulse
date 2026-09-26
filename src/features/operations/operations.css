@@ -2683,10 +2683,12 @@
 }
 
 .power-flow {
+  position: relative;
   display: grid;
-  grid-template-columns: minmax(9rem, 1fr) 3rem minmax(10rem, 1.15fr) 3rem minmax(10rem, 1fr);
+  grid-template-columns: minmax(9rem, 0.82fr) minmax(20rem, 1.7fr) minmax(10rem, 0.82fr);
+  grid-template-rows: auto auto;
   align-items: center;
-  gap: 0.45rem;
+  gap: 1rem;
   min-height: 16.5rem;
   margin-top: 1rem;
   padding: 1.1rem;
@@ -2705,6 +2707,55 @@
 .power-flow-loads {
   display: grid;
   gap: 0.75rem;
+  z-index: 2;
+}
+
+.power-flow-graphic {
+  position: relative;
+  align-self: stretch;
+  min-height: 13rem;
+}
+
+.power-flow-graphic svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.power-flow-graphic svg path:not(marker path) {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.88;
+  vector-effect: non-scaling-stroke;
+}
+
+.power-flow-graphic marker path {
+  fill: context-stroke;
+}
+
+.power-flow-graphic .flow-grid {
+  stroke: var(--ops-demand);
+}
+.power-flow-graphic .flow-battery {
+  stroke: var(--ops-battery);
+}
+.power-flow-graphic .flow-compute {
+  stroke: var(--ops-compute);
+}
+.power-flow-graphic .flow-other {
+  stroke: var(--ops-neutral);
+}
+
+.power-flow-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 2;
+  width: min(15rem, 48%);
+  transform: translate(-50%, -50%);
 }
 
 .power-flow-node {
@@ -2761,47 +2812,28 @@
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 7%, transparent);
 }
 
-.power-flow-rail {
-  position: relative;
-  height: 6rem;
+.power-flow-equations {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
 }
-.power-flow-rail::after {
-  content: "";
-  position: absolute;
-  top: calc(50% - 1px);
-  right: 0;
-  left: 0;
-  border-top: 5px solid color-mix(in srgb, var(--accent) 78%, transparent);
-  border-radius: 999px;
+
+.power-flow-equations span {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--ops-surface-raised) 82%, transparent);
+  color: var(--muted-foreground);
+  font-size: 0.69rem;
+  font-variant-numeric: tabular-nums;
 }
-.power-flow-rail i {
-  position: absolute;
-  left: 0;
-  width: 55%;
-  border-top: 5px solid var(--ops-demand);
-  transform-origin: left center;
-}
-.power-flow-rail i:first-child {
-  top: 20%;
-  transform: rotate(28deg);
-}
-.power-flow-rail i:last-child {
-  bottom: 20%;
-  border-color: var(--ops-battery);
-  transform: rotate(-28deg);
-}
-.power-flow-rail.outgoing i {
-  right: 0;
-  left: auto;
-  transform-origin: right center;
-}
-.power-flow-rail.outgoing i:first-child {
-  border-color: var(--ops-compute);
-  transform: rotate(-28deg);
-}
-.power-flow-rail.outgoing i:last-child {
-  border-color: var(--muted-foreground);
-  transform: rotate(28deg);
+
+.power-flow-equations strong {
+  color: var(--foreground);
 }
 
 .power-flow-note {
@@ -2905,11 +2937,13 @@
 }
 
 .operations-context-strip {
+  position: relative;
+  z-index: 20;
   display: grid;
   grid-template-columns: minmax(12rem, 1.35fr) repeat(2, minmax(10rem, 0.8fr)) minmax(13rem, 1fr);
   gap: 0;
   margin: 0.7rem 0 0.85rem;
-  overflow: hidden;
+  overflow: visible;
   border: 1px solid var(--border);
   border-radius: 10px;
   background: color-mix(in srgb, var(--card) 88%, transparent);
@@ -2921,6 +2955,14 @@
   min-height: 3.6rem;
   padding: 0.62rem 0.8rem;
   border-right: 1px solid var(--border);
+}
+
+.operations-context-field:first-child {
+  border-radius: 9px 0 0 9px;
+}
+
+.operations-context-health {
+  border-radius: 0 9px 9px 0;
 }
 
 .operations-context-field {
@@ -2946,7 +2988,30 @@
   white-space: nowrap;
 }
 
-.operations-context-field select {
+.operations-select {
+  position: relative;
+  display: grid;
+  align-content: center;
+  min-width: 0;
+}
+
+.operations-select > span {
+  color: var(--muted-foreground);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.operations-select-native {
+  display: none;
+}
+
+.operations-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
   width: 100%;
   min-height: 1.8rem;
   padding: 0;
@@ -2956,6 +3021,95 @@
   font: inherit;
   font-size: 0.79rem;
   font-weight: 750;
+  text-align: left;
+  cursor: pointer;
+}
+
+.operations-select-trigger svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  flex: 0 0 auto;
+  transition: transform 160ms ease;
+}
+
+.operations-select-trigger[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.operations-select-trigger:focus-visible {
+  border-radius: 4px;
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.operations-select-popover {
+  position: absolute;
+  top: calc(100% + 0.55rem);
+  right: -0.45rem;
+  left: -0.45rem;
+  z-index: 50;
+  min-width: 13rem;
+  padding: 0.35rem;
+  border: 1px solid var(--ops-border-strong);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--ops-surface-raised) 94%, var(--background));
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.3);
+}
+
+.operations-select-popover [role="listbox"] {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.operations-select-popover button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--foreground);
+  font: inherit;
+  text-align: left;
+}
+
+.operations-select-popover button > span {
+  display: grid;
+  gap: 0.12rem;
+}
+
+.operations-select-popover button strong {
+  font-size: 0.77rem;
+}
+
+.operations-select-popover button small {
+  color: var(--muted-foreground);
+  font-size: 0.64rem;
+}
+
+.operations-select-popover button svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  flex: 0 0 auto;
+  color: var(--accent);
+}
+
+.operations-select-popover button:not(:disabled):hover,
+.operations-select-popover button:not(:disabled):focus-visible,
+.operations-select-popover button[aria-selected="true"] {
+  border-color: color-mix(in srgb, var(--accent) 32%, transparent);
+  outline: none;
+  background: color-mix(in srgb, var(--accent) 13%, var(--ops-surface-raised));
+}
+
+.operations-select-popover button:disabled {
+  cursor: not-allowed;
+  color: color-mix(in srgb, var(--muted-foreground) 88%, var(--foreground));
+  background: color-mix(in srgb, var(--muted) 34%, transparent);
 }
 
 .operations-context-health {
@@ -3223,20 +3377,45 @@
 @media (max-width: 760px) {
   .power-flow {
     grid-template-columns: 1fr;
+    grid-template-rows: auto;
   }
-  .power-flow-rail {
-    height: 2.5rem;
+  .power-flow-graphic {
+    min-height: 7rem;
   }
-  .power-flow-rail::after {
-    top: 0;
-    bottom: 0;
-    left: 50%;
-    right: auto;
-    border-top: 0;
-    border-left: 2px solid var(--accent);
-  }
-  .power-flow-rail i {
+  .power-flow-graphic svg {
     display: none;
+  }
+  .power-flow-center {
+    width: 100%;
+  }
+  .power-flow-equations {
+    grid-column: 1;
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .operations-select-trigger,
+  .operations-select-popover {
+    display: none;
+  }
+  .operations-select-native {
+    display: block;
+    width: 100%;
+    min-height: 2rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--foreground);
+    font: inherit;
+    font-size: 0.79rem;
+    font-weight: 750;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .operations-select-trigger svg {
+    transition: none;
   }
 }
 

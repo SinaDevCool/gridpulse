@@ -48,6 +48,7 @@ import {
   OperationsEvidenceBadge,
   OperationsMetricCard,
 } from "./components";
+import { buildPowerBalancePresentation, flowWidth } from "./power-balance";
 
 const number = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
 
@@ -1072,12 +1073,20 @@ function PowerBalanceFlow({
       ? Number(selected.gpuPowerMw)
       : null;
   const other = facility != null && gpu != null ? Math.max(0, facility - gpu) : null;
+  const balance =
+    facility == null || grid == null
+      ? null
+      : buildPowerBalancePresentation({ facilityMw: facility, gridMw: grid, batteryMw: battery, gpuMw: gpu });
   const batteryLabel =
-    battery == null
+    balance?.batteryMw == null
       ? "Battery unavailable"
-      : battery >= 0
-        ? `${number.format(battery)} MW discharge`
-        : `${number.format(Math.abs(battery))} MW charging`;
+      : balance.batteryDirection === "discharge"
+        ? `${number.format(balance.batteryMw)} MW discharge`
+        : balance.batteryDirection === "charge"
+          ? `${number.format(Math.abs(balance.batteryMw))} MW charging`
+          : "0 MW idle";
+  const largest = balance ? Math.max(balance.facilityMw, balance.gridMw, Math.abs(balance.batteryMw ?? 0)) : 1;
+  const batteryWidth = balance ? flowWidth(Math.abs(balance.batteryMw ?? 0), largest) : 0;
 
   return (
     <article className="power-flow-card">
@@ -1088,19 +1097,19 @@ function PowerBalanceFlow({
         </div>
         <EvidencePill mode={mode} />
       </header>
-      {facility == null || grid == null ? (
+      {!balance ? (
         <EmptyEvidence />
       ) : (
         <div
           className="power-flow"
           role="img"
-          aria-label={`Grid import ${number.format(grid)} megawatts, ${batteryLabel}, facility demand ${number.format(facility)} megawatts${gpu == null ? "" : `, including ${number.format(gpu)} megawatts of GPU power`}.`}
+          aria-label={`Power balance: grid import ${number.format(balance.gridMw)} megawatts; ${batteryLabel}; facility demand ${number.format(balance.facilityMw)} megawatts${balance.gpuMw == null ? "; facility sub-loads unavailable" : `; ${number.format(balance.gpuMw)} megawatts GPU power and ${number.format(balance.otherMw ?? 0)} megawatts other load`}.`}
         >
-          <div className="power-flow-sources">
+          <div className="power-flow-stage power-flow-sources">
             <FlowNode
               icon={<Cable />}
               label="Grid import"
-              value={`${number.format(grid)} MW`}
+              value={`${number.format(balance.gridMw)} MW`}
               tone="grid"
             />
             <FlowNode
@@ -1110,23 +1119,42 @@ function PowerBalanceFlow({
               tone="battery"
             />
           </div>
-          <div className="power-flow-rail" aria-hidden="true">
-            <i />
-            <i />
+          <div className="power-flow-graphic" aria-hidden="true">
+            <svg viewBox="0 0 1000 260" preserveAspectRatio="none">
+              <defs>
+                <marker id="flow-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+                  <path d="M 0 0 L 10 5 L 0 10 z" />
+                </marker>
+              </defs>
+              <path className="flow-grid" d="M 0 60 C 120 60, 180 120, 285 130" style={{ strokeWidth: flowWidth(balance.gridMw, largest) }} markerEnd="url(#flow-arrow)" />
+              {batteryWidth ? (
+                <path
+                  className="flow-battery"
+                  d="M 0 200 C 120 200, 180 140, 285 130"
+                  style={{ strokeWidth: batteryWidth }}
+                  markerEnd={balance.batteryDirection === "charge" ? undefined : "url(#flow-arrow)"}
+                  markerStart={balance.batteryDirection === "charge" ? "url(#flow-arrow)" : undefined}
+                />
+              ) : null}
+              {balance.gpuMw != null ? (
+                <>
+                  <path className="flow-compute" d="M 715 130 C 820 120, 880 60, 1000 60" style={{ strokeWidth: flowWidth(balance.gpuMw, largest) }} markerEnd="url(#flow-arrow)" />
+                  <path className="flow-other" d="M 715 130 C 820 140, 880 200, 1000 200" style={{ strokeWidth: flowWidth(balance.otherMw ?? 0, largest) }} markerEnd="url(#flow-arrow)" />
+                </>
+              ) : null}
+            </svg>
+            <div className="power-flow-center">
+              <FlowNode
+                icon={<Bolt />}
+                label="Facility demand"
+                value={`${number.format(balance.facilityMw)} MW`}
+                tone="facility"
+                featured
+              />
+            </div>
           </div>
-          <FlowNode
-            icon={<Bolt />}
-            label="Facility demand"
-            value={`${number.format(facility)} MW`}
-            tone="facility"
-            featured
-          />
-          <div className="power-flow-rail outgoing" aria-hidden="true">
-            <i />
-            <i />
-          </div>
-          <div className="power-flow-loads">
-            {gpu == null ? (
+          <div className="power-flow-stage power-flow-loads">
+            {balance.gpuMw == null ? (
               <FlowNode
                 icon={<Activity />}
                 label="Load allocation"
@@ -1138,17 +1166,31 @@ function PowerBalanceFlow({
                 <FlowNode
                   icon={<Zap />}
                   label="GPU power"
-                  value={`${number.format(gpu)} MW`}
+                value={`${number.format(balance.gpuMw)} MW`}
                   tone="compute"
                 />
                 <FlowNode
                   icon={<Activity />}
                   label="Other facility load"
-                  value={`${number.format(other ?? 0)} MW`}
+                value={`${number.format(balance.otherMw ?? other ?? 0)} MW`}
                   tone="muted"
                 />
               </>
             )}
+          </div>
+          <div className="power-flow-equations">
+            <span>
+              <strong>Supply balance</strong>
+              {balance.batteryMw == null
+                ? "Battery contribution unavailable"
+                : `${number.format(balance.gridMw)} ${balance.batteryMw >= 0 ? "+" : "−"} ${number.format(Math.abs(balance.batteryMw))} = ${number.format(balance.facilityMw)} MW`}
+            </span>
+            <span>
+              <strong>Load allocation</strong>
+              {balance.gpuMw == null
+                ? "Sub-load evidence unavailable"
+                : `${number.format(balance.gpuMw)} + ${number.format(balance.otherMw ?? 0)} = ${number.format(balance.facilityMw)} MW`}
+            </span>
           </div>
         </div>
       )}

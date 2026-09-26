@@ -56,6 +56,7 @@ import {
   type OperatingWindowPreset,
   type OperationsDataMode,
 } from "./operating-context";
+import { OperationsSelect } from "./OperationsSelect";
 
 export type OperationsView = "overview" | "compute" | "power";
 
@@ -195,45 +196,42 @@ export function OperationsDashboard({
           <span>Facility</span>
           <strong>{scenario.facilityName}</strong>
         </div>
-        <label className="operations-context-field">
-          <span>Operating Window</span>
-          <select
+        <div className="operations-context-field">
+          <OperationsSelect
             name="operating-window"
+            label="Operating Window"
             value={window}
-            onChange={(event) =>
+            options={Object.entries(operatingWindowLabels).map(([value, label]) => ({
+              value: value as OperatingWindowPreset,
+              label,
+            }))}
+            onChange={(nextWindow) =>
               navigate({
-                search: { view, window: event.target.value as OperatingWindowPreset, mode },
+                search: { view, window: nextWindow, mode },
                 replace: true,
               })
             }
-          >
-            {Object.entries(operatingWindowLabels).map(([value, label]) => (
-              <option value={value} key={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="operations-context-field">
-          <span>Data Mode</span>
-          <select
+          />
+        </div>
+        <div className="operations-context-field">
+          <OperationsSelect
             name="data-mode"
+            label="Data Mode"
             value={mode}
-            onChange={(event) =>
+            options={Object.entries(operationsModeLabels).map(([value, label]) => ({
+              value: value as OperationsDataMode,
+              label,
+              disabled: value !== "scenario",
+              description: value === "scenario" ? "Configured inputs" : "Connect evidence to enable",
+            }))}
+            onChange={(nextMode) =>
               navigate({
-                search: { view, window, mode: event.target.value as OperationsDataMode },
+                search: { view, window, mode: nextMode },
                 replace: true,
               })
             }
-          >
-            {Object.entries(operationsModeLabels).map(([value, label]) => (
-              <option value={value} key={value} disabled={value !== "scenario"}>
-                {label}
-                {value !== "scenario" ? " · Connect Evidence" : ""}
-              </option>
-            ))}
-          </select>
-        </label>
+          />
+        </div>
         <div className="operations-context-health" role="status">
           <i className={backendState} aria-hidden="true" />
           <span>

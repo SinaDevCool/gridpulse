@@ -46,6 +46,26 @@ test("Operations exposes the focused three-view facility workflow", async ({ pag
     .toHaveText(/^\d[\d,.]* h$/);
 });
 
+test("Operations context selectors are themed, keyboard-operable, and preserve URL state", async ({
+  page,
+}) => {
+  await page.goto("/operations?view=overview&window=today&mode=scenario");
+  await expect(page.getByText("Assessment service online")).toBeVisible();
+  const windowTrigger = page.locator(".operations-select-trigger").filter({ hasText: "Today" });
+  await windowTrigger.click();
+  const listbox = page.locator(".operations-select-popover").first();
+  await expect(listbox).toBeVisible();
+  await page.getByRole("option", { name: "Next 4 Hours" }).click();
+  await expect(page).toHaveURL(/window=next-4h/);
+
+  const modeTrigger = page.locator(".operations-select-trigger").filter({ hasText: "Scenario" });
+  await modeTrigger.click();
+  await expect(page.getByRole("option", { name: /Live/ })).toBeDisabled();
+  await expect(page.getByRole("option", { name: /Historical/ })).toBeDisabled();
+  await page.keyboard.press("Escape");
+  await expect(modeTrigger).toBeFocused();
+});
+
 test("legacy Operations views resolve to a supported destination", async ({ page }) => {
   await page.goto("/operations?view=battery");
   await expect(page).toHaveURL(/view=power/);
@@ -134,6 +154,13 @@ test("Power & Battery exposes dispatch physics and imports measured evidence", a
   await expect(page.getByText("Facility Power & Battery Response")).toBeVisible();
   await expect(page.getByText("Facility Power", { exact: true })).toBeVisible();
   await expect(page.getByText("Battery Dispatch & State of Charge", { exact: true })).toBeVisible();
+  await expect(page.getByText("Supply balance", { exact: true })).toBeVisible();
+  await expect(page.locator(".power-flow-equations span").first()).toContainText(
+    "101.6 + 5 = 106.6 MW",
+  );
+  await expect(page.locator(".power-flow-equations span").last()).toContainText(
+    "75.7 + 30.9 = 106.6 MW",
+  );
   await expect(page.getByText("No live connectors configured")).toBeVisible();
   const connect = page.getByRole("button", { name: "Connect evidence" });
   await expect(connect).toBeEnabled();
