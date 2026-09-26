@@ -60,7 +60,7 @@ test("Finder landing, sector pages and methodology form the public product site"
     }),
   ).toBeVisible();
 
-  for (const pathname of ["/portfolio", "/constraint-explorer"]) {
+  for (const pathname of ["/portfolio", "/operations"]) {
     const response = await page.goto(pathname);
     expect(response?.status(), pathname).toBeLessThan(400);
     await expect(page.locator("main")).toBeVisible();

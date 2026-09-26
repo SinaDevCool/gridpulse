@@ -3,7 +3,7 @@ import type { ProductMode } from "@/config/product-mode";
 export type ProductCapability = "finder" | "workspace" | "connect" | "operate";
 export type UnavailableBehavior = "explain" | "hide";
 
-export const activeWorkspaceStageIds = ["sites", "finder", "constraints"] as const;
+export const activeWorkspaceStageIds = ["sites", "finder", "operations"] as const;
 const activeWorkspaceStages = new Set<string>(activeWorkspaceStageIds);
 
 export const workspaceLinks = [
@@ -24,10 +24,10 @@ export const workspaceLinks = [
     unavailableBehavior: "explain",
   },
   {
-    id: "constraints",
-    label: "Constraints",
-    detail: "Constraint evidence",
-    to: "/constraint-explorer",
+    id: "operations",
+    label: "Operations",
+    detail: "Facility power",
+    to: "/operations",
     capability: "finder",
     unavailableBehavior: "explain",
   },
@@ -45,14 +45,6 @@ export const workspaceLinks = [
     detail: "Connection pathway",
     to: "/activation",
     capability: "connect",
-    unavailableBehavior: "explain",
-  },
-  {
-    id: "operations",
-    label: "Operations",
-    detail: "Shadow delivery",
-    to: "/operations",
-    capability: "operate",
     unavailableBehavior: "explain",
   },
   {

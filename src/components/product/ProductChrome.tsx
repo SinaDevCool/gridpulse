@@ -6,12 +6,12 @@ import {
 } from "./product-navigation";
 import { productMode } from "@/config/product-mode";
 import { ThemeControl } from "@/features/theme/ThemeControl";
-import { MapPinned, Search, TriangleAlert, type LucideIcon } from "lucide-react";
+import { Gauge, MapPinned, Search, type LucideIcon } from "lucide-react";
 
 const workspaceIcons: Record<string, LucideIcon> = {
   sites: MapPinned,
   finder: Search,
-  constraints: TriangleAlert,
+  operations: Gauge,
 };
 
 export function ProductHeader() {

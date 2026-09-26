@@ -33,7 +33,7 @@ export const finderContactEmail = "kshitijjindal1@gmail.com";
 const finderRoutes = new Set([
   "/",
   "/power-finder",
-  "/constraint-explorer",
+  "/operations",
   "/synthetic-network-study",
   "/data-sources",
   "/data-centres",
@@ -46,7 +46,6 @@ const finderRoutes = new Set([
 const retiredWorkspaceRoots = [
   "/data-centre-planner",
   "/activation",
-  "/operations",
   "/evidence",
   "/evidence-review",
   "/reports",
@@ -56,9 +55,11 @@ function matchesRouteRoot(pathname: string, root: string) {
   return pathname === root || pathname.startsWith(`${root}/`);
 }
 
-/** Customer-facing stages held outside the focused Sites -> Finder -> Constraints product. */
+/** Customer-facing stages held outside the focused Sites -> Finder -> Power Operations product. */
 export function retiredWorkspaceDestination(pathname: string): string | null {
   const normalized = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
+  if (matchesRouteRoot(normalized, "/constraint-explorer")) return "/operations";
+  if (normalized.startsWith("/operations/")) return "/operations";
   if (!retiredWorkspaceRoots.some((root) => matchesRouteRoot(normalized, root))) return null;
   if (matchesRouteRoot(normalized, "/reports")) return "/portfolio";
   if (
@@ -66,7 +67,7 @@ export function retiredWorkspaceDestination(pathname: string): string | null {
     matchesRouteRoot(normalized, "/evidence") ||
     matchesRouteRoot(normalized, "/evidence-review")
   ) {
-    return "/constraint-explorer";
+    return "/power-finder";
   }
   return "/power-finder";
 }

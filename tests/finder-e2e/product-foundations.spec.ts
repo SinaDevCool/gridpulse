@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import path from "node:path";
 
 test("every visible workflow destination resolves to meaningful content", async ({ page }) => {
   await page.goto("/power-finder");
@@ -7,10 +8,10 @@ test("every visible workflow destination resolves to meaningful content", async 
   const expectations = [
     ["Sites", /Sites|portfolio/i],
     ["Power Finder", /Germany connection context/i],
-    ["Constraints", /Understand what may constrain/i],
+    ["Operations", /Run more compute within the power limit/i],
   ] as const;
   await expect(navigation.getByRole("link")).toHaveCount(3);
-  for (const hidden of ["Planner", "Activation", "Operations", "Evidence", "Reports"]) {
+  for (const hidden of ["Planner", "Activation", "Constraints", "Evidence", "Reports"]) {
     await expect(navigation.getByRole("link", { name: new RegExp(hidden) })).toHaveCount(0);
   }
   for (const [label, heading] of expectations) {
@@ -21,25 +22,26 @@ test("every visible workflow destination resolves to meaningful content", async 
 
 test("dormant workspace URLs redirect into the focused product", async ({ page }) => {
   for (const [path, destination] of [
-    ["/data-centre-planner", "/constraint-explorer"],
-    ["/evidence", "/constraint-explorer"],
-    ["/evidence-review", "/constraint-explorer"],
+    ["/data-centre-planner", "/power-finder"],
+    ["/evidence", "/power-finder"],
+    ["/evidence-review", "/power-finder"],
+    ["/constraint-explorer", "/operations"],
     ["/reports", "/portfolio"],
     ["/activation", "/power-finder"],
-    ["/operations/site-1", "/power-finder"],
+    ["/operations/site-1", "/operations"],
   ] as const) {
     await page.goto(path);
     await expect(page).toHaveURL(new RegExp(`${destination.replace("/", "\\/")}$`));
   }
 });
 
-test("theme persists and constraint filters are URL-addressable", async ({ page }) => {
+test("theme persists on the Operations workspace", async ({ page }) => {
   await page.addInitScript(() => {
     if (!localStorage.getItem("gridpulse-theme")) localStorage.setItem("gridpulse-theme", "dark");
   });
-  await page.goto("/constraint-explorer");
+  await page.goto("/operations");
   await expect(
-    page.getByRole("heading", { name: "Understand what may constrain a site" }),
+    page.getByRole("heading", { name: "Run more compute within the power limit" }),
   ).toBeVisible();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await expect
@@ -52,12 +54,8 @@ test("theme persists and constraint filters are URL-addressable", async ({ page 
     .poll(() => page.evaluate(() => localStorage.getItem("gridpulse-theme")))
     .toBe("light");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
-  await page.goto("/constraint-explorer?severity=critical");
-  await expect(page).toHaveURL(/severity=critical/);
-  await expect(page.getByText("Equipment rating gap")).toBeVisible();
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
-  await expect(page.getByLabel("Severity")).toHaveValue("critical");
 });
 
 test("Power Finder rail follows the resolved light theme", async ({ page }) => {
@@ -79,34 +77,63 @@ test("Power Finder rail follows the resolved light theme", async ({ page }) => {
   );
 });
 
-test("Constraint Explorer reuses the Germany-wide generation registry", async ({ page }) => {
-  await page.goto("/constraint-explorer");
-  await expect(
-    page.getByRole("application", { name: "Interactive grid and industrial-site screening map" }),
-  ).toBeVisible();
-  await expect(page.getByText("MaStR public asset context").first()).toBeVisible();
-  await page.getByRole("button", { name: "Show only Solar" }).click();
-  await expect(page).toHaveURL(/isolateTechnology=solar/);
-  await expect(page.getByRole("button", { name: "Show all Solar" })).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
+test("Operations loads a real CSV and keeps unaccepted forecasts unpublished", async ({ page }) => {
+  await page.goto("/operations");
+  await expect(page.locator("main.operations-page")).toHaveAttribute("data-hydrated", "true", {
+    timeout: 20_000,
+  });
+  await page.getByLabel("Facility name").fill("E2E Facility");
+  await page.getByLabel("Contracted import limit (MW)").fill("50");
+  await page.getByLabel("Limit evidence").selectOption("contract_reviewed");
+  const upload = page.getByLabel("Operational CSV");
+  await upload.setInputFiles(path.resolve("e2e/fixtures/operations-real-sample.csv"));
+  await expect(page.getByText(/valid measurements loaded/)).toBeVisible();
+  await page.getByRole("button", { name: "Analyse Measured History" }).click();
+
+  await expect(page.getByText("4 MW", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Power", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Power Envelope" })).toBeVisible();
+  await page.getByRole("button", { name: "Compute" }).click();
+  await expect(page.getByRole("heading", { name: "Compute intelligence" })).toBeVisible();
+  await page.getByRole("button", { name: "Battery" }).click();
+  await expect(page.getByRole("heading", { name: "Battery intelligence" })).toBeVisible();
+  await page.getByRole("button", { name: "Forecast" }).click();
+  await expect(page).toHaveURL(/view=forecast/);
+  await expect(page.getByText("No accepted forecast").first()).toBeVisible();
+  await page.getByRole("button", { name: "Verification" }).click();
+  await expect(page.getByText("Automatic dispatch: not authorized")).toBeVisible();
+  await page.getByRole("button", { name: "Data health" }).click();
+  await expect(page.getByText("NVIDIA DCGM-compatible field")).toBeVisible();
 });
 
-test("constraint legend isolates voltage and severity through shareable state", async ({
-  page,
-}) => {
-  await page.goto("/constraint-explorer");
-  await expect(
-    page.getByRole("application", { name: "Interactive grid and industrial-site screening map" }),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "Show only 380 kV and above" }).click();
-  await expect(page).toHaveURL(/isolateVoltage=ehv/);
-  await expect(page.getByRole("button", { name: "Show all 380 kV and above" })).toHaveAttribute(
-    "aria-pressed",
-    "true",
+test("Operations explains incomplete evidence and focuses the correction", async ({ page }) => {
+  await page.goto("/operations");
+  await expect(page.locator("main.operations-page")).toHaveAttribute("data-hydrated", "true", {
+    timeout: 20_000,
+  });
+  await page.getByRole("button", { name: "Analyse Measured History" }).click();
+  const alert = page.getByRole("alert");
+  await expect(alert).toContainText("Check the highlighted inputs and try again");
+  await expect(alert).toBeFocused();
+});
+
+test("Operations remains legible and free of horizontal overflow on mobile", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => localStorage.setItem("gridpulse-theme", "dark"));
+  await page.goto("/operations");
+  await expect(page.locator("main.operations-page")).toHaveAttribute("data-hydrated", "true", {
+    timeout: 20_000,
+  });
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth),
+  ).toBe(false);
+  expect(
+    await page.getByRole("button", { name: "Analyse Measured History" }).evaluate((button) =>
+      Number.parseFloat(getComputedStyle(button).fontSize),
+    ),
+  ).toBeGreaterThanOrEqual(13);
+  const tabSizes = await page.locator(".operations-tabs button").evaluateAll((buttons) =>
+    buttons.map((button) => ({ width: button.getBoundingClientRect().width, height: button.getBoundingClientRect().height })),
   );
-  await page.getByRole("button", { name: "Show only Critical" }).click();
-  await expect(page).toHaveURL(/severity=critical/);
-  await expect(page).not.toHaveURL(/isolateVoltage/);
+  expect(tabSizes.every(({ width, height }) => width >= 44 && height >= 44)).toBe(true);
 });

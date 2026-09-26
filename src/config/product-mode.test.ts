@@ -14,9 +14,9 @@ describe("Finder MVP route boundary", () => {
     expect(productCapabilities.authentication).toBe(false);
     expect(isRouteEnabled("/")).toBe(true);
     expect(isRouteEnabled("/power-finder")).toBe(true);
-    expect(isRouteEnabled("/constraint-explorer")).toBe(true);
+    expect(isRouteEnabled("/constraint-explorer")).toBe(false);
     expect(isRouteEnabled("/activation")).toBe(false);
-    expect(isRouteEnabled("/operations")).toBe(false);
+    expect(isRouteEnabled("/operations")).toBe(true);
     expect(isRouteEnabled("/activation/private-id")).toBe(false);
     expect(isRouteEnabled("/operations/private-id")).toBe(false);
     expect(isRouteEnabled("/data-sources")).toBe(true);
@@ -34,12 +34,12 @@ describe("Finder MVP route boundary", () => {
   });
 
   it("maps dormant workspace URLs into the focused product", () => {
-    expect(retiredWorkspaceDestination("/data-centre-planner")).toBe("/constraint-explorer");
-    expect(retiredWorkspaceDestination("/evidence-review")).toBe("/constraint-explorer");
+    expect(retiredWorkspaceDestination("/data-centre-planner")).toBe("/power-finder");
+    expect(retiredWorkspaceDestination("/evidence-review")).toBe("/power-finder");
     expect(retiredWorkspaceDestination("/reports")).toBe("/portfolio");
     expect(retiredWorkspaceDestination("/activation/private-id")).toBe("/power-finder");
-    expect(retiredWorkspaceDestination("/operations/private-id/")).toBe("/power-finder");
-    expect(retiredWorkspaceDestination("/constraint-explorer")).toBeNull();
+    expect(retiredWorkspaceDestination("/operations/private-id/")).toBe("/operations");
+    expect(retiredWorkspaceDestination("/constraint-explorer")).toBe("/operations");
   });
 
   it("reactivates the retained workspace in connect and full modes", () => {

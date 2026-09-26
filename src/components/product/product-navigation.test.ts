@@ -8,16 +8,16 @@ import {
 
 describe("workspace outcome navigation", () => {
   it("exposes only the focused three-stage workflow", () => {
-    expect(activeWorkspaceStageIds).toEqual(["sites", "finder", "constraints"]);
+    expect(activeWorkspaceStageIds).toEqual(["sites", "finder", "operations"]);
     expect(workspaceLinksForMode("finder").map((item) => item.to)).toEqual([
       "/portfolio",
       "/power-finder",
-      "/constraint-explorer",
+      "/operations",
     ]);
     expect(workspaceLinksForMode("full").map((item) => item.to)).toEqual([
       "/portfolio",
       "/power-finder",
-      "/constraint-explorer",
+      "/operations",
     ]);
     expect(new Set(workspaceLinks.map((item) => item.to)).size).toBe(workspaceLinks.length);
   });
