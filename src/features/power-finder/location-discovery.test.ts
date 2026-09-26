@@ -37,7 +37,7 @@ const collection = {
       net_capacity_mw: 80,
     }),
     feature("wind", "generation_asset", [13.03, 52], {
-      generation_group: "wind",
+      technology: "Windenergie an Land",
       net_capacity_mw: 40,
     }),
   ],
@@ -51,9 +51,12 @@ describe("regional location discovery", () => {
       maxNodeDistanceKm: 20,
       resultCount: 10,
       strategy: "balanced",
+      generationGroup: "all",
+      minimumGenerationMw: 0,
+      minimumStorageMw: 0,
     });
     expect(result.name).toBe("land-a");
-    expect(result.renewableMw).toBe(120);
+    expect(result.generationMw).toBe(120);
     expect(result.technologyCount).toBe(2);
     expect(result.node.properties.capacity_state).toBeUndefined();
   });
@@ -89,9 +92,70 @@ describe("regional location discovery", () => {
       maxNodeDistanceKm: 20,
       resultCount: 10,
       strategy: "balanced",
+      generationGroup: "all",
+      minimumGenerationMw: 0,
+      minimumStorageMw: 0,
     });
 
     expect(results.map((result) => result.name)).toEqual(["bremen-land"]);
     expect(results.every((result) => isPointInGermanState("DE-HB", result.coordinates))).toBe(true);
+  });
+
+  it("uses the selected technology and capacity thresholds in the energy score", () => {
+    const [allEnergy] = discoverLocations(collection, {
+      requiredMw: 100,
+      preferredVoltageKv: 110,
+      maxNodeDistanceKm: 20,
+      resultCount: 10,
+      strategy: "energy",
+      generationGroup: "all",
+      minimumGenerationMw: 0,
+      minimumStorageMw: 0,
+    });
+    const [largeWind] = discoverLocations(collection, {
+      requiredMw: 100,
+      preferredVoltageKv: 110,
+      maxNodeDistanceKm: 20,
+      resultCount: 10,
+      strategy: "energy",
+      generationGroup: "wind",
+      minimumGenerationMw: 50,
+      minimumStorageMw: 10,
+    });
+
+    expect(allEnergy.generationMw).toBe(120);
+    expect(largeWind.generationMw).toBe(0);
+    expect(largeWind.technologyCount).toBe(0);
+    expect(largeWind.energyScore).toBeLessThan(allEnergy.energyScore);
+  });
+
+  it("applies load, voltage, distance, strategy and result-count parameters", () => {
+    const base = {
+      requiredMw: 100,
+      preferredVoltageKv: 110,
+      maxNodeDistanceKm: 20,
+      resultCount: 10 as const,
+      strategy: "balanced" as const,
+      generationGroup: "all",
+      minimumGenerationMw: 0,
+      minimumStorageMw: 0,
+    };
+    const [baseline] = discoverLocations(collection, base);
+    const [largerLoad] = discoverLocations(collection, { ...base, requiredMw: 500 });
+    const [voltageMismatch] = discoverLocations(collection, {
+      ...base,
+      preferredVoltageKv: 380,
+    });
+    const [connectionFirst] = discoverLocations(collection, {
+      ...base,
+      strategy: "connection",
+    });
+    const [energyFirst] = discoverLocations(collection, { ...base, strategy: "energy" });
+
+    expect(largerLoad.energyScore).toBeLessThan(baseline.energyScore);
+    expect(voltageMismatch.gridScore).toBeLessThan(baseline.gridScore);
+    expect(connectionFirst.score).not.toBe(energyFirst.score);
+    expect(discoverLocations(collection, { ...base, maxNodeDistanceKm: 0.5 })).toEqual([]);
+    expect(discoverLocations(collection, base)).toHaveLength(1);
   });
 });

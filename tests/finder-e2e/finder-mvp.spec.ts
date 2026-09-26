@@ -506,13 +506,49 @@ test("discover locations exposes generation and storage context filters", async 
   await discoverMode.click();
   await expect(discoverMode).toHaveAttribute("aria-pressed", "true");
 
+  await page.getByLabel("Bundesland").selectOption("DE-HE");
+  await expect(page).toHaveURL(/region=DE-HE/);
+  await page.getByLabel("Required load (MW)").fill("125");
+  await page.getByLabel("Preferred voltage").selectOption("220");
+  await page.getByLabel("Maximum node distance").selectOption("30");
+  await page.getByLabel("Ranking strategy").selectOption("energy");
+  await page.getByLabel("Number of results").selectOption("20");
   await expect(page.getByLabel("Discovery generation technology")).toBeVisible();
   await page.getByLabel("Discovery generation technology").selectOption("solar");
   await page.getByLabel("Discovery minimum registered generation").selectOption("10");
   await page.getByLabel("Discovery minimum registered storage power").selectOption("1");
+  await expect(page.getByLabel("Required load (MW)")).toHaveValue("125");
+  await expect(page.getByLabel("Preferred voltage")).toHaveValue("220");
+  await expect(page.getByLabel("Maximum node distance")).toHaveValue("30");
+  await expect(page.getByLabel("Ranking strategy")).toHaveValue("energy");
+  await expect(page.getByLabel("Number of results")).toHaveValue("20");
+  await expect(page.getByRole("button", { name: "Find 20 investigation locations" })).toBeVisible();
   await expect(page.getByLabel("Discovery generation technology")).toHaveValue("solar");
   await expect(page.getByLabel("Discovery minimum registered generation")).toHaveValue("10");
   await expect(page.getByLabel("Discovery minimum registered storage power")).toHaveValue("1");
+});
+
+test("regional discovery runs on public backend data and invalidates stale results", async ({
+  page,
+}) => {
+  test.setTimeout(120_000);
+  await page.goto("/power-finder?region=DE-BE");
+  await expect(page.getByText("Loading map context…")).toHaveCount(0, { timeout: 20_000 });
+  await page
+    .getByRole("group", { name: "Power Finder modes" })
+    .getByRole("button", { name: /Discover locations/ })
+    .click();
+  await page.getByRole("button", { name: "Find 10 investigation locations" }).click();
+  await expect(page.getByRole("button", { name: "Find 10 investigation locations" })).toBeEnabled({
+    timeout: 90_000,
+  });
+  const rankedAreas = page.getByRole("heading", { name: "Ranked areas" });
+  const noResults = page.getByText(/No investigation locations met the current mapped-data criteria/);
+  await expect(rankedAreas.or(noResults)).toBeVisible();
+  if (await rankedAreas.isVisible()) {
+    await page.getByLabel("Ranking strategy").selectOption("energy");
+    await expect(rankedAreas).toHaveCount(0);
+  }
 });
 
 test("candidate detail and map legend can be dismissed on a laptop viewport", async ({ page }) => {

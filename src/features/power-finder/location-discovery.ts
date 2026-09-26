@@ -16,6 +16,9 @@ export type DiscoveryParameters = {
   maxNodeDistanceKm: number;
   resultCount: 10 | 20;
   strategy: DiscoveryStrategy;
+  generationGroup: string;
+  minimumGenerationMw: number;
+  minimumStorageMw: number;
 };
 
 export type DiscoveryLocation = {
@@ -27,7 +30,7 @@ export type DiscoveryLocation = {
   energyScore: number;
   node: PowerFinderFeature;
   nodeDistanceKm: number;
-  renewableMw: number;
+  generationMw: number;
   storageMw: number;
   technologyCount: number;
   landContext: "mapped" | "not_assessed";
@@ -41,6 +44,22 @@ const weights = {
 } as const;
 
 const round1 = (value: number) => Math.round(value * 10) / 10;
+
+function generationGroup(feature: PowerFinderFeature) {
+  if (feature.properties.generation_group) return feature.properties.generation_group;
+  const technology = feature.properties.technology?.toLocaleLowerCase() ?? "";
+  if (technology.includes("solar")) return "solar";
+  if (technology.includes("wind")) return "wind";
+  if (technology.includes("biomass")) return "biomass";
+  if (technology.includes("wasser") && !technology.includes("wasserstoff")) return "hydro";
+  if (technology.includes("geotherm")) return "geothermal";
+  if (technology.includes("kern")) return "nuclear";
+  if (/erdgas|andere gase|grubengas/.test(technology)) return "gas";
+  if (/mineralöl|steinkohle|braunkohle|nicht biogener abfall/.test(technology)) {
+    return "fossil_other";
+  }
+  return "other";
+}
 
 function distanceKm(left: [number, number], right: [number, number]) {
   const radians = Math.PI / 180;
@@ -67,11 +86,25 @@ export function discoverLocations(
   const land = collection.features.filter(
     (feature) => feature.properties.kind === "industrial_site" && pointCoordinates(feature),
   );
-  const energy = collection.features.filter(
-    (feature) =>
-      ["generation_asset", "storage_asset"].includes(feature.properties.kind) &&
-      pointCoordinates(feature),
-  );
+  const energy = collection.features.filter((feature) => {
+    const properties = feature.properties;
+    if (!pointCoordinates(feature)) return false;
+    if (properties.kind === "generation_asset") {
+      return (
+        (parameters.generationGroup === "all" ||
+          generationGroup(feature) === parameters.generationGroup) &&
+        (parameters.minimumGenerationMw === 0 ||
+          (properties.net_capacity_mw ?? -1) >= parameters.minimumGenerationMw)
+      );
+    }
+    if (properties.kind === "storage_asset") {
+      return (
+        parameters.minimumStorageMw === 0 ||
+        (properties.net_capacity_mw ?? -1) >= parameters.minimumStorageMw
+      );
+    }
+    return false;
+  });
   const origins = land.length > 0 ? land : nodes;
   const candidates = origins.flatMap((origin) => {
     const coordinates = pointCoordinates(origin);
@@ -88,7 +121,7 @@ export function discoverLocations(
       const position = pointCoordinates(feature);
       return position && distanceKm(coordinates, position) <= 15;
     });
-    const renewableMw = nearby
+    const generationMw = nearby
       .filter((feature) => feature.properties.kind === "generation_asset")
       .reduce((sum, feature) => sum + (feature.properties.net_capacity_mw ?? 0), 0);
     const storageMw = nearby
@@ -97,7 +130,7 @@ export function discoverLocations(
     const technologies = new Set(
       nearby
         .filter((feature) => feature.properties.kind === "generation_asset")
-        .map((feature) => feature.properties.generation_group)
+        .map(generationGroup)
         .filter(Boolean),
     );
     const proximity = Math.max(0, 100 * (1 - nearest.distance / parameters.maxNodeDistanceKm));
@@ -106,7 +139,7 @@ export function discoverLocations(
       proximity * 0.3 +
       (nearest.node.properties.operator ? 100 : 40) * 0.15;
     const energyScore =
-      Math.min(100, (renewableMw / Math.max(1, parameters.requiredMw)) * 45) +
+      Math.min(100, (generationMw / Math.max(1, parameters.requiredMw)) * 45) +
       Math.min(25, technologies.size * 7) +
       Math.min(15, (storageMw / Math.max(1, parameters.requiredMw)) * 15);
     const profile = weights[parameters.strategy];
@@ -128,13 +161,13 @@ export function discoverLocations(
         energyScore: round1(energyScore),
         node: nearest.node,
         nodeDistanceKm: round1(nearest.distance),
-        renewableMw: round1(renewableMw),
+        generationMw: round1(generationMw),
         storageMw: round1(storageMw),
         technologyCount: technologies.size,
         landContext: origin.properties.kind === "industrial_site" ? "mapped" : "not_assessed",
         reasons: [
           `${nearest.node.properties.voltage_kv?.join(" / ") || "Unknown"} kV mapped node ${round1(nearest.distance)} km away.`,
-          `${round1(renewableMw)} MW known registered generation within 15 km.`,
+          `${round1(generationMw)} MW matching registered generation within 15 km.`,
           storageMw > 0
             ? `${round1(storageMw)} MW registered storage within 15 km.`
             : "No registered storage detected; developer-supplied storage remains possible.",

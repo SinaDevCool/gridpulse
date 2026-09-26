@@ -510,6 +510,11 @@ function PowerFinderPage() {
   const [discoveryState, setDiscoveryState] = useState<"idle" | "loading" | "ready" | "error">(
     "idle",
   );
+  const invalidateDiscoveryResults = () => {
+    setDiscoveryResults([]);
+    setSelectedDiscoveryId(null);
+    setDiscoveryState("idle");
+  };
   const [generationGroup, setGenerationGroup] = useState<string>(
     search.isolateTechnology && search.isolateTechnology !== "storage"
       ? search.isolateTechnology
@@ -1616,7 +1621,26 @@ function PowerFinderPage() {
                   aria-pressed={finderWorkflow === "discover"}
                   onClick={() => {
                     setFinderWorkflow("discover");
-                    if (regionCode === "DE") void updateSearch({ region: "DE-BB" });
+                    setEnabled({
+                      node: true,
+                      line: true,
+                      industrial_site: true,
+                      generation_asset: true,
+                      storage_asset: true,
+                    });
+                    setShowDataCentres(false);
+                    if (regionCode === "DE") {
+                      const brandenburg = coverage.find((item) => item.regionCode === "DE-BB");
+                      void updateSearch({ region: "DE-BB" });
+                      if (brandenburg) {
+                        setMapNavigationTarget({
+                          requestId: Date.now(),
+                          kind: "bounds",
+                          bounds: brandenburg.bounds,
+                          maxZoom: brandenburg.zoom,
+                        });
+                      }
+                    }
                   }}
                 >
                   <MapPinned aria-hidden="true" />
@@ -1644,9 +1668,19 @@ function PowerFinderPage() {
                       value={regionCode === "DE" ? "DE-BB" : regionCode}
                       onChange={(event) => {
                         const nextRegion = event.target.value as typeof search.region;
-                        setDiscoveryResults([]);
-                        setSelectedDiscoveryId(null);
+                        invalidateDiscoveryResults();
                         void updateSearch({ region: nextRegion });
+                        const nextCoverage = coverage.find(
+                          (item) => item.regionCode === nextRegion,
+                        );
+                        if (nextCoverage) {
+                          setMapNavigationTarget({
+                            requestId: Date.now(),
+                            kind: "bounds",
+                            bounds: nextCoverage.bounds,
+                            maxZoom: nextCoverage.zoom,
+                          });
+                        }
                       }}
                     >
                       {coverage
@@ -1665,18 +1699,26 @@ function PowerFinderPage() {
                       min="1"
                       max="1000"
                       value={project.importMw}
-                      onChange={(event) =>
-                        updateProject({ importMw: Number(event.target.value) || 1 })
-                      }
+                      onChange={(event) => {
+                        const value = Math.min(
+                          1000,
+                          Math.max(1, Number(event.target.value) || 1),
+                        );
+                        updateProject({ importMw: value });
+                        invalidateDiscoveryResults();
+                      }}
                     />
                   </label>
                   <label>
                     <span>Preferred voltage</span>
                     <select
                       value={project.preferredVoltageKv ?? 0}
-                      onChange={(event) =>
-                        updateProject({ preferredVoltageKv: Number(event.target.value) || null })
-                      }
+                      onChange={(event) => {
+                        updateProject({
+                          preferredVoltageKv: Number(event.target.value) || null,
+                        });
+                        invalidateDiscoveryResults();
+                      }}
                     >
                       <option value="0">Any / unknown</option>
                       <option value="110">110 kV</option>
@@ -1688,9 +1730,10 @@ function PowerFinderPage() {
                     <span>Maximum node distance</span>
                     <select
                       value={project.maxDistanceKm}
-                      onChange={(event) =>
-                        updateProject({ maxDistanceKm: Number(event.target.value) })
-                      }
+                      onChange={(event) => {
+                        updateProject({ maxDistanceKm: Number(event.target.value) });
+                        invalidateDiscoveryResults();
+                      }}
                     >
                       <option value="10">10 km</option>
                       <option value="20">20 km</option>
@@ -1701,9 +1744,10 @@ function PowerFinderPage() {
                     <span>Ranking strategy</span>
                     <select
                       value={discoveryStrategy}
-                      onChange={(event) =>
-                        setDiscoveryStrategy(event.target.value as DiscoveryStrategy)
-                      }
+                      onChange={(event) => {
+                        setDiscoveryStrategy(event.target.value as DiscoveryStrategy);
+                        invalidateDiscoveryResults();
+                      }}
                     >
                       <option value="connection">Connection-first</option>
                       <option value="balanced">Balanced</option>
@@ -1714,9 +1758,10 @@ function PowerFinderPage() {
                     <span>Number of results</span>
                     <select
                       value={discoveryResultCount}
-                      onChange={(event) =>
-                        setDiscoveryResultCount(Number(event.target.value) as 10 | 20)
-                      }
+                      onChange={(event) => {
+                        setDiscoveryResultCount(Number(event.target.value) as 10 | 20);
+                        invalidateDiscoveryResults();
+                      }}
                     >
                       <option value="10">10 locations</option>
                       <option value="20">20 locations</option>
@@ -1776,6 +1821,9 @@ function PowerFinderPage() {
                           maxNodeDistanceKm: project.maxDistanceKm,
                           resultCount: discoveryResultCount,
                           strategy: discoveryStrategy,
+                          generationGroup,
+                          minimumGenerationMw,
+                          minimumStorageMw,
                         });
                         setDiscoveryResults(results);
                         setSelectedDiscoveryId(results[0]?.id ?? null);
@@ -1814,12 +1862,16 @@ function PowerFinderPage() {
                     ? "Scanning regional context…"
                     : `Find ${discoveryResultCount} investigation locations`}
                 </button>
-                <small>Recommended for investigation only. Capacity remains unknown.</small>
+                <small>
+                  Required load normalises the context score; it does not estimate available
+                  capacity. Results are recommendations for investigation only.
+                </small>
                 <details className="finder-discovery-energy-filters" open>
                   <summary>Energy context filters</summary>
                   <p>
-                    Filter registered generation and storage shown on the map. These assets provide
-                    nearby ecosystem context, not available grid capacity.
+                    Limit the registered assets used in the energy-context score and shown on the
+                    map. These assets provide nearby ecosystem context, not available grid
+                    capacity.
                   </p>
                   <div className="finder-discovery-filter-grid">
                     <label>
@@ -1827,7 +1879,10 @@ function PowerFinderPage() {
                       <select
                         aria-label="Discovery generation technology"
                         value={generationGroup}
-                        onChange={(event) => setGenerationGroup(event.target.value)}
+                        onChange={(event) => {
+                          setGenerationGroup(event.target.value);
+                          invalidateDiscoveryResults();
+                        }}
                       >
                         <option value="all">All technologies</option>
                         <option value="solar">Solar</option>
@@ -1846,7 +1901,10 @@ function PowerFinderPage() {
                       <select
                         aria-label="Discovery minimum registered generation"
                         value={minimumGenerationMw}
-                        onChange={(event) => setMinimumGenerationMw(Number(event.target.value))}
+                        onChange={(event) => {
+                          setMinimumGenerationMw(Number(event.target.value));
+                          invalidateDiscoveryResults();
+                        }}
                       >
                         <option value="0">Any MW, including unknown</option>
                         <option value="1">1+ MW</option>
@@ -1861,7 +1919,10 @@ function PowerFinderPage() {
                       <select
                         aria-label="Discovery minimum registered storage power"
                         value={minimumStorageMw}
-                        onChange={(event) => setMinimumStorageMw(Number(event.target.value))}
+                        onChange={(event) => {
+                          setMinimumStorageMw(Number(event.target.value));
+                          invalidateDiscoveryResults();
+                        }}
                       >
                         <option value="0">Any MW, including unknown</option>
                         <option value="1">1+ MW</option>
