@@ -170,6 +170,7 @@ export const Route = createFileRoute("/power-finder")({
     tso: z.string().max(160).optional().catch(undefined),
     dso: z.string().max(160).optional().catch(undefined),
     sort: z.enum(["context", "voltage", "name"]).optional().catch(undefined),
+    workflow: z.enum(["screen", "discover"]).optional().catch(undefined),
     mw: safeNumber(0.1, 1000),
     distance: safeNumber(1, 100),
     candidate: z.string().max(200).optional().catch(undefined),
@@ -502,7 +503,9 @@ function PowerFinderPage() {
   const [legendOpen, setLegendOpen] = useState(false);
   const [showDataCentres, setShowDataCentres] = useState(false);
   const [selectedDataCentre, setSelectedDataCentre] = useState<RzRegDataCentre | null>(null);
-  const [finderWorkflow, setFinderWorkflow] = useState<"screen" | "discover">("screen");
+  const [finderWorkflow, setFinderWorkflow] = useState<"screen" | "discover">(
+    search.workflow ?? "screen",
+  );
   const [discoveryStrategy, setDiscoveryStrategy] = useState<DiscoveryStrategy>("balanced");
   const [discoveryResultCount, setDiscoveryResultCount] = useState<10 | 20>(10);
   const [discoveryResults, setDiscoveryResults] = useState<DiscoveryLocation[]>([]);
@@ -1695,7 +1698,10 @@ function PowerFinderPage() {
                   type="button"
                   className={finderWorkflow === "screen" ? "is-active" : ""}
                   aria-pressed={finderWorkflow === "screen"}
-                  onClick={() => setFinderWorkflow("screen")}
+                  onClick={() => {
+                    setFinderWorkflow("screen");
+                    void updateSearch({ workflow: "screen" });
+                  }}
                 >
                   <MapPin aria-hidden="true" />
                   <span>
@@ -1719,7 +1725,7 @@ function PowerFinderPage() {
                     setShowDataCentres(false);
                     if (regionCode === "DE") {
                       const brandenburg = coverage.find((item) => item.regionCode === "DE-BB");
-                      void updateSearch({ region: "DE-BB" });
+                      void updateSearch({ region: "DE-BB", workflow: "discover" });
                       if (brandenburg) {
                         setMapNavigationTarget({
                           requestId: Date.now(),
@@ -1728,6 +1734,8 @@ function PowerFinderPage() {
                           maxZoom: brandenburg.zoom,
                         });
                       }
+                    } else {
+                      void updateSearch({ workflow: "discover" });
                     }
                   }}
                 >

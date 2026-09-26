@@ -22922,3 +22922,675 @@ tbody tr:last-child td {
 .regional-grid-outlook.is-compact small {
   font-size: 0.68rem;
 }
+
+/* Power Finder light theme -------------------------------------------------
+   This final scoped layer intentionally follows the legacy map-workspace
+   rules above. It keeps the map canvas visually quiet while giving every
+   control, result, legend and detail surface a consistent light hierarchy. */
+:root[data-theme="light"] .power-finder-page {
+  --pf-canvas: #e9eef2;
+  --pf-rail: #f4f7f9;
+  --pf-panel: #ffffff;
+  --pf-panel-subtle: #f7f9fb;
+  --pf-panel-selected: #e8f5f8;
+  --pf-border: #cbd5df;
+  --pf-border-strong: #aab8c5;
+  --pf-text: #17212b;
+  --pf-muted: #5d6d7e;
+  --pf-faint: #778797;
+  --pf-accent: #08758a;
+  --pf-accent-strong: #07586a;
+  --pf-accent-soft: #e3f5f8;
+  --pf-warning: #8a5608;
+  --pf-warning-soft: #fff7e6;
+  --pf-danger: #b42318;
+  --pf-shadow: rgb(16 24 40 / 14%);
+  background: var(--pf-canvas);
+  color: var(--pf-text);
+  color-scheme: light;
+}
+
+:root[data-theme="light"] .power-finder-sidebar {
+  border-color: var(--pf-border);
+  background: var(--pf-rail);
+  color: var(--pf-text);
+  scrollbar-color: #98a8b8 transparent;
+}
+
+:root[data-theme="light"] .finder-rail-sticky {
+  border-color: var(--pf-border);
+  background: rgb(244 247 249 / 98%);
+  box-shadow: 0 10px 24px rgb(16 24 40 / 8%);
+}
+
+:root[data-theme="light"] .power-finder-sidebar section {
+  border-color: var(--pf-border);
+}
+
+:root[data-theme="light"] .power-finder-sidebar :is(h1, h2, h3, strong, summary) {
+  color: var(--pf-text);
+}
+
+:root[data-theme="light"] .power-finder-sidebar :is(p, small),
+:root[data-theme="light"] .power-finder-sidebar header > p:last-child,
+:root[data-theme="light"] .power-finder-sidebar section > p {
+  color: var(--pf-muted);
+}
+
+:root[data-theme="light"] .finder-workflow-switch,
+:root[data-theme="light"] .finder-project-summary {
+  background: var(--pf-rail);
+}
+
+:root[data-theme="light"] .finder-workflow-switch > div {
+  border-color: var(--pf-border);
+  background: #e9eef2;
+}
+
+:root[data-theme="light"] .finder-workflow-switch button {
+  background: transparent;
+  color: var(--pf-muted);
+}
+
+:root[data-theme="light"] .finder-workflow-switch button:hover {
+  background: rgb(255 255 255 / 72%);
+  color: var(--pf-text);
+}
+
+:root[data-theme="light"] .finder-workflow-switch button.is-active {
+  border-color: #72b9c8;
+  background: var(--pf-panel);
+  box-shadow: 0 2px 8px rgb(16 24 40 / 9%);
+  color: var(--pf-text);
+}
+
+:root[data-theme="light"] .finder-workflow-switch button svg,
+:root[data-theme="light"] .finder-project-summary > div > small {
+  color: var(--pf-accent);
+}
+
+:root[data-theme="light"] .finder-project-summary .finder-project-actions {
+  border-color: var(--pf-border);
+}
+
+:root[data-theme="light"] .finder-project-actions button,
+:root[data-theme="light"] .finder-more-filters,
+:root[data-theme="light"] .finder-clear-site,
+:root[data-theme="light"] .finder-return-to-workspace {
+  border-color: var(--pf-border-strong);
+  background: var(--pf-panel);
+  color: var(--pf-accent-strong);
+}
+
+:root[data-theme="light"] .finder-project-actions button:hover,
+:root[data-theme="light"] .finder-more-filters:hover,
+:root[data-theme="light"] .finder-clear-site:hover,
+:root[data-theme="light"] .finder-return-to-workspace:hover {
+  border-color: #5ba8b8;
+  background: var(--pf-accent-soft);
+  color: var(--pf-accent-strong);
+}
+
+:root[data-theme="light"] .finder-project-actions .primary-button,
+:root[data-theme="light"] .power-finder-sidebar .primary-button {
+  border-color: var(--pf-accent);
+  background: var(--pf-accent);
+  color: #ffffff;
+}
+
+:root[data-theme="light"] .finder-screening-controls {
+  border-color: var(--pf-border);
+  background: var(--pf-panel);
+  box-shadow: 0 1px 3px rgb(16 24 40 / 5%);
+}
+
+:root[data-theme="light"] .finder-screening-controls .power-finder-filter-panel {
+  border-color: var(--pf-border);
+}
+
+:root[data-theme="light"] .finder-project-panel > label,
+:root[data-theme="light"] .finder-project-grid--primary,
+:root[data-theme="light"] .finder-project-voltage {
+  border-color: var(--pf-border);
+  background: var(--pf-panel-subtle);
+}
+
+:root[data-theme="light"] .finder-project-grid--primary > label {
+  background: transparent;
+}
+
+:root[data-theme="light"] .finder-project-panel label,
+:root[data-theme="light"] .finder-project-panel label > small,
+:root[data-theme="light"] .finder-project-heading > small {
+  color: var(--pf-muted);
+}
+
+:root[data-theme="light"] .finder-project-panel :is(input, select),
+:root[data-theme="light"] .power-finder-search,
+:root[data-theme="light"] .power-finder-filter-grid label,
+:root[data-theme="light"] .power-finder-candidates > header select,
+:root[data-theme="light"] .registered-capacity-filters select,
+:root[data-theme="light"] .storage-legend-controls select {
+  border-color: var(--pf-border-strong);
+  background: var(--pf-panel);
+  color: var(--pf-text);
+  box-shadow: 0 1px 2px rgb(16 24 40 / 4%);
+}
+
+:root[data-theme="light"] .finder-project-panel :is(input, select):hover,
+:root[data-theme="light"] .power-finder-filter-grid label:hover,
+:root[data-theme="light"] .registered-capacity-filters select:hover {
+  border-color: #7f95a7;
+}
+
+:root[data-theme="light"] .finder-project-panel :is(input, select):focus-visible,
+:root[data-theme="light"] .power-finder-filter-grid :is(input, select):focus-visible,
+:root[data-theme="light"] .registered-capacity-filters select:focus-visible {
+  border-color: var(--pf-accent);
+  outline: 3px solid rgb(14 116 144 / 18%);
+  outline-offset: 1px;
+}
+
+:root[data-theme="light"] .power-finder-search:focus-within {
+  border-color: var(--pf-accent);
+  box-shadow: 0 0 0 3px rgb(14 116 144 / 14%);
+}
+
+:root[data-theme="light"] .power-finder-search input::placeholder {
+  color: #7b8794;
+}
+
+:root[data-theme="light"] .power-finder-filter-grid label > span,
+:root[data-theme="light"] .registered-capacity-filters label,
+:root[data-theme="light"] .storage-legend-controls label {
+  color: var(--pf-muted);
+}
+
+:root[data-theme="light"] .operator-hierarchy-boundary,
+:root[data-theme="light"] .layer-visibility-note {
+  color: var(--pf-muted);
+}
+
+:root[data-theme="light"] .finder-layers-menu,
+:root[data-theme="light"] .finder-question-panel,
+:root[data-theme="light"] .finder-ranking-method {
+  border-color: var(--pf-border);
+  background: var(--pf-panel);
+  color: var(--pf-text);
+}
+
+:root[data-theme="light"] .finder-map-presets {
+  border-color: var(--pf-border);
+  background: #edf2f5;
+}
+
+:root[data-theme="light"] .finder-map-presets button {
+  color: var(--pf-muted);
+}
+
+:root[data-theme="light"] .finder-map-presets button:hover,
+:root[data-theme="light"] .finder-map-presets button.is-active {
+  border-color: #72b9c8;
+  background: var(--pf-panel);
+  color: var(--pf-accent-strong);
+}
+
+:root[data-theme="light"] .power-finder-layer-list label {
+  border-color: var(--pf-border);
+  background: var(--pf-panel);
+  color: var(--pf-text);
+}
+
+:root[data-theme="light"] .power-finder-layer-list label:hover {
+  border-color: #78acb8;
+  background: var(--pf-accent-soft);
+}
+
+:root[data-theme="light"] .power-finder-layer-list small {
+  color: var(--pf-muted);
+}
+
+:root[data-theme="light"] .finder-input-boundary,
+:root[data-theme="light"] .finder-site-empty,
+:root[data-theme="light"] .finder-ranking-method {
+  border-color: var(--pf-border);
+  background: var(--pf-panel-subtle);
+  color: var(--pf-muted);
+}
+
+:root[data-theme="light"] .finder-input-boundary strong,
+:root[data-theme="light"] .finder-site-empty strong,
+:root[data-theme="light"] .finder-ranking-method summary {
+  color: var(--pf-text);
+}
+
+:root[data-theme="light"] .power-finder-candidates > header {
+  border-color: var(--pf-border);
+  background: rgb(244 247 249 / 97%);
+}
+
+:root[data-theme="light"] .power-finder-candidates > header h2 {
+  color: var(--pf-text);
+}
+
+:root[data-theme="light"] .power-finder-candidates > header small {
+  color: var(--pf-muted);
+}
+
+:root[data-theme="light"] .power-finder-candidates button {
+  border-color: var(--pf-border);
+  background: var(--pf-panel);
+  color: var(--pf-text);
+}
+
+:root[data-theme="light"] .power-finder-candidates button:hover,
+:root[data-theme="light"] .power-finder-candidates button.active {
+  border-color: #c28a23;
+  background: #fffbf2;
+}
+
+:root[data-theme="light"] .power-finder-candidates small,
+:root[data-theme="light"] .power-finder-candidates .candidate-boundary {
+  color: var(--pf-muted);
+}
+
+:root[data-theme="light"] .candidate-badges i {
+  border-color: #9fd3de;
+  background: #edf9fb;
+  color: #07586a;
+}
+
+:root[data-theme="light"] .candidate-badges i[data-fit="conditional"],
+:root[data-theme="light"] .candidate-badges i[data-confidence="low"] {
+  border-color: #e5bf77;
+  background: var(--pf-warning-soft);
+  color: var(--pf-warning);
+}
+
+:root[data-theme="light"] .candidate-badges strong,
+:root[data-theme="light"] .candidate-fit-summary strong {
+  color: var(--pf-accent-strong);
+}
+
+:root[data-theme="light"] .candidate-fit-summary {
+  color: var(--pf-muted);
+}
+
+:root[data-theme="light"] .candidate-fit-summary > small {
+  color: var(--pf-warning);
+}
+
+:root[data-theme="light"] .power-finder-source {
+  border-color: var(--pf-border);
+  color: var(--pf-muted);
+}
+
+:root[data-theme="light"] .power-finder-source strong {
+  color: var(--pf-text);
+}
+
+:root[data-theme="light"] .capacity-opportunity-card {
+  border-color: var(--pf-border);
+  background: var(--pf-panel);
+  box-shadow: 0 1px 3px rgb(16 24 40 / 5%);
+}
+
+:root[data-theme="light"] .capacity-overlay-switch small,
+:root[data-theme="light"] .capacity-data-basis,
+:root[data-theme="light"] .capacity-control-row label > span {
+  color: var(--pf-muted);
+}
+
+:root[data-theme="light"] .capacity-overlay-switch input {
+  border-color: var(--pf-border-strong);
+  background: #dbe3e9;
+}
+
+:root[data-theme="light"] .capacity-overlay-switch input:checked {
+  border-color: var(--pf-accent);
+  background: var(--pf-accent);
+}
+
+:root[data-theme="light"] .capacity-required-heading label,
+:root[data-theme="light"] .capacity-fit-summary b {
+  color: var(--pf-text);
+}
+
+:root[data-theme="light"] .capacity-required-heading span,
+:root[data-theme="light"] .capacity-reset-demand {
+  color: var(--pf-accent);
+}
+
+:root[data-theme="light"] .capacity-control-row :is(input, select),
+:root[data-theme="light"] .finder-capacity-controls select {
+  border-color: var(--pf-border-strong);
+  background: var(--pf-panel);
+  color: var(--pf-text);
+}
+
+:root[data-theme="light"] .capacity-fit-summary span {
+  border-color: var(--pf-border);
+  background: var(--pf-panel-subtle);
+  color: var(--pf-muted);
+}
+
+:root[data-theme="light"] .finder-discovery-intro,
+:root[data-theme="light"] .finder-discovery-energy-filters,
+:root[data-theme="light"] .finder-discovery-results-panel {
+  border-color: var(--pf-border) !important;
+  background: var(--pf-panel) !important;
+  box-shadow: 0 1px 3px rgb(16 24 40 / 5%);
+}
+
+:root[data-theme="light"] .finder-discovery-intro h2,
+:root[data-theme="light"] .finder-discovery-energy-filters summary,
+:root[data-theme="light"] .finder-discovery-results-panel > header h2 {
+  color: var(--pf-text);
+}
+
+:root[data-theme="light"] .finder-discovery-intro > p:not(.context-label),
+:root[data-theme="light"] .finder-discovery-energy-filters > p,
+:root[data-theme="light"] .finder-discovery-results-panel > p,
+:root[data-theme="light"] .finder-discovery-results small {
+  color: var(--pf-muted) !important;
+}
+
+:root[data-theme="light"] .finder-discovery-intro dl,
+:root[data-theme="light"] .finder-discovery-intro dl > div {
+  background: var(--pf-panel-subtle);
+}
+
+:root[data-theme="light"] .finder-discovery-intro dt,
+:root[data-theme="light"] .finder-discovery-form label > span,
+:root[data-theme="light"] .finder-discovery-filter-grid label > span {
+  color: var(--pf-muted);
+}
+
+:root[data-theme="light"] .finder-discovery-intro dd {
+  color: var(--pf-text);
+}
+
+:root[data-theme="light"] .finder-discovery-energy-filters[open] summary {
+  border-color: var(--pf-border);
+}
+
+:root[data-theme="light"] .finder-discovery-form label > strong,
+:root[data-theme="light"] .finder-discovery-form :is(input, select),
+:root[data-theme="light"] .finder-discovery-filter-grid select {
+  border-color: var(--pf-border-strong);
+  background: var(--pf-panel);
+  color: var(--pf-text);
+}
+
+:root[data-theme="light"] .finder-discovery-results-panel > header > span {
+  border-color: #82c3d1;
+  background: var(--pf-accent-soft);
+  color: var(--pf-accent-strong);
+}
+
+:root[data-theme="light"] .finder-discovery-results button {
+  border-color: var(--pf-border);
+  background: var(--pf-panel-subtle);
+  color: var(--pf-text);
+}
+
+:root[data-theme="light"] .finder-discovery-results button:hover,
+:root[data-theme="light"] .finder-discovery-results button.is-active {
+  border-color: #5aaabb;
+  background: var(--pf-accent-soft);
+}
+
+:root[data-theme="light"] .power-finder-boundary,
+:root[data-theme="light"] .candidate-capacity-banner {
+  border-color: #dfb45e;
+  background: var(--pf-warning-soft);
+  color: var(--pf-warning);
+}
+
+:root[data-theme="light"] .power-finder-boundary strong,
+:root[data-theme="light"] .candidate-capacity-banner strong {
+  color: #774307;
+}
+
+:root[data-theme="light"] .power-finder-boundary p,
+:root[data-theme="light"] .candidate-capacity-banner span {
+  color: #80561c;
+}
+
+:root[data-theme="light"] .power-finder-loading,
+:root[data-theme="light"] .power-finder-error {
+  background: var(--pf-canvas);
+  color: var(--pf-muted);
+}
+
+:root[data-theme="light"] .power-finder-error {
+  color: var(--pf-danger);
+}
+
+:root[data-theme="light"] .power-finder-sidebar-toggle,
+:root[data-theme="light"] .power-finder-basemap-toggle {
+  border-color: var(--pf-border-strong);
+  background: rgb(255 255 255 / 96%);
+  box-shadow: 0 8px 22px var(--pf-shadow);
+  color: var(--pf-text);
+}
+
+:root[data-theme="light"] .power-finder-sidebar-toggle:hover,
+:root[data-theme="light"] .power-finder-basemap-toggle:hover {
+  border-color: #5aaabb;
+  background: var(--pf-accent-soft);
+}
+
+:root[data-theme="light"] .power-finder-basemap-notice {
+  border-color: #d8a341;
+  background: rgb(255 249 235 / 97%);
+  box-shadow: 0 8px 22px var(--pf-shadow);
+  color: #70420a;
+}
+
+:root[data-theme="light"] .power-finder-basemap-notice button {
+  border-color: #d2a14a;
+  background: #ffffff;
+}
+
+:root[data-theme="light"] .interactive-map-legend.power-finder-interactive-legend,
+:root[data-theme="light"] .power-finder-legend {
+  border-color: var(--pf-border-strong);
+  background: rgb(255 255 255 / 97%);
+  box-shadow: 0 10px 26px var(--pf-shadow);
+  color: var(--pf-text);
+}
+
+:root[data-theme="light"] .interactive-map-legend__source {
+  border-color: var(--pf-border);
+  background: var(--pf-panel-subtle);
+  color: var(--pf-muted);
+}
+
+:root[data-theme="light"] .power-finder-legend-toggle,
+:root[data-theme="light"] .power-finder-legend :is(h2, h3, strong),
+:root[data-theme="light"] .interactive-map-legend :is(h2, h3, strong) {
+  color: var(--pf-text);
+}
+
+:root[data-theme="light"] .power-finder-legend :is(p, small, span),
+:root[data-theme="light"] .interactive-map-legend :is(p, small) {
+  color: var(--pf-muted);
+}
+
+:root[data-theme="light"] .power-finder-detail,
+:root[data-theme="light"] .candidate-comparison,
+:root[data-theme="light"] .reference-capacity-inset {
+  border-color: var(--pf-border-strong);
+  background: rgb(255 255 255 / 98%);
+  box-shadow: 0 20px 48px rgb(16 24 40 / 18%);
+  color: var(--pf-text);
+}
+
+:root[data-theme="light"] .detail-sticky-header {
+  background: linear-gradient(180deg, #ffffff 84%, rgb(255 255 255 / 0%));
+}
+
+:root[data-theme="light"] .power-finder-detail h2,
+:root[data-theme="light"] .power-finder-detail dd,
+:root[data-theme="light"] .candidate-intelligence h3,
+:root[data-theme="light"] .candidate-key-drivers ul,
+:root[data-theme="light"] .candidate-regulatory-context ul {
+  color: var(--pf-text);
+}
+
+:root[data-theme="light"] .detail-sticky-header > p,
+:root[data-theme="light"] .power-finder-detail > p:not(.context-label),
+:root[data-theme="light"] .power-finder-detail dt,
+:root[data-theme="light"] .candidate-intelligence :is(p, small),
+:root[data-theme="light"] .candidate-regulatory-context li span,
+:root[data-theme="light"] .candidate-calculation-version,
+:root[data-theme="light"] .detail-help {
+  color: var(--pf-muted);
+}
+
+:root[data-theme="light"] .power-finder-detail dl,
+:root[data-theme="light"] .registered-capacity-filters,
+:root[data-theme="light"] .candidate-regulatory-context {
+  border-color: var(--pf-border);
+}
+
+:root[data-theme="light"] .node-pathway-notice {
+  background: #edf8fb;
+  color: #07586a !important;
+}
+
+:root[data-theme="light"] .calculation-class-row span {
+  border-color: var(--pf-border);
+  color: var(--pf-muted);
+}
+
+:root[data-theme="light"] .candidate-intelligence,
+:root[data-theme="light"] .candidate-outcome,
+:root[data-theme="light"] .power-finder-score,
+:root[data-theme="light"] .finder-scenario-inputs,
+:root[data-theme="light"] .release-a-scenario {
+  border-color: #a9d2db;
+  background: #f3fafb;
+}
+
+:root[data-theme="light"] .candidate-outcome dl div,
+:root[data-theme="light"] .candidate-site-impact > dl > div,
+:root[data-theme="light"] .candidate-comparison article,
+:root[data-theme="light"] .release-b-branches li {
+  border-color: var(--pf-border);
+  background: var(--pf-panel);
+}
+
+:root[data-theme="light"] .candidate-intelligence header strong,
+:root[data-theme="light"] .candidate-outcome > div strong,
+:root[data-theme="light"] .candidate-regulatory-context a,
+:root[data-theme="light"] .power-finder-method-link,
+:root[data-theme="light"] .finder-scenario-inputs summary,
+:root[data-theme="light"] .candidate-comparison > header button,
+:root[data-theme="light"] .candidate-comparison-remove {
+  color: var(--pf-accent);
+}
+
+:root[data-theme="light"] .candidate-outcome > div span,
+:root[data-theme="light"] .candidate-site-impact dt,
+:root[data-theme="light"] .candidate-comparison article > span,
+:root[data-theme="light"] .candidate-comparison dt {
+  color: var(--pf-muted);
+}
+
+:root[data-theme="light"] .candidate-site-impact dd,
+:root[data-theme="light"] .candidate-comparison dd,
+:root[data-theme="light"] .candidate-comparison article > strong,
+:root[data-theme="light"] .candidate-comparison > header,
+:root[data-theme="light"] .release-a-scenario dd,
+:root[data-theme="light"] .scenario-score-components li b {
+  color: var(--pf-text);
+}
+
+:root[data-theme="light"] .release-b-network {
+  border-color: #c9b9e8;
+  background: linear-gradient(145deg, #faf8ff, #f4effc);
+}
+
+:root[data-theme="light"] .release-b-network summary {
+  color: #5d3c92;
+}
+
+:root[data-theme="light"] .reference-capacity-inset > header,
+:root[data-theme="light"] .reference-capacity-inset > footer,
+:root[data-theme="light"] .reference-capacity-detail,
+:root[data-theme="light"] .reference-capacity-evidence {
+  border-color: var(--pf-border);
+}
+
+:root[data-theme="light"] .reference-capacity-grid button,
+:root[data-theme="light"] .reference-capacity-detail {
+  border-color: var(--pf-border);
+  background: var(--pf-panel-subtle);
+  color: var(--pf-text);
+}
+
+:root[data-theme="light"] .reference-capacity-grid button:hover,
+:root[data-theme="light"] .reference-capacity-grid button.is-selected {
+  border-color: #5aaabb;
+  background: var(--pf-accent-soft);
+}
+
+:root[data-theme="light"] .reference-capacity-grid button small,
+:root[data-theme="light"] .reference-capacity-inset > header small,
+:root[data-theme="light"] .reference-capacity-inset > footer,
+:root[data-theme="light"] .reference-capacity-detail dt,
+:root[data-theme="light"] .reference-capacity-evidence {
+  color: var(--pf-muted);
+}
+
+:root[data-theme="light"] .reference-capacity-boundary {
+  background: var(--pf-warning-soft);
+  color: #774307;
+}
+
+:root[data-theme="light"] .reference-capacity-explanation {
+  background: #eef8fa;
+  color: var(--pf-muted);
+}
+
+:root[data-theme="light"] .reference-capacity-explanation strong {
+  color: var(--pf-text);
+}
+
+:root[data-theme="light"] .power-finder-map .maplibregl-ctrl-attrib {
+  border-color: rgb(102 112 133 / 22%);
+  background: rgb(255 255 255 / 88%);
+  color: #5d6d7e;
+}
+
+:root[data-theme="light"] .power-finder-map .maplibregl-ctrl-attrib a {
+  color: #344054;
+}
+
+:root[data-theme="light"] .power-finder-map .maplibregl-ctrl-attrib-button {
+  filter: none;
+}
+
+:root[data-theme="light"] .product-shell--focused .product-truth--compact {
+  border-color: #9fc8d1;
+  background: #edf8fa;
+  box-shadow: 0 1px 3px rgb(16 24 40 / 5%);
+}
+
+:root[data-theme="light"]
+  .product-shell--focused
+  .product-truth--compact
+  .product-truth-heading
+  strong {
+  color: var(--pf-text, #17212b);
+}
+
+:root[data-theme="light"]
+  .product-shell--focused
+  .product-truth--compact
+  .product-truth-heading
+  p {
+  color: var(--pf-muted, #5d6d7e);
+}
