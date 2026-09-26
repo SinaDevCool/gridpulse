@@ -268,8 +268,8 @@ const checks = [
     url: `${baseUrl}/data-centre-planner`,
     expectedStatus: 200,
     validate: async (response) => {
-      if (new URL(response.url).pathname !== "/operations") {
-        throw new Error("dormant Planner URL did not redirect to Operations");
+      if (new URL(response.url).pathname !== "/power-finder") {
+        throw new Error("dormant Planner URL did not redirect to Power Finder");
       }
     },
   },
