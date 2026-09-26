@@ -72,7 +72,7 @@ test("Power Finder rail follows the resolved light theme", async ({ page }) => {
     "background-color",
     "rgba(255, 255, 255, 0.96)",
   );
-  await page.getByText("Map Layers", { exact: true }).click();
+  await page.getByText("Map view & optional layers", { exact: true }).click();
   await expect(page.locator(".power-finder-layer-list label").first()).toHaveCSS(
     "color",
     "rgb(16, 24, 40)",

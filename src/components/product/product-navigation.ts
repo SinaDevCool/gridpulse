@@ -10,7 +10,7 @@ export const workspaceLinks = [
   {
     id: "sites",
     label: "Sites",
-    detail: "Portfolio decisions",
+    detail: "Site portfolio",
     to: "/portfolio",
     capability: "finder",
     unavailableBehavior: "explain",
@@ -18,7 +18,7 @@ export const workspaceLinks = [
   {
     id: "finder",
     label: "Power Finder",
-    detail: "Grid hypotheses",
+    detail: "Connection screening",
     to: "/power-finder",
     capability: "finder",
     unavailableBehavior: "explain",
@@ -26,7 +26,7 @@ export const workspaceLinks = [
   {
     id: "constraints",
     label: "Constraints",
-    detail: "Exposure & evidence",
+    detail: "Constraint evidence",
     to: "/constraint-explorer",
     capability: "finder",
     unavailableBehavior: "explain",

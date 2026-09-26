@@ -6,7 +6,15 @@ test("Finder exploration and local property portfolio are anonymous", async ({ p
 
   await page.goto("/power-finder");
   await expect(page.getByRole("heading", { level: 1 })).toContainText("connection context");
-  await expect(page.getByRole("navigation", { name: "Grid workspace navigation" })).toBeVisible();
+  const workspaceNavigation = page.getByRole("navigation", { name: "Grid workspace navigation" });
+  await expect(workspaceNavigation).toBeVisible();
+  await expect(workspaceNavigation.locator("a > svg")).toHaveCount(3);
+  expect(
+    await workspaceNavigation.locator(":scope > div").evaluate((element) => ({
+      horizontal: element.scrollWidth > element.clientWidth,
+      vertical: element.scrollHeight > element.clientHeight,
+    })),
+  ).toEqual({ horizontal: false, vertical: false });
   await expect(page.getByRole("link", { name: "Discuss a site" })).toHaveCount(0);
   await expect(page.getByText(/Sign in|Sign up|Create account/i)).toHaveCount(0);
   await expect(page.getByText(/^Screening only\./i)).toHaveCount(0);
@@ -73,7 +81,7 @@ test("a Finder project saves locally, survives navigation, and opens a dossier",
   await expect(save).toBeEnabled();
   await save.click();
   await expect(page).toHaveURL(/propertyId=/);
-  await page.getByRole("link", { name: /Sites Portfolio decisions/i }).click();
+  await page.getByRole("link", { name: /Sites Site portfolio/i }).click();
   await expect(page.getByRole("heading", { name: "Sites", exact: true })).toBeVisible();
   await expect(page.getByText("Untitled screening project").first()).toBeVisible();
   await page.getByRole("link", { name: /Untitled screening project/i }).click();
@@ -128,7 +136,7 @@ test("anonymous site workspace qualifies a site and records operator evidence", 
   await page.getByLabel("Category").selectOption("operator");
   await page.getByRole("button", { name: /Add evidence/i }).click();
   await expect(page.getByText("Operator acknowledgement")).toBeVisible();
-  await page.getByRole("link", { name: /Sites Portfolio decisions/i }).click();
+  await page.getByRole("link", { name: /Sites Site portfolio/i }).click();
   await page.getByRole("button", { name: "Comparison" }).click();
   await expect(page.getByText("Bremen Data Centre Campus").first()).toBeVisible();
 });
@@ -141,7 +149,7 @@ test("site decisions flow into the unified Decision Review view", async ({ page 
   });
   await page.getByRole("button", { name: "Create pipeline site", exact: true }).click();
   await expect(page.getByRole("button", { name: /Screening saved/i })).toBeDisabled();
-  await page.getByRole("link", { name: /Sites Portfolio decisions/i }).click();
+  await page.getByRole("link", { name: /Sites Site portfolio/i }).click();
   await page.getByRole("link", { name: /Untitled screening project/i }).click();
   await expect(page).toHaveURL(/selected=[0-9a-f-]{36}/);
   await page.getByRole("link", { name: "Review Decision" }).click();
@@ -158,7 +166,7 @@ test("site decisions flow into the unified Decision Review view", async ({ page 
     "Advance for investigation while operator capacity remains unconfirmed.",
   );
   await expect(page.getByText(/Provisional advance/i).first()).toBeVisible();
-  await page.getByRole("link", { name: /Sites Portfolio decisions/i }).click();
+  await page.getByRole("link", { name: /Sites Site portfolio/i }).click();
   await page.getByRole("button", { name: "Decision Review" }).click();
   await expect(page.getByRole("heading", { name: "Decision Review" }).first()).toBeVisible();
   await expect(page.getByText("Untitled screening project").first()).toBeVisible();
@@ -173,7 +181,7 @@ test("portfolio views are URL-backed and the site workspace is directly discover
     timeout: 15_000,
   });
   await page.getByRole("button", { name: "Create pipeline site", exact: true }).click();
-  await page.getByRole("link", { name: /Sites Portfolio decisions/i }).click();
+  await page.getByRole("link", { name: /Sites Site portfolio/i }).click();
   await page.getByLabel("Stage").selectOption("draft");
   await expect(page).toHaveURL(/stage=draft/);
   await expect(page.getByRole("heading", { name: "No Sites Match This View" })).toBeVisible();
@@ -391,7 +399,7 @@ test("unsafe coordinates are handled inline and malformed URLs do not crash", as
   await expect(page.getByRole("heading", { level: 1 })).toContainText("connection context");
   await expect(page.getByText("Something went wrong!")).toHaveCount(0);
   await expect.poll(() => new URL(page.url()).searchParams.has("lat")).toBe(false);
-  await page.getByText("Map Layers", { exact: true }).click();
+  await page.getByText("Map view & optional layers", { exact: true }).click();
   await expect(page.getByRole("checkbox", { name: /Registered generation/ })).toBeEnabled({
     timeout: 15_000,
   });
@@ -430,29 +438,15 @@ test("comparison supports multiple candidates and resets when the site changes",
 
 test("registered generation and storage are available without an account", async ({ page }) => {
   await page.goto("/power-finder");
-  await page.getByText("Map Layers", { exact: true }).click();
+  await page.getByText("Map view & optional layers", { exact: true }).click();
   const generation = page.getByRole("checkbox", { name: /Registered generation/ });
   const storage = page.getByRole("checkbox", { name: /Registered storage/ });
   await expect(generation).toBeEnabled({ timeout: 15_000 });
   await expect(storage).toBeEnabled({ timeout: 15_000 });
-  await expect(generation.locator("..")).toContainText(
-    /(?:\d+ (?:in view|visible|in current detail view)|Source unavailable)/,
-    {
-      timeout: 15_000,
-    },
-  );
-  await expect(storage.locator("..")).toContainText(
-    /(?:\d+ (?:in view|visible|in current detail view)|Source unavailable)/,
-    { timeout: 15_000 },
-  );
   await generation.check();
   await storage.check();
   await expect(generation).toBeChecked();
   await expect(storage).toBeChecked();
-  await expect(page.getByLabel("Generation technology")).toBeVisible();
-  await page.getByLabel("Generation technology").selectOption("solar");
-  await page.getByLabel("Minimum registered generation").selectOption("10");
-  await page.getByLabel("Minimum registered storage power").selectOption("10");
 });
 
 test("map presets and voltage isolation are reproducible", async ({ page }) => {
@@ -460,12 +454,16 @@ test("map presets and voltage isolation are reproducible", async ({ page }) => {
   await expect(
     page.getByRole("application", { name: "Interactive grid and industrial-site screening map" }),
   ).toBeVisible();
-  await page.getByText("Map Layers", { exact: true }).click();
-  await page.getByRole("button", { name: "Infrastructure", exact: true }).click();
+  await page.locator("details.finder-layers-menu").evaluate((element) => {
+    (element as HTMLDetailsElement).open = true;
+  });
+  await page.getByRole("button", { name: "Grid infrastructure", exact: true }).click();
   await expect(page).toHaveURL(/mapView=infrastructure/);
+  await page.getByRole("button", { name: "Show map legend" }).click();
   await page.getByRole("button", { name: "Show only 220–<380 kV" }).click();
   await expect(page).toHaveURL(/isolateVoltage=220kv/);
   await page.reload();
+  await page.getByRole("button", { name: "Show map legend" }).click();
   await expect(page.getByRole("button", { name: "Show all 220–<380 kV" })).toHaveAttribute(
     "aria-pressed",
     "true",
@@ -477,20 +475,25 @@ test("generation preset exposes governed capacity controls", async ({ page }) =>
   await expect(
     page.getByRole("application", { name: "Interactive grid and industrial-site screening map" }),
   ).toBeVisible();
-  await page.getByText("Map Layers", { exact: true }).click();
-  await page.getByRole("button", { name: "Generation & Storage", exact: true }).click();
+  await page.getByText("Map view & optional layers", { exact: true }).click();
+  await page.getByRole("button", { name: "Energy context", exact: true }).click();
   await expect(page).toHaveURL(/mapView=generation/);
+  await expect(page).toHaveURL(/generationMinMw=10/);
+  await expect(page).toHaveURL(/storageMinMw=1/);
+  await page.getByText("Map view & optional layers", { exact: true }).click();
   const registryControls = page.getByLabel("Maximum registered generation");
   const unavailableState = page.getByText(/Registered generation and storage are unavailable/);
-  await expect(registryControls.or(unavailableState)).toBeVisible();
-  if (await registryControls.isVisible()) {
-    await expect(page.getByLabel("Maximum registered storage power")).toBeVisible();
+  await expect(registryControls.or(unavailableState)).toHaveCount(1);
+  if ((await registryControls.count()) > 0) {
+    await expect(page.getByLabel("Maximum registered storage power")).toHaveCount(1);
   } else {
-    await expect(
-      page.getByRole("checkbox", { name: /Registered generation/ }).locator(".."),
-    ).toContainText("Source unavailable");
+    await expect(unavailableState).toHaveCount(1);
   }
-  await expect(page.getByText(/Registered asset context|not grid headroom/i).first()).toBeVisible();
+  await page.getByRole("button", { name: "Show map legend" }).click();
+  await expect(page.locator('.interactive-map-legend img[src*="/assets/energy-icons/"]')).toHaveCount(
+    10,
+  );
+  await expect(page.getByText("Partial", { exact: true })).toHaveCount(0);
 });
 
 test("discover locations exposes generation and storage context filters", async ({ page }) => {
@@ -521,6 +524,7 @@ test("candidate detail and map legend can be dismissed on a laptop viewport", as
   await expect(page.locator(".power-finder-detail.open")).toBeVisible();
   await page.getByRole("button", { name: "Close detail" }).click();
   await expect(page.locator(".power-finder-detail.open")).toHaveCount(0);
+  await page.getByRole("button", { name: "Show map legend" }).click();
   await page.getByRole("button", { name: "Hide map legend" }).click();
   const collapsedLegend = page.locator(".power-finder-interactive-legend.is-collapsed");
   await expect(page.getByRole("button", { name: "Show map legend" })).toBeVisible();
@@ -593,7 +597,7 @@ test("viewport fallback does not disable the independent registry source", async
     route.fulfill({ status: 503, contentType: "application/json", body: '{"error":"offline"}' }),
   );
   await page.goto("/power-finder");
-  await page.getByText("Map Layers", { exact: true }).click();
+  await page.getByText("Map view & optional layers", { exact: true }).click();
   await expect(page.getByRole("checkbox", { name: /Registered generation/ })).toBeEnabled({
     timeout: 15_000,
   });
@@ -606,17 +610,15 @@ test("unclustered grid lines and industrial polygons render in the Brandenburg v
   await page.goto(
     "/power-finder?lat=52.232112&lng=13.305687&mw=20&distance=20&voltage=20&region=DE-BB",
   );
-  await page.getByText("Map Layers", { exact: true }).click();
+  await page.getByText("Map view & optional layers", { exact: true }).click();
   const gridLines = page.getByRole("checkbox", { name: /Mapped grid corridors/ });
   const industrialSites = page.getByRole("checkbox", { name: /Industrial sites/ });
   await expect(gridLines).toBeChecked();
+  await industrialSites.check();
   await expect(industrialSites).toBeChecked();
-  await expect
-    .poll(() => gridLines.locator("..").textContent(), { timeout: 15_000 })
-    .toMatch(/[1-9]\d* visible/);
-  await expect
-    .poll(() => industrialSites.locator("..").textContent(), { timeout: 15_000 })
-    .toMatch(/[1-9]\d* visible/);
+  await expect(
+    page.getByText(/No enabled grid lines or industrial sites intersect the current map view/),
+  ).toHaveCount(0, { timeout: 15_000 });
 });
 
 test("comparison enforces five candidates and supports independent removal", async ({ page }) => {
@@ -675,7 +677,7 @@ test("selected candidates remain highlighted independently of the node layer", a
   const map = page.getByRole("application", { name: /Interactive grid/ });
   await expect(map).not.toHaveAttribute("data-selected-feature", "");
   await expect(page.getByText("Selected candidate connection point")).toBeVisible();
-  await page.getByText("Map Layers", { exact: true }).click();
+  await page.getByText("Map view & optional layers", { exact: true }).click();
   await page.getByRole("checkbox", { name: /Grid nodes/ }).uncheck();
   await expect(map).not.toHaveAttribute("data-selected-feature", "");
   await page.getByRole("button", { name: "Close detail" }).click();

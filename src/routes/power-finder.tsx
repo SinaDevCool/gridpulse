@@ -524,6 +524,9 @@ function PowerFinderPage() {
     minimumStorageMw: search.storageMinMw ?? 0,
     maximumStorageMw: search.storageMaxMw ?? null,
   });
+  const [layersMenuOpen, setLayersMenuOpen] = useState(
+    () => (search.mapView ?? "connection") !== "connection",
+  );
   const minimumGenerationMw = mapFilters.minimumGenerationMw;
   const minimumStorageMw = mapFilters.minimumStorageMw;
   const setMinimumGenerationMw = (minimum: number) => {
@@ -690,6 +693,20 @@ function PowerFinderPage() {
         storage_asset: true,
       });
       setShowDataCentres(false);
+      if (search.generationMinMw == null) {
+        dispatchMapFilter({
+          type: "set_generation_range",
+          minimum: 10,
+          maximum: mapFilters.maximumGenerationMw,
+        });
+      }
+      if (search.storageMinMw == null) {
+        dispatchMapFilter({
+          type: "set_storage_range",
+          minimum: 1,
+          maximum: mapFilters.maximumStorageMw,
+        });
+      }
     }
     void navigate({
       to: "/power-finder",
@@ -699,6 +716,12 @@ function PowerFinderPage() {
         mapMode: "voltage",
         isolateVoltage: undefined,
         isolateTechnology: undefined,
+        generationMinMw:
+          preset === "generation" && search.generationMinMw == null
+            ? 10
+            : search.generationMinMw,
+        storageMinMw:
+          preset === "generation" && search.storageMinMw == null ? 1 : search.storageMinMw,
       },
       replace: true,
     });
@@ -717,7 +740,6 @@ function PowerFinderPage() {
           label: item.label,
           color: item.color,
           shape: "line" as const,
-          status: item.id === "distribution" ? "Partial" : undefined,
           unavailable: mapSourceSummary?.voltageCoverage[item.id] === "not_covered",
           unavailableReason:
             item.id === "distribution"
@@ -2789,8 +2811,19 @@ function PowerFinderPage() {
             </section>
           ) : null}
 
-          <details className="finder-layers-menu" suppressHydrationWarning>
-            <summary>Map view &amp; optional layers</summary>
+          <details
+            className="finder-layers-menu"
+            open={layersMenuOpen}
+            suppressHydrationWarning
+          >
+            <summary
+              onClick={(event) => {
+                event.preventDefault();
+                setLayersMenuOpen((open) => !open);
+              }}
+            >
+              Map view &amp; optional layers
+            </summary>
             <div className="finder-map-presets" role="group" aria-label="Map view">
               {(
                 [
@@ -2810,7 +2843,7 @@ function PowerFinderPage() {
                 </button>
               ))}
             </div>
-            {mapFilters.preset === "generation" && registryAssetsUnavailable ? (
+            {(enabled.generation_asset || enabled.storage_asset) && registryAssetsUnavailable ? (
               <p className="layer-visibility-note" role="status">
                 Registered generation and storage are unavailable in this fallback release. Grid
                 infrastructure remains available; no empty map is being presented as zero assets.

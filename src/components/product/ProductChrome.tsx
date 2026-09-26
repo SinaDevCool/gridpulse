@@ -6,6 +6,13 @@ import {
 } from "./product-navigation";
 import { productMode } from "@/config/product-mode";
 import { ThemeControl } from "@/features/theme/ThemeControl";
+import { MapPinned, Search, TriangleAlert, type LucideIcon } from "lucide-react";
+
+const workspaceIcons: Record<string, LucideIcon> = {
+  sites: MapPinned,
+  finder: Search,
+  constraints: TriangleAlert,
+};
 
 export function ProductHeader() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
@@ -58,9 +65,10 @@ export function ProductStageNavigation() {
   return (
     <nav className="product-stage-navigation" aria-label="Grid workspace navigation">
       <div>
-        {links.map((item, index) => {
+        {links.map((item) => {
           const active = isWorkspaceDestinationActive(pathname, item.to);
           const available = capabilityAvailable(item.capability, productMode);
+          const Icon = workspaceIcons[item.id];
           return (
             <Link
               key={item.to}
@@ -74,7 +82,7 @@ export function ProductStageNavigation() {
                   : `${item.label} prerequisites are not enabled in this product mode`
               }
             >
-              <span>{String(index + 1).padStart(2, "0")}</span>
+              {Icon ? <Icon aria-hidden="true" /> : null}
               <span>
                 <strong>{item.label}</strong>
                 <small>{item.detail}</small>

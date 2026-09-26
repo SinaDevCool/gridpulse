@@ -1,15 +1,15 @@
 import type { ExpressionSpecification } from "maplibre-gl";
 
 export const GENERATION_TECHNOLOGY_CLASSES = [
-  { id: "solar", label: "Solar", color: "#facc15", glyph: "S" },
-  { id: "wind", label: "Wind", color: "#38bdf8", glyph: "W" },
-  { id: "biomass", label: "Biomass", color: "#22c55e", glyph: "B" },
-  { id: "hydro", label: "Hydro", color: "#06b6d4", glyph: "H" },
-  { id: "geothermal", label: "Geothermal", color: "#f97316", glyph: "G" },
-  { id: "nuclear", label: "Nuclear", color: "#f472b6", glyph: "N" },
-  { id: "gas", label: "Gas", color: "#a78bfa", glyph: "G" },
-  { id: "fossil_other", label: "Coal, oil & other fossil", color: "#ef4444", glyph: "F" },
-  { id: "other", label: "Other / unknown", color: "#94a3b8", glyph: "?" },
+  { id: "solar", label: "Solar", color: "#facc15", icon: "/assets/energy-icons/solar.svg" },
+  { id: "wind", label: "Wind", color: "#38bdf8", icon: "/assets/energy-icons/wind.svg" },
+  { id: "biomass", label: "Biomass", color: "#22c55e", icon: "/assets/energy-icons/biomass.svg" },
+  { id: "hydro", label: "Hydro", color: "#06b6d4", icon: "/assets/energy-icons/hydro.svg" },
+  { id: "geothermal", label: "Geothermal", color: "#f97316", icon: "/assets/energy-icons/geothermal.svg" },
+  { id: "nuclear", label: "Nuclear", color: "#f472b6", icon: "/assets/energy-icons/nuclear.svg" },
+  { id: "gas", label: "Gas", color: "#a78bfa", icon: "/assets/energy-icons/gas.svg" },
+  { id: "fossil_other", label: "Coal, oil & other fossil", color: "#ef4444", icon: "/assets/energy-icons/fossil.svg" },
+  { id: "other", label: "Other / unknown", color: "#94a3b8", icon: "/assets/energy-icons/other.svg" },
 ] as const;
 
 export type GenerationTechnologyId = (typeof GENERATION_TECHNOLOGY_CLASSES)[number]["id"];
@@ -18,31 +18,31 @@ export const STORAGE_TECHNOLOGY = {
   id: "storage",
   label: "Registered storage",
   color: "#a855f7",
-  glyph: "E",
+  icon: "/assets/energy-icons/storage.svg",
 } as const;
 
-export const generationGlyphExpression: ExpressionSpecification = [
+export const generationIconExpression: ExpressionSpecification = [
   "match",
   ["get", "generation_group"],
   "solar",
-  "S",
+  "energy-solar",
   "wind",
-  "W",
+  "energy-wind",
   "biomass",
-  "B",
+  "energy-biomass",
   "hydro",
-  "H",
+  "energy-hydro",
   "geothermal",
-  "G",
+  "energy-geothermal",
   "nuclear",
-  "N",
+  "energy-nuclear",
   "gas",
-  "G",
+  "energy-gas",
   "fossil_other",
-  "F",
+  "energy-fossil_other",
   "other",
-  "?",
-  "?",
+  "energy-other",
+  "energy-other",
 ];
 
 export const EVIDENCE_CLASSES = [

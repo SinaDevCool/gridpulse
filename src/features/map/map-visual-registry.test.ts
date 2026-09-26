@@ -6,7 +6,10 @@ describe("canonical map visual registry", () => {
     expect(new Set(GENERATION_TECHNOLOGY_CLASSES.map((item) => item.id)).size).toBe(
       GENERATION_TECHNOLOGY_CLASSES.length,
     );
-    expect(GENERATION_TECHNOLOGY_CLASSES.every((item) => item.color && item.label)).toBe(true);
+    expect(GENERATION_TECHNOLOGY_CLASSES.every((item) => item.color && item.label && item.icon)).toBe(
+      true,
+    );
+    expect(GENERATION_TECHNOLOGY_CLASSES.every((item) => item.icon.endsWith(".svg"))).toBe(true);
   });
 
   it("fails unknown technology into an explicit nonclaim category", () => {

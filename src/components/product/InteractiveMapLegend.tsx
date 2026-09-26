@@ -10,7 +10,7 @@ export type InteractiveLegendItem = {
   count?: number | null;
   unavailable?: boolean;
   unavailableReason?: string;
-  glyph?: string;
+  icon?: string;
   status?: string;
 };
 
@@ -93,18 +93,16 @@ export function InteractiveMapLegend({
               <ul>
                 {section.items.map((item) => {
                   const active = isolated?.dimension === section.id && isolated.value === item.id;
-                  return (
-                    <li
-                      key={item.id}
-                      className={active ? "is-isolated" : ""}
-                      title={item.unavailable ? item.unavailableReason : undefined}
-                    >
+                  const content = (
+                    <>
                       <span
                         className={`interactive-map-legend__symbol is-${item.shape ?? "dot"}`}
                         style={{ "--legend-color": item.color } as CSSProperties}
                         aria-hidden="true"
                       >
-                        {item.glyph && item.shape !== "line" ? item.glyph : null}
+                        {item.icon && item.shape !== "line" ? (
+                          <img src={item.icon} width="18" height="18" alt="" />
+                        ) : null}
                       </span>
                       <span className="interactive-map-legend__label">{item.label}</span>
                       {item.status ? (
@@ -113,18 +111,28 @@ export function InteractiveMapLegend({
                       {typeof item.count === "number" ? (
                         <span className="interactive-map-legend__count">{item.count}</span>
                       ) : null}
+                    </>
+                  );
+                  return (
+                    <li
+                      key={item.id}
+                      className={active ? "is-isolated" : ""}
+                      title={item.unavailable ? item.unavailableReason : undefined}
+                    >
                       {section.isolatable && onIsolate ? (
                         <button
                           type="button"
-                          className="interactive-map-legend__only"
+                          className="interactive-map-legend__row"
                           aria-label={`${active ? "Show all" : "Show only"} ${item.label}`}
                           aria-pressed={active}
                           disabled={!interactive || item.unavailable}
                           onClick={() => onIsolate(section.id, item.id)}
                         >
-                          {active ? "All" : "Only"}
+                          {content}
                         </button>
-                      ) : null}
+                      ) : (
+                        <div className="interactive-map-legend__row">{content}</div>
+                      )}
                     </li>
                   );
                 })}

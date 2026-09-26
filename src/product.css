@@ -18877,33 +18877,38 @@ tbody tr:last-child td {
   top: 58px;
   z-index: 19;
   border-bottom: 1px solid #203747;
-  background: rgba(7, 19, 31, 0.96);
+  background: rgb(7 19 31 / 97%);
   backdrop-filter: blur(12px);
 }
 .product-stage-navigation > div {
-  display: flex;
-  width: min(760px, calc(100% - 48px));
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: min(960px, calc(100% - 48px));
   margin: 0 auto;
-  overflow-x: hidden;
+  padding: 6px 0;
+  overflow: clip;
 }
 .product-stage-navigation a {
   position: relative;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: 20px minmax(0, 1fr);
   align-items: center;
-  gap: 8px;
-  min-height: 52px;
-  padding: 6px 14px;
-  flex: 1 1 0;
+  gap: 10px;
+  min-height: 48px;
+  padding: 7px 16px;
+  border: 1px solid transparent;
+  border-radius: 8px;
   color: #7f96a5;
   text-decoration: none;
+  touch-action: manipulation;
 }
 .product-stage-navigation a::after {
   position: absolute;
-  right: 14px;
-  bottom: -1px;
-  left: 14px;
+  right: 16px;
+  bottom: 1px;
+  left: 16px;
   height: 2px;
+  border-radius: 999px;
   background: transparent;
   content: "";
 }
@@ -18912,16 +18917,17 @@ tbody tr:last-child td {
   color: #dce8ee;
 }
 .product-stage-navigation a.active {
+  border-color: rgb(53 223 241 / 18%);
+  background: rgb(53 223 241 / 7%);
   color: #effbff;
 }
 .product-stage-navigation a.active::after {
   background: #20c4e8;
 }
-.product-stage-navigation a > span:first-child {
+.product-stage-navigation a > svg {
+  width: 18px;
+  height: 18px;
   color: #20c4e8;
-  font-variant-numeric: tabular-nums;
-  font-size: 0.66rem;
-  font-weight: 800;
 }
 .product-stage-navigation a > span:last-child {
   min-width: 0;
@@ -18931,12 +18937,12 @@ tbody tr:last-child td {
   display: block;
 }
 .product-stage-navigation strong {
-  font-size: 0.74rem;
+  font-size: 0.76rem;
 }
 .product-stage-navigation small {
   margin-top: 2px;
   overflow: hidden;
-  font-size: 0.58rem;
+  font-size: 0.6rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -19151,14 +19157,16 @@ tbody tr:last-child td {
   }
   .product-stage-navigation > div {
     width: 100%;
-    overflow-x: hidden;
+    padding: 4px 8px;
+    overflow: clip;
   }
   .product-stage-navigation a {
-    grid-template-columns: 1fr;
+    grid-template-columns: 18px minmax(0, auto);
     justify-items: center;
-    gap: 2px;
-    min-height: 54px;
-    padding: 6px 4px;
+    justify-content: center;
+    gap: 6px;
+    min-height: 46px;
+    padding: 6px;
     text-align: center;
   }
   .product-stage-navigation a::after {
@@ -19167,6 +19175,9 @@ tbody tr:last-child td {
   }
   .product-stage-navigation small {
     display: none;
+  }
+  .product-stage-navigation strong {
+    font-size: 0.68rem;
   }
   .product-shell--focused .product-truth--compact,
   .product-shell--focused .section-page {
@@ -22276,7 +22287,7 @@ tbody tr:last-child td {
 .interactive-map-legend.power-finder-interactive-legend {
   right: auto;
   left: 0.8rem;
-  width: min(18rem, calc(100% - 1.6rem));
+  width: min(16.25rem, calc(100% - 1.6rem));
 }
 .interactive-map-legend.power-finder-interactive-legend.is-collapsed {
   right: auto;
@@ -22291,6 +22302,9 @@ tbody tr:last-child td {
   font-size: 0.48rem;
   font-weight: 900;
   line-height: 1;
+}
+.interactive-map-legend__symbol img {
+  pointer-events: none;
 }
 .finder-view-switch button:hover,
 .finder-view-switch button.is-active,
@@ -22324,6 +22338,24 @@ tbody tr:last-child td {
   border-bottom: 1px solid var(--map-panel-border);
   background: var(--map-panel-raised);
   font-weight: 700;
+}
+.power-finder-map .maplibregl-ctrl-attrib {
+  margin: 0 6px 6px 0;
+  border: 1px solid rgb(148 163 184 / 20%);
+  border-radius: 6px;
+  background: rgb(7 17 31 / 76%);
+  color: #91a4b2;
+  font-size: 9px;
+  line-height: 1.35;
+  backdrop-filter: blur(8px);
+}
+.power-finder-map .maplibregl-ctrl-attrib a {
+  color: #b7c8d2;
+}
+.power-finder-map .maplibregl-ctrl-attrib-button {
+  width: 24px;
+  height: 24px;
+  filter: invert(1) opacity(0.72);
 }
 @media (max-width: 720px) {
   .interactive-map-legend.is-open {

@@ -27,8 +27,10 @@ import {
   type GridVoltageClassId,
 } from "@/features/power-finder/voltage-style";
 import {
+  GENERATION_TECHNOLOGY_CLASSES,
+  STORAGE_TECHNOLOGY,
   generationColourExpression,
-  generationGlyphExpression,
+  generationIconExpression,
 } from "@/features/map/map-visual-registry";
 import type { MapRuntimeSourceStatus } from "@/features/map/map-source-registry";
 import type { CapacityMetric } from "@/features/power-finder/calculated-capacity";
@@ -47,6 +49,27 @@ const sourceIds = {
   generation_asset: "power-finder-generation-assets",
   storage_asset: "power-finder-storage-assets",
 } as const;
+
+type EnergyIconImage = readonly [id: string, image: HTMLImageElement];
+
+function preloadEnergyIconImages(): Promise<EnergyIconImage[]> {
+  const icons = [
+    ...GENERATION_TECHNOLOGY_CLASSES.map((item) => [`energy-${item.id}`, item.icon] as const),
+    [`energy-${STORAGE_TECHNOLOGY.id}`, STORAGE_TECHNOLOGY.icon] as const,
+  ];
+  return Promise.all(
+    icons.map(
+      ([id, src]) =>
+        new Promise<EnergyIconImage>((resolve, reject) => {
+          const image = new Image(32, 32);
+          image.decoding = "async";
+          image.onload = () => resolve([id, image] as const);
+          image.onerror = () => reject(new Error(`Could not load map icon: ${id}`));
+          image.src = src;
+        }),
+    ),
+  );
+}
 
 function generationAssetFilter(
   group: string,
@@ -412,8 +435,15 @@ export function PowerFinderMap({
       () => onBasemapStatusChangeRef.current?.("fallback"),
       3_500,
     );
-    void Promise.all([import("maplibre-gl"), loadBasemapStyle(basemapModeRef.current)]).then(
-      ([{ Map, NavigationControl }, basemap]) => {
+    void Promise.all([
+      import("maplibre-gl"),
+      loadBasemapStyle(basemapModeRef.current),
+      preloadEnergyIconImages().catch((reason: unknown) => {
+        console.warn("Energy map pictograms could not be loaded; coloured markers remain available.", reason);
+        return [];
+      }),
+    ]).then(
+      ([{ Map, NavigationControl, AttributionControl }, basemap, energyIcons]) => {
         globalThis.clearTimeout(startupDeadline);
         if (cancelled || !containerRef.current) return;
         basemapLayerIdsRef.current = basemap.layerIds;
@@ -422,11 +452,12 @@ export function PowerFinderMap({
           container: containerRef.current,
           center: projectSiteRef.current ?? [13.36, 52.31],
           zoom: projectSiteRef.current ? 11.2 : 9.1,
-          attributionControl: {},
+          attributionControl: false,
           style: basemap.style,
         });
         mapRef.current = map;
         map.addControl(new NavigationControl({ showCompass: false }), "top-right");
+        map.addControl(new AttributionControl({ compact: true }), "bottom-right");
         let basemapErrorCount = 0;
         map.on("error", (event) => {
           const sourceId = "sourceId" in event ? String(event.sourceId ?? "") : "";
@@ -452,6 +483,9 @@ export function PowerFinderMap({
           }
         });
         map.on("load", () => {
+          for (const [id, image] of energyIcons) {
+            if (!map.hasImage(id)) map.addImage(id, image, { pixelRatio: 2 });
+          }
           globalThis.performance?.mark("gridpulse-map-ready");
           globalThis.performance?.measure(
             "gridpulse-map-startup",
@@ -870,7 +904,7 @@ export function PowerFinderMap({
             type: "circle",
             source: "power-finder-registry-tiles",
             "source-layer": "power_finder",
-            minzoom: 6,
+            minzoom: 8.5,
             maxzoom: 11,
             filter: generationAssetFilter(
               assetFilterRef.current.generationGroup,
@@ -881,9 +915,9 @@ export function PowerFinderMap({
               visibility: enabledLayersRef.current.generation_asset ? "visible" : "none",
             },
             paint: {
-              "circle-radius": scaleMarkersByCapacityRef.current ? registeredCapacityRadius : 6,
+              "circle-radius": scaleMarkersByCapacityRef.current ? registeredCapacityRadius : 4,
               "circle-color": generationColourExpression,
-              "circle-opacity": ["interpolate", ["linear"], ["zoom"], 6, 0.72, 9, 0.9],
+              "circle-opacity": ["interpolate", ["linear"], ["zoom"], 8.5, 0.34, 10.5, 0.82],
               "circle-stroke-color": "rgba(255, 255, 255, 0.7)",
               "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 6, 0.25, 9, 0.7],
             },
@@ -921,7 +955,7 @@ export function PowerFinderMap({
             type: "symbol",
             source: "power-finder-registry-tiles",
             "source-layer": "power_finder",
-            minzoom: 8,
+            minzoom: 9,
             maxzoom: 24,
             filter: generationAssetFilter(
               assetFilterRef.current.generationGroup,
@@ -930,15 +964,15 @@ export function PowerFinderMap({
             ),
             layout: {
               visibility: enabledLayersRef.current.generation_asset ? "visible" : "none",
-              "text-field": generationGlyphExpression,
-              "text-font": ["Noto Sans Bold"],
-              "text-size": ["interpolate", ["linear"], ["zoom"], 8, 7, 12, 9],
-              "text-allow-overlap": false,
-            },
-            paint: {
-              "text-color": "#07111f",
-              "text-halo-color": "rgba(255,255,255,0.55)",
-              "text-halo-width": 0.5,
+              "icon-image": generationIconExpression,
+              "icon-size": ["interpolate", ["linear"], ["zoom"], 9, 0.82, 12, 1.08],
+              "icon-allow-overlap": false,
+              "icon-padding": 4,
+              "symbol-sort-key": [
+                "-",
+                0,
+                ["coalesce", ["get", "registered_mw"], ["get", "net_capacity_mw"], 0],
+              ],
             },
           });
           map.addLayer({
@@ -993,7 +1027,7 @@ export function PowerFinderMap({
             type: "circle",
             source: "power-finder-registry-tiles",
             "source-layer": "power_finder",
-            minzoom: 6,
+            minzoom: 9,
             maxzoom: 24,
             filter: storageAssetFilter(
               assetFilterRef.current.minimumStorageMw,
@@ -1007,6 +1041,30 @@ export function PowerFinderMap({
               "circle-color": "#a855f7",
               "circle-stroke-color": "#f3e8ff",
               "circle-stroke-width": 1,
+            },
+          });
+          map.addLayer({
+            id: "national-storage-technology-icon",
+            type: "symbol",
+            source: "power-finder-registry-tiles",
+            "source-layer": "power_finder",
+            minzoom: 9,
+            maxzoom: 24,
+            filter: storageAssetFilter(
+              assetFilterRef.current.minimumStorageMw,
+              assetFilterRef.current.maximumStorageMw,
+            ),
+            layout: {
+              visibility: enabledLayersRef.current.storage_asset ? "visible" : "none",
+              "icon-image": "energy-storage",
+              "icon-size": ["interpolate", ["linear"], ["zoom"], 9, 0.82, 12, 1.08],
+              "icon-allow-overlap": false,
+              "icon-padding": 4,
+              "symbol-sort-key": [
+                "-",
+                0,
+                ["coalesce", ["get", "registered_mw"], ["get", "net_capacity_mw"], 0],
+              ],
             },
           });
           map.addLayer({
@@ -1428,6 +1486,7 @@ export function PowerFinderMap({
       "national-generation-assets": enabledLayers.generation_asset,
       "national-generation-asset-labels": enabledLayers.generation_asset,
       "national-storage-assets": enabledLayers.storage_asset,
+      "national-storage-technology-icon": enabledLayers.storage_asset,
       "national-storage-asset-labels": enabledLayers.storage_asset,
     } as const;
     for (const [layer, visible] of Object.entries(nationalLayers)) {
@@ -1765,7 +1824,11 @@ export function PowerFinderMap({
       "national-generation-asset-labels",
     ])
       if (map.getLayer(layer)) map.setFilter(layer, generationFilter);
-    for (const layer of ["national-storage-assets", "national-storage-asset-labels"])
+    for (const layer of [
+      "national-storage-assets",
+      "national-storage-technology-icon",
+      "national-storage-asset-labels",
+    ])
       if (map.getLayer(layer)) map.setFilter(layer, storageFilter);
   }, [
     generationGroup,
