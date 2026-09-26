@@ -49,10 +49,10 @@ const checks = [
     expectedStatus: 200,
     validate: async (response) => {
       const html = await response.text();
-      if (!html.includes("Run more compute within the power limit")) {
+      if (!html.includes("Power Operations")) {
         throw new Error("Operations heading is missing");
       }
-      if (!html.includes("Facility operations—not grid capacity")) {
+      if (!html.includes("Scenario inputs and simulated results—not measured telemetry or operational instructions")) {
         throw new Error("Operations evidence boundary is missing");
       }
       if (html.includes("Understand what may constrain a site")) {
