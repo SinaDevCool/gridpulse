@@ -23,7 +23,7 @@ test("Finder exploration and local property portfolio are anonymous", async ({ p
   await expect(page.getByText(/Operator questions & report/i)).toHaveCount(0);
   await expect(page.getByText(/Day-ahead grid outlook unavailable/i)).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Show map legend" })).toBeVisible();
-  await expect(page.getByText("Registered generation · exact public locations")).toBeHidden();
+  await expect(page.getByRole("checkbox", { name: /^Generation$/ })).toBeHidden();
   await expect(page.getByRole("button", { name: /Show .* on map, .*\/100/ })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /Create pipeline site/i })).toBeDisabled();
   expect(requests.some((url) => /\/auth\/v1\/(token|signup)/.test(url))).toBe(false);
@@ -400,7 +400,7 @@ test("unsafe coordinates are handled inline and malformed URLs do not crash", as
   await expect(page.getByText("Something went wrong!")).toHaveCount(0);
   await expect.poll(() => new URL(page.url()).searchParams.has("lat")).toBe(false);
   await page.getByText("Map view & optional layers", { exact: true }).click();
-  await expect(page.getByRole("checkbox", { name: /Registered generation/ })).toBeEnabled({
+  await expect(page.getByRole("checkbox", { name: /^Generation$/ })).toBeEnabled({
     timeout: 15_000,
   });
   expect(new URL(page.url()).searchParams.get("lat")).toBeNull();
@@ -439,14 +439,38 @@ test("comparison supports multiple candidates and resets when the site changes",
 test("registered generation and storage are available without an account", async ({ page }) => {
   await page.goto("/power-finder");
   await page.getByText("Map view & optional layers", { exact: true }).click();
-  const generation = page.getByRole("checkbox", { name: /Registered generation/ });
-  const storage = page.getByRole("checkbox", { name: /Registered storage/ });
+  const generation = page.getByRole("checkbox", { name: /^Generation$/ });
+  const storage = page.getByRole("checkbox", { name: /^Storage$/ });
   await expect(generation).toBeEnabled({ timeout: 15_000 });
   await expect(storage).toBeEnabled({ timeout: 15_000 });
   await generation.check();
   await storage.check();
   await expect(generation).toBeChecked();
   await expect(storage).toBeChecked();
+});
+
+test("map legends follow only the active layers", async ({ page }) => {
+  await page.goto("/power-finder");
+  await expect(
+    page.getByRole("application", { name: "Interactive grid and industrial-site screening map" }),
+  ).toBeVisible();
+  await page.getByText("Map view & optional layers", { exact: true }).click();
+  const nodes = page.getByRole("checkbox", { name: /^Grid nodes$/ });
+  const corridors = page.getByRole("checkbox", { name: /^Grid corridors$/ });
+  const industrial = page.getByRole("checkbox", { name: /^Industrial sites$/ });
+  const dataCentres = page.getByRole("checkbox", { name: /Data centres/ });
+  await nodes.uncheck();
+  await corridors.uncheck();
+  await industrial.check();
+  await page.getByRole("button", { name: "Show map legend" }).click();
+  const legend = page.locator(".power-finder-interactive-legend");
+  await expect(legend.getByRole("heading", { name: "Industrial sites" })).toBeVisible();
+  await expect(legend.getByRole("heading", { name: "Voltage" })).toHaveCount(0);
+  await dataCentres.check();
+  await expect(legend.getByRole("heading", { name: "Data centres" })).toBeVisible();
+  await expect(legend.getByText("Facility address", { exact: true })).toBeVisible();
+  await expect(legend.getByText("Postcode area", { exact: true })).toBeVisible();
+  await expect(page.locator(".rzreg-detail-card")).toHaveCount(0);
 });
 
 test("map presets and voltage isolation are reproducible", async ({ page }) => {
@@ -634,10 +658,10 @@ test("viewport fallback does not disable the independent registry source", async
   );
   await page.goto("/power-finder");
   await page.getByText("Map view & optional layers", { exact: true }).click();
-  await expect(page.getByRole("checkbox", { name: /Registered generation/ })).toBeEnabled({
+  await expect(page.getByRole("checkbox", { name: /^Generation$/ })).toBeEnabled({
     timeout: 15_000,
   });
-  await expect(page.getByRole("checkbox", { name: /Registered storage/ })).toBeEnabled();
+  await expect(page.getByRole("checkbox", { name: /^Storage$/ })).toBeEnabled();
 });
 
 test("unclustered grid lines and industrial polygons render in the Brandenburg view", async ({
@@ -647,7 +671,7 @@ test("unclustered grid lines and industrial polygons render in the Brandenburg v
     "/power-finder?lat=52.232112&lng=13.305687&mw=20&distance=20&voltage=20&region=DE-BB",
   );
   await page.getByText("Map view & optional layers", { exact: true }).click();
-  const gridLines = page.getByRole("checkbox", { name: /Mapped grid corridors/ });
+  const gridLines = page.getByRole("checkbox", { name: /^Grid corridors$/ });
   const industrialSites = page.getByRole("checkbox", { name: /Industrial sites/ });
   await expect(gridLines).toBeChecked();
   await industrialSites.check();

@@ -13916,8 +13916,12 @@ tbody tr:last-child td {
   display: grid;
   font-size: 0.76rem;
   gap: 9px;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   padding: 8px 10px;
+}
+.power-finder-layer-list label > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .power-finder-layer-list input {
   accent-color: #f59e0b;
@@ -13929,6 +13933,7 @@ tbody tr:last-child td {
 .power-finder-layer-list small {
   color: var(--muted-foreground);
   font-family: "JetBrains Mono", monospace;
+  white-space: nowrap;
 }
 .layer-visibility-note {
   color: var(--muted-foreground);

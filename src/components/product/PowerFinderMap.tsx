@@ -12,6 +12,8 @@ import type {
 import type {
   PowerFinderCollection,
   PowerFinderFeature,
+  PowerFinderKind,
+  PowerFinderProperties,
 } from "@/features/power-finder/fixture-data";
 import type { PowerFinderBounds } from "@/features/power-finder/data-source";
 import {
@@ -258,6 +260,80 @@ export type RzRegDataCentre = {
 
 function isGeoJsonSource(source: Source | undefined): source is GeoJSONSource {
   return source?.type === "geojson";
+}
+
+const selectableKinds = new Set<PowerFinderKind>([
+  "node",
+  "line",
+  "industrial_site",
+  "generation_asset",
+  "storage_asset",
+]);
+
+function optionalString(value: unknown) {
+  return typeof value === "string" && value.trim() ? value : undefined;
+}
+
+function optionalNumber(value: unknown) {
+  const parsed = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function renderedFeatureToPowerFinderFeature(
+  rendered: NonNullable<MapLayerMouseEvent["features"]>[number],
+): PowerFinderFeature | null {
+  const raw = rendered.properties ?? {};
+  const kind = optionalString(raw.kind) as PowerFinderKind | undefined;
+  const id = rendered.id ?? raw.id;
+  if (!kind || !selectableKinds.has(kind) || id == null) return null;
+  const maxVoltage = optionalNumber(raw.max_voltage_kv);
+  const rawVoltage = raw.voltage_kv;
+  const voltageValues = Array.isArray(rawVoltage)
+    ? rawVoltage.map(optionalNumber).filter((value): value is number => value != null)
+    : typeof rawVoltage === "string"
+      ? rawVoltage
+          .replaceAll("[", "")
+          .replaceAll("]", "")
+          .replaceAll('"', "")
+          .split(/[,/]/)
+          .map(optionalNumber)
+          .filter((value): value is number => value != null)
+      : maxVoltage != null
+        ? [maxVoltage]
+        : undefined;
+  const evidence = optionalString(raw.evidence_class);
+  const properties: PowerFinderProperties = {
+    kind,
+    name: optionalString(raw.name) ?? `${kind.replaceAll("_", " ")} ${String(id)}`,
+    evidence_class:
+      evidence === "official_operator" ||
+      evidence === "official_regulatory" ||
+      evidence === "official_public" ||
+      evidence === "test_fixture"
+        ? evidence
+        : "open_mapping",
+    operator: optionalString(raw.operator),
+    voltage_kv: voltageValues,
+    max_voltage_kv: maxVoltage,
+    status: optionalString(raw.status),
+    source_url: optionalString(raw.source_url),
+    site_kind: optionalString(raw.site_kind),
+    area_ha: optionalNumber(raw.area_ha),
+    planning_status: optionalString(raw.planning_status),
+    technology: optionalString(raw.technology),
+    generation_group: optionalString(raw.generation_group) as
+      | PowerFinderProperties["generation_group"]
+      | undefined,
+    net_capacity_mw:
+      optionalNumber(raw.net_capacity_mw) ?? optionalNumber(raw.registered_mw),
+    storage_energy_mwh: optionalNumber(raw.storage_energy_mwh),
+  };
+  return {
+    type: "Feature",
+    id: String(id),
+    geometry: rendered.geometry,
+    properties,
+  };
 }
 
 function renderedFeatureCount(map: MapLibreMap, layer: string) {
@@ -1324,10 +1400,11 @@ export function PowerFinderMap({
 
           const selectFeature = (event: MapLayerMouseEvent) => {
             const rendered = event.features?.[0];
+            if (!rendered) return;
             const id = rendered?.id ?? rendered?.properties?.id;
-            const feature = collectionRef.current.features.find(
-              (item) => String(item.id) === String(id),
-            );
+            const feature =
+              collectionRef.current.features.find((item) => String(item.id) === String(id)) ??
+              renderedFeatureToPowerFinderFeature(rendered);
             if (feature) onSelectRef.current(feature);
           };
           for (const layer of [

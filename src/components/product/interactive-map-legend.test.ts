@@ -57,4 +57,27 @@ describe("interactive map legend", () => {
     expect(html).toContain("Registry data unavailable.");
     expect(html).toContain("disabled");
   });
+
+  it("uses an explicit shared isolation dimension for split legend sections", () => {
+    const html = renderToStaticMarkup(
+      createElement(InteractiveMapLegend, {
+        title: "Generation & storage",
+        open: true,
+        onOpenChange: () => undefined,
+        sections: [
+          {
+            id: "storage-technology",
+            dimension: "technology",
+            title: "Storage",
+            isolatable: true,
+            items: [{ id: "storage", label: "Storage", color: "#a855f7" }],
+          },
+        ],
+        isolated: { dimension: "technology", value: "storage" },
+        onIsolate: () => undefined,
+      }),
+    );
+    expect(html).toContain('aria-label="Show all Storage"');
+    expect(html).toContain('aria-pressed="true"');
+  });
 });

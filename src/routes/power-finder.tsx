@@ -284,10 +284,10 @@ export const Route = createFileRoute("/power-finder")({
 
 const kindLabels: Record<PowerFinderKind, string> = {
   node: "Grid nodes",
-  line: "Mapped grid corridors",
+  line: "Grid corridors",
   industrial_site: "Industrial sites",
-  generation_asset: "Registered generation · exact public locations",
-  storage_asset: "Registered storage",
+  generation_asset: "Generation",
+  storage_asset: "Storage",
 };
 const initialBounds: PowerFinderBounds = {
   west: 12.9,
@@ -734,8 +734,33 @@ function PowerFinderPage() {
   };
   const legendSections = useMemo(() => {
     if (mapMode === "capacity") return [];
-    const sections: InteractiveLegendSection[] = [
-      {
+    const sections: InteractiveLegendSection[] = [];
+    if (showDataCentres) {
+      sections.push({
+        id: "data-centres",
+        title: "Data centres",
+        description:
+          "Official German Data Centre Register locations. Markers show published location precision—not grid capacity.",
+        items: [
+          {
+            id: "facility-address",
+            label: "Facility address",
+            color: "#14b8a6",
+            shape: "dot" as const,
+            count: 38,
+          },
+          {
+            id: "postcode-area",
+            label: "Postcode area",
+            color: "#f59e0b",
+            shape: "ring" as const,
+            count: 281,
+          },
+        ],
+      });
+    }
+    if (enabled.node || enabled.line) {
+      sections.push({
         id: "voltage",
         title: "Voltage",
         description: "Mapped public topology; voltage is not available connection capacity.",
@@ -751,12 +776,29 @@ function PowerFinderPage() {
               ? "German distribution topology is incomplete. An empty view is not evidence that no network exists."
               : undefined,
         })),
-      },
-    ];
-    if (mapFilters.preset === "generation" || enabled.generation_asset || enabled.storage_asset) {
+      });
+    }
+    if (enabled.industrial_site) {
       sections.push({
-        id: "technology",
-        title: "Generation & Storage",
+        id: "industrial-sites",
+        title: "Industrial sites",
+        description: "Mapped land context. Select a marker to inspect published site attributes.",
+        items: [
+          {
+            id: "industrial-site",
+            label: "Mapped industrial site",
+            color: "#67e8f9",
+            shape: "ring" as const,
+            count: visibleLayerCounts.industrial_site,
+          },
+        ],
+      });
+    }
+    if (enabled.generation_asset) {
+      sections.push({
+        id: "generation-technology",
+        dimension: "technology",
+        title: "Generation",
         description:
           "Marker area represents registered capacity where published—not grid headroom.",
         isolatable: true,
@@ -769,6 +811,18 @@ function PowerFinderPage() {
               ? "Registry assets are unavailable in the accepted static fallback."
               : undefined,
           })),
+        ],
+      });
+    }
+    if (enabled.storage_asset) {
+      sections.push({
+        id: "storage-technology",
+        dimension: "technology",
+        title: "Storage",
+        description:
+          "Marker area represents registered power where published—not available grid capacity.",
+        isolatable: true,
+        items: [
           {
             ...STORAGE_TECHNOLOGY,
             shape: "ring" as const,
@@ -782,12 +836,16 @@ function PowerFinderPage() {
     }
     return sections;
   }, [
+    enabled.industrial_site,
+    enabled.line,
+    enabled.node,
     enabled.generation_asset,
     enabled.storage_asset,
-    mapFilters.preset,
     mapMode,
     registryAssetsUnavailable,
     mapSourceSummary,
+    showDataCentres,
+    visibleLayerCounts.industrial_site,
   ]);
   const isolateMapLegendItem = (dimension: string, value: string) => {
     if (dimension === "voltage") {
@@ -835,6 +893,29 @@ function PowerFinderPage() {
       );
     }
   };
+  const activeLegendTitle = useMemo(() => {
+    if (mapMode === "capacity") return `${capacityMetricLabels[capacityMetric]} · MW`;
+    const labels = [
+      showDataCentres ? "Data centres" : null,
+      enabled.node ? "Nodes" : null,
+      enabled.line ? "Corridors" : null,
+      enabled.industrial_site ? "Industrial sites" : null,
+      enabled.generation_asset ? "Generation" : null,
+      enabled.storage_asset ? "Storage" : null,
+    ].filter(Boolean);
+    if (labels.length === 0) return "Map legend";
+    if (labels.length === 1) return labels[0] as string;
+    return `${labels.length} active layers`;
+  }, [
+    capacityMetric,
+    enabled.generation_asset,
+    enabled.industrial_site,
+    enabled.line,
+    enabled.node,
+    enabled.storage_asset,
+    mapMode,
+    showDataCentres,
+  ]);
   const activeCoverage =
     coverage.find((item) => item.regionCode === regionCode) ?? fallbackCoverage[1];
   const viewportTarget = useMemo(
@@ -2921,11 +3002,11 @@ function PowerFinderPage() {
                     setShowDataCentres(checked);
                     if (!checked) setSelectedDataCentre(null);
                     setInteractionNotice(
-                      `RZReg data-centre layer ${checked ? "enabled" : "disabled"}.`,
+                      `Data-centre layer ${checked ? "enabled" : "disabled"}.`,
                     );
                   }}
                 />
-                <span>RZReg Data Centres</span>
+                <span>Data centres</span>
                 <small>319 total</small>
               </label>
               {(Object.keys(kindLabels) as PowerFinderKind[]).map((kind) => (
@@ -2941,6 +3022,7 @@ function PowerFinderPage() {
                     onChange={(event) => {
                       const checked = event.target.checked;
                       setEnabled((current) => ({ ...current, [kind]: checked }));
+                      if (!checked && selected?.properties.kind === kind) setSelected(null);
                       setInteractionNotice(
                         `${kindLabels[kind]} layer ${checked ? "enabled" : "disabled"}.`,
                       );
@@ -3386,6 +3468,7 @@ function PowerFinderPage() {
               viewportTarget={viewportTarget}
               navigationTarget={mapNavigationTarget}
               onSelect={(feature) => {
+                setSelectedDataCentre(null);
                 setSelected(feature);
                 if (feature.properties.kind === "node") {
                   const matchingOpportunity = highestRankedOpportunityForNode(
@@ -3459,8 +3542,11 @@ function PowerFinderPage() {
               }}
               showDataCentres={showDataCentres}
               onDataCentreSelect={(dataCentre) => {
+                setSelected(null);
+                setSelectedOpportunitySnapshot(null);
                 setSelectedDataCentre(dataCentre);
-                setInteractionNotice(`${dataCentre.name} selected from the RZReg layer.`);
+                void updateSearch({ candidate: undefined });
+                setInteractionNotice(`${dataCentre.name} selected from the data-centre layer.`);
               }}
             />
           )}
@@ -3543,13 +3629,7 @@ function PowerFinderPage() {
             </aside>
           ) : null}
           <InteractiveMapLegend
-            title={
-              mapMode === "capacity"
-                ? `${capacityMetricLabels[capacityMetric]} · MW`
-                : mapFilters.preset === "generation"
-                  ? "Generation & Storage"
-                  : "Map Legend"
-            }
+            title={activeLegendTitle}
             open={legendOpen}
             onOpenChange={setLegendOpen}
             sections={legendSections}
@@ -3563,34 +3643,10 @@ function PowerFinderPage() {
             className="power-finder-interactive-legend"
             sourceSummary={
               mapSourceSummary
-                ? mapFilters.preset === "generation"
-                  ? `Public energy assets · ${mapSourceSummary.health === "live" ? "current coverage" : "partial coverage"}`
-                  : `Public grid coverage · ${mapSourceSummary.health === "live" ? "current" : "partial"}`
+                ? `Public mapped evidence · ${mapSourceSummary.health === "live" ? "current coverage" : "partial coverage"}`
                 : undefined
             }
           >
-            {showDataCentres ? (
-              <div className="interactive-map-legend__custom power-finder-data-legend">
-                <div className="power-finder-data-legend__heading">
-                  <b>Data-centre locations</b>
-                  <span className="power-finder-data-legend__source">319 RZReg records</span>
-                </div>
-                <div className="power-finder-data-legend__row">
-                  <i className="legend-data-centre-exact" aria-hidden="true" />
-                  <span>Published facility address</span>
-                  <strong>38</strong>
-                </div>
-                <div className="power-finder-data-legend__row">
-                  <i className="legend-data-centre-approximate" aria-hidden="true" />
-                  <span>Approximate postcode area</span>
-                  <strong>281</strong>
-                </div>
-                <div className="power-finder-data-legend__boundary">
-                  <strong>Location evidence only</strong>
-                  <small>Markers do not indicate grid capacity or connection availability.</small>
-                </div>
-              </div>
-            ) : null}
             {mapMode === "capacity" ? (
               <div className="interactive-map-legend__custom power-finder-data-legend">
                 <span>
@@ -3940,12 +3996,57 @@ function PowerFinderPage() {
                           </section>
                         )}
                     </>
-                  ) : (
+                  ) : selected.properties.kind === "industrial_site" ? (
                     <dl>
                       <div>
                         <dt>Evidence Source</dt>
                         <dd>{selected.properties.evidence_class.replaceAll("_", " ")}</dd>
                       </div>
+                      <div>
+                        <dt>Site Type</dt>
+                        <dd>{selected.properties.site_kind?.replaceAll("_", " ") ?? "Industrial land"}</dd>
+                      </div>
+                      <div>
+                        <dt>Published Area</dt>
+                        <dd>
+                          {selected.properties.area_ha != null
+                            ? `${selected.properties.area_ha.toFixed(1)} ha`
+                            : "Not published"}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>Planning Status</dt>
+                        <dd>
+                          {selected.properties.planning_status?.replaceAll("_", " ") ??
+                            "Screening context only"}
+                        </dd>
+                      </div>
+                    </dl>
+                  ) : selected.properties.kind === "line" ? (
+                    <dl>
+                      <div>
+                        <dt>Mapped Voltage</dt>
+                        <dd>
+                          {selected.properties.voltage_kv?.length
+                            ? `${selected.properties.voltage_kv.join(" / ")} kV`
+                            : "Not mapped"}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>Operator</dt>
+                        <dd>{selected.properties.operator ?? "Not published"}</dd>
+                      </div>
+                      <div>
+                        <dt>Status</dt>
+                        <dd>{selected.properties.status?.replaceAll("_", " ") ?? "Mapped"}</dd>
+                      </div>
+                      <div>
+                        <dt>Evidence Source</dt>
+                        <dd>{selected.properties.evidence_class.replaceAll("_", " ")}</dd>
+                      </div>
+                    </dl>
+                  ) : (
+                    <dl>
                       <div>
                         <dt>Technology</dt>
                         <dd>{selected.properties.technology ?? "Not published"}</dd>
@@ -3958,7 +4059,7 @@ function PowerFinderPage() {
                             : "Not published"}
                         </dd>
                       </div>
-                      {selected.properties.kind === "storage_asset" && (
+                      {selected.properties.kind === "storage_asset" ? (
                         <div>
                           <dt>Registered Energy</dt>
                           <dd>
@@ -3967,7 +4068,19 @@ function PowerFinderPage() {
                               : "Not published"}
                           </dd>
                         </div>
-                      )}
+                      ) : null}
+                      <div>
+                        <dt>Operator</dt>
+                        <dd>{selected.properties.operator ?? "Not published"}</dd>
+                      </div>
+                      <div>
+                        <dt>Status</dt>
+                        <dd>{selected.properties.status?.replaceAll("_", " ") ?? "Registered"}</dd>
+                      </div>
+                      <div>
+                        <dt>Evidence Source</dt>
+                        <dd>{selected.properties.evidence_class.replaceAll("_", " ")}</dd>
+                      </div>
                     </dl>
                   )}
                   {(selected.properties.kind === "generation_asset" ||

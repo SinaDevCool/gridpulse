@@ -16,6 +16,7 @@ export type InteractiveLegendItem = {
 
 export type InteractiveLegendSection = {
   id: string;
+  dimension?: string;
   title: string;
   description?: string;
   items: readonly InteractiveLegendItem[];
@@ -92,7 +93,8 @@ export function InteractiveMapLegend({
               <h3 id={`legend-${section.id}`}>{section.title}</h3>
               <ul>
                 {section.items.map((item) => {
-                  const active = isolated?.dimension === section.id && isolated.value === item.id;
+                  const dimension = section.dimension ?? section.id;
+                  const active = isolated?.dimension === dimension && isolated.value === item.id;
                   const content = (
                     <>
                       <span
@@ -126,7 +128,7 @@ export function InteractiveMapLegend({
                           aria-label={`${active ? "Show all" : "Show only"} ${item.label}`}
                           aria-pressed={active}
                           disabled={!interactive || item.unavailable}
-                          onClick={() => onIsolate(section.id, item.id)}
+                          onClick={() => onIsolate(dimension, item.id)}
                         >
                           {content}
                         </button>
