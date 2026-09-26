@@ -668,6 +668,17 @@ function PowerFinderPage() {
     }),
     [enabled, isolatedTechnology],
   );
+  useEffect(() => {
+    if (!isolatedTechnology) return;
+    const isolatedLayerDisabled =
+      (isolatedTechnology === "storage" && !enabled.storage_asset) ||
+      (isolatedTechnology !== "storage" && !enabled.generation_asset);
+    if (!isolatedLayerDisabled) return;
+    dispatchMapFilter({ type: "clear_isolation" });
+    void updateSearch(mapIsolationSearchPatch(null));
+    // URL isolation must never hide an enabled layer after its own layer was disabled.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabled.generation_asset, enabled.storage_asset, isolatedTechnology]);
   const applyMapPreset = (preset: MapPreset) => {
     dispatchMapFilter({ type: "set_preset", preset });
     setMapMode("voltage");
@@ -722,9 +733,7 @@ function PowerFinderPage() {
         isolateVoltage: undefined,
         isolateTechnology: undefined,
         generationMinMw:
-          preset === "generation" && search.generationMinMw == null
-            ? 10
-            : search.generationMinMw,
+          preset === "generation" && search.generationMinMw == null ? 10 : search.generationMinMw,
         storageMinMw:
           preset === "generation" && search.storageMinMw == null ? 1 : search.storageMinMw,
       },
@@ -1175,10 +1184,7 @@ function PowerFinderPage() {
         canonicalOperator === selectedTso ||
         operatorContext?.tsoNames.includes(selectedTso);
       const matchesDso = selectedDso === "all" || canonicalOperator === selectedDso;
-      const matchesOperator =
-        selectedTso !== "all" && selectedDso !== "all"
-          ? canonicalOperator === selectedTso || canonicalOperator === selectedDso
-          : matchesTso && matchesDso;
+      const matchesOperator = matchesTso && matchesDso;
       const matchesRegisteredCapacity =
         properties.kind === "generation_asset"
           ? (effectiveGenerationGroup === "all" ||
@@ -1238,6 +1244,7 @@ function PowerFinderPage() {
         featureCount: 0,
         bounds: null,
         tsoNames: [],
+        relationshipBasis: null,
       }));
   }, [collection, operatorCatalog]);
   const regionalOperators = useMemo(
@@ -1325,8 +1332,8 @@ function PowerFinderPage() {
         : eligibleItems.filter(
             (candidate) => canonicalOperatorName(candidate.operator) === selectedDso,
           );
-    const dsoFallback = selectedDso !== "all" && dsoItems.length === 0 && eligibleItems.length > 0;
-    const baseItems = dsoFallback ? eligibleItems : dsoItems;
+    const dsoFallback = false;
+    const baseItems = dsoItems;
     const tsoItems =
       selectedTso === "all"
         ? baseItems
@@ -1340,8 +1347,8 @@ function PowerFinderPage() {
               operatorContext?.tsoNames.includes(selectedTso)
             );
           });
-    const tsoFallback = selectedTso !== "all" && tsoItems.length === 0 && baseItems.length > 0;
-    const items = tsoFallback ? baseItems : tsoItems;
+    const tsoFallback = false;
+    const items = tsoItems;
     items.sort((left, right) => {
       if (mapMode === "capacity") {
         const byNode = new Map(activeCapacityNodes.map((node) => [node.publicNodeId, node]));
@@ -1781,10 +1788,7 @@ function PowerFinderPage() {
                       max="1000"
                       value={project.importMw}
                       onChange={(event) => {
-                        const value = Math.min(
-                          1000,
-                          Math.max(1, Number(event.target.value) || 1),
-                        );
+                        const value = Math.min(1000, Math.max(1, Number(event.target.value) || 1));
                         updateProject({ importMw: value });
                         invalidateDiscoveryResults();
                       }}
@@ -1951,8 +1955,7 @@ function PowerFinderPage() {
                   <summary>Energy context filters</summary>
                   <p>
                     Limit the registered assets used in the energy-context score and shown on the
-                    map. These assets provide nearby ecosystem context, not available grid
-                    capacity.
+                    map. These assets provide nearby ecosystem context, not available grid capacity.
                   </p>
                   <div className="finder-discovery-filter-grid">
                     <label>
@@ -2196,7 +2199,7 @@ function PowerFinderPage() {
                   <small>{finderProjectTypes[project.type].description}</small>
                 </label>
               ) : null}
-              <div className="finder-project-grid">
+              <div className="finder-project-grid finder-project-grid--primary">
                 <label>
                   <span>Latitude</span>
                   <input
@@ -2346,7 +2349,7 @@ function PowerFinderPage() {
                   </label>
                 )}
               </div>
-              <label>
+              <label className="finder-project-voltage">
                 <span>Voltage context</span>
                 <select
                   name="preferred-voltage"
@@ -2367,9 +2370,6 @@ function PowerFinderPage() {
                   <option value={220}>220 kV</option>
                   <option value={380}>380 kV</option>
                 </select>
-                <small>
-                  Screening assumption only. Adjust when a connection-voltage assumption is known.
-                </small>
               </label>
               {search.study === "activation" && (
                 <details className="finder-scenario-inputs">
@@ -2575,10 +2575,6 @@ function PowerFinderPage() {
                   </label>
                 </div>
               )}
-              <p className="candidate-boundary">
-                Click an empty point on the map or enter coordinates. The marker is a
-                customer-declared site, not network evidence.
-              </p>
               {project.latitude != null && project.longitude != null && (
                 <button
                   type="button"
@@ -2953,11 +2949,7 @@ function PowerFinderPage() {
             </section>
           ) : null}
 
-          <details
-            className="finder-layers-menu"
-            open={layersMenuOpen}
-            suppressHydrationWarning
-          >
+          <details className="finder-layers-menu" open={layersMenuOpen} suppressHydrationWarning>
             <summary
               onClick={(event) => {
                 event.preventDefault();
@@ -3001,9 +2993,7 @@ function PowerFinderPage() {
                     const checked = event.target.checked;
                     setShowDataCentres(checked);
                     if (!checked) setSelectedDataCentre(null);
-                    setInteractionNotice(
-                      `Data-centre layer ${checked ? "enabled" : "disabled"}.`,
-                    );
+                    setInteractionNotice(`Data-centre layer ${checked ? "enabled" : "disabled"}.`);
                   }}
                 />
                 <span>Data centres</span>
@@ -3022,6 +3012,20 @@ function PowerFinderPage() {
                     onChange={(event) => {
                       const checked = event.target.checked;
                       setEnabled((current) => ({ ...current, [kind]: checked }));
+                      const isolation = mapFilters.isolation;
+                      const isolationConflicts =
+                        isolation?.dimension === "technology" &&
+                        ((!checked &&
+                          ((kind === "storage_asset" && isolation.value === "storage") ||
+                            (kind === "generation_asset" && isolation.value !== "storage"))) ||
+                          (checked &&
+                            ((kind === "generation_asset" && isolation.value === "storage") ||
+                              (kind === "storage_asset" && isolation.value !== "storage"))));
+                      if (isolationConflicts) {
+                        dispatchMapFilter({ type: "clear_isolation" });
+                        void updateSearch(mapIsolationSearchPatch(null));
+                      }
+                      if (checked && kind === "storage_asset") setLegendOpen(true);
                       if (!checked && selected?.properties.kind === kind) setSelected(null);
                       setInteractionNotice(
                         `${kindLabels[kind]} layer ${checked ? "enabled" : "disabled"}.`,
@@ -3091,55 +3095,21 @@ function PowerFinderPage() {
                     </label>
                   </>
                 ) : null}
-                {enabled.storage_asset ? (
-                  <>
-                    <label>
-                      <span>Minimum Registered Storage Power</span>
-                      <select
-                        aria-label="Minimum registered storage power"
-                        value={minimumStorageMw}
-                        onChange={(event) => setMinimumStorageMw(Number(event.target.value))}
-                      >
-                        <option value="0">Any MW, Including Unknown</option>
-                        <option value="1">1+ MW</option>
-                        <option value="10">10+ MW</option>
-                        <option value="50">50+ MW</option>
-                        <option value="100">100+ MW</option>
-                      </select>
-                    </label>
-                    <label>
-                      <span>Maximum Registered Storage Power</span>
-                      <select
-                        aria-label="Maximum registered storage power"
-                        value={mapFilters.maximumStorageMw ?? ""}
-                        onChange={(event) =>
-                          setMaximumStorageMw(
-                            event.target.value ? Number(event.target.value) : null,
-                          )
-                        }
-                      >
-                        <option value="">No Maximum</option>
-                        <option value="10">Up to 10 MW</option>
-                        <option value="50">Up to 50 MW</option>
-                        <option value="100">Up to 100 MW</option>
-                        <option value="500">Up to 500 MW</option>
-                      </select>
-                    </label>
-                  </>
+                {enabled.generation_asset ? (
+                  <label className="registered-capacity-scale-toggle">
+                    <input
+                      type="checkbox"
+                      checked={mapFilters.scaleMarkersByCapacity}
+                      onChange={(event) =>
+                        dispatchMapFilter({
+                          type: "set_capacity_scaling",
+                          enabled: event.currentTarget.checked,
+                        })
+                      }
+                    />
+                    <span>Scale markers by registered capacity</span>
+                  </label>
                 ) : null}
-                <label className="registered-capacity-scale-toggle">
-                  <input
-                    type="checkbox"
-                    checked={mapFilters.scaleMarkersByCapacity}
-                    onChange={(event) =>
-                      dispatchMapFilter({
-                        type: "set_capacity_scaling",
-                        enabled: event.currentTarget.checked,
-                      })
-                    }
-                  />
-                  <span>Scale markers by registered capacity</span>
-                </label>
                 <p className="layer-visibility-note">
                   Circle area represents registered net capacity where published. Small circles may
                   mean low or unknown MW. This is nearby asset context, not available power or grid
@@ -3647,6 +3617,54 @@ function PowerFinderPage() {
                 : undefined
             }
           >
+            {enabled.storage_asset && !registryAssetsUnavailable ? (
+              <fieldset className="interactive-map-legend__custom storage-legend-controls">
+                <legend>Registered power range</legend>
+                <label>
+                  <span>Minimum</span>
+                  <select
+                    name="storage-minimum-mw"
+                    value={minimumStorageMw}
+                    onChange={(event) => setMinimumStorageMw(Number(event.target.value))}
+                  >
+                    <option value="0">Any MW</option>
+                    <option value="1">1+ MW</option>
+                    <option value="10">10+ MW</option>
+                    <option value="50">50+ MW</option>
+                    <option value="100">100+ MW</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Maximum</span>
+                  <select
+                    name="storage-maximum-mw"
+                    value={mapFilters.maximumStorageMw ?? ""}
+                    onChange={(event) =>
+                      setMaximumStorageMw(event.target.value ? Number(event.target.value) : null)
+                    }
+                  >
+                    <option value="">No maximum</option>
+                    <option value="10">10 MW</option>
+                    <option value="50">50 MW</option>
+                    <option value="100">100 MW</option>
+                    <option value="500">500 MW</option>
+                  </select>
+                </label>
+                <label className="storage-legend-controls__scale">
+                  <input
+                    type="checkbox"
+                    checked={mapFilters.scaleMarkersByCapacity}
+                    onChange={(event) =>
+                      dispatchMapFilter({
+                        type: "set_capacity_scaling",
+                        enabled: event.currentTarget.checked,
+                      })
+                    }
+                  />
+                  <span>Scale by MW</span>
+                </label>
+              </fieldset>
+            ) : null}
             {mapMode === "capacity" ? (
               <div className="interactive-map-legend__custom power-finder-data-legend">
                 <span>
@@ -4004,7 +4022,9 @@ function PowerFinderPage() {
                       </div>
                       <div>
                         <dt>Site Type</dt>
-                        <dd>{selected.properties.site_kind?.replaceAll("_", " ") ?? "Industrial land"}</dd>
+                        <dd>
+                          {selected.properties.site_kind?.replaceAll("_", " ") ?? "Industrial land"}
+                        </dd>
                       </div>
                       <div>
                         <dt>Published Area</dt>

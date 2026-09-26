@@ -8,6 +8,7 @@ export type GridOperatorOption = {
   featureCount: number;
   bounds: OperatorBounds | null;
   tsoNames: string[];
+  relationshipBasis?: "authoritative" | "mapped_proximity" | null;
 };
 
 function validBounds(value: unknown): value is OperatorBounds {
@@ -40,6 +41,10 @@ export async function loadGridOperatorCatalog(): Promise<GridOperatorOption[]> {
       featureCount: (previous?.featureCount ?? 0) + Number(item.featureCount ?? 0),
       bounds: mergeOperatorBounds(previous?.bounds ?? null, bounds),
       tsoNames: [...new Set([...(previous?.tsoNames ?? []), ...tsoNames])].sort(),
+      relationshipBasis:
+        item.relationshipBasis === "authoritative" || item.relationshipBasis === "mapped_proximity"
+          ? item.relationshipBasis
+          : (previous?.relationshipBasis ?? null),
     });
   }
   return [...merged.values()].sort(

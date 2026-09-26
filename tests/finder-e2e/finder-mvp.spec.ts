@@ -399,7 +399,9 @@ test("unsafe coordinates are handled inline and malformed URLs do not crash", as
   await expect(page.getByRole("heading", { level: 1 })).toContainText("connection context");
   await expect(page.getByText("Something went wrong!")).toHaveCount(0);
   await expect.poll(() => new URL(page.url()).searchParams.has("lat")).toBe(false);
-  await page.getByText("Map view & optional layers", { exact: true }).click();
+  await page.locator("details.finder-layers-menu").evaluate((element) => {
+    (element as HTMLDetailsElement).open = true;
+  });
   await expect(page.getByRole("checkbox", { name: /^Generation$/ })).toBeEnabled({
     timeout: 15_000,
   });
@@ -509,15 +511,44 @@ test("generation preset exposes governed capacity controls", async ({ page }) =>
   const unavailableState = page.getByText(/Registered generation and storage are unavailable/);
   await expect(registryControls.or(unavailableState)).toHaveCount(1);
   if ((await registryControls.count()) > 0) {
-    await expect(page.getByLabel("Maximum registered storage power")).toHaveCount(1);
+    await page.getByRole("button", { name: "Show map legend" }).click();
+    await expect(page.getByLabel("Maximum")).toHaveCount(1);
+    await page.getByLabel("Maximum").selectOption("100");
+    await expect(page).toHaveURL(/storageMaxMw=100/);
   } else {
     await expect(unavailableState).toHaveCount(1);
   }
-  await page.getByRole("button", { name: "Show map legend" }).click();
+  if ((await page.getByRole("button", { name: "Show map legend" }).count()) > 0) {
+    await page.getByRole("button", { name: "Show map legend" }).click();
+  }
   await expect(page.locator('.interactive-map-legend img[src*="/assets/energy-icons/"]')).toHaveCount(
     10,
   );
   await expect(page.getByText("Partial", { exact: true })).toHaveCount(0);
+});
+
+test("disabled storage clears stale technology isolation and light-theme layers remain active", async ({
+  page,
+}) => {
+  await page.addInitScript(() => localStorage.setItem("gridpulse-theme", "light"));
+  await page.goto("/power-finder?mapView=generation&isolateTechnology=storage");
+  await expect(page.getByRole("application", { name: /Interactive grid/ })).toHaveAttribute(
+    "data-basemap",
+    "light",
+    { timeout: 15_000 },
+  );
+  await page.locator("details.finder-layers-menu").evaluate((element) => {
+    (element as HTMLDetailsElement).open = true;
+  });
+  const storage = page.getByRole("checkbox", { name: /^Storage$/ });
+  await storage.uncheck();
+  await expect(page).not.toHaveURL(/isolateTechnology=storage/);
+  await expect(page.getByRole("checkbox", { name: /^Generation$/ })).toBeChecked();
+  await page.getByRole("checkbox", { name: /^Industrial sites$/ }).check();
+  await page.getByRole("button", { name: "Show map legend" }).click();
+  const legend = page.locator(".power-finder-interactive-legend");
+  await expect(legend.getByRole("heading", { name: "Generation" })).toBeVisible();
+  await expect(legend.getByRole("heading", { name: "Industrial sites" })).toBeVisible();
 });
 
 test("discover locations exposes generation and storage context filters", async ({ page }) => {
