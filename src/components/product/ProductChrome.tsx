@@ -2,11 +2,12 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   capabilityAvailable,
   isWorkspaceDestinationActive,
-  workspaceLinksForMode,
+  workspaceDestinationsForMode,
 } from "./product-navigation";
 import { productMode } from "@/config/product-mode";
 import { ThemeControl } from "@/features/theme/ThemeControl";
-import { Gauge, MapPinned, Search, type LucideIcon } from "lucide-react";
+import { Gauge, MapPinned, Menu, Search, X, type LucideIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 const workspaceIcons: Record<string, LucideIcon> = {
   sites: MapPinned,
@@ -16,6 +17,9 @@ const workspaceIcons: Record<string, LucideIcon> = {
 
 export function ProductHeader() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const [hydrated, setHydrated] = useState(false);
+  const [navigationOpen, setNavigationOpen] = useState(false);
+  const navigationToggleRef = useRef<HTMLButtonElement>(null);
   const marketingPage =
     pathname === "/" ||
     pathname === "/data-centres" ||
@@ -26,6 +30,21 @@ export function ProductHeader() {
     { label: "Energy Storage", to: "/energy-storage" },
     { label: "Hydrogen & Industry", to: "/hydrogen-industry" },
   ] as const;
+  const workspaceDestinations = workspaceDestinationsForMode(productMode);
+
+  useEffect(() => setHydrated(true), []);
+
+  useEffect(() => {
+    if (!navigationOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setNavigationOpen(false);
+      navigationToggleRef.current?.focus();
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [navigationOpen]);
+
   return (
     <header className="app-header product-header--minimal">
       <Link to="/" className="brand" aria-label="GridPulse home" translate="no">
@@ -52,26 +71,62 @@ export function ProductHeader() {
           </Link>
         </nav>
       ) : (
-        <span className="product-header-label">Grid Intelligence Workspace</span>
+        <>
+          <WorkspaceNavigation
+            pathname={pathname}
+            destinations={workspaceDestinations}
+            open={navigationOpen}
+            onNavigate={() => setNavigationOpen(false)}
+          />
+          <button
+            ref={navigationToggleRef}
+            type="button"
+            className="workspace-navigation-toggle"
+            aria-label={navigationOpen ? "Close workspace navigation" : "Open workspace navigation"}
+            aria-expanded={navigationOpen}
+            aria-controls="workspace-navigation"
+            disabled={!hydrated}
+            onClick={() => setNavigationOpen((open) => !open)}
+          >
+            {navigationOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
+          </button>
+        </>
       )}
       <ThemeControl />
     </header>
   );
 }
 
-export function ProductStageNavigation() {
-  const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const links = workspaceLinksForMode(productMode);
+type WorkspaceDestination = ReturnType<typeof workspaceDestinationsForMode>[number];
+
+function WorkspaceNavigation({
+  pathname,
+  destinations,
+  open,
+  onNavigate,
+}: {
+  pathname: string;
+  destinations: readonly WorkspaceDestination[];
+  open: boolean;
+  onNavigate: () => void;
+}) {
   return (
-    <nav className="product-stage-navigation" aria-label="Grid workspace navigation">
-      <div>
-        {links.map((item) => {
-          const active = isWorkspaceDestinationActive(pathname, item.to);
-          const available = capabilityAvailable(item.capability, productMode);
-          const Icon = workspaceIcons[item.id];
-          return (
+    <nav
+      id="workspace-navigation"
+      className="workspace-navigation"
+      aria-label="GridPulse workspace"
+      data-open={open ? "true" : "false"}
+    >
+      {destinations.map((item, index) => {
+        const active = isWorkspaceDestinationActive(pathname, item.to);
+        const available = capabilityAvailable(item.capability, productMode);
+        const Icon = workspaceIcons[item.id];
+        return (
+          <span className="workspace-navigation-item" key={item.to}>
+            {index > 0 && item.group !== destinations[index - 1]?.group ? (
+              <span className="workspace-navigation-divider" aria-hidden="true" />
+            ) : null}
             <Link
-              key={item.to}
               to={item.to}
               className={active ? "active" : undefined}
               aria-current={active ? "page" : undefined}
@@ -81,6 +136,7 @@ export function ProductStageNavigation() {
                   ? undefined
                   : `${item.label} prerequisites are not enabled in this product mode`
               }
+              onClick={onNavigate}
             >
               {Icon ? <Icon aria-hidden="true" /> : null}
               <span>
@@ -89,9 +145,9 @@ export function ProductStageNavigation() {
                 {!available ? <em>Prerequisites</em> : null}
               </span>
             </Link>
-          );
-        })}
-      </div>
+          </span>
+        );
+      })}
     </nav>
   );
 }

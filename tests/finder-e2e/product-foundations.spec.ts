@@ -3,7 +3,7 @@ import path from "node:path";
 
 test("every visible workflow destination resolves to meaningful content", async ({ page }) => {
   await page.goto("/power-finder");
-  const navigation = page.getByRole("navigation", { name: "Grid workspace navigation" });
+  const navigation = page.getByRole("navigation", { name: "GridPulse workspace" });
   await expect(navigation).toBeVisible();
   const expectations = [
     ["Sites", /Sites|portfolio/i],
@@ -11,6 +11,7 @@ test("every visible workflow destination resolves to meaningful content", async 
     ["Operations", /Run more compute within the power limit/i],
   ] as const;
   await expect(navigation.getByRole("link")).toHaveCount(3);
+  await expect(navigation).not.toContainText(/\b0[123]\b/);
   for (const hidden of ["Planner", "Activation", "Constraints", "Evidence", "Reports"]) {
     await expect(navigation.getByRole("link", { name: new RegExp(hidden) })).toHaveCount(0);
   }
@@ -20,18 +21,55 @@ test("every visible workflow destination resolves to meaningful content", async 
   }
 });
 
+test("workspace destinations behave as independent navigation on mobile", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/power-finder");
+  const navigation = page.getByRole("navigation", { name: "GridPulse workspace" });
+  const toggle = page.getByRole("button", { name: "Open workspace navigation" });
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await toggle.click();
+  await expect(page.getByRole("button", { name: "Close workspace navigation" })).toHaveAttribute(
+    "aria-expanded",
+    "true",
+  );
+  await expect(navigation).toBeVisible();
+  await expect(navigation.getByRole("link")).toHaveCount(3);
+  const targets = await navigation.getByRole("link").evaluateAll((links) =>
+    links.map((link) => ({
+      width: link.getBoundingClientRect().width,
+      height: link.getBoundingClientRect().height,
+    })),
+  );
+  expect(targets.every(({ width, height }) => width >= 44 && height >= 44)).toBe(true);
+  await page.keyboard.press("Escape");
+  await expect(toggle).toBeFocused();
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await toggle.click();
+  await navigation.getByRole("link", { name: /Operations/ }).click();
+  await expect(page).toHaveURL(/\/operations\?view=overview$/);
+  await expect(page.getByRole("link", { name: /Operations/ })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    ),
+  ).toBe(false);
+});
+
 test("dormant workspace URLs redirect into the focused product", async ({ page }) => {
   for (const [path, destination] of [
-    ["/data-centre-planner", "/power-finder"],
-    ["/evidence", "/power-finder"],
-    ["/evidence-review", "/power-finder"],
-    ["/constraint-explorer", "/operations"],
-    ["/reports", "/portfolio"],
-    ["/activation", "/power-finder"],
-    ["/operations/site-1", "/operations"],
+    ["/data-centre-planner", /\/power-finder$/],
+    ["/evidence", /\/power-finder$/],
+    ["/evidence-review", /\/power-finder$/],
+    ["/constraint-explorer", /\/operations\?view=overview$/],
+    ["/reports", /\/portfolio$/],
+    ["/activation", /\/power-finder$/],
+    ["/operations/site-1", /\/operations\?view=overview$/],
   ] as const) {
     await page.goto(path);
-    await expect(page).toHaveURL(new RegExp(`${destination.replace("/", "\\/")}$`));
+    await expect(page).toHaveURL(destination);
   }
 });
 
@@ -125,15 +163,20 @@ test("Operations remains legible and free of horizontal overflow on mobile", asy
     timeout: 20_000,
   });
   expect(
-    await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth),
+    await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    ),
   ).toBe(false);
   expect(
-    await page.getByRole("button", { name: "Analyse Measured History" }).evaluate((button) =>
-      Number.parseFloat(getComputedStyle(button).fontSize),
-    ),
+    await page
+      .getByRole("button", { name: "Analyse Measured History" })
+      .evaluate((button) => Number.parseFloat(getComputedStyle(button).fontSize)),
   ).toBeGreaterThanOrEqual(13);
   const tabSizes = await page.locator(".operations-tabs button").evaluateAll((buttons) =>
-    buttons.map((button) => ({ width: button.getBoundingClientRect().width, height: button.getBoundingClientRect().height })),
+    buttons.map((button) => ({
+      width: button.getBoundingClientRect().width,
+      height: button.getBoundingClientRect().height,
+    })),
   );
   expect(tabSizes.every(({ width, height }) => width >= 44 && height >= 44)).toBe(true);
 });

@@ -6,15 +6,14 @@ test("Finder exploration and local property portfolio are anonymous", async ({ p
 
   await page.goto("/power-finder");
   await expect(page.getByRole("heading", { level: 1 })).toContainText("connection context");
-  const workspaceNavigation = page.getByRole("navigation", { name: "Grid workspace navigation" });
+  const workspaceNavigation = page.getByRole("navigation", { name: "GridPulse workspace" });
   await expect(workspaceNavigation).toBeVisible();
   await expect(workspaceNavigation.locator("a > svg")).toHaveCount(3);
   expect(
-    await workspaceNavigation.locator(":scope > div").evaluate((element) => ({
-      horizontal: element.scrollWidth > element.clientWidth,
-      vertical: element.scrollHeight > element.clientHeight,
-    })),
-  ).toEqual({ horizontal: false, vertical: false });
+    await workspaceNavigation.evaluate(
+      (element) => element.scrollWidth > element.clientWidth,
+    ),
+  ).toBe(false);
   await expect(page.getByRole("link", { name: "Discuss a site" })).toHaveCount(0);
   await expect(page.getByText(/Sign in|Sign up|Create account/i)).toHaveCount(0);
   await expect(page.getByText(/^Screening only\./i)).toHaveCount(0);
@@ -521,9 +520,9 @@ test("generation preset exposes governed capacity controls", async ({ page }) =>
   if ((await page.getByRole("button", { name: "Show map legend" }).count()) > 0) {
     await page.getByRole("button", { name: "Show map legend" }).click();
   }
-  await expect(page.locator('.interactive-map-legend img[src*="/assets/energy-icons/"]')).toHaveCount(
-    10,
-  );
+  await expect(
+    page.locator('.interactive-map-legend img[src*="/assets/energy-icons/"]'),
+  ).toHaveCount(10);
   await expect(page.getByText("Partial", { exact: true })).toHaveCount(0);
 });
 
@@ -598,7 +597,9 @@ test("regional discovery runs on public backend data and invalidates stale resul
     timeout: 90_000,
   });
   const rankedAreas = page.getByRole("heading", { name: "Ranked areas" });
-  const noResults = page.getByText(/No investigation locations met the current mapped-data criteria/);
+  const noResults = page.getByText(
+    /No investigation locations met the current mapped-data criteria/,
+  );
   await expect(rankedAreas.or(noResults)).toBeVisible();
   if (await rankedAreas.isVisible()) {
     await page.getByLabel("Ranking strategy").selectOption("energy");

@@ -151,10 +151,10 @@
   outline-offset: 2px;
 }
 
-.product-stage-navigation a[data-availability="prerequisite"] {
+.workspace-navigation a[data-availability="prerequisite"] {
   opacity: 0.68;
 }
-.product-stage-navigation a em {
+.workspace-navigation a em {
   color: #f3c654;
   display: block;
   font-size: 0.58rem;
@@ -504,13 +504,12 @@
   color-scheme: light;
 }
 :root[data-theme="light"] .app-header,
-:root[data-theme="light"] .product-stage-navigation,
+:root[data-theme="light"] .workspace-navigation,
 :root[data-theme="light"] .product-footer {
   background: var(--surface);
   color: var(--foreground);
 }
-:root[data-theme="light"] .product-stage-navigation a,
-:root[data-theme="light"] .product-header-label {
+:root[data-theme="light"] .workspace-navigation a {
   color: var(--foreground);
 }
 :root[data-theme="light"] .brand > span {
@@ -519,27 +518,34 @@
 :root[data-theme="light"] .brand > strong {
   color: #08758a;
 }
-:root[data-theme="light"] .product-stage-navigation a > span:first-child {
+:root[data-theme="light"] .workspace-navigation a > span:first-child {
   color: #0e6678;
 }
-:root[data-theme="light"] .product-stage-navigation a:hover,
-:root[data-theme="light"] .product-stage-navigation a:focus-visible,
-:root[data-theme="light"] .product-stage-navigation a.active {
+:root[data-theme="light"] .workspace-navigation a:hover,
+:root[data-theme="light"] .workspace-navigation a:focus-visible,
+:root[data-theme="light"] .workspace-navigation a.active {
   color: #101828;
 }
-:root[data-theme="light"] .product-stage-navigation a[data-availability="prerequisite"] {
+:root[data-theme="light"] .workspace-navigation a[data-availability="prerequisite"] {
   color: #475467;
   opacity: 1;
 }
 :root[data-theme="light"]
-  .product-stage-navigation
+  .workspace-navigation
   a[data-availability="prerequisite"]
   > span:first-child {
   color: #475467;
 }
-:root[data-theme="light"] .product-stage-navigation a em {
+:root[data-theme="light"] .workspace-navigation a em {
   color: #854a0e;
   font-weight: 700;
+}
+:root[data-theme="light"] .workspace-navigation-divider {
+  background: #d0d5dd;
+}
+:root[data-theme="light"] .workspace-navigation-toggle {
+  border-color: #d0d5dd;
+  color: #344054;
 }
 :root[data-theme="light"] .data-panel,
 :root[data-theme="light"] .page-heading,
@@ -1354,7 +1360,7 @@
 .product-shell :where(input, select, textarea)::placeholder {
   color: var(--muted-foreground);
 }
-.product-shell :where(.app-header, .product-stage-navigation) {
+.product-shell :where(.app-header, .workspace-navigation) {
   border-color: var(--border);
   background: color-mix(in srgb, var(--surface) 96%, transparent);
   color: var(--foreground);

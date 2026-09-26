@@ -3,14 +3,15 @@ import type { ProductMode } from "@/config/product-mode";
 export type ProductCapability = "finder" | "workspace" | "connect" | "operate";
 export type UnavailableBehavior = "explain" | "hide";
 
-export const activeWorkspaceStageIds = ["sites", "finder", "operations"] as const;
-const activeWorkspaceStages = new Set<string>(activeWorkspaceStageIds);
+export const primaryWorkspaceDestinationIds = ["sites", "finder", "operations"] as const;
+const primaryWorkspaceDestinations = new Set<string>(primaryWorkspaceDestinationIds);
 
 export const workspaceLinks = [
   {
     id: "sites",
     label: "Sites",
     detail: "Site portfolio",
+    group: "planning",
     to: "/portfolio",
     capability: "finder",
     unavailableBehavior: "explain",
@@ -19,6 +20,7 @@ export const workspaceLinks = [
     id: "finder",
     label: "Power Finder",
     detail: "Connection screening",
+    group: "planning",
     to: "/power-finder",
     capability: "finder",
     unavailableBehavior: "explain",
@@ -27,6 +29,7 @@ export const workspaceLinks = [
     id: "operations",
     label: "Operations",
     detail: "Facility power",
+    group: "operations",
     to: "/operations",
     capability: "finder",
     unavailableBehavior: "explain",
@@ -35,6 +38,7 @@ export const workspaceLinks = [
     id: "planner",
     label: "Planner",
     detail: "Energy & flexibility",
+    group: "planning",
     to: "/data-centre-planner",
     capability: "finder",
     unavailableBehavior: "explain",
@@ -43,6 +47,7 @@ export const workspaceLinks = [
     id: "activation",
     label: "Activation",
     detail: "Connection pathway",
+    group: "planning",
     to: "/activation",
     capability: "connect",
     unavailableBehavior: "explain",
@@ -51,6 +56,7 @@ export const workspaceLinks = [
     id: "evidence",
     label: "Evidence",
     detail: "Claims & sources",
+    group: "planning",
     to: "/evidence",
     capability: "finder",
     unavailableBehavior: "explain",
@@ -59,6 +65,7 @@ export const workspaceLinks = [
     id: "reports",
     label: "Reports",
     detail: "Decision packages",
+    group: "planning",
     to: "/reports",
     capability: "finder",
     unavailableBehavior: "explain",
@@ -74,10 +81,10 @@ export function capabilityAvailable(capability: ProductCapability, mode: Product
   return mode === "full";
 }
 
-export function workspaceLinksForMode(mode: ProductMode) {
+export function workspaceDestinationsForMode(mode: ProductMode) {
   return workspaceLinks.filter(
     (item) =>
-      activeWorkspaceStages.has(item.id) &&
+      primaryWorkspaceDestinations.has(item.id) &&
       (capabilityAvailable(item.capability, mode) || item.unavailableBehavior === "explain"),
   );
 }

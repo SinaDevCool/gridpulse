@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { ProductTruthNotice } from "./ProductTruthNotice";
 import { productCapabilities } from "@/config/product-mode";
 import { FinderShell } from "./FinderShell";
-import { ProductHeader, ProductStageNavigation } from "./ProductChrome";
+import { ProductHeader } from "./ProductChrome";
 import { useAuth } from "@/context/useAuth";
 
 function AuthenticatedBoundary({ children }: { children: ReactNode }) {
@@ -19,16 +19,19 @@ function AuthenticatedBoundary({ children }: { children: ReactNode }) {
   return children;
 }
 
-export function AppShell({ children, requireAuth = false }: { children: ReactNode; requireAuth?: boolean }) {
+export function AppShell({
+  children,
+  requireAuth = false,
+}: {
+  children: ReactNode;
+  requireAuth?: boolean;
+}) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const publicProduct = pathname.startsWith("/power-finder");
   if (!productCapabilities.workspace) return <FinderShell>{children}</FinderShell>;
   const shell = (
-    <div
-      className={`product-shell${publicProduct ? " product-shell--focused" : ""}`}
-    >
+    <div className={`product-shell${publicProduct ? " product-shell--focused" : ""}`}>
       <ProductHeader />
-      <ProductStageNavigation />
       {publicProduct ? <ProductTruthNotice compact /> : null}
       {children}
       <footer className="product-footer">

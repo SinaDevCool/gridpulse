@@ -1,25 +1,30 @@
 import { describe, expect, it } from "vitest";
 import {
-  activeWorkspaceStageIds,
+  primaryWorkspaceDestinationIds,
   isWorkspaceDestinationActive,
   workspaceLinks,
-  workspaceLinksForMode,
+  workspaceDestinationsForMode,
 } from "./product-navigation";
 
 describe("workspace outcome navigation", () => {
-  it("exposes only the focused three-stage workflow", () => {
-    expect(activeWorkspaceStageIds).toEqual(["sites", "finder", "operations"]);
-    expect(workspaceLinksForMode("finder").map((item) => item.to)).toEqual([
+  it("exposes 3 independent primary workspace destinations", () => {
+    expect(primaryWorkspaceDestinationIds).toEqual(["sites", "finder", "operations"]);
+    expect(workspaceDestinationsForMode("finder").map((item) => item.to)).toEqual([
       "/portfolio",
       "/power-finder",
       "/operations",
     ]);
-    expect(workspaceLinksForMode("full").map((item) => item.to)).toEqual([
+    expect(workspaceDestinationsForMode("full").map((item) => item.to)).toEqual([
       "/portfolio",
       "/power-finder",
       "/operations",
     ]);
     expect(new Set(workspaceLinks.map((item) => item.to)).size).toBe(workspaceLinks.length);
+    expect(workspaceDestinationsForMode("finder").map((item) => item.group)).toEqual([
+      "planning",
+      "planning",
+      "operations",
+    ]);
   });
 
   it("keeps detail pages in their owning workflow", () => {
