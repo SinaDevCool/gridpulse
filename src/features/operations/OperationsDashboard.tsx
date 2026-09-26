@@ -25,7 +25,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { evidenceLabels, type EvidenceClass, type EvidencedValue } from "./evidence";
+import { type EvidencedValue } from "./evidence";
+import { OperationsEvidenceBadge, OperationsMetricCard } from "./components";
 import {
   buildOperationsScenario,
   defaultOperationsScenario,
@@ -93,7 +94,7 @@ export function OperationsDashboard({ view }: { view: OperationsView }) {
           </p>
         </div>
         <div className="operations-v2-context">
-          <EvidenceBadge kind="simulated" label="Scenario Simulation" />
+          <OperationsEvidenceBadge kind="simulated" label="Scenario Simulation" />
           <span className="operations-v2-facility">
             <Database aria-hidden="true" />
             {scenario.facilityName}
@@ -325,12 +326,27 @@ function DemandChart({
       </OperationsChartSummary>
       <OperationsChartLegend
         items={[
-          { label: "Baseline demand", detail: "MW · before response", tone: "demand", mark: "area" },
+          {
+            label: "Baseline demand",
+            detail: "MW · before response",
+            tone: "demand",
+            mark: "area",
+          },
           ...(selected !== "baseline"
             ? [{ label: selectedName, detail: "MW · selected response", tone: "response" as const }]
             : []),
-          { label: "Safety target", detail: `${formatMw(targetMw)} · assumption`, tone: "target", mark: "dash" },
-          { label: "Facility limit", detail: `${formatMw(model.scenario.importLimitMw)} · assumption`, tone: "limit", mark: "dash" },
+          {
+            label: "Safety target",
+            detail: `${formatMw(targetMw)} · assumption`,
+            tone: "target",
+            mark: "dash",
+          },
+          {
+            label: "Facility limit",
+            detail: `${formatMw(model.scenario.importLimitMw)} · assumption`,
+            tone: "limit",
+            mark: "dash",
+          },
         ]}
       />
       <div
@@ -577,7 +593,7 @@ function ScenarioEditor({
             </p>
           ) : null}
           <footer>
-            <EvidenceBadge kind="user_assumption" />
+            <OperationsEvidenceBadge kind="user_assumption" />
             <button type="submit" className="primary-button">
               Recalculate Scenario
             </button>
@@ -623,10 +639,6 @@ function NumberField({
   );
 }
 
-function EvidenceBadge({ kind, label }: { kind: EvidenceClass; label?: string }) {
-  return <span className={`operations-v2-evidence ${kind}`}>{label ?? evidenceLabels[kind]}</span>;
-}
-
 function MetricCard<T>({
   icon,
   label,
@@ -651,21 +663,22 @@ function MetricCard<T>({
           : number.format(metric.value)
         : String(metric.value);
   return (
-    <article className={`operations-v2-metric ${tone ?? ""}`}>
-      <header>
-        <span aria-hidden="true">{icon}</span>
-        <EvidenceBadge kind={metric.evidenceClass} />
-      </header>
-      <p>{label}</p>
-      <strong>
-        {value}
-        {metric.value != null && metric.unit ? <small>&nbsp;{metric.unit}</small> : null}
-        {label === "Additional GPUs Supportable" && metric.value != null ? (
-          <small>&nbsp;GPU{Number(metric.value) === 1 ? "" : "s"}</small>
-        ) : null}
-      </strong>
-      <small>{note}</small>
-    </article>
+    <OperationsMetricCard
+      icon={icon}
+      label={label}
+      evidence={metric.evidenceClass}
+      tone={tone}
+      value={
+        <>
+          {value}
+          {metric.value != null && metric.unit ? <small>&nbsp;{metric.unit}</small> : null}
+          {label === "Additional GPUs Supportable" && metric.value != null ? (
+            <small>&nbsp;GPU{Number(metric.value) === 1 ? "" : "s"}</small>
+          ) : null}
+        </>
+      }
+      note={note}
+    />
   );
 }
 

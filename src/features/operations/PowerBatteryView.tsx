@@ -3,6 +3,7 @@ import {
   Activity,
   AlertTriangle,
   BatteryCharging,
+  Bolt,
   Cable,
   CheckCircle2,
   Database,
@@ -42,6 +43,7 @@ import {
   formatMw,
   formatPercent,
 } from "./visualization";
+import { OperationsEvidenceBadge, OperationsMetricCard } from "./components";
 
 const number = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
 
@@ -326,6 +328,16 @@ export function PowerBatteryView({ model }: { model: OperationsOverviewModel }) 
         />
       </div>
 
+      <div className="power-insight-grid">
+        <PowerBalanceFlow selected={selected} mode={mode} />
+        <BatterySocPanel
+          model={model}
+          selected={selectedScenario}
+          mode={mode}
+          selectedHistorical={selectedHistorical}
+        />
+      </div>
+
       <div className="power-primary-grid">
         <article className="power-timeline-card">
           <header>
@@ -369,12 +381,32 @@ export function PowerBatteryView({ model }: { model: OperationsOverviewModel }) 
               </OperationsChartSummary>
               <OperationsChartLegend
                 items={[
-                  { label: "Facility demand", detail: "MW · before battery response", tone: "demand", mark: "area" },
+                  {
+                    label: "Facility demand",
+                    detail: "MW · before battery response",
+                    tone: "demand",
+                    mark: "area",
+                  },
                   { label: "Grid import", detail: "MW · after battery response", tone: "response" },
-                  { label: "Battery dispatch", detail: "MW · + discharge / − charge", tone: "battery", mark: "bar" },
+                  {
+                    label: "Battery dispatch",
+                    detail: "MW · + discharge / − charge",
+                    tone: "battery",
+                    mark: "bar",
+                  },
                   { label: "State of charge", detail: "% · battery energy state", tone: "soc" },
-                  { label: "Safety target", detail: `${formatMw(targetMw)} · assumption`, tone: "target", mark: "dash" },
-                  { label: "Facility limit", detail: `${formatMw(model.scenario.importLimitMw)} · assumption`, tone: "limit", mark: "dash" },
+                  {
+                    label: "Safety target",
+                    detail: `${formatMw(targetMw)} · assumption`,
+                    tone: "target",
+                    mark: "dash",
+                  },
+                  {
+                    label: "Facility limit",
+                    detail: `${formatMw(model.scenario.importLimitMw)} · assumption`,
+                    tone: "limit",
+                    mark: "dash",
+                  },
                 ]}
               />
               <PowerTimeline
@@ -517,7 +549,9 @@ function PowerTimeline({
                 position: "insideTopRight",
               }}
             />
-            {selectedLabel ? <ReferenceLine x={selectedLabel} stroke="var(--ops-selection)" /> : null}
+            {selectedLabel ? (
+              <ReferenceLine x={selectedLabel} stroke="var(--ops-selection)" />
+            ) : null}
             <Area
               dataKey="facilityDemandMw"
               name="Facility demand"
@@ -973,6 +1007,205 @@ function ConnectorStatus() {
   );
 }
 
+function PowerBalanceFlow({
+  selected,
+  mode,
+}: {
+  selected: Record<string, unknown> | OperationsInterval | HistoricalPoint | null;
+  mode: EvidenceMode;
+}) {
+  const facility = selected ? valueOf(selected, "facilityDemandMw", "baselineDemandMw") : null;
+  const grid = selected ? valueOf(selected, "gridImportMw", "batteryDemandMw") : null;
+  const battery =
+    selected && typeof selected.batteryPowerMw === "number" ? selected.batteryPowerMw : null;
+  const gpu =
+    mode === "scenario" && selected && "gpuPowerMw" in selected
+      ? Number(selected.gpuPowerMw)
+      : null;
+  const other = facility != null && gpu != null ? Math.max(0, facility - gpu) : null;
+  const batteryLabel =
+    battery == null
+      ? "Battery unavailable"
+      : battery >= 0
+        ? `${number.format(battery)} MW discharge`
+        : `${number.format(Math.abs(battery))} MW charging`;
+
+  return (
+    <article className="power-flow-card">
+      <header>
+        <div>
+          <p className="context-label">Selected interval</p>
+          <h3>Facility Power Balance</h3>
+        </div>
+        <EvidencePill mode={mode} />
+      </header>
+      {facility == null || grid == null ? (
+        <EmptyEvidence />
+      ) : (
+        <div
+          className="power-flow"
+          role="img"
+          aria-label={`Grid import ${number.format(grid)} megawatts, ${batteryLabel}, facility demand ${number.format(facility)} megawatts${gpu == null ? "" : `, including ${number.format(gpu)} megawatts of GPU power`}.`}
+        >
+          <div className="power-flow-sources">
+            <FlowNode
+              icon={<Cable />}
+              label="Grid import"
+              value={`${number.format(grid)} MW`}
+              tone="grid"
+            />
+            <FlowNode
+              icon={<BatteryCharging />}
+              label="Battery"
+              value={batteryLabel}
+              tone="battery"
+            />
+          </div>
+          <div className="power-flow-rail" aria-hidden="true">
+            <i />
+            <i />
+          </div>
+          <FlowNode
+            icon={<Bolt />}
+            label="Facility demand"
+            value={`${number.format(facility)} MW`}
+            tone="facility"
+            featured
+          />
+          <div className="power-flow-rail outgoing" aria-hidden="true">
+            <i />
+            <i />
+          </div>
+          <div className="power-flow-loads">
+            {gpu == null ? (
+              <FlowNode
+                icon={<Activity />}
+                label="Load allocation"
+                value="Not available"
+                tone="muted"
+              />
+            ) : (
+              <>
+                <FlowNode
+                  icon={<Zap />}
+                  label="GPU power"
+                  value={`${number.format(gpu)} MW`}
+                  tone="compute"
+                />
+                <FlowNode
+                  icon={<Activity />}
+                  label="Other facility load"
+                  value={`${number.format(other ?? 0)} MW`}
+                  tone="muted"
+                />
+              </>
+            )}
+          </div>
+        </div>
+      )}
+      <p className="power-flow-note">
+        {mode === "scenario"
+          ? "GPU and other-load allocation comes from the configured scenario. Cooling and auxiliary loads are not invented as separate values."
+          : "Measured imports and battery power are shown without inferring unavailable facility sub-loads."}
+      </p>
+    </article>
+  );
+}
+
+function FlowNode({
+  icon,
+  label,
+  value,
+  tone,
+  featured = false,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  tone: string;
+  featured?: boolean;
+}) {
+  return (
+    <div className={`power-flow-node ${tone}${featured ? " featured" : ""}`}>
+      <span aria-hidden="true">{icon}</span>
+      <small>{label}</small>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+function BatterySocPanel({
+  model,
+  selected,
+  mode,
+  selectedHistorical,
+}: {
+  model: OperationsOverviewModel;
+  selected: OperationsInterval;
+  mode: EvidenceMode;
+  selectedHistorical: HistoricalPoint | null;
+}) {
+  const battery = model.scenario.battery;
+  const observation = selectedHistorical?.battery;
+  const soc = mode === "scenario" ? selected.batterySocPercent : (observation?.socPercent ?? null);
+  const stateOfHealth =
+    mode === "scenario"
+      ? battery.stateOfHealthPercent
+      : (observation?.stateOfHealthPercent ?? null);
+  const boundedSoc = Math.max(0, Math.min(100, soc ?? 0));
+  const circumference = 2 * Math.PI * 52;
+  const dash = (boundedSoc / 100) * circumference;
+  return (
+    <article className="battery-soc-card">
+      <header>
+        <div>
+          <p className="context-label">Battery reserve</p>
+          <h3>State of Charge</h3>
+        </div>
+        <EvidencePill mode={mode} />
+      </header>
+      <div className="battery-soc-body">
+        <div
+          className="battery-soc-gauge"
+          role="img"
+          aria-label={
+            soc == null
+              ? "Battery state of charge unavailable"
+              : `Battery state of charge ${number.format(soc)} percent`
+          }
+        >
+          <svg viewBox="0 0 128 128" aria-hidden="true">
+            <circle cx="64" cy="64" r="52" className="track" />
+            <circle
+              cx="64"
+              cy="64"
+              r="52"
+              className="value"
+              strokeDasharray={`${dash} ${circumference - dash}`}
+            />
+          </svg>
+          <span>
+            <strong>{soc == null ? "—" : number.format(soc)}</strong>
+            <small>{soc == null ? "Unavailable" : "% SOC"}</small>
+          </span>
+        </div>
+        <dl>
+          <Row label="Minimum reserve" value={`${number.format(battery.minimumSocPercent)}%`} />
+          <Row label="Maximum SOC" value={`${number.format(battery.maximumSocPercent)}%`} />
+          <Row
+            label="State of health"
+            value={stateOfHealth == null ? "Unavailable" : `${number.format(stateOfHealth)}%`}
+          />
+          <Row
+            label="Sustainable duration"
+            value={mode === "scenario" ? durationLabel(model, selected) : "Not derivable"}
+          />
+        </dl>
+      </div>
+    </article>
+  );
+}
+
 function PowerMetric({
   icon,
   label,
@@ -984,24 +1217,22 @@ function PowerMetric({
   value: string;
   evidence: EvidenceMode | "assumption";
 }) {
-  return (
-    <article className="operations-v2-metric">
-      <header>
-        <span aria-hidden="true">{icon}</span>
-        <EvidencePill mode={evidence} />
-      </header>
-      <p>{label}</p>
-      <strong>{value}</strong>
-    </article>
-  );
+  const evidenceClass =
+    evidence === "historical"
+      ? "measured"
+      : evidence === "scenario"
+        ? "simulated"
+        : "user_assumption";
+  return <OperationsMetricCard icon={icon} label={label} value={value} evidence={evidenceClass} />;
 }
 function EvidencePill({ mode }: { mode: EvidenceMode | "assumption" }) {
+  const kind =
+    mode === "historical" ? "measured" : mode === "scenario" ? "simulated" : "user_assumption";
   return (
-    <span
-      className={`operations-v2-evidence ${mode === "historical" ? "measured" : mode === "scenario" ? "simulated" : "user_assumption"}`}
-    >
-      {mode === "historical" ? "Measured" : mode === "scenario" ? "Simulated" : "Assumption"}
-    </span>
+    <OperationsEvidenceBadge
+      kind={kind}
+      label={mode === "historical" ? "Measured" : mode === "scenario" ? "Simulated" : "Assumption"}
+    />
   );
 }
 function Row({ label, value }: { label: string; value: string }) {

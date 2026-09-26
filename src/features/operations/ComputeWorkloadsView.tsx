@@ -25,7 +25,7 @@ import {
   YAxis,
 } from "recharts";
 import type { EvidenceClass } from "./evidence";
-import { evidenceLabels } from "./evidence";
+import { OperationsEvidenceBadge, OperationsMetricCard } from "./components";
 import { requestOperationsAssessment } from "@/lib/operations-api";
 import type { OperationsOverviewModel } from "./scenario-engine";
 import {
@@ -73,6 +73,14 @@ export function ComputeWorkloadsView({ model }: { model: OperationsOverviewModel
     [workloads, telemetry, model],
   );
   const assessment = backendAssessment ?? localAssessment;
+  const peakInterval = useMemo(
+    () =>
+      model.intervals.reduce(
+        (peak, point) => (point.activeGpuCount > peak.activeGpuCount ? point : peak),
+        model.intervals[0],
+      ),
+    [model],
+  );
   const decisions =
     status === "all"
       ? assessment.decisions
@@ -148,7 +156,7 @@ export function ComputeWorkloadsView({ model }: { model: OperationsOverviewModel
           </p>
         </div>
         <div className="compute-decision-actions">
-          <EvidenceBadge kind={evidence} />
+          <OperationsEvidenceBadge kind={evidence} />
           <button
             type="button"
             className="secondary-button"
@@ -179,19 +187,29 @@ export function ComputeWorkloadsView({ model }: { model: OperationsOverviewModel
 
       <div className="operations-v2-kpis operations-v2-kpis--compute">
         <Metric
-          icon={<AlertTriangle />}
-          label="Power-Limit Exposure"
-          value={formatDurationFromIntervals(model.summaries[0].violationIntervals)}
+          icon={<Server />}
+          label="GPUs Allocated"
+          value={integer.format(model.scenario.gpuCount)}
           evidence="simulated"
-          note={`${model.summaries[0].violationIntervals} × 15-minute intervals`}
-          tone="warning"
+          note={`Configured ${model.scenario.gpuModel} fleet`}
         />
         <Metric
-          icon={<Server />}
-          label="Jobs Affected"
-          value={integer.format(assessment.affectedJobs)}
-          evidence={evidence}
-          note="Running or queued"
+          icon={<Cpu />}
+          label="Active GPUs"
+          value={integer.format(peakInterval.activeGpuCount)}
+          evidence="simulated"
+          note={`Peak at ${peakInterval.label}`}
+        />
+        <Metric
+          icon={<Gauge />}
+          label="GPU Utilization"
+          value={`${number.format(peakInterval.utilizationPercent)}%`}
+          evidence={telemetry.length ? "measured" : "simulated"}
+          note={
+            telemetry.length
+              ? `${number.format(assessment.telemetryCompletenessPercent)}% telemetry completeness`
+              : "Scenario profile · DCGM not connected"
+          }
         />
         <Metric
           icon={<TrendingDown />}
@@ -202,18 +220,11 @@ export function ComputeWorkloadsView({ model }: { model: OperationsOverviewModel
         />
         <Metric
           icon={<Clock3 />}
-          label="Deadlines at Risk"
-          value={integer.format(assessment.deadlinesAtRisk)}
+          label="Shiftable Workloads"
+          value={integer.format(assessment.eligibleJobs)}
           evidence={evidence}
-          note="Based on declared timing"
+          note={`${assessment.recommendedJobs} recommended · ${assessment.deadlinesAtRisk} deadlines at risk`}
           tone={assessment.deadlinesAtRisk ? "danger" : undefined}
-        />
-        <Metric
-          icon={<Gauge />}
-          label="Telemetry Completeness"
-          value={`${number.format(assessment.telemetryCompletenessPercent)}%`}
-          evidence={telemetry.length ? "measured" : "unavailable"}
-          note={telemetry.length ? "Optional DCGM fields" : "DCGM not connected"}
         />
       </div>
 
@@ -224,7 +235,7 @@ export function ComputeWorkloadsView({ model }: { model: OperationsOverviewModel
               <p className="context-label">Coordinated Timeline</p>
               <h3>Compute Demand and Facility Limit</h3>
             </div>
-            <EvidenceBadge kind="simulated" />
+            <OperationsEvidenceBadge kind="simulated" />
           </header>
           <p className="operations-chart-purpose">
             Whole-facility demand is compared with the response profile. GPU power is shown as a
@@ -253,11 +264,26 @@ export function ComputeWorkloadsView({ model }: { model: OperationsOverviewModel
           </OperationsChartSummary>
           <OperationsChartLegend
             items={[
-              { label: "Facility demand", detail: "MW · before response", tone: "demand", mark: "area" },
+              {
+                label: "Facility demand",
+                detail: "MW · before response",
+                tone: "demand",
+                mark: "area",
+              },
               { label: "After response", detail: "MW · recommended profile", tone: "response" },
               { label: "GPU power", detail: "MW · component of facility demand", tone: "compute" },
-              { label: "Safety target", detail: `${formatMw(model.scenario.importLimitMw - model.scenario.safetyReserveMw)} · assumption`, tone: "target", mark: "dash" },
-              { label: "Facility limit", detail: `${formatMw(model.scenario.importLimitMw)} · assumption`, tone: "limit", mark: "dash" },
+              {
+                label: "Safety target",
+                detail: `${formatMw(model.scenario.importLimitMw - model.scenario.safetyReserveMw)} · assumption`,
+                tone: "target",
+                mark: "dash",
+              },
+              {
+                label: "Facility limit",
+                detail: `${formatMw(model.scenario.importLimitMw)} · assumption`,
+                tone: "limit",
+                mark: "dash",
+              },
             ]}
           />
           <div
@@ -556,7 +582,7 @@ function EvidenceImport({
           <p className="context-label">Real Exported Evidence</p>
           <h3 id="compute-import-title">Load Scheduler and GPU Records</h3>
         </div>
-        <EvidenceBadge kind="measured" label="Browser processed" />
+        <OperationsEvidenceBadge kind="measured" label="Browser processed" />
       </header>
       <div className="compute-import-grid">
         <label>
@@ -604,7 +630,7 @@ function WorkloadDrawer({
           <X aria-hidden="true" />
         </button>
       </header>
-      <EvidenceBadge kind={workload.source === "scenario" ? "simulated" : "measured"} />
+      <OperationsEvidenceBadge kind={workload.source === "scenario" ? "simulated" : "measured"} />
       <dl>
         <Row label="Class" value={workload.workloadClass} />
         <Row label="Status" value={workload.status} />
@@ -657,19 +683,15 @@ function Metric({
   tone?: "warning" | "danger";
 }) {
   return (
-    <article className={`operations-v2-metric ${tone ?? ""}`}>
-      <header>
-        <span aria-hidden="true">{icon}</span>
-        <EvidenceBadge kind={evidence} />
-      </header>
-      <p>{label}</p>
-      <strong>{value}</strong>
-      <small>{note}</small>
-    </article>
+    <OperationsMetricCard
+      icon={icon}
+      label={label}
+      value={value}
+      evidence={evidence}
+      note={note}
+      tone={tone}
+    />
   );
-}
-function EvidenceBadge({ kind, label }: { kind: EvidenceClass; label?: string }) {
-  return <span className={`operations-v2-evidence ${kind}`}>{label ?? evidenceLabels[kind]}</span>;
 }
 function Row({ label, value }: { label: string; value: string }) {
   return (

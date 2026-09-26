@@ -1634,7 +1634,10 @@
   border: 0;
   border-radius: 9px;
   font-size: 0.86rem;
-  transition: background-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease;
 }
 .operations-v2-tabs a.active {
   background: color-mix(in srgb, var(--accent) 14%, var(--card));
@@ -1829,7 +1832,10 @@
   min-height: 8.5rem;
   padding: 1rem;
   border-radius: 11px;
-  transition: border-color 160ms ease, background-color 160ms ease, transform 160ms ease;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    transform 160ms ease;
 }
 .operations-v2-comparison-grid > button:hover {
   border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
@@ -2042,7 +2048,9 @@
 :root[data-theme="light"] .operations-v2-tabs a.active {
   color: #063f51;
   background: #dceff4;
-  box-shadow: inset 0 0 0 1px #8dbdcc, 0 2px 6px rgb(22 88 108 / 10%);
+  box-shadow:
+    inset 0 0 0 1px #8dbdcc,
+    0 2px 6px rgb(22 88 108 / 10%);
 }
 
 :root[data-theme="light"] .operations-v2-provenance {
@@ -2395,12 +2403,24 @@
   white-space: nowrap;
 }
 
-.operations-chart-summary .tone-response strong { color: var(--ops-response); }
-.operations-chart-summary .tone-positive strong { color: var(--ops-positive); }
-.operations-chart-summary .tone-limit strong { color: var(--ops-limit); }
-.operations-chart-summary .tone-demand strong { color: var(--ops-demand); }
-.operations-chart-summary .tone-battery strong { color: var(--ops-battery); }
-.operations-chart-summary .tone-soc strong { color: var(--ops-soc); }
+.operations-chart-summary .tone-response strong {
+  color: var(--ops-response);
+}
+.operations-chart-summary .tone-positive strong {
+  color: var(--ops-positive);
+}
+.operations-chart-summary .tone-limit strong {
+  color: var(--ops-limit);
+}
+.operations-chart-summary .tone-demand strong {
+  color: var(--ops-demand);
+}
+.operations-chart-summary .tone-battery strong {
+  color: var(--ops-battery);
+}
+.operations-chart-summary .tone-soc strong {
+  color: var(--ops-soc);
+}
 
 .operations-chart-legend {
   display: flex;
@@ -2456,23 +2476,45 @@
   border-top: 3px solid var(--mark-color);
 }
 
-.operations-chart-mark.dash::before { border-top-style: dashed; }
-.operations-chart-mark.area { background: color-mix(in srgb, var(--mark-color) 14%, transparent); }
+.operations-chart-mark.dash::before {
+  border-top-style: dashed;
+}
+.operations-chart-mark.area {
+  background: color-mix(in srgb, var(--mark-color) 14%, transparent);
+}
 .operations-chart-mark.bar {
   width: 1rem;
   height: 0.85rem;
   border-radius: 2px;
   background: var(--mark-color);
 }
-.operations-chart-mark.bar::before { content: none; }
-.operations-chart-mark.demand { --mark-color: var(--ops-demand); }
-.operations-chart-mark.response { --mark-color: var(--ops-response); }
-.operations-chart-mark.compute { --mark-color: var(--ops-compute); }
-.operations-chart-mark.battery { --mark-color: var(--ops-battery); }
-.operations-chart-mark.soc { --mark-color: var(--ops-soc); }
-.operations-chart-mark.limit { --mark-color: var(--ops-limit); }
-.operations-chart-mark.target { --mark-color: var(--ops-target); }
-.operations-chart-mark.positive { --mark-color: var(--ops-positive); }
+.operations-chart-mark.bar::before {
+  content: none;
+}
+.operations-chart-mark.demand {
+  --mark-color: var(--ops-demand);
+}
+.operations-chart-mark.response {
+  --mark-color: var(--ops-response);
+}
+.operations-chart-mark.compute {
+  --mark-color: var(--ops-compute);
+}
+.operations-chart-mark.battery {
+  --mark-color: var(--ops-battery);
+}
+.operations-chart-mark.soc {
+  --mark-color: var(--ops-soc);
+}
+.operations-chart-mark.limit {
+  --mark-color: var(--ops-limit);
+}
+.operations-chart-mark.target {
+  --mark-color: var(--ops-target);
+}
+.operations-chart-mark.positive {
+  --mark-color: var(--ops-positive);
+}
 
 .operations-v2-tooltip > div {
   display: grid;
@@ -2573,14 +2615,25 @@
 }
 
 @media (max-width: 1100px) {
-  .operations-chart-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .power-timeline { height: 38rem; }
+  .operations-chart-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .power-timeline {
+    height: 38rem;
+  }
 }
 
 @media (max-width: 620px) {
-  .operations-chart-summary { grid-template-columns: 1fr 1fr; }
-  .operations-chart-legend { display: grid; grid-template-columns: 1fr 1fr; }
-  .operations-chart-legend li { min-width: 0; }
+  .operations-chart-summary {
+    grid-template-columns: 1fr 1fr;
+  }
+  .operations-chart-legend {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .operations-chart-legend li {
+    min-width: 0;
+  }
   .power-timeline {
     grid-template-rows: 17rem 13rem;
     height: 31rem;
@@ -2589,5 +2642,270 @@
 
 @media (max-width: 420px) {
   .operations-chart-summary,
-  .operations-chart-legend { grid-template-columns: 1fr; }
+  .operations-chart-legend {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Operational power-balance modules */
+.power-insight-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(20rem, 0.8fr);
+  gap: 1.25rem;
+}
+
+.power-flow-card,
+.battery-soc-card {
+  min-width: 0;
+  padding: 1.25rem;
+  border: 1px solid var(--ops-border-strong);
+  border-radius: 15px;
+  background: var(--ops-surface);
+  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.07);
+}
+
+.power-flow-card > header,
+.battery-soc-card > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.power-flow-card h3,
+.battery-soc-card h3 {
+  margin: 0.2rem 0 0;
+  font-size: 1.12rem;
+}
+
+.power-flow {
+  display: grid;
+  grid-template-columns: minmax(9rem, 1fr) 3rem minmax(10rem, 1.15fr) 3rem minmax(10rem, 1fr);
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 15rem;
+  margin-top: 1rem;
+  padding: 1.1rem;
+  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  border-radius: 12px;
+  background:
+    radial-gradient(
+      circle at 50% 50%,
+      color-mix(in srgb, var(--accent) 8%, transparent),
+      transparent 36%
+    ),
+    color-mix(in srgb, var(--background) 32%, transparent);
+}
+
+.power-flow-sources,
+.power-flow-loads {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.power-flow-node {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.15rem 0.65rem;
+  align-items: center;
+  min-width: 0;
+  padding: 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--ops-surface-raised);
+}
+
+.power-flow-node > span {
+  grid-row: 1 / 3;
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 9px;
+  color: var(--node-color, var(--muted-foreground));
+  background: color-mix(in srgb, var(--node-color, var(--muted-foreground)) 12%, transparent);
+}
+
+.power-flow-node svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+.power-flow-node small {
+  color: var(--muted-foreground);
+  font-size: 0.7rem;
+}
+.power-flow-node strong {
+  overflow: hidden;
+  font-size: 0.92rem;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+}
+.power-flow-node.grid {
+  --node-color: var(--ops-demand);
+}
+.power-flow-node.battery {
+  --node-color: var(--ops-battery);
+}
+.power-flow-node.facility {
+  --node-color: var(--accent);
+}
+.power-flow-node.compute {
+  --node-color: var(--ops-compute);
+}
+.power-flow-node.featured {
+  border-color: color-mix(in srgb, var(--accent) 60%, var(--border));
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 7%, transparent);
+}
+
+.power-flow-rail {
+  position: relative;
+  height: 6rem;
+}
+.power-flow-rail::after {
+  content: "";
+  position: absolute;
+  top: calc(50% - 1px);
+  right: 0;
+  left: 0;
+  border-top: 2px solid var(--accent);
+}
+.power-flow-rail i {
+  position: absolute;
+  left: 0;
+  width: 55%;
+  border-top: 2px solid var(--ops-demand);
+  transform-origin: left center;
+}
+.power-flow-rail i:first-child {
+  top: 20%;
+  transform: rotate(28deg);
+}
+.power-flow-rail i:last-child {
+  bottom: 20%;
+  border-color: var(--ops-battery);
+  transform: rotate(-28deg);
+}
+.power-flow-rail.outgoing i {
+  right: 0;
+  left: auto;
+  transform-origin: right center;
+}
+.power-flow-rail.outgoing i:first-child {
+  border-color: var(--ops-compute);
+  transform: rotate(-28deg);
+}
+.power-flow-rail.outgoing i:last-child {
+  border-color: var(--muted-foreground);
+  transform: rotate(28deg);
+}
+
+.power-flow-note {
+  margin: 0.8rem 0 0;
+  color: var(--muted-foreground);
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+.battery-soc-body {
+  display: grid;
+  grid-template-columns: minmax(9rem, 0.8fr) 1fr;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+.battery-soc-gauge {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  aspect-ratio: 1;
+}
+.battery-soc-gauge svg {
+  width: 100%;
+  max-width: 11rem;
+  transform: rotate(-90deg);
+}
+.battery-soc-gauge circle {
+  fill: none;
+  stroke-width: 10;
+}
+.battery-soc-gauge .track {
+  stroke: color-mix(in srgb, var(--border) 78%, transparent);
+}
+.battery-soc-gauge .value {
+  stroke: var(--ops-soc);
+  stroke-linecap: round;
+}
+.battery-soc-gauge > span {
+  position: absolute;
+  display: grid;
+  place-items: center;
+}
+.battery-soc-gauge strong {
+  font-size: clamp(1.65rem, 2.5vw, 2.5rem);
+  font-variant-numeric: tabular-nums;
+}
+.battery-soc-gauge small {
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+}
+.battery-soc-body dl {
+  margin: 0;
+}
+.battery-soc-body dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.battery-soc-body dt {
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+}
+.battery-soc-body dd {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+@media (max-width: 1100px) {
+  .power-insight-grid {
+    grid-template-columns: 1fr;
+  }
+  .battery-soc-body {
+    grid-template-columns: minmax(9rem, 12rem) 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .power-flow {
+    grid-template-columns: 1fr;
+  }
+  .power-flow-rail {
+    height: 2.5rem;
+  }
+  .power-flow-rail::after {
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    right: auto;
+    border-top: 0;
+    border-left: 2px solid var(--accent);
+  }
+  .power-flow-rail i {
+    display: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .battery-soc-body {
+    grid-template-columns: 1fr;
+  }
+  .battery-soc-gauge {
+    max-width: 11rem;
+    margin-inline: auto;
+  }
 }
