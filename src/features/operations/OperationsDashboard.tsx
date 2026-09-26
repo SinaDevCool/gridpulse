@@ -84,7 +84,7 @@ export function OperationsDashboard({ view }: { view: OperationsView }) {
             title: "Power Operations",
             description: "Translate facility limits into compute, battery, and workload decisions.",
             evidence:
-              "Public workload shape and configured assumptions produce simulated decision support.",
+              "Results use configured assumptions until measured facility evidence is connected.",
           };
 
   useEffect(() => {
