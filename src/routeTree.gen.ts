@@ -43,6 +43,9 @@ import { Route as ApiPropertiesEnrichRouteImport } from './routes/api.properties
 import { Route as ApiPowerFinderViewportRouteImport } from './routes/api.power-finder.viewport'
 import { Route as ApiPowerFinderStudyRouteImport } from './routes/api.power-finder.study'
 import { Route as ApiPowerFinderScenarioRouteImport } from './routes/api.power-finder.scenario'
+import { Route as ApiOperationsIngestRouteImport } from './routes/api.operations.ingest'
+import { Route as ApiOperationsCapabilitiesRouteImport } from './routes/api.operations.capabilities'
+import { Route as ApiOperationsAssessRouteImport } from './routes/api.operations.assess'
 import { Route as ApiForecastsGridStressCurrentRouteImport } from './routes/api.forecasts.grid-stress.current'
 import { Route as ApiPowerFinderTileZXYRouteImport } from './routes/api.power-finder.tile.$z.$x.$y'
 
@@ -216,6 +219,22 @@ const ApiPowerFinderScenarioRoute = ApiPowerFinderScenarioRouteImport.update({
   path: '/api/power-finder/scenario',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiOperationsIngestRoute = ApiOperationsIngestRouteImport.update({
+  id: '/api/operations/ingest',
+  path: '/api/operations/ingest',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiOperationsCapabilitiesRoute =
+  ApiOperationsCapabilitiesRouteImport.update({
+    id: '/api/operations/capabilities',
+    path: '/api/operations/capabilities',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiOperationsAssessRoute = ApiOperationsAssessRouteImport.update({
+  id: '/api/operations/assess',
+  path: '/api/operations/assess',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiForecastsGridStressCurrentRoute =
   ApiForecastsGridStressCurrentRouteImport.update({
     id: '/api/forecasts/grid-stress/current',
@@ -259,6 +278,9 @@ export interface FileRoutesByFullPath {
   '/pilot-case/$id': typeof PilotCaseIdRoute
   '/portfolio/$id': typeof PortfolioIdRoute
   '/submission-package/$id': typeof SubmissionPackageIdRoute
+  '/api/operations/assess': typeof ApiOperationsAssessRoute
+  '/api/operations/capabilities': typeof ApiOperationsCapabilitiesRoute
+  '/api/operations/ingest': typeof ApiOperationsIngestRoute
   '/api/power-finder/scenario': typeof ApiPowerFinderScenarioRoute
   '/api/power-finder/study': typeof ApiPowerFinderStudyRoute
   '/api/power-finder/viewport': typeof ApiPowerFinderViewportRoute
@@ -297,6 +319,9 @@ export interface FileRoutesByTo {
   '/pilot-case/$id': typeof PilotCaseIdRoute
   '/portfolio/$id': typeof PortfolioIdRoute
   '/submission-package/$id': typeof SubmissionPackageIdRoute
+  '/api/operations/assess': typeof ApiOperationsAssessRoute
+  '/api/operations/capabilities': typeof ApiOperationsCapabilitiesRoute
+  '/api/operations/ingest': typeof ApiOperationsIngestRoute
   '/api/power-finder/scenario': typeof ApiPowerFinderScenarioRoute
   '/api/power-finder/study': typeof ApiPowerFinderStudyRoute
   '/api/power-finder/viewport': typeof ApiPowerFinderViewportRoute
@@ -336,6 +361,9 @@ export interface FileRoutesById {
   '/pilot-case/$id': typeof PilotCaseIdRoute
   '/portfolio/$id': typeof PortfolioIdRoute
   '/submission-package/$id': typeof SubmissionPackageIdRoute
+  '/api/operations/assess': typeof ApiOperationsAssessRoute
+  '/api/operations/capabilities': typeof ApiOperationsCapabilitiesRoute
+  '/api/operations/ingest': typeof ApiOperationsIngestRoute
   '/api/power-finder/scenario': typeof ApiPowerFinderScenarioRoute
   '/api/power-finder/study': typeof ApiPowerFinderStudyRoute
   '/api/power-finder/viewport': typeof ApiPowerFinderViewportRoute
@@ -376,6 +404,9 @@ export interface FileRouteTypes {
     | '/pilot-case/$id'
     | '/portfolio/$id'
     | '/submission-package/$id'
+    | '/api/operations/assess'
+    | '/api/operations/capabilities'
+    | '/api/operations/ingest'
     | '/api/power-finder/scenario'
     | '/api/power-finder/study'
     | '/api/power-finder/viewport'
@@ -414,6 +445,9 @@ export interface FileRouteTypes {
     | '/pilot-case/$id'
     | '/portfolio/$id'
     | '/submission-package/$id'
+    | '/api/operations/assess'
+    | '/api/operations/capabilities'
+    | '/api/operations/ingest'
     | '/api/power-finder/scenario'
     | '/api/power-finder/study'
     | '/api/power-finder/viewport'
@@ -452,6 +486,9 @@ export interface FileRouteTypes {
     | '/pilot-case/$id'
     | '/portfolio/$id'
     | '/submission-package/$id'
+    | '/api/operations/assess'
+    | '/api/operations/capabilities'
+    | '/api/operations/ingest'
     | '/api/power-finder/scenario'
     | '/api/power-finder/study'
     | '/api/power-finder/viewport'
@@ -488,6 +525,9 @@ export interface RootRouteChildren {
   OperatorReviewIdRoute: typeof OperatorReviewIdRoute
   PilotCaseIdRoute: typeof PilotCaseIdRoute
   SubmissionPackageIdRoute: typeof SubmissionPackageIdRoute
+  ApiOperationsAssessRoute: typeof ApiOperationsAssessRoute
+  ApiOperationsCapabilitiesRoute: typeof ApiOperationsCapabilitiesRoute
+  ApiOperationsIngestRoute: typeof ApiOperationsIngestRoute
   ApiPowerFinderScenarioRoute: typeof ApiPowerFinderScenarioRoute
   ApiPowerFinderStudyRoute: typeof ApiPowerFinderStudyRoute
   ApiPowerFinderViewportRoute: typeof ApiPowerFinderViewportRoute
@@ -736,6 +776,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPowerFinderScenarioRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/operations/ingest': {
+      id: '/api/operations/ingest'
+      path: '/api/operations/ingest'
+      fullPath: '/api/operations/ingest'
+      preLoaderRoute: typeof ApiOperationsIngestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/operations/capabilities': {
+      id: '/api/operations/capabilities'
+      path: '/api/operations/capabilities'
+      fullPath: '/api/operations/capabilities'
+      preLoaderRoute: typeof ApiOperationsCapabilitiesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/operations/assess': {
+      id: '/api/operations/assess'
+      path: '/api/operations/assess'
+      fullPath: '/api/operations/assess'
+      preLoaderRoute: typeof ApiOperationsAssessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/forecasts/grid-stress/current': {
       id: '/api/forecasts/grid-stress/current'
       path: '/api/forecasts/grid-stress/current'
@@ -817,6 +878,9 @@ const rootRouteChildren: RootRouteChildren = {
   OperatorReviewIdRoute: OperatorReviewIdRoute,
   PilotCaseIdRoute: PilotCaseIdRoute,
   SubmissionPackageIdRoute: SubmissionPackageIdRoute,
+  ApiOperationsAssessRoute: ApiOperationsAssessRoute,
+  ApiOperationsCapabilitiesRoute: ApiOperationsCapabilitiesRoute,
+  ApiOperationsIngestRoute: ApiOperationsIngestRoute,
   ApiPowerFinderScenarioRoute: ApiPowerFinderScenarioRoute,
   ApiPowerFinderStudyRoute: ApiPowerFinderStudyRoute,
   ApiPowerFinderViewportRoute: ApiPowerFinderViewportRoute,
