@@ -43,7 +43,11 @@ import {
   formatMw,
   formatPercent,
 } from "./visualization";
-import { OperationsEvidenceBadge, OperationsMetricCard } from "./components";
+import {
+  OperationsDefinitionRow,
+  OperationsEvidenceBadge,
+  OperationsMetricCard,
+} from "./components";
 
 const number = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
 
@@ -295,6 +299,12 @@ export function PowerBatteryView({ model }: { model: OperationsOverviewModel }) 
           evidence="assumption"
         />
         <PowerMetric
+          icon={<Gauge />}
+          label="Required response"
+          value={requiredMw == null ? "Unavailable" : `${number.format(requiredMw)} MW`}
+          evidence={mode}
+        />
+        <PowerMetric
           icon={<BatteryCharging />}
           label="Battery SOC"
           value={
@@ -306,16 +316,10 @@ export function PowerBatteryView({ model }: { model: OperationsOverviewModel }) 
         />
         <PowerMetric
           icon={<Zap />}
-          label="Battery power"
-          value={batteryMw == null ? "Unavailable" : `${number.format(batteryMw)} MW`}
-          evidence={mode}
-        />
-        <PowerMetric
-          icon={<Gauge />}
-          label="Peak avoided"
+          label="Sustainable response"
           value={
             mode === "scenario"
-              ? `${number.format(Math.max(0, model.summaries[0].peakDemandMw - model.summaries[1].peakDemandMw))} MW`
+              ? `${number.format(model.recommendation.durationMinutes / 60)} h`
               : "Not derivable"
           }
           evidence={mode}
@@ -442,8 +446,59 @@ export function PowerBatteryView({ model }: { model: OperationsOverviewModel }) 
         />
         <SelectedBalance selected={selected} mode={mode} targetMw={targetMw} />
       </div>
+      <ResponseComparison model={model} />
       <ConnectorStatus />
     </section>
+  );
+}
+
+function ResponseComparison({ model }: { model: OperationsOverviewModel }) {
+  const endingSoc =
+    model.intervals.at(-1)?.batterySocPercent ?? model.scenario.battery.initialSocPercent;
+  return (
+    <article className="power-response-comparison">
+      <header>
+        <div>
+          <p className="context-label">Response Comparison</p>
+          <h3>Compare feasible operating responses</h3>
+        </div>
+        <span>All results simulated</span>
+      </header>
+      <div>
+        {model.summaries.map((summary) => (
+          <section
+            key={summary.kind}
+            className={summary.kind === "battery_workload" ? "selected" : ""}
+          >
+            <strong>{summary.label}</strong>
+            <dl>
+              <OperationsDefinitionRow
+                label="Limit violations"
+                value={summary.violationIntervals}
+              />
+              <OperationsDefinitionRow
+                label="Peak import"
+                value={`${number.format(summary.peakDemandMw)} MW`}
+              />
+              <OperationsDefinitionRow
+                label="Ending SOC"
+                value={
+                  summary.kind === "baseline" ? "Not dispatched" : `${number.format(endingSoc)}%`
+                }
+              />
+              <OperationsDefinitionRow
+                label="Workload shifted"
+                value={
+                  summary.kind === "battery_workload"
+                    ? `${number.format(model.recommendation.workloadMwh)} MWh`
+                    : "0 MWh"
+                }
+              />
+            </dl>
+          </section>
+        ))}
+      </div>
+    </article>
   );
 }
 

@@ -187,13 +187,6 @@ export function ComputeWorkloadsView({ model }: { model: OperationsOverviewModel
 
       <div className="operations-v2-kpis operations-v2-kpis--compute">
         <Metric
-          icon={<Server />}
-          label="GPUs Allocated"
-          value={integer.format(model.scenario.gpuCount)}
-          evidence="simulated"
-          note={`Configured ${model.scenario.gpuModel} fleet`}
-        />
-        <Metric
           icon={<Cpu />}
           label="Active GPUs"
           value={integer.format(peakInterval.activeGpuCount)}
@@ -201,14 +194,14 @@ export function ComputeWorkloadsView({ model }: { model: OperationsOverviewModel
           note={`Peak at ${peakInterval.label}`}
         />
         <Metric
-          icon={<Gauge />}
-          label="GPU Utilization"
-          value={`${number.format(peakInterval.utilizationPercent)}%`}
+          icon={<Server />}
+          label="Compute Power"
+          value={`${number.format(peakInterval.gpuPowerMw)} MW`}
           evidence={telemetry.length ? "measured" : "simulated"}
           note={
             telemetry.length
               ? `${number.format(assessment.telemetryCompletenessPercent)}% telemetry completeness`
-              : "Scenario profile · DCGM not connected"
+              : `${number.format(peakInterval.utilizationPercent)}% GPU utilization`
           }
         />
         <Metric
@@ -220,10 +213,17 @@ export function ComputeWorkloadsView({ model }: { model: OperationsOverviewModel
         />
         <Metric
           icon={<Clock3 />}
-          label="Shiftable Workloads"
-          value={integer.format(assessment.eligibleJobs)}
+          label="Recommended Moves"
+          value={integer.format(assessment.recommendedJobs)}
           evidence={evidence}
-          note={`${assessment.recommendedJobs} recommended · ${assessment.deadlinesAtRisk} deadlines at risk`}
+          note={`${assessment.eligibleJobs} workloads pass eligibility gates`}
+        />
+        <Metric
+          icon={<AlertTriangle />}
+          label="Deadlines at Risk"
+          value={integer.format(assessment.deadlinesAtRisk)}
+          evidence={evidence}
+          note="After the recommended response"
           tone={assessment.deadlinesAtRisk ? "danger" : undefined}
         />
       </div>

@@ -8,6 +8,7 @@ export type OperationsSeriesTone =
   | "soc"
   | "limit"
   | "target"
+  | "neutral"
   | "positive";
 
 export type OperationsLegendItem = {

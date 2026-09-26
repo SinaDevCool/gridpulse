@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import {
   Activity,
   AlertTriangle,
@@ -47,13 +47,31 @@ import {
   formatDurationFromIntervals,
   formatMw,
 } from "./visualization";
+import {
+  derivePrimaryAlert,
+  operatingWindowLabels,
+  operationalPue,
+  operationsModeLabels,
+  scopeOperationsModel,
+  type OperatingWindowPreset,
+  type OperationsDataMode,
+} from "./operating-context";
 
 export type OperationsView = "overview" | "compute" | "power";
 
 const number = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
 const integer = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
 
-export function OperationsDashboard({ view }: { view: OperationsView }) {
+export function OperationsDashboard({
+  view,
+  window,
+  mode,
+}: {
+  view: OperationsView;
+  window: OperatingWindowPreset;
+  mode: OperationsDataMode;
+}) {
+  const navigate = useNavigate({ from: "/operations" });
   const [scenario, setScenario] = useState(defaultOperationsScenario);
   const [selected, setSelected] = useState<OperationsScenarioKind>("battery_workload");
   const [announcement, setAnnouncement] = useState("Default scenario loaded.");
@@ -61,7 +79,8 @@ export function OperationsDashboard({ view }: { view: OperationsView }) {
   const [backendState, setBackendState] = useState<"checking" | "verified" | "unavailable">(
     "checking",
   );
-  const model = serverModel ?? buildOperationsScenario(scenario);
+  const fullModel = serverModel ?? buildOperationsScenario(scenario);
+  const model = scopeOperationsModel(fullModel, window);
   const viewCopy =
     view === "power"
       ? {
@@ -141,9 +160,27 @@ export function OperationsDashboard({ view }: { view: OperationsView }) {
 
       <div className="operations-v2-nav-row">
         <nav className="operations-v2-tabs" aria-label="Power Operations views">
-          <OperationsTab id="overview" label="Overview" current={view} />
-          <OperationsTab id="compute" label="Compute & Workloads" current={view} />
-          <OperationsTab id="power" label="Power & Battery" current={view} />
+          <OperationsTab
+            id="overview"
+            label="Overview"
+            current={view}
+            window={window}
+            mode={mode}
+          />
+          <OperationsTab
+            id="compute"
+            label="Compute & Workloads"
+            current={view}
+            window={window}
+            mode={mode}
+          />
+          <OperationsTab
+            id="power"
+            label="Power & Battery"
+            current={view}
+            window={window}
+            mode={mode}
+          />
         </nav>
         <p className="operations-v2-provenance">
           <Info aria-hidden="true" />
@@ -152,6 +189,61 @@ export function OperationsDashboard({ view }: { view: OperationsView }) {
           </span>
         </p>
       </div>
+
+      <section className="operations-context-strip" aria-label="Operating context">
+        <div className="operations-context-field">
+          <span>Facility</span>
+          <strong>{scenario.facilityName}</strong>
+        </div>
+        <label className="operations-context-field">
+          <span>Operating Window</span>
+          <select
+            name="operating-window"
+            value={window}
+            onChange={(event) =>
+              navigate({
+                search: { view, window: event.target.value as OperatingWindowPreset, mode },
+                replace: true,
+              })
+            }
+          >
+            {Object.entries(operatingWindowLabels).map(([value, label]) => (
+              <option value={value} key={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="operations-context-field">
+          <span>Data Mode</span>
+          <select
+            name="data-mode"
+            value={mode}
+            onChange={(event) =>
+              navigate({
+                search: { view, window, mode: event.target.value as OperationsDataMode },
+                replace: true,
+              })
+            }
+          >
+            {Object.entries(operationsModeLabels).map(([value, label]) => (
+              <option value={value} key={value} disabled={value !== "scenario"}>
+                {label}
+                {value !== "scenario" ? " · Connect Evidence" : ""}
+              </option>
+            ))}
+          </select>
+        </label>
+        <div className="operations-context-health" role="status">
+          <i className={backendState} aria-hidden="true" />
+          <span>
+            <strong>
+              {backendState === "verified" ? "Assessment Current" : "Local Assessment"}
+            </strong>
+            {operationsModeLabels[mode]} · {model.intervals.length} intervals
+          </span>
+        </div>
+      </section>
 
       <p className="sr-only" aria-live="polite">
         {announcement}
@@ -169,15 +261,19 @@ function OperationsTab({
   id,
   label,
   current,
+  window,
+  mode,
 }: {
   id: OperationsView;
   label: string;
   current: OperationsView;
+  window: OperatingWindowPreset;
+  mode: OperationsDataMode;
 }) {
   return (
     <Link
       to="/operations"
-      search={{ view: id }}
+      search={{ view: id, window, mode }}
       className={current === id ? "active" : undefined}
       aria-current={current === id ? "page" : undefined}
     >
@@ -198,11 +294,24 @@ function OverviewView({
   const selectedSummary =
     model.summaries.find((item) => item.kind === selected) ?? model.summaries[2];
   const snapshot = peakInterval(model);
+  const alert = derivePrimaryAlert(model);
+  const pue = operationalPue(model);
   return (
     <section className="operations-v2-view" aria-labelledby="operations-overview-title">
       <h2 id="operations-overview-title" className="sr-only">
         Operations Overview
       </h2>
+      <article className={`operations-primary-alert ${alert.state}`}>
+        <span className="operations-primary-alert-icon" aria-hidden="true">
+          {alert.state === "normal" ? <ShieldCheck /> : <AlertTriangle />}
+        </span>
+        <div>
+          <p className="context-label">Operating Window Status · {alert.interval}</p>
+          <h3>{alert.title}</h3>
+          <p>{alert.detail}</p>
+        </div>
+        <strong>{alert.remainingRisk}</strong>
+      </article>
       <div className="operations-v2-kpis">
         <MetricCard
           icon={<Activity />}
@@ -224,10 +333,17 @@ function OverviewView({
         />
         <MetricCard
           icon={<Cpu />}
-          label="Additional GPUs Supportable"
-          metric={model.metrics.additionalGpus}
-          note="Based on configured GPU power and PUE"
-          format="integer"
+          label="Response Available"
+          metric={{
+            value:
+              model.recommendation.batteryMw +
+              Math.max(0, ...model.intervals.map((point) => point.workloadShiftMw)),
+            unit: "MW",
+            evidenceClass: "simulated",
+            sourceLabel: "Battery and eligible workload response",
+            quality: "accepted",
+          }}
+          note="Battery plus eligible workload"
         />
         <MetricCard
           icon={<AlertTriangle />}
@@ -242,6 +358,15 @@ function OverviewView({
           }
           tone={model.metrics.limitRisk.value === "High" ? "danger" : "warning"}
         />
+      </div>
+
+      <div className="operations-efficiency-guardrail">
+        <div>
+          <span>Operating PUE</span>
+          <strong>{number.format(pue.value)}</strong>
+          <OperationsEvidenceBadge kind={pue.evidence} label={pue.status} />
+        </div>
+        <p>{pue.detail}</p>
       </div>
 
       <div className="operations-v2-overview-grid">
@@ -314,6 +439,16 @@ function DemandChart({
         ? "Battery response"
         : "Battery + workload";
   const targetMw = model.scenario.importLimitMw - model.scenario.safetyReserveMw;
+  const chartData = model.intervals.map((point, index) => {
+    const uncertainty = Math.max(0.8, point.baselineDemandMw * (0.018 + index * 0.00008));
+    return {
+      ...point,
+      forecastBand: [
+        Number(Math.max(0, point.baselineDemandMw - uncertainty).toFixed(2)),
+        Number((point.baselineDemandMw + uncertainty).toFixed(2)),
+      ],
+    };
+  });
   return (
     <article className={`operations-v2-chart-card${compact ? " compact" : ""}`}>
       <ChartHeader
@@ -351,6 +486,12 @@ function DemandChart({
             tone: "demand",
             mark: "area",
           },
+          {
+            label: "Planning range",
+            detail: "MW · scenario uncertainty",
+            tone: "neutral",
+            mark: "area",
+          },
           ...(selected !== "baseline"
             ? [{ label: selectedName, detail: "MW · selected response", tone: "response" as const }]
             : []),
@@ -375,7 +516,7 @@ function DemandChart({
       >
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
-            data={model.intervals}
+            data={chartData}
             margin={{ top: 12, right: 18, left: 4, bottom: 4 }}
             accessibilityLayer
           >
@@ -415,6 +556,14 @@ function DemandChart({
                 fill: "var(--ops-limit)",
                 position: "insideBottomLeft",
               }}
+            />
+            <Area
+              dataKey="forecastBand"
+              name="Planning range"
+              stroke="none"
+              fill="var(--ops-forecast-fill)"
+              fillOpacity={0.55}
+              isAnimationActive={false}
             />
             <Area
               dataKey="baselineDemandMw"
