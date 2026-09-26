@@ -1963,6 +1963,264 @@
   border-radius: 9px;
 }
 
+/* Light mode is intentionally tuned as a distinct operating surface rather
+   than a color-inverted version of the dark workspace. */
+:root[data-theme="light"] .operations-v2 {
+  --ops-measured: #087c98;
+  --ops-measured-fill: color-mix(in srgb, var(--ops-measured) 12%, transparent);
+  --ops-public-trace: #425ed0;
+  --ops-assumption: #9a5a00;
+  --ops-reference: #53657a;
+  --ops-simulated: #7042c7;
+  --ops-limit: #c43e4a;
+  --ops-positive: #087a52;
+  --ops-chart-grid: #d3dde7;
+  --ops-surface: #ffffff;
+  --ops-surface-raised: #f4f8fb;
+  --ops-border-strong: #b9c7d4;
+  color: #122235;
+}
+
+:root[data-theme="light"] .operations-v2-header h1,
+:root[data-theme="light"] .operations-v2-metric > strong,
+:root[data-theme="light"] .operations-v2 h2,
+:root[data-theme="light"] .operations-v2 h3,
+:root[data-theme="light"] .operations-v2 dd,
+:root[data-theme="light"] .operations-v2 strong {
+  color: #102033;
+}
+
+:root[data-theme="light"] .operations-v2-header > div:first-child > p:last-child,
+:root[data-theme="light"] .operations-v2-metric > p,
+:root[data-theme="light"] .operations-v2-metric > small,
+:root[data-theme="light"] .operations-v2 dt,
+:root[data-theme="light"] .operations-v2 .context-label {
+  color: #506278;
+}
+
+:root[data-theme="light"] .operations-v2-facility,
+:root[data-theme="light"] .operations-v2-configure,
+:root[data-theme="light"] .operations-v2-nav-row {
+  border-color: #b8c7d4;
+  background: #ffffff;
+  box-shadow: 0 5px 16px rgb(35 58 82 / 8%);
+}
+
+:root[data-theme="light"] .operations-v2-configure:hover,
+:root[data-theme="light"] .operations-v2-configure:focus-visible {
+  border-color: #087c98;
+  background: #e9f7fa;
+}
+
+:root[data-theme="light"] .operations-v2-tabs a {
+  color: #4e6176;
+}
+
+:root[data-theme="light"] .operations-v2-tabs a:hover {
+  color: #102033;
+  background: #eef5f8;
+}
+
+:root[data-theme="light"] .operations-v2-tabs a.active {
+  color: #063f51;
+  background: #dceff4;
+  box-shadow: inset 0 0 0 1px #8dbdcc, 0 2px 6px rgb(22 88 108 / 10%);
+}
+
+:root[data-theme="light"] .operations-v2-provenance {
+  width: fit-content;
+  max-width: 70rem;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid #c3d7df;
+  border-radius: 9px;
+  background: #eef8fa;
+  color: #40566c;
+}
+
+:root[data-theme="light"] .operations-v2-metric,
+:root[data-theme="light"] .operations-v2-chart-card,
+:root[data-theme="light"] .operations-v2-recommendation,
+:root[data-theme="light"] .operations-v2-comparison,
+:root[data-theme="light"] .operations-v2-detail-card,
+:root[data-theme="light"] .operations-v2-balance-card,
+:root[data-theme="light"] .operations-v2-battery-card,
+:root[data-theme="light"] .power-decision-bar,
+:root[data-theme="light"] .power-import,
+:root[data-theme="light"] .power-timeline-card,
+:root[data-theme="light"] .power-dispatch-card,
+:root[data-theme="light"] .power-detail-card,
+:root[data-theme="light"] .power-connectors,
+:root[data-theme="light"] .compute-decision-bar,
+:root[data-theme="light"] .compute-import,
+:root[data-theme="light"] .compute-recommendation,
+:root[data-theme="light"] .compute-queue-card,
+:root[data-theme="light"] .compute-connectors {
+  border-color: #b9c7d4;
+  background: #ffffff;
+  box-shadow: 0 12px 30px rgb(35 58 82 / 9%);
+}
+
+:root[data-theme="light"] .operations-v2-metric {
+  background: linear-gradient(155deg, #ffffff 42%, #f3f8fa 100%);
+}
+
+:root[data-theme="light"] .operations-v2-metric > header > span:first-child {
+  width: 2.15rem;
+  height: 2.15rem;
+  border-radius: 9px;
+  background: #e4f4f7;
+  color: #087c98;
+}
+
+:root[data-theme="light"] .operations-v2-metric.warning {
+  border-color: #d5aa57;
+  background: linear-gradient(155deg, #ffffff 42%, #fff9e9 100%);
+}
+
+:root[data-theme="light"] .operations-v2-metric.danger {
+  border-color: #dc8a90;
+  background: linear-gradient(155deg, #ffffff 42%, #fff3f4 100%);
+}
+
+:root[data-theme="light"] .operations-v2-evidence {
+  border-color: color-mix(in srgb, currentColor 48%, #ffffff);
+  background: color-mix(in srgb, currentColor 10%, #ffffff);
+  font-weight: 800;
+}
+
+:root[data-theme="light"] .operations-v2-evidence.unavailable {
+  border-color: #9baabc;
+  background: #eef2f6;
+  color: #4f6073;
+}
+
+:root[data-theme="light"] .operations-v2-chart .recharts-text,
+:root[data-theme="light"] .power-timeline .recharts-text,
+:root[data-theme="light"] .operations-v2-chart .recharts-legend-item-text,
+:root[data-theme="light"] .power-timeline .recharts-legend-item-text {
+  fill: #506278 !important;
+  color: #506278 !important;
+}
+
+:root[data-theme="light"] .operations-v2 .recharts-cartesian-grid line {
+  stroke: var(--ops-chart-grid);
+}
+
+:root[data-theme="light"] .operations-v2-tooltip,
+:root[data-theme="light"] .operations-v2 .recharts-default-tooltip {
+  border-color: #9fb0c1 !important;
+  background: rgb(255 255 255 / 98%) !important;
+  color: #102033 !important;
+  box-shadow: 0 14px 34px rgb(24 42 64 / 18%);
+}
+
+:root[data-theme="light"] .operations-v2-recommendation,
+:root[data-theme="light"] .compute-recommendation,
+:root[data-theme="light"] .power-dispatch-card {
+  background: linear-gradient(180deg, #ffffff, #f7fafc);
+}
+
+:root[data-theme="light"] .operations-v2-readonly,
+:root[data-theme="light"] .operations-v2-caveat,
+:root[data-theme="light"] .power-readonly {
+  border-color: #c6dbe3;
+  background: #edf7fa;
+  color: #385469;
+}
+
+:root[data-theme="light"] .operations-v2-recommendation dl > div,
+:root[data-theme="light"] .operations-v2-detail-card dl > div,
+:root[data-theme="light"] .operations-v2-battery-card dl > div,
+:root[data-theme="light"] .compute-recommendation dl > div,
+:root[data-theme="light"] .power-dispatch-card dl > div,
+:root[data-theme="light"] .power-detail-card dl > div {
+  border-color: #d4dee7;
+}
+
+:root[data-theme="light"] .operations-v2-comparison-grid > button,
+:root[data-theme="light"] .compute-connectors section,
+:root[data-theme="light"] .power-connectors section {
+  border-color: #c5d0da;
+  background: #f8fafc;
+}
+
+:root[data-theme="light"] .operations-v2-comparison-grid > button:hover {
+  border-color: #5b9caf;
+  background: #eef7f9;
+}
+
+:root[data-theme="light"] .operations-v2-comparison-grid > button.selected {
+  border-color: #087c98;
+  background: #e6f4f7;
+  box-shadow: inset 0 0 0 1px #087c98;
+}
+
+:root[data-theme="light"] .compute-table-wrap {
+  border-color: #aebdcc;
+  background: #ffffff;
+}
+
+:root[data-theme="light"] .compute-table-wrap thead {
+  background: #163247;
+  color: #f4fbff;
+}
+
+:root[data-theme="light"] .compute-table-wrap thead th {
+  border-color: #355166;
+  color: #f4fbff;
+}
+
+:root[data-theme="light"] .compute-table-wrap tbody th,
+:root[data-theme="light"] .compute-table-wrap tbody td {
+  border-color: #c8d3dd;
+  background: #ffffff;
+  color: #16283b;
+}
+
+:root[data-theme="light"] .compute-table-wrap tbody tr:nth-child(even) th,
+:root[data-theme="light"] .compute-table-wrap tbody tr:nth-child(even) td {
+  background: #f5f8fa;
+}
+
+:root[data-theme="light"] .compute-table-wrap tbody tr:hover th,
+:root[data-theme="light"] .compute-table-wrap tbody tr:hover td,
+:root[data-theme="light"] .compute-table-wrap tbody tr.selected th,
+:root[data-theme="light"] .compute-table-wrap tbody tr.selected td {
+  background: #e5f3f7;
+}
+
+:root[data-theme="light"] .decision-recommended {
+  background: #dff3e9;
+  color: #05613f;
+}
+
+:root[data-theme="light"] .power-mode,
+:root[data-theme="light"] .power-toolbar,
+:root[data-theme="light"] .operations-v2-editor-panel {
+  border-color: #b9c7d4;
+  background: #ffffff;
+}
+
+:root[data-theme="light"] .power-mode button,
+:root[data-theme="light"] .secondary-button,
+:root[data-theme="light"] .operations-v2-editor-grid label > span {
+  border-color: #aebdcc;
+  background: #f7fafc;
+  color: #1c3045;
+}
+
+:root[data-theme="light"] .power-mode button:hover,
+:root[data-theme="light"] .secondary-button:hover {
+  border-color: #568fa2;
+  background: #eaf5f8;
+}
+
+:root[data-theme="light"] .operations-v2-chart-data,
+:root[data-theme="light"] .operations-v2-chart-data th,
+:root[data-theme="light"] .operations-v2-chart-data td {
+  border-color: #c9d4de;
+}
+
 @media (max-width: 1400px) {
   .operations-v2 {
     width: min(100% - 2rem, 108rem);
