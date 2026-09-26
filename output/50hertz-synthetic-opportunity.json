@@ -1,0 +1,86 @@
+{
+  "schema_version": "gridpulse-50hertz-synthetic-opportunity-v1",
+  "generated_at": "2026-08-10T23:10:34.999798+00:00",
+  "scope": "50Hertz / Thyrow mapped voltage yards",
+  "as_of_context": "50Hertz public connection map context dated 2026-03-31",
+  "result_mode": "real_geography_synthetic_electrical_screening",
+  "model": {
+    "id": "50hertz-thyrow-geographic-synthetic",
+    "version": "50hertz-thyrow-screening-v1",
+    "sha256": "0f761248b300ee133a6da3991c14d0b61b09afb8224c9cddd8da613729d44eda",
+    "solver": "pandapower-newton-raphson"
+  },
+  "formula": {
+    "n0": "max \u0394P such that AC power flow converges and voltage/thermal limits hold",
+    "n1": "min over each mocked transformer outage of feasible max \u0394P",
+    "flexible_proxy": "min(N-0, 1.20 \u00d7 N-1); illustrative 20% interruptible uplift"
+  },
+  "assumptions": {
+    "base_load_mw": {
+      "220_kv": 180.0,
+      "110_kv": 140.0
+    },
+    "power_factor": 0.97,
+    "transformers": "2x600 MVA 380/220 kV and 2x300 MVA 220/110 kV",
+    "contingencies": "one mocked transformer bank out at a time",
+    "missing": [
+      "actual topology",
+      "actual ratings",
+      "SCADA loading",
+      "switch states",
+      "operator contingency policy",
+      "connection queue",
+      "planned outages"
+    ]
+  },
+  "results": [
+    {
+      "public_node_id": "osm-way-29331499",
+      "location": "Thyrow 220 kV yard",
+      "nominal_voltage_kv": 220.0,
+      "coordinates": [
+        13.3059442941,
+        52.2307456706
+      ],
+      "n0_additional_import_mw": 815.81,
+      "n1_firm_proxy_mw": 247.0,
+      "flexible_proxy_mw": 296.4,
+      "flexibility_uplift_mw": 49.4,
+      "binding_case": "mock-380-220-bank-1-out",
+      "binding_constraint": "transformer_thermal_loading",
+      "opportunity_score": 24.7,
+      "capacity_claim": false,
+      "display_as_capacity": false,
+      "interpretation": "Synthetic screening proxy for prioritising a real operator study.",
+      "rank": 1
+    },
+    {
+      "public_node_id": "osm-way-940470388",
+      "location": "Thyrow 110 kV yard",
+      "nominal_voltage_kv": 110.0,
+      "coordinates": [
+        13.3045748727,
+        52.2316837091
+      ],
+      "n0_additional_import_mw": 392.0,
+      "n1_firm_proxy_mw": 139.75,
+      "flexible_proxy_mw": 167.7,
+      "flexibility_uplift_mw": 27.95,
+      "binding_case": "mock-220-110-bank-1-out",
+      "binding_constraint": "transformer_thermal_loading",
+      "opportunity_score": 14.0,
+      "capacity_claim": false,
+      "display_as_capacity": false,
+      "interpretation": "Synthetic screening proxy for prioritising a real operator study.",
+      "rank": 2
+    }
+  ],
+  "results_sha256": "ceaf508ac22c2c1e6563aa8910ca4f39d850515ece7dfe886454a1a0c013e2f2",
+  "decision": {
+    "screen_first": "Thyrow 220 kV yard",
+    "reason": "highest synthetic N-1 additional-import proxy in this limited case",
+    "next_gate": "replace every mocked electrical input and obtain 50Hertz study confirmation"
+  },
+  "permitted_interpretation": "A reproducible hypothesis and site-screening priority.",
+  "prohibited_interpretation": "Not free capacity, a 50Hertz result, GridCARE output, connection offer, or reservation."
+}

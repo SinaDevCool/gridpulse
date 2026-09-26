@@ -1,352 +1,597 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { z } from "zod";
+import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
-  AlertTriangle,
   ArrowRight,
-  BatteryCharging,
-  ChevronDown,
+  Database,
+  Download,
+  FileUp,
+  Filter,
+  MapPin,
   Plus,
   Search,
+  Trash2,
+  X,
 } from "lucide-react";
-import { AppShell, PageHeading } from "@/components/product/AppShell";
-import { useAuth } from "@/context/useAuth";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { z } from "zod";
+import { toast } from "sonner";
+import { AppShell } from "@/components/product/AppShell";
+import { PropertyImportPanel } from "@/features/properties/PropertyImportPanel";
+import { downloadPortfolioComparisonPdf } from "@/features/properties/capacity-dossier";
+import { downloadPropertyXlsx } from "@/features/properties/property-export";
+import { portfolioExportRow } from "@/features/site-portfolio/portfolio-export";
 import {
-  derivePortfolioProject,
-  filterPortfolioProjects,
-  type PortfolioProject,
-  type PortfolioSort,
-  type PortfolioStage,
-} from "@/features/grid-connection/portfolio-model";
-import { supabase } from "@/integrations/supabase/client";
-import { ConnectionDecisionBoard } from "@/features/grid-connection/ConnectionDecisionBoard";
+  clearAnonymousWorkspace,
+  deleteAnonymousProperty,
+  exportAnonymousWorkspace,
+  restoreAnonymousWorkspace,
+} from "@/features/anonymous-workspace/repository";
+import type { AnonymousProperty } from "@/features/anonymous-workspace/schema";
+import {
+  projectAnonymousProperty,
+  anonymousPropertyToDecisionRow,
+  type AnonymousSiteStage,
+} from "@/features/anonymous-workspace/portfolio-projection";
+import { buildPortfolioIntelligence } from "@/features/grid-connection/portfolio-intelligence";
+import { suggestScreeningVoltage } from "@/features/power-finder/site-screening-context";
+import {
+  PortfolioDecisionView,
+  PortfolioReadinessView,
+} from "@/features/site-portfolio/PortfolioViews";
+import {
+  portfolioDecisions,
+  portfolioStages,
+  portfolioStageLabels,
+  portfolioViews,
+} from "@/features/site-portfolio/portfolio-status";
+import { useSitePortfolio } from "@/features/site-portfolio/use-site-portfolio";
 
-const stages: Array<{ value: PortfolioStage; label: string }> = [
-  { value: "all", label: "All" },
-  { value: "action_required", label: "Action required" },
-  { value: "screening", label: "Screening" },
-  { value: "preparing", label: "Preparing" },
-  { value: "awaiting_operator", label: "Awaiting operator" },
-  { value: "decision_ready", label: "Decision ready" },
-];
+const stages = portfolioStages;
+const decisions = portfolioDecisions;
+
 export const Route = createFileRoute("/portfolio")({
   validateSearch: z.object({
     q: z.string().max(160).optional(),
-    stage: z
-      .enum([
-        "all",
-        "action_required",
-        "screening",
-        "preparing",
-        "awaiting_operator",
-        "decision_ready",
-      ])
-      .optional(),
-    sort: z.enum(["priority", "deadline", "newest", "name"]).optional(),
-    expanded: z.string().uuid().optional(),
+    view: z.enum(portfolioViews).optional(),
+    stage: z.enum(stages).optional(),
+    decision: z.enum(decisions).optional(),
+    sort: z.enum(["priority", "updated", "name", "mw"]).optional(),
+    risk: z.enum(["all", "blocked", "deadline", "operator_confirmed"]).optional(),
+    operator: z.string().max(160).optional(),
+    selected: z.string().uuid().optional(),
+    import: z.literal("open").optional(),
   }),
   head: () => ({
-    meta: [
-      { title: "Connection Portfolio | GridPulse" },
-      { name: "robots", content: "noindex, nofollow" },
-    ],
+    meta: [{ title: "Sites | GridPulse" }, { name: "robots", content: "noindex, nofollow" }],
   }),
-  component: Portfolio,
+  component: SitePipeline,
 });
 
-function groupCount<T extends { site_id: string }>(items: T[]) {
-  return items.reduce<Record<string, number>>((groups, item) => {
-    groups[item.site_id] = (groups[item.site_id] ?? 0) + 1;
-    return groups;
-  }, {});
+function downloadJson(value: unknown, name: string) {
+  const url = URL.createObjectURL(
+    new Blob([JSON.stringify(value, null, 2)], { type: "application/json" }),
+  );
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = name;
+  anchor.click();
+  URL.revokeObjectURL(url);
 }
 
-function groupItems<T extends { site_id: string }>(items: T[]) {
-  return items.reduce<Map<string, T[]>>((groups, item) => {
-    groups.set(item.site_id, [...(groups.get(item.site_id) ?? []), item]);
-    return groups;
-  }, new Map());
+const stageLabel: Record<AnonymousSiteStage, string> = portfolioStageLabels;
+
+function SitePipeline() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  if (pathname.startsWith("/portfolio/")) return <Outlet />;
+  return <SitePipelineIndex />;
 }
 
-function Portfolio() {
-  const { user } = useAuth();
+function SitePipelineIndex() {
   const navigate = useNavigate();
   const search = Route.useSearch();
-  const query = search.q ?? "";
-  const stage = search.stage ?? "all";
-  const sort = search.sort ?? "priority";
-  const expanded = search.expanded ?? "";
-  const updateSearch = (patch: Partial<typeof search>) =>
-    navigate({ to: "/portfolio", search: { ...search, ...patch }, replace: true });
+  const restoreInput = useRef<HTMLInputElement>(null);
   const {
-    data: projects = [],
-    isLoading,
+    properties,
+    summaries,
+    loading,
     error,
-    refetch,
-  } = useQuery({
-    queryKey: ["candidate-sites", user?.id],
-    enabled: Boolean(user),
-    queryFn: async () => {
-      await supabase.rpc("accept_assessment_invitations");
-      const [sites, documents, requirements, envelopes, profiles, milestones, reviews] =
-        await Promise.all([
-          supabase
-            .from("candidate_sites")
-            .select(
-              "id,name,project_type,latitude,longitude,requested_import_mw,requested_export_mw,assessment_status,operator_status,likely_network_operator,operator_confirmation_status,operator_profile_key,decision_status,created_at",
-            )
-            .neq("assessment_status", "archived")
-            .order("created_at", { ascending: false }),
-          supabase.from("assessment_documents").select("site_id"),
-          supabase.from("operator_requirements").select("site_id,status"),
-          supabase
-            .from("fca_envelopes")
-            .select("site_id,status,version")
-            .order("version", { ascending: false }),
-          supabase.from("interval_profiles").select("site_id"),
-          supabase
-            .from("assessment_milestones")
-            .select("site_id,due_at,status")
-            .eq("status", "open"),
-          supabase.from("assessment_reviews").select("site_id,status,due_at,assigned_to_email"),
-        ]);
-      for (const result of [
-        sites,
-        documents,
-        requirements,
-        envelopes,
-        profiles,
-        milestones,
-        reviews,
-      ]) {
-        if (result.error) throw result.error;
-      }
-      const siteRows = sites.data ?? [];
-      const documentRows = documents.data ?? [];
-      const requirementRows = requirements.data ?? [];
-      const envelopeRows = envelopes.data ?? [];
-      const profileRows = profiles.data ?? [];
-      const milestoneRows = milestones.data ?? [];
-      const reviewRows = reviews.data ?? [];
-      const documentCounts = groupCount(documentRows);
-      const profileCounts = groupCount(profileRows);
-      const readyStatuses = new Set(["ready", "submitted", "accepted", "not_applicable"]);
-      const requirementsBySite = groupItems(requirementRows);
-      const reviewsBySite = groupItems(reviewRows);
-      const milestonesBySite = groupItems(milestoneRows);
-      const envelopeBySite = new Map<string, (typeof envelopeRows)[number]>();
-      envelopeRows.forEach((envelope) => {
-        if (!envelopeBySite.has(envelope.site_id)) envelopeBySite.set(envelope.site_id, envelope);
+    refresh,
+    metrics,
+    selectedSite: selected,
+  } = useSitePortfolio(search.selected);
+  const activeView = search.view ?? "pipeline";
+  const importOpen = search.import === "open";
+  const visible = useMemo(() => {
+    const needle = (search.q ?? "").trim().toLocaleLowerCase();
+    return summaries
+      .filter((site) => {
+        const queryMatch =
+          !needle ||
+          [site.name, site.locationLabel, site.operator, site.projectType, site.nextAction]
+            .filter(Boolean)
+            .some((value) => String(value).toLocaleLowerCase().includes(needle));
+        const stageMatch =
+          !search.stage ||
+          search.stage === "all" ||
+          (search.stage === "action_required"
+            ? site.blockers.length > 0
+            : site.stage === search.stage);
+        const decisionMatch =
+          !search.decision || search.decision === "all" || site.decisionStatus === search.decision;
+        return queryMatch && stageMatch && decisionMatch;
+      })
+      .sort((left, right) => {
+        if (search.sort === "name") return left.name.localeCompare(right.name);
+        if (search.sort === "mw") return right.requiredMw - left.requiredMw;
+        if (search.sort === "updated")
+          return Date.parse(right.updatedAt) - Date.parse(left.updatedAt);
+        return (
+          Number(right.decisionStatus === "unreviewed") -
+            Number(left.decisionStatus === "unreviewed") ||
+          right.blockers.length - left.blockers.length ||
+          right.requiredMw - left.requiredMw
+        );
       });
-      return siteRows.map((site) => {
-        const siteRequirements = requirementsBySite.get(site.id) ?? [];
-        const siteMilestones = milestonesBySite.get(site.id) ?? [];
-        const firstMilestone = [...siteMilestones].sort(
-          (a, b) => Date.parse(a.due_at) - Date.parse(b.due_at),
-        )[0];
-        return derivePortfolioProject({
-          ...site,
-          documents: documentCounts[site.id] ?? 0,
-          requirementsReady: siteRequirements.filter((item) => readyStatuses.has(item.status))
-            .length,
-          requirementsTotal: siteRequirements.length,
-          hasIntervalProfile: Boolean(profileCounts[site.id]),
-          envelopeStatus: envelopeBySite.get(site.id)?.status ?? "not_started",
-          milestoneDueAt: firstMilestone?.due_at ?? null,
-          reviews: reviewsBySite.get(site.id) ?? [],
-        });
-      });
-    },
-  });
+  }, [search, summaries]);
+  const patchSearch = (patch: Partial<typeof search>) =>
+    void navigate({ to: "/portfolio", search: { ...search, ...patch }, replace: true });
+  const decisionRows = useMemo(() => {
+    const permittedIds = new Set(
+      summaries
+        .filter(
+          (site) =>
+            !search.decision ||
+            search.decision === "all" ||
+            site.decisionStatus === search.decision,
+        )
+        .map((site) => site.id),
+    );
+    return properties
+      .filter((property) => permittedIds.has(property.id))
+      .map(anonymousPropertyToDecisionRow);
+  }, [properties, search.decision, summaries]);
+  const intelligence = useMemo(
+    () =>
+      buildPortfolioIntelligence(decisionRows, {
+        operator: search.operator ?? "all",
+        risk: search.risk ?? "all",
+        sort: search.sort === "name" || search.sort === "mw" ? search.sort : "urgency",
+      }),
+    [decisionRows, search.operator, search.risk, search.sort],
+  );
+  const scopedIds = useMemo(
+    () => new Set(intelligence.rows.map((row) => row.site_id)),
+    [intelligence.rows],
+  );
+  const decisionSites = useMemo(
+    () => summaries.filter((site) => scopedIds.has(site.id)),
+    [scopedIds, summaries],
+  );
+  const exportIds = useMemo(
+    () => new Set((search.view === "pipeline" ? visible : decisionSites).map((site) => site.id)),
+    [decisionSites, search.view, visible],
+  );
+  const exportRows = useMemo(
+    () =>
+      properties
+        .filter((property) => exportIds.has(property.id))
+        .map(portfolioExportRow)
+        .filter((row) => row != null),
+    [exportIds, properties],
+  );
+  const filtersActive = Boolean(
+    search.q ||
+    (search.stage && search.stage !== "all") ||
+    (search.decision && search.decision !== "all") ||
+    (search.sort && search.sort !== "priority") ||
+    (search.risk && search.risk !== "all") ||
+    search.operator,
+  );
 
-  const visibleProjects = filterPortfolioProjects(projects, query, stage, sort);
-  const summary = {
-    needsAction: projects.filter((project) => project.needsAction).length,
-    evidenceBlocked: projects.filter((project) => project.evidenceBlocked).length,
-    packageReady: projects.filter((project) => project.packageReady).length,
-    overdue: projects.reduce((total, project) => total + project.overdueActions, 0),
-  };
   return (
-    <AppShell requireAuth>
-      <main id="main-content" className="section-page portfolio-page">
-        <PageHeading
-          eyebrow="Connection decision workspace"
-          title="Connection projects"
-          description="Prioritise evidence gaps, operator engagement and decisions across the German connection portfolio. Public context and customer inputs are not statements of available grid capacity."
-          action={
-            <Link to="/assessments/new" className="primary-button">
-              <Plus size={15} aria-hidden="true" /> New project
-            </Link>
-          }
-        />
-
-        {isLoading ? (
-          <div className="portfolio-state" role="status" aria-live="polite">
-            <div className="loading-spinner" />
-            <p>Loading private projects…</p>
-          </div>
-        ) : error ? (
-          <div className="portfolio-state error-message" role="alert">
-            <AlertTriangle aria-hidden="true" />
-            <h2>Projects could not be loaded</h2>
-            <p>Refresh the data or try again shortly.</p>
-            <button className="secondary-button" type="button" onClick={() => refetch()}>
-              Try again
-            </button>
-          </div>
-        ) : projects.length === 0 ? (
-          <div className="portfolio-state">
-            <BatteryCharging aria-hidden="true" />
-            <h2>No connection projects yet</h2>
-            <p>Add a candidate site to begin evidence-led screening and connection planning.</p>
-            <Link to="/assessments/new" className="primary-button">
-              <Plus size={15} aria-hidden="true" /> Create project
-            </Link>
-          </div>
-        ) : (
-          <>
-            <ConnectionDecisionBoard />
-            <section className="portfolio-summary" aria-label="Portfolio priorities">
-              <Metric
-                label="Needs action"
-                value={summary.needsAction}
-                detail="Open blocker or review gate"
-                tone="warning"
+    <AppShell>
+      <main id="main-content" className="site-pipeline-page decision-workspace-page">
+        <aside className="decision-workspace-rail" aria-label="Sites controls">
+          <header>
+            <p className="context-label">Portfolio Workspace</p>
+            <h1>Sites</h1>
+            <p>Screen, qualify, and make evidence-led decisions across the portfolio.</p>
+          </header>
+          <section className="rail-metrics" aria-label="Portfolio summary">
+            <Metric label="Sites" value={metrics.sites} />
+            <Metric label="Declared" value={`${metrics.declaredMw.toLocaleString("en-GB")} MW`} />
+            <Metric label="Action" value={metrics.actionRequired} tone="warning" />
+            <Metric label="Ready" value={metrics.decisionReady} tone="positive" />
+          </section>
+          <section className="rail-section">
+            <h2>
+              <Filter aria-hidden="true" /> Portfolio View
+            </h2>
+            <label className="rail-search">
+              <span className="sr-only">Search sites</span>
+              <Search aria-hidden="true" />
+              <input
+                name="site-search"
+                type="search"
+                autoComplete="off"
+                placeholder="Search site or operator…"
+                value={search.q ?? ""}
+                onChange={(event) =>
+                  patchSearch({ q: event.target.value || undefined, selected: undefined })
+                }
               />
-              <Metric
-                label="Blocked by evidence"
-                value={summary.evidenceBlocked}
-                detail="Customer-side package incomplete"
-              />
-              <Metric
-                label="Package ready"
-                value={summary.packageReady}
-                detail="Ready for operator engagement"
-                tone="positive"
-              />
-              <Metric
-                label="Overdue actions"
-                value={summary.overdue}
-                detail="Open review or milestone due"
-                tone="danger"
-              />
-            </section>
-
-            <section className="portfolio-work-queue" aria-labelledby="work-queue-title">
-              <div className="portfolio-controls">
-                <div>
-                  <h2 id="work-queue-title">Decision work queue</h2>
-                  <p>
-                    {visibleProjects.length} of {projects.length} projects shown
-                  </p>
-                </div>
-                <label className="portfolio-search">
-                  <span className="sr-only">Search projects</span>
-                  <Search aria-hidden="true" />
-                  <input
-                    type="search"
-                    name="project-search"
-                    autoComplete="off"
-                    placeholder="Search project or operator…"
-                    value={query}
-                    onChange={(event) => {
-                      void updateSearch({
-                        q: event.target.value || undefined,
-                        expanded: undefined,
-                      });
-                    }}
-                  />
-                </label>
-                <label className="portfolio-sort">
-                  <span>Sort</span>
+            </label>
+            {activeView === "pipeline" ? (
+              <label>
+                Stage
+                <select
+                  name="pipeline-stage"
+                  value={search.stage ?? "all"}
+                  onChange={(event) =>
+                    patchSearch({
+                      stage: event.target.value as (typeof stages)[number],
+                      selected: undefined,
+                    })
+                  }
+                >
+                  <option value="all">All Sites</option>
+                  <option value="action_required">Action Required</option>
+                  <option value="draft">Draft</option>
+                  <option value="screening">Screening</option>
+                  <option value="shortlisted">Candidate Shortlisted</option>
+                  <option value="evidence_review">Evidence Review</option>
+                  <option value="decision_ready">Decision Ready</option>
+                </select>
+              </label>
+            ) : null}
+            <label>
+              Decision
+              <select
+                name="pipeline-decision"
+                value={search.decision ?? "all"}
+                onChange={(event) =>
+                  patchSearch({
+                    decision: event.target.value as (typeof decisions)[number],
+                    selected: undefined,
+                  })
+                }
+              >
+                <option value="all">All Decisions</option>
+                <option value="unreviewed">Unreviewed</option>
+                <option value="advance">Advance</option>
+                <option value="hold">Hold</option>
+                <option value="reject">Reject</option>
+              </select>
+            </label>
+            <label>
+              Sort
+              <select
+                name="pipeline-sort"
+                value={search.sort ?? "priority"}
+                onChange={(event) =>
+                  patchSearch({
+                    sort: event.target.value as "priority" | "updated" | "name" | "mw",
+                  })
+                }
+              >
+                <option value="priority">Decision Priority</option>
+                <option value="updated">Recently Updated</option>
+                <option value="mw">Required MW</option>
+                <option value="name">Site Name</option>
+              </select>
+            </label>
+            {activeView !== "pipeline" ? (
+              <>
+                <label>
+                  Evidence Exposure
                   <select
-                    value={sort}
+                    name="portfolio-risk"
+                    value={search.risk ?? "all"}
                     onChange={(event) =>
-                      void updateSearch({ sort: event.target.value as PortfolioSort })
+                      patchSearch({ risk: event.target.value as typeof search.risk })
                     }
                   >
-                    <option value="priority">Priority</option>
-                    <option value="deadline">Next deadline</option>
-                    <option value="newest">Newest</option>
-                    <option value="name">Project name</option>
+                    <option value="all">All Sites</option>
+                    <option value="blocked">Evidence Required</option>
+                    <option value="deadline">Validity Deadline</option>
+                    <option value="operator_confirmed">Operator Confirmed</option>
                   </select>
                 </label>
-              </div>
-              <nav className="portfolio-filters" aria-label="Filter projects by workflow stage">
-                {stages.map((stageOption) => {
-                  const count =
-                    stageOption.value === "all"
-                      ? projects.length
-                      : stageOption.value === "action_required"
-                        ? summary.needsAction
-                        : projects.filter((project) => project.stage === stageOption.value).length;
-                  return (
-                    <button
-                      type="button"
-                      key={stageOption.value}
-                      className={stage === stageOption.value ? "filter-active" : ""}
-                      aria-pressed={stage === stageOption.value}
-                      onClick={() => {
-                        void updateSearch({ stage: stageOption.value, expanded: undefined });
-                      }}
-                    >
-                      {stageOption.label} <span>{count}</span>
-                    </button>
-                  );
-                })}
-              </nav>
-
-              {visibleProjects.length === 0 ? (
-                <div className="portfolio-no-results" role="status">
-                  <h3>No projects match this view</h3>
-                  <p>Clear the search or choose another workflow stage.</p>
-                  <button
-                    type="button"
-                    className="secondary-button"
-                    onClick={() => {
-                      void updateSearch({ q: undefined, stage: "all", expanded: undefined });
-                    }}
+                <label>
+                  Operator
+                  <select
+                    name="portfolio-operator"
+                    value={search.operator ?? "all"}
+                    onChange={(event) =>
+                      patchSearch({
+                        operator: event.target.value === "all" ? undefined : event.target.value,
+                      })
+                    }
                   >
-                    Clear filters
-                  </button>
-                </div>
-              ) : (
-                <div className="table-wrap portfolio-table-wrap">
-                  <table className="portfolio-table">
-                    <caption className="sr-only">
-                      Connection projects ordered by the selected portfolio priority.
-                    </caption>
-                    <thead>
-                      <tr>
-                        <th scope="col">Project</th>
-                        <th scope="col">Current gate</th>
-                        <th scope="col">Customer-side evidence</th>
-                        <th scope="col">Operator status</th>
-                        <th scope="col">Next action</th>
-                        <th scope="col">Owner &amp; due</th>
-                        <th scope="col">Decision</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {visibleProjects.map((project) => (
-                        <ProjectRows
-                          key={project.id}
-                          project={project}
-                          expanded={expanded === project.id}
-                          onToggle={() =>
-                            void updateSearch({
-                              expanded: expanded === project.id ? undefined : project.id,
-                            })
-                          }
-                        />
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </section>
-          </>
-        )}
+                    <option value="all">All Operators</option>
+                    {intelligence.operators.map((item) => (
+                      <option key={item.operator} value={item.operator}>
+                        {item.operator}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </>
+            ) : null}
+            {filtersActive ? (
+              <button
+                type="button"
+                className="rail-reset-button"
+                onClick={() =>
+                  void navigate({
+                    to: "/portfolio",
+                    search: { view: activeView },
+                    replace: true,
+                  })
+                }
+              >
+                <X aria-hidden="true" /> Reset Filters
+              </button>
+            ) : null}
+          </section>
+          <details className="rail-section workspace-data-menu" suppressHydrationWarning>
+            <summary>
+              <Database aria-hidden="true" /> Workspace Data
+            </summary>
+            <div>
+              <div className="workspace-data-group">
+                <span>Bring Data In</span>
+                <button
+                  type="button"
+                  onClick={() => patchSearch({ import: importOpen ? undefined : "open" })}
+                >
+                  <FileUp aria-hidden="true" /> <strong>Import Sites</strong>
+                </button>
+                <button type="button" onClick={() => restoreInput.current?.click()}>
+                  <FileUp aria-hidden="true" /> <strong>Restore Backup</strong>
+                </button>
+              </div>
+              <div className="workspace-data-group">
+                <span>Export &amp; Share</span>
+                <button
+                  type="button"
+                  onClick={async () =>
+                    downloadJson(
+                      await exportAnonymousWorkspace(),
+                      "gridpulse-workspace-backup.json",
+                    )
+                  }
+                >
+                  <Download aria-hidden="true" /> <strong>Workspace Backup</strong>
+                </button>
+                <button
+                  type="button"
+                  onClick={async () =>
+                    downloadJson(
+                      await exportAnonymousWorkspace(true),
+                      "gridpulse-complete-portable-workspace.json",
+                    )
+                  }
+                >
+                  <Download aria-hidden="true" /> <strong>Backup With Documents</strong>
+                </button>
+                <button
+                  type="button"
+                  disabled={!exportRows.length}
+                  onClick={() => void downloadPropertyXlsx(exportRows)}
+                >
+                  <Download aria-hidden="true" /> <strong>Portfolio XLSX</strong>
+                </button>
+                <button
+                  type="button"
+                  disabled={!exportRows.length}
+                  onClick={() => downloadPortfolioComparisonPdf(exportRows)}
+                >
+                  <Download aria-hidden="true" /> <strong>Decision PDF</strong>
+                </button>
+              </div>
+              <input
+                ref={restoreInput}
+                className="sr-only"
+                type="file"
+                accept="application/json,.json"
+                onChange={async (event) => {
+                  const file = event.target.files?.[0];
+                  if (!file) return;
+                  try {
+                    const result = await restoreAnonymousWorkspace(JSON.parse(await file.text()));
+                    toast.success(`${result.imported} sites restored`);
+                  } catch (reason) {
+                    toast.error(reason instanceof Error ? reason.message : "Restore failed");
+                  }
+                  event.target.value = "";
+                }}
+              />
+              <button
+                type="button"
+                className="danger-action"
+                onClick={async () => {
+                  if (
+                    !window.confirm(
+                      "Export a backup first if needed. Clear every locally stored site?",
+                    )
+                  )
+                    return;
+                  await clearAnonymousWorkspace();
+                  toast.success("Local workspace cleared");
+                }}
+              >
+                <Trash2 aria-hidden="true" /> Clear Workspace
+              </button>
+            </div>
+          </details>
+        </aside>
+        <section className="decision-workspace-main">
+          <header className="workspace-main-header">
+            <div>
+              <p className="context-label">Data-Centre Opportunity Portfolio</p>
+              <h2>
+                {activeView === "pipeline"
+                  ? "Sites Under Review"
+                  : activeView === "readiness"
+                    ? "Property Comparison"
+                    : "Decision Review"}
+              </h2>
+              <p>
+                {visible.length} of {summaries.length} sites shown
+              </p>
+              {summaries.length && filtersActive ? (
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() =>
+                    void navigate({ to: "/portfolio", search: { view: activeView }, replace: true })
+                  }
+                >
+                  Reset Portfolio View
+                </button>
+              ) : null}
+            </div>
+            <Link to="/power-finder" className="primary-button">
+              <Plus aria-hidden="true" /> New Site Screening
+            </Link>
+          </header>
+          <nav
+            className="decision-view-switcher site-portfolio-view-switcher"
+            aria-label="Sites portfolio view"
+          >
+            {portfolioViews.map((view) => (
+              <button
+                key={view}
+                type="button"
+                className={activeView === view ? "active" : ""}
+                onClick={() => patchSearch({ view, selected: undefined })}
+              >
+                {view === "pipeline"
+                  ? "Pipeline"
+                  : view === "readiness"
+                    ? "Comparison"
+                    : "Decision Review"}
+              </button>
+            ))}
+          </nav>
+          {importOpen ? (
+            <div className="workspace-inline-panel">
+              <button
+                className="panel-close"
+                type="button"
+                aria-label="Close import panel"
+                onClick={() => patchSearch({ import: undefined })}
+              >
+                <X aria-hidden="true" />
+              </button>
+              <PropertyImportPanel
+                variant="compact"
+                onImported={() => {
+                  void refresh();
+                  patchSearch({ import: undefined });
+                }}
+              />
+            </div>
+          ) : null}
+          {loading ? (
+            <div className="decision-empty" role="status">
+              <div className="loading-spinner" /> Loading local sites…
+            </div>
+          ) : error ? (
+            <div className="decision-empty error-message" role="alert">
+              {error}
+            </div>
+          ) : activeView === "readiness" ? (
+            <PortfolioReadinessView sites={decisionSites} />
+          ) : activeView === "decisions" ? (
+            <PortfolioDecisionView
+              intelligence={{
+                ...intelligence,
+                rows: intelligence.rows.filter((row) =>
+                  decisionSites.some((site) => site.id === row.site_id),
+                ),
+              }}
+              sites={decisionSites}
+            />
+          ) : !visible.length ? (
+            <div className="decision-empty">
+              <MapPin aria-hidden="true" />
+              <h2>{summaries.length ? "No Sites Match This View" : "No Sites in the Pipeline"}</h2>
+              <p>
+                {summaries.length
+                  ? "Clear filters or choose another portfolio stage."
+                  : "Declare a site in Power Finder or import an existing opportunity."}
+              </p>
+              <Link to="/power-finder" className="primary-button">
+                Screen a Site
+              </Link>
+            </div>
+          ) : (
+            <div className="site-queue">
+              {visible.map((site) => (
+                <Link
+                  to="/portfolio"
+                  search={{ ...search, selected: site.id }}
+                  className={`site-queue-row${selected?.id === site.id ? " is-selected" : ""}`}
+                  key={site.id}
+                  aria-current={selected?.id === site.id ? "true" : undefined}
+                >
+                  <span className="site-identity">
+                    <b>{site.name}</b>
+                    <small>
+                      {site.locationLabel} · {site.projectType.replaceAll("_", " ")}
+                    </small>
+                  </span>
+                  <span>
+                    <small>Required</small>
+                    <b>{site.requiredMw.toLocaleString("en-GB")} MW</b>
+                  </span>
+                  <span>
+                    <small>Stage</small>
+                    <b>{stageLabel[site.stage]}</b>
+                  </span>
+                  <span>
+                    <small>
+                      {site.preferredCandidate ? "Shortlisted Candidate" : "Recommended"}
+                    </small>
+                    <b>
+                      {site.preferredCandidate?.nodeName ??
+                        site.recommendedCandidate?.nodeName ??
+                        "Not screened"}
+                    </b>
+                    <em>
+                      {(site.preferredCandidate ?? site.recommendedCandidate)
+                        ? `${(site.preferredCandidate ?? site.recommendedCandidate)!.distanceKm.toFixed(1)} km · ${(site.preferredCandidate ?? site.recommendedCandidate)!.voltageKv.length ? `${Math.max(...(site.preferredCandidate ?? site.recommendedCandidate)!.voltageKv)} kV` : "Voltage unknown"}`
+                        : "Open in Power Finder"}
+                    </em>
+                  </span>
+                  <span>
+                    <small>Evidence</small>
+                    <b>{site.evidenceScore == null ? "Unknown" : `${site.evidenceScore}/100`}</b>
+                    <em>
+                      {site.checksRemaining.length}{" "}
+                      {site.checksRemaining.length === 1 ? "check" : "checks"} remaining
+                    </em>
+                  </span>
+                  <span className={`decision-chip is-${site.decisionStatus}`}>
+                    {site.decisionStatus}
+                  </span>
+                  <ArrowRight aria-hidden="true" />
+                </Link>
+              ))}
+            </div>
+          )}
+        </section>
+        {selected ? (
+          <SiteDetail
+            site={selected}
+            onClose={() => patchSearch({ selected: undefined })}
+            onDeleted={async () => {
+              await deleteAnonymousProperty(selected.id);
+              patchSearch({ selected: undefined });
+            }}
+          />
+        ) : null}
       </main>
     </AppShell>
   );
@@ -355,144 +600,163 @@ function Portfolio() {
 function Metric({
   label,
   value,
-  detail,
-  tone = "default",
+  tone = "",
 }: {
   label: string;
-  value: number;
-  detail: string;
+  value: string | number;
   tone?: string;
 }) {
   return (
-    <div className={`portfolio-metric ${tone}`}>
+    <div className={tone}>
       <span>{label}</span>
-      <b>{value}</b>
-      <small>{detail}</small>
+      <strong>{value}</strong>
     </div>
   );
 }
 
-function ProjectRows({
-  project,
-  expanded,
-  onToggle,
+function SiteDetail({
+  site,
+  onClose,
+  onDeleted,
 }: {
-  project: PortfolioProject;
-  expanded: boolean;
-  onToggle: () => void;
+  site: ReturnType<typeof projectAnonymousProperty>;
+  onClose: () => void;
+  onDeleted: () => Promise<void>;
 }) {
-  const due = project.nextDeadline
-    ? new Intl.DateTimeFormat("de-DE", { dateStyle: "medium" }).format(
-        new Date(project.nextDeadline),
-      )
-    : "Not scheduled";
   return (
-    <>
-      <tr className={project.needsAction ? "needs-action" : ""}>
-        <td>
-          <b>{project.name}</b>
-          <small>
-            {label(project.project_type)} · {project.requested_import_mw} MW import
-          </small>
-        </td>
-        <td>
-          <span className={`portfolio-chip stage-${project.stage}`}>{project.stageLabel}</span>
-          <small>
-            {project.openReviews
-              ? `${project.openReviews} open review gate${project.openReviews === 1 ? "" : "s"}`
-              : "No open review gates"}
-          </small>
-        </td>
-        <td>
-          <b>{project.evidenceLabel}</b>
-          <small>
-            {project.documents} documents ·{" "}
-            {project.hasIntervalProfile ? "Load profile recorded" : "Load profile missing"}
-          </small>
-        </td>
-        <td>
-          <span className={`portfolio-chip operator-${project.operator_confirmation_status}`}>
-            {project.operatorStatusLabel}
-          </span>
-          <small>{project.likely_network_operator ?? "Responsible operator not routed"}</small>
-        </td>
-        <td>
-          <b>{project.nextAction}</b>
-          <small>
-            {project.blockers.length
-              ? `${project.blockers.length} blocker${project.blockers.length === 1 ? "" : "s"} visible`
-              : "No customer-side blocker"}
-          </small>
-        </td>
-        <td>
-          <b>{project.owner}</b>
-          <small className={project.overdueActions ? "overdue-text" : ""}>
-            {project.overdueActions ? "Overdue · " : ""}
-            {due}
-          </small>
-        </td>
-        <td className="portfolio-row-actions">
-          <Link to="/assessments/$id" params={{ id: project.id }}>
-            Open <ArrowRight aria-hidden="true" />
-          </Link>
-          <button
-            type="button"
-            onClick={onToggle}
-            aria-expanded={expanded}
-            aria-controls={`project-details-${project.id}`}
-          >
-            Details <ChevronDown aria-hidden="true" />
-          </button>
-        </td>
-      </tr>
-      {expanded ? (
-        <tr className="portfolio-detail-row" id={`project-details-${project.id}`}>
-          <td colSpan={7}>
-            <div className="portfolio-details">
-              <div>
-                <span>Requested capacity</span>
-                <b>
-                  {project.requested_import_mw} MW import · {project.requested_export_mw} MW export
-                </b>
-              </div>
-              <div>
-                <span>Coordinates</span>
-                <b>
-                  {Number(project.latitude).toFixed(4)}, {Number(project.longitude).toFixed(4)}
-                </b>
-              </div>
-              <div>
-                <span>FCA / connection envelope</span>
-                <b>{label(project.envelopeStatus)}</b>
-              </div>
-              <div>
-                <span>Customer-side readiness</span>
-                <b>{project.readinessScore}/100</b>
-                <small>Planning indicator, not operator-approved capacity</small>
-              </div>
-              <div className="portfolio-blocker-list">
-                <span>Unresolved gates</span>
-                {project.blockers.length ? (
-                  <ul>
-                    {project.blockers.map((blocker) => (
-                      <li key={blocker}>{blocker}</li>
-                    ))}
-                  </ul>
-                ) : (
-                  <b>No customer-side blockers recorded</b>
-                )}
-              </div>
-              <Link to="/assessments/$id" params={{ id: project.id }} className="secondary-button">
-                Open complete project <ArrowRight aria-hidden="true" />
-              </Link>
-            </div>
-          </td>
-        </tr>
-      ) : null}
-    </>
+    <aside className="site-detail-panel" aria-label={`${site.name} details`}>
+      <header>
+        <div>
+          <p className="context-label">Selected Site</p>
+          <h2>{site.name}</h2>
+          <p>{site.locationLabel}</p>
+        </div>
+        <button type="button" aria-label="Close site details" onClick={onClose}>
+          <X aria-hidden="true" />
+        </button>
+      </header>
+      <div className="detail-status-line">
+        <span className={`decision-chip is-${site.decisionStatus}`}>{site.decisionStatus}</span>
+        <span>{stageLabel[site.stage]}</span>
+        <span>{site.requiredMw} MW required</span>
+      </div>
+      <dl className="detail-location-summary">
+        <div>
+          <dt>Site label</dt>
+          <dd>{site.property.siteLabel ?? "Not recorded"}</dd>
+        </div>
+        <div>
+          <dt>Municipality</dt>
+          <dd>{site.property.municipality ?? "Not recorded"}</dd>
+        </div>
+      </dl>
+      <section>
+        <h3>Screening Snapshot</h3>
+        <dl>
+          <div>
+            <dt>Public sources</dt>
+            <dd>{site.property.enrichmentRuns?.[0]?.completedSources.length ?? 0} checked</dd>
+          </div>
+          <div>
+            <dt>Grid candidates</dt>
+            <dd>{site.candidateCount}</dd>
+          </div>
+          <div>
+            <dt>Screening coverage</dt>
+            <dd>{site.screeningCoverage}%</dd>
+          </div>
+          <div>
+            <dt>Operator</dt>
+            <dd>{site.operator ?? "Unconfirmed"}</dd>
+          </div>
+          <div>
+            <dt>Capacity</dt>
+            <dd>
+              {site.capacityState === "validated" ? "Validated evidence attached" : "Unknown"}
+            </dd>
+          </div>
+          <div>
+            <dt>Land control</dt>
+            <dd>{site.property.landControlStatus}</dd>
+          </div>
+        </dl>
+      </section>
+      <section>
+        <h3>Recommended Connection Hypothesis</h3>
+        <p>
+          <b>{site.recommendedCandidate?.nodeName ?? "Not yet screened"}</b>
+          {site.recommendedCandidate
+            ? ` · ${site.recommendedCandidate.distanceKm.toFixed(1)} km · ${site.recommendedCandidate.screeningRank.toFixed(0)}/100 investigation score`
+            : ""}
+        </p>
+        <small>Recommended for investigation—not a capacity offer.</small>
+      </section>
+      <section>
+        <h3>Checks Before Decision</h3>
+        <ul className="detail-blockers">
+          {site.checksRemaining.slice(0, 6).map((blocker) => (
+            <li key={blocker}>{blocker}</li>
+          ))}
+        </ul>
+        <p className="next-action">
+          <b>Recommended Next Step:</b> {site.nextAction}
+        </p>
+      </section>
+      <section className="site-decision-form detail-decision-summary">
+        <h3>Client Decision</h3>
+        <div className="detail-decision-current">
+          <span className={`decision-chip is-${site.decisionStatus}`}>{site.decisionStatus}</span>
+          <p>{site.property.decisionRationale ?? "No rationale recorded yet."}</p>
+        </div>
+        <Link
+          className="primary-button"
+          to="/portfolio/$id"
+          params={{ id: site.id }}
+          search={{ tab: "decision" }}
+        >
+          Review Decision
+        </Link>
+      </section>
+      <footer>
+        <Link
+          to="/power-finder"
+          search={{
+            propertyId: site.id,
+            lat: site.property.project.latitude ?? undefined,
+            lng: site.property.project.longitude ?? undefined,
+            mw: site.property.project.importMw,
+            projectType: site.property.project.type,
+            voltage: suggestScreeningVoltage(
+              site.property.project.importMw,
+              site.property.project.type,
+              site.property.project.preferredVoltageKv,
+            ),
+            preferredVoltage: suggestScreeningVoltage(
+              site.property.project.importMw,
+              site.property.project.type,
+              site.property.project.preferredVoltageKv,
+            ),
+          }}
+        >
+          Review in Power Finder
+        </Link>
+        <Link to="/portfolio/$id" params={{ id: site.id }} search={{ tab: "overview" }}>
+          Open Site Workspace
+        </Link>
+        <Link to="/capacity-dossiers/$id" params={{ id: site.id }}>
+          Export Record
+        </Link>
+        <button
+          type="button"
+          className="danger-action"
+          onClick={async () => {
+            if (!window.confirm(`Delete ${site.name} from this browser?`)) return;
+            await onDeleted();
+          }}
+        >
+          <Trash2 /> Delete
+        </button>
+      </footer>
+    </aside>
   );
-}
-
-function label(value: string) {
-  return value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }

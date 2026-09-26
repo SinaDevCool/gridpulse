@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import importlib.metadata
+import hashlib
 import logging
 import os
 import sys
@@ -16,10 +18,27 @@ from grid_data.api.auth import authenticated_user
 from grid_data.api.executor import JobExecutor, OperatorHealthExecutor
 from grid_data.api.models import (
     AnalyticsJob,
-    FlexibilityOptimizationRequest,
+    C1NetworkStudyRequest,
+    C2HourlyCapacityRequest,
+    C3SecurityFlexibilityRequest,
+    C4ReconciliationRequest,
+    CapacityRequirementRequest,
+    FacilityPlanRequest,
+    FcaIntervalRequest,
+    FacilityUncertaintyRequest,
+    FacilityHistoricalReplayRequest,
+    MarketQualificationRequest,
+    RollingFacilityPlanRequest,
+    OperatorEnquiryPackageRequest,
+    ShadowVerificationRequest,
+    GraphGuidedStudyRequest,
     HealthReport,
     JobAccepted,
+    P0P4PermutationRequest,
     ReferenceTopologyRequest,
+    Release3ShadowValidationRequest,
+    ReleaseBNetworkRequest,
+    SyntheticCapacityRequest,
     UserIdentity,
 )
 from grid_data.api.store import InMemoryJobStore, JobStore, SupabaseJobStore
@@ -74,7 +93,59 @@ class _UnavailableExecutor:
     def execute_reference_topology(self, job_id: UUID) -> None:
         raise RuntimeError(f"job executor is not configured for {job_id}")
 
-    def execute_flexibility_optimization(self, job_id: UUID) -> None:
+
+    def execute_facility_plan(self, job_id: UUID) -> None:
+        raise RuntimeError(f"job executor is not configured for {job_id}")
+
+    def execute_fca_interval(self, job_id: UUID) -> None:
+        raise RuntimeError(f"job executor is not configured for {job_id}")
+
+    def execute_facility_uncertainty(self, job_id: UUID) -> None:
+        raise RuntimeError(f"job executor is not configured for {job_id}")
+
+    def execute_market_qualification(self, job_id: UUID) -> None:
+        raise RuntimeError(f"job executor is not configured for {job_id}")
+
+    def execute_rolling_facility_plan(self, job_id: UUID) -> None:
+        raise RuntimeError(f"job executor is not configured for {job_id}")
+
+    def execute_facility_historical_replay(self, job_id: UUID) -> None:
+        raise RuntimeError(f"job executor is not configured for {job_id}")
+
+    def execute_operator_enquiry_package(self, job_id: UUID) -> None:
+        raise RuntimeError(f"job executor is not configured for {job_id}")
+
+    def execute_shadow_verification(self, job_id: UUID) -> None:
+        raise RuntimeError(f"job executor is not configured for {job_id}")
+
+    def execute_capacity_requirement(self, job_id: UUID) -> None:
+        raise RuntimeError(f"job executor is not configured for {job_id}")
+
+    def execute_synthetic_capacity(self, job_id: UUID) -> None:
+        raise RuntimeError(f"job executor is not configured for {job_id}")
+
+    def execute_release_b_network(self, job_id: UUID) -> None:
+        raise RuntimeError(f"job executor is not configured for {job_id}")
+
+    def execute_c1_network_study(self, job_id: UUID) -> None:
+        raise RuntimeError(f"job executor is not configured for {job_id}")
+
+    def execute_c2_hourly_capacity(self, job_id: UUID) -> None:
+        raise RuntimeError(f"job executor is not configured for {job_id}")
+
+    def execute_c3_security_flexibility(self, job_id: UUID) -> None:
+        raise RuntimeError(f"job executor is not configured for {job_id}")
+
+    def execute_c4_reconciliation(self, job_id: UUID) -> None:
+        raise RuntimeError(f"job executor is not configured for {job_id}")
+
+    def execute_p0_p4_permutation(self, job_id: UUID) -> None:
+        raise RuntimeError(f"job executor is not configured for {job_id}")
+
+    def execute_release3_shadow_validation(self, job_id: UUID) -> None:
+        raise RuntimeError(f"job executor is not configured for {job_id}")
+
+    def execute_graph_guided_study(self, job_id: UUID) -> None:
         raise RuntimeError(f"job executor is not configured for {job_id}")
 
 
@@ -114,6 +185,29 @@ def create_app(
     )
     app.state.job_store = job_store
     app.state.executor = executor
+    app.state.dispatch_mode = os.environ.get("GRIDPULSE_JOB_DISPATCH_MODE", "inline")
+
+    def dispatch(background_tasks: BackgroundTasks, method: Callable, job_id: UUID) -> None:
+        if app.state.dispatch_mode == "inline":
+            background_tasks.add_task(method, job_id)
+
+    def canonical_job(
+        *, owner_id: UUID, job_type: str, payload: dict[str, object]
+    ) -> tuple[AnalyticsJob, bool]:
+        fingerprint = hashlib.sha256(
+            json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+        existing = app.state.job_store.find_by_fingerprint(owner_id, job_type, fingerprint)
+        if existing is not None:
+            return existing, False
+        return app.state.job_store.create(
+            AnalyticsJob(
+                owner_id=owner_id,
+                job_type=job_type,
+                input_payload=payload,
+                input_fingerprint=fingerprint,
+            )
+        ), True
 
     @app.middleware("http")
     async def request_context(request: Request, call_next):
@@ -153,12 +247,41 @@ def create_app(
 
     @app.get("/health", response_model=HealthReport)
     def health() -> HealthReport:
+        try:
+            engine_version = importlib.metadata.version("gridpulse-capacity-backtest")
+        except importlib.metadata.PackageNotFoundError:
+            engine_version = None
         return HealthReport(
             status="ok",
             service="gridpulse-analytics",
             version=SERVICE_VERSION,
             job_store=type(app.state.job_store).__name__,
+            grid_core_version=importlib.metadata.version("gridpulse-grid-core"),
+            capacity_engine_version=engine_version,
+            canonical_job_schemas=[
+                "gridpulse-capacity-requirement-request-v1",
+                "gridpulse-facility-plan-request-v1",
+                "gridpulse-fca-interval-request-v1",
+                "gridpulse-market-qualification-request-v1",
+                "gridpulse-rolling-facility-plan-request-v1",
+                "gridpulse-facility-uncertainty-request-v1",
+                "gridpulse-facility-historical-replay-request-v1",
+                "gridpulse-operator-enquiry-package-request-v1",
+                "gridpulse-shadow-verification-request-v1",
+            ],
         )
+
+    @app.get("/v1/contracts")
+    def contracts() -> dict[str, object]:
+        try:
+            from capacity_backtest.application import contract_manifest
+
+            return contract_manifest()
+        except ImportError as error:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Canonical analytical engine is not installed",
+            ) from error
 
     @app.post(
         "/v1/jobs/operator-source-health",
@@ -172,7 +295,7 @@ def create_app(
         job = app.state.job_store.create(
             AnalyticsJob(owner_id=user.id, job_type="operator_source_health")
         )
-        background_tasks.add_task(app.state.executor.execute_operator_source_health, job.id)
+        dispatch(background_tasks, app.state.executor.execute_operator_source_health, job.id)
         return JobAccepted(job_id=job.id, status=job.status)
 
     @app.post(
@@ -192,28 +315,362 @@ def create_app(
                 input_payload=request.model_dump(),
             )
         )
-        background_tasks.add_task(app.state.executor.execute_reference_topology, job.id)
+        dispatch(background_tasks, app.state.executor.execute_reference_topology, job.id)
         return JobAccepted(job_id=job.id, status=job.status)
 
     @app.post(
-        "/v1/jobs/flexibility-optimization",
+        "/v1/jobs/fca-interval",
         response_model=JobAccepted,
         status_code=status.HTTP_202_ACCEPTED,
     )
-    def start_flexibility_optimization_job(
-        request: FlexibilityOptimizationRequest,
+    def start_fca_interval_job(
+        request: FcaIntervalRequest,
+        background_tasks: BackgroundTasks,
+        user: UserIdentity = Depends(auth_dependency),
+    ) -> JobAccepted:
+        job, created = canonical_job(
+            owner_id=user.id, job_type="fca_interval", payload=request.model_dump(mode="json")
+        )
+        if created:
+            dispatch(background_tasks, app.state.executor.execute_fca_interval, job.id)
+        return JobAccepted(job_id=job.id, status=job.status)
+
+    @app.post(
+        "/v1/jobs/facility-plan",
+        response_model=JobAccepted,
+        status_code=status.HTTP_202_ACCEPTED,
+    )
+    def start_facility_plan_job(
+        request: FacilityPlanRequest,
+        background_tasks: BackgroundTasks,
+        user: UserIdentity = Depends(auth_dependency),
+    ) -> JobAccepted:
+        job, created = canonical_job(
+            owner_id=user.id, job_type="facility_plan", payload=request.model_dump(mode="json")
+        )
+        if created:
+            dispatch(background_tasks, app.state.executor.execute_facility_plan, job.id)
+        return JobAccepted(job_id=job.id, status=job.status)
+
+    @app.post(
+        "/v1/jobs/capacity-requirement",
+        response_model=JobAccepted,
+        status_code=status.HTTP_202_ACCEPTED,
+    )
+    def start_capacity_requirement_job(
+        request: CapacityRequirementRequest,
+        background_tasks: BackgroundTasks,
+        user: UserIdentity = Depends(auth_dependency),
+    ) -> JobAccepted:
+        job, created = canonical_job(
+            owner_id=user.id,
+            job_type="capacity_requirement",
+            payload=request.model_dump(mode="json"),
+        )
+        if created:
+            dispatch(background_tasks, app.state.executor.execute_capacity_requirement, job.id)
+        return JobAccepted(job_id=job.id, status=job.status)
+
+    @app.post(
+        "/v1/jobs/facility-uncertainty",
+        response_model=JobAccepted,
+        status_code=status.HTTP_202_ACCEPTED,
+    )
+    def start_facility_uncertainty_job(
+        request: FacilityUncertaintyRequest,
+        background_tasks: BackgroundTasks,
+        user: UserIdentity = Depends(auth_dependency),
+    ) -> JobAccepted:
+        job, created = canonical_job(
+            owner_id=user.id,
+            job_type="facility_uncertainty",
+            payload=request.model_dump(mode="json"),
+        )
+        if created:
+            dispatch(background_tasks, app.state.executor.execute_facility_uncertainty, job.id)
+        return JobAccepted(job_id=job.id, status=job.status)
+
+    @app.post(
+        "/v1/jobs/market-qualification",
+        response_model=JobAccepted,
+        status_code=status.HTTP_202_ACCEPTED,
+    )
+    def start_market_qualification_job(
+        request: MarketQualificationRequest,
+        background_tasks: BackgroundTasks,
+        user: UserIdentity = Depends(auth_dependency),
+    ) -> JobAccepted:
+        job, created = canonical_job(
+            owner_id=user.id,
+            job_type="market_qualification",
+            payload=request.model_dump(mode="json"),
+        )
+        if created:
+            dispatch(background_tasks, app.state.executor.execute_market_qualification, job.id)
+        return JobAccepted(job_id=job.id, status=job.status)
+
+    @app.post(
+        "/v1/jobs/rolling-facility-plan",
+        response_model=JobAccepted,
+        status_code=status.HTTP_202_ACCEPTED,
+    )
+    def start_rolling_facility_plan_job(
+        request: RollingFacilityPlanRequest,
+        background_tasks: BackgroundTasks,
+        user: UserIdentity = Depends(auth_dependency),
+    ) -> JobAccepted:
+        job, created = canonical_job(
+            owner_id=user.id,
+            job_type="rolling_facility_plan",
+            payload=request.model_dump(mode="json"),
+        )
+        if created:
+            dispatch(background_tasks, app.state.executor.execute_rolling_facility_plan, job.id)
+        return JobAccepted(job_id=job.id, status=job.status)
+
+    @app.post(
+        "/v1/jobs/facility-historical-replay",
+        response_model=JobAccepted,
+        status_code=status.HTTP_202_ACCEPTED,
+    )
+    def start_facility_historical_replay_job(
+        request: FacilityHistoricalReplayRequest,
+        background_tasks: BackgroundTasks,
+        user: UserIdentity = Depends(auth_dependency),
+    ) -> JobAccepted:
+        job, created = canonical_job(
+            owner_id=user.id,
+            job_type="facility_historical_replay",
+            payload=request.model_dump(mode="json"),
+        )
+        if created:
+            dispatch(background_tasks, app.state.executor.execute_facility_historical_replay, job.id)
+        return JobAccepted(job_id=job.id, status=job.status)
+
+    @app.post(
+        "/v1/jobs/operator-enquiry-package",
+        response_model=JobAccepted,
+        status_code=status.HTTP_202_ACCEPTED,
+    )
+    def start_operator_enquiry_package_job(
+        request: OperatorEnquiryPackageRequest,
+        background_tasks: BackgroundTasks,
+        user: UserIdentity = Depends(auth_dependency),
+    ) -> JobAccepted:
+        job, created = canonical_job(
+            owner_id=user.id,
+            job_type="operator_enquiry_package",
+            payload=request.model_dump(mode="json"),
+        )
+        if created:
+            dispatch(background_tasks, app.state.executor.execute_operator_enquiry_package, job.id)
+        return JobAccepted(job_id=job.id, status=job.status)
+
+    @app.post(
+        "/v1/jobs/shadow-verification",
+        response_model=JobAccepted,
+        status_code=status.HTTP_202_ACCEPTED,
+    )
+    def start_shadow_verification_job(
+        request: ShadowVerificationRequest,
+        background_tasks: BackgroundTasks,
+        user: UserIdentity = Depends(auth_dependency),
+    ) -> JobAccepted:
+        job, created = canonical_job(
+            owner_id=user.id,
+            job_type="shadow_verification",
+            payload=request.model_dump(mode="json"),
+        )
+        if created:
+            dispatch(background_tasks, app.state.executor.execute_shadow_verification, job.id)
+        return JobAccepted(job_id=job.id, status=job.status)
+
+    @app.post(
+        "/v1/jobs/synthetic-capacity",
+        response_model=JobAccepted,
+        status_code=status.HTTP_202_ACCEPTED,
+    )
+    def start_synthetic_capacity_job(
+        request: SyntheticCapacityRequest,
         background_tasks: BackgroundTasks,
         user: UserIdentity = Depends(auth_dependency),
     ) -> JobAccepted:
         job = app.state.job_store.create(
             AnalyticsJob(
                 owner_id=user.id,
-                job_type="flexibility_optimization",
+                job_type="synthetic_capacity",
                 input_payload=request.model_dump(),
             )
         )
-        background_tasks.add_task(app.state.executor.execute_flexibility_optimization, job.id)
+        dispatch(background_tasks, app.state.executor.execute_synthetic_capacity, job.id)
         return JobAccepted(job_id=job.id, status=job.status)
+
+    @app.post(
+        "/v1/jobs/release-b-network",
+        response_model=JobAccepted,
+        status_code=status.HTTP_202_ACCEPTED,
+    )
+    def start_release_b_network_job(
+        request: ReleaseBNetworkRequest,
+        background_tasks: BackgroundTasks,
+        user: UserIdentity = Depends(auth_dependency),
+    ) -> JobAccepted:
+        job = app.state.job_store.create(
+            AnalyticsJob(
+                owner_id=user.id,
+                job_type="release_b_network",
+                input_payload=request.model_dump(),
+            )
+        )
+        dispatch(background_tasks, app.state.executor.execute_release_b_network, job.id)
+        return JobAccepted(job_id=job.id, status=job.status)
+
+    @app.post(
+        "/v1/jobs/c1-network-study",
+        response_model=JobAccepted,
+        status_code=status.HTTP_202_ACCEPTED,
+    )
+    def start_c1_network_study_job(
+        request: C1NetworkStudyRequest,
+        background_tasks: BackgroundTasks,
+        user: UserIdentity = Depends(auth_dependency),
+    ) -> JobAccepted:
+        job = app.state.job_store.create(
+            AnalyticsJob(
+                owner_id=user.id,
+                job_type="c1_network_study",
+                input_payload=request.model_dump(),
+            )
+        )
+        dispatch(background_tasks, app.state.executor.execute_c1_network_study, job.id)
+        return JobAccepted(job_id=job.id, status=job.status)
+
+    @app.post(
+        "/v1/jobs/c2-hourly-capacity",
+        response_model=JobAccepted,
+        status_code=status.HTTP_202_ACCEPTED,
+    )
+    def start_c2_hourly_capacity_job(
+        request: C2HourlyCapacityRequest,
+        background_tasks: BackgroundTasks,
+        user: UserIdentity = Depends(auth_dependency),
+    ) -> JobAccepted:
+        job = app.state.job_store.create(
+            AnalyticsJob(
+                owner_id=user.id,
+                job_type="c2_hourly_capacity",
+                input_payload=request.model_dump(mode="json"),
+            )
+        )
+        dispatch(background_tasks, app.state.executor.execute_c2_hourly_capacity, job.id)
+        return JobAccepted(job_id=job.id, status=job.status)
+
+    @app.post(
+        "/v1/jobs/c3-security-flexibility",
+        response_model=JobAccepted,
+        status_code=status.HTTP_202_ACCEPTED,
+    )
+    def start_c3_security_flexibility_job(
+        request: C3SecurityFlexibilityRequest,
+        background_tasks: BackgroundTasks,
+        user: UserIdentity = Depends(auth_dependency),
+    ) -> JobAccepted:
+        job = app.state.job_store.create(
+            AnalyticsJob(
+                owner_id=user.id,
+                job_type="c3_security_flexibility",
+                input_payload=request.model_dump(mode="json"),
+            )
+        )
+        dispatch(background_tasks, app.state.executor.execute_c3_security_flexibility, job.id)
+        return JobAccepted(job_id=job.id, status=job.status)
+
+    @app.post(
+        "/v1/jobs/c4-reconciliation",
+        response_model=JobAccepted,
+        status_code=status.HTTP_202_ACCEPTED,
+    )
+    def start_c4_reconciliation_job(
+        request: C4ReconciliationRequest,
+        background_tasks: BackgroundTasks,
+        user: UserIdentity = Depends(auth_dependency),
+    ) -> JobAccepted:
+        job = app.state.job_store.create(
+            AnalyticsJob(
+                owner_id=user.id,
+                job_type="c4_reconciliation",
+                input_payload=request.model_dump(mode="json"),
+            )
+        )
+        dispatch(background_tasks, app.state.executor.execute_c4_reconciliation, job.id)
+        return JobAccepted(job_id=job.id, status=job.status)
+
+    @app.post(
+        "/v1/jobs/p0-p4-permutation",
+        response_model=JobAccepted,
+        status_code=status.HTTP_202_ACCEPTED,
+    )
+    def start_p0_p4_permutation_job(
+        request: P0P4PermutationRequest,
+        background_tasks: BackgroundTasks,
+        user: UserIdentity = Depends(auth_dependency),
+    ) -> JobAccepted:
+        job = app.state.job_store.create(
+            AnalyticsJob(
+                owner_id=user.id,
+                job_type="p0_p4_permutation",
+                input_payload=request.model_dump(mode="json"),
+            )
+        )
+        dispatch(background_tasks, app.state.executor.execute_p0_p4_permutation, job.id)
+        return JobAccepted(job_id=job.id, status=job.status)
+
+    @app.post(
+        "/v1/jobs/release3-shadow-validation",
+        response_model=JobAccepted,
+        status_code=status.HTTP_202_ACCEPTED,
+    )
+    def start_release3_shadow_validation_job(
+        request: Release3ShadowValidationRequest,
+        background_tasks: BackgroundTasks,
+        user: UserIdentity = Depends(auth_dependency),
+    ) -> JobAccepted:
+        job = app.state.job_store.create(
+            AnalyticsJob(
+                owner_id=user.id,
+                job_type="release3_shadow_validation",
+                input_payload=request.model_dump(mode="json"),
+            )
+        )
+        dispatch(background_tasks, app.state.executor.execute_release3_shadow_validation, job.id)
+        return JobAccepted(job_id=job.id, status=job.status)
+
+    @app.post(
+        "/v1/jobs/graph-guided-study",
+        response_model=JobAccepted,
+        status_code=status.HTTP_202_ACCEPTED,
+    )
+    def start_graph_guided_study_job(
+        request: GraphGuidedStudyRequest,
+        background_tasks: BackgroundTasks,
+        user: UserIdentity = Depends(auth_dependency),
+    ) -> JobAccepted:
+        job = app.state.job_store.create(
+            AnalyticsJob(
+                owner_id=user.id,
+                job_type="graph_guided_study",
+                input_payload=request.model_dump(mode="json"),
+            )
+        )
+        dispatch(background_tasks, app.state.executor.execute_graph_guided_study, job.id)
+        return JobAccepted(job_id=job.id, status=job.status)
+
+    @app.get("/v1/jobs", response_model=list[AnalyticsJob])
+    def list_jobs(
+        limit: int = 100,
+        user: UserIdentity = Depends(auth_dependency),
+    ) -> list[AnalyticsJob]:
+        return app.state.job_store.list_for_owner(user.id, min(max(limit, 1), 200))
 
     @app.get("/v1/jobs/{job_id}", response_model=AnalyticsJob)
     def get_job(
@@ -221,6 +678,16 @@ def create_app(
         user: UserIdentity = Depends(auth_dependency),
     ) -> AnalyticsJob:
         job = app.state.job_store.get(job_id, user.id)
+        if not job:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
+        return job
+
+    @app.post("/v1/jobs/{job_id}/cancel", response_model=AnalyticsJob)
+    def cancel_job(
+        job_id: UUID,
+        user: UserIdentity = Depends(auth_dependency),
+    ) -> AnalyticsJob:
+        job = app.state.job_store.request_cancel(job_id, user.id)
         if not job:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
         return job

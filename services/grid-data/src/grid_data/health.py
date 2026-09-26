@@ -7,7 +7,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-
 MASTR_DOWNLOAD_PAGE = "https://www.marktstammdatenregister.de/MaStR/Datendownload"
 _EXPORT_PATTERN = re.compile(
     r"https://download\.marktstammdatenregister\.de/Gesamtdatenexport_[0-9_]+\.[0-9]+\.zip"

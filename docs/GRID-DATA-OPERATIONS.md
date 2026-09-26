@@ -59,10 +59,33 @@ Cloudflare billing terms and cannot be completed safely by application code.
 
 ## Current official release
 
-- Scope: Brandenburg electrical assets
-- Source publication: 2026-07-23, MaStR export version 26.1
-- Compressed bytes: 3,099,107,513
-- SHA-256: `e7279576bd901eae26490e942687dc6361e171f43ec452a24cca048b94c249e3`
-- Parsed and published rows: 290,957
-- Exact public coordinates: 14,962
-- Active release: `7432f187-4bda-45f6-bad9-8b1069992b6a`
+- Scope: Germany-wide exact public generation and storage locations
+- Source publication: 2026-08-10, MaStR export version 26.1
+- Compressed bytes: 3,130,298,194
+- SHA-256: `e8f2203b90e77f1a52b5be82c18cb11b6358fc27c1acd0f7e4e794c78e8b8b1c`
+- Parsed and published map rows: 364,663
+- Exact generation locations: 357,703
+- Exact storage locations: 6,960
+- Active release: `94ce31d6-3b18-4d81-a301-8503f77b586c`
+
+The accepted national map release retains only generation and storage units with public exact
+coordinates. Municipality-only and withheld locations remain absent rather than being placed at
+invented coordinates. The bundled OSM fallback remains the south-Berlin/Brandenburg pilot and is
+used only when the live national API is unavailable.
+
+## National OSM operation
+
+1. Discover the 14 state extracts with `discover-geofabrik-states`.
+2. Download each PBF with resumable `.part` handling and retain its manifest.
+3. Verify the advertised MD5 before parsing; a mismatch stops the state run.
+4. Stream nodes, ways and assembled multipolygons with `parse-osm-pbf`.
+5. Review the rejected-record NDJSON and mandatory validation gates.
+6. Generate COPY files with `write-osm-copy`; do not generate per-row migrations.
+7. Stage into the existing canonical tables under a non-active artifact/release.
+8. Validate counts, geometry, boundaries, duplicates, metadata and GiST indexes.
+9. Aggregate accepted state reports and atomically activate through existing release governance.
+10. Project only accepted topology and release lineage to Neo4j, then reconcile counts and IDs.
+
+The national CI workflow deliberately fails at staging if immutable artifact storage or batch
+database credentials are absent. That failure is truthful: fixtures and the Brandenburg artifact
+are never promoted as Germany-wide coverage.

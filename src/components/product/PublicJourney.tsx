@@ -16,7 +16,7 @@ export const PUBLIC_JOURNEY = [
   },
   {
     id: "prepare",
-    label: "Prepare for activation",
+    label: "Prepare the decision",
     description: "Assemble the evidence, operator questions, and decision package.",
     icon: ClipboardCheck,
   },

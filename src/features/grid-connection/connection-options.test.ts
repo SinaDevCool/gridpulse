@@ -54,6 +54,19 @@ describe("connection option set", () => {
     ).toBe(true);
   });
 
+  it("uses injected canonical analyses without calculating in the option composer", () => {
+    const analysis = {
+      classification: "operator_validation_required",
+      warnings: ["canonical"],
+    } as never;
+    const options = buildConnectionOptions({
+      ...base,
+      canonicalAnalyses: { requested_firm: analysis },
+    });
+    expect(options.find((option) => option.kind === "requested_firm")?.analysis).toBe(analysis);
+    expect(options.find((option) => option.kind === "dynamic_flexible")?.analysis).toBeNull();
+  });
+
   it("ranks viable options ahead of minimum-capacity failures", () => {
     const ranked = rankConnectionOptions(buildConnectionOptions(base));
     expect(ranked.at(-1)?.operationalStatus).toBe("fails_minimum_viable_capacity");

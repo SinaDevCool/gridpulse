@@ -1,0 +1,9 @@
+{
+  "minimum_voltage_pu": 0.95,
+  "maximum_voltage_pu": 1.05,
+  "maximum_normal_loading_percent": 100,
+  "maximum_emergency_loading_percent": 110,
+  "require_n_minus_one": true,
+  "criteria_source": "Synthetic pilot assumption; replace with operator TAB and planning criteria.",
+  "is_synthetic": true
+}

@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("Power Finder remains private while its accepted OSM release is publicly readable", async ({
+test("Power Finder and its accepted OSM release are publicly readable without creating capacity claims", async ({
   page,
   request,
 }) => {
@@ -18,11 +18,7 @@ test("Power Finder remains private while its accepted OSM release is publicly re
   ).toBeTruthy();
 
   await page.goto("/power-finder");
-  await expect(page.getByRole("heading", { name: "Sign in to continue" })).toBeVisible({
-    timeout: 10_000,
-  });
-  await expect(page.getByRole("link", { name: "Sign In to Continue" })).toHaveAttribute(
-    "href",
-    /auth\?redirect=.*power-finder/,
-  );
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(page.getByText("Evidence status controls every conclusion")).toBeVisible();
+  await expect(page.getByText(/not a network study, connection offer/i)).toBeVisible();
 });

@@ -5,7 +5,6 @@ from pathlib import Path
 
 from grid_data.fixture import build_fixture, validate_fixture
 
-
 FIXTURE = Path(__file__).parent / "fixtures" / "brandenburg-screening-source.json"
 
 
@@ -24,7 +23,9 @@ class FixturePipelineTest(unittest.TestCase):
             report = build_fixture(FIXTURE, output)
             published = json.loads(output.read_text(encoding="utf-8"))
             self.assertEqual(published["metadata"]["artifact_sha256"], report.sha256)
-            self.assertIn("Synthetic development fixture", published["metadata"]["evidence_boundary"])
+            self.assertIn(
+                "Synthetic development fixture", published["metadata"]["evidence_boundary"]
+            )
 
     def test_rejects_unlabelled_capacity_claim(self) -> None:
         payload = json.loads(FIXTURE.read_text(encoding="utf-8"))
@@ -36,4 +37,3 @@ class FixturePipelineTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

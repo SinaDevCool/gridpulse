@@ -1,0 +1,4 @@
+[
+  {"contingency_id": "synthetic-n-1-trafo-1", "element_type": "transformer", "element_id": "synthetic-trafo-1", "mandatory": true, "reviewed_by_operator": false, "is_synthetic": true},
+  {"contingency_id": "synthetic-n-1-line-a-b", "element_type": "line", "element_id": "synthetic-line-a-b", "mandatory": true, "reviewed_by_operator": false, "is_synthetic": true}
+]

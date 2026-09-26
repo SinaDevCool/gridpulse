@@ -6,14 +6,21 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from grid_data.osm import build_osm_artifact, build_overpass_query, overpass_to_geojson
+from grid_data.osm import _numbers, build_osm_artifact, build_overpass_query, overpass_to_geojson
 from grid_data.sql_export import write_ingestion_sql
-
 
 FIXTURE = Path(__file__).parent / "fixtures" / "overpass-sample.json"
 
 
 class OsmConnectorTests(unittest.TestCase):
+    def test_voltage_values_are_normalized_from_volts_to_kv(self) -> None:
+        self.assertEqual(_numbers("750"), [0.75])
+        self.assertEqual(_numbers("30000"), [30.0])
+        self.assertEqual(_numbers("110000"), [110.0])
+        self.assertEqual(_numbers("30000;750"), [30.0, 0.75])
+        self.assertEqual(_numbers("30 kV;750 V"), [30.0, 0.75])
+        self.assertEqual(_numbers("invalid"), [])
+
     def test_query_is_bounded_and_requests_supported_layers(self) -> None:
         query = build_overpass_query((52.2, 13.1, 52.4, 13.5))
         self.assertIn("52.2,13.1,52.4,13.5", query)

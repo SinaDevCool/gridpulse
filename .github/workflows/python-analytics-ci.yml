@@ -4,12 +4,14 @@ on:
   pull_request:
     paths:
       - "services/grid-data/**"
+      - "public/power-finder/**"
       - "supabase/migrations/**"
       - ".github/workflows/python-analytics-ci.yml"
   push:
     branches: [main]
     paths:
       - "services/grid-data/**"
+      - "public/power-finder/**"
       - "supabase/migrations/**"
       - ".github/workflows/python-analytics-ci.yml"
   workflow_dispatch:
@@ -28,19 +30,46 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: python -m pip install --upgrade pip
-      - run: python -m pip install -e "./services/grid-data[api,dev]"
+      - run: python -m pip install -e "./services/grid-data[api,study,dev]"
       - run: >-
           python -m ruff check
           services/grid-data/src/grid_data/api
           services/grid-data/src/grid_data/geofabrik.py
+          services/grid-data/src/grid_data/c2_sources.py
+          services/grid-data/src/grid_data/c2_hourly.py
+          services/grid-data/src/grid_data/c2_benchmark.py
+          services/grid-data/src/grid_data/c2_publish.py
+          services/grid-data/src/grid_data/open_sources.py
           services/grid-data/tests/test_api.py
           services/grid-data/tests/test_geofabrik.py
+          services/grid-data/tests/test_c2_sources.py
+          services/grid-data/tests/test_c2_hourly.py
+          services/grid-data/tests/test_open_sources.py
       - run: >-
           python -m ruff format --check
           services/grid-data/src/grid_data/api
           services/grid-data/src/grid_data/geofabrik.py
+          services/grid-data/src/grid_data/c2_sources.py
+          services/grid-data/src/grid_data/c2_hourly.py
+          services/grid-data/src/grid_data/c2_benchmark.py
+          services/grid-data/src/grid_data/c2_publish.py
+          services/grid-data/src/grid_data/open_sources.py
           services/grid-data/tests/test_api.py
           services/grid-data/tests/test_geofabrik.py
-      - run: python -m unittest discover -s services/grid-data/tests
+          services/grid-data/tests/test_c2_sources.py
+          services/grid-data/tests/test_c2_hourly.py
+          services/grid-data/tests/test_open_sources.py
+      - run: python -m pytest services/grid-data/tests
+        env:
+          PYTHONPATH: services/grid-data/src
+      - run: >-
+          python -m grid_data.cli validate-c1-benchmark
+          --output public/power-finder/c1-benchmark-validation.json
+        env:
+          PYTHONPATH: services/grid-data/src
+      - run: >-
+          python -m grid_data.cli audit-release
+          --input public/power-finder/brandenburg-osm.json
+          --output output/brandenburg-osm-audit.json
         env:
           PYTHONPATH: services/grid-data/src

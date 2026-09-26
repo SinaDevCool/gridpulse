@@ -1,4 +1,6 @@
 export const PHASE5_VERSION = "de-operator-engagement-v1" as const;
+export const RELEASE5_BENCHMARK_STATEMENT =
+  "Dynamische Bezugsleistung 42,5 MW. Einspeisung 0 MW. Gültig 01.09.2026 bis 31.08.2027. Vorlauf 15 Minuten. Schutzkonzept und Telemetrie erforderlich.";
 
 export type ExtractedOperatorFacts = {
   importLimitMw: number | null;
@@ -28,6 +30,14 @@ export function compareOperatorFacts(
     notificationLeadMinutes?: number | null;
   },
 ): OperatorDiscrepancy[] {
+  const numericInputs = [
+    declared.requestedImportMw,
+    declared.requestedExportMw,
+    declared.notificationLeadMinutes,
+  ].filter((value): value is number => value !== null && value !== undefined);
+  if (numericInputs.some((value) => !Number.isFinite(value) || value < 0)) {
+    throw new Error("Declared operator-comparison values must be finite and non-negative.");
+  }
   const compare = (
     field: OperatorDiscrepancy["field"],
     declaredValue: number | null,
@@ -63,7 +73,10 @@ export function compareOperatorFacts(
 const firstNumber = (text: string, patterns: RegExp[]) => {
   for (const pattern of patterns) {
     const match = text.match(pattern);
-    if (match?.[1]) return Number(match[1].replace(",", "."));
+    if (match?.[1]) {
+      const value = Number(match[1].replace(",", "."));
+      return Number.isFinite(value) && value >= 0 ? value : null;
+    }
   }
   return null;
 };
@@ -88,6 +101,15 @@ export function extractOperatorFacts(text: string): ExtractedOperatorFacts {
       : /static|statisch|fixed limit|feste grenze/i.test(normalized)
         ? "static"
         : "unspecified";
+  const isoDates = [...normalized.matchAll(/\b(20\d{2})-(\d{2})-(\d{2})\b/g)].map(
+    (match) => `${match[1]}-${match[2]}-${match[3]}`,
+  );
+  const germanDates = [...normalized.matchAll(/\b(\d{2})\.(\d{2})\.(20\d{2})\b/g)].map(
+    (match) => `${match[3]}-${match[2]}-${match[1]}`,
+  );
+  const dates = [...isoDates, ...germanDates].filter(
+    (value) => !Number.isNaN(Date.parse(`${value}T00:00:00Z`)),
+  );
   const studyRequirements = [
     /short[- ]?circuit|kurzschluss/i.test(normalized) ? "Short-circuit study" : null,
     /protection|schutzkonzept/i.test(normalized) ? "Protection coordination" : null,
@@ -104,8 +126,8 @@ export function extractOperatorFacts(text: string): ExtractedOperatorFacts {
   return {
     importLimitMw,
     exportLimitMw,
-    validFrom: null,
-    validTo: null,
+    validFrom: dates[0] ?? null,
+    validTo: dates[1] ?? null,
     flexibilityMode,
     noticeMinutes,
     studyRequirements,
@@ -124,6 +146,10 @@ export function simulateRestrictionEvent(input: {
   batteryResponseMw: number;
   workloadResponseMw: number;
 }) {
+  const values = Object.values(input);
+  if (values.some((value) => !Number.isFinite(value) || value < 0)) {
+    throw new Error("Restriction rehearsal values must be finite and non-negative.");
+  }
   const requiredReductionMw = Math.max(0, input.baselineMw - input.networkLimitMw);
   const deliveredReductionMw = Math.min(
     requiredReductionMw,
@@ -137,5 +163,85 @@ export function simulateRestrictionEvent(input: {
     residualMw,
     compliant: residualMw === 0,
     disclaimer: "Simulation—not a network instruction or proof of connection capacity.",
+  };
+}
+
+export function buildRelease5Acceptance() {
+  const facts = extractOperatorFacts(RELEASE5_BENCHMARK_STATEMENT);
+  const discrepancies = compareOperatorFacts(facts, {
+    requestedImportMw: 60,
+    requestedExportMw: 0,
+    notificationLeadMinutes: 30,
+  });
+  const rehearsal = simulateRestrictionEvent({
+    baselineMw: 60,
+    networkLimitMw: facts.importLimitMw ?? 0,
+    batteryResponseMw: 8,
+    workloadResponseMw: 6,
+  });
+  const gates = {
+    operator_terms_extracted: facts.importLimitMw === 42.5 && facts.flexibilityMode === "dynamic",
+    source_review_warning_present: facts.warnings.some((warning) => warning.includes("draft only")),
+    discrepancy_preserved: discrepancies.some(
+      (item) =>
+        item.field === "import_limit_mw" &&
+        item.status === "conflict" &&
+        item.declaredValue === 60 &&
+        item.operatorValue === 42.5,
+    ),
+    confirmed_field_preserved: discrepancies.some(
+      (item) => item.field === "export_limit_mw" && item.status === "confirmed",
+    ),
+    validity_scope_extracted: facts.validFrom === "2026-09-01" && facts.validTo === "2027-08-31",
+    restriction_response_rehearsed: rehearsal.requiredReductionMw === 17.5,
+    residual_exposure_visible: rehearsal.residualMw === 3.5 && rehearsal.compliant === false,
+    no_automatic_dispatch: rehearsal.disclaimer.includes("not a network instruction"),
+    no_capacity_or_confirmation_claim: true,
+  };
+  return {
+    schema_version: "gridpulse-release5-acceptance-v1" as const,
+    release: "Release 5",
+    methodology_version: PHASE5_VERSION,
+    validation_class: "synthetic_demonstration" as const,
+    gates,
+    all_repository_gates_passed: Object.values(gates).every(Boolean),
+    benchmark: {
+      extracted_facts: {
+        import_limit_mw: facts.importLimitMw,
+        export_limit_mw: facts.exportLimitMw,
+        flexibility_mode: facts.flexibilityMode,
+        notice_minutes: facts.noticeMinutes,
+        valid_from: facts.validFrom,
+        valid_to: facts.validTo,
+        study_requirement_count: facts.studyRequirements.length,
+        signal_count: facts.signals.length,
+      },
+      discrepancy_statuses: Object.fromEntries(
+        discrepancies.map((item) => [item.field, item.status]),
+      ),
+      restriction_rehearsal: {
+        required_reduction_mw: rehearsal.requiredReductionMw,
+        delivered_reduction_mw: rehearsal.deliveredReductionMw,
+        residual_mw: rehearsal.residualMw,
+        compliant: rehearsal.compliant,
+      },
+    },
+    controls: {
+      human_source_review_required: true,
+      linked_source_document_required: true,
+      authenticated_grid_expert_approval_required: true,
+      declared_values_overwritten: false,
+      automatic_dispatch_authorized: false,
+      operator_confirmation_created: false,
+      display_as_capacity: false,
+      capacity_claim: false,
+    },
+    external_gates: [
+      "real operator source document linked to the project",
+      "human comparison of every extracted field with that source",
+      "authenticated grid-expert approval with content hash",
+      "operator-signed limits and validity scope",
+      "capacity-representation permission before any public display",
+    ],
   };
 }

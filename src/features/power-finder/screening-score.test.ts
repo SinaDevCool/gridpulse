@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PowerFinderFeature } from "./fixture-data";
-import { scoreFeature } from "./screening-score";
+import { evidenceConfidence, scoreFeature } from "./screening-score";
 
 function node(overrides: Partial<PowerFinderFeature["properties"]> = {}): PowerFinderFeature {
   return {
@@ -17,15 +17,13 @@ function node(overrides: Partial<PowerFinderFeature["properties"]> = {}): PowerF
   };
 }
 
-describe("Power Finder screening context score", () => {
-  it("does not award capacity points when capacity is unknown", () => {
+describe("Power Finder evidence readiness score", () => {
+  it("does not include a capacity component", () => {
     const result = scoreFeature(
       node({ voltage_kv: [110], operator: "Mapped operator", status: "operational" }),
     );
-    expect(
-      result?.components.find((component) => component.label.includes("capacity"))?.points,
-    ).toBe(0);
-    expect(result?.boundary).toContain("not a probability of connection");
+    expect(result?.components.some((component) => /capacity/i.test(component.label))).toBe(false);
+    expect(result?.boundary).toContain("does not establish technical compatibility");
   });
 
   it("rewards authoritative published observations without implying feasibility", () => {
@@ -40,12 +38,42 @@ describe("Power Finder screening context score", () => {
       }),
     );
     expect(result?.total).toBe(100);
-    expect(result?.label).toBe("strong screening context");
+    expect(result?.label).toBe("higher evidence completeness");
   });
 
   it("does not score non-node context", () => {
     const feature = node();
     feature.properties.kind = "industrial_site";
     expect(scoreFeature(feature)).toBeNull();
+  });
+
+  it("classifies open mapping without presenting it as confirmed evidence", () => {
+    const result = evidenceConfidence(
+      node({
+        voltage_kv: [110],
+        operator: "Mapped operator",
+        status: "operational",
+        source_published_at: "2026-08-08T00:00:00Z",
+      }),
+    );
+    expect(result.find((item) => item.label === "Voltage")?.level).toBe("mapped");
+    expect(result.find((item) => item.label === "Operator Responsibility")?.level).toBe("mapped");
+    expect(result.find((item) => item.label === "Operating Status")?.level).toBe("inferred");
+    expect(result.find((item) => item.label === "Capacity Evidence")?.level).toBe("unknown");
+  });
+
+  it("reserves confirmed status for authoritative evidence", () => {
+    const result = evidenceConfidence(
+      node({
+        evidence_class: "official_operator",
+        voltage_kv: [110],
+        operator: "Responsible operator",
+        status: "operational",
+        capacity_state: "published_exact",
+        exact_mw: 40,
+      }),
+    );
+    expect(result.find((item) => item.label === "Voltage")?.level).toBe("confirmed");
+    expect(result.find((item) => item.label === "Capacity Evidence")?.level).toBe("confirmed");
   });
 });

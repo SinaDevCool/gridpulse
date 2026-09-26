@@ -9,6 +9,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { toast } from "sonner";
+import { privateGraphUiEnabled } from "@/config/product-mode";
 import { supabase } from "@/integrations/supabase/client";
 import type {
   CapacitySnapshot,
@@ -23,6 +24,7 @@ import {
   nodeDisplayName,
   parseJsonObject,
 } from "./node-intelligence";
+import { PrivateGraphIntelligence } from "./PrivateGraphIntelligence";
 
 const numberOrNull = (value: FormDataEntryValue | null) =>
   value === null || String(value).trim() === "" ? null : Number(value);
@@ -186,6 +188,7 @@ export function NodeIntelligencePanel({
           </p>
         </div>
       </div>
+      {privateGraphUiEnabled && <PrivateGraphIntelligence siteId={site.id} />}
       <div className="summary-grid node-summary">
         <article>
           <GitBranch />

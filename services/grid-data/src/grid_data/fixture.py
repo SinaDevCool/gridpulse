@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-
 ALLOWED_KINDS = {"node", "line", "industrial_site"}
 
 
@@ -78,4 +77,3 @@ def build_fixture(input_path: Path, output_path: Path) -> ValidationReport:
         json.dumps(output, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
     return report
-

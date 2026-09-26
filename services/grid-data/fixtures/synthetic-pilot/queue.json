@@ -1,0 +1,4 @@
+[
+  {"project_id": "synthetic-queue-001", "candidate_bus": "synthetic-mv-a", "import_mw": 15, "export_mw": 0, "status": "accepted_mock", "earliest_energisation": "2027-06-01", "inclusion_probability": 0.85, "is_synthetic": true},
+  {"project_id": "synthetic-queue-002", "candidate_bus": "synthetic-mv-b", "import_mw": 25, "export_mw": 10, "status": "accepted_mock", "earliest_energisation": "2028-01-01", "inclusion_probability": 0.6, "is_synthetic": true}
+]

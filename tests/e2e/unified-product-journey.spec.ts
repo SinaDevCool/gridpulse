@@ -1,17 +1,20 @@
 import { expect, test } from "@playwright/test";
 
-test("private shell exposes the unified lifecycle and customer destinations", async ({ page }) => {
+test("workspace shell exposes the unified decision destinations", async ({ page }) => {
   await page.goto("/portfolio?q=berlin&stage=screening&sort=name");
 
-  const primary = page.getByRole("navigation", { name: "Primary" });
-  await expect(primary.getByRole("link", { name: "Portfolio" })).toBeVisible();
-  await expect(primary.getByRole("link", { name: "Power Finder" })).toBeVisible();
-  await expect(primary.getByRole("link", { name: "Evidence", exact: true })).toBeVisible();
-  await expect(primary.getByRole("link", { name: "Reports" })).toBeVisible();
-
-  const lifecycle = page.getByRole("navigation", { name: "Grid connection lifecycle" });
-  for (const stage of ["Discover", "Qualify", "Prepare", "Engage", "Decide", "Learn"]) {
-    await expect(lifecycle.getByRole("link", { name: new RegExp(stage) })).toBeVisible();
+  const navigation = page.getByRole("navigation", { name: "Grid workspace navigation" });
+  for (const destination of [
+    "Sites",
+    "Power Finder",
+    "Constraints",
+    "Planner",
+    "Activation",
+    "Operations",
+    "Evidence",
+    "Reports",
+  ]) {
+    await expect(navigation.getByRole("link", { name: new RegExp(destination) })).toBeVisible();
   }
   await expect(page).toHaveURL(/q=berlin/);
   await expect(page).toHaveURL(/stage=screening/);

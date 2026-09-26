@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import hashlib
 import json
-import xml.etree.ElementTree as ElementTree
 import zipfile
+from collections.abc import Iterator
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Iterator
-
+from typing import Any
+from xml.etree import ElementTree
 
 SOURCE_ID = "bnetza-mastr-full-export-v1"
 CONNECTOR_VERSION = "mastr-full-export-v1"
@@ -111,7 +111,9 @@ def _status(value: str | None) -> str:
 
 
 def _asset_type(member_name: str, fields: dict[str, str]) -> str:
-    text = f"{member_name} {fields.get('EinheitTyp', '')} {fields.get('Technologie', '')}".casefold()
+    text = (
+        f"{member_name} {fields.get('EinheitTyp', '')} {fields.get('Technologie', '')}".casefold()
+    )
     if "speicher" in text:
         return "storage"
     if "verbrauch" in text:
@@ -256,7 +258,9 @@ def parse_mastr_export(
         "assets": assets,
     }
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    output_path.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
     return MastrReport(len(assets), skipped, source_sha256, tuple(warnings))
 
 
@@ -265,6 +269,7 @@ def stream_mastr_export(
     output_path: Path,
     *,
     federal_state: str | None = None,
+    exact_map_points_only: bool = False,
 ) -> MastrReport:
     """Write newline-delimited records without retaining the full export in memory."""
     source_hash = hashlib.sha256()
@@ -284,6 +289,7 @@ def stream_mastr_export(
         "source_url": "https://www.marktstammdatenregister.de/MaStR/Datendownload",
         "licence": "Datenlizenz Deutschland – Namensnennung – Version 2.0",
         "geographic_scope": federal_state or "Germany",
+        "exact_map_points_only": exact_map_points_only,
         "source_sha256": source_sha256,
         "connector_version": CONNECTOR_VERSION,
         "parser_version": PARSER_VERSION,
@@ -323,6 +329,11 @@ def stream_mastr_export(
                         warnings.extend(asset_warnings)
                         if asset["latitude"] is None or asset["longitude"] is None:
                             skipped += 1
+                            if exact_map_points_only:
+                                continue
+                        if exact_map_points_only and asset["asset_type"] == "consumption":
+                            skipped += 1
+                            continue
                         output.write(
                             json.dumps(
                                 {"record_type": "asset", **asset},
