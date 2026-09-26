@@ -21853,6 +21853,375 @@ tbody tr:last-child td {
   }
 }
 
+/* Sites workspace light theme. The portfolio owns a compact decision-system
+   palette, so its light values must be defined here rather than inherited from
+   the map-first Power Finder workspace. */
+:root[data-theme="light"] .decision-workspace-page {
+  --dw-bg: #f3f6f9;
+  --dw-panel: #ffffff;
+  --dw-strong: #eaf1f5;
+  --dw-border: #b8c6d2;
+  --dw-text: #112337;
+  --dw-muted: #53677a;
+  --dw-accent: #087c98;
+  --dw-warning: #9a5a00;
+  background: var(--dw-bg);
+  color: var(--dw-text);
+  color-scheme: light;
+}
+
+:root[data-theme="light"] .decision-workspace-rail {
+  border-color: var(--dw-border);
+  background: #eaf0f4;
+  color: var(--dw-text);
+}
+
+:root[data-theme="light"] .decision-workspace-rail > header,
+:root[data-theme="light"] .rail-section,
+:root[data-theme="light"] .workspace-main-header,
+:root[data-theme="light"] .decision-view-switcher {
+  border-color: var(--dw-border);
+}
+
+:root[data-theme="light"] .decision-workspace-page .context-label {
+  color: #08758a;
+}
+
+:root[data-theme="light"] .rail-metrics {
+  border-color: #aebdca;
+  background: #aebdca;
+  box-shadow: 0 6px 18px rgb(32 52 72 / 8%);
+}
+
+:root[data-theme="light"] .rail-metrics > div {
+  background: #ffffff;
+}
+
+:root[data-theme="light"] .rail-metrics .positive strong,
+:root[data-theme="light"] .decision-kpi-strip .positive strong {
+  color: #08734e;
+}
+
+:root[data-theme="light"] .rail-section h2,
+:root[data-theme="light"] .rail-section summary {
+  color: #263b4f;
+}
+
+:root[data-theme="light"] .rail-section select,
+:root[data-theme="light"] .rail-search input,
+:root[data-theme="light"] .site-detail-panel select,
+:root[data-theme="light"] .site-detail-panel textarea,
+:root[data-theme="light"] .detail-location-fields input {
+  border-color: #9fb0bf;
+  background: #ffffff;
+  color: #162a3e;
+  box-shadow: inset 0 1px 2px rgb(25 45 66 / 4%);
+}
+
+:root[data-theme="light"] .rail-search input::placeholder,
+:root[data-theme="light"] .site-detail-panel textarea::placeholder {
+  color: #718397;
+}
+
+:root[data-theme="light"] .rail-section select:hover,
+:root[data-theme="light"] .rail-search input:hover {
+  border-color: #71899b;
+}
+
+:root[data-theme="light"] .workspace-data-menu button,
+:root[data-theme="light"] .export-menu button {
+  color: #354b5f;
+}
+
+:root[data-theme="light"] .workspace-data-menu button:hover,
+:root[data-theme="light"] .export-menu button:hover {
+  border-color: #a7bac8;
+  background: #ffffff;
+  color: #102438;
+}
+
+:root[data-theme="light"] .workspace-data-group {
+  border-color: #b6c5d1;
+  background: #f8fafc;
+}
+
+:root[data-theme="light"] .workspace-data-group > span {
+  color: #5c7184;
+}
+
+:root[data-theme="light"] .workspace-data-menu .workspace-data-group button {
+  color: #344b60;
+}
+
+:root[data-theme="light"] .workspace-data-menu .workspace-data-group button:hover {
+  border-color: #86a5b5;
+  background: #eaf4f7;
+  color: #102438;
+}
+
+:root[data-theme="light"] .decision-workspace-page .danger-action {
+  color: #b42318;
+}
+
+:root[data-theme="light"] .decision-workspace-main {
+  background: var(--dw-bg);
+}
+
+:root[data-theme="light"] .decision-workspace-page .primary-button {
+  border-color: #087c98;
+  background: #087c98;
+  color: #ffffff;
+  box-shadow: 0 5px 14px rgb(8 124 152 / 18%);
+}
+
+:root[data-theme="light"] .decision-workspace-page .primary-button:hover {
+  border-color: #075f75;
+  background: #075f75;
+}
+
+:root[data-theme="light"] .decision-view-switcher button {
+  color: #52687c;
+}
+
+:root[data-theme="light"] .decision-view-switcher button:hover {
+  background: #e5eff3;
+  color: #102438;
+}
+
+:root[data-theme="light"] .decision-view-switcher button.active {
+  border-color: #087c98;
+  color: #075f75;
+}
+
+:root[data-theme="light"] .workspace-inline-panel .panel-close {
+  border-color: #9fb0bf;
+  background: #ffffff;
+  color: #193047;
+}
+
+:root[data-theme="light"] .property-import-panel--compact {
+  border-color: #aebdca !important;
+  background: #ffffff !important;
+  color: #102438 !important;
+  box-shadow: 0 12px 30px rgb(32 52 72 / 10%);
+}
+
+:root[data-theme="light"] .property-import-panel--compact h2,
+:root[data-theme="light"] .property-import-panel--compact strong {
+  color: #102438 !important;
+}
+
+:root[data-theme="light"] .property-import-panel--compact p,
+:root[data-theme="light"] .property-import-panel--compact small {
+  color: #53677a !important;
+}
+
+:root[data-theme="light"] .workspace-inline-panel .property-import-panel--compact .workspace-card-heading .secondary-button {
+  border-color: #9fb0bf;
+  background: #f5f8fa;
+  color: #1d5062;
+}
+
+:root[data-theme="light"] .workspace-inline-panel .property-import-dropzone {
+  border-color: #89a7b6;
+  background: #f1f7f9;
+}
+
+:root[data-theme="light"] .workspace-inline-panel .property-import-dropzone input::file-selector-button {
+  border-color: #7196a7;
+  background: #ffffff;
+  color: #17495b;
+}
+
+:root[data-theme="light"] .site-queue {
+  border-color: #aebdca;
+  background: #aebdca;
+  box-shadow: 0 12px 30px rgb(32 52 72 / 8%);
+}
+
+:root[data-theme="light"] .site-queue-row {
+  border-color: #c8d3dc;
+  background: #ffffff;
+  color: var(--dw-text);
+}
+
+:root[data-theme="light"] .site-queue-row:nth-child(even) {
+  background: #f7f9fb;
+}
+
+:root[data-theme="light"] .site-queue-row:hover,
+:root[data-theme="light"] .site-queue-row.is-selected {
+  background: #e7f3f6;
+}
+
+:root[data-theme="light"] .site-queue-row small {
+  color: #63798c;
+}
+
+:root[data-theme="light"] .decision-chip {
+  border-color: #91a5b5;
+  background: #f3f6f8;
+  color: #405669;
+}
+
+:root[data-theme="light"] .decision-chip.is-advance {
+  border-color: #4b9d7b;
+  background: #e4f4ed;
+  color: #05613f;
+}
+
+:root[data-theme="light"] .decision-chip.is-hold {
+  border-color: #c69a43;
+  background: #fff5dc;
+  color: #754500;
+}
+
+:root[data-theme="light"] .decision-chip.is-reject {
+  border-color: #d28a8c;
+  background: #fff0f1;
+  color: #a12b32;
+}
+
+:root[data-theme="light"] .site-detail-panel {
+  border-color: #8fa9b9;
+  background: rgb(248 251 252 / 98%);
+  color: #112337;
+  box-shadow: -22px 0 50px rgb(32 52 72 / 20%);
+}
+
+:root[data-theme="light"] .site-detail-panel > header,
+:root[data-theme="light"] .detail-status-line,
+:root[data-theme="light"] .site-detail-panel section,
+:root[data-theme="light"] .detail-location-summary {
+  border-color: #c2ced8;
+}
+
+:root[data-theme="light"] .site-detail-panel h2,
+:root[data-theme="light"] .site-detail-panel h3,
+:root[data-theme="light"] .site-detail-panel dd,
+:root[data-theme="light"] .detail-blockers,
+:root[data-theme="light"] .detail-decision-current p {
+  color: #172c40;
+}
+
+:root[data-theme="light"] .site-detail-panel header button,
+:root[data-theme="light"] .detail-location-summary div,
+:root[data-theme="light"] .detail-decision-current,
+:root[data-theme="light"] .site-detail-panel > footer a,
+:root[data-theme="light"] .site-detail-panel > footer button {
+  border-color: #aebdca;
+  background: #ffffff;
+  color: #08758a;
+}
+
+:root[data-theme="light"] .detail-location-fields input[readonly],
+:root[data-theme="light"] .site-detail-panel select:disabled,
+:root[data-theme="light"] .detail-decision-summary textarea[readonly] {
+  background: #eef3f6;
+  color: #3f566a;
+}
+
+:root[data-theme="light"] .next-action {
+  background: #eaf4f7;
+  color: #19384a;
+}
+
+:root[data-theme="light"] .decision-kpi-strip {
+  border-color: #aebdca;
+  background: #aebdca;
+  box-shadow: 0 10px 24px rgb(32 52 72 / 8%);
+}
+
+:root[data-theme="light"] .decision-kpi-strip article {
+  background: #ffffff;
+}
+
+:root[data-theme="light"] .decision-priority-section,
+:root[data-theme="light"] .operator-exposure-section,
+:root[data-theme="light"] .decision-record-index,
+:root[data-theme="light"] .portfolio-matrix-section {
+  border-color: #aebdca;
+  background: #ffffff;
+  box-shadow: 0 12px 30px rgb(32 52 72 / 8%);
+}
+
+:root[data-theme="light"] .decision-priority-section > header,
+:root[data-theme="light"] .operator-exposure-section > header,
+:root[data-theme="light"] .decision-record-index > header,
+:root[data-theme="light"] .decision-priority-list > article,
+:root[data-theme="light"] .operator-exposure-section article {
+  border-color: #c8d3dc;
+}
+
+:root[data-theme="light"] .decision-priority-list h3,
+:root[data-theme="light"] .decision-priority-list dd,
+:root[data-theme="light"] .decision-record-index h3,
+:root[data-theme="light"] .decision-record-index dd {
+  color: #172c40;
+}
+
+:root[data-theme="light"] .decision-priority-list dt,
+:root[data-theme="light"] .decision-priority-list b,
+:root[data-theme="light"] .decision-record-index dt {
+  color: #5c7285;
+}
+
+:root[data-theme="light"] .decision-priority-list > article:nth-child(even) {
+  background: #f7f9fb;
+}
+
+:root[data-theme="light"] .matrix-legend span {
+  border-color: #9fb0bf;
+  background: #f5f8fa;
+  color: #455b6e;
+}
+
+:root[data-theme="light"] .matrix-head,
+:root[data-theme="light"] .portfolio-matrix > a {
+  border-color: #c6d2dc;
+  color: #4f6578;
+}
+
+:root[data-theme="light"] .matrix-head {
+  background: #eaf0f4;
+}
+
+:root[data-theme="light"] .portfolio-matrix > a:hover {
+  background: #e8f4f7;
+}
+
+:root[data-theme="light"] .portfolio-matrix strong {
+  color: #172c40;
+}
+
+:root[data-theme="light"] .portfolio-matrix small {
+  color: #60768a;
+}
+
+:root[data-theme="light"] .matrix-status {
+  border-color: #93a6b6;
+  background: #f4f7f9;
+  color: #42586b;
+}
+
+:root[data-theme="light"] .matrix-status.status-favourable {
+  border-color: #55a182;
+  background: #e5f5ee;
+  color: #076342;
+}
+
+:root[data-theme="light"] .matrix-status.status-conditional {
+  border-color: #c49a45;
+  background: #fff5dc;
+  color: #754500;
+}
+
+:root[data-theme="light"] .matrix-status.status-adverse {
+  border-color: #d0878e;
+  background: #fff0f1;
+  color: #a12b32;
+}
+
 /* Adviser workflow: property brief, guided review and decision controls. */
 .overview-executive {
   display: grid;
