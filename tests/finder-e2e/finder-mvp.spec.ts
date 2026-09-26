@@ -13,6 +13,9 @@ test("Finder exploration and local property portfolio are anonymous", async ({ p
   await expect(page.getByText(/demand headroom is not established/i)).toHaveCount(0);
   await expect(page.getByText("No declared site yet")).toBeVisible();
   await expect(page.getByText(/Operator questions & report/i)).toHaveCount(0);
+  await expect(page.getByText(/Day-ahead grid outlook unavailable/i)).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Show map legend" })).toBeVisible();
+  await expect(page.getByText("Registered generation · exact public locations")).toBeHidden();
   await expect(page.getByRole("button", { name: /Show .* on map, .*\/100/ })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /Create pipeline site/i })).toBeDisabled();
   expect(requests.some((url) => /\/auth\/v1\/(token|signup)/.test(url))).toBe(false);

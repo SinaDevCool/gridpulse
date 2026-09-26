@@ -28,9 +28,6 @@ import {
 } from "react";
 import { z } from "zod";
 import { AppShell } from "@/components/product/AppShell";
-import { RegionalGridOutlook } from "@/features/grid-forecast/RegionalGridOutlook";
-import { loadCurrentGridStressForecast } from "@/features/grid-forecast/client";
-import type { GridStressForecast } from "@/features/grid-forecast/contracts";
 import { PowerFinderMap, type RzRegDataCentre } from "@/components/product/PowerFinderMap";
 import {
   InteractiveMapLegend,
@@ -64,7 +61,6 @@ import {
 } from "@/features/map/map-visual-registry";
 import {
   resolveMapSourceSummary,
-  sourceStatusLabel,
   sourceSupportsKind,
   type MapRuntimeSourceStatus,
 } from "@/features/map/map-source-registry";
@@ -74,7 +70,6 @@ import {
   type MapPreset,
 } from "@/features/map/map-filter-state";
 import { mapIsolationFromSearch, mapIsolationSearchPatch } from "@/features/map/map-url-state";
-import { layerAvailability } from "@/features/power-finder/layer-availability";
 import {
   loadPowerFinderViewport,
   type PowerFinderDataMode,
@@ -375,7 +370,7 @@ function PowerFinderPage() {
     return {
       node: true,
       line: true,
-      industrial_site: true,
+      industrial_site: false,
       generation_asset: false,
       storage_asset: false,
     };
@@ -385,7 +380,7 @@ function PowerFinderPage() {
   const [dataMode, setDataMode] = useState<PowerFinderDataMode | null>(null);
   const [runtimeSourceStatus, setRuntimeSourceStatus] = useState<MapRuntimeSourceStatus>({});
   const query = search.q ?? "";
-  const minimumVoltage = search.voltage ?? 0;
+  const minimumVoltage = search.voltage ?? (project.importMw >= 100 ? 110 : 0);
   const legacyOperator = search.operator ?? "all";
   const selectedTso = search.tso ?? "all";
   const selectedDso = search.dso ?? "all";
@@ -504,7 +499,7 @@ function PowerFinderPage() {
   );
   const [secondaryControlsOpen, setSecondaryControlsOpen] = useState(Boolean(search.propertyId));
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [legendOpen, setLegendOpen] = useState(true);
+  const [legendOpen, setLegendOpen] = useState(false);
   const [showDataCentres, setShowDataCentres] = useState(false);
   const [selectedDataCentre, setSelectedDataCentre] = useState<RzRegDataCentre | null>(null);
   const [finderWorkflow, setFinderWorkflow] = useState<"screen" | "discover">("screen");
@@ -623,7 +618,6 @@ function PowerFinderPage() {
   const [rankingState, setRankingState] = useState<"loading" | "ready" | "error">("loading");
   const [coverage, setCoverage] = useState<PowerFinderCoverage[]>(fallbackCoverage);
   const [operatorCatalog, setOperatorCatalog] = useState<GridOperatorOption[]>([]);
-  const [gridOutlook, setGridOutlook] = useState<GridStressForecast | null>(null);
   const regionCode = search.region ?? "DE";
   const [mapMode, setMapMode] = useState<"voltage" | "evidence" | "capacity">(
     search.mapMode ?? "voltage",
@@ -673,7 +667,7 @@ function PowerFinderPage() {
       setEnabled({
         node: true,
         line: true,
-        industrial_site: true,
+        industrial_site: false,
         generation_asset: false,
         storage_asset: false,
       });
@@ -1506,14 +1500,6 @@ function PowerFinderPage() {
   }, [selected]);
 
   useEffect(() => {
-    const controller = new AbortController();
-    void loadCurrentGridStressForecast("DE", controller.signal)
-      .then(setGridOutlook)
-      .catch(() => setGridOutlook(null));
-    return () => controller.abort();
-  }, []);
-
-  useEffect(() => {
     const sourceCollection = rankingCollection;
     if (!sourceCollection || !dataMode) return;
     if (project.latitude == null || project.longitude == null) {
@@ -1608,11 +1594,6 @@ function PowerFinderPage() {
                   aria-pressed={finderWorkflow === "discover"}
                   onClick={() => {
                     setFinderWorkflow("discover");
-                    setEnabled((current) => ({
-                      ...current,
-                      generation_asset: true,
-                      storage_asset: true,
-                    }));
                     if (regionCode === "DE") void updateSearch({ region: "DE-BB" });
                   }}
                 >
@@ -1624,7 +1605,6 @@ function PowerFinderPage() {
                 </button>
               </div>
             </div>
-            <RegionalGridOutlook forecast={gridOutlook} compact />
             {finderWorkflow === "discover" ? (
               <section className="finder-discovery-intro" aria-labelledby="finder-discovery-title">
                 <p className="context-label">Regional opportunity discovery</p>
@@ -1884,6 +1864,7 @@ function PowerFinderPage() {
                 <div className="finder-project-actions">
                   <button
                     type="button"
+                    aria-label={projectEditorOpen ? "Close brief" : "Screening brief"}
                     aria-expanded={projectEditorOpen}
                     aria-controls="finder-project-editor"
                     onClick={() => {
@@ -1898,7 +1879,7 @@ function PowerFinderPage() {
                       }
                     }}
                   >
-                    {projectEditorOpen ? "Close brief" : "Screening brief"}
+                    {projectEditorOpen ? "Close site brief" : "Edit site brief"}
                   </button>
                   <button
                     type="button"
@@ -1927,6 +1908,15 @@ function PowerFinderPage() {
                   <button
                     type="button"
                     className="primary-button"
+                    aria-label={
+                      propertySaveStatus === "saving"
+                        ? "Saving screening"
+                        : propertySaveStatus === "saved"
+                          ? "Screening saved"
+                          : activeProperty
+                            ? "Save screening to site"
+                            : "Create pipeline site"
+                    }
                     disabled={
                       propertySaveStatus === "saving" ||
                       propertySaveStatus === "saved" ||
@@ -1947,7 +1937,7 @@ function PowerFinderPage() {
                             ? "Try saving again"
                             : activeProperty
                               ? "Save screening to site"
-                              : "Create pipeline site"}
+                              : "Save screening"}
                   </button>
                 </div>
                 {activeProperty && propertySaveStatus === "saved" ? (
@@ -2459,17 +2449,18 @@ function PowerFinderPage() {
                   name="grid-search"
                   autoComplete="off"
                   onChange={(event) => void updateSearch({ q: event.target.value || undefined })}
-                  placeholder="Search node, operator, or ID…"
+                  placeholder="Search or filter connection points…"
                 />
               </label>
               <button
                 type="button"
                 className="finder-more-filters"
+                aria-label="More Filters"
                 aria-expanded={secondaryControlsOpen}
                 aria-controls="finder-secondary-controls"
                 onClick={() => setSecondaryControlsOpen((current) => !current)}
               >
-                More Filters
+                Filters
               </button>
               <div
                 id="finder-secondary-controls"
@@ -2799,13 +2790,13 @@ function PowerFinderPage() {
           ) : null}
 
           <details className="finder-layers-menu" suppressHydrationWarning>
-            <summary>Map Layers</summary>
+            <summary>Map view &amp; optional layers</summary>
             <div className="finder-map-presets" role="group" aria-label="Map view">
               {(
                 [
-                  ["connection", "Connection"],
-                  ["infrastructure", "Infrastructure"],
-                  ["generation", "Generation & Storage"],
+                  ["connection", "Connection candidates"],
+                  ["infrastructure", "Grid infrastructure"],
+                  ["generation", "Energy context"],
                 ] as const
               ).map(([preset, label]) => (
                 <button
@@ -2862,29 +2853,6 @@ function PowerFinderPage() {
                     }}
                   />
                   <span>{kindLabels[kind]}</span>
-                  <small>
-                    {(() => {
-                      if (!collection) return "—";
-                      if (
-                        registryAssetsUnavailable &&
-                        (kind === "generation_asset" || kind === "storage_asset")
-                      ) {
-                        return "Source unavailable";
-                      }
-                      const total = collection.features.filter(
-                        (feature) => feature.properties.kind === kind,
-                      ).length;
-                      const visible = visibleLayerCounts[kind];
-                      if (visible > 0) return `${visible} visible`;
-                      const availability = layerAvailability(collection, kind);
-                      if (!availability.available) return "0 in current detail view";
-                      if (total === 0) return "0 in view";
-                      if (kind === "generation_asset" || kind === "storage_asset") {
-                        return `${total} in view`;
-                      }
-                      return `${total} total`;
-                    })()}
-                  </small>
                 </label>
               ))}
             </div>
@@ -3501,10 +3469,9 @@ function PowerFinderPage() {
             className="power-finder-interactive-legend"
             sourceSummary={
               mapSourceSummary
-                ? sourceStatusLabel(
-                    mapSourceSummary,
-                    mapFilters.preset === "generation" ? "registry" : "grid",
-                  )
+                ? mapFilters.preset === "generation"
+                  ? `Public energy assets · ${mapSourceSummary.health === "live" ? "current coverage" : "partial coverage"}`
+                  : `Public grid coverage · ${mapSourceSummary.health === "live" ? "current" : "partial"}`
                 : undefined
             }
           >
