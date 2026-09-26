@@ -52,7 +52,10 @@ const checks = [
       if (!html.includes("Power Operations")) {
         throw new Error("Operations heading is missing");
       }
-      if (!html.includes("Scenario inputs and simulated results—not measured telemetry or operational instructions")) {
+      if (
+        !html.includes("Results use configured assumptions until measured facility evidence is connected") ||
+        !html.includes("No control commands are issued")
+      ) {
         throw new Error("Operations evidence boundary is missing");
       }
       if (html.includes("Understand what may constrain a site")) {
