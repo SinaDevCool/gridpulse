@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 const publicRoutes = [
-  ["/", "See which sites are worth advancing.", "Open Site Pipeline"],
+  ["/", "Screen the Grid Before Advancing the Site.", "Open Power Finder"],
   [
     "/service",
     "Turn an uncertain site into an operator-ready connection strategy.",
@@ -55,7 +55,7 @@ test("public navigation remains usable on mobile", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Close navigation" })).toBeVisible();
   const navigation = page.getByRole("navigation", { name: "Public navigation" });
   await expect(navigation).toBeVisible();
-  await expect(navigation.getByRole("link", { name: "Open Site Pipeline" })).toBeVisible();
+  await expect(navigation.getByRole("link", { name: "Open Power Finder" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)).toBe(
     false,
   );

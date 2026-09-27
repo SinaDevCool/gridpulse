@@ -1,16 +1,41 @@
 import { expect, test } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 
 test("homepage decision links match their promised destinations", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page.getByRole("link", { name: "Open Site Pipeline" }).first()).toHaveAttribute(
-    "href",
-    "/portfolio",
-  );
-  await expect(page.getByRole("link", { name: "Explore Power Finder" })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: "Open Power Finder" }).first()).toHaveAttribute(
     "href",
     "/power-finder",
   );
+  await expect(page.getByRole("link", { name: "View Site Pipeline" }).first()).toHaveAttribute(
+    "href",
+    "/portfolio",
+  );
+  await expect(page.getByRole("link", { name: "Operations", exact: true }).last()).toHaveAttribute(
+    "href",
+    "/operations",
+  );
+});
+
+test("homepage product proof is semantic, lazy-loaded and accessible", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+  await expect(
+    page.getByRole("heading", { name: "Put the Site in Its Grid Context." }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Know What Supports Every Decision." }),
+  ).toBeVisible();
+  await expect(page.getByText("Screening evidence—not a capacity offer.")).toBeVisible();
+
+  const productImage = page.getByRole("img", { name: /Power Finder in dark mode/i });
+  await expect(productImage).toHaveAttribute("loading", "lazy");
+  await expect(productImage).toHaveAttribute("width", "1600");
+  await expect(productImage).toHaveAttribute("height", "980");
+
+  const results = await new AxeBuilder({ page }).analyze();
+  expect(results.violations).toEqual([]);
 });
 
 test("pilot scope and application form are deep-linkable", async ({ page }) => {

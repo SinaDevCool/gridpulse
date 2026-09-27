@@ -17,7 +17,7 @@ test("landing page presents the focused decision journey", async ({ page }) => {
   await expect(
     page.locator("main").getByText(/activation strategy|operational envelope/i),
   ).toHaveCount(0);
-  await page.getByRole("link", { name: "Explore Power Finder" }).click();
+  await page.getByRole("link", { name: "Open Power Finder" }).first().click();
   await expect(page).toHaveURL(/\/power-finder$/);
 });
 
@@ -42,8 +42,9 @@ test("Operations exposes the focused three-view facility workflow", async ({ pag
   await expect(navigation.getByRole("link")).toHaveCount(3);
   await expect(page.getByText("Scenario workspace", { exact: true })).toBeVisible();
   await expect(page.getByText(/No control commands are issued/)).toBeVisible();
-  await expect(page.getByText("GPU-Hours Enabled").locator("xpath=..").locator("dd"))
-    .toHaveText(/^\d[\d,.]* h$/);
+  await expect(page.getByText("GPU-Hours Enabled").locator("xpath=..").locator("dd")).toHaveText(
+    /^\d[\d,.]* h$/,
+  );
 });
 
 test("Operations context selectors are themed, keyboard-operable, and preserve URL state", async ({

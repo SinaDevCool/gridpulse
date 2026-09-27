@@ -10,9 +10,7 @@ test("Finder exploration and local property portfolio are anonymous", async ({ p
   await expect(workspaceNavigation).toBeVisible();
   await expect(workspaceNavigation.locator("a > svg")).toHaveCount(3);
   expect(
-    await workspaceNavigation.evaluate(
-      (element) => element.scrollWidth > element.clientWidth,
-    ),
+    await workspaceNavigation.evaluate((element) => element.scrollWidth > element.clientWidth),
   ).toBe(false);
   await expect(page.getByRole("link", { name: "Discuss a site" })).toHaveCount(0);
   await expect(page.getByText(/Sign in|Sign up|Create account/i)).toHaveCount(0);
@@ -33,9 +31,10 @@ test("Finder landing, sector pages and methodology form the public product site"
 }) => {
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: /See which sites are worth advancing/i }),
+    page.getByRole("heading", { name: /Screen the Grid Before Advancing the Site/i }),
   ).toBeVisible();
-  await expect(page.getByRole("link", { name: /Open Site Pipeline/i }).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: /Open Power Finder/i }).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "Product" })).toBeVisible();
   await expect(page.getByRole("link", { name: "How It Works" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Product Tour" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Review the data" })).toHaveCount(0);

@@ -12,7 +12,11 @@ const publicNavigation = [
   { label: "Methodology & Sources", to: "/data-sources" },
 ] as const;
 
-const finderNavigation = [{ label: "How It Works", to: "/", hash: "how-it-works" }] as const;
+const finderNavigation = [
+  { label: "Product", to: "/", hash: "product" },
+  { label: "How It Works", to: "/", hash: "how-it-works" },
+  { label: "Evidence", to: "/", hash: "evidence" },
+] as const;
 
 export function PublicBrand() {
   return (
@@ -54,21 +58,21 @@ export function PublicLayout({
             </Link>
           ))}
           <Link
-            to={finderMarketingChrome ? "/portfolio" : "/pilot"}
+            to={finderMarketingChrome ? "/power-finder" : "/pilot"}
             hash={!finderMarketingChrome && onPilotPage ? "pilot-form" : undefined}
             className="public-header-cta"
             onClick={() => {
               setMenuOpen(false);
               trackEvent(
                 finderMarketingChrome
-                  ? "public_open_site_pipeline_clicked"
+                  ? "public_open_power_finder_clicked"
                   : "public_start_pilot_clicked",
                 { placement: "header" },
               );
             }}
           >
             {finderMarketingChrome
-              ? "Open Site Pipeline"
+              ? "Open Power Finder"
               : onPilotPage
                 ? "Continue Application"
                 : "Start a Pilot"}
@@ -106,8 +110,11 @@ export function PublicFooter({
           {finderMarketingChrome ? null : <Link to="/service">Assessment</Link>}
           {finderMarketingChrome ? null : <Link to="/demo">Product Tour</Link>}
           {finderMarketingChrome ? null : <Link to="/data-sources">Methodology &amp; Sources</Link>}
+          {finderMarketingChrome ? <Link to="/power-finder">Power Finder</Link> : null}
+          {finderMarketingChrome ? <Link to="/portfolio">Sites</Link> : null}
+          {finderMarketingChrome ? <Link to="/operations">Operations</Link> : null}
           {finderMarketingChrome ? (
-            <Link to="/portfolio">Open Site Pipeline</Link>
+            <Link to="/data-sources">Evidence &amp; Methodology</Link>
           ) : (
             <Link to="/pilot">Start a Pilot</Link>
           )}
