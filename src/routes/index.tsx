@@ -200,7 +200,7 @@ function DataCentreLandingPage() {
                     height="980"
                     loading="lazy"
                     decoding="async"
-                    alt="GridPulse Power Finder in dark mode showing a data-centre site brief, mapped grid context and connection screening map."
+                    alt="GridPulse Power Finder in dark mode showing regional site discovery, mapped grid infrastructure and generation context around Brandenburg."
                   />
                 </picture>
                 <figcaption>
