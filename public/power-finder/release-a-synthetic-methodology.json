@@ -1,0 +1,37 @@
+{
+  "scenario_version": "de-bb-synthetic-capacity-v1",
+  "model_version": "deterministic-hourly-profile-v1",
+  "evidence_status": "synthetic",
+  "training_status": "untrained",
+  "not_for_connection_decision": true,
+  "geographic_scope": "Brandenburg demonstration coverage",
+  "purpose": "Product demonstration of requirement-sensitive geographic and temporal screening.",
+  "replacement_target": "DSO/TSO asset ratings, planning model, operational loading, security criteria and connection queue",
+  "synthetic_equipment_midpoints_mw": {
+    "20_kv": 28,
+    "110_kv": 120,
+    "220_kv": 320,
+    "380_kv": 650
+  },
+  "hourly_resolution": "8760 deterministic hourly intervals",
+  "calculation": {
+    "firm_envelope": "minimum of synthetic transformer, upstream branch, voltage-security and contingency limits",
+    "flexible_envelope": "hourly conditional operating limit; customer flexibility and BESS are simulated separately and do not create network capacity",
+    "uncertainty": "P10/P50/P90 band across deterministic scenario hours; not a statistical confidence interval",
+    "ranking_weights_percent": {
+      "capacity_fit": 25,
+      "voltage_fit": 15,
+      "temporal_availability": 15,
+      "distance": 10,
+      "evidence": 10,
+      "operating_stress": 10,
+      "flexibility_burden": 10,
+      "site_context": 5
+    }
+  },
+  "limitations": [
+    "No operator asset ratings, SCADA loading, protection settings, fault levels or connection queue are used.",
+    "The hourly profile is not trained on node-level German operational data.",
+    "Outputs are neither free, available, connectable, reserved nor operator-confirmed capacity."
+  ]
+}

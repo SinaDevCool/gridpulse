@@ -59,6 +59,21 @@ describe("portfolio intelligence", () => {
       { operator: "all", risk: "deadline", sort: "urgency", now },
     );
     expect(result.rows.map((item) => item.site_id)).toEqual(["a"]);
+    expect(result.metrics.totalMw).toBe(100);
+    expect(result.metrics.atRiskMw).toBe(0);
     expect(result.boundary).toContain("does not aggregate available grid capacity");
+  });
+
+  it("applies operator filters to rows and portfolio metrics", () => {
+    const result = buildPortfolioIntelligence(
+      [
+        row({ site_id: "a", operator_name: "Operator A", requested_import_mw: 100 }),
+        row({ site_id: "b", operator_name: "Operator B", requested_import_mw: 40 }),
+      ],
+      { operator: "Operator B", risk: "all", sort: "mw" },
+    );
+    expect(result.rows.map((item) => item.site_id)).toEqual(["b"]);
+    expect(result.metrics.totalMw).toBe(40);
+    expect(result.metrics.urgentProjects).toBe(1);
   });
 });

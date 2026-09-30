@@ -1,0 +1,9 @@
+{
+  "schema_version": "gridpulse-activation-policy-v1",
+  "flexible_load_fraction": 0.25,
+  "maximum_event_hours": 8,
+  "battery_power_fraction": 0.22,
+  "battery_duration_hours": 4.0,
+  "battery_round_trip_efficiency": 0.9,
+  "battery_reserve_fraction": 0.1
+}

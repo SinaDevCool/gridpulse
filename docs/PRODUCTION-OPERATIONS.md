@@ -23,6 +23,25 @@ $env:VITE_SUPABASE_PUBLISHABLE_KEY = "<publishable key>"
 node scripts/check-production-health.mjs
 ```
 
+Run the browser-level map check after deployment. Unlike the HTTP health script, this verifies that
+MapLibre creates a usable canvas and that the basemap, national grid, and registry tile sources all
+reach a ready state:
+
+```powershell
+$env:GRIDPULSE_HEALTH_BASE_URL = "https://gridpulseinsights.com"
+node scripts/check-production-map.mjs
+```
+
+The browser check reports the non-sensitive `gridpulse-map-startup` performance measurement. Failed
+checks retain a screenshot under `test-results/`; they never capture project coordinates or customer
+inputs.
+
+After every production build, enforce the checked-in asset budgets with:
+
+```powershell
+npm run check:performance-budgets
+```
+
 Confirm database migration reconciliation with:
 
 ```powershell
@@ -68,3 +87,18 @@ operator-data experiments must remain local and must not be described as staging
 4. Restore the last known-good application.
 5. Diagnose and ship a forward fix.
 6. Record root cause, impact, detection, and preventive action.
+
+## Map incident classification
+
+Record map failures independently so a background-provider incident is not mistaken for loss of
+GridPulse evidence:
+
+1. `basemap`: OpenFreeMap style, sprite, glyph, or background vector tile failure.
+2. `grid`: GridPulse national grid vector tile failure.
+3. `registry`: MaStR generation or storage vector tile failure.
+4. `viewport`: Bounded candidate/evidence GeoJSON failure.
+5. `data-centres`: Contextual RZReg location layer failure.
+
+When the basemap fails but grid or viewport evidence remains ready, the product is degraded rather
+than unavailable. The local data-only background must stay interactive and all public truth labels
+remain unchanged.

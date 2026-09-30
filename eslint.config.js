@@ -1,12 +1,30 @@
 import js from "@eslint/js";
-import eslintPluginPrettier from "eslint-plugin-prettier/recommended";
 import globals from "globals";
 import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["dist", ".output", ".vinxi"] },
+  {
+    ignores: [
+      "dist/**",
+      ".output/**",
+      ".vinxi/**",
+      ".wrangler/**",
+      ".claude/**",
+      ".codex_artifacts/**",
+      ".codex-tmp/**",
+      "node_modules/**",
+      "output/**",
+      "outputs/**",
+      "test-results/**",
+      "tmp/**",
+      "work/**",
+      "services/grid-data/build/**",
+      "worker-configuration.d.ts",
+      "src/routeTree.gen.ts",
+    ],
+  },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ["**/*.{ts,tsx}"],
@@ -36,5 +54,4 @@ export default tseslint.config(
       "@typescript-eslint/no-unused-vars": "off",
     },
   },
-  eslintPluginPrettier,
 );

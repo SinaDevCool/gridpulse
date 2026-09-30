@@ -1,0 +1,127 @@
+{
+  "schema_version": "gridpulse-c1-validation-v1",
+  "generated_at": "2026-08-08T14:29:24.299111+00:00",
+  "model_id": "simbench:1-MV-urban--0-sw",
+  "model_version": "simbench-open-model-v1",
+  "validation_class": "synthetic_demonstration",
+  "model_sha256": "6786fe43a4a4567928b01ca582403bb4820aa4ef852ffc6af290e4baf685da95",
+  "connection_bus": "bus-84",
+  "element_counts": {
+    "buses": 144,
+    "lines": 147,
+    "transformers": 2,
+    "loads": 139,
+    "generators": 135
+  },
+  "provenance": {
+    "source": "SimBench",
+    "source_url": "https://simbench.de/en/download/",
+    "license": "ODbL-1.0",
+    "benchmark_code": "1-MV-urban--0-sw",
+    "geographic_truth": "representative German benchmark; not a real location"
+  },
+  "results": [
+    {
+      "status": "demonstration",
+      "study_type": "base_case",
+      "provider": "pandapower-newton-raphson",
+      "solver_version": "3.5.4",
+      "converged": true,
+      "values": {
+        "converged": true,
+        "passes": true,
+        "violations": [],
+        "minimum_voltage_pu": 0.96616,
+        "maximum_voltage_pu": 1.025,
+        "maximum_line_loading_percent": 71.887,
+        "maximum_transformer_loading_percent": 40.166,
+        "model_id": "simbench:1-MV-urban--0-sw",
+        "model_version": "simbench-open-model-v1",
+        "validation_class": "synthetic_demonstration",
+        "study_year": 2026,
+        "provenance": {
+          "source": "SimBench",
+          "source_url": "https://simbench.de/en/download/",
+          "license": "ODbL-1.0",
+          "benchmark_code": "1-MV-urban--0-sw",
+          "geographic_truth": "representative German benchmark; not a real location"
+        }
+      },
+      "limitations": [
+        "C1 evaluates steady-state AC thermal and voltage constraints only.",
+        "Short-circuit, protection, harmonics and dynamic stability are outside this result.",
+        "Only operator-confirmed studies may be represented as confirmed connection capacity."
+      ]
+    },
+    {
+      "status": "demonstration",
+      "study_type": "voltage",
+      "provider": "pandapower-newton-raphson",
+      "solver_version": "3.5.4",
+      "converged": true,
+      "values": {
+        "converged": true,
+        "passes": true,
+        "violations": [],
+        "minimum_voltage_pu": 0.96616,
+        "maximum_voltage_pu": 1.025,
+        "maximum_line_loading_percent": 71.887,
+        "maximum_transformer_loading_percent": 40.166,
+        "model_id": "simbench:1-MV-urban--0-sw",
+        "model_version": "simbench-open-model-v1",
+        "validation_class": "synthetic_demonstration",
+        "study_year": 2026,
+        "provenance": {
+          "source": "SimBench",
+          "source_url": "https://simbench.de/en/download/",
+          "license": "ODbL-1.0",
+          "benchmark_code": "1-MV-urban--0-sw",
+          "geographic_truth": "representative German benchmark; not a real location"
+        }
+      },
+      "limitations": [
+        "C1 evaluates steady-state AC thermal and voltage constraints only.",
+        "Short-circuit, protection, harmonics and dynamic stability are outside this result.",
+        "Only operator-confirmed studies may be represented as confirmed connection capacity."
+      ]
+    },
+    {
+      "status": "demonstration",
+      "study_type": "capacity",
+      "provider": "pandapower-newton-raphson",
+      "solver_version": "3.5.4",
+      "converged": true,
+      "values": {
+        "converged": true,
+        "base_case_capacity_mw": 5.812,
+        "firm_import_capacity_mw": 5.812,
+        "binding_case": "base_case",
+        "binding_constraint": "line_thermal_loading",
+        "contingencies": [],
+        "search_tolerance_mw": 0.1,
+        "voltage_limits_pu": [
+          0.95,
+          1.05
+        ],
+        "thermal_limit_percent": 100.0,
+        "model_id": "simbench:1-MV-urban--0-sw",
+        "model_version": "simbench-open-model-v1",
+        "validation_class": "synthetic_demonstration",
+        "study_year": 2026,
+        "provenance": {
+          "source": "SimBench",
+          "source_url": "https://simbench.de/en/download/",
+          "license": "ODbL-1.0",
+          "benchmark_code": "1-MV-urban--0-sw",
+          "geographic_truth": "representative German benchmark; not a real location"
+        }
+      },
+      "limitations": [
+        "C1 evaluates steady-state AC thermal and voltage constraints only.",
+        "Short-circuit, protection, harmonics and dynamic stability are outside this result.",
+        "Only operator-confirmed studies may be represented as confirmed connection capacity."
+      ]
+    }
+  ],
+  "public_label": "Open benchmark solver validation \u2014 not location capacity"
+}

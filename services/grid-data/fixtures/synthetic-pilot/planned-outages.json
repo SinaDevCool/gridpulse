@@ -1,0 +1,11 @@
+[
+  {
+    "outage_id": "mock:de-pilot-01:planned-outage:line-a-b",
+    "element_type": "line",
+    "element_id": "synthetic-line-a-b",
+    "starts_at": "2028-06-03T06:00:00Z",
+    "ends_at": "2028-06-03T18:00:00Z",
+    "reason": "Deterministic benchmark maintenance window",
+    "is_synthetic": true
+  }
+]

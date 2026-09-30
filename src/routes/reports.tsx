@@ -1,338 +1,244 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
+import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, ArrowRight, BarChart3, BellRing, FileText } from "lucide-react";
+import { Download, FileCheck2, LoaderCircle } from "lucide-react";
 import { AppShell, PageHeading } from "@/components/product/AppShell";
-import { useAuth } from "@/context/useAuth";
-import { supabase } from "@/integrations/supabase/client";
-import { readiness, type CandidateSite, type Evidence } from "@/lib/assessment-model";
-import { z } from "zod";
-import { PortfolioIntelligencePanel } from "@/features/grid-connection/PortfolioIntelligencePanel";
-import type {
-  DecisionPortfolioRow,
-  PortfolioRiskFilter,
-  PortfolioSort,
-} from "@/features/grid-connection/portfolio-intelligence";
+import { operatorEnquiryPackageResultSchema } from "@/features/analytics/contracts";
+import {
+  listAnalyticsJobs,
+  startOperatorEnquiryPackage,
+  waitForAnalyticsJob,
+  type AnalyticsJob,
+} from "@/lib/analytics-api";
+import { productCapabilities } from "@/config/product-mode";
+import { WorkflowShowcase } from "@/components/product/WorkflowShowcase";
 
 export const Route = createFileRoute("/reports")({
-  validateSearch: z.object({
-    operator: z.string().max(160).optional(),
-    risk: z.enum(["all", "blocked", "deadline", "operator_confirmed"]).optional(),
-    sort: z.enum(["urgency", "evidence", "mw", "name"]).optional(),
-  }),
   head: () => ({
     meta: [
-      { title: "Management Reports | GridPulse" },
+      { title: "Decision Packages | GridPulse" },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
   component: ReportsPage,
 });
 
-type Summary = {
-  project_count: number;
-  requested_import_mw: number;
-  indicated_import_mw: number;
-  estimated_capital_eur: number;
-  blocked_by_evidence: number;
-  awaiting_operator: number;
-  offers_requiring_decision: number;
-  operator_confirmed: number;
-};
-type Benchmark = {
-  operator_name: string;
-  completed_pilots: number;
-  response_time_days: number | null;
-  clarification_rounds: number | null;
-  reinforcement_rate: number | null;
-  indicated_lead_time_days: number | null;
-  cost_per_requested_mw_eur: number | null;
-  customer_confirmed_observations: number;
-};
-type Notification = {
-  id: string;
-  severity: string;
-  title: string;
-  detail: string;
-  action_path: string | null;
-};
-type Onboarding = {
-  id: string;
-  priority: number;
-  operator_name: string;
-  source_discovery_status: string;
-  geographic_value: string;
-  rights_status: string;
-  next_action: string;
-};
+const packageInputs = new Set([
+  "capacity_requirement",
+  "facility_plan",
+  "facility_uncertainty",
+  "rolling_facility_plan",
+  "market_qualification",
+  "facility_historical_replay",
+  "shadow_verification",
+]);
+const reportDate = new Intl.DateTimeFormat("en-DE", {
+  dateStyle: "medium",
+  timeStyle: "short",
+});
 
-const number = (value: number) =>
-  new Intl.NumberFormat("de-DE", { maximumFractionDigits: 0 }).format(value);
-const money = (value: number | null) =>
-  value == null
-    ? "—"
-    : new Intl.NumberFormat("de-DE", {
-        style: "currency",
-        currency: "EUR",
-        maximumFractionDigits: 0,
-      }).format(value);
+function saveText(name: string, text: string, type: string) {
+  const url = URL.createObjectURL(new Blob([text], { type }));
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = name;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
 
 function ReportsPage() {
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const search = Route.useSearch();
-  const query = useQuery({
-    queryKey: ["management-reports", user?.id],
-    enabled: Boolean(user),
-    queryFn: async () => {
-      const refreshed = await supabase.rpc("refresh_my_notifications");
-      if (refreshed.error) throw refreshed.error;
-      const [sites, evidence, summary, benchmarks, notifications, onboarding, portfolio] =
-        await Promise.all([
-          supabase
-            .from("candidate_sites")
-            .select("*")
-            .neq("assessment_status", "archived")
-            .order("created_at", { ascending: false }),
-          supabase.from("assessment_evidence").select("*"),
-          supabase.rpc("management_portfolio_summary"),
-          supabase.rpc("operator_pilot_benchmarks"),
-          supabase
-            .from("user_notifications")
-            .select("id,severity,title,detail,action_path")
-            .is("read_at", null)
-            .is("dismissed_at", null)
-            .order("created_at", { ascending: false })
-            .limit(8),
-          supabase
-            .from("operator_onboarding_register")
-            .select("*")
-            .order("priority")
-            .order("operator_name"),
-          supabase.rpc("connection_decision_portfolio"),
-        ]);
-      for (const result of [
-        sites,
-        evidence,
-        summary,
-        benchmarks,
-        notifications,
-        onboarding,
-        portfolio,
-      ])
-        if (result.error) throw result.error;
-      return {
-        projects: (sites.data as CandidateSite[]).map((site) => ({
-          site,
-          state: readiness(
-            (evidence.data as Evidence[]).filter((item) => item.site_id === site.id),
-          ),
-        })),
-        summary: summary.data as Summary,
-        benchmarks: (benchmarks.data ?? []) as Benchmark[],
-        notifications: (notifications.data ?? []) as Notification[],
-        onboarding: (onboarding.data ?? []) as Onboarding[],
-        portfolio: (portfolio.data ?? []) as DecisionPortfolioRow[],
-      };
-    },
+  const jobs = useQuery({
+    queryKey: ["canonical-analytics-jobs"],
+    queryFn: () => listAnalyticsJobs(200),
+    enabled: productCapabilities.workspace,
   });
-  const data = query.data;
-  const metrics: Array<[string, number, string]> = data
-    ? [
-        ["Active projects", data.summary.project_count, ""],
-        ["Demand under assessment", data.summary.requested_import_mw, " MW"],
-        ["Operator-indicated power", data.summary.indicated_import_mw, " MW"],
-        ["Blocked by evidence", data.summary.blocked_by_evidence, ""],
-        ["Awaiting operator", data.summary.awaiting_operator, ""],
-        ["Offers requiring decision", data.summary.offers_requiring_decision, ""],
-        ["Operator confirmed", data.summary.operator_confirmed, ""],
-      ]
-    : [];
+  const candidates = useMemo(
+    () =>
+      (jobs.data ?? []).filter(
+        (job) =>
+          job.status === "succeeded" && packageInputs.has(job.job_type) && job.result_payload,
+      ),
+    [jobs.data],
+  );
+  const [selected, setSelected] = useState<string[]>([]);
+  const [packageJob, setPackageJob] = useState<AnalyticsJob | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const result = packageJob?.result_payload
+    ? operatorEnquiryPackageResultSchema.safeParse(packageJob.result_payload)
+    : null;
+
+  async function buildPackage() {
+    setBusy(true);
+    setError(null);
+    try {
+      const chosen = candidates.filter((job) => selected.includes(job.id));
+      const artifacts = Object.fromEntries(
+        chosen.map((job) => [`${job.job_type}:${job.id}`, job.result_payload]),
+      );
+      const accepted = await startOperatorEnquiryPackage({
+        schema_version: "gridpulse-operator-enquiry-package-request-v1",
+        package_id: `operator-enquiry-${new Date().toISOString().slice(0, 10)}`,
+        artifacts,
+        blockers: ["operator_confirmation_required"],
+        assumption_ids: [],
+      });
+      setPackageJob(await waitForAnalyticsJob(accepted.job_id));
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "The package could not be generated");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <AppShell requireAuth>
-      <main id="main-content" className="section-page management-report">
+      <main id="main-content" className="section-page">
         <PageHeading
-          eyebrow="Decision intelligence"
-          title="Management portfolio and pilot learning"
-          description="Track decision exposure, operator progress and consent-controlled evidence of GridPulse customer value."
+          eyebrow="Decision packages"
+          title="Operator enquiry package"
+          description="Select canonical analytical results and generate one deterministic JSON and Markdown package. Results remain screening evidence until confirmed by the responsible operator."
         />
-        {query.isLoading ? (
-          <div className="portfolio-state">
-            <div className="loading-spinner" />
-            Loading management intelligence…
-          </div>
-        ) : null}
-        {query.error ? (
-          <div className="portfolio-state error-message">
-            <AlertTriangle />
-            {query.error instanceof Error ? query.error.message : "Reporting unavailable."}
-          </div>
-        ) : null}
-        {data ? (
+        {!productCapabilities.workspace ? (
           <>
-            <section className="management-kpi-grid">
-              {metrics.map(([label, value, suffix]) => (
-                <article key={label}>
-                  <span>{label}</span>
-                  <strong>
-                    {number(value)}
-                    {suffix}
-                  </strong>
-                </article>
-              ))}
-              <article>
-                <span>Indicative connection capital</span>
-                <strong>{money(data.summary.estimated_capital_eur)}</strong>
-              </article>
+            <section className="constraint-truth-banner">
+              <FileCheck2 aria-hidden="true" />
+              <p>
+                <strong>Package preview.</strong> Save a project and complete its canonical
+                assessments to unlock deterministic package generation. Public screening never
+                creates an operator-confirmed capacity claim.
+              </p>
             </section>
-            <PortfolioIntelligencePanel
-              rows={data.portfolio}
-              operator={search.operator ?? "all"}
-              risk={(search.risk ?? "all") as PortfolioRiskFilter}
-              sort={(search.sort ?? "urgency") as PortfolioSort}
-              onChange={(patch) =>
-                void navigate({
-                  to: "/reports",
-                  search: {
-                    ...search,
-                    operator:
-                      patch.operator === "all" ? undefined : (patch.operator ?? search.operator),
-                    risk: patch.risk === "all" ? undefined : (patch.risk ?? search.risk),
-                    sort: patch.sort === "urgency" ? undefined : (patch.sort ?? search.sort),
-                  },
-                  replace: true,
-                })
-              }
-            />
-            <section className="workspace-card">
-              <div className="panel-heading">
-                <div>
-                  <h2>Action inbox</h2>
-                  <p>
-                    In-app alerts are live. Warning and critical items are also queued in the email
-                    delivery ledger.
-                  </p>
-                </div>
-                <BellRing />
+            <WorkflowShowcase kind="reports" />
+          </>
+        ) : null}
+        {productCapabilities.workspace ? (
+          <section className="data-panel" aria-labelledby="package-inputs-title">
+            <div className="section-toolbar">
+              <div>
+                <h2 id="package-inputs-title">Canonical artifacts</h2>
               </div>
-              {data.notifications.length ? (
-                <div className="decision-alert-list">
-                  {data.notifications.map((item) => (
-                    <article className={`decision-alert ${item.severity}`} key={item.id}>
-                      <BellRing />
-                      <span>
-                        <b>{item.title}</b>
-                        <small>{item.detail}</small>
-                      </span>
-                      {item.action_path ? (
-                        <Link to={item.action_path as "/portfolio"}>
-                          Review <ArrowRight />
-                        </Link>
-                      ) : null}
-                    </article>
-                  ))}
-                </div>
-              ) : (
-                <div className="compact-empty">No unread alerts.</div>
-              )}
-            </section>
-            <section className="workspace-card">
-              <div className="panel-heading">
-                <div>
-                  <h2>Consented pilot benchmarks</h2>
-                  <p>
-                    Only completed pilots with anonymised-case permission and a customer-confirmed
-                    final observation are included.
-                  </p>
-                </div>
-                <BarChart3 />
-              </div>
-              <div className="table-wrap">
-                <table className="decision-table">
+              <span>{candidates.length} available</span>
+            </div>
+            {jobs.isLoading ? (
+              <p>Loading analytical results…</p>
+            ) : jobs.error ? (
+              <p role="alert">Unable to load analytical results.</p>
+            ) : (
+              <div className="table-scroll">
+                <table className="product-table">
                   <thead>
                     <tr>
-                      <th>Operator</th>
-                      <th>Pilots</th>
-                      <th>Response</th>
-                      <th>Clarifications</th>
-                      <th>Reinforcement</th>
-                      <th>Lead time</th>
-                      <th>Cost / requested MW</th>
+                      <th>Include</th>
+                      <th>Analysis</th>
+                      <th>Completed</th>
+                      <th>Fingerprint</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {data.benchmarks.map((row) => (
-                      <tr key={row.operator_name}>
-                        <td>
-                          <b>{row.operator_name}</b>
-                          <small>
-                            {row.customer_confirmed_observations} confirmed observations
-                          </small>
+                    {candidates.length === 0 ? (
+                      <tr>
+                        <td colSpan={4}>
+                          Run a capacity, facility, uncertainty, rolling, market, replay, or shadow
+                          study first.
                         </td>
-                        <td>{row.completed_pilots}</td>
-                        <td>{row.response_time_days ?? "—"} days</td>
-                        <td>{row.clarification_rounds ?? "—"}</td>
-                        <td>
-                          {row.reinforcement_rate == null ? "—" : `${row.reinforcement_rate}%`}
-                        </td>
-                        <td>{row.indicated_lead_time_days ?? "—"} days</td>
-                        <td>{money(row.cost_per_requested_mw_eur)}</td>
                       </tr>
-                    ))}
+                    ) : (
+                      candidates.map((job) => (
+                        <tr key={job.id}>
+                          <td>
+                            <input
+                              aria-label={`Include ${job.job_type} ${job.id}`}
+                              type="checkbox"
+                              checked={selected.includes(job.id)}
+                              onChange={(event) =>
+                                setSelected((current) =>
+                                  event.target.checked
+                                    ? [...current, job.id]
+                                    : current.filter((id) => id !== job.id),
+                                )
+                              }
+                            />
+                          </td>
+                          <td>
+                            <b>{job.job_type.replaceAll("_", " ")}</b>
+                          </td>
+                          <td>
+                            {job.completed_at ? reportDate.format(new Date(job.completed_at)) : "—"}
+                          </td>
+                          <td>
+                            <code>
+                              {String(job.result_payload?.result_fingerprint ?? job.id).slice(
+                                0,
+                                12,
+                              )}
+                            </code>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
-              {!data.benchmarks.length ? (
-                <div className="compact-empty">
-                  No consented, customer-confirmed final pilot outcomes yet. This is intentionally
-                  not estimated.
-                </div>
-              ) : null}
-            </section>
-            <section className="workspace-card">
-              <div className="panel-heading">
-                <div>
-                  <h2>Operator data onboarding</h2>
-                  <p>
-                    Prioritised source discovery and reuse-rights work. Capacity remains “not
-                    established” until written evidence exists.
-                  </p>
-                </div>
-                <FileText />
-              </div>
-              <div className="onboarding-grid">
-                {data.onboarding.map((row) => (
-                  <article key={row.id}>
-                    <span>
-                      Priority {row.priority} · {row.source_discovery_status.replaceAll("_", " ")}
-                    </span>
-                    <h3>{row.operator_name}</h3>
-                    <p>{row.geographic_value}</p>
-                    <small>Rights: {row.rights_status.replaceAll("_", " ")}</small>
-                    <b>{row.next_action}</b>
-                  </article>
-                ))}
-              </div>
-            </section>
-            <section>
-              <h2>Project deliverables</h2>
-              <div className="report-index-grid">
-                {data.projects.map(({ site, state }) => (
-                  <article className="report-index-card" key={site.id}>
-                    <p className="context-label">{site.id.slice(0, 8)}</p>
-                    <h2>{site.name}</h2>
-                    <p>{state.completed}/3 readiness requirements complete</p>
-                    <span className={state.ready ? "status collected" : "status warning-text"}>
-                      {state.ready ? "Ready" : "Evidence incomplete"}
-                    </span>
-                    <Link to="/assessments/$id" params={{ id: site.id }}>
-                      Open assessment <ArrowRight />
-                    </Link>
-                  </article>
-                ))}
-              </div>
-            </section>
-          </>
+            )}
+            <button
+              className="primary-button"
+              type="button"
+              disabled={busy || selected.length === 0}
+              onClick={() => void buildPackage()}
+            >
+              {busy ? <LoaderCircle aria-hidden="true" /> : <FileCheck2 aria-hidden="true" />}{" "}
+              Generate canonical package
+            </button>
+            {error ? <p role="alert">{error}</p> : null}
+          </section>
+        ) : null}
+        {result?.success ? (
+          <section className="data-panel" aria-labelledby="package-result-title">
+            <h2 id="package-result-title">Package ready</h2>
+            <p>
+              <code>{result.data.package.package_fingerprint}</code>
+            </p>
+            <p>Capacity claim: No · Automatic live dispatch: No</p>
+            <div className="button-row">
+              <button
+                type="button"
+                onClick={() =>
+                  saveText(
+                    "operator-enquiry.json",
+                    result.data.package.json_text,
+                    "application/json",
+                  )
+                }
+              >
+                <Download aria-hidden="true" /> JSON
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  saveText(
+                    "operator-enquiry.md",
+                    result.data.package.markdown_text,
+                    "text/markdown",
+                  )
+                }
+              >
+                <Download aria-hidden="true" /> Markdown
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  saveText(
+                    "manifest.json",
+                    JSON.stringify(result.data.package.manifest, null, 2) + "\n",
+                    "application/json",
+                  )
+                }
+              >
+                <Download aria-hidden="true" /> Manifest
+              </button>
+            </div>
+          </section>
         ) : null}
       </main>
     </AppShell>

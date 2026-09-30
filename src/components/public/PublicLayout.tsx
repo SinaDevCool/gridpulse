@@ -2,13 +2,20 @@ import { Link, useLocation } from "@tanstack/react-router";
 import { ArrowRight, Menu, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { trackEvent } from "@/lib/analytics";
-import { useAuth } from "@/context/useAuth";
+import { isFinderMvp } from "@/config/product-mode";
+import { FinderShell } from "@/components/product/FinderShell";
 
 const publicNavigation = [
   { label: "How It Works", to: "/", hash: "how-it-works" },
   { label: "Assessment", to: "/service" },
   { label: "Product Tour", to: "/demo" },
   { label: "Methodology & Sources", to: "/data-sources" },
+] as const;
+
+const finderNavigation = [
+  { label: "Product", to: "/", hash: "product" },
+  { label: "How It Works", to: "/", hash: "how-it-works" },
+  { label: "Evidence", to: "/", hash: "evidence" },
 ] as const;
 
 export function PublicBrand() {
@@ -19,17 +26,26 @@ export function PublicBrand() {
   );
 }
 
-export function PublicLayout({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+export function PublicLayout({
+  children,
+  forcePublicChrome = false,
+  finderMarketingChrome = false,
+}: {
+  children: ReactNode;
+  forcePublicChrome?: boolean;
+  finderMarketingChrome?: boolean;
+}) {
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
+  if (isFinderMvp() && !forcePublicChrome) return <FinderShell>{children}</FinderShell>;
   const onPilotPage = location.pathname === "/pilot";
+  const navigation = finderMarketingChrome ? finderNavigation : publicNavigation;
   return (
     <div className="public-shell">
       <header className="public-header">
         <PublicBrand />
         <nav className={menuOpen ? "is-open" : undefined} aria-label="Public navigation">
-          {publicNavigation.map((item) => (
+          {navigation.map((item) => (
             <Link
               key={`${item.to}-${"hash" in item ? item.hash : ""}`}
               to={item.to}
@@ -41,30 +57,25 @@ export function PublicLayout({ children }: { children: ReactNode }) {
               {item.label}
             </Link>
           ))}
-          {user ? (
-            <Link to="/portfolio" className="public-sign-in" onClick={() => setMenuOpen(false)}>
-              Workspace
-            </Link>
-          ) : (
-            <Link
-              to="/auth"
-              search={{ redirect: undefined }}
-              className="public-sign-in"
-              onClick={() => setMenuOpen(false)}
-            >
-              Sign In
-            </Link>
-          )}
           <Link
-            to="/pilot"
-            hash={onPilotPage ? "pilot-form" : undefined}
+            to={finderMarketingChrome ? "/power-finder" : "/pilot"}
+            hash={!finderMarketingChrome && onPilotPage ? "pilot-form" : undefined}
             className="public-header-cta"
             onClick={() => {
               setMenuOpen(false);
-              trackEvent("public_start_pilot_clicked", { placement: "header" });
+              trackEvent(
+                finderMarketingChrome
+                  ? "public_open_power_finder_clicked"
+                  : "public_start_pilot_clicked",
+                { placement: "header" },
+              );
             }}
           >
-            {onPilotPage ? "Continue Application" : "Start a Pilot"}
+            {finderMarketingChrome
+              ? "Open Power Finder"
+              : onPilotPage
+                ? "Continue Application"
+                : "Start a Pilot"}
           </Link>
         </nav>
         <button
@@ -78,13 +89,16 @@ export function PublicLayout({ children }: { children: ReactNode }) {
         </button>
       </header>
       {children}
-      <PublicFooter />
+      <PublicFooter finderMarketingChrome={finderMarketingChrome} />
     </div>
   );
 }
 
-export function PublicFooter() {
-  const { user } = useAuth();
+export function PublicFooter({
+  finderMarketingChrome = false,
+}: {
+  finderMarketingChrome?: boolean;
+}) {
   return (
     <footer className="public-footer">
       <div className="public-container public-footer-grid">
@@ -93,16 +107,16 @@ export function PublicFooter() {
           <p>Evidence-led grid-connection decision support for German infrastructure projects.</p>
         </div>
         <nav aria-label="Public footer navigation">
-          <Link to="/service">Assessment</Link>
-          <Link to="/demo">Product Tour</Link>
-          <Link to="/data-sources">Methodology &amp; Sources</Link>
-          <Link to="/pilot">Start a Pilot</Link>
-          {user ? (
-            <Link to="/portfolio">Workspace</Link>
+          {finderMarketingChrome ? null : <Link to="/service">Assessment</Link>}
+          {finderMarketingChrome ? null : <Link to="/demo">Product Tour</Link>}
+          {finderMarketingChrome ? null : <Link to="/data-sources">Methodology &amp; Sources</Link>}
+          {finderMarketingChrome ? <Link to="/power-finder">Power Finder</Link> : null}
+          {finderMarketingChrome ? <Link to="/portfolio">Sites</Link> : null}
+          {finderMarketingChrome ? <Link to="/operations">Operations</Link> : null}
+          {finderMarketingChrome ? (
+            <Link to="/data-sources">Evidence &amp; Methodology</Link>
           ) : (
-            <Link to="/auth" search={{ redirect: undefined }}>
-              Sign In
-            </Link>
+            <Link to="/pilot">Start a Pilot</Link>
           )}
         </nav>
       </div>
@@ -159,6 +173,23 @@ export function PublicCTA({
   secondaryTo?: "/pilot" | "/service" | "/demo" | "/data-sources";
   secondaryHash?: string;
 }) {
+  if (isFinderMvp()) {
+    return (
+      <section className="public-final-cta">
+        <p className="public-eyebrow">Power Finder MVP</p>
+        <h2>Explore the current screening release.</h2>
+        <p>
+          Review Germany-wide mapped grid context and source evidence. Findings are screening
+          context and require network-operator confirmation.
+        </p>
+        <div className="public-actions">
+          <Link to="/power-finder" className="public-button public-button-primary">
+            Open Power Finder <ArrowRight aria-hidden="true" />
+          </Link>
+        </div>
+      </section>
+    );
+  }
   return (
     <section className="public-final-cta">
       <p className="public-eyebrow">{eyebrow}</p>
