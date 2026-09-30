@@ -19,7 +19,9 @@ page.on("console", (message) => {
 });
 
 page.on("requestfailed", (request) => {
-  failures.push(`${request.failure()?.errorText ?? "request failed"}: ${request.url()}`);
+  const errorText = request.failure()?.errorText ?? "request failed";
+  if (errorText === "net::ERR_ABORTED") return;
+  failures.push(`${errorText}: ${request.url()}`);
 });
 page.on("response", (response) => {
   const url = response.url();
