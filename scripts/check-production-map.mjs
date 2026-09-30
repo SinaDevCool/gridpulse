@@ -10,6 +10,13 @@ const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage({ viewport: { width: 1600, height: 900 } });
 const failures = [];
 const mapResponses = { grid: false, registry: false, basemap: false };
+let operatorCatalogCount = 0;
+
+page.on("console", (message) => {
+  if (message.type() === "error" && /content security policy|connect-src/i.test(message.text())) {
+    failures.push(`Browser CSP error: ${message.text()}`);
+  }
+});
 
 page.on("requestfailed", (request) => {
   failures.push(`${request.failure()?.errorText ?? "request failed"}: ${request.url()}`);
@@ -27,7 +34,18 @@ page.on("response", (response) => {
 });
 
 try {
+  const operatorCatalogResponse = page.waitForResponse(
+    (response) => response.url().includes("/rest/v1/rpc/power_finder_public_operators"),
+    { timeout: 30_000 },
+  );
   await page.goto(`${baseUrl}/power-finder`, { waitUntil: "domcontentloaded", timeout: 60_000 });
+  const catalogResponse = await operatorCatalogResponse;
+  if (!catalogResponse.ok()) {
+    throw new Error(`operator catalogue returned HTTP ${catalogResponse.status()}`);
+  }
+  const operatorCatalog = await catalogResponse.json();
+  operatorCatalogCount = Array.isArray(operatorCatalog) ? operatorCatalog.length : 0;
+  if (!operatorCatalogCount) throw new Error("operator catalogue returned no records");
   await page.locator(".maplibregl-canvas").waitFor({ state: "visible", timeout: 30_000 });
   await page.getByText("Loading map context…").waitFor({ state: "detached", timeout: 30_000 });
   await page.waitForFunction(
@@ -74,10 +92,41 @@ try {
   for (const [source, loaded] of Object.entries(observedSources)) {
     if (!loaded) throw new Error(`${source} map resources did not load`);
   }
+
+  await page.goto(
+    `${baseUrl}/power-finder?lat=53.22248786642879&lng=8.573712174796157&mw=200&distance=20&preferredVoltage=110`,
+    { waitUntil: "domcontentloaded", timeout: 60_000 },
+  );
+  const candidates = page.getByRole("button", { name: /Show .* on map, .*\/100/ });
+  await candidates.first().waitFor({ state: "visible", timeout: 30_000 });
+  await page.getByRole("button", { name: /Show Rönnebeck on map/i }).click();
+  let detail = page.locator(".power-finder-detail.open");
+  await detail.getByText("DSO", { exact: true }).waitFor({ state: "visible", timeout: 10_000 });
+
+  await page.goto(
+    `${baseUrl}/power-finder?lat=53.22248786642879&lng=8.573712174796157&mw=200&distance=20&preferredVoltage=220`,
+    { waitUntil: "domcontentloaded", timeout: 60_000 },
+  );
+  await page
+    .getByRole("button", { name: /Show .* on map, .*\/100/ })
+    .first()
+    .waitFor({ state: "visible", timeout: 30_000 });
+  await page.getByRole("button", { name: /Show Umspannwerk Neuenkirchen on map/i }).click();
+  detail = page.locator(".power-finder-detail.open");
+  await detail.getByText("TSO", { exact: true }).waitFor({ state: "visible", timeout: 10_000 });
+
   if (failures.length) throw new Error(failures.join("\n"));
   console.log(
     JSON.stringify(
-      { status: "pass", base_url: baseUrl, ...result, mapResponses, observedSources },
+      {
+        status: "pass",
+        base_url: baseUrl,
+        ...result,
+        mapResponses,
+        observedSources,
+        operatorCatalogCount,
+        operatorRoleChecks: { dso: true, tso: true },
+      },
       null,
       2,
     ),

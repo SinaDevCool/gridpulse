@@ -15,6 +15,17 @@ export type CandidateOperatorContext = {
   sourceLabel: string;
 };
 
+export type OperatorCatalogState = "loading" | "ready" | "unavailable";
+
+export function candidateOperatorTypeLabel(
+  state: OperatorCatalogState,
+  role: CandidateOperatorContext["mappedRole"],
+) {
+  if (state === "loading") return "Classifying…";
+  if (state === "unavailable") return "Temporarily unavailable";
+  return role ?? "Unknown";
+}
+
 export type CandidateDetailModel = {
   score: number;
   evidenceCompleteness: "High" | "Medium" | "Low";

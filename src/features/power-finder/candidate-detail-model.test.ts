@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { CandidateOpportunity } from "./candidate-intelligence";
 import {
   buildCandidateDetailModel,
+  candidateOperatorTypeLabel,
   resolveCandidateOperatorContext,
 } from "./candidate-detail-model";
 import type { PowerFinderFeature } from "./fixture-data";
@@ -100,5 +101,15 @@ describe("candidate detail model", () => {
     expect(model.evidenceCompleteness).toBe("Medium");
     expect(model.capacityStatus).toBe("Not available");
     expect(model.nextStep).toContain("TenneT TSO GmbH (TSO)");
+  });
+});
+
+describe("candidateOperatorTypeLabel", () => {
+  it("distinguishes loading, catalogue failure, unmatched, TSO and DSO states", () => {
+    expect(candidateOperatorTypeLabel("loading", null)).toBe("Classifying…");
+    expect(candidateOperatorTypeLabel("unavailable", null)).toBe("Temporarily unavailable");
+    expect(candidateOperatorTypeLabel("ready", null)).toBe("Unknown");
+    expect(candidateOperatorTypeLabel("ready", "TSO")).toBe("TSO");
+    expect(candidateOperatorTypeLabel("ready", "DSO")).toBe("DSO");
   });
 });

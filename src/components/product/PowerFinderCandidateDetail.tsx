@@ -4,7 +4,11 @@ import {
   voltageFitLabels,
   type CandidateOpportunity,
 } from "@/features/power-finder/candidate-intelligence";
-import { buildCandidateDetailModel } from "@/features/power-finder/candidate-detail-model";
+import {
+  buildCandidateDetailModel,
+  candidateOperatorTypeLabel,
+  type OperatorCatalogState,
+} from "@/features/power-finder/candidate-detail-model";
 import type { PowerFinderFeature } from "@/features/power-finder/fixture-data";
 import type { GridOperatorOption } from "@/features/power-finder/operator-catalog";
 
@@ -14,7 +18,7 @@ type PowerFinderCandidateDetailProps = {
   operatorCatalog: GridOperatorOption[];
   actions: ReactNode;
   extraEvidence?: ReactNode;
-  operatorCatalogState?: "loading" | "ready" | "unavailable";
+  operatorCatalogState?: OperatorCatalogState;
 };
 
 export function PowerFinderCandidateDetail({
@@ -26,12 +30,7 @@ export function PowerFinderCandidateDetail({
   operatorCatalogState = "ready",
 }: PowerFinderCandidateDetailProps) {
   const model = buildCandidateDetailModel(candidate, feature, operatorCatalog);
-  const operatorType =
-    operatorCatalogState === "loading"
-      ? "Classifying…"
-      : operatorCatalogState === "unavailable"
-        ? "Unavailable"
-        : (model.operator.mappedRole ?? "Unknown");
+  const operatorType = candidateOperatorTypeLabel(operatorCatalogState, model.operator.mappedRole);
 
   return (
     <section className="candidate-detail" aria-label="Candidate decision summary">

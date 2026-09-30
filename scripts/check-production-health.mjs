@@ -33,6 +33,11 @@ const checks = [
       ]) {
         if (!response.headers.get(header)) throw new Error(`Finder is missing ${header}`);
       }
+      const policy = response.headers.get("content-security-policy") ?? "";
+      const supabaseOrigins = policy.match(/https:\/\/[a-z0-9-]+\.supabase\.co/g) ?? [];
+      if (supabaseOrigins.length !== 1 || policy.includes("*.supabase.co")) {
+        throw new Error("Finder CSP does not allow exactly one configured Supabase origin");
+      }
       if (/Sign In|Sign Up|Create account/i.test(html)) {
         throw new Error("Finder unexpectedly exposes account access");
       }
@@ -53,7 +58,9 @@ const checks = [
         throw new Error("Operations heading is missing");
       }
       if (
-        !html.includes("Results use configured assumptions until measured facility evidence is connected") ||
+        !html.includes(
+          "Results use configured assumptions until measured facility evidence is connected",
+        ) ||
         !html.includes("No control commands are issued")
       ) {
         throw new Error("Operations evidence boundary is missing");

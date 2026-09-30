@@ -875,3 +875,35 @@ test("candidate detail prioritises decisions, contains its layout and omits cand
   );
   expect(candidateLabels.some((label) => /\d\.\d{2,}/.test(label))).toBe(false);
 });
+
+test("candidate operator context identifies known DSO and TSO records", async ({ page }) => {
+  const cspErrors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error" && /content security policy|connect-src/i.test(message.text())) {
+      cspErrors.push(message.text());
+    }
+  });
+
+  await page.goto(
+    "/power-finder?lat=53.22248786642879&lng=8.573712174796157&mw=200&distance=20&preferredVoltage=110",
+  );
+  const candidates = page.getByRole("button", { name: /Show .* on map, .*\/100/ });
+  await expect(candidates.first()).toBeVisible({ timeout: 20_000 });
+
+  await page.getByRole("button", { name: /Show Rönnebeck on map/i }).click();
+  let detail = page.locator(".power-finder-detail.open");
+  await expect(detail.getByText("wesernetz Bremen GmbH", { exact: true })).toBeVisible();
+  await expect(detail.getByText("DSO", { exact: true })).toBeVisible();
+
+  await page.goto(
+    "/power-finder?lat=53.22248786642879&lng=8.573712174796157&mw=200&distance=20&preferredVoltage=220",
+  );
+  await expect(page.getByRole("button", { name: /Show .* on map, .*\/100/ }).first()).toBeVisible({
+    timeout: 20_000,
+  });
+  await page.getByRole("button", { name: /Show Umspannwerk Neuenkirchen on map/i }).click();
+  detail = page.locator(".power-finder-detail.open");
+  await expect(detail.getByText("TenneT TSO GmbH", { exact: true })).toBeVisible();
+  await expect(detail.getByText("TSO", { exact: true })).toBeVisible();
+  expect(cspErrors).toEqual([]);
+});
