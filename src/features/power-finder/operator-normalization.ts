@@ -6,6 +6,11 @@ const canonicalOperators: Array<[RegExp, string]> = [
   [/^amprion(?: gmbh)?$/i, "Amprion GmbH"],
   [/^tennet(?: tso)?(?: gmbh)?$/i, "TenneT TSO GmbH"],
   [/^transnetbw(?: gmbh)?$/i, "TransnetBW GmbH"],
+  [/^(?:aon[ _])?avacon(?: ag| netz(?: ag| gmbh)?)?$/i, "Avacon Netz GmbH"],
+  [/^e[ _.-]?on[ _-]?avacon(?: ag)?$/i, "Avacon Netz GmbH"],
+  [/^wesernetz(?: bremen)?(?: gmbh)?$/i, "wesernetz Bremen GmbH"],
+  [/^ewe[_ -]?netz(?: ag| gmbh)?$/i, "EWE Netz GmbH"],
+  [/^ewe$/i, "EWE Netz GmbH"],
   [/^(e\.dis netz(?: gmbh)?|eon_edis|e\.dis)$/i, "E.DIS Netz GmbH"],
   [/^(db energie(?: gmbh)?|db netz ag)$/i, "DB Energie GmbH"],
   [/^(fbb|fbs|flughafen gmbh)$/i, "Flughafen Berlin Brandenburg GmbH"],
@@ -28,4 +33,14 @@ export function canonicalOperatorName(value?: string | null) {
 export function knownOperatorRole(value?: string | null): "TSO" | null {
   const canonical = canonicalOperatorName(value);
   return canonical && canonicalTsoNames.has(canonical) ? "TSO" : null;
+}
+
+export function sameOperatorIdentity(left?: string | null, right?: string | null) {
+  const canonicalLeft = canonicalOperatorName(left);
+  const canonicalRight = canonicalOperatorName(right);
+  return Boolean(
+    canonicalLeft &&
+    canonicalRight &&
+    canonicalLeft.localeCompare(canonicalRight, undefined, { sensitivity: "accent" }) === 0,
+  );
 }

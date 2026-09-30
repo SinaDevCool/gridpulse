@@ -287,11 +287,11 @@ test("the release workbook passes the browser import preview", async ({ page }, 
   await expect(candidates.first()).toBeVisible({ timeout: 15_000 });
   await candidates.first().click();
   let candidateDetail = page.locator(".power-finder-detail.open");
-  await candidateDetail.getByRole("button", { name: "Compare candidate" }).click();
+  await candidateDetail.getByRole("button", { name: "Compare", exact: true }).click();
   await page.getByRole("button", { name: "Close detail" }).click();
   await candidates.nth(1).click();
   candidateDetail = page.locator(".power-finder-detail.open");
-  await candidateDetail.getByRole("button", { name: "Compare candidate" }).click();
+  await candidateDetail.getByRole("button", { name: "Compare", exact: true }).click();
   await page.getByRole("button", { name: "Close detail" }).click();
   await candidates.first().click();
   const shortlist = page.getByRole("button", { name: /Shortlist for Brandenburg South Campus/i });
@@ -421,12 +421,12 @@ test("comparison supports multiple candidates and resets when the site changes",
   await candidates.nth(0).click();
   let detail = page.locator(".power-finder-detail.open");
   await expect(detail).toBeVisible({ timeout: 15_000 });
-  await detail.getByRole("button", { name: "Compare candidate" }).click();
+  await detail.getByRole("button", { name: "Compare", exact: true }).click();
   await page.getByRole("button", { name: "Close detail" }).click();
   await candidates.nth(1).click();
   detail = page.locator(".power-finder-detail.open");
   await expect(detail).toBeVisible({ timeout: 15_000 });
-  await detail.getByRole("button", { name: "Compare candidate" }).click();
+  await detail.getByRole("button", { name: "Compare", exact: true }).click();
   await expect(page.getByText("Compare 2 Candidates")).toBeVisible();
   expect(new URL(page.url()).searchParams.get("compare")?.split(",")).toHaveLength(2);
 
@@ -726,7 +726,7 @@ test("comparison enforces five candidates and supports independent removal", asy
     await page.getByRole("button", { name: candidateNames[index], exact: true }).click();
     const detail = page.locator(".power-finder-detail.open");
     await expect(detail).toBeVisible({ timeout: 15_000 });
-    await detail.getByRole("button", { name: "Compare candidate" }).click();
+    await detail.getByRole("button", { name: "Compare", exact: true }).click();
     await expect(
       page.getByText(`Compare ${index + 1} ${index === 0 ? "Candidate" : "Candidates"}`),
     ).toBeVisible();
@@ -738,7 +738,7 @@ test("comparison enforces five candidates and supports independent removal", asy
   await page.getByRole("button", { name: candidateNames[5], exact: true }).click();
   await page
     .locator(".power-finder-detail.open")
-    .getByRole("button", { name: "Compare candidate" })
+    .getByRole("button", { name: "Compare", exact: true })
     .click();
   await expect(page.getByText("You can compare up to 5 candidates.")).toBeAttached();
   await expect(page.getByText("Compare 5 Candidates")).toBeVisible();
@@ -783,7 +783,7 @@ test("Finder controls and comparison remain usable on a narrow viewport", async 
   const candidates = page.getByRole("button", { name: /Show .* on map, .*\/100/ });
   await expect(candidates.first()).toBeVisible({ timeout: 15_000 });
   await candidates.first().click();
-  await page.getByRole("button", { name: "Compare candidate" }).click();
+  await page.getByRole("button", { name: "Compare", exact: true }).click();
   await page.getByRole("button", { name: "Close detail" }).click();
   await expect(page.getByText("Compare 1 Candidate")).toBeVisible();
   await expect(page.getByRole("button", { name: /Remove .* from comparison/ })).toBeVisible();

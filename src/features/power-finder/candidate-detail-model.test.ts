@@ -55,10 +55,10 @@ describe("candidate detail model", () => {
     const context = resolveCandidateOperatorContext(candidate, [tso]);
     expect(context.mappedOperator).toBe("TenneT TSO GmbH");
     expect(context.mappedRole).toBe("TSO");
-    expect(context.likelyUpstreamTso).toBeNull();
+    expect(context.upstreamTso).toBeNull();
   });
 
-  it("labels a proximity-derived upstream TSO as likely", () => {
+  it("keeps a proximity-derived upstream TSO separate from the DSO role", () => {
     const dsoCandidate = { ...candidate, operator: "E.DIS" };
     const context = resolveCandidateOperatorContext(dsoCandidate, [
       {
@@ -71,9 +71,28 @@ describe("candidate detail model", () => {
       },
     ]);
     expect(context.mappedRole).toBe("DSO");
-    expect(context.likelyUpstreamTso).toBe("50Hertz Transmission GmbH");
+    expect(context.upstreamTso).toBe("50Hertz Transmission GmbH");
     expect(context.relationshipBasis).toBe("mapped_proximity");
   });
+
+  it.each(["Avacon", "Avacon Netz", "Avacon Netz GmbH", "AON Avacon"])(
+    "classifies the Avacon alias %s as a DSO",
+    (operator) => {
+      const context = resolveCandidateOperatorContext({ ...candidate, operator }, [
+        {
+          name: "Avacon Netz GmbH",
+          type: "DSO / other",
+          featureCount: 1,
+          bounds: null,
+          tsoNames: ["TenneT TSO GmbH"],
+          relationshipBasis: "mapped_proximity",
+        },
+      ]);
+      expect(context.mappedOperator).toBe("Avacon Netz GmbH");
+      expect(context.mappedRole).toBe("DSO");
+      expect(context.upstreamTso).toBe("TenneT TSO GmbH");
+    },
+  );
 
   it("keeps fit, evidence completeness and capacity evidence distinct", () => {
     const model = buildCandidateDetailModel(candidate, feature, [tso]);

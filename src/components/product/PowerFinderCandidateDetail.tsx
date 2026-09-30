@@ -14,6 +14,7 @@ type PowerFinderCandidateDetailProps = {
   operatorCatalog: GridOperatorOption[];
   actions: ReactNode;
   extraEvidence?: ReactNode;
+  operatorCatalogState?: "loading" | "ready" | "unavailable";
 };
 
 export function PowerFinderCandidateDetail({
@@ -22,14 +23,15 @@ export function PowerFinderCandidateDetail({
   operatorCatalog,
   actions,
   extraEvidence,
+  operatorCatalogState = "ready",
 }: PowerFinderCandidateDetailProps) {
   const model = buildCandidateDetailModel(candidate, feature, operatorCatalog);
-  const operatorRoleLabel =
-    model.operator.mappedRole === "TSO"
-      ? "Mapped TSO"
-      : model.operator.mappedRole === "DSO"
-        ? "Mapped DSO"
-        : "Mapped operator";
+  const operatorType =
+    operatorCatalogState === "loading"
+      ? "Classifying…"
+      : operatorCatalogState === "unavailable"
+        ? "Unavailable"
+        : (model.operator.mappedRole ?? "Unknown");
 
   return (
     <section className="candidate-detail" aria-label="Candidate decision summary">
@@ -56,24 +58,28 @@ export function PowerFinderCandidateDetail({
         {model.operator.mappedOperator ? (
           <dl>
             <div>
-              <dt>{operatorRoleLabel}</dt>
+              <dt>Operator</dt>
               <dd>{model.operator.mappedOperator}</dd>
             </div>
-            {model.operator.likelyUpstreamTso ? (
+            <div>
+              <dt>Type</dt>
+              <dd>{operatorType}</dd>
+            </div>
+            {model.operator.upstreamTso ? (
               <div>
-                <dt>
-                  {model.operator.relationshipBasis === "authoritative"
-                    ? "Upstream TSO"
-                    : "Likely upstream TSO"}
-                </dt>
-                <dd>{model.operator.likelyUpstreamTso}</dd>
+                <dt>Upstream TSO</dt>
+                <dd>{model.operator.upstreamTso}</dd>
               </div>
             ) : null}
             <div>
-              <dt>Basis</dt>
+              <dt>Status</dt>
+              <dd>Connection responsibility not confirmed</dd>
+            </div>
+            <div>
+              <dt>Data basis</dt>
               <dd>
                 {model.operator.relationshipBasis === "mapped_proximity"
-                  ? "Mapped proximity · confirmation required"
+                  ? "Public mapping · geographic association"
                   : `${model.operator.sourceLabel} · confirmation required`}
               </dd>
             </div>

@@ -122,6 +122,7 @@ import {
 } from "@/features/power-finder/location-discovery";
 import { loadRegionalDiscoverySamples } from "@/features/power-finder/regional-discovery-sampling";
 import { canonicalOperatorName } from "@/features/power-finder/operator-normalization";
+import { resolveCandidateOperatorContext } from "@/features/power-finder/candidate-detail-model";
 import {
   loadGridOperatorCatalog,
   type GridOperatorOption,
@@ -632,6 +633,9 @@ function PowerFinderPage() {
   const [rankingState, setRankingState] = useState<"loading" | "ready" | "error">("loading");
   const [coverage, setCoverage] = useState<PowerFinderCoverage[]>(fallbackCoverage);
   const [operatorCatalog, setOperatorCatalog] = useState<GridOperatorOption[]>([]);
+  const [operatorCatalogState, setOperatorCatalogState] = useState<
+    "loading" | "ready" | "unavailable"
+  >("loading");
   const regionCode = search.region ?? "DE";
   const [mapMode, setMapMode] = useState<"voltage" | "evidence" | "capacity">(
     search.mapMode ?? "voltage",
@@ -947,8 +951,14 @@ function PowerFinderPage() {
 
   useEffect(() => {
     void loadGridOperatorCatalog()
-      .then(setOperatorCatalog)
-      .catch(() => setOperatorCatalog([]));
+      .then((catalog) => {
+        setOperatorCatalog(catalog);
+        setOperatorCatalogState(catalog.length ? "ready" : "unavailable");
+      })
+      .catch(() => {
+        setOperatorCatalog([]);
+        setOperatorCatalogState("unavailable");
+      });
   }, []);
 
   useEffect(() => {
@@ -3806,6 +3816,12 @@ function PowerFinderPage() {
                             {candidate.operator
                               ? canonicalOperatorName(candidate.operator)
                               : "Confirm"}
+                            {candidate.operator ? (
+                              <small>
+                                {resolveCandidateOperatorContext(candidate, operatorCatalog)
+                                  .mappedRole ?? "Unknown"}
+                              </small>
+                            ) : null}
                           </dd>
                         </div>
                         <div>
@@ -4122,6 +4138,7 @@ function PowerFinderPage() {
                       candidate={selectedOpportunity}
                       feature={selected}
                       operatorCatalog={operatorCatalog}
+                      operatorCatalogState={operatorCatalogState}
                       actions={
                         <>
                           <button

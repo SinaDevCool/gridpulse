@@ -1,12 +1,16 @@
 import type { CandidateOpportunity } from "./candidate-intelligence";
 import type { PowerFinderFeature } from "./fixture-data";
-import { canonicalOperatorName, knownOperatorRole } from "./operator-normalization";
+import {
+  canonicalOperatorName,
+  knownOperatorRole,
+  sameOperatorIdentity,
+} from "./operator-normalization";
 import type { GridOperatorOption } from "./operator-catalog";
 
 export type CandidateOperatorContext = {
   mappedOperator: string | null;
-  mappedRole: "TSO" | "DSO" | "operator" | null;
-  likelyUpstreamTso: string | null;
+  mappedRole: "TSO" | "DSO" | null;
+  upstreamTso: string | null;
   relationshipBasis: "authoritative" | "mapped_proximity" | null;
   sourceLabel: string;
 };
@@ -26,7 +30,7 @@ export function resolveCandidateOperatorContext(
   catalog: GridOperatorOption[],
 ): CandidateOperatorContext {
   const mappedOperator = canonicalOperatorName(candidate.operator);
-  const catalogEntry = catalog.find((item) => item.name === mappedOperator);
+  const catalogEntry = catalog.find((item) => sameOperatorIdentity(item.name, mappedOperator));
   const mappedRole =
     catalogEntry?.type === "TSO"
       ? "TSO"
@@ -34,17 +38,15 @@ export function resolveCandidateOperatorContext(
         ? "DSO"
         : knownOperatorRole(mappedOperator) === "TSO"
           ? "TSO"
-          : mappedOperator
-            ? "operator"
-            : null;
-  const likelyUpstreamTso =
+          : null;
+  const upstreamTso =
     mappedRole === "DSO" && catalogEntry?.tsoNames.length === 1 ? catalogEntry.tsoNames[0] : null;
 
   return {
     mappedOperator,
     mappedRole,
-    likelyUpstreamTso,
-    relationshipBasis: likelyUpstreamTso ? (catalogEntry?.relationshipBasis ?? null) : null,
+    upstreamTso,
+    relationshipBasis: upstreamTso ? (catalogEntry?.relationshipBasis ?? null) : null,
     sourceLabel: "Public infrastructure mapping",
   };
 }
