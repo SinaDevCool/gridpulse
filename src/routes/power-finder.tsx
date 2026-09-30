@@ -28,6 +28,7 @@ import {
 } from "react";
 import { z } from "zod";
 import { AppShell } from "@/components/product/AppShell";
+import { PowerFinderCandidateDetail } from "@/components/product/PowerFinderCandidateDetail";
 import { PowerFinderMap, type RzRegDataCentre } from "@/components/product/PowerFinderMap";
 import {
   InteractiveMapLegend,
@@ -395,6 +396,8 @@ function PowerFinderPage() {
   >("idle");
   const [activeProperty, setActiveProperty] = useState<AnonymousProperty | null>(null);
   const propertySaveRequest = useRef(0);
+  const detailPanelRef = useRef<HTMLElement | null>(null);
+  const detailReturnFocusRef = useRef<HTMLElement | null>(null);
   const [showAllCandidates, setShowAllCandidates] = useState(false);
   const [operatorEvidence, setOperatorEvidence] = useState<OperatorEvidenceResult | null>(null);
   const [operatorEvidenceState, setOperatorEvidenceState] = useState<
@@ -1481,6 +1484,29 @@ function PowerFinderPage() {
           },
         })
       : null);
+  const closeDetail = async () => {
+    detailDismissedRef.current = true;
+    await updateSearch({ candidate: undefined });
+    setSelectedOpportunitySnapshot(null);
+    setSelected(null);
+    detailReturnFocusRef.current?.focus();
+  };
+  useEffect(() => {
+    if (!selectedDetailFeature) return;
+    const frame = window.requestAnimationFrame(() => detailPanelRef.current?.focus());
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      void closeDetail();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+    // The selected feature identity controls panel focus; closeDetail intentionally uses current state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDetailFeature?.id]);
   const selectedCapacity = selectedDetailFeature
     ? (activeCapacityNodes.find(
         (result) => result.publicNodeId === String(selectedDetailFeature.id),
@@ -1698,7 +1724,8 @@ function PowerFinderPage() {
                   type="button"
                   className={finderWorkflow === "screen" ? "is-active" : ""}
                   aria-pressed={finderWorkflow === "screen"}
-                  onClick={() => {
+                  onClick={(event) => {
+                    detailReturnFocusRef.current = event.currentTarget;
                     setFinderWorkflow("screen");
                     void updateSearch({ workflow: "screen" });
                   }}
@@ -3848,19 +3875,19 @@ function PowerFinderPage() {
             </section>
           )}
 
-          <aside className={`power-finder-detail ${selectedDetailFeature ? "open" : ""}`}>
+          <aside
+            ref={detailPanelRef}
+            className={`power-finder-detail ${selectedDetailFeature ? "open" : ""}`}
+            aria-labelledby={selectedDetailFeature ? "power-finder-detail-title" : undefined}
+            tabIndex={selectedDetailFeature ? -1 : undefined}
+          >
             {selectedDetailFeature ? (
               ((selected) => (
                 <>
                   <button
                     type="button"
                     className="detail-close"
-                    onClick={async () => {
-                      detailDismissedRef.current = true;
-                      await updateSearch({ candidate: undefined });
-                      setSelectedOpportunitySnapshot(null);
-                      setSelected(null);
-                    }}
+                    onClick={() => void closeDetail()}
                     aria-label="Close detail"
                   >
                     ×
@@ -3871,7 +3898,7 @@ function PowerFinderPage() {
                         ? "Selected candidate connection point"
                         : kindLabels[selected.properties.kind]}
                     </p>
-                    <h2>{selected.properties.name}</h2>
+                    <h2 id="power-finder-detail-title">{selected.properties.name}</h2>
                     <p>{featureSummary(selected)}</p>
                     {selectedOpportunity && (
                       <p className="candidate-boundary">
@@ -3894,25 +3921,6 @@ function PowerFinderPage() {
                       highest-ranked match is selected from the current list.
                     </p>
                   )}
-                  {selectedOpportunity ? (
-                    <div className="candidate-capacity-banner" role="status">
-                      <strong>
-                        {selected.properties.capacity_state === "published_exact" &&
-                        selected.properties.exact_mw != null
-                          ? `${selected.properties.exact_mw} MW published observation`
-                          : selected.properties.capacity_state === "published_band" &&
-                              selected.properties.band_min_mw != null
-                            ? `${selected.properties.band_min_mw}–${selected.properties.band_max_mw ?? "?"} MW published band`
-                            : "Capacity unknown"}
-                      </strong>
-                      <span>
-                        {selected.properties.capacity_state === "published_exact" ||
-                        selected.properties.capacity_state === "published_band"
-                          ? `Source-attributed observation${selected.properties.capacity_published_at ? ` · published ${selected.properties.capacity_published_at}` : ""}. It is not current available capacity or a connection offer.`
-                          : "Mapped voltage is not MW capacity. Operator confirmation and accepted evidence are required."}
-                      </span>
-                    </div>
-                  ) : null}
                   {selectedCapacity &&
                     selectedCapacityOpportunity.fit !== "stale" &&
                     selectedCapacity.validationState !== "failed" && (
@@ -3967,7 +3975,7 @@ function PowerFinderPage() {
                         </small>
                       </section>
                     )}
-                  {selected.properties.kind === "node" ? (
+                  {selected.properties.kind === "node" && !selectedOpportunity ? (
                     <>
                       <section
                         className="candidate-fact-section"
@@ -3987,15 +3995,6 @@ function PowerFinderPage() {
                                 : "Unknown"}
                             </dd>
                           </div>
-                          {selectedOpportunity && (
-                            <div>
-                              <dt>Distance From Site</dt>
-                              <dd>
-                                {distanceFormatter.format(selectedOpportunity.distanceKm)} km
-                                straight-line
-                              </dd>
-                            </div>
-                          )}
                           <div>
                             <dt>Likely Network Operator</dt>
                             <dd>
@@ -4119,301 +4118,201 @@ function PowerFinderPage() {
                     </p>
                   )}
                   {selectedOpportunity && (
-                    <section className="candidate-intelligence" aria-label="Candidate intelligence">
-                      <header>
-                        <span>
-                          <strong>
-                            {selectedOpportunity.confidence === "high"
-                              ? "Strong"
-                              : selectedOpportunity.confidence === "medium"
-                                ? "Medium"
-                                : "Limited"}
-                          </strong>
-                          <small>data-centre investigation fit</small>
-                        </span>
-                        <b>{selectedOpportunity.siteName}</b>
-                      </header>
-                      <section
-                        className="candidate-outcome"
-                        aria-labelledby="candidate-outcome-title"
-                      >
-                        <div>
-                          <span id="candidate-outcome-title">Investigation recommendation</span>
-                          <strong>
-                            {selectedOpportunity.screeningRank >= 70
-                              ? "Recommended for operator verification"
-                              : selectedOpportunity.screeningRank >= 40
-                                ? "Worth comparing"
-                                : "More evidence needed"}
-                          </strong>
-                          <small>
-                            Based on mapped voltage, proximity, operator context &amp; evidence
-                            coverage.
-                          </small>
-                        </div>
-                      </section>
-                      <section
-                        className="candidate-key-drivers"
-                        aria-labelledby="key-drivers-title"
-                      >
-                        <h3 id="key-drivers-title">
-                          {activeProperty?.preferredCandidateId === selectedOpportunity.id
-                            ? "Why this candidate was shortlisted"
-                            : "Why this candidate ranks highly"}
-                        </h3>
-                        <ul>
-                          <li>{voltageFitLabels[selectedOpportunity.voltageFit]}.</li>
-                          <li>
-                            {distanceFormatter.format(selectedOpportunity.distanceKm)} km
-                            straight-line proximity to the declared site.
-                          </li>
-                          <li>
-                            {selectedOpportunity.operator
-                              ? `Mapped operator tag: ${canonicalOperatorName(selectedOpportunity.operator)}.`
-                              : "Responsible operator requires confirmation."}
-                          </li>
-                        </ul>
-                      </section>
-                      <dl>
-                        <div>
-                          <dt>Distance</dt>
-                          <dd>{selectedOpportunity.distanceKm} km straight-line</dd>
-                        </div>
-                        <div>
-                          <dt>Voltage screen</dt>
-                          <dd>{voltageFitLabels[selectedOpportunity.voltageFit]}</dd>
-                        </div>
-                        <div>
-                          <dt>Evidence completeness</dt>
-                          <dd>{selectedOpportunity.confidence}</dd>
-                        </div>
-                      </dl>
-                      <section
-                        className="candidate-evidence-gaps"
-                        aria-labelledby="candidate-gaps-title"
-                      >
-                        <h3 id="candidate-gaps-title">Required before advance</h3>
-                        <ul>
-                          <li>Confirm the responsible network operator.</li>
-                          <li>Confirm a suitable connection point.</li>
-                          <li>Obtain an operator capacity indication.</li>
-                          <li>Request indicative programme, cost and reinforcement context.</li>
-                        </ul>
-                      </section>
-                      <section
-                        className="candidate-site-impact"
-                        aria-labelledby="candidate-site-impact-title"
-                      >
-                        <h3 id="candidate-site-impact-title">Site impact</h3>
+                    <PowerFinderCandidateDetail
+                      candidate={selectedOpportunity}
+                      feature={selected}
+                      operatorCatalog={operatorCatalog}
+                      actions={
+                        <>
+                          <button
+                            type="button"
+                            className="primary-button candidate-shortlist-action"
+                            disabled={
+                              propertySaveStatus === "saving" ||
+                              activeProperty?.preferredCandidateId === selectedOpportunity.id ||
+                              shortlistId === selectedOpportunity.id
+                            }
+                            onClick={async () => {
+                              const candidateSet = Array.from(
+                                new Map(
+                                  [...comparedCandidates, selectedOpportunity].map((item) => [
+                                    item.id,
+                                    item,
+                                  ]),
+                                ).values(),
+                              );
+                              const savedPropertyId = await persistScreening(
+                                candidateSet,
+                                selectedOpportunity.id,
+                              );
+                              if (savedPropertyId) {
+                                setShortlistId(selectedOpportunity.id);
+                                setInteractionNotice(
+                                  `${selectedOpportunity.nodeName} shortlisted for ${project.name}.`,
+                                );
+                              }
+                            }}
+                          >
+                            <BookmarkPlus aria-hidden="true" />
+                            {activeProperty?.preferredCandidateId === selectedOpportunity.id ||
+                            shortlistId === selectedOpportunity.id
+                              ? "Preferred candidate saved"
+                              : "Shortlist candidate"}
+                          </button>
+                          <button
+                            type="button"
+                            className="secondary-button"
+                            onClick={() => {
+                              if (comparisonIds.includes(selectedOpportunity.id)) {
+                                const next = removeComparisonCandidate(
+                                  comparisonIds,
+                                  selectedOpportunity.id,
+                                );
+                                setInteractionNotice("Candidate removed from comparison.");
+                                void updateSearch({ compare: serializeComparison(next) });
+                                return;
+                              }
+                              const result = addComparisonCandidate(
+                                comparisonIds,
+                                selectedOpportunity.id,
+                              );
+                              if (result.limitReached) {
+                                setInteractionNotice("You can compare up to 5 candidates.");
+                                return;
+                              }
+                              setInteractionNotice(
+                                `Candidate added. ${result.ids.length} of 5 comparison slots used.`,
+                              );
+                              setComparisonOpen(true);
+                              void updateSearch({ compare: serializeComparison(result.ids) });
+                            }}
+                          >
+                            <GitCompareArrows aria-hidden="true" />
+                            {comparisonIds.includes(selectedOpportunity.id)
+                              ? "Remove from comparison"
+                              : "Compare"}
+                          </button>
+                          {activeProperty && propertySaveStatus === "saved" ? (
+                            <Link
+                              className="secondary-button candidate-return-action"
+                              to="/portfolio/$id"
+                              params={{ id: activeProperty.id }}
+                              search={{ tab: "overview" }}
+                            >
+                              Open Site Workspace
+                            </Link>
+                          ) : null}
+                        </>
+                      }
+                    />
+                  )}
+                  {selected.properties.kind === "node" && c1Study?.c3?.available && (
+                    <details className="candidate-advanced-study">
+                      <summary>Security &amp; flexibility study</summary>
+                      <section className="finder-panel-card finder-panel-card--study">
+                        <p>
+                          This result is linked to an operator-reviewed model for the selected node.
+                        </p>
                         <dl>
                           <div>
-                            <dt>Grid readiness</dt>
-                            <dd>Screening only</dd>
+                            <dt>Firm import</dt>
+                            <dd>
+                              {c1Study.c3.security?.import_capacity?.values
+                                ?.firm_import_capacity_mw ?? "—"}{" "}
+                              MW
+                            </dd>
                           </div>
                           <div>
-                            <dt>Current decision</dt>
-                            <dd>{activeProperty?.decisionStatus ?? "Unreviewed"}</dd>
+                            <dt>Firm export</dt>
+                            <dd>
+                              {c1Study.c3.security?.export_capacity?.values
+                                ?.firm_export_capacity_mw ?? "—"}{" "}
+                              MW
+                            </dd>
                           </div>
                           <div>
-                            <dt>Primary blocker</dt>
-                            <dd>No accepted capacity evidence</dd>
+                            <dt>Contingencies assessed</dt>
+                            <dd>
+                              {c1Study.c3.security?.contingency_coverage?.assessed_count ?? 0}
+                            </dd>
                           </div>
                           <div>
-                            <dt>Next step</dt>
-                            <dd>Prepare operator enquiry</dd>
+                            <dt>Constrained hours</dt>
+                            <dd>
+                              {c1Study.c3.flexibilitySummary?.constrained_hours?.toLocaleString() ??
+                                "—"}
+                            </dd>
                           </div>
                         </dl>
                       </section>
-                      <button
-                        type="button"
-                        className="primary-button candidate-shortlist-action"
-                        disabled={
-                          propertySaveStatus === "saving" ||
-                          activeProperty?.preferredCandidateId === selectedOpportunity.id ||
-                          shortlistId === selectedOpportunity.id
-                        }
-                        onClick={async () => {
-                          const candidateSet = Array.from(
-                            new Map(
-                              [...comparedCandidates, selectedOpportunity].map((item) => [
-                                item.id,
-                                item,
-                              ]),
-                            ).values(),
-                          );
-                          const savedPropertyId = await persistScreening(
-                            candidateSet,
-                            selectedOpportunity.id,
-                          );
-                          if (savedPropertyId) {
-                            setShortlistId(selectedOpportunity.id);
-                            setInteractionNotice(
-                              `${selectedOpportunity.nodeName} shortlisted for ${project.name}.`,
-                            );
-                          }
-                        }}
-                      >
-                        <BookmarkPlus aria-hidden="true" />
-                        {activeProperty?.preferredCandidateId === selectedOpportunity.id ||
-                        shortlistId === selectedOpportunity.id
-                          ? "Preferred candidate saved"
-                          : `Shortlist for ${project.name}`}
-                      </button>
-                      <button
-                        type="button"
-                        className="secondary-button"
-                        onClick={() => {
-                          if (comparisonIds.includes(selectedOpportunity.id)) {
-                            const next = removeComparisonCandidate(
-                              comparisonIds,
-                              selectedOpportunity.id,
-                            );
-                            setInteractionNotice("Candidate removed from comparison.");
-                            void updateSearch({ compare: serializeComparison(next) });
-                            return;
-                          }
-                          const result = addComparisonCandidate(
-                            comparisonIds,
-                            selectedOpportunity.id,
-                          );
-                          if (result.limitReached) {
-                            setInteractionNotice("You can compare up to 5 candidates.");
-                            return;
-                          }
-                          setInteractionNotice(
-                            `Candidate added. ${result.ids.length} of 5 comparison slots used.`,
-                          );
-                          setComparisonOpen(true);
-                          void updateSearch({ compare: serializeComparison(result.ids) });
-                        }}
-                      >
-                        <GitCompareArrows aria-hidden="true" />
-                        {comparisonIds.includes(selectedOpportunity.id)
-                          ? "Remove from comparison"
-                          : "Compare candidate"}
-                      </button>
-                      {activeProperty && propertySaveStatus === "saved" ? (
-                        <Link
-                          className="secondary-button candidate-return-action"
-                          to="/portfolio/$id"
-                          params={{ id: activeProperty.id }}
-                          search={{ tab: "overview" }}
-                        >
-                          Return to Site Workspace
-                        </Link>
-                      ) : null}
-                    </section>
-                  )}
-                  {selected.properties.kind === "node" && c1Study?.c3?.available && (
-                    <section className="finder-panel-card finder-panel-card--study">
-                      <header>
-                        <span>Security &amp; Flexibility Study</span>
-                        <b>Operator model linked</b>
-                      </header>
-                      <p>
-                        This result is linked to an operator-reviewed model for the selected node.
-                      </p>
-                      <dl>
-                        <div>
-                          <dt>Firm Import</dt>
-                          <dd>
-                            {c1Study.c3.security?.import_capacity?.values
-                              ?.firm_import_capacity_mw ?? "—"}{" "}
-                            MW
-                          </dd>
-                        </div>
-                        <div>
-                          <dt>Firm Export</dt>
-                          <dd>
-                            {c1Study.c3.security?.export_capacity?.values
-                              ?.firm_export_capacity_mw ?? "—"}{" "}
-                            MW
-                          </dd>
-                        </div>
-                        <div>
-                          <dt>Contingencies Assessed</dt>
-                          <dd>{c1Study.c3.security?.contingency_coverage?.assessed_count ?? 0}</dd>
-                        </div>
-                        <div>
-                          <dt>Constrained Hours</dt>
-                          <dd>
-                            {c1Study.c3.flexibilitySummary?.constrained_hours?.toLocaleString() ??
-                              "—"}
-                          </dd>
-                        </div>
-                      </dl>
-                    </section>
+                    </details>
                   )}
                   {productCapabilities.workspace && selected.properties.kind === "node" && (
-                    <section
-                      className="power-finder-operator-evidence"
-                      aria-label="Official operator evidence"
-                    >
-                      <header>
+                    <details className="candidate-advanced-study">
+                      <summary>
                         <ShieldCheck aria-hidden="true" />
-                        <span>
-                          <b>Operator evidence</b>
-                          <small>
-                            {operatorEvidence?.match_state === "accepted_node_evidence"
-                              ? "Reviewed node match"
-                              : operatorEvidence?.match_state === "operator_context_only"
-                                ? "Operator-level context"
-                                : "No reviewed node evidence"}
-                          </small>
-                        </span>
-                      </header>
-                      {operatorEvidenceState === "loading" && <p>Checking accepted evidence…</p>}
-                      {operatorEvidenceState === "unavailable" && (
-                        <p>Evidence service is temporarily unavailable.</p>
-                      )}
-                      {operatorEvidenceState === "idle" && dataMode === "published_artifact" && (
-                        <p>Operator source inspection is not included in the public Finder.</p>
-                      )}
-                      {operatorEvidenceState === "ready" &&
-                        (operatorEvidence?.items.length ? (
-                          <ul>
-                            {operatorEvidence.items.map((item) => (
-                              <li key={`${item.scope}-${item.url}`}>
-                                <span>
-                                  {item.scope === "node_match" && (
-                                    <CheckCircle2 aria-label="Reviewed node match" />
-                                  )}
-                                  <a href={item.url} target="_blank" rel="noreferrer">
-                                    {item.title} <ExternalLink aria-hidden="true" />
-                                  </a>
-                                </span>
-                                <small>
-                                  {item.scope === "node_match"
-                                    ? item.rationale
-                                    : item.legal_boundary}
-                                </small>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p>
-                            No official publication is linked to this mapped node. Capacity remains
-                            unknown until the responsible operator responds.
-                          </p>
-                        ))}
-                      <footer>
-                        Operator-level pages explain process or network context. They do not
-                        establish capacity at this node.
-                      </footer>
-                    </section>
+                        Operator evidence
+                      </summary>
+                      <section
+                        className="power-finder-operator-evidence"
+                        aria-label="Official operator evidence"
+                      >
+                        <p>
+                          {operatorEvidence?.match_state === "accepted_node_evidence"
+                            ? "Reviewed node match"
+                            : operatorEvidence?.match_state === "operator_context_only"
+                              ? "Operator-level context"
+                              : "No reviewed node evidence"}
+                        </p>
+                        {operatorEvidenceState === "loading" && <p>Checking accepted evidence…</p>}
+                        {operatorEvidenceState === "unavailable" && (
+                          <p>Evidence service is temporarily unavailable.</p>
+                        )}
+                        {operatorEvidenceState === "idle" && dataMode === "published_artifact" && (
+                          <p>Operator source inspection is not included in the public Finder.</p>
+                        )}
+                        {operatorEvidenceState === "ready" &&
+                          (operatorEvidence?.items.length ? (
+                            <ul>
+                              {operatorEvidence.items.map((item) => (
+                                <li key={`${item.scope}-${item.url}`}>
+                                  <span>
+                                    {item.scope === "node_match" && (
+                                      <CheckCircle2 aria-label="Reviewed node match" />
+                                    )}
+                                    <a href={item.url} target="_blank" rel="noreferrer">
+                                      {item.title} <ExternalLink aria-hidden="true" />
+                                    </a>
+                                  </span>
+                                  <small>
+                                    {item.scope === "node_match"
+                                      ? item.rationale
+                                      : item.legal_boundary}
+                                  </small>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p>
+                              No official publication is linked to this mapped node. Capacity
+                              remains unknown until the responsible operator responds.
+                            </p>
+                          ))}
+                        <footer>
+                          Operator-level pages explain process or network context. They do not
+                          establish capacity at this node.
+                        </footer>
+                      </section>
+                    </details>
                   )}
-                  {productCapabilities.workspace && coordinates && (
+                  {productCapabilities.workspace && coordinates && !selectedOpportunity && (
                     <button
                       type="button"
                       className="primary-button"
                       disabled={saveStatus === "saving"}
                       onClick={() => {
                         setSaveStatus("saving");
-                        void savePowerFinderCandidate(
-                          selected,
-                          selectedOpportunity,
-                          requiredImportMw,
-                        )
+                        void savePowerFinderCandidate(selected, null, requiredImportMw)
                           .then((id) => {
                             setShortlistId(id);
                             setSaveStatus("saved");
@@ -4421,15 +4320,13 @@ function PowerFinderPage() {
                               to: "/assessments/new",
                               search: {
                                 shortlistId: id,
-                                name: selectedOpportunity?.siteName ?? selected.properties.name,
+                                name: selected.properties.name,
                                 projectType: "large_load",
                                 importMw: requiredImportMw,
                                 latitude: coordinates[1],
                                 longitude: coordinates[0],
                                 federalState: "Brandenburg",
-                                challenge: selectedOpportunity
-                                  ? `${selectedOpportunity.siteName} screened against ${selectedOpportunity.nodeName} at ${distanceFormatter.format(selectedOpportunity.distanceKm)} km. Rank ${formatScore(selectedOpportunity.screeningRank)}/100 reflects context only; capacity, feasibility, cost, and timing require operator confirmation.`
-                                  : `Screening candidate ${selected.id}; capacity and operator responsibility require confirmation.`,
+                                challenge: `Screening candidate ${selected.id}; capacity and operator responsibility require confirmation.`,
                               },
                             });
                           })
@@ -4441,6 +4338,7 @@ function PowerFinderPage() {
                     </button>
                   )}
                   {productCapabilities.workspace &&
+                    !selectedOpportunity &&
                     ["node", "industrial_site"].includes(selected.properties.kind) && (
                       <button
                         type="button"
@@ -4448,11 +4346,7 @@ function PowerFinderPage() {
                         disabled={saveStatus === "saving" || saveStatus === "saved"}
                         onClick={() => {
                           setSaveStatus("saving");
-                          void savePowerFinderCandidate(
-                            selected,
-                            selectedOpportunity,
-                            requiredImportMw,
-                          )
+                          void savePowerFinderCandidate(selected, null, requiredImportMw)
                             .then((id) => {
                               setShortlistId(id);
                               setSaveStatus("saved");

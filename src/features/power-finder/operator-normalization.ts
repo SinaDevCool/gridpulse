@@ -12,8 +12,20 @@ const canonicalOperators: Array<[RegExp, string]> = [
   [/^stromnetz berlin(?:, 50hz, e\.dis)?$/i, "Stromnetz Berlin GmbH"],
 ];
 
+const canonicalTsoNames = new Set([
+  "50Hertz Transmission GmbH",
+  "Amprion GmbH",
+  "TenneT TSO GmbH",
+  "TransnetBW GmbH",
+]);
+
 export function canonicalOperatorName(value?: string | null) {
   const normalized = value?.trim();
   if (!normalized) return null;
   return canonicalOperators.find(([pattern]) => pattern.test(normalized))?.[1] ?? normalized;
+}
+
+export function knownOperatorRole(value?: string | null): "TSO" | null {
+  const canonical = canonicalOperatorName(value);
+  return canonical && canonicalTsoNames.has(canonical) ? "TSO" : null;
 }

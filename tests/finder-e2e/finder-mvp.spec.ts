@@ -849,12 +849,14 @@ test("candidate detail prioritises decisions, contains its layout and omits cand
   const detail = page.locator(".power-finder-detail.open");
   await expect(detail).toBeVisible({ timeout: 15_000 });
   await expect(detail.getByText("Selected candidate connection point")).toBeVisible();
-  await expect(detail.getByText("Investigation recommendation")).toBeVisible();
-  await expect(
-    detail.getByRole("heading", { name: /Why this candidate (ranks highly|was shortlisted)/i }),
-  ).toBeVisible();
+  await expect(detail.getByLabel("Candidate decision summary")).toBeVisible();
+  await expect(detail.getByRole("heading", { name: "Operator context" })).toBeVisible();
+  await expect(detail.getByRole("heading", { name: "Next step" })).toBeVisible();
+  await expect(detail.getByText("Capacity evidence", { exact: true })).toBeVisible();
+  await expect(detail.getByText("Evidence completeness", { exact: true })).toBeVisible();
+  await expect(detail.getByText(/Why this candidate ranks highly/i)).toBeVisible();
   await expect(detail.getByText("Public Data Confidence", { exact: true })).toHaveCount(0);
-  await expect(detail.getByRole("heading", { name: "Connection Context" })).toBeVisible();
+  await expect(detail.getByRole("heading", { name: "Connection Context" })).toHaveCount(0);
   await expect(detail.getByRole("heading", { name: "What Remains Unknown" })).toHaveCount(0);
   await expect(detail.getByText("Grid Study Status", { exact: true })).toHaveCount(0);
   await expect(detail.getByText("Hourly Connection Envelope", { exact: true })).toHaveCount(0);
@@ -862,7 +864,9 @@ test("candidate detail prioritises decisions, contains its layout and omits cand
   await expect(detail.getByText("German Connection Framework")).toHaveCount(0);
   await expect(detail.getByText(/Experimental Hourly Demonstration/)).toHaveCount(0);
   await expect(page.getByRole("link", { name: /Discuss this candidate/i })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Compare candidate" })).toBeVisible();
+  await expect(detail.getByText("Evidence & provenance", { exact: true })).toBeVisible();
+  await expect(detail.getByText("What must be confirmed", { exact: true })).toBeVisible();
+  await expect(detail.getByRole("button", { name: "Compare", exact: true })).toBeVisible();
   expect(await detail.evaluate((element) => element.scrollWidth <= element.clientWidth + 1)).toBe(
     true,
   );
