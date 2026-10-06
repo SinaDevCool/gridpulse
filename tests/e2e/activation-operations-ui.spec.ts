@@ -95,6 +95,25 @@ test("Operations scenario assumptions recalculate the dashboard", async ({ page 
   ).toBeAttached();
 });
 
+test("Power & Battery explains when dispatch is unnecessary", async ({ page }) => {
+  await page.goto("/operations?view=overview");
+  await expect(page.locator(".recharts-wrapper").first()).toBeVisible();
+  await page.waitForTimeout(250);
+  await page.getByRole("button", { name: "Configure Scenario" }).click();
+  await page.locator("#ops-facility-limit").fill("120");
+  await page.getByRole("button", { name: "Recalculate Scenario" }).click();
+  await page.getByRole("link", { name: "Power & Battery" }).click();
+
+  await expect(
+    page.getByRole("heading", {
+      name: "No battery response is required for the selected interval",
+    }),
+  ).toBeVisible();
+  await expect(
+    page.locator(".power-kpis").filter({ hasText: "Sustainable response" }),
+  ).toContainText("Not required");
+});
+
 test("Compute & Workloads keeps scenario evidence distinct and supports workload inspection", async ({
   page,
 }) => {

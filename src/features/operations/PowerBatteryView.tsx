@@ -108,6 +108,14 @@ export function PowerBatteryView({ model }: { model: OperationsOverviewModel }) 
       ? null
       : Math.max(0, requiredMw - Math.max(0, batteryMw));
   const feasible = shortfallMw != null && shortfallMw <= 0.01;
+  const responseRequired = requiredMw != null && requiredMw > 0.01;
+  const dispatchHeadline = !selected
+    ? "Load aligned meter and battery evidence"
+    : !responseRequired
+      ? "No battery response is required for the selected interval"
+      : feasible
+        ? "Battery response can hold the selected interval below target"
+        : "Battery response cannot fully cover the selected interval";
 
   async function verifyEvidence(
     facility: FacilityPowerObservation[],
@@ -178,13 +186,7 @@ export function PowerBatteryView({ model }: { model: OperationsOverviewModel }) 
       <article className={`power-decision-bar ${feasible ? "feasible" : "limited"}`}>
         <div>
           <p className="context-label">Read-only dispatch assessment</p>
-          <h3>
-            {selected
-              ? feasible
-                ? "Battery response can hold the selected interval below target"
-                : "Battery response cannot fully cover the selected interval"
-              : "Load aligned meter and battery evidence"}
-          </h3>
+          <h3>{dispatchHeadline}</h3>
           <p>
             Positive battery power means discharge; negative power means charge. No physical control
             commands are issued.
@@ -320,7 +322,9 @@ export function PowerBatteryView({ model }: { model: OperationsOverviewModel }) 
           label="Sustainable response"
           value={
             mode === "scenario"
-              ? `${number.format(model.recommendation.durationMinutes / 60)} h`
+              ? responseRequired
+                ? `${number.format(model.recommendation.durationMinutes / 60)} h`
+                : "Not required"
               : "Not derivable"
           }
           evidence={mode}
