@@ -52,4 +52,36 @@ describe("operations backend service", () => {
     );
     expect(aligned[0].battery).toBeNull();
   });
+
+  it("returns one assurance result for quality, verification, compliance, economics and dispatch", () => {
+    const response = runOperationsAssessment({
+      kind: "assurance",
+      quality: {
+        expectedIntervals: 4, receivedIntervals: 4,
+        newestEvidenceAt: "2026-10-06T10:00:00.000Z",
+        assessedAt: "2026-10-06T10:05:00.000Z",
+        powerBalanceResidualPercent: 1,
+      },
+      verification: null,
+      compliance: {
+        facilityEnergyMwh: 125, itEnergyMwh: 100, renewableSharePercent: 100,
+        wasteHeatMwh: 10, heatTemperatureC: 35, measurementCoveragePercent: 100,
+      },
+      economics: {
+        avoidedPeakMw: 5, durationHours: 1, energyPriceEurPerMwh: 100,
+        capacityValueEurPerMw: 0, batteryEnergyMwh: 5,
+        batteryDegradationEurPerMwh: 10, shiftedEnergyMwh: 0,
+        workloadCostEurPerMwh: 0, flexibilityPaymentEur: 0, slaPenaltyEur: 0,
+      },
+      dispatch: {
+        mode: "shadow", evidenceReady: true, connectorHealthy: true,
+        agreementCurrent: true, approvalCount: 2, automaticDispatchEnabled: false,
+      },
+    });
+    expect(response.result).toMatchObject({
+      quality: { status: "ready" },
+      compliance: { measuredPue: 1.25, evidenceReady: true },
+      dispatch: { authorized: false, failClosed: true },
+    });
+  });
 });

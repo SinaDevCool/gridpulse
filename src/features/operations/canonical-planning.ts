@@ -2,8 +2,8 @@ import type { FacilityPlanRequest } from "../analytics/contracts";
 import type { OperationsWorkspace } from "./workspace-contract";
 
 export type CanonicalPlanPreparation =
-  | { ready: true; request: FacilityPlanRequest; blockers: [] }
-  | { ready: false; request: null; blockers: string[] };
+  | { ready: true; request: FacilityPlanRequest; blockers: []; warnings: string[] }
+  | { ready: false; request: null; blockers: string[]; warnings: string[] };
 
 /**
  * Projects persisted Operations evidence into the canonical facility-plan contract.
@@ -13,6 +13,7 @@ export function prepareCanonicalFacilityPlan(
   workspace: OperationsWorkspace,
 ): CanonicalPlanPreparation {
   const blockers = [...workspace.readiness.blockers];
+  const warnings: string[] = [];
   const importPoints = workspace.measurements.filter(
     (point) => point.metricKey === "facility_grid_import_mw" && point.quality === "accepted",
   );
@@ -22,11 +23,11 @@ export function prepareCanonicalFacilityPlan(
   if (importPoints.length < 4)
     blockers.push("At least four accepted facility-import intervals are required.");
   if (!workspace.workloads.length)
-    blockers.push("No evidenced workload portfolio is available.");
+    warnings.push("No evidenced workload portfolio is available; workload response is zero.");
   if (!workspace.batteryAssets.length)
-    blockers.push("No battery asset configuration is available.");
+    warnings.push("No battery asset configuration is available; battery response is zero.");
   const uniqueBlockers = [...new Set(blockers)];
-  if (uniqueBlockers.length) return { ready: false, request: null, blockers: uniqueBlockers };
+  if (uniqueBlockers.length) return { ready: false, request: null, blockers: uniqueBlockers, warnings };
 
   const byTimestamp = new Map<string, Record<string, number>>();
   for (const point of workspace.measurements) {
@@ -47,6 +48,7 @@ export function prepareCanonicalFacilityPlan(
   return {
     ready: true,
     blockers: [],
+    warnings,
     request: {
       schema_version: "gridpulse-facility-plan-request-v1",
       portfolio_id: workspace.facility.id,

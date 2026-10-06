@@ -57,6 +57,7 @@ import {
   type OperationsDataMode,
 } from "./operating-context";
 import { OperationsSelect } from "./OperationsSelect";
+import { assessOperationsCompliance, authorizeDispatch } from "./operations-assurance";
 
 export type OperationsView = "overview" | "compute" | "power";
 
@@ -294,6 +295,22 @@ function OverviewView({
   const snapshot = peakInterval(model);
   const alert = derivePrimaryAlert(model);
   const pue = operationalPue(model);
+  const compliance = assessOperationsCompliance({
+    facilityEnergyMwh: null,
+    itEnergyMwh: null,
+    renewableSharePercent: null,
+    wasteHeatMwh: null,
+    heatTemperatureC: null,
+    measurementCoveragePercent: 0,
+  });
+  const dispatchGate = authorizeDispatch({
+    mode: "scenario",
+    evidenceReady: compliance.evidenceReady,
+    connectorHealthy: false,
+    agreementCurrent: false,
+    approvalCount: 0,
+    automaticDispatchEnabled: false,
+  });
   return (
     <section className="operations-v2-view" aria-labelledby="operations-overview-title">
       <h2 id="operations-overview-title" className="sr-only">
@@ -367,6 +384,29 @@ function OverviewView({
         <p>{pue.detail}</p>
       </div>
 
+      <article className="operations-envelope-strip" aria-label="Operating envelope summary">
+        <div>
+          <span>Directly feasible</span>
+          <strong>{number.format(model.operatingEnvelope.summary.minimumDirectCeilingMw)} MW</strong>
+        </div>
+        <div>
+          <span>Risk-adjusted envelope</span>
+          <strong>{number.format(model.operatingEnvelope.summary.minimumRiskAdjustedCeilingMw)} MW</strong>
+        </div>
+        <div>
+          <span>Binding constraint</span>
+          <strong>{model.operatingEnvelope.summary.bindingConstraint.replaceAll("_", " ")}</strong>
+        </div>
+        <div>
+          <span>Envelope confidence</span>
+          <strong>{model.operatingEnvelope.summary.confidence}</strong>
+        </div>
+        <p>
+          The envelope combines the facility limit, reserve, battery energy and eligible workload
+          response. Uncertainty can reduce the firm operating ceiling but never increase it.
+        </p>
+      </article>
+
       <div className="operations-v2-overview-grid">
         <DemandChart model={model} selected={selected} />
         <article className="operations-v2-recommendation">
@@ -408,6 +448,31 @@ function OverviewView({
         </article>
       </div>
       <ScenarioComparison model={model} selected={selected} onSelect={onSelect} />
+      <details className="operations-assurance-panel">
+        <summary>Evidence, verification and control readiness</summary>
+        <div className="operations-assurance-grid">
+          <section>
+            <span>Measured verification</span>
+            <strong>Awaiting observed response</strong>
+            <p>Predicted and delivered response remain separate until interval evidence is imported.</p>
+          </section>
+          <section>
+            <span>Operational evidence</span>
+            <strong>{compliance.evidenceReady ? "Evidence ready" : "Evidence incomplete"}</strong>
+            <p>{compliance.missing.slice(0, 2).join(" · ") || "Required evidence is aligned."}</p>
+          </section>
+          <section>
+            <span>Economics</span>
+            <strong>Disabled in scenario mode</strong>
+            <p>Cost selection follows technical feasibility and never changes the safe envelope.</p>
+          </section>
+          <section>
+            <span>Physical dispatch</span>
+            <strong>{dispatchGate.authorized ? "Authorized" : "Locked"}</strong>
+            <p>{dispatchGate.reasons[0]}</p>
+          </section>
+        </div>
+      </details>
     </section>
   );
 }
@@ -441,6 +506,8 @@ function DemandChart({
     const uncertainty = Math.max(0.8, point.baselineDemandMw * (0.018 + index * 0.00008));
     return {
       ...point,
+      riskAdjustedCeilingMw:
+        model.operatingEnvelope.intervals[index]?.riskAdjustedCeilingMw ?? targetMw,
       forecastBand: [
         Number(Math.max(0, point.baselineDemandMw - uncertainty).toFixed(2)),
         Number((point.baselineDemandMw + uncertainty).toFixed(2)),
@@ -505,6 +572,12 @@ function DemandChart({
             tone: "limit",
             mark: "dash",
           },
+          {
+            label: "Risk-adjusted envelope",
+            detail: "MW · uncertainty adjusted",
+            tone: "positive",
+            mark: "dash",
+          },
         ]}
       />
       <div
@@ -544,6 +617,15 @@ function DemandChart({
                 fill: "var(--ops-target)",
                 position: "insideTopRight",
               }}
+            />
+            <Line
+              dataKey="riskAdjustedCeilingMw"
+              name="Risk-adjusted envelope"
+              stroke="var(--ops-positive)"
+              strokeWidth={1.5}
+              strokeDasharray="2 5"
+              dot={false}
+              isAnimationActive={false}
             />
             <ReferenceLine
               y={model.scenario.importLimitMw}

@@ -6,7 +6,16 @@ export type ConnectorMeasurement = {
     | "gpu_power_mw"
     | "gpu_utilization_percent"
     | "bess_power_mw"
-    | "bess_soc_percent";
+    | "bess_soc_percent"
+    | "it_load_mw"
+    | "cooling_power_mw"
+    | "auxiliary_power_mw"
+    | "ups_output_mw"
+    | "shiftable_load_mw"
+    | "onsite_generation_mw"
+    | "renewable_energy_mwh"
+    | "waste_heat_mwh"
+    | "waste_heat_temperature_c";
   assetId: string;
   eventAt: string;
   intervalSeconds: number | null;

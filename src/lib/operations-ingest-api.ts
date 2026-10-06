@@ -19,6 +19,10 @@ const metricSchema = z.enum([
   "scheduled_gpu_count",
   "active_gpu_count",
   "shiftable_load_mw",
+  "onsite_generation_mw",
+  "renewable_energy_mwh",
+  "waste_heat_mwh",
+  "waste_heat_temperature_c",
 ]);
 
 const ingestSchema = z.object({

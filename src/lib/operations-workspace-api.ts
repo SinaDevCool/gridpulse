@@ -34,6 +34,13 @@ export async function handleOperationsWorkspace(request: Request, env: Operation
     if (!result.ok) throw new Error(`${table}:${result.status}`);
     return await result.json() as Array<Record<string, unknown>>;
   };
+  const queryOptional = async (table: string, parameters: string) => {
+    try {
+      return await query(table, parameters);
+    } catch {
+      return [] as Array<Record<string, unknown>>;
+    }
+  };
   const facilityFilter = `facility_id=eq.${encodeURIComponent(facilityId)}`;
 
   try {
@@ -41,7 +48,7 @@ export async function handleOperationsWorkspace(request: Request, env: Operation
     const facility = facilities[0];
     if (!facility) return response({ error: "Facility not found." }, 404);
 
-    const [sources, watermarks, measurements, batteries, workloads, forecasts, recommendations, verifications, quality] = await Promise.all([
+    const [sources, watermarks, measurements, batteries, workloads, forecasts, recommendations, verifications, quality, agreements, calculationRuns, approvals] = await Promise.all([
       query("operations_sources", `${facilityFilter}&select=id,source_type,display_name,health,read_only,last_received_at&order=display_name.asc`),
       query("operations_source_watermarks", `${facilityFilter}&select=source_id,latest_event_at,latest_received_at,consecutive_failures,last_error_code`),
       query("operations_measurements", `${facilityFilter}&select=source_id,metric_key,asset_id,event_at,value,unit,value_kind,quality&quality=eq.accepted&order=event_at.desc&limit=2000`),
@@ -51,6 +58,9 @@ export async function handleOperationsWorkspace(request: Request, env: Operation
       query("operations_recommendations", `${facilityFilter}&select=*&order=created_at.desc&limit=1`),
       query("operations_verifications", `${facilityFilter}&select=*&order=created_at.desc&limit=1`),
       query("operations_data_quality", `${facilityFilter}&select=*&order=window_end.desc&limit=1`),
+      queryOptional("operations_operating_agreements", `${facilityFilter}&select=*&order=valid_from.desc&limit=10`),
+      queryOptional("operations_calculation_runs", `${facilityFilter}&select=*&order=created_at.desc&limit=10`),
+      queryOptional("operations_dispatch_approvals", `${facilityFilter}&select=*&order=decision_at.desc&limit=50`),
     ]);
 
     const watermarkBySource = new Map(watermarks.map((item) => [item.source_id, item]));
@@ -107,6 +117,9 @@ export async function handleOperationsWorkspace(request: Request, env: Operation
       latestRecommendation: recommendations[0] ?? null,
       latestVerification: verifications[0] ?? null,
       dataQuality: quality[0] ?? null,
+      operatingAgreements: agreements,
+      calculationRuns,
+      dispatchApprovals: approvals,
       readiness: {
         mode: recommendations.length ? "shadow" : measurements.length ? "historical" : "historical",
         blockers,

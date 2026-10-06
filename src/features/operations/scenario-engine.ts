@@ -1,6 +1,11 @@
 import { z } from "zod";
 import type { EvidencedValue } from "./evidence";
 import { simulateBatteryDispatch } from "./battery-dispatch";
+import {
+  calculateOperatingEnvelope,
+  summarizeOperatingEnvelope,
+  type OperatingEnvelopeInterval,
+} from "./operating-envelope";
 
 export const operationsScenarioSchema = z
   .object({
@@ -114,6 +119,10 @@ export type OperationsOverviewModel = {
     violationsAvoided: number;
     peakReductionMw: number;
     additionalGpuHours: number;
+  };
+  operatingEnvelope: {
+    intervals: OperatingEnvelopeInterval[];
+    summary: ReturnType<typeof summarizeOperatingEnvelope>;
   };
 };
 
@@ -279,6 +288,30 @@ export function buildOperationsScenario(
     (sum, point) => sum + point.workloadShiftMw * intervalHours,
     0,
   );
+  const envelopeIntervals = calculateOperatingEnvelope(
+    intervals.map((point) => ({
+      timestamp: point.timestamp,
+      durationMinutes: 15,
+      baselineDemandMw: point.baselineDemandMw,
+      proposedDemandMw: point.baselineDemandMw,
+      contractualLimitMw: scenario.importLimitMw,
+      operatorLimitMw: null,
+      transformerLimitMw: null,
+      upsLimitMw: null,
+      coolingLimitMw: null,
+      safetyReserveMw: scenario.safetyReserveMw,
+      demandUncertaintyMw: Math.max(0.8, point.baselineDemandMw * 0.02),
+      resourceUncertaintyMw: point.availableDischargeMw > 0 ? point.availableDischargeMw * 0.03 : 0,
+      batteryAvailablePowerMw: point.availableDischargeMw,
+      batteryAvailableEnergyMwh:
+        scenario.battery.usableEnergyMwh *
+        Math.max(0, point.batterySocPercent - scenario.battery.minimumSocPercent) /
+        100,
+      batteryDischargeEfficiency: scenario.battery.dischargeEfficiency,
+      workloadFlexibleMw: point.workloadShiftMw,
+      workloadReboundMw: 0,
+    })),
+  );
 
   return {
     mode: "scenario",
@@ -314,6 +347,10 @@ export function buildOperationsScenario(
       violationsAvoided: Math.max(0, baseline.violationIntervals - combined.violationIntervals),
       peakReductionMw: round(peakReduction),
       additionalGpuHours: combined.additionalGpuHours,
+    },
+    operatingEnvelope: {
+      intervals: envelopeIntervals,
+      summary: summarizeOperatingEnvelope(envelopeIntervals),
     },
   };
 }

@@ -8,8 +8,15 @@ import {
   gpuTelemetrySchema,
 } from "./workload-intelligence";
 import { buildOperationsScenario, operationsScenarioSchema } from "./scenario-engine";
+import {
+  assessOperationsCompliance,
+  assessOperationsQuality,
+  authorizeDispatch,
+  evaluateResponseEconomics,
+  verifyOperationsResponse,
+} from "./operations-assurance";
 
-export const OPERATIONS_CALCULATION_VERSION = "operations-backend-v1";
+export const OPERATIONS_CALCULATION_VERSION = "operations-backend-v2-envelope-assurance";
 
 const facilityObservationSchema = z.object({
   timestamp: z.string().datetime(),
@@ -53,11 +60,65 @@ export const operationsAssessmentRequestSchema = z.discriminatedUnion("kind", [
       })
       .nullable(),
   }),
+  z.object({
+    kind: z.literal("assurance"),
+    quality: z.object({
+      expectedIntervals: z.number().int().positive(),
+      receivedIntervals: z.number().int().nonnegative(),
+      duplicateCount: z.number().int().nonnegative().default(0),
+      staleCount: z.number().int().nonnegative().default(0),
+      suspectCount: z.number().int().nonnegative().default(0),
+      newestEvidenceAt: z.string().datetime().nullable(),
+      assessedAt: z.string().datetime(),
+      freshnessThresholdMinutes: z.number().positive().default(15),
+      powerBalanceResidualPercent: z.number().nonnegative().nullable().default(null),
+    }),
+    verification: z.object({
+      requestedReductionMw: z.number().nonnegative(),
+      expectedImportMw: z.number().nonnegative(),
+      actualImportMw: z.array(z.number().nonnegative()).min(1),
+      baselineImportMw: z.array(z.number().nonnegative()).min(1),
+      intervalMinutes: z.number().positive(),
+      batteryPowerMw: z.array(z.number()).optional(),
+      reboundImportMw: z.array(z.number().nonnegative()).optional(),
+      telemetryCompletenessPercent: z.number().min(0).max(100),
+    }).nullable(),
+    compliance: z.object({
+      facilityEnergyMwh: z.number().nonnegative().nullable(),
+      itEnergyMwh: z.number().nonnegative().nullable(),
+      renewableSharePercent: z.number().min(0).max(100).nullable(),
+      wasteHeatMwh: z.number().nonnegative().nullable(),
+      heatTemperatureC: z.number().nullable(),
+      measurementCoveragePercent: z.number().min(0).max(100),
+    }),
+    economics: z.object({
+      avoidedPeakMw: z.number().nonnegative(),
+      durationHours: z.number().nonnegative(),
+      energyPriceEurPerMwh: z.number(),
+      capacityValueEurPerMw: z.number(),
+      batteryEnergyMwh: z.number().nonnegative(),
+      batteryDegradationEurPerMwh: z.number().nonnegative(),
+      shiftedEnergyMwh: z.number().nonnegative(),
+      workloadCostEurPerMwh: z.number().nonnegative(),
+      flexibilityPaymentEur: z.number(),
+      slaPenaltyEur: z.number().nonnegative(),
+    }),
+    dispatch: z.object({
+      mode: z.enum(["scenario", "historical", "shadow", "live"]),
+      evidenceReady: z.boolean(),
+      connectorHealthy: z.boolean(),
+      agreementCurrent: z.boolean(),
+      approvalCount: z.number().int().nonnegative(),
+      requiredApprovalCount: z.number().int().positive().default(2),
+      automaticDispatchEnabled: z.boolean(),
+    }),
+  }),
 ]);
 
-export type OperationsAssessmentRequest = z.infer<typeof operationsAssessmentRequestSchema>;
+export type OperationsAssessmentRequest = z.input<typeof operationsAssessmentRequestSchema>;
 
 export function runOperationsAssessment(input: OperationsAssessmentRequest) {
+  input = operationsAssessmentRequestSchema.parse(input);
   if (input.kind === "overview") {
     return envelope("simulated", buildOperationsScenario(input.scenario), {
       sampleCount: 96,
@@ -78,6 +139,21 @@ export function runOperationsAssessment(input: OperationsAssessmentRequest) {
       warnings: input.telemetry.length
         ? []
         : ["No GPU telemetry was supplied; power values use explicit reference estimates."],
+    });
+  }
+
+  if (input.kind === "assurance") {
+    const quality = assessOperationsQuality(input.quality);
+    return envelope("measured", {
+      quality,
+      verification: input.verification ? verifyOperationsResponse(input.verification) : null,
+      compliance: assessOperationsCompliance(input.compliance),
+      economics: evaluateResponseEconomics(input.economics),
+      dispatch: authorizeDispatch(input.dispatch),
+    }, {
+      sampleCount: input.quality.receivedIntervals,
+      completenessPercent: quality.completenessPercent,
+      warnings: quality.blockers,
     });
   }
 

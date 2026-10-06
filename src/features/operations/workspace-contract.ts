@@ -53,8 +53,11 @@ export const operationsWorkspaceSchema = z.object({
   latestRecommendation: z.record(z.string(), z.unknown()).nullable(),
   latestVerification: z.record(z.string(), z.unknown()).nullable(),
   dataQuality: z.record(z.string(), z.unknown()).nullable(),
+  operatingAgreements: z.array(z.record(z.string(), z.unknown())).default([]),
+  calculationRuns: z.array(z.record(z.string(), z.unknown())).default([]),
+  dispatchApprovals: z.array(z.record(z.string(), z.unknown())).default([]),
   readiness: z.object({
-    mode: z.enum(["historical", "shadow", "live_monitoring"]),
+    mode: z.enum(["scenario", "historical", "shadow", "live_monitoring"]),
     blockers: z.array(z.string()),
     freshestEvidenceAt: z.string().datetime().nullable(),
   }),

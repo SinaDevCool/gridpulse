@@ -4,6 +4,7 @@ import type {
   OperationsScenarioKind,
   ScenarioSummary,
 } from "./scenario-engine";
+import { summarizeOperatingEnvelope } from "./operating-envelope";
 
 export const operatingWindowValues = ["now", "next-4h", "today", "tomorrow"] as const;
 export const operationsModeValues = ["scenario", "live", "historical"] as const;
@@ -61,6 +62,10 @@ export function scopeOperationsModel(
   const target = model.scenario.importLimitMw - model.scenario.safetyReserveMw;
   const headroom = Math.max(0, target - peak.combinedDemandMw);
   const incrementalGpuMw = (model.scenario.gpuActivePowerWatts * model.scenario.pue) / 1_000_000;
+  const intervalTimestamps = new Set(intervals.map((interval) => interval.timestamp));
+  const envelopeIntervals = model.operatingEnvelope.intervals.filter((interval) =>
+    intervalTimestamps.has(interval.timestamp),
+  );
   return {
     ...model,
     intervals,
@@ -92,6 +97,10 @@ export function scopeOperationsModel(
       violationsAvoided: Math.max(0, baseline.violationIntervals - combined.violationIntervals),
       peakReductionMw: Number((baseline.peakDemandMw - combined.peakDemandMw).toFixed(1)),
       additionalGpuHours: combined.additionalGpuHours,
+    },
+    operatingEnvelope: {
+      intervals: envelopeIntervals,
+      summary: summarizeOperatingEnvelope(envelopeIntervals),
     },
   };
 }

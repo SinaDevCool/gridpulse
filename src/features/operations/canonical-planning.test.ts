@@ -39,11 +39,13 @@ describe("canonical Operations plan preparation", () => {
     expect(result.request.intervals).toHaveLength(4);
   });
 
-  it("fails closed when the workload portfolio is absent", () => {
+  it("keeps direct feasibility available when flexible resources are absent", () => {
     const input = workspace();
     input.workloads = [];
+    input.batteryAssets = [];
     const result = prepareCanonicalFacilityPlan(input);
-    expect(result.ready).toBe(false);
-    expect(result.blockers).toContain("No evidenced workload portfolio is available.");
+    expect(result.ready).toBe(true);
+    expect(result.warnings).toContain("No evidenced workload portfolio is available; workload response is zero.");
+    expect(result.warnings).toContain("No battery asset configuration is available; battery response is zero.");
   });
 });
