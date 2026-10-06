@@ -2,10 +2,8 @@ import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
   Activity,
-  AlertTriangle,
   BatteryCharging,
   Bolt,
-  Cpu,
   Database,
   Gauge,
   Info,
@@ -48,9 +46,7 @@ import {
   formatMw,
 } from "./visualization";
 import {
-  derivePrimaryAlert,
   operatingWindowLabels,
-  operationalPue,
   operationsModeLabels,
   scopeOperationsModel,
   type OperatingWindowPreset,
@@ -58,6 +54,13 @@ import {
 } from "./operating-context";
 import { OperationsSelect } from "./OperationsSelect";
 import { assessOperationsCompliance, authorizeDispatch } from "./operations-assurance";
+import {
+  OperatingEnvelopeMap,
+  OperationsDecisionBrief,
+  OperationsEvidenceRail,
+  OperationsLifecycle,
+  ScenarioDecisionTable,
+} from "./OperationsDecision";
 
 export type OperationsView = "overview" | "compute" | "power";
 
@@ -223,7 +226,8 @@ export function OperationsDashboard({
               value: value as OperationsDataMode,
               label,
               disabled: value !== "scenario",
-              description: value === "scenario" ? "Configured inputs" : "Connect evidence to enable",
+              description:
+                value === "scenario" ? "Configured inputs" : "Connect evidence to enable",
             }))}
             onChange={(nextMode) =>
               navigate({
@@ -293,8 +297,6 @@ function OverviewView({
   const selectedSummary =
     model.summaries.find((item) => item.kind === selected) ?? model.summaries[2];
   const snapshot = peakInterval(model);
-  const alert = derivePrimaryAlert(model);
-  const pue = operationalPue(model);
   const compliance = assessOperationsCompliance({
     facilityEnergyMwh: null,
     itEnergyMwh: null,
@@ -316,18 +318,10 @@ function OverviewView({
       <h2 id="operations-overview-title" className="sr-only">
         Operations Overview
       </h2>
-      <article className={`operations-primary-alert ${alert.state}`}>
-        <span className="operations-primary-alert-icon" aria-hidden="true">
-          {alert.state === "normal" ? <ShieldCheck /> : <AlertTriangle />}
-        </span>
-        <div>
-          <p className="context-label">Operating Window Status · {alert.interval}</p>
-          <h3>{alert.title}</h3>
-          <p>{alert.detail}</p>
-        </div>
-        <strong>{alert.remainingRisk}</strong>
-      </article>
-      <div className="operations-v2-kpis">
+      <OperationsLifecycle />
+      <OperationsDecisionBrief model={model} />
+      <OperatingEnvelopeMap model={model} />
+      <div className="operations-v2-kpis operations-v2-kpis--outcomes">
         <MetricCard
           icon={<Activity />}
           label="Facility Demand"
@@ -346,70 +340,11 @@ function OverviewView({
           metric={model.metrics.remainingMargin}
           note="After safety reserve"
         />
-        <MetricCard
-          icon={<Cpu />}
-          label="Response Available"
-          metric={{
-            value:
-              model.recommendation.batteryMw +
-              Math.max(0, ...model.intervals.map((point) => point.workloadShiftMw)),
-            unit: "MW",
-            evidenceClass: "simulated",
-            sourceLabel: "Battery and eligible workload response",
-            quality: "accepted",
-          }}
-          note="Battery plus eligible workload"
-        />
-        <MetricCard
-          icon={<AlertTriangle />}
-          label="Limit Risk"
-          metric={model.metrics.limitRisk}
-          note={
-            model.metrics.limitRisk.value === "Low"
-              ? "Baseline remains below the facility limit"
-              : model.metrics.limitRisk.value === "Moderate"
-                ? "Response resolves the baseline exceedance"
-                : "Response still exceeds the facility limit"
-          }
-          tone={model.metrics.limitRisk.value === "High" ? "danger" : "warning"}
-        />
       </div>
-
-      <div className="operations-efficiency-guardrail">
-        <div>
-          <span>Operating PUE</span>
-          <strong>{number.format(pue.value)}</strong>
-          <OperationsEvidenceBadge kind={pue.evidence} label={pue.status} />
-        </div>
-        <p>{pue.detail}</p>
-      </div>
-
-      <article className="operations-envelope-strip" aria-label="Operating envelope summary">
-        <div>
-          <span>Directly feasible</span>
-          <strong>{number.format(model.operatingEnvelope.summary.minimumDirectCeilingMw)} MW</strong>
-        </div>
-        <div>
-          <span>Risk-adjusted envelope</span>
-          <strong>{number.format(model.operatingEnvelope.summary.minimumRiskAdjustedCeilingMw)} MW</strong>
-        </div>
-        <div>
-          <span>Binding constraint</span>
-          <strong>{model.operatingEnvelope.summary.bindingConstraint.replaceAll("_", " ")}</strong>
-        </div>
-        <div>
-          <span>Envelope confidence</span>
-          <strong>{model.operatingEnvelope.summary.confidence}</strong>
-        </div>
-        <p>
-          The envelope combines the facility limit, reserve, battery energy and eligible workload
-          response. Uncertainty can reduce the firm operating ceiling but never increase it.
-        </p>
-      </article>
 
       <div className="operations-v2-overview-grid">
         <DemandChart model={model} selected={selected} />
-        <article className="operations-v2-recommendation">
+        <article id="operations-response" className="operations-v2-recommendation">
           <header>
             <Zap aria-hidden="true" />
             <div>
@@ -424,6 +359,18 @@ function OverviewView({
             demand.
           </p>
           <dl>
+            <ImpactRow
+              label="Required Response"
+              value={`${number.format(Math.max(0, snapshot.baselineDemandMw - (model.scenario.importLimitMw - model.scenario.safetyReserveMw)))} MW`}
+            />
+            <ImpactRow
+              label="Battery Contribution"
+              value={`${number.format(model.recommendation.batteryMw)} MW`}
+            />
+            <ImpactRow
+              label="Workload Contribution"
+              value={`${number.format(model.recommendation.peakReductionMw - model.recommendation.batteryMw)} MW`}
+            />
             <ImpactRow
               label="Violation Intervals Avoided"
               value={integer.format(model.recommendation.violationsAvoided)}
@@ -447,14 +394,24 @@ function OverviewView({
           </div>
         </article>
       </div>
-      <ScenarioComparison model={model} selected={selected} onSelect={onSelect} />
-      <details className="operations-assurance-panel">
+      <section
+        className="operations-scenario-comparison"
+        aria-labelledby="scenario-comparison-title"
+      >
+        <p className="context-label">Scenario comparison</p>
+        <h3 id="scenario-comparison-title">Compare operational responses</h3>
+        <ScenarioDecisionTable model={model} selected={selected} onSelect={onSelect} />
+      </section>
+      <OperationsEvidenceRail model={model} />
+      <details id="operations-assurance" className="operations-assurance-panel">
         <summary>Evidence, verification and control readiness</summary>
         <div className="operations-assurance-grid">
           <section>
             <span>Measured verification</span>
             <strong>Awaiting observed response</strong>
-            <p>Predicted and delivered response remain separate until interval evidence is imported.</p>
+            <p>
+              Predicted and delivered response remain separate until interval evidence is imported.
+            </p>
           </section>
           <section>
             <span>Operational evidence</span>
