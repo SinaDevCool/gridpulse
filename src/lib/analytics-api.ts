@@ -113,7 +113,7 @@ export function startFcaInterval(input: FcaIntervalRequest): Promise<JobAccepted
 
 export function startFcaProfile(input: FcaProfileRequest): Promise<JobAccepted> {
   const payload = fcaProfileRequestSchema.parse(input);
-  return authenticatedRequest<JobAccepted>("/v1/jobs/fca-interval", {
+  return authenticatedRequest<JobAccepted>("/v1/jobs/fca-profile", {
     method: "POST", body: JSON.stringify(payload),
   });
 }

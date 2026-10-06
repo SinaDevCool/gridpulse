@@ -30,17 +30,36 @@ export function canonicalOperatorName(value?: string | null) {
   return canonicalOperators.find(([pattern]) => pattern.test(normalized))?.[1] ?? normalized;
 }
 
+export function canonicalOperatorNames(value?: string | null) {
+  if (!value?.trim()) return [];
+
+  return Array.from(
+    new Set(
+      value
+        .split(/[;,|]/)
+        .map((name) => canonicalOperatorName(name))
+        .filter((name): name is string => Boolean(name)),
+    ),
+  );
+}
+
+export function formatOperatorNames(value?: string | null) {
+  const names = canonicalOperatorNames(value);
+  return names.length ? names.join(" · ") : null;
+}
+
 export function knownOperatorRole(value?: string | null): "TSO" | null {
   const canonical = canonicalOperatorName(value);
   return canonical && canonicalTsoNames.has(canonical) ? "TSO" : null;
 }
 
 export function sameOperatorIdentity(left?: string | null, right?: string | null) {
-  const canonicalLeft = canonicalOperatorName(left);
-  const canonicalRight = canonicalOperatorName(right);
-  return Boolean(
-    canonicalLeft &&
-    canonicalRight &&
-    canonicalLeft.localeCompare(canonicalRight, undefined, { sensitivity: "accent" }) === 0,
+  const canonicalLeft = canonicalOperatorNames(left);
+  const canonicalRight = canonicalOperatorNames(right);
+  return canonicalLeft.some((leftName) =>
+    canonicalRight.some(
+      (rightName) =>
+        leftName.localeCompare(rightName, undefined, { sensitivity: "accent" }) === 0,
+    ),
   );
 }

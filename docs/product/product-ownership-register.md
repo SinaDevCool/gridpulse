@@ -18,6 +18,9 @@ This register applies to the production product only. The browser application ne
 | Mitigation comparison                           | `src/features/constraint-exposure/mitigations.ts`                            | explorer and enquiry                   | Compares supplied outcomes; does not create feasibility.                 |
 | Operator-enquiry readiness                      | `src/features/operator-enquiry/readiness.ts`                                 | enquiry and reports                    | One pure policy owns readiness and missing inputs.                       |
 | Analytics job transport                         | `src/lib/analytics-api.ts`                                                   | feature clients and reports            | Components do not call transport directly.                               |
+| Operations persistence                          | existing `operations_*` Supabase tables                                      | Operations workspace API and UI        | Views do not create a second facility, telemetry, forecast or recommendation store. |
+| Operations authoritative analytics              | canonical analytics service and `gridpulse-capacity-backtest`                | Operations workspace and reports       | Browser and route-local calculators are synthetic preview or degraded monitoring only. |
+| Operations evidence projection                  | shared grid-connection evidence domain plus canonical result provenance       | Operations badges, exports and reviews | Operations does not define a second truth model.                          |
 | Decision package                                | existing reports/decision-package owners                                     | UI and exports                         | Views and exports use the same canonical projection.                     |
 
 ## Prohibited duplicates
@@ -29,3 +32,5 @@ This register applies to the production product only. The browser application ne
 - A second report calculation pipeline.
 - A theme state inside individual pages.
 - Exact-looking points for postcode, municipality, regional, or unknown locations.
+- A route-local or browser-side Operations optimizer presented as an authoritative result.
+- A second Operations facility, telemetry, forecast, recommendation or verification store.

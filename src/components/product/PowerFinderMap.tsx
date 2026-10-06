@@ -623,6 +623,15 @@ export function PowerFinderMap({
         attributionControl: false,
         style: basemap.style,
       });
+      const decorativeBasemapImages = new Set(["wood-pattern", "circle-11"]);
+      map.setMissingStyleImageResolver((id) => {
+        if (!decorativeBasemapImages.has(id) || map.hasImage(id)) return;
+        map.addImage(id, {
+          width: 1,
+          height: 1,
+          data: new Uint8Array([0, 0, 0, 0]),
+        });
+      });
       mapRef.current = map;
       map.addControl(new NavigationControl({ showCompass: false }), "top-right");
       map.addControl(new AttributionControl({ compact: true }), "bottom-right");

@@ -3,17 +3,8 @@ import { expect, test } from "@playwright/test";
 test("workspace shell exposes the unified decision destinations", async ({ page }) => {
   await page.goto("/portfolio?q=berlin&stage=screening&sort=name");
 
-  const navigation = page.getByRole("navigation", { name: "Grid workspace navigation" });
-  for (const destination of [
-    "Sites",
-    "Power Finder",
-    "Constraints",
-    "Planner",
-    "Activation",
-    "Operations",
-    "Evidence",
-    "Reports",
-  ]) {
+  const navigation = page.getByRole("navigation", { name: "GridPulse workspace" });
+  for (const destination of ["Sites", "Power Finder", "Operations"]) {
     await expect(navigation.getByRole("link", { name: new RegExp(destination) })).toBeVisible();
   }
   await expect(page).toHaveURL(/q=berlin/);

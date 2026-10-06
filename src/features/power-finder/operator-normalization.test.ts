@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { canonicalOperatorName } from "./operator-normalization";
+import {
+  canonicalOperatorName,
+  canonicalOperatorNames,
+  formatOperatorNames,
+  sameOperatorIdentity,
+} from "./operator-normalization";
 
 describe("canonicalOperatorName", () => {
   it("collapses aliases while retaining unknown operators", () => {
@@ -11,5 +16,16 @@ describe("canonicalOperatorName", () => {
     expect(canonicalOperatorName("EWE_Netz")).toBe("EWE Netz GmbH");
     expect(canonicalOperatorName("Local Utility")).toBe("Local Utility");
     expect(canonicalOperatorName(null)).toBeNull();
+  });
+
+  it("normalizes and formats multiple mapped operators without exposing source delimiters", () => {
+    expect(canonicalOperatorNames("TenneT; Avacon")).toEqual([
+      "TenneT TSO GmbH",
+      "Avacon Netz GmbH",
+    ]);
+    expect(formatOperatorNames("TenneT TSO GmbH;Avacon Netz GmbH")).toBe(
+      "TenneT TSO GmbH · Avacon Netz GmbH",
+    );
+    expect(sameOperatorIdentity("TenneT; Avacon", "Avacon Netz GmbH")).toBe(true);
   });
 });

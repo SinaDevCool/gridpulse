@@ -3102,8 +3102,12 @@
 .operations-select-popover button:not(:disabled):focus-visible,
 .operations-select-popover button[aria-selected="true"] {
   border-color: color-mix(in srgb, var(--accent) 32%, transparent);
-  outline: none;
   background: color-mix(in srgb, var(--accent) 13%, var(--ops-surface-raised));
+}
+
+.operations-select-popover button:not(:disabled):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
 
 .operations-select-popover button:disabled {

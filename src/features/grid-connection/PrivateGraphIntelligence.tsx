@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   AlertTriangle,
@@ -108,11 +108,16 @@ function CandidateModelReconciliation({ siteId }: { siteId: string }) {
   const [links, setLinks] = useState<CandidateModelBusLink[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
-  const refresh = () =>
-    loadCandidateModelBusLinks(siteId)
-      .then(setLinks)
-      .catch((reason) => setError(reason instanceof Error ? reason.message : "Reconciliation unavailable"));
-  useEffect(() => void refresh(), [siteId]);
+  const refresh = useCallback(
+    () =>
+      loadCandidateModelBusLinks(siteId)
+        .then(setLinks)
+        .catch((reason) =>
+          setError(reason instanceof Error ? reason.message : "Reconciliation unavailable"),
+        ),
+    [siteId],
+  );
+  useEffect(() => void refresh(), [refresh]);
   const accepted = links.find((link) => link.match_status === "accepted");
   const suggestions = links.filter((link) => link.match_status === "suggested" || link.match_status === "under_review");
   return (
@@ -191,13 +196,12 @@ export function PrivateGraphIntelligence({ siteId }: { siteId: string }) {
   const quality = graph?.quality ?? {};
   const metrics = (quality.metrics ?? {}) as Record<string, unknown>;
   const checks = (quality.checks ?? {}) as Record<string, unknown>;
-  const portfolio = graph?.portfolio ?? {};
   const interactions = useMemo(
     () =>
-      Array.isArray(portfolio.pairwise_interactions)
-        ? (portfolio.pairwise_interactions as Array<Record<string, unknown>>)
+      Array.isArray(graph?.portfolio?.pairwise_interactions)
+        ? (graph.portfolio.pairwise_interactions as Array<Record<string, unknown>>)
         : [],
-    [portfolio],
+    [graph?.portfolio?.pairwise_interactions],
   );
 
   if (error) {

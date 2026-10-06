@@ -95,6 +95,27 @@ describe("candidate detail model", () => {
     },
   );
 
+  it("keeps jointly mapped TSO and DSO identities visible", () => {
+    const context = resolveCandidateOperatorContext(
+      { ...candidate, operator: "TenneT; Avacon" },
+      [
+        tso,
+        {
+          name: "Avacon Netz GmbH",
+          type: "DSO / other",
+          featureCount: 1,
+          bounds: null,
+          tsoNames: ["TenneT TSO GmbH"],
+          relationshipBasis: "mapped_proximity",
+        },
+      ],
+    );
+
+    expect(context.mappedOperator).toBe("TenneT TSO GmbH · Avacon Netz GmbH");
+    expect(context.mappedRole).toBe("TSO & DSO");
+    expect(context.upstreamTso).toBeNull();
+  });
+
   it("keeps fit, evidence completeness and capacity evidence distinct", () => {
     const model = buildCandidateDetailModel(candidate, feature, [tso]);
     expect(model.score).toBe(94.1);

@@ -1,7 +1,8 @@
 import type { CandidateOpportunity } from "./candidate-intelligence";
 import type { PowerFinderFeature } from "./fixture-data";
 import {
-  canonicalOperatorName,
+  canonicalOperatorNames,
+  formatOperatorNames,
   knownOperatorRole,
   sameOperatorIdentity,
 } from "./operator-normalization";
@@ -9,7 +10,7 @@ import type { GridOperatorOption } from "./operator-catalog";
 
 export type CandidateOperatorContext = {
   mappedOperator: string | null;
-  mappedRole: "TSO" | "DSO" | null;
+  mappedRole: "TSO" | "DSO" | "TSO & DSO" | null;
   upstreamTso: string | null;
   relationshipBasis: "authoritative" | "mapped_proximity" | null;
   sourceLabel: string;
@@ -40,16 +41,17 @@ export function resolveCandidateOperatorContext(
   candidate: CandidateOpportunity,
   catalog: GridOperatorOption[],
 ): CandidateOperatorContext {
-  const mappedOperator = canonicalOperatorName(candidate.operator);
-  const catalogEntry = catalog.find((item) => sameOperatorIdentity(item.name, mappedOperator));
-  const mappedRole =
-    catalogEntry?.type === "TSO"
-      ? "TSO"
-      : catalogEntry?.type === "DSO / other"
-        ? "DSO"
-        : knownOperatorRole(mappedOperator) === "TSO"
-          ? "TSO"
-          : null;
+  const mappedNames = canonicalOperatorNames(candidate.operator);
+  const mappedOperator = formatOperatorNames(candidate.operator);
+  const catalogEntries = catalog.filter((item) =>
+    mappedNames.some((name) => sameOperatorIdentity(item.name, name)),
+  );
+  const catalogEntry = catalogEntries.length === 1 ? catalogEntries[0] : undefined;
+  const hasTso =
+    catalogEntries.some((item) => item.type === "TSO") ||
+    mappedNames.some((name) => knownOperatorRole(name) === "TSO");
+  const hasDso = catalogEntries.some((item) => item.type === "DSO / other");
+  const mappedRole = hasTso && hasDso ? "TSO & DSO" : hasTso ? "TSO" : hasDso ? "DSO" : null;
   const upstreamTso =
     mappedRole === "DSO" && catalogEntry?.tsoNames.length === 1 ? catalogEntry.tsoNames[0] : null;
 

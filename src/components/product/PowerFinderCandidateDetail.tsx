@@ -66,7 +66,11 @@ export function PowerFinderCandidateDetail({
             </div>
             {model.operator.upstreamTso ? (
               <div>
-                <dt>Upstream TSO</dt>
+                <dt>
+                  {model.operator.relationshipBasis === "mapped_proximity"
+                    ? "Nearby TSO context"
+                    : "Upstream TSO"}
+                </dt>
                 <dd>{model.operator.upstreamTso}</dd>
               </div>
             ) : null}

@@ -121,7 +121,10 @@ import {
   type DiscoveryStrategy,
 } from "@/features/power-finder/location-discovery";
 import { loadRegionalDiscoverySamples } from "@/features/power-finder/regional-discovery-sampling";
-import { canonicalOperatorName } from "@/features/power-finder/operator-normalization";
+import {
+  canonicalOperatorName,
+  formatOperatorNames,
+} from "@/features/power-finder/operator-normalization";
 import { resolveCandidateOperatorContext } from "@/features/power-finder/candidate-detail-model";
 import {
   loadGridOperatorCatalog,
@@ -3335,9 +3338,7 @@ function PowerFinderPage() {
                         ? `${Math.max(...candidate.voltageKv)} kV`
                         : "Voltage unknown"}{" "}
                       · {distanceFormatter.format(candidate.distanceKm)} km ·{" "}
-                      {candidate.operator
-                        ? canonicalOperatorName(candidate.operator)
-                        : "Operator unconfirmed"}
+                      {formatOperatorNames(candidate.operator) ?? "Operator unconfirmed"}
                     </small>
                     <span className="candidate-fit-summary">
                       <strong>{formatScore(candidate.screeningRank)}/100</strong>
@@ -3813,9 +3814,7 @@ function PowerFinderPage() {
                         <div>
                           <dt>Operator</dt>
                           <dd>
-                            {candidate.operator
-                              ? canonicalOperatorName(candidate.operator)
-                              : "Confirm"}
+                            {formatOperatorNames(candidate.operator) ?? "Confirm"}
                             {candidate.operator ? (
                               <small>
                                 {resolveCandidateOperatorContext(candidate, operatorCatalog)
@@ -4012,10 +4011,10 @@ function PowerFinderPage() {
                             </dd>
                           </div>
                           <div>
-                            <dt>Likely Network Operator</dt>
+                            <dt>Mapped Network Operator</dt>
                             <dd>
                               {selected.properties.operator
-                                ? `${canonicalOperatorName(selected.properties.operator)} · confirmation required`
+                                ? `${formatOperatorNames(selected.properties.operator)} · responsibility requires confirmation`
                                 : "Confirmation required"}
                             </dd>
                           </div>
@@ -4077,7 +4076,7 @@ function PowerFinderPage() {
                       </div>
                       <div>
                         <dt>Operator</dt>
-                        <dd>{selected.properties.operator ?? "Not published"}</dd>
+                        <dd>{formatOperatorNames(selected.properties.operator) ?? "Not published"}</dd>
                       </div>
                       <div>
                         <dt>Status</dt>
@@ -4114,7 +4113,7 @@ function PowerFinderPage() {
                       ) : null}
                       <div>
                         <dt>Operator</dt>
-                        <dd>{selected.properties.operator ?? "Not published"}</dd>
+                        <dd>{formatOperatorNames(selected.properties.operator) ?? "Not published"}</dd>
                       </div>
                       <div>
                         <dt>Status</dt>
