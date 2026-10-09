@@ -58,8 +58,21 @@ function BalanceLink({
   );
 }
 
-export function PowerBalanceDiagram({ balance }: { balance: PowerBalancePresentation }) {
+export function PowerBalanceDiagram({
+  balance,
+  limitMw,
+}: {
+  balance: PowerBalancePresentation;
+  limitMw?: number;
+}) {
   const data = buildPowerBalanceSankey(balance);
+  const exceedsLimit = limitMw != null && balance.gridMw > limitMw + 0.01;
+  if (exceedsLimit)
+    data.nodes
+      .filter((node) => node.name === "Grid import")
+      .forEach((node) => {
+        node.tone = "limit";
+      });
   return (
     <div className="balance-diagram">
       {data.reconciled && data.links.length ? (
@@ -89,9 +102,12 @@ export function PowerBalanceDiagram({ balance }: { balance: PowerBalancePresenta
         </p>
       )}
       <dl className="balance-values" aria-label="Power balance values">
-        <div>
+        <div className={exceedsLimit ? "balance-limit-breach" : undefined}>
           <dt>Grid import</dt>
-          <dd>{formatMw(balance.gridMw)}</dd>
+          <dd>
+            {formatMw(balance.gridMw)}
+            {exceedsLimit ? <small>Above {formatMw(limitMw!)} facility limit</small> : null}
+          </dd>
         </div>
         <div>
           <dt>Battery · {balance.batteryDirection}</dt>

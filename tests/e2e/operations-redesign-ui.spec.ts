@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 
 test("response selection updates overview values and illustrative uncertainty is opt-in", async ({
   page,
@@ -143,6 +144,8 @@ for (const view of ["overview", "compute", "power"]) {
       await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
       for (const width of [1440, 390]) {
         await page.setViewportSize({ width, height: 1000 });
+        const tabBounds = await page.locator(".operations-v2-tabs").boundingBox();
+        expect(tabBounds!.height).toBeLessThan(110);
         expect(
           await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth),
         ).toBe(false);
@@ -156,6 +159,108 @@ for (const view of ["overview", "compute", "power"]) {
           fullPage: true,
         });
       }
+    }
+  });
+}
+
+test("large imported workload queues are bounded and paginate without losing records", async ({
+  page,
+}) => {
+  await page.goto("/operations?view=compute");
+  await page.getByRole("button", { name: "Connect Evidence", exact: true }).click();
+  const header =
+    "workload_id,name,workload_class,status,priority,earliest_start,deadline,expected_duration_minutes,requested_gpu_count,minimum_gpu_count,checkpointable,preemptible,maximum_delay_minutes";
+  const records = Array.from(
+    { length: 55 },
+    (_, index) =>
+      `job-${index},Batch ${index},batch,queued,10,2026-09-26T00:00:00Z,2026-09-26T20:00:00Z,60,8,4,true,true,120`,
+  );
+  await page
+    .getByLabel(/Workload CSV/)
+    .setInputFiles({
+      name: "queue.csv",
+      mimeType: "text/csv",
+      buffer: Buffer.from([header, ...records].join("\n")),
+    });
+  await expect(page.getByText("55 scheduler records loaded from queue.csv.")).toBeVisible();
+  await expect(page.locator(".compute-table-wrap tbody tr")).toHaveCount(50);
+  await page.getByRole("button", { name: "Next page", exact: true }).click();
+  await expect(page.locator(".compute-table-wrap tbody tr")).toHaveCount(5);
+  await page.getByRole("button", { name: "Previous page", exact: true }).click();
+  await expect(page.locator(".compute-table-wrap tbody tr")).toHaveCount(50);
+});
+
+test("window scopes every scenario timeline without truncating recovery calculations", async ({
+  page,
+}) => {
+  await page.goto("/operations?view=overview&window=next-4h&mode=scenario");
+  await expect(page.locator(".operations-context-health")).toContainText("16 displayed intervals");
+  await page.getByText("View Chart Data", { exact: true }).click();
+  await expect(
+    page
+      .getByLabel("Operations Overview", { exact: true })
+      .locator(".operations-v2-chart-data tbody tr"),
+  ).toHaveCount(16);
+  await page.getByRole("link", { name: "Compute & Workloads", exact: true }).click();
+  await page.getByText("View Full Chart Data", { exact: true }).click();
+  await expect(
+    page
+      .getByLabel("Compute and Workloads", { exact: true })
+      .locator(".operations-v2-chart-data tbody tr"),
+  ).toHaveCount(16);
+  await expect(page.getByText(/not the selected candidate job schedule/)).toBeVisible();
+  await page.getByRole("link", { name: "Power & Battery", exact: true }).click();
+  await page.getByText("View Full Interval Data", { exact: true }).click();
+  await expect(
+    page
+      .getByLabel("Power & Battery", { exact: true })
+      .locator(".operations-v2-chart-data tbody tr"),
+  ).toHaveCount(16);
+  await expect(page.getByText("Discharge time · full horizon", { exact: true })).toBeVisible();
+  await expect(page.locator(".power-interval-control")).toBeVisible();
+  const intervalBounds = await page.locator(".power-interval-control").boundingBox();
+  const flowBounds = await page.locator(".power-insight-grid").boundingBox();
+  expect(intervalBounds!.y).toBeLessThan(flowBounds!.y);
+});
+
+test("power compliance does not hide unrecovered work and advanced contracts are secondary", async ({
+  page,
+}) => {
+  await page.goto("/operations?view=overview");
+  await expect(page.locator(".operations-decision-message")).toContainText(
+    /Power target met, but .* deferred work remains unrecovered/,
+  );
+  await expect(page.locator(".operations-decision-statuses")).toContainText(
+    "Unrecovered work · full horizon",
+  );
+  await expect(page.locator(".operations-decision-facts")).toContainText("Scenario only");
+  await expect(page.locator(".operations-technical-details")).not.toHaveAttribute("open", "");
+  const chart = await page.locator(".operations-v2-chart-card").first().boundingBox();
+  const advanced = await page.locator(".operations-technical-details").boundingBox();
+  expect(chart!.y).toBeLessThan(advanced!.y);
+});
+
+for (const view of ["overview", "compute", "power"]) {
+  test(`${view} meets automated WCAG checks in both themes`, async ({ page }) => {
+    await page.goto(`/operations?view=${view}`);
+    await expect(
+      page.getByRole("button", { name: "Configure Scenario", exact: true }),
+    ).toBeEnabled();
+    for (const theme of ["light", "dark"]) {
+      const toggle = page.getByRole("button", {
+        name: new RegExp(`Theme: ${theme === "dark" ? "light" : "dark"}`),
+      });
+      if (await toggle.count()) await toggle.click();
+      const report = await new AxeBuilder({ page })
+        .include(".operations-v2")
+        .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
+        .analyze();
+      expect(
+        report.violations.map((v) => ({
+          id: v.id,
+          nodes: v.nodes.map((n) => ({ target: n.target, summary: n.failureSummary })),
+        })),
+      ).toEqual([]);
     }
   });
 }

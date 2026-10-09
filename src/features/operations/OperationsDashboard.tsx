@@ -4,7 +4,6 @@ import {
   Activity,
   BatteryCharging,
   Bolt,
-  Database,
   Gauge,
   Info,
   Settings2,
@@ -152,19 +151,6 @@ export function OperationsDashboard({
           <p>{viewCopy.description}</p>
         </div>
         <div className="operations-v2-context">
-          <OperationsEvidenceBadge kind="simulated" label="Scenario Simulation" />
-          <span className="operations-v2-facility">
-            <Database aria-hidden="true" />
-            {scenario.facilityName}
-          </span>
-          <span className={`operations-v2-backend ${backendState}`} role="status">
-            <i aria-hidden="true" />
-            {backendState === "verified"
-              ? "Assessment service available"
-              : backendState === "checking"
-                ? "Checking assessment service…"
-                : "Using browser fallback"}
-          </span>
           <ScenarioEditor
             scenario={scenario}
             onApply={(next) => {
@@ -205,7 +191,7 @@ export function OperationsDashboard({
         <p className="operations-v2-provenance">
           <Info aria-hidden="true" />
           <span>
-            <strong>Simulated assessment · No automatic dispatch</strong>
+            <strong>Scenario assessment—not live control</strong>
           </span>
         </p>
       </div>
@@ -218,7 +204,8 @@ export function OperationsDashboard({
         <div className="operations-context-field">
           <OperationsSelect
             name="operating-window"
-            label="Operating Window"
+            label={mode === "historical" ? "Scenario window (inactive)" : "Operating Window"}
+            disabled={mode === "historical"}
             value={window}
             options={Object.entries(operatingWindowLabels).map(([value, label]) => ({
               value: value as OperatingWindowPreset,
@@ -240,9 +227,13 @@ export function OperationsDashboard({
             options={Object.entries(operationsModeLabels).map(([value, label]) => ({
               value: value as OperationsDataMode,
               label,
-              disabled: value !== "scenario",
+              disabled: value === "live" || (value === "historical" && view !== "power"),
               description:
-                value === "scenario" ? "Configured inputs" : "Connect evidence to enable",
+                value === "scenario"
+                  ? "Configured inputs"
+                  : value === "historical"
+                    ? "Power & Battery evidence workspace"
+                    : "Live connector not connected",
             }))}
             onChange={(nextMode) =>
               navigate({
@@ -256,30 +247,23 @@ export function OperationsDashboard({
           <i className={backendState} aria-hidden="true" />
           <span>
             <strong>
-              {backendState === "verified" ? "Assessment Current" : "Local Assessment"}
+              {backendState === "verified"
+                ? "Calculation service available"
+                : backendState === "checking"
+                  ? "Calculation pending…"
+                  : "Browser calculation"}
             </strong>
-            {operationsModeLabels[mode]} · {model.intervals.length} intervals · No live telemetry
+            {mode === "historical"
+              ? "Uploaded evidence workspace"
+              : `${model.intervals.length} displayed intervals · Scenario only`}
           </span>
         </div>
       </section>
-      <p className="operations-assessment-date">
+      <p className="operations-assessment-date" hidden={mode === "historical"}>
         Scenario data: {formatOperationsTime(model.intervals[0].timestamp, true)} –{" "}
         {formatOperationsTime(model.intervals.at(-1)!.timestamp)}. Window presets select simulated
         intervals, not a live forecast.
       </p>
-      <p className="operations-assessment-date" role="status">
-        {assessmentIdentity
-          ? `Assessment ${assessmentIdentity.id.slice(0, 8)} · Calculated ${formatOperationsTime(assessmentIdentity.generatedAt, true)} · Scenario only`
-          : "Calculation pending or browser demonstration · Not an operational plan"}
-      </p>
-      <details className="operations-assurance-panel">
-        <summary>Canonical planning, rolling analysis & historical replay</summary>
-        <p>
-          Use a reviewed model contract and authenticated analytics service. This is separate from
-          the aggregate scenario demonstration; no physical commands are issued.
-        </p>
-        <CanonicalPlanningWorkbench />
-      </details>
 
       <p className="sr-only" aria-live="polite">
         {announcement}
@@ -290,11 +274,38 @@ export function OperationsDashboard({
       {/* Keep evidence workspaces mounted across tab navigation. Native hidden
           removes inactive controls from both layout and accessibility tree. */}
       <div hidden={view !== "compute"}>
-        <ComputeWorkloadsView model={fullModel} />
+        <ComputeWorkloadsView model={fullModel} displayModel={model} />
       </div>
       <div hidden={view !== "power"}>
-        <PowerBatteryView model={fullModel} />
+        <PowerBatteryView
+          model={fullModel}
+          displayModel={model}
+          mode={mode === "historical" ? "historical" : "scenario"}
+          onModeChange={(nextMode) =>
+            navigate({ search: { view: "power", window, mode: nextMode }, replace: true })
+          }
+        />
       </div>
+      <details className="operations-assurance-panel operations-technical-details">
+        <summary>Assessment details & advanced planning</summary>
+        <p>
+          {assessmentIdentity
+            ? `Assessment ${assessmentIdentity.id} · Calculated ${formatOperationsTime(assessmentIdentity.generatedAt, true)}`
+            : "Calculation pending or browser demonstration—not an operational plan"}
+        </p>
+        <p>
+          Full planning horizon: {fullModel.intervals.length} intervals. Recovery and battery state
+          are calculated over this horizon before display-window filtering.
+        </p>
+        <details>
+          <summary>Canonical planning, rolling analysis & historical replay</summary>
+          <p>
+            Authenticated model-contract workspace; separate from the aggregate scenario
+            demonstration. No physical commands are issued.
+          </p>
+          <CanonicalPlanningWorkbench />
+        </details>
+      </details>
     </main>
   );
 }
@@ -315,7 +326,7 @@ function OperationsTab({
   return (
     <Link
       to="/operations"
-      search={{ view: id, window, mode }}
+      search={{ view: id, window, mode: id === "power" ? mode : "scenario" }}
       className={current === id ? "active" : undefined}
       aria-current={current === id ? "page" : undefined}
     >
@@ -357,7 +368,6 @@ function OverviewView({
       <h2 id="operations-overview-title" className="sr-only">
         Operations Overview
       </h2>
-      <OperationsLifecycle />
       <OperationsDecisionBrief model={model} selected={selected} />
       <div className="operations-v2-kpis operations-v2-kpis--outcomes">
         <MetricCard
@@ -461,6 +471,10 @@ function OverviewView({
       >
         <p className="context-label">Scenario comparison</p>
         <h3 id="scenario-comparison-title">Compare operational responses</h3>
+        <p className="operations-chart-purpose">
+          Peak and exposure use the selected display window. Recovery obligations remain assessed
+          over the full planning horizon.
+        </p>
         <ScenarioDecisionTable model={model} selected={selected} onSelect={onSelect} />
       </section>
       <details className="operations-assurance-panel">
@@ -470,6 +484,7 @@ function OverviewView({
       <OperationsEvidenceRail model={model} />
       <details className="operations-assurance-panel">
         <summary>Planning assumptions & recovery obligations</summary>
+        <OperationsLifecycle />
         <ul>
           {model.planningWarnings.map((warning) => (
             <li key={warning}>{warning}</li>
@@ -582,12 +597,12 @@ function DemandChart({
         <ChartSummaryMetric
           label="Peak Reduction"
           value={formatMw(Math.max(0, baseline.peakDemandMw - selectedSummary.peakDemandMw))}
-          tone="positive"
+          tone={selectedSummary.feasible ? "positive" : undefined}
         />
         <ChartSummaryMetric
           label="Limit Exposure"
           value={`${formatDurationFromIntervals(baseline.violationIntervals)} → ${formatDurationFromIntervals(selectedSummary.violationIntervals)}`}
-          tone={selectedSummary.violationIntervals ? "limit" : "positive"}
+          tone={!selectedSummary.feasible ? "limit" : "positive"}
         />
       </OperationsChartSummary>
       <OperationsChartLegend

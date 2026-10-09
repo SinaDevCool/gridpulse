@@ -49,11 +49,15 @@ export function OperationsDecisionBrief({
         ? "response"
         : "direct";
   const title =
-    state === "infeasible"
-      ? "The selected response has unresolved constraints or recovery obligations"
-      : state === "response"
-        ? "Aggregate response fits the target; job-level validation is still required"
-        : "Demand remains inside the direct operating envelope";
+    residualMw > 0.01
+      ? `Selected response leaves a ${formatMw(residualMw)} shortfall to the safety target`
+      : (selectedSummary?.unresolvedWorkMwh ?? 0) > 0.001
+        ? `Power target met, but ${formatMwh(selectedSummary!.unresolvedWorkMwh)} of deferred work remains unrecovered`
+        : state === "infeasible"
+          ? "Power target met, but reserve or recovery constraints remain unresolved"
+          : state === "response"
+            ? "Aggregate response fits the target; job-level validation is still required"
+            : "Demand remains inside the direct operating envelope";
 
   return (
     <article className={`operations-decision-brief operations-decision-brief--${state}`}>
@@ -91,13 +95,28 @@ export function OperationsDecisionBrief({
           <dd>{formatMw(residualMw)}</dd>
         </div>
         <div>
-          <dt>Confidence</dt>
-          <dd>{model.mode === "scenario" ? "Illustrative" : envelope.confidence}</dd>
+          <dt>Evidence</dt>
+          <dd>{model.mode === "scenario" ? "Scenario only" : "Review provenance"}</dd>
         </div>
       </dl>
+      <p className="operations-decision-statuses">
+        <span>Power: {residualMw > 0.01 ? "Target not met" : "Target met"}</span>
+        <span>
+          Recovery:{" "}
+          {(selectedSummary?.unresolvedWorkMwh ?? 0) > 0.001
+            ? "Unrecovered work · full horizon"
+            : selected === "baseline" || selected === "battery"
+              ? "No workload shifting"
+              : "Aggregate only · job validation required"}
+        </span>
+        <span>Evidence: {model.mode === "scenario" ? "Scenario—not live" : "Review inputs"}</span>
+      </p>
       <div className="operations-decision-actions">
         <a href="#operations-response">
-          Review response <ArrowRight aria-hidden="true" />
+          {(selectedSummary?.unresolvedWorkMwh ?? 0) > 0.001
+            ? "Review recovery"
+            : "Review response"}{" "}
+          <ArrowRight aria-hidden="true" />
         </a>
         <a
           href="#operations-assurance"

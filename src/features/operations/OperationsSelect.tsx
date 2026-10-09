@@ -14,12 +14,14 @@ export function OperationsSelect<T extends string>({
   value,
   options,
   onChange,
+  disabled = false,
 }: {
   name: string;
   label: string;
   value: T;
   options: OperationsSelectOption<T>[];
   onChange: (value: T) => void;
+  disabled?: boolean;
 }) {
   const id = useId();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -92,7 +94,7 @@ export function OperationsSelect<T extends string>({
       <span id={`${id}-label`}>{label}</span>
       <select
         className="operations-select-native"
-        disabled={!interactive}
+        disabled={!interactive || disabled}
         name={name}
         aria-label={label}
         value={value}
@@ -107,7 +109,7 @@ export function OperationsSelect<T extends string>({
       <button
         type="button"
         className="operations-select-trigger"
-        disabled={!interactive}
+        disabled={!interactive || disabled}
         aria-labelledby={`${id}-label ${id}-value`}
         aria-haspopup="listbox"
         aria-expanded={open}

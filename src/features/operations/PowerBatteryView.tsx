@@ -36,9 +36,7 @@ import {
   type FacilityPowerObservation,
 } from "./battery-dispatch";
 import {
-  ChartSummaryMetric,
   OperationsChartLegend,
-  OperationsChartSummary,
   OperationsTooltipShell,
   TooltipRow,
   formatMw,
@@ -58,8 +56,17 @@ const number = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
 
 type EvidenceMode = "scenario" | "historical";
 
-export function PowerBatteryView({ model }: { model: OperationsOverviewModel }) {
-  const [mode, setMode] = useState<EvidenceMode>("scenario");
+export function PowerBatteryView({
+  model,
+  displayModel = model,
+  mode = "scenario",
+  onModeChange,
+}: {
+  model: OperationsOverviewModel;
+  displayModel?: OperationsOverviewModel;
+  mode?: EvidenceMode;
+  onModeChange?: (mode: EvidenceMode) => void;
+}) {
   const [importsOpen, setImportsOpen] = useState(false);
   const [facilityObservations, setFacilityObservations] = useState<FacilityPowerObservation[]>([]);
   const [batteryObservations, setBatteryObservations] = useState<BatteryObservation[]>([]);
@@ -71,26 +78,25 @@ export function PowerBatteryView({ model }: { model: OperationsOverviewModel }) 
 
   const scenarioPeak = useMemo(
     () =>
-      model.intervals.reduce(
+      displayModel.intervals.reduce(
         (peak, point) => (point.baselineDemandMw > peak.baselineDemandMw ? point : peak),
-        model.intervals[0],
+        displayModel.intervals[0],
       ),
-    [model],
+    [displayModel],
   );
   const selectedScenario =
-    model.intervals.find((point) => point.timestamp === selectedTimestamp) ?? scenarioPeak;
+    displayModel.intervals.find((point) => point.timestamp === selectedTimestamp) ?? scenarioPeak;
   const historical = useMemo(
     () => buildHistoricalSeries(facilityObservations, batteryObservations),
     [facilityObservations, batteryObservations],
   );
   const selectedHistorical =
     historical.find((point) => point.timestamp === selectedTimestamp) ?? historical.at(-1) ?? null;
-  const hasHistorical = facilityObservations.length > 0 || batteryObservations.length > 0;
   const targetMw = model.scenario.importLimitMw - model.scenario.safetyReserveMw;
   const selected = mode === "scenario" ? selectedScenario : selectedHistorical;
   const series =
     mode === "scenario"
-      ? model.intervals.map((point) => ({
+      ? displayModel.intervals.map((point) => ({
           ...point,
           facilityDemandMw: point.baselineDemandMw,
           gridImportMw: point.batteryDemandMw,
@@ -160,7 +166,7 @@ export function PowerBatteryView({ model }: { model: OperationsOverviewModel }) 
       const parsed = parseFacilityPowerCsv(await file.text());
       const verified = await verifyEvidence(parsed, batteryObservations);
       setFacilityObservations(parsed);
-      setMode("historical");
+      onModeChange?.("historical");
       setMessage(
         `${parsed.length} facility meter records loaded from ${file.name}${verified ? " and input-validated by the Operations backend (not dispatch-verified)" : ""}.`,
       );
@@ -177,7 +183,7 @@ export function PowerBatteryView({ model }: { model: OperationsOverviewModel }) 
       const parsed = parseBatteryCsv(await file.text());
       const verified = await verifyEvidence(facilityObservations, parsed);
       setBatteryObservations(parsed);
-      setMode("historical");
+      onModeChange?.("historical");
       setMessage(
         `${parsed.length} BMS/PCS records loaded from ${file.name}${verified ? " and aligned by the Operations backend" : ""}.`,
       );
@@ -214,25 +220,11 @@ export function PowerBatteryView({ model }: { model: OperationsOverviewModel }) 
       </article>
 
       <div className="power-toolbar">
-        <div className="power-mode" role="group" aria-label="Power evidence source">
-          <button
-            type="button"
-            className={mode === "scenario" ? "active" : ""}
-            onClick={() => setMode("scenario")}
-            aria-pressed={mode === "scenario"}
-          >
-            Scenario
-          </button>
-          <button
-            type="button"
-            className={mode === "historical" ? "active" : ""}
-            onClick={() => setMode("historical")}
-            aria-pressed={mode === "historical"}
-            disabled={!hasHistorical}
-          >
-            Historical evidence
-          </button>
-        </div>
+        <p className="operations-chart-purpose">
+          {mode === "historical"
+            ? "Uploaded historical evidence · complete uploaded range (scenario window presets do not filter these observations)"
+            : "Selected scenario window · battery state retains the full calculation horizon"}
+        </p>
         <button
           type="button"
           className="secondary-button"
@@ -321,18 +313,8 @@ export function PowerBatteryView({ model }: { model: OperationsOverviewModel }) 
           evidence={mode}
         />
         <PowerMetric
-          icon={<BatteryCharging />}
-          label="Battery SOC"
-          value={
-            selected && valueOf(selected, "socPercent", "batterySocPercent") != null
-              ? formatOptionalPercent(valueOf(selected, "socPercent", "batterySocPercent"))
-              : "Unavailable"
-          }
-          evidence={mode}
-        />
-        <PowerMetric
           icon={<Zap />}
-          label="Total discharge time"
+          label="Discharge time · full horizon"
           value={
             mode === "scenario"
               ? model.recommendation.durationMinutes > 0
@@ -341,16 +323,6 @@ export function PowerBatteryView({ model }: { model: OperationsOverviewModel }) 
               : "Not derivable"
           }
           evidence={mode}
-        />
-      </div>
-
-      <div className="power-insight-grid">
-        <PowerBalanceFlow selected={selected} mode={mode} />
-        <BatterySocPanel
-          model={model}
-          selected={selectedScenario}
-          mode={mode}
-          selectedHistorical={selectedHistorical}
         />
       </div>
 
@@ -383,6 +355,16 @@ export function PowerBatteryView({ model }: { model: OperationsOverviewModel }) 
         </span>
       </div>
 
+      <div className="power-insight-grid">
+        <PowerBalanceFlow selected={selected} mode={mode} limitMw={model.scenario.importLimitMw} />
+        <BatterySocPanel
+          model={model}
+          selected={selectedScenario}
+          mode={mode}
+          selectedHistorical={selectedHistorical}
+        />
+      </div>
+
       <div className="power-primary-grid">
         <article className="power-timeline-card">
           <header>
@@ -398,34 +380,6 @@ export function PowerBatteryView({ model }: { model: OperationsOverviewModel }) 
                 Facility power and battery behavior use aligned timelines so MW and state of charge
                 are never compared on the same axis.
               </p>
-              <OperationsChartSummary>
-                <ChartSummaryMetric
-                  label="Facility Demand"
-                  value={formatOptionalMw(
-                    valueOf(selected, "facilityDemandMw", "baselineDemandMw"),
-                  )}
-                  tone="demand"
-                />
-                <ChartSummaryMetric
-                  label="Grid Import"
-                  value={formatOptionalMw(valueOf(selected, "gridImportMw", "batteryDemandMw"))}
-                  tone="response"
-                />
-                <ChartSummaryMetric
-                  label="Battery Dispatch"
-                  value={batteryMw == null ? "Unavailable" : formatMw(batteryMw)}
-                  tone="battery"
-                />
-                <ChartSummaryMetric
-                  label="State of Charge"
-                  value={
-                    selected && valueOf(selected, "socPercent", "batterySocPercent") != null
-                      ? formatOptionalPercent(valueOf(selected, "socPercent", "batterySocPercent"))
-                      : "Unavailable"
-                  }
-                  tone="soc"
-                />
-              </OperationsChartSummary>
               <OperationsChartLegend
                 items={[
                   {
@@ -475,15 +429,18 @@ export function PowerBatteryView({ model }: { model: OperationsOverviewModel }) 
             />
           ) : null}
         </article>
-        <DispatchCard
-          model={model}
-          selected={selectedScenario}
-          mode={mode}
-          selectedHistorical={selectedHistorical}
-          feasible={feasible}
-          requiredMw={requiredMw}
-          shortfallMw={shortfallMw}
-        />
+        <details className="operations-assurance-panel power-dispatch-details">
+          <summary>Selected interval constraints & response breakdown</summary>
+          <DispatchCard
+            model={model}
+            selected={selectedScenario}
+            mode={mode}
+            selectedHistorical={selectedHistorical}
+            feasible={feasible}
+            requiredMw={requiredMw}
+            shortfallMw={shortfallMw}
+          />
+        </details>
       </div>
 
       <details className="operations-assurance-panel power-supporting-details">
@@ -1129,9 +1086,11 @@ function ConnectorStatus() {
 function PowerBalanceFlow({
   selected,
   mode,
+  limitMw,
 }: {
   selected: Record<string, unknown> | OperationsInterval | HistoricalPoint | null;
   mode: EvidenceMode;
+  limitMw: number;
 }) {
   const facility = selected ? valueOf(selected, "facilityDemandMw", "baselineDemandMw") : null;
   const grid = selected ? valueOf(selected, "gridImportMw", "batteryDemandMw") : null;
@@ -1168,7 +1127,7 @@ function PowerBalanceFlow({
         <EvidencePill mode={mode} />
       </header>
       {balance ? (
-        <PowerBalanceDiagram balance={balance} />
+        <PowerBalanceDiagram balance={balance} limitMw={limitMw} />
       ) : selected ? (
         <p className="balance-warning" role="status">
           Power balance unavailable: matching battery and facility readings are required. Missing

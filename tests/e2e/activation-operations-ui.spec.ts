@@ -41,7 +41,7 @@ test("Operations exposes the focused three-view facility workflow", async ({ pag
   await expect(navigation.getByRole("link", { name: "Power & Battery" })).toBeVisible();
   await expect(navigation.getByRole("link")).toHaveCount(3);
   await expect(
-    page.getByText("Simulated assessment · No automatic dispatch", { exact: true }),
+    page.getByText("Scenario assessment—not live control", { exact: true }),
   ).toBeVisible();
   await expect(
     page
@@ -55,7 +55,7 @@ test("Operations context selectors are themed, keyboard-operable, and preserve U
   page,
 }) => {
   await page.goto("/operations?view=overview&window=today&mode=scenario");
-  await expect(page.getByText("Assessment service available")).toBeVisible();
+  await expect(page.getByText("Calculation service available")).toBeVisible();
   const windowTrigger = page
     .locator(".operations-select-trigger")
     .filter({ hasText: "Full scenario day" });
@@ -118,7 +118,7 @@ test("Power & Battery explains when dispatch is unnecessary", async ({ page }) =
     }),
   ).toBeVisible();
   await expect(
-    page.locator(".power-kpis").filter({ hasText: "Total discharge time" }),
+    page.locator(".power-kpis").filter({ hasText: "Discharge time · full horizon" }),
   ).toContainText("Not required");
 });
 
@@ -127,7 +127,7 @@ test("Compute & Workloads keeps scenario evidence distinct and supports workload
 }) => {
   await page.goto("/operations?view=compute");
   await expect(page.getByText("Power-Aware Workload Decision")).toBeVisible();
-  await expect(page.getByText(/minimum recommended response/i)).toBeVisible();
+  await expect(page.getByText(/Eligibility is not a validated recovery schedule/i)).toBeVisible();
   await expect(page.getByRole("table")).toBeVisible();
   await expect(page.getByText("reference", { exact: true }).first()).toBeVisible();
   await page.getByRole("button", { name: /Embedding refresh/ }).click();
@@ -214,10 +214,12 @@ test("Power & Battery exposes dispatch physics and imports measured evidence", a
     ),
   });
   await expect(page.getByText("2 BMS/PCS records loaded from battery.csv.")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Historical evidence" })).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
+  await expect(page).toHaveURL(/mode=historical/);
+  await expect(
+    page
+      .locator(".operations-context-strip .operations-select-trigger")
+      .filter({ hasText: "Historical" }),
+  ).toBeVisible();
   await expect(page.getByText("Measured", { exact: true }).first()).toBeVisible();
 });
 

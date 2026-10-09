@@ -1634,7 +1634,7 @@
   overflow: visible;
 }
 .operations-v2-tabs {
-  flex: 0 1 44rem;
+  flex: 0 1 auto;
   gap: 0.25rem;
 }
 .operations-v2-tabs a {
@@ -3955,6 +3955,173 @@
 }
 .operations-v2 .operations-v2-nav-row {
   margin-top: 0;
+}
+/* Operator hierarchy: compact context, readable evidence, bounded charts. */
+.operations-v2 .operations-v2-tabs {
+  flex-basis: auto;
+  width: min(44rem, 100%);
+}
+.operations-v2 .operations-v2-header {
+  margin-bottom: 1rem;
+}
+.operations-v2 .operations-context-strip {
+  margin-top: 0.5rem;
+}
+.operations-v2 .operations-assessment-date {
+  font-size: 0.75rem;
+  margin-block: 0.5rem;
+}
+.operations-v2 .operations-decision-brief {
+  margin-top: 0.75rem;
+}
+.operations-v2 .operations-v2-view {
+  margin-top: 1rem;
+}
+.operations-v2 .operations-chart-summary > div > span {
+  font-size: 0.75rem;
+}
+.operations-v2 .operations-context-field > span,
+.operations-v2 .operations-select > span {
+  font-size: 0.75rem;
+}
+.operations-v2 .operations-v2-metric small,
+.operations-v2 .operations-chart-legend small,
+.operations-v2 .operations-chart-summary dt,
+.operations-v2 .operations-evidence-rail span,
+.operations-v2 .power-flow-note,
+.operations-v2 .compute-table-wrap small {
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+.operations-v2 .compute-table-wrap thead th {
+  font-size: 0.75rem;
+}
+.operations-v2 .operations-scenario-table thead {
+  background: var(--ops-surface);
+}
+.operations-v2 .operations-scenario-table thead th {
+  color: var(--ops-muted);
+  font-size: 0.75rem;
+}
+.operations-v2 .operations-scenario-table th button {
+  color: var(--ops-text);
+}
+:root[data-theme="light"] .operations-v2 .operations-scenario-table {
+  background: #fff;
+}
+:root[data-theme="light"] .operations-v2 .operations-scenario-table thead {
+  background: #f0f5f9;
+}
+:root[data-theme="light"] .operations-v2 .operations-scenario-table th {
+  background: #f0f5f9;
+}
+:root[data-theme="light"] .operations-v2 .operations-scenario-table tbody th {
+  background: #fff;
+}
+:root[data-theme="light"] .operations-v2 .operations-scenario-table tr.selected th {
+  background: #e1f3f8;
+}
+:root[data-theme="light"] .operations-v2 .compute-status.running,
+:root[data-theme="light"] .operations-v2 .decision-eligible {
+  color: #075e40;
+}
+:root[data-theme="light"] .operations-v2 .compute-status.queued {
+  color: #3048a6;
+}
+.operations-v2 .compute-status,
+.operations-v2 :is(.decision-eligible, .decision-recommended, .decision-protected) {
+  font-size: 0.75rem;
+}
+.operations-v2 .context-label {
+  font-size: 0.7rem;
+}
+.operations-v2 .operations-v2-chart:not(.compact) {
+  height: 22rem;
+  min-height: 16rem;
+}
+.operations-v2 .compute-drawer {
+  overscroll-behavior: contain;
+}
+.operations-v2 .balance-limit-breach {
+  border: 1px solid var(--ops-limit);
+  color: var(--ops-limit);
+}
+.operations-v2 .balance-limit-breach small {
+  font-size: 0.75rem;
+}
+.operations-v2 .power-interval-control {
+  margin-block: 1rem;
+}
+.operations-v2 .compute-pagination {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+.operations-v2 .operations-v2-kpis--compute {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.operations-v2 .compute-inventory > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--ops-border);
+}
+.operations-v2 .power-kpis {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.operations-v2 .power-primary-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+.operations-v2 .balance-limit-breach small {
+  display: block;
+  margin-top: 0.25rem;
+}
+.operations-v2 .compute-pagination button {
+  padding: 0.5rem 0.75rem;
+  min-height: 44px;
+  border: 1px solid var(--ops-border);
+  border-radius: 6px;
+}
+.operations-v2 .operations-technical-details > details {
+  padding: 1rem;
+}
+.operations-v2 .operations-decision-statuses {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 0.5rem 1.5rem;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+  margin: 0;
+}
+.operations-v2 :is(button, a, input, select, summary) {
+  touch-action: manipulation;
+}
+.operations-v2 :is(h2, h3) {
+  text-wrap: balance;
+  scroll-margin-top: 6rem;
+}
+@media (max-width: 760px) {
+  .operations-v2 .power-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .operations-v2 .operations-v2-kpis--compute {
+    grid-template-columns: 1fr;
+  }
+  .operations-v2 .operations-v2-tabs {
+    flex: 0 0 auto;
+    height: auto;
+  }
+  .operations-v2 .operations-decision-brief {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .operations-v2 .operations-v2-tabs a {
+    padding-inline: 0.4rem;
+    min-height: 44px;
+  }
 }
 .operations-v2 .operations-envelope-bands > span {
   min-width: 0;

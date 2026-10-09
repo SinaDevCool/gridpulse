@@ -3,12 +3,10 @@ import {
   AlertTriangle,
   CheckCircle2,
   Clock3,
-  Cpu,
   Database,
   FileUp,
   Gauge,
   PlugZap,
-  Server,
   ShieldCheck,
   TrendingDown,
   X,
@@ -55,7 +53,13 @@ import {
 const number = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
 const integer = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
 
-export function ComputeWorkloadsView({ model }: { model: OperationsOverviewModel }) {
+export function ComputeWorkloadsView({
+  model,
+  displayModel = model,
+}: {
+  model: OperationsOverviewModel;
+  displayModel?: OperationsOverviewModel;
+}) {
   const importRevision = useRef(0);
   const { data: capabilities } = useOperationsCapabilities();
   const [workloads, setWorkloads] = useState<ComputeWorkload[]>(() =>
@@ -64,6 +68,7 @@ export function ComputeWorkloadsView({ model }: { model: OperationsOverviewModel
   const [telemetry, setTelemetry] = useState<GpuTelemetry[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [status, setStatus] = useState<"all" | ComputeWorkload["status"]>("all");
+  const [queuePage, setQueuePage] = useState(0);
   const [importOpen, setImportOpen] = useState(false);
   const [interactive, setInteractive] = useState(false);
   const [message, setMessage] = useState(
@@ -78,11 +83,11 @@ export function ComputeWorkloadsView({ model }: { model: OperationsOverviewModel
   const assessment = backendAssessment ?? localAssessment;
   const peakInterval = useMemo(
     () =>
-      model.intervals.reduce(
+      displayModel.intervals.reduce(
         (peak, point) => (point.activeGpuCount > peak.activeGpuCount ? point : peak),
-        model.intervals[0],
+        displayModel.intervals[0],
       ),
-    [model],
+    [displayModel],
   );
   const decisions =
     status === "all"
@@ -90,6 +95,12 @@ export function ComputeWorkloadsView({ model }: { model: OperationsOverviewModel
       : assessment.decisions.filter((workload) => workload.status === status);
   const selected =
     assessment.decisions.find((workload) => workload.workloadId === selectedId) ?? null;
+  const orderedDecisions = [...decisions].sort(
+    (a, b) => Number(b.recommended) - Number(a.recommended),
+  );
+  const pageCount = Math.max(1, Math.ceil(orderedDecisions.length / 50));
+  const visiblePage = Math.min(queuePage, pageCount - 1);
+  const visibleDecisions = orderedDecisions.slice(visiblePage * 50, (visiblePage + 1) * 50);
   const evidence: EvidenceClass =
     assessment.source === "scenario" ? "simulated" : telemetry.length ? "measured" : "reference";
 
@@ -167,12 +178,12 @@ export function ComputeWorkloadsView({ model }: { model: OperationsOverviewModel
           <p className="context-label">Power-Aware Workload Decision</p>
           <h3>
             {assessment.recommendedJobs
-              ? `Move ${assessment.recommendedJobs} workload${assessment.recommendedJobs === 1 ? "" : "s"} to stay inside the facility limit`
+              ? `Review ${assessment.recommendedJobs} candidate workload${assessment.recommendedJobs === 1 ? "" : "s"} for shifting`
               : "No workload movement is required"}
           </h3>
           <p>
             {assessment.recommendedJobs
-              ? `The minimum recommended response is ${number.format(assessment.recommendedPowerMw)} MW. ${assessment.eligibleJobs} workloads pass all declared safety gates.`
+              ? `Required workload reduction: ${number.format(assessment.requiredWorkloadResponseMw)} MW; selected candidate power: ${number.format(assessment.recommendedPowerMw)} MW. Eligibility is not a validated recovery schedule.`
               : "The assessed profile remains inside the configured safe operating target."}
           </p>
         </div>
@@ -208,43 +219,25 @@ export function ComputeWorkloadsView({ model }: { model: OperationsOverviewModel
 
       <div className="operations-v2-kpis operations-v2-kpis--compute">
         <Metric
-          icon={<Cpu />}
-          label="Active GPUs"
-          value={integer.format(peakInterval.activeGpuCount)}
-          evidence="simulated"
-          note={`Peak at ${peakInterval.label}`}
-        />
-        <Metric
-          icon={<Server />}
-          label="Compute Power"
-          value={`${number.format(peakInterval.gpuPowerMw)} MW`}
-          evidence="simulated"
-          note={
-            telemetry.length
-              ? `${number.format(assessment.telemetryCompletenessPercent)}% telemetry completeness`
-              : `${number.format(peakInterval.utilizationPercent)}% GPU utilization`
-          }
-        />
-        <Metric
           icon={<TrendingDown />}
-          label="Flexible Compute"
-          value={`${number.format(assessment.flexiblePowerMw)} MW`}
+          label="Required workload reduction"
+          value={`${number.format(assessment.requiredWorkloadResponseMw)} MW`}
           evidence={evidence}
-          note={`${number.format(assessment.flexibleEnergyMwh)} MWh shift window`}
+          note="Full-horizon requirement after battery response"
         />
         <Metric
           icon={<Clock3 />}
-          label="Recommended Moves"
+          label="Candidate workloads"
           value={integer.format(assessment.recommendedJobs)}
           evidence={evidence}
-          note={`${assessment.eligibleJobs} workloads pass eligibility gates`}
+          note={`${number.format(assessment.recommendedPowerMw)} MW candidate power · eligibility only`}
         />
         <Metric
           icon={<AlertTriangle />}
-          label="Deadlines at Risk"
+          label="Declared deadline flags"
           value={integer.format(assessment.deadlinesAtRisk)}
           evidence={evidence}
-          note="After the recommended response"
+          note="Eligibility checks—not a validated recovery schedule"
           tone={assessment.deadlinesAtRisk ? "danger" : undefined}
         />
       </div>
@@ -260,7 +253,10 @@ export function ComputeWorkloadsView({ model }: { model: OperationsOverviewModel
             <select
               value={status}
               disabled={!interactive}
-              onChange={(event) => setStatus(event.target.value as typeof status)}
+              onChange={(event) => {
+                setStatus(event.target.value as typeof status);
+                setQueuePage(0);
+              }}
             >
               <option value="all">All statuses</option>
               <option value="running">Running</option>
@@ -284,7 +280,7 @@ export function ComputeWorkloadsView({ model }: { model: OperationsOverviewModel
               </tr>
             </thead>
             <tbody>
-              {decisions.map((workload) => (
+              {visibleDecisions.map((workload) => (
                 <tr
                   key={workload.workloadId}
                   className={`${selectedId === workload.workloadId ? "selected" : ""} ${workload.recommended ? "recommended" : ""}`}
@@ -331,6 +327,32 @@ export function ComputeWorkloadsView({ model }: { model: OperationsOverviewModel
             </tbody>
           </table>
         </div>
+        {!decisions.length ? (
+          <p role="status">
+            No workloads match this status. Choose another status to review the queue.
+          </p>
+        ) : null}
+        {pageCount > 1 ? (
+          <nav className="compute-pagination" aria-label="Workload queue pages">
+            <button
+              type="button"
+              disabled={visiblePage === 0}
+              onClick={() => setQueuePage(visiblePage - 1)}
+            >
+              Previous page
+            </button>
+            <span>
+              Page {visiblePage + 1} of {pageCount} · {decisions.length} workloads
+            </span>
+            <button
+              type="button"
+              disabled={visiblePage === pageCount - 1}
+              onClick={() => setQueuePage(visiblePage + 1)}
+            >
+              Next page
+            </button>
+          </nav>
+        ) : null}
       </article>
 
       <div className="compute-primary-grid">
@@ -343,28 +365,29 @@ export function ComputeWorkloadsView({ model }: { model: OperationsOverviewModel
             <OperationsEvidenceBadge kind="simulated" />
           </header>
           <p className="operations-chart-purpose">
-            Whole-facility demand is compared with the response profile. GPU power is shown as a
-            component, not a separate facility total.
+            Selected display window. The response curve is the aggregate battery + workload
+            scenario, not the selected candidate job schedule. Eligibility uses the full planning
+            horizon.
           </p>
           <OperationsChartSummary>
             <ChartSummaryMetric
               label="Baseline Exposure"
-              value={formatDurationFromIntervals(model.summaries[0].violationIntervals)}
+              value={formatDurationFromIntervals(displayModel.summaries[0].violationIntervals)}
               tone="limit"
             />
             <ChartSummaryMetric
-              label="Recommended Response"
+              label="Candidate power · full horizon"
               value={formatMw(assessment.recommendedPowerMw)}
               tone="response"
             />
             <ChartSummaryMetric
-              label="Shiftable Energy"
+              label="Candidate energy · full horizon"
               value={formatMwh(assessment.recommendedEnergyMwh)}
             />
             <ChartSummaryMetric
-              label="Deadlines at Risk"
+              label="Declared deadline flags"
               value={integer.format(assessment.deadlinesAtRisk)}
-              tone={assessment.deadlinesAtRisk ? "limit" : "positive"}
+              tone={assessment.deadlinesAtRisk ? "limit" : undefined}
             />
           </OperationsChartSummary>
           <OperationsChartLegend
@@ -375,7 +398,11 @@ export function ComputeWorkloadsView({ model }: { model: OperationsOverviewModel
                 tone: "demand",
                 mark: "area",
               },
-              { label: "After response", detail: "MW · recommended profile", tone: "response" },
+              {
+                label: "Aggregate scenario response",
+                detail: "MW · not a job schedule",
+                tone: "response",
+              },
               { label: "GPU power", detail: "MW · component of facility demand", tone: "compute" },
               {
                 label: "Safety target",
@@ -398,7 +425,7 @@ export function ComputeWorkloadsView({ model }: { model: OperationsOverviewModel
           >
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart
-                data={model.intervals}
+                data={displayModel.intervals}
                 margin={{ top: 12, right: 18, left: 4, bottom: 4 }}
                 accessibilityLayer
               >
@@ -443,7 +470,7 @@ export function ComputeWorkloadsView({ model }: { model: OperationsOverviewModel
                 />
                 <Line
                   dataKey="combinedDemandMw"
-                  name="After response"
+                  name="Aggregate scenario response"
                   stroke="var(--ops-response)"
                   strokeWidth={3}
                   dot={false}
@@ -451,7 +478,7 @@ export function ComputeWorkloadsView({ model }: { model: OperationsOverviewModel
               </ComposedChart>
             </ResponsiveContainer>
           </div>
-          <ComputeChartData model={model} />
+          <ComputeChartData model={displayModel} />
         </article>
         <article className="compute-recommendation">
           <header>
@@ -459,15 +486,13 @@ export function ComputeWorkloadsView({ model }: { model: OperationsOverviewModel
             <div>
               <p className="context-label">Recommended Response</p>
               <h3>
-                {assessment.recommendedJobs
-                  ? "Move the minimum eligible set"
-                  : "Hold recommendation"}
+                {assessment.recommendedJobs ? "Review the candidate set" : "Hold recommendation"}
               </h3>
             </div>
           </header>
           <p>
             {assessment.recommendedJobs
-              ? `Delay the lowest-priority eligible workload set inside its declared windows. This meets the ${number.format(assessment.requiredWorkloadResponseMw)} MW response target without moving every flexible job.`
+              ? `Candidate selection provides ${number.format(assessment.recommendedPowerMw)} MW against a ${number.format(assessment.requiredWorkloadResponseMw)} MW requirement. Whole jobs may exceed the required reduction. Validate start times, recovery and deadlines before accepting this option.`
               : "No workload movement is needed for the current facility scenario."}
           </p>
           <dl>
@@ -480,7 +505,10 @@ export function ComputeWorkloadsView({ model }: { model: OperationsOverviewModel
               label="Shiftable energy"
               value={`${number.format(assessment.recommendedEnergyMwh)} MWh`}
             />
-            <Row label="Deadline violations" value={integer.format(assessment.deadlinesAtRisk)} />
+            <Row
+              label="Declared deadline flags"
+              value={integer.format(assessment.deadlinesAtRisk)}
+            />
           </dl>
           <div className="operations-v2-readonly">
             <ShieldCheck aria-hidden="true" />
@@ -491,6 +519,35 @@ export function ComputeWorkloadsView({ model }: { model: OperationsOverviewModel
         </article>
       </div>
 
+      <details className="operations-assurance-panel">
+        <summary>Compute inventory & flexibility</summary>
+        <dl className="compute-inventory">
+          <Row
+            label="Active GPUs · selected window peak"
+            value={integer.format(peakInterval.activeGpuCount)}
+          />
+          <Row
+            label="Compute power · selected window peak"
+            value={formatMw(peakInterval.gpuPowerMw)}
+          />
+          <Row label="Flexible power · full horizon" value={formatMw(assessment.flexiblePowerMw)} />
+          <Row
+            label="Flexible energy · full horizon"
+            value={formatMwh(assessment.flexibleEnergyMwh)}
+          />
+          <Row
+            label="Telemetry completeness"
+            value={`${number.format(assessment.telemetryCompletenessPercent)}%`}
+          />
+          <Row
+            label="Aggregate unrecovered work · full horizon"
+            value={formatMwh(
+              model.summaries.find((summary) => summary.kind === "battery_workload")
+                ?.unresolvedWorkMwh ?? 0,
+            )}
+          />
+        </dl>
+      </details>
       <details className="operations-assurance-panel">
         <summary>Evidence & connector readiness</summary>
         <section className="compute-connectors" aria-labelledby="compute-connectors-title">
