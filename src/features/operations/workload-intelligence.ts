@@ -249,16 +249,20 @@ export function assessWorkloads(
   model: OperationsOverviewModel,
 ): WorkloadAssessment {
   const referenceMwPerGpu = (model.scenario.gpuActivePowerWatts * model.scenario.pue) / 1_000_000;
-  const telemetryByWorkload = new Map<string, number[]>();
+  const concurrentPower = new Map<string, Map<string, Map<string, number>>>();
   telemetry.forEach((point) => {
-    if (point.powerWatts != null)
-      telemetryByWorkload.set(point.workloadId, [
-        ...(telemetryByWorkload.get(point.workloadId) ?? []),
-        point.powerWatts,
-      ]);
+    if (point.powerWatts == null) return;
+    const intervals =
+      concurrentPower.get(point.workloadId) ?? new Map<string, Map<string, number>>();
+    const devices = intervals.get(point.timestamp) ?? new Map<string, number>();
+    devices.set(point.gpuUuid, point.powerWatts);
+    intervals.set(point.timestamp, devices);
+    concurrentPower.set(point.workloadId, intervals);
   });
   const decisions = workloads.map((workload): WorkloadDecision => {
-    const samples = telemetryByWorkload.get(workload.workloadId) ?? [];
+    const samples = [...(concurrentPower.get(workload.workloadId)?.values() ?? [])].map((devices) =>
+      [...devices.values()].reduce((sum, watts) => sum + watts, 0),
+    );
     const measured =
       workload.source === "scenario"
         ? null
@@ -273,6 +277,7 @@ export function assessWorkloads(
     const delay = Math.min(workload.maximumDelayMinutes, model.scenario.maximumDelayMinutes);
     const eligible =
       workload.workloadClass !== "critical" &&
+      workload.status !== "completed" &&
       workload.checkpointable &&
       workload.preemptible &&
       delay > 0 &&
@@ -323,9 +328,8 @@ export function assessWorkloads(
     const decision = decisions.find((candidate) => candidate.workloadId === workload.workloadId);
     if (!decision) return;
     decision.recommended = true;
-    decision.peakReductionMw = Number(
-      Math.min(decision.estimatedPowerMw, remainingResponseMw).toFixed(2),
-    );
+    // Whole-job interruption is not an unproven fractional power cap.
+    decision.peakReductionMw = decision.estimatedPowerMw;
     remainingResponseMw = Math.max(0, remainingResponseMw - decision.estimatedPowerMw);
   });
   const recommended = decisions.filter((workload) => workload.recommended);

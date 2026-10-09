@@ -16,7 +16,7 @@ import {
   verifyOperationsResponse,
 } from "./operations-assurance";
 
-export const OPERATIONS_CALCULATION_VERSION = "operations-backend-v2-envelope-assurance";
+export const OPERATIONS_CALCULATION_VERSION = "operations-backend-v3-conserved-recovery";
 
 const facilityObservationSchema = z.object({
   timestamp: z.string().datetime(),
@@ -73,16 +73,18 @@ export const operationsAssessmentRequestSchema = z.discriminatedUnion("kind", [
       freshnessThresholdMinutes: z.number().positive().default(15),
       powerBalanceResidualPercent: z.number().nonnegative().nullable().default(null),
     }),
-    verification: z.object({
-      requestedReductionMw: z.number().nonnegative(),
-      expectedImportMw: z.number().nonnegative(),
-      actualImportMw: z.array(z.number().nonnegative()).min(1),
-      baselineImportMw: z.array(z.number().nonnegative()).min(1),
-      intervalMinutes: z.number().positive(),
-      batteryPowerMw: z.array(z.number()).optional(),
-      reboundImportMw: z.array(z.number().nonnegative()).optional(),
-      telemetryCompletenessPercent: z.number().min(0).max(100),
-    }).nullable(),
+    verification: z
+      .object({
+        requestedReductionMw: z.number().nonnegative(),
+        expectedImportMw: z.number().nonnegative(),
+        actualImportMw: z.array(z.number().nonnegative()).min(1),
+        baselineImportMw: z.array(z.number().nonnegative()).min(1),
+        intervalMinutes: z.number().positive(),
+        batteryPowerMw: z.array(z.number()).optional(),
+        reboundImportMw: z.array(z.number().nonnegative()).optional(),
+        telemetryCompletenessPercent: z.number().min(0).max(100),
+      })
+      .nullable(),
     compliance: z.object({
       facilityEnergyMwh: z.number().nonnegative().nullable(),
       itEnergyMwh: z.number().nonnegative().nullable(),
@@ -102,6 +104,11 @@ export const operationsAssessmentRequestSchema = z.discriminatedUnion("kind", [
       workloadCostEurPerMwh: z.number().nonnegative(),
       flexibilityPaymentEur: z.number(),
       slaPenaltyEur: z.number().nonnegative(),
+      baselineImportMw: z.array(z.number().nonnegative()).optional(),
+      proposedImportMw: z.array(z.number().nonnegative()).optional(),
+      intervalHours: z.array(z.number().positive()).optional(),
+      intervalPricesEurPerMwh: z.array(z.number()).optional(),
+      billingPeakEvidenceReviewed: z.boolean().optional(),
     }),
     dispatch: z.object({
       mode: z.enum(["scenario", "historical", "shadow", "live"]),
@@ -144,17 +151,21 @@ export function runOperationsAssessment(input: OperationsAssessmentRequest) {
 
   if (input.kind === "assurance") {
     const quality = assessOperationsQuality(input.quality);
-    return envelope("measured", {
-      quality,
-      verification: input.verification ? verifyOperationsResponse(input.verification) : null,
-      compliance: assessOperationsCompliance(input.compliance),
-      economics: evaluateResponseEconomics(input.economics),
-      dispatch: authorizeDispatch(input.dispatch),
-    }, {
-      sampleCount: input.quality.receivedIntervals,
-      completenessPercent: quality.completenessPercent,
-      warnings: quality.blockers,
-    });
+    return envelope(
+      "measured",
+      {
+        quality,
+        verification: input.verification ? verifyOperationsResponse(input.verification) : null,
+        compliance: assessOperationsCompliance(input.compliance),
+        economics: evaluateResponseEconomics(input.economics),
+        dispatch: authorizeDispatch(input.dispatch),
+      },
+      {
+        sampleCount: input.quality.receivedIntervals,
+        completenessPercent: quality.completenessPercent,
+        warnings: quality.blockers,
+      },
+    );
   }
 
   const aligned = alignPowerEvidence(input.facility, input.battery);
@@ -217,13 +228,21 @@ export function alignPowerEvidence(
   toleranceMs = 5 * 60_000,
 ) {
   const orderedBattery = [...battery].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+  let cursor = 0;
   return [...facility]
     .sort((a, b) => a.timestamp.localeCompare(b.timestamp))
     .map((point) => {
       const target = Date.parse(point.timestamp);
       let closest: BatteryObservation | null = null;
       let distance = Number.POSITIVE_INFINITY;
-      for (const candidate of orderedBattery) {
+      while (
+        cursor + 1 < orderedBattery.length &&
+        Date.parse(orderedBattery[cursor + 1].timestamp) <= target
+      )
+        cursor++;
+      for (const candidate of [orderedBattery[cursor], orderedBattery[cursor + 1]].filter(
+        (item): item is BatteryObservation => Boolean(item),
+      )) {
         const candidateDistance = Math.abs(Date.parse(candidate.timestamp) - target);
         if (candidateDistance < distance) {
           closest = candidate;

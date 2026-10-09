@@ -114,6 +114,7 @@ function summarize(
     baseline: "baselineDemandMw",
     battery: "batteryDemandMw",
     battery_workload: "combinedDemandMw",
+    workload: "workloadDemandMw",
   };
   const values = intervals.map((point) => Number(point[key[source.kind]]));
   const violations = values.filter((value) => value > model.scenario.importLimitMw).length;

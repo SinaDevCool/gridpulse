@@ -90,9 +90,15 @@ test("power interval selection and advanced panels expose consistent units", asy
     "Compare scenario responses",
     "Evidence & connector readiness",
   ]) {
-    await page.getByText(name, { exact: true }).click();
+    await page
+      .getByLabel("Power & Battery", { exact: true })
+      .getByText(name, { exact: true })
+      .click();
     await expect(
-      page.locator("details").filter({ has: page.getByText(name, { exact: true }) }),
+      page
+        .getByLabel("Power & Battery", { exact: true })
+        .locator("details")
+        .filter({ has: page.getByText(name, { exact: true }) }),
     ).toHaveAttribute("open", "");
   }
   await expect(page.getByText("Battery Dispatch", { exact: true }).first()).toBeVisible();
@@ -114,16 +120,21 @@ test("historical import without battery evidence does not invent demand or SOC",
   await expect(page.getByText("2 facility meter records loaded from facility.csv.")).toBeVisible();
   await expect(page.locator(".power-flow-card")).toContainText("Power balance unavailable");
   await page.getByText("View Full Interval Data", { exact: true }).click();
-  await expect(page.locator(".operations-v2-chart-data tbody tr").first()).toContainText(
-    "Unavailable",
-  );
+  await expect(
+    page
+      .getByLabel("Power & Battery", { exact: true })
+      .locator(".operations-v2-chart-data tbody tr")
+      .first(),
+  ).toContainText("Unavailable");
 });
 
 for (const view of ["overview", "compute", "power"]) {
   test(`${view} fits desktop and mobile in both themes`, async ({ page }, testInfo) => {
     await page.goto(`/operations?view=${view}`);
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Configure Scenario", exact: true })).toBeEnabled();
+    await expect(
+      page.getByRole("button", { name: "Configure Scenario", exact: true }),
+    ).toBeEnabled();
     for (const theme of ["dark", "light"]) {
       const toggle = page.getByRole("button", {
         name: new RegExp(`Theme: ${theme === "dark" ? "light" : "dark"}`),

@@ -56,6 +56,7 @@ const number = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
 const integer = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
 
 export function ComputeWorkloadsView({ model }: { model: OperationsOverviewModel }) {
+  const importRevision = useRef(0);
   const { data: capabilities } = useOperationsCapabilities();
   const [workloads, setWorkloads] = useState<ComputeWorkload[]>(() =>
     buildScenarioWorkloads(model),
@@ -93,10 +94,23 @@ export function ComputeWorkloadsView({ model }: { model: OperationsOverviewModel
     assessment.source === "scenario" ? "simulated" : telemetry.length ? "measured" : "reference";
 
   useEffect(() => setInteractive(true), []);
+  useEffect(() => {
+    importRevision.current += 1;
+    setBackendAssessment(null);
+    setWorkloads((current) =>
+      current.every((workload) => workload.source === "scenario")
+        ? buildScenarioWorkloads(model)
+        : current,
+    );
+    setMessage(
+      "Inputs changed. Workload estimates recalculated; canonical schedule validation is still required.",
+    );
+  }, [model]);
 
   async function importWorkloadFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
+    const revision = ++importRevision.current;
     try {
       const parsed = parseWorkloadCsv(await file.text());
       const response = await requestOperationsAssessment<WorkloadAssessment>({
@@ -105,12 +119,14 @@ export function ComputeWorkloadsView({ model }: { model: OperationsOverviewModel
         workloads: parsed,
         telemetry,
       });
+      if (revision !== importRevision.current) return;
       setWorkloads(parsed);
       setBackendAssessment(response.result);
       setSelectedId(null);
       setError("");
       setMessage(`${parsed.length} scheduler records loaded from ${file.name}.`);
     } catch (reason) {
+      if (revision !== importRevision.current) return;
       setError(reason instanceof Error ? reason.message : "The workload file could not be read.");
     } finally {
       event.target.value = "";
@@ -119,6 +135,7 @@ export function ComputeWorkloadsView({ model }: { model: OperationsOverviewModel
   async function importTelemetryFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
+    const revision = ++importRevision.current;
     try {
       const parsed = parseGpuTelemetryCsv(await file.text());
       const response = await requestOperationsAssessment<WorkloadAssessment>({
@@ -127,11 +144,13 @@ export function ComputeWorkloadsView({ model }: { model: OperationsOverviewModel
         workloads,
         telemetry: parsed,
       });
+      if (revision !== importRevision.current) return;
       setTelemetry(parsed);
       setBackendAssessment(response.result);
       setError("");
       setMessage(`${parsed.length} GPU telemetry records loaded from ${file.name}.`);
     } catch (reason) {
+      if (revision !== importRevision.current) return;
       setError(reason instanceof Error ? reason.message : "The telemetry file could not be read.");
     } finally {
       event.target.value = "";

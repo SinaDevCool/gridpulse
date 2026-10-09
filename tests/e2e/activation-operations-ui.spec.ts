@@ -43,9 +43,12 @@ test("Operations exposes the focused three-view facility workflow", async ({ pag
   await expect(
     page.getByText("Simulated assessment · No automatic dispatch", { exact: true }),
   ).toBeVisible();
-  await expect(page.getByText("GPU-Hours Enabled").locator("xpath=..").locator("dd")).toHaveText(
-    /^\d[\d,.]* h$/,
-  );
+  await expect(
+    page
+      .getByText("Reference GPU-hour equivalent (not delivered compute)")
+      .locator("xpath=..")
+      .locator("dd"),
+  ).toHaveText(/^\d[\d,.]* h$/);
 });
 
 test("Operations context selectors are themed, keyboard-operable, and preserve URL state", async ({
@@ -65,7 +68,9 @@ test("Operations context selectors are themed, keyboard-operable, and preserve U
   const modeTrigger = page.locator(".operations-select-trigger").filter({ hasText: "Scenario" });
   await modeTrigger.click();
   await expect(page.getByRole("option", { name: /Live/ })).toBeDisabled();
-  await expect(page.getByRole("option", { name: /Historical/ })).toBeDisabled();
+  await expect(
+    page.locator(".operations-select-popover").getByRole("option", { name: /Historical/ }),
+  ).toBeDisabled();
   await page.keyboard.press("Escape");
   await expect(modeTrigger).toBeFocused();
 });
@@ -185,7 +190,10 @@ test("Power & Battery exposes dispatch physics and imports measured evidence", a
   await expect(page.locator(".power-flow-equations span").last()).toContainText(
     "75.7 MW + 30.9 MW ≈ 106.6 MW",
   );
-  await page.getByText("Evidence & connector readiness", { exact: true }).click();
+  await page
+    .getByLabel("Power & Battery", { exact: true })
+    .getByText("Evidence & connector readiness", { exact: true })
+    .click();
   await expect(page.getByText("No live connectors configured")).toBeVisible();
   const connect = page.getByRole("button", { name: "Connect evidence" });
   await expect(connect).toBeEnabled();
@@ -218,12 +226,24 @@ test("Operations charts expose explicit legends, units, targets, and full data a
 }) => {
   await page.goto("/operations?view=overview");
   await expect(page.getByText("Facility Demand vs Operating Target")).toBeVisible();
-  await expect(page.getByText("Safety target", { exact: true })).toBeVisible();
-  await expect(page.getByText("Facility limit", { exact: true })).toBeVisible();
+  await expect(
+    page
+      .getByLabel("Operations Overview", { exact: true })
+      .getByText("Safety target", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page
+      .getByLabel("Operations Overview", { exact: true })
+      .getByText("Facility limit", { exact: true }),
+  ).toBeVisible();
   await expect(page.getByText("Peak Reduction", { exact: true }).first()).toBeVisible();
   await page.getByText("View Chart Data", { exact: true }).click();
   await expect(page.getByRole("columnheader", { name: "Baseline (MW)" })).toBeVisible();
-  await expect(page.locator(".operations-v2-chart-data tbody tr")).toHaveCount(96);
+  await expect(
+    page
+      .getByLabel("Operations Overview", { exact: true })
+      .locator(".operations-v2-chart-data tbody tr"),
+  ).toHaveCount(96);
 
   await page.goto("/operations?view=compute");
   await expect(page.getByText("GPU power", { exact: true })).toBeVisible();
@@ -236,7 +256,11 @@ test("Operations charts expose explicit legends, units, targets, and full data a
   await expect(page.getByText("State of charge", { exact: true }).first()).toBeVisible();
   await page.getByText("View Full Interval Data", { exact: true }).click();
   await expect(page.getByRole("columnheader", { name: "Battery Dispatch (MW)" })).toBeVisible();
-  await expect(page.locator(".operations-v2-chart-data tbody tr")).toHaveCount(96);
+  await expect(
+    page
+      .getByLabel("Power & Battery", { exact: true })
+      .locator(".operations-v2-chart-data tbody tr"),
+  ).toHaveCount(96);
 });
 
 test("Power & Battery remains usable on a mobile viewport", async ({ page }) => {

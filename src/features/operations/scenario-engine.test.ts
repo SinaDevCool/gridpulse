@@ -13,14 +13,20 @@ describe("operations scenario engine", () => {
     expect(result.metrics.facilityDemand.evidenceClass).toBe("simulated");
   });
 
-  it("uses charge and discharge signs consistently while workload response only reduces import", () => {
+  it("uses charge/discharge signs and conserves deferred work including unresolved obligations", () => {
     const result = buildOperationsScenario();
     result.intervals.forEach((point) => {
       expect(point.batteryDemandMw).toBeCloseTo(point.baselineDemandMw - point.batteryPowerMw, 1);
-      expect(point.combinedDemandMw).toBeLessThanOrEqual(point.batteryDemandMw);
     });
     expect(result.intervals.some((point) => point.batteryPowerMw < 0)).toBe(true);
     expect(result.intervals.some((point) => point.batteryPowerMw > 0)).toBe(true);
+    const shifted = result.intervals.reduce((sum, point) => sum + point.workloadShiftMw * 0.25, 0);
+    const recovered = result.intervals.reduce(
+      (sum, point) => sum + point.workloadRecoveryMw * 0.25,
+      0,
+    );
+    expect(shifted - recovered).toBeCloseTo(result.summaries[2].unresolvedWorkMwh, 1);
+    expect(result.summaries).toHaveLength(4);
   });
 
   it("respects battery power and reserve constraints", () => {

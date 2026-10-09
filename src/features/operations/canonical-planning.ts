@@ -1,89 +1,76 @@
-import type { FacilityPlanRequest } from "../analytics/contracts";
+import { facilityPlanRequestSchema, type FacilityPlanRequest } from "../analytics/contracts";
 import type { OperationsWorkspace } from "./workspace-contract";
 
 export type CanonicalPlanPreparation =
   | { ready: true; request: FacilityPlanRequest; blockers: []; warnings: string[] }
   | { ready: false; request: null; blockers: string[]; warnings: string[] };
 
-/**
- * Projects persisted Operations evidence into the canonical facility-plan contract.
- * It deliberately performs no feasibility or dispatch calculation.
- */
+/** No duplicate optimiser: electrical/thermal models and power profiles must
+ * be supplied explicitly. A meter series cannot define those parameters. */
 export function prepareCanonicalFacilityPlan(
   workspace: OperationsWorkspace,
+  approvedRequest?: FacilityPlanRequest,
 ): CanonicalPlanPreparation {
-  const blockers = [...workspace.readiness.blockers];
+  const blockers: string[] = [];
   const warnings: string[] = [];
-  const importPoints = workspace.measurements.filter(
-    (point) => point.metricKey === "facility_grid_import_mw" && point.quality === "accepted",
-  );
-  if (workspace.facility.limitEvidence !== "operator_confirmed" &&
-      workspace.facility.limitEvidence !== "contract_reviewed")
+  const imports = workspace.measurements
+    .filter(
+      (point) => point.metricKey === "facility_grid_import_mw" && point.quality === "accepted",
+    )
+    .sort((a, b) => a.eventAt.localeCompare(b.eventAt));
+  if (!["operator_confirmed", "contract_reviewed"].includes(workspace.facility.limitEvidence))
     blockers.push("The facility import limit is not contract-reviewed or operator-confirmed.");
-  if (importPoints.length < 4)
+  if (
+    workspace.facility.limitValidUntil &&
+    Date.parse(workspace.facility.limitValidUntil) <= Date.now()
+  )
+    blockers.push("The facility import-limit evidence has expired.");
+  if (imports.length < 4)
     blockers.push("At least four accepted facility-import intervals are required.");
+  if (new Set(imports.map((point) => point.eventAt)).size !== imports.length)
+    blockers.push("Duplicate facility-import intervals require reconciliation.");
+  if (
+    !workspace.sources.some(
+      (source) => source.type === "facility_meter" && source.health === "healthy",
+    )
+  )
+    blockers.push("No healthy facility-meter source is connected.");
   if (!workspace.workloads.length)
-    warnings.push("No evidenced workload portfolio is available; workload response is zero.");
+    warnings.push(
+      "No evidenced workload portfolio is available; workload scheduling cannot be validated.",
+    );
   if (!workspace.batteryAssets.length)
     warnings.push("No battery asset configuration is available; battery response is zero.");
-  const uniqueBlockers = [...new Set(blockers)];
-  if (uniqueBlockers.length) return { ready: false, request: null, blockers: uniqueBlockers, warnings };
-
-  const byTimestamp = new Map<string, Record<string, number>>();
-  for (const point of workspace.measurements) {
-    if (point.quality !== "accepted") continue;
-    const values = byTimestamp.get(point.eventAt) ?? {};
-    values[point.metricKey] = point.value;
-    byTimestamp.set(point.eventAt, values);
+  if (!approvedRequest)
+    blockers.push(
+      "Supply a reviewed canonical facility model, workload power profiles, policy, cooling model and tariff contract. Meter readings alone cannot define these inputs.",
+    );
+  const parsed = approvedRequest ? facilityPlanRequestSchema.safeParse(approvedRequest) : null;
+  if (parsed && !parsed.success)
+    blockers.push("The reviewed canonical request has an invalid transport contract.");
+  if (parsed?.success) {
+    const request = parsed.data;
+    if (request.facility.facility_id !== workspace.facility.id)
+      blockers.push("The canonical model belongs to a different facility.");
+    if (request.facility.import_limit_mw !== workspace.facility.contractedImportLimitMw)
+      blockers.push("The canonical import limit differs from the accepted facility agreement.");
+    if (!request.facility.truth_class || !request.requirement.truth_class)
+      blockers.push("Canonical facility and requirement truth classes are required.");
+    if (
+      request.intervals.some(
+        (point) => !Number.isInteger(point.index) || typeof point.start !== "string",
+      )
+    )
+      blockers.push("Canonical intervals require indexes and start timestamps.");
+    if (request.profiles.some((profile) => !profile.workload_id || !Array.isArray(profile.points)))
+      blockers.push("Canonical workload profiles require explicit power/throughput points.");
+    if (
+      !Array.isArray(request.policy.event_intervals) ||
+      !Array.isArray(request.economics.import_price_eur_per_mwh)
+    )
+      blockers.push("Canonical event policy and interval prices are required.");
   }
-  const intervals = importPoints.map((point, index) => ({
-    interval_id: `${workspace.facility.id}:${index}`,
-    timestamp: point.eventAt,
-    duration_minutes: intervalMinutes(importPoints, index),
-    baseline_import_mw: point.value,
-    facility_limit_mw: workspace.facility.contractedImportLimitMw,
-    ...byTimestamp.get(point.eventAt),
-  }));
-
-  return {
-    ready: true,
-    blockers: [],
-    warnings,
-    request: {
-      schema_version: "gridpulse-facility-plan-request-v1",
-      portfolio_id: workspace.facility.id,
-      requirement: {
-        facility_id: workspace.facility.id,
-        maximum_grid_import_mw: workspace.facility.contractedImportLimitMw,
-        limit_evidence: workspace.facility.limitEvidence,
-        evidence_cutoff: workspace.readiness.freshestEvidenceAt,
-      },
-      intervals,
-      facility: {
-        id: workspace.facility.id,
-        name: workspace.facility.name,
-        timezone: workspace.facility.timezone,
-        batteries: workspace.batteryAssets,
-      },
-      workloads: workspace.workloads,
-      profiles: [{ profile_id: "observed-facility-import", intervals }],
-      policy: {
-        mode: "shadow",
-        automatic_live_dispatch_authorized: false,
-        fail_closed: true,
-      },
-      economics: { enabled: false },
-      cooling: { source: "operations_measurements", modeled_when_missing: false },
-    },
-  };
+  if (blockers.length || !parsed?.success)
+    return { ready: false, request: null, blockers: [...new Set(blockers)], warnings };
+  return { ready: true, request: parsed.data, blockers: [], warnings };
 }
-function intervalMinutes(
-  points: OperationsWorkspace["measurements"],
-  index: number,
-) {
-  const current = Date.parse(points[index].eventAt);
-  const adjacent = points[index + 1] ?? points[index - 1];
-  if (!adjacent) return 15;
-  return Math.max(1, Math.round(Math.abs(Date.parse(adjacent.eventAt) - current) / 60_000));
-}
-

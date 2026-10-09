@@ -38,14 +38,16 @@ describe("operations assurance", () => {
   });
 
   it("requires aligned energy before publishing measured PUE", () => {
-    expect(assessOperationsCompliance({
-      facilityEnergyMwh: 125,
-      itEnergyMwh: 100,
-      renewableSharePercent: 100,
-      wasteHeatMwh: 10,
-      heatTemperatureC: 35,
-      measurementCoveragePercent: 99,
-    }).measuredPue).toBe(1.25);
+    expect(
+      assessOperationsCompliance({
+        facilityEnergyMwh: 125,
+        itEnergyMwh: 100,
+        renewableSharePercent: 100,
+        wasteHeatMwh: 10,
+        heatTemperatureC: 35,
+        measurementCoveragePercent: 99,
+      }).measuredPue,
+    ).toBe(1.25);
   });
 
   it("keeps economics downstream from feasibility", () => {
@@ -60,26 +62,37 @@ describe("operations assurance", () => {
       workloadCostEurPerMwh: 20,
       flexibilityPaymentEur: 100,
       slaPenaltyEur: 0,
+      baselineImportMw: [100, 100],
+      proposedImportMw: [95, 105],
+      intervalHours: [1, 1],
+      intervalPricesEurPerMwh: [100, 100],
+      billingPeakEvidenceReviewed: false,
     });
-    expect(result.netValueEur).toBe(1210);
+    expect(result.avoidedEnergyCostEur).toBe(0);
+    expect(result.avoidedCapacityCostEur).toBe(0);
+    expect(result.netValueEur).toBe(10);
   });
 
   it("keeps physical dispatch disabled unless every gate passes", () => {
-    expect(authorizeDispatch({
-      mode: "shadow",
-      evidenceReady: true,
-      connectorHealthy: true,
-      agreementCurrent: true,
-      approvalCount: 2,
-      automaticDispatchEnabled: false,
-    }).authorized).toBe(false);
-    expect(authorizeDispatch({
-      mode: "live",
-      evidenceReady: true,
-      connectorHealthy: true,
-      agreementCurrent: true,
-      approvalCount: 2,
-      automaticDispatchEnabled: true,
-    }).authorized).toBe(true);
+    expect(
+      authorizeDispatch({
+        mode: "shadow",
+        evidenceReady: true,
+        connectorHealthy: true,
+        agreementCurrent: true,
+        approvalCount: 2,
+        automaticDispatchEnabled: false,
+      }).authorized,
+    ).toBe(false);
+    expect(
+      authorizeDispatch({
+        mode: "live",
+        evidenceReady: true,
+        connectorHealthy: true,
+        agreementCurrent: true,
+        approvalCount: 2,
+        automaticDispatchEnabled: true,
+      }).authorized,
+    ).toBe(true);
   });
 });

@@ -53,6 +53,7 @@ import {
   type OperationsDataMode,
 } from "./operating-context";
 import { OperationsSelect } from "./OperationsSelect";
+import { CanonicalPlanningWorkbench } from "../analytics/CanonicalPlanningWorkbench";
 import { formatOperationsTime } from "./presentation";
 import { assessOperationsCompliance, authorizeDispatch } from "./operations-assurance";
 import {
@@ -82,6 +83,11 @@ export function OperationsDashboard({
   const [selected, setSelected] = useState<OperationsScenarioKind>("battery_workload");
   const [announcement, setAnnouncement] = useState("Default scenario loaded.");
   const [serverModel, setServerModel] = useState<OperationsOverviewModel | null>(null);
+  const [assessmentIdentity, setAssessmentIdentity] = useState<{
+    id: string;
+    fingerprint: string;
+    generatedAt: string;
+  } | null>(null);
   const [backendState, setBackendState] = useState<"checking" | "verified" | "unavailable">(
     "checking",
   );
@@ -121,6 +127,11 @@ export function OperationsDashboard({
       .then(([assessment]) => {
         if (!active) return;
         setServerModel(assessment.result);
+        setAssessmentIdentity({
+          id: assessment.assessmentId,
+          fingerprint: assessment.inputFingerprint,
+          generatedAt: assessment.generatedAt,
+        });
         setBackendState("verified");
       })
       .catch(() => {
@@ -158,6 +169,7 @@ export function OperationsDashboard({
             scenario={scenario}
             onApply={(next) => {
               setServerModel(null);
+              setAssessmentIdentity(null);
               setBackendState("checking");
               setScenario(next);
               setAnnouncement("Scenario assumptions updated. Dashboard results recalculated.");
@@ -255,6 +267,19 @@ export function OperationsDashboard({
         {formatOperationsTime(model.intervals.at(-1)!.timestamp)}. Window presets select simulated
         intervals, not a live forecast.
       </p>
+      <p className="operations-assessment-date" role="status">
+        {assessmentIdentity
+          ? `Assessment ${assessmentIdentity.id.slice(0, 8)} · Calculated ${formatOperationsTime(assessmentIdentity.generatedAt, true)} · Scenario only`
+          : "Calculation pending or browser demonstration · Not an operational plan"}
+      </p>
+      <details className="operations-assurance-panel">
+        <summary>Canonical planning, rolling analysis & historical replay</summary>
+        <p>
+          Use a reviewed model contract and authenticated analytics service. This is separate from
+          the aggregate scenario demonstration; no physical commands are issued.
+        </p>
+        <CanonicalPlanningWorkbench />
+      </details>
 
       <p className="sr-only" aria-live="polite">
         {announcement}
@@ -262,8 +287,14 @@ export function OperationsDashboard({
       {view === "overview" ? (
         <OverviewView model={model} selected={selected} onSelect={setSelected} />
       ) : null}
-      {view === "compute" ? <ComputeWorkloadsView model={model} /> : null}
-      {view === "power" ? <PowerBatteryView model={model} /> : null}
+      {/* Keep evidence workspaces mounted across tab navigation. Native hidden
+          removes inactive controls from both layout and accessibility tree. */}
+      <div hidden={view !== "compute"}>
+        <ComputeWorkloadsView model={fullModel} />
+      </div>
+      <div hidden={view !== "power"}>
+        <PowerBatteryView model={fullModel} />
+      </div>
     </main>
   );
 }
@@ -368,12 +399,24 @@ function OverviewView({
           <p className="operations-v2-recommendation-copy">
             Test up to{" "}
             <strong>
-              {number.format(selected === "baseline" ? 0 : model.recommendation.batteryMw)}&nbsp;MW
+              {number.format(
+                selected === "baseline" || selected === "workload"
+                  ? 0
+                  : model.recommendation.batteryMw,
+              )}
+              &nbsp;MW
             </strong>{" "}
             of battery response and shift{" "}
             <strong>
               {number.format(
-                selected === "battery_workload" ? model.recommendation.workloadMwh : 0,
+                selected === "battery_workload"
+                  ? model.recommendation.workloadMwh
+                  : selected === "workload"
+                    ? model.intervals.reduce(
+                        (sum, point) => sum + point.workloadOnlyShiftMw * 0.25,
+                        0,
+                      )
+                    : 0,
               )}
               &nbsp;MWh
             </strong>{" "}
@@ -386,11 +429,11 @@ function OverviewView({
             />
             <ImpactRow
               label="Battery Contribution"
-              value={`${number.format(selected === "baseline" ? 0 : model.recommendation.batteryMw)} MW`}
+              value={`${number.format(selected === "baseline" || selected === "workload" ? 0 : model.recommendation.batteryMw)} MW`}
             />
             <ImpactRow
               label="Workload Contribution"
-              value={`${number.format(selected === "battery_workload" ? Math.max(...model.intervals.map((point) => point.workloadShiftMw)) : 0)} MW`}
+              value={`${number.format(selected === "battery_workload" ? Math.max(...model.intervals.map((point) => point.workloadShiftMw)) : selected === "workload" ? Math.max(...model.intervals.map((point) => point.workloadOnlyShiftMw)) : 0)} MW`}
             />
             <ImpactRow
               label="Violation Intervals Avoided"
@@ -402,7 +445,7 @@ function OverviewView({
               )}
             />
             <ImpactRow
-              label="GPU-Hours Enabled"
+              label="Reference GPU-hour equivalent (not delivered compute)"
               value={`${integer.format(selectedSummary.additionalGpuHours)} h`}
             />
           </dl>
@@ -425,6 +468,18 @@ function OverviewView({
         <OperatingEnvelopeMap model={model} />
       </details>
       <OperationsEvidenceRail model={model} />
+      <details className="operations-assurance-panel">
+        <summary>Planning assumptions & recovery obligations</summary>
+        <ul>
+          {model.planningWarnings.map((warning) => (
+            <li key={warning}>{warning}</li>
+          ))}
+        </ul>
+        <p>
+          Cost unavailable until a reviewed tariff and full-horizon canonical calculation are
+          supplied.
+        </p>
+      </details>
       <details id="operations-assurance" className="operations-assurance-panel">
         <summary>Evidence, verification and control readiness</summary>
         <div className="operations-assurance-grid">
@@ -470,7 +525,9 @@ function DemandChart({
       ? "baselineDemandMw"
       : selected === "battery"
         ? "batteryDemandMw"
-        : "combinedDemandMw";
+        : selected === "workload"
+          ? "workloadDemandMw"
+          : "combinedDemandMw";
   const baseline = model.summaries[0];
   const selectedSummary =
     model.summaries.find((summary) => summary.kind === selected) ?? model.summaries[2];
@@ -479,7 +536,9 @@ function DemandChart({
       ? "Baseline"
       : selected === "battery"
         ? "Battery response"
-        : "Battery + workload";
+        : selected === "workload"
+          ? "Workload only"
+          : "Battery + workload";
   const targetMw = model.scenario.importLimitMw - model.scenario.safetyReserveMw;
   const [showUncertainty, setShowUncertainty] = useState(false);
   const chartData = model.intervals.map((point, index) => {

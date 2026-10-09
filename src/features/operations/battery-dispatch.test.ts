@@ -23,6 +23,45 @@ const config: BatteryConfiguration = {
 };
 
 describe("battery dispatch", () => {
+  it("never creates energy while ramping down at the reserve boundary", () => {
+    const result = simulateBatteryDispatch(
+      Array.from({ length: 16 }, (_, i) => ({
+        timestamp: new Date(Date.UTC(2026, 0, 1, 0, i)).toISOString(),
+        facilityDemandMw: 110,
+        targetImportMw: 100,
+      })),
+      {
+        ...config,
+        maximumDischargePowerMw: 10,
+        usableEnergyMwh: 1,
+        initialSocPercent: 100,
+        minimumSocPercent: 0,
+        maximumSocPercent: 100,
+        dischargeEfficiency: 1,
+        chargeEfficiency: 1,
+      },
+      1,
+    );
+    expect(result.reduce((sum, point) => sum + point.batteryPowerMw / 60, 0)).toBeLessThanOrEqual(
+      1.0001,
+    );
+    expect(result.every((point) => point.batteryPowerMw <= point.availableDischargeMw + 0.01)).toBe(
+      true,
+    );
+    expect(result.at(-1)?.batteryPowerMw).toBe(0);
+  });
+
+  it("does not let charging ramp exceed import headroom", () => {
+    const result = simulateBatteryDispatch(
+      [
+        { timestamp: "2026-09-26T00:00:00Z", facilityDemandMw: 90, targetImportMw: 100 },
+        { timestamp: "2026-09-26T00:01:00Z", facilityDemandMw: 100, targetImportMw: 100 },
+      ],
+      config,
+      1,
+    );
+    expect(result.every((point) => point.gridImportMw <= 100)).toBe(true);
+  });
   it("uses positive power for discharge and respects power and SOC limits", () => {
     const result = simulateBatteryDispatch(
       [

@@ -30,7 +30,9 @@ export function OperationsDecisionBrief({
       ? "baselineDemandMw"
       : selected === "battery"
         ? "batteryDemandMw"
-        : "combinedDemandMw";
+        : selected === "workload"
+          ? "workloadDemandMw"
+          : "combinedDemandMw";
   const selectedResponseMw = Math.max(0, peak.baselineDemandMw - peak[key]);
   const residualMw = Math.max(
     0,
@@ -39,12 +41,18 @@ export function OperationsDecisionBrief({
   const firstAffected = model.intervals.find(
     (point) => point.baselineDemandMw > envelope.directCeilingMw + 0.01,
   );
-  const state = residualMw > 0.01 ? "infeasible" : requiredMw > 0.01 ? "response" : "direct";
+  const selectedSummary = model.summaries.find((summary) => summary.kind === selected);
+  const state =
+    residualMw > 0.01 || !selectedSummary?.feasible
+      ? "infeasible"
+      : requiredMw > 0.01
+        ? "response"
+        : "direct";
   const title =
     state === "infeasible"
-      ? "The selected response leaves a shortfall to the safety target"
+      ? "The selected response has unresolved constraints or recovery obligations"
       : state === "response"
-        ? "A coordinated response keeps demand inside the safe envelope"
+        ? "Aggregate response fits the target; job-level validation is still required"
         : "Demand remains inside the direct operating envelope";
 
   return (
@@ -84,7 +92,7 @@ export function OperationsDecisionBrief({
         </div>
         <div>
           <dt>Confidence</dt>
-          <dd>{envelope.confidence}</dd>
+          <dd>{model.mode === "scenario" ? "Illustrative" : envelope.confidence}</dd>
         </div>
       </dl>
       <div className="operations-decision-actions">
@@ -298,19 +306,34 @@ export function ScenarioDecisionTable({
               </th>
               <td>{formatMw(summary.peakDemandMw)}</td>
               <td>{formatDurationFromIntervals(summary.violationIntervals)}</td>
-              <td>{summary.kind === "baseline" ? "—" : formatMw(battery)}</td>
+              <td>
+                {summary.kind === "baseline" || summary.kind === "workload"
+                  ? "—"
+                  : formatMw(battery)}
+              </td>
               <td>
                 {summary.kind === "battery_workload"
                   ? formatMwh(model.recommendation.workloadMwh)
-                  : "—"}
+                  : summary.kind === "workload"
+                    ? formatMwh(
+                        model.intervals.reduce(
+                          (sum, point) => sum + point.workloadOnlyShiftMw * 0.25,
+                          0,
+                        ),
+                      )
+                    : "—"}
               </td>
               <td>
-                {summary.violationIntervals
-                  ? `${summary.violationIntervals} intervals`
-                  : summary.peakDemandMw >
-                      model.scenario.importLimitMw - model.scenario.safetyReserveMw + 0.01
-                    ? "Below limit; reserve shortfall"
-                    : "Within safety target"}
+                {summary.unresolvedWorkMwh > 0
+                  ? `${formatMwh(summary.unresolvedWorkMwh)} unrecovered`
+                  : !summary.feasible && !summary.violationIntervals
+                    ? "Constraint or reserve shortfall"
+                    : summary.violationIntervals
+                      ? `${summary.violationIntervals} intervals`
+                      : summary.peakDemandMw >
+                          model.scenario.importLimitMw - model.scenario.safetyReserveMw + 0.01
+                        ? "Below limit; reserve shortfall"
+                        : "Within safety target"}
               </td>
             </tr>
           ))}

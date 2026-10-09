@@ -34,9 +34,21 @@ export const Route = createFileRoute("/api/operations/assess")({
         }
         try {
           const input = operationsAssessmentRequestSchema.parse(await request.json());
-          return Response.json(runOperationsAssessment(input), {
-            headers: { "cache-control": "no-store", "x-gridpulse-control-mode": "read-only" },
-          });
+          const bytes = new TextEncoder().encode(JSON.stringify(input));
+          const hash = await crypto.subtle.digest("SHA-256", bytes);
+          const inputFingerprint = [...new Uint8Array(hash)]
+            .map((value) => value.toString(16).padStart(2, "0"))
+            .join("");
+          return Response.json(
+            {
+              ...runOperationsAssessment(input),
+              assessmentId: crypto.randomUUID(),
+              inputFingerprint,
+            },
+            {
+              headers: { "cache-control": "no-store", "x-gridpulse-control-mode": "read-only" },
+            },
+          );
         } catch (error) {
           return Response.json(
             {

@@ -72,6 +72,17 @@ export async function handleOperationsIngest(request: Request, env: OperationsIn
       400,
     );
   const body = parsed.data;
+  const invalid = body.measurements.find((item) => {
+    if (item.metricKey.endsWith("percent"))
+      return item.unit !== "%" || item.value < 0 || item.value > 100;
+    if (item.metricKey.endsWith("_mw"))
+      return item.unit !== "MW" || (item.metricKey !== "bess_power_mw" && item.value < 0);
+    if (item.metricKey.endsWith("_mwh")) return item.unit !== "MWh" || item.value < 0;
+    if (item.metricKey.endsWith("_count")) return !Number.isInteger(item.value) || item.value < 0;
+    return item.metricKey.endsWith("_temperature_c") && (item.value < -50 || item.value > 200);
+  });
+  if (invalid)
+    return response({ error: `Invalid unit or physical range for ${invalid.metricKey}.` }, 400);
   const rows = body.measurements.map((item) => ({
     facility_id: body.facilityId,
     source_id: body.sourceId,

@@ -68,7 +68,7 @@ export const operationsScenarioSchema = z
   });
 
 export type OperationsScenario = z.infer<typeof operationsScenarioSchema>;
-export type OperationsScenarioKind = "baseline" | "battery" | "battery_workload";
+export type OperationsScenarioKind = "baseline" | "battery" | "battery_workload" | "workload";
 
 export type OperationsInterval = {
   timestamp: string;
@@ -87,6 +87,9 @@ export type OperationsInterval = {
   batteryShortfallMw: number;
   batteryConstraintCode: string;
   workloadShiftMw: number;
+  workloadOnlyShiftMw: number;
+  workloadRecoveryMw: number;
+  workloadDemandMw: number;
 };
 
 export type ScenarioSummary = {
@@ -97,6 +100,8 @@ export type ScenarioSummary = {
   violationHours: number;
   totalEnergyMwh: number;
   additionalGpuHours: number;
+  feasible: boolean;
+  unresolvedWorkMwh: number;
 };
 
 export type OperationsOverviewModel = {
@@ -124,9 +129,39 @@ export type OperationsOverviewModel = {
     intervals: OperatingEnvelopeInterval[];
     summary: ReturnType<typeof summarizeOperatingEnvelope>;
   };
+  planningWarnings: string[];
 };
 
 const round = (value: number, digits = 1) => Number(value.toFixed(digits));
+
+/** Demonstration only: moves aggregate energy, never deletes deferred demand.
+ * Actual job/SLA feasibility belongs to the canonical scheduler. */
+function recoverShiftedDemand(
+  demand: number[],
+  target: number,
+  percent: number,
+  delayMinutes: number,
+) {
+  const shifts = demand.map((value) =>
+    delayMinutes > 0 ? Math.min(Math.max(0, value - target), (value * percent) / 100) : 0,
+  );
+  const recovered = demand.map(() => 0);
+  let unresolvedWorkMwh = 0;
+  shifts.forEach((shift, index) => {
+    let remaining = shift;
+    const end = Math.min(demand.length - 1, index + Math.floor(delayMinutes / 15));
+    for (let destination = index + 1; destination <= end && remaining > 0; destination++) {
+      const amount = Math.min(
+        remaining,
+        Math.max(0, target - demand[destination] - recovered[destination]),
+      );
+      recovered[destination] += amount;
+      remaining -= amount;
+    }
+    unresolvedWorkMwh += remaining * 0.25;
+  });
+  return { shifts, recovered, unresolvedWorkMwh };
+}
 
 export const defaultOperationsScenario: OperationsScenario = {
   facilityName: "100 MW AI Data Centre",
@@ -215,15 +250,34 @@ export function buildOperationsScenario(
     },
     15,
   );
+  const combinedRecovery = recoverShiftedDemand(
+    dispatch.map((point) => point.gridImportMw),
+    targetMw,
+    scenario.maximumShiftablePercent,
+    scenario.maximumDelayMinutes,
+  );
+  const workloadRecovery = recoverShiftedDemand(
+    baselineIntervals.map((point) => point.baselineDemandMw),
+    targetMw,
+    scenario.maximumShiftablePercent,
+    scenario.maximumDelayMinutes,
+  );
   const intervals: OperationsInterval[] = baselineIntervals.map((point, index) => {
     const battery = dispatch[index];
     const batteryDemandMw = battery.gridImportMw;
-    const shiftableMw = point.baselineDemandMw * (scenario.maximumShiftablePercent / 100);
-    const workloadShiftMw = Math.min(Math.max(0, batteryDemandMw - targetMw), shiftableMw);
+    const workloadShiftMw = combinedRecovery.shifts[index];
     return {
       ...point,
       batteryDemandMw: round(batteryDemandMw, 2),
-      combinedDemandMw: round(Math.max(0, batteryDemandMw - workloadShiftMw), 2),
+      combinedDemandMw: round(
+        Math.max(0, batteryDemandMw - workloadShiftMw + combinedRecovery.recovered[index]),
+        2,
+      ),
+      workloadRecoveryMw: round(combinedRecovery.recovered[index], 2),
+      workloadDemandMw: round(
+        point.baselineDemandMw - workloadRecovery.shifts[index] + workloadRecovery.recovered[index],
+        2,
+      ),
       batteryPowerMw: battery.batteryPowerMw,
       batterySocPercent: battery.socPercent,
       availableDischargeMw: battery.availableDischargeMw,
@@ -231,13 +285,14 @@ export function buildOperationsScenario(
       batteryShortfallMw: battery.shortfallMw,
       batteryConstraintCode: battery.constraintCode,
       workloadShiftMw: round(workloadShiftMw, 2),
+      workloadOnlyShiftMw: round(workloadRecovery.shifts[index], 2),
     };
   });
 
   const summary = (
     kind: OperationsScenarioKind,
     label: string,
-    key: "baselineDemandMw" | "batteryDemandMw" | "combinedDemandMw",
+    key: "baselineDemandMw" | "batteryDemandMw" | "combinedDemandMw" | "workloadDemandMw",
   ): ScenarioSummary => {
     const values = intervals.map((point) => point[key]);
     const violations = values.filter((value) => value > scenario.importLimitMw).length;
@@ -257,12 +312,27 @@ export function buildOperationsScenario(
       violationHours: round(violations * intervalHours, 2),
       totalEnergyMwh: round(values.reduce((sum, value) => sum + value * intervalHours, 0)),
       additionalGpuHours: Math.round(additionalGpuHours),
+      unresolvedWorkMwh: round(
+        kind === "battery_workload"
+          ? combinedRecovery.unresolvedWorkMwh
+          : kind === "workload"
+            ? workloadRecovery.unresolvedWorkMwh
+            : 0,
+        3,
+      ),
+      feasible:
+        values.every((value) => value <= targetMw + 0.01) &&
+        (kind !== "battery_workload" || combinedRecovery.unresolvedWorkMwh < 0.001) &&
+        (kind !== "workload" || workloadRecovery.unresolvedWorkMwh < 0.001) &&
+        ((kind !== "battery" && kind !== "battery_workload") ||
+          dispatch.every((point) => point.constraintCode !== "constraint_conflict")),
     };
   };
   const summaries = [
     summary("baseline", "Baseline", "baselineDemandMw"),
     summary("battery", "Battery Response", "batteryDemandMw"),
     summary("battery_workload", "Battery + Workload", "combinedDemandMw"),
+    summary("workload", "Workload Only", "workloadDemandMw"),
   ];
   const baseline = summaries[0];
   const combined = summaries[2];
@@ -304,17 +374,28 @@ export function buildOperationsScenario(
       resourceUncertaintyMw: point.availableDischargeMw > 0 ? point.availableDischargeMw * 0.03 : 0,
       batteryAvailablePowerMw: point.availableDischargeMw,
       batteryAvailableEnergyMwh:
-        scenario.battery.usableEnergyMwh *
-        Math.max(0, point.batterySocPercent - scenario.battery.minimumSocPercent) /
+        (scenario.battery.usableEnergyMwh *
+          Math.max(0, point.batterySocPercent - scenario.battery.minimumSocPercent)) /
         100,
       batteryDischargeEfficiency: scenario.battery.dischargeEfficiency,
       workloadFlexibleMw: point.workloadShiftMw,
-      workloadReboundMw: 0,
+      workloadReboundMw: point.workloadRecoveryMw,
     })),
   );
 
   return {
     mode: "scenario",
+    planningWarnings: [
+      "Aggregate scenario only: actual job completion and equipment limits require a canonical assessment.",
+      ...(combinedRecovery.unresolvedWorkMwh > 0.001
+        ? [
+            `${round(combinedRecovery.unresolvedWorkMwh, 3)} MWh of deferred work has no recovery slot inside its delay window.`,
+          ]
+        : []),
+      ...(dispatch.some((point) => point.constraintCode === "constraint_conflict")
+        ? ["Battery ramp and energy/headroom constraints conflict; response is not feasible."]
+        : []),
+    ],
     scenario,
     generatedAt: new Date().toISOString(),
     metrics: {

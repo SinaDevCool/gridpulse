@@ -4,6 +4,7 @@ export type BatteryConstraintCode =
   | "none"
   | "power_limited"
   | "energy_limited"
+  | "constraint_conflict"
   | "soc_minimum"
   | "soc_maximum"
   | "ramp_limited"
@@ -68,14 +69,22 @@ export function simulateBatteryDispatch(
   config: BatteryConfiguration,
   intervalMinutes: number,
 ): BatteryDispatchInterval[] {
-  const dtHours = intervalMinutes / 60;
+  if (!(intervalMinutes > 0) || !Number.isFinite(intervalMinutes))
+    throw new Error("A positive battery interval duration is required.");
   const effectiveEnergyMwh = (config.usableEnergyMwh * config.stateOfHealthPercent) / 100;
   let storedEnergyMwh = (effectiveEnergyMwh * config.initialSocPercent) / 100;
   let previousPowerMw = 0;
   let previousMode: "charge" | "discharge" | "idle" = "idle";
   let modeMinutes = config.minimumDwellMinutes;
 
-  return inputs.map((input) => {
+  return inputs.map((input, index) => {
+    const next = inputs[index + 1];
+    const duration = next
+      ? (Date.parse(next.timestamp) - Date.parse(input.timestamp)) / 60_000
+      : intervalMinutes;
+    if (!(duration > 0) || !Number.isFinite(duration))
+      throw new Error("Battery timestamps must be valid, unique and chronological.");
+    const dtHours = duration / 60;
     const socPercent = effectiveEnergyMwh ? (storedEnergyMwh / effectiveEnergyMwh) * 100 : 0;
     const dischargeEnergyMw =
       dtHours > 0
@@ -120,13 +129,20 @@ export function simulateBatteryDispatch(
       batteryPowerMw = 0;
       constraintCode = "minimum_dwell";
     } else {
-      const maxDeltaMw = config.rampRateMwPerMinute * intervalMinutes;
+      const maxDeltaMw = config.rampRateMwPerMinute * duration;
       const ramped = Math.max(
         previousPowerMw - maxDeltaMw,
         Math.min(previousPowerMw + maxDeltaMw, batteryPowerMw),
       );
       if (Math.abs(ramped - batteryPowerMw) > 0.0001) constraintCode = "ramp_limited";
-      batteryPowerMw = ramped;
+      // Energy and PCS limits are hard bounds. A ramp-down obligation cannot
+      // create energy or force charging beyond the facility's import headroom.
+      const safePower = Math.max(
+        -desiredChargeMw,
+        Math.min(availableDischargeMw, input.facilityDemandMw, ramped),
+      );
+      batteryPowerMw = safePower;
+      if (Math.abs(safePower - ramped) > 0.0001) constraintCode = "constraint_conflict";
     }
 
     if (batteryPowerMw > 0) {
@@ -159,7 +175,7 @@ export function simulateBatteryDispatch(
       constraintCode = "soc_maximum";
 
     const actualMode = batteryPowerMw > 0 ? "discharge" : batteryPowerMw < 0 ? "charge" : "idle";
-    modeMinutes = actualMode === previousMode ? modeMinutes + intervalMinutes : intervalMinutes;
+    modeMinutes = actualMode === previousMode ? modeMinutes + duration : duration;
     previousMode = actualMode;
     previousPowerMw = batteryPowerMw;
     const gridImportMw = Math.max(0, input.facilityDemandMw - batteryPowerMw);
@@ -238,7 +254,7 @@ export function parseBatteryCsv(text: string): BatteryObservation[] {
     const timestamp = new Date(cells[indexOf("timestamp")]);
     if (!Number.isFinite(timestamp.getTime()))
       throw new Error(`Invalid timestamp on row ${index + 2}.`);
-    return {
+    const observation = {
       timestamp: timestamp.toISOString(),
       socPercent: numeric(cells, indexOf("soc_percent"), index + 2, "SOC")!,
       activePowerMw: numeric(cells, indexOf("active_power_mw"), index + 2, "active power")!,
@@ -268,5 +284,18 @@ export function parseBatteryCsv(text: string): BatteryObservation[] {
         indexOf("inverter_state") < 0 ? null : cells[indexOf("inverter_state")] || null,
       alarms: indexOf("alarms") < 0 ? null : cells[indexOf("alarms")] || null,
     };
+    return z
+      .object({
+        timestamp: z.string().datetime(),
+        socPercent: z.number().min(0).max(100),
+        activePowerMw: z.number().min(-2000).max(2000),
+        allowedDischargeMw: z.number().nonnegative().nullable(),
+        allowedChargeMw: z.number().nonnegative().nullable(),
+        stateOfHealthPercent: z.number().min(0).max(100).nullable(),
+        temperatureC: z.number().min(-50).max(200).nullable(),
+        inverterState: z.string().nullable(),
+        alarms: z.string().nullable(),
+      })
+      .parse(observation);
   });
 }

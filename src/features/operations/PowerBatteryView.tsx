@@ -27,6 +27,7 @@ import {
 } from "recharts";
 import type { OperationsOverviewModel, OperationsInterval } from "./scenario-engine";
 import { requestOperationsAssessment } from "@/lib/operations-api";
+import { alignPowerEvidence } from "./operations-service";
 import { useOperationsCapabilities } from "./use-operations-capabilities";
 import {
   parseBatteryCsv,
@@ -161,7 +162,7 @@ export function PowerBatteryView({ model }: { model: OperationsOverviewModel }) 
       setFacilityObservations(parsed);
       setMode("historical");
       setMessage(
-        `${parsed.length} facility meter records loaded from ${file.name}${verified ? " and verified by the Operations backend" : ""}.`,
+        `${parsed.length} facility meter records loaded from ${file.name}${verified ? " and input-validated by the Operations backend (not dispatch-verified)" : ""}.`,
       );
       setError("");
     } catch (caught) {
@@ -573,22 +574,19 @@ function buildHistoricalSeries(
   facility: FacilityPowerObservation[],
   battery: BatteryObservation[],
 ): HistoricalPoint[] {
-  const batteryByTime = new Map(battery.map((point) => [point.timestamp, point]));
-  return [...facility]
-    .sort((a, b) => a.timestamp.localeCompare(b.timestamp))
-    .map((point) => {
-      const batteryPoint = batteryByTime.get(point.timestamp) ?? null;
-      return {
-        timestamp: point.timestamp,
-        label: formatOperationsTime(point.timestamp).replace(" UTC", ""),
-        facilityDemandMw: batteryPoint ? point.facilityImportMw + batteryPoint.activePowerMw : null,
-        gridImportMw: point.facilityImportMw,
-        batteryPowerMw: batteryPoint?.activePowerMw ?? null,
-        socPercent: batteryPoint?.socPercent ?? null,
-        operatingLimitMw: point.operatingLimitMw,
-        battery: batteryPoint,
-      };
-    });
+  return alignPowerEvidence(facility, battery).map((point) => {
+    const batteryPoint = point.battery;
+    return {
+      timestamp: point.timestamp,
+      label: formatOperationsTime(point.timestamp).replace(" UTC", ""),
+      facilityDemandMw: batteryPoint ? point.facilityImportMw + batteryPoint.activePowerMw : null,
+      gridImportMw: point.facilityImportMw,
+      batteryPowerMw: batteryPoint?.activePowerMw ?? null,
+      socPercent: batteryPoint?.socPercent ?? null,
+      operatingLimitMw: point.operatingLimitMw,
+      battery: batteryPoint,
+    };
+  });
 }
 
 const formatOptionalMw = (value: number | null) =>

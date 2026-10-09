@@ -10,6 +10,18 @@ import {
 const model = buildOperationsScenario();
 
 describe("workload intelligence", () => {
+  it("sums concurrent GPUs and deduplicates device samples", () => {
+    const workload = { ...buildScenarioWorkloads(model)[0], source: "csv" as const };
+    const telemetry = parseGpuTelemetryCsv(
+      [
+        "timestamp,workload_id,gpu_uuid,power_watts",
+        `2026-09-26T08:00:00Z,${workload.workloadId},GPU-a,500000`,
+        `2026-09-26T08:00:00Z,${workload.workloadId},GPU-b,700000`,
+        `2026-09-26T08:00:00Z,${workload.workloadId},GPU-a,500000`,
+      ].join("\n"),
+    );
+    expect(assessWorkloads([workload], telemetry, model).decisions[0].estimatedPowerMw).toBe(1.2);
+  });
   it("keeps scenario workloads explicitly reference-based", () => {
     const assessment = assessWorkloads(buildScenarioWorkloads(model), [], model);
     expect(assessment.source).toBe("scenario");
@@ -17,7 +29,9 @@ describe("workload intelligence", () => {
       true,
     );
     expect(assessment.recommendedJobs).toBeGreaterThan(0);
-    expect(assessment.recommendedPowerMw).toBeCloseTo(assessment.requiredWorkloadResponseMw);
+    expect(assessment.recommendedPowerMw).toBeGreaterThanOrEqual(
+      assessment.requiredWorkloadResponseMw,
+    );
     expect(assessment.recommendedJobs).toBeLessThan(assessment.eligibleJobs);
   });
 

@@ -14,7 +14,10 @@ export const operationsQualityInputSchema = z.object({
 
 export function assessOperationsQuality(raw: z.input<typeof operationsQualityInputSchema>) {
   const input = operationsQualityInputSchema.parse(raw);
-  const completenessPercent = Math.min(100, (input.receivedIntervals / input.expectedIntervals) * 100);
+  const completenessPercent = Math.min(
+    100,
+    (input.receivedIntervals / input.expectedIntervals) * 100,
+  );
   const freshnessMinutes = input.newestEvidenceAt
     ? Math.max(0, (Date.parse(input.assessedAt) - Date.parse(input.newestEvidenceAt)) / 60_000)
     : null;
@@ -25,7 +28,8 @@ export function assessOperationsQuality(raw: z.input<typeof operationsQualityInp
   if (input.powerBalanceResidualPercent != null && input.powerBalanceResidualPercent > 5)
     blockers.push("Facility power-balance residual exceeds 5%.");
   if (input.suspectCount) blockers.push("Suspect measurements require review.");
-  const status = blockers.length === 0 ? "ready" : completenessPercent >= 80 ? "limited" : "scenario_only";
+  const status =
+    blockers.length === 0 ? "ready" : completenessPercent >= 80 ? "limited" : "scenario_only";
   return {
     completenessPercent: Number(completenessPercent.toFixed(1)),
     freshnessMinutes: freshnessMinutes == null ? null : Number(freshnessMinutes.toFixed(1)),
@@ -56,13 +60,26 @@ export function verifyOperationsResponse(input: VerificationInput) {
     Math.max(0, input.baselineImportMw[index] - actual),
   );
   const deliveredReductionMw = delivered.reduce((sum, value) => sum + value, 0) / delivered.length;
-  const deliveredEnergyMwh = delivered.reduce((sum, value) => sum + value, 0) * input.intervalMinutes / 60;
-  const batteryEnergyMwh = (input.batteryPowerMw ?? [])
-    .reduce((sum, value) => sum + Math.max(0, value), 0) * input.intervalMinutes / 60;
-  const reboundEnergyMwh = (input.reboundImportMw ?? [])
-    .reduce((sum, value, index) => sum + Math.max(0, value - (input.baselineImportMw[index] ?? value)), 0) * input.intervalMinutes / 60;
+  const deliveredEnergyMwh =
+    (delivered.reduce((sum, value) => sum + value, 0) * input.intervalMinutes) / 60;
+  const batteryEnergyMwh =
+    ((input.batteryPowerMw ?? []).reduce((sum, value) => sum + Math.max(0, value), 0) *
+      input.intervalMinutes) /
+    60;
+  const reboundEnergyMwh =
+    ((input.reboundImportMw ?? []).reduce(
+      (sum, value, index) => sum + Math.max(0, value - (input.baselineImportMw[index] ?? value)),
+      0,
+    ) *
+      input.intervalMinutes) /
+    60;
   const netDeliveredEnergyMwh = Math.max(0, deliveredEnergyMwh - reboundEnergyMwh);
-  const confidence = input.telemetryCompletenessPercent >= 95 ? "high" : input.telemetryCompletenessPercent >= 80 ? "medium" : "low";
+  const confidence =
+    input.telemetryCompletenessPercent >= 95
+      ? "high"
+      : input.telemetryCompletenessPercent >= 80
+        ? "medium"
+        : "low";
   return {
     requestedReductionMw: input.requestedReductionMw,
     deliveredReductionMw: Number(deliveredReductionMw.toFixed(3)),
@@ -70,7 +87,14 @@ export function verifyOperationsResponse(input: VerificationInput) {
     batteryEnergyMwh: Number(batteryEnergyMwh.toFixed(3)),
     reboundEnergyMwh: Number(reboundEnergyMwh.toFixed(3)),
     netDeliveredEnergyMwh: Number(netDeliveredEnergyMwh.toFixed(3)),
-    performancePercent: Number(Math.min(100, input.requestedReductionMw ? deliveredReductionMw / input.requestedReductionMw * 100 : 100).toFixed(1)),
+    performancePercent: Number(
+      Math.min(
+        100,
+        input.requestedReductionMw
+          ? (deliveredReductionMw / input.requestedReductionMw) * 100
+          : 100,
+      ).toFixed(1),
+    ),
     verified: confidence !== "low",
     confidence,
   } as const;
@@ -84,9 +108,10 @@ export function assessOperationsCompliance(input: {
   heatTemperatureC: number | null;
   measurementCoveragePercent: number;
 }) {
-  const measuredPue = input.facilityEnergyMwh != null && input.itEnergyMwh != null && input.itEnergyMwh > 0
-    ? input.facilityEnergyMwh / input.itEnergyMwh
-    : null;
+  const measuredPue =
+    input.facilityEnergyMwh != null && input.itEnergyMwh != null && input.itEnergyMwh > 0
+      ? input.facilityEnergyMwh / input.itEnergyMwh
+      : null;
   const missing: string[] = [];
   if (measuredPue == null) missing.push("Aligned facility and IT energy");
   if (input.renewableSharePercent == null) missing.push("Renewable electricity share");
@@ -111,19 +136,57 @@ export function evaluateResponseEconomics(input: {
   workloadCostEurPerMwh: number;
   flexibilityPaymentEur: number;
   slaPenaltyEur: number;
+  baselineImportMw?: number[];
+  proposedImportMw?: number[];
+  intervalHours?: number[];
+  intervalPricesEurPerMwh?: number[];
+  billingPeakEvidenceReviewed?: boolean;
 }) {
-  const avoidedEnergyCostEur = input.avoidedPeakMw * input.durationHours * input.energyPriceEurPerMwh;
-  const avoidedCapacityCostEur = input.avoidedPeakMw * input.capacityValueEurPerMw;
+  const baseline = input.baselineImportMw;
+  const proposed = input.proposedImportMw;
+  const durations = input.intervalHours;
+  const prices = input.intervalPricesEurPerMwh;
+  const comparable = Boolean(
+    baseline?.length &&
+    proposed?.length === baseline.length &&
+    durations?.length === baseline.length &&
+    prices?.length === baseline.length,
+  );
+  if (!comparable)
+    return {
+      available: false,
+      reason:
+        "Aligned full-horizon baseline, recovery/recharge imports, durations and tariff prices are required.",
+      avoidedEnergyCostEur: null,
+      avoidedCapacityCostEur: null,
+      batteryCostEur: null,
+      workloadCostEur: null,
+      grossValueEur: null,
+      netValueEur: null,
+    };
+  const avoidedEnergyCostEur = baseline!.reduce(
+    (sum, value, index) => sum + (value - proposed![index]) * durations![index] * prices![index],
+    0,
+  );
+  const avoidedCapacityCostEur = input.billingPeakEvidenceReviewed
+    ? input.avoidedPeakMw * input.capacityValueEurPerMw
+    : 0;
   const batteryCostEur = input.batteryEnergyMwh * input.batteryDegradationEurPerMwh;
   const workloadCostEur = input.shiftedEnergyMwh * input.workloadCostEurPerMwh;
   const grossValueEur = avoidedEnergyCostEur + avoidedCapacityCostEur + input.flexibilityPaymentEur;
   return {
+    available: true,
+    reason: input.billingPeakEvidenceReviewed
+      ? "Reviewed full-horizon tariff comparison."
+      : "Full-horizon energy comparison; demand-charge savings excluded without reviewed billing evidence.",
     avoidedEnergyCostEur: Number(avoidedEnergyCostEur.toFixed(2)),
     avoidedCapacityCostEur: Number(avoidedCapacityCostEur.toFixed(2)),
     batteryCostEur: Number(batteryCostEur.toFixed(2)),
     workloadCostEur: Number(workloadCostEur.toFixed(2)),
     grossValueEur: Number(grossValueEur.toFixed(2)),
-    netValueEur: Number((grossValueEur - batteryCostEur - workloadCostEur - input.slaPenaltyEur).toFixed(2)),
+    netValueEur: Number(
+      (grossValueEur - batteryCostEur - workloadCostEur - input.slaPenaltyEur).toFixed(2),
+    ),
   };
 }
 
@@ -141,7 +204,8 @@ export function authorizeDispatch(input: {
   if (!input.evidenceReady) reasons.push("Operational evidence is not ready.");
   if (!input.connectorHealthy) reasons.push("A required connector is unhealthy.");
   if (!input.agreementCurrent) reasons.push("The operating agreement is not current.");
-  if (input.approvalCount < (input.requiredApprovalCount ?? 2)) reasons.push("Two-person approval is incomplete.");
+  if (input.approvalCount < (input.requiredApprovalCount ?? 2))
+    reasons.push("Two-person approval is incomplete.");
   if (!input.automaticDispatchEnabled) reasons.push("Automatic dispatch is disabled.");
   return { authorized: reasons.length === 0, failClosed: true, reasons };
 }
