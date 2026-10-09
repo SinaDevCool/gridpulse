@@ -52,8 +52,12 @@ export function resolveCandidateOperatorContext(
     mappedNames.some((name) => knownOperatorRole(name) === "TSO");
   // Identity-based TSO classification takes precedence over fallback catalogue roles.
   // A joint role requires a distinct mapped DSO, not conflicting rows for one TSO.
-  const hasDso = catalogEntries.some(
-    (item) => item.type === "DSO / other" && knownOperatorRole(item.name) !== "TSO",
+  const hasDso = mappedNames.some(
+    (name) =>
+      knownOperatorRole(name) !== "TSO" &&
+      catalogEntries.some(
+        (item) => item.type === "DSO / other" && sameOperatorIdentity(item.name, name),
+      ),
   );
   const mappedRole = hasTso && hasDso ? "TSO & DSO" : hasTso ? "TSO" : hasDso ? "DSO" : null;
   const upstreamTso =

@@ -57,6 +57,12 @@ describe("candidate detail model", () => {
     expect(context.mappedRole).toBe("TSO");
     expect(context.upstreamTso).toBeNull();
   });
+  it("does not inherit a DSO role from an overlapping joint catalogue name", () => {
+    const context = resolveCandidateOperatorContext(candidate, [
+      { ...tso, name: "TenneT; Avacon", type: "DSO / other" },
+    ]);
+    expect(context.mappedRole).toBe("TSO");
+  });
   it("identifies a directly mapped TSO without inventing a DSO", () => {
     const context = resolveCandidateOperatorContext(candidate, [tso]);
     expect(context.mappedOperator).toBe("TenneT TSO GmbH");
