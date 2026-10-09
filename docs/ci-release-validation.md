@@ -9,3 +9,5 @@ The deployment job now installs Python dependencies and calls Python directly in
 Release bundle limits remain unchanged. Landing-only CSS is loaded with PublicLayout; the Finder map, legend and candidate-detail components load through React Suspense. Validate map rendering and candidate actions as well as Operations before publishing.
 
 This web deployment does not provision a separately hosted Python analytics worker or live facility connectors.
+
+Clean-runner verification also exposed missing ML extras and checkout conversion of checksum-bound fixture bytes. CI installs the ML extras, and Git preserves the fixture bytes without text conversion. The private canonical-engine package is not published into this public repository: dependency tests verify a 503/no-result failure when absent and the real adapter when installed. A green public CI run therefore does not certify the private optimizer deployment.

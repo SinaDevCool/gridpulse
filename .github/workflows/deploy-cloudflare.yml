@@ -25,7 +25,7 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-      - run: python -m pip install -e "./services/grid-data[api,study,dev]"
+      - run: python -m pip install -e "./services/grid-data[api,study,ml,dev]"
       - run: npm run check:encoding
       - run: npm run typecheck
       - run: npm run test

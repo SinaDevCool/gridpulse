@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from importlib.util import find_spec
 from uuid import uuid4
 
 from grid_data.api.executor import OperatorHealthExecutor
@@ -7,7 +8,7 @@ from grid_data.api.models import AnalyticsJob, JobStatus
 from grid_data.api.store import InMemoryJobStore
 
 
-def test_installed_canonical_engine_is_invoked_and_fails_closed() -> None:
+def test_canonical_engine_dependency_is_invoked_or_fails_closed() -> None:
     store = InMemoryJobStore()
     job = store.create(
         AnalyticsJob(
@@ -28,4 +29,9 @@ def test_installed_canonical_engine_is_invoked_and_fails_closed() -> None:
     executor.execute_facility_plan(job.id)
     completed = store.get_internal(job.id)
     assert completed.status == JobStatus.FAILED
-    assert completed.error and "missing required fields" in completed.error
+    assert completed.error
+    if find_spec("capacity_backtest") is None:
+        assert "No module named 'capacity_backtest'" in completed.error
+        assert completed.result_payload is None
+    else:
+        assert "missing required fields" in completed.error

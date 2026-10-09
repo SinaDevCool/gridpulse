@@ -3,6 +3,7 @@ from __future__ import annotations
 import unittest
 from dataclasses import asdict
 from datetime import datetime
+from importlib.util import find_spec
 from uuid import UUID, uuid4
 
 from fastapi.testclient import TestClient
@@ -236,6 +237,12 @@ class AnalyticsApiTests(unittest.TestCase):
 
     def test_contract_manifest_exposes_versioned_canonical_jobs(self) -> None:
         response = self.client.get("/v1/contracts")
+        if find_spec("capacity_backtest") is None:
+            self.assertEqual(response.status_code, 503)
+            self.assertEqual(
+                response.json()["detail"], "Canonical analytical engine is not installed"
+            )
+            return
         self.assertEqual(response.status_code, 200)
         payload = response.json()
         self.assertEqual(payload["schema_version"], "gridpulse-analytics-contract-manifest-v1")
