@@ -27,6 +27,7 @@ type Props = {
 export function OperatorEngagementControl({ site, documents, correspondence, refresh }: Props) {
   const [draftText, setDraftText] = useState("");
   const [selectedDocumentId, setSelectedDocumentId] = useState("");
+  const [selectedDocumentHash, setSelectedDocumentHash] = useState("");
   const [busy, setBusy] = useState(false);
   const [operationalAssessment, setOperationalAssessment] = useState<OperationalAssessment | null>(
     null,
@@ -86,13 +87,21 @@ export function OperatorEngagementControl({ site, documents, correspondence, ref
       return toast.error("Human source review is required.");
     const documentId = String(values.get("documentId") || "");
     if (!documentId) return toast.error("Link the operator source document first.");
+    if (!selectedDocumentHash)
+      return toast.error("Extract the linked PDF so its source hash can be verified.");
     setBusy(true);
     const organization = String(values.get("organization") || "Responsible network operator");
     const payload = {
       sourceDocumentId: documentId,
+      sourceDocumentSha256: selectedDocumentHash,
       correspondenceId: String(values.get("correspondenceId") || "") || null,
       reviewedText: draftText,
       facts,
+      discrepancies,
+      declaredValues: {
+        requestedImportMw: site.requested_import_mw,
+        requestedExportMw: site.requested_export_mw,
+      },
       reviewerStatement: "Compared with the linked source by a human reviewer.",
       methodologyVersion: PHASE5_VERSION,
     };
@@ -146,8 +155,12 @@ export function OperatorEngagementControl({ site, documents, correspondence, ref
         .from("assessment-documents")
         .download(document.storage_path);
       if (downloaded.error) throw downloaded.error;
+      const bytes = await downloaded.data.arrayBuffer();
+      const sourceHash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)))
+        .map((byte) => byte.toString(16).padStart(2, "0"))
+        .join("");
       const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
-      const pdf = await pdfjs.getDocument({ data: await downloaded.data.arrayBuffer() }).promise;
+      const pdf = await pdfjs.getDocument({ data: bytes }).promise;
       const pages: string[] = [];
       for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
         const content = await (await pdf.getPage(pageNumber)).getTextContent();
@@ -156,6 +169,7 @@ export function OperatorEngagementControl({ site, documents, correspondence, ref
       const extracted = pages.join("\n\n").trim();
       if (!extracted) throw new Error("No selectable text found. This PDF may require OCR.");
       setDraftText(extracted);
+      setSelectedDocumentHash(sourceHash);
       toast.success(`Extracted ${pdf.numPages} PDF page${pdf.numPages === 1 ? "" : "s"}`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "PDF extraction failed");
@@ -170,51 +184,12 @@ export function OperatorEngagementControl({ site, documents, correspondence, ref
     const reviewedEvent = data?.events.find((item) => item.id === eventId);
     if (!reviewedEvent || !documentId) return toast.error("The evidence source is incomplete.");
     setBusy(true);
-    const encoded = new TextEncoder().encode(JSON.stringify(reviewedEvent.payload));
-    const hash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", encoded)))
-      .map((byte) => byte.toString(16).padStart(2, "0"))
-      .join("");
-    const approval = await supabase.rpc("record_assessment_approval", {
-      p_site_id: site.id,
-      p_role: "grid_expert",
-      p_subject_type: "operator_capacity_evidence",
-      p_subject_id: documentId,
-      p_note: "Authenticated grid-expert approval of the reviewed extraction.",
-      p_content_hash: hash,
+    const payload = reviewedEvent.payload as { sourceDocumentSha256?: string };
+    const approval = await supabase.rpc("approve_release5_operator_evidence", {
+      p_event_id: eventId,
+      p_document_id: documentId,
+      p_source_sha256: payload.sourceDocumentSha256 ?? "",
     });
-    if (!approval.error) {
-      await supabase
-        .from("integration_events")
-        .update({ evidence_state: "operator_confirmed" })
-        .eq("id", eventId);
-      const payload = reviewedEvent.payload as { facts?: typeof facts };
-      const approvedFacts = payload.facts;
-      if (
-        approvedFacts &&
-        (approvedFacts.importLimitMw !== null || approvedFacts.exportLimitMw !== null)
-      ) {
-        await supabase.from("fca_envelopes").insert({
-          site_id: site.id,
-          user_id: site.user_id,
-          name: `Grid-expert reviewed proposal · ${new Date().toLocaleDateString("de-DE")}`,
-          mode:
-            approvedFacts.flexibilityMode === "unspecified"
-              ? "static"
-              : approvedFacts.flexibilityMode,
-          max_import_mw: approvedFacts.importLimitMw,
-          max_export_mw: approvedFacts.exportLimitMw,
-          status: "operator_proposed",
-          source_document_id: documentId,
-          restriction_schedule: {
-            noticeMinutes: approvedFacts.noticeMinutes,
-            signals: approvedFacts.signals,
-            source: "authenticated_grid_expert_review",
-          },
-          notes:
-            "Derived from reviewed operator correspondence; this remains a customer-side record, not a connection offer.",
-        });
-      }
-    }
     setBusy(false);
     if (approval.error) toast.error(approval.error.message);
     else {
@@ -395,6 +370,7 @@ export function OperatorEngagementControl({ site, documents, correspondence, ref
               name="documentId"
               value={selectedDocumentId}
               onChange={(event) => setSelectedDocumentId(event.target.value)}
+              onInput={() => setSelectedDocumentHash("")}
               required
             >
               <option value="">Select operator source</option>

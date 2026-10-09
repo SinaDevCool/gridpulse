@@ -35,7 +35,7 @@ We would be pleased to demonstrate the workflow and discuss how it could reduce 
 Kind regards,
 
 GridPulse  
-contact@gridpulseinsights.com  
+sina.khedmati@outlook.de
 https://gridpulseinsights.com
 
 ## Internal send checklist

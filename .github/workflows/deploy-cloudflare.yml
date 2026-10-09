@@ -13,6 +13,7 @@ jobs:
     env:
       GRIDPULSE_BUILD_SHA: ${{ github.sha }}
       GRIDPULSE_BUILD_ENV: production
+      GRIDPULSE_PRODUCT_MODE: finder
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -20,16 +21,34 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -e "./services/grid-data[api,study,ml,dev]"
       - run: npm run check:encoding
       - run: npm run typecheck
       - run: npm run test
+      - run: npm run test:operations:database
+      - run: python -m pytest services/grid-data/tests
+        env:
+          PYTHONPATH: services/grid-data/src
+      - run: python -m grid_data.cli audit-release --input public/power-finder/brandenburg-osm.json --output output/brandenburg-osm-audit.json
+        env:
+          PYTHONPATH: services/grid-data/src
       - run: npm run build
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      - run: npm run check:performance-budgets
       - run: npx playwright install --with-deps chromium
-      - run: npm run test:e2e
+      - name: Validate Operations controls
+        run: npx playwright test tests/e2e/activation-operations-ui.spec.ts tests/e2e/operations-redesign-ui.spec.ts tests/e2e/operations-release-controls.spec.ts --workers=1
         env:
+          GRIDPULSE_PRODUCT_MODE: full
+      - run: npm run test:e2e:finder
+        env:
+          GRIDPULSE_PRODUCT_MODE: finder
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
       - run: npx wrangler deploy --dry-run
@@ -43,3 +62,7 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
         run: node scripts/check-production-health.mjs
+      - name: Verify production map rendering
+        env:
+          GRIDPULSE_HEALTH_BASE_URL: https://gridpulseinsights.com
+        run: node scripts/check-production-map.mjs

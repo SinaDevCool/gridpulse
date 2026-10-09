@@ -1,0 +1,15 @@
+{
+  "valid": true,
+  "audited_at": "2026-10-09T23:13:00+00:00",
+  "input": "public\\power-finder\\brandenburg-osm.json",
+  "sha256": "232075691d2345c0a7497a51e0e94a1ff21f16bf386a55f02a4411beb6e7b9d0",
+  "feature_count": 668,
+  "kind_counts": {
+    "industrial_site": 142,
+    "line": 233,
+    "node": 293
+  },
+  "rule_counts": {},
+  "errors": [],
+  "warnings": []
+}

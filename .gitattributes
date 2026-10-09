@@ -2,3 +2,6 @@
 *.png binary
 *.jpg binary
 *.jpeg binary
+
+# These fixtures are raw-byte checksum-bound. Checkout must not alter their bytes.
+services/grid-data/fixtures/synthetic-pilot/** -text whitespace=cr-at-eol

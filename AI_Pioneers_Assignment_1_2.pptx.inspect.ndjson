@@ -1,0 +1,91 @@
+{"kind":"deck","id":"pr/ch4zff","name":"Deck"}
+{"kind":"layout","layoutId":"259fcd1a-8341-4436-983c-b8c1106b8fc2","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"664b25f5-269f-44d2-a675-0b198ebbb421","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/ya63vr","slide":1,"title":"AI","textShapes":22}
+{"kind":"shape","id":"sh/l032p0z6","slide":1,"name":"lavender-wash","bbox":[0,0,225,720]}
+{"kind":"shape","id":"sh/excju5gf","slide":1,"name":"cyan-arc-1","bbox":[900,4,370,648]}
+{"kind":"shape","id":"sh/zylknah0","slide":1,"name":"cyan-arc-2","bbox":[958,18,302,610]}
+{"kind":"shape","id":"sh/83ul0fyh","slide":1,"name":"logo-mark","bbox":[1094,32,26,26]}
+{"kind":"textbox","id":"sh/9on2tkz2","slide":1,"name":"logo-ai","text":"AI","textPreview":"AI","textChars":2,"textLines":1,"bbox":[1094,33,26,24]}
+{"kind":"textbox","id":"sh/m1c3y5gr","slide":1,"name":"logo-word","text":"AI Pioneers","textPreview":"AI Pioneers","textChars":11,"textLines":1,"bbox":[1127,33,112,26]}
+{"kind":"shape","id":"sh/n2lkrahc","slide":1,"name":"footer-rule","bbox":[54,674,1172,1]}
+{"kind":"textbox","id":"sh/wrel4fyt","slide":1,"name":"footer-left","text":"ASSIGNMENT 5  ·  RATE YOUR OWN AGENT","textPreview":"ASSIGNMENT 5  ·  RATE YOUR OWN AGENT","textChars":36,"textLines":1,"bbox":[58,686,460,18]}
+{"kind":"textbox","id":"sh/xsn2xkze","slide":1,"name":"footer-right","text":"AI Pioneers  ·  TUM     1","textPreview":"AI Pioneers  ·  TUM     1","textChars":25,"textLines":1,"bbox":[1010,686,215,18]}
+{"kind":"textbox","id":"sh/hsj6dorq","slide":1,"name":"eyebrow","text":"HIRING AGENT  ·  AUTONOMY ASSESSMENT","textPreview":"HIRING AGENT  ·  AUTONOMY ASSESSMENT","textChars":36,"textLines":1,"bbox":[58,38,600,24]}
+{"kind":"textbox","id":"sh/wrq5k3a5","slide":1,"name":"title","text":"The workflow qualifies as a multi-step agent","textPreview":"The workflow qualifies as a multi-step agent","textChars":44,"textLines":1,"bbox":[58,72,900,52]}
+{"kind":"textbox","id":"sh/vqhoby9k","slide":1,"name":"subtitle","text":"It plans, acts, observes and revises across a persisted run—while one coordinator still owns the full plan.","textPreview":"It plans, acts, observes and revises across a persisted run—while one coordinator still owns the full plan.","textChars":107,"textLines":1,"bbox":[58,127,1020,40]}
+{"kind":"shape","id":"sh/up8nitsz","slide":1,"name":"spectrum-line","bbox":[112,245,1052,1]}
+{"kind":"shape","id":"sh/5wj6h8rm","slide":1,"name":"stage-0","bbox":[77,203,116,84]}
+{"kind":"textbox","id":"sh/4va5o3a1","slide":1,"name":"stage-label-0","text":"Fixed\nworkflow","textPreview":"Fixed | workflow","textChars":14,"textLines":2,"bbox":[85,220,100,48]}
+{"kind":"shape","id":"sh/ju1ofy9w","slide":1,"name":"stage-1","bbox":[302,203,116,84]}
+{"kind":"textbox","id":"sh/itsnmtsb","slide":1,"name":"stage-label-1","text":"Routing","textPreview":"Routing","textChars":7,"textLines":1,"bbox":[310,220,100,48]}
+{"kind":"shape","id":"sh/l0f654ri","slide":1,"name":"stage-2","bbox":[517,203,116,84]}
+{"kind":"textbox","id":"sh/kz65czax","slide":1,"name":"stage-label-2","text":"Tool-calling\nloop","textPreview":"Tool-calling | loop","textChars":17,"textLines":2,"bbox":[525,220,100,48]}
+{"kind":"shape","id":"sh/cja5sjit","slide":1,"name":"stage-3","bbox":[742,203,116,84]}
+{"kind":"textbox","id":"sh/d4j61oze","slide":1,"name":"stage-label-3","text":"Multi-step\nagent","textPreview":"Multi-step | agent","textChars":16,"textLines":2,"bbox":[750,220,100,48]}
+{"kind":"shape","id":"sh/qhsnq90n","slide":1,"name":"current-tag","bbox":[755,184,90,24]}
+{"kind":"textbox","id":"sh/bi1ozeh8","slide":1,"name":"current-text","text":"CURRENT","textPreview":"CURRENT","textChars":7,"textLines":1,"bbox":[755,188,90,18]}
+{"kind":"shape","id":"sh/07u5wjip","slide":1,"name":"stage-4","bbox":[987,203,116,84]}
+{"kind":"textbox","id":"sh/l8365oza","slide":1,"name":"stage-label-4","text":"Multi-agent\nsystem","textPreview":"Multi-agent | system","textChars":18,"textLines":2,"bbox":[995,220,100,48]}
+{"kind":"textbox","id":"sh/y5snu90z","slide":1,"name":"why-header","text":"WHY THIS LEVEL","textPreview":"WHY THIS LEVEL","textChars":14,"textLines":1,"bbox":[58,329,290,25]}
+{"kind":"textbox","id":"sh/z6lo3ehk","slide":1,"name":"why-body","text":"• Nemotron creates a dependency-aware plan.\n• Approved tools verify status/company, score fit and prepare a grounded CV draft.\n• New observations decide whether to continue, stop or escalate.\n• Runs, steps, decisions and checkpoints persist across the process.","textPreview":"• Nemotron creates a dependency-aware plan. | • Approved tools verify status/company, score fit and prepare a grounded CV draft. | • New ...","textChars":260,"textLines":4,"bbox":[58,360,625,172]}
+{"kind":"shape","id":"sh/8bup03i1","slide":1,"name":"distinction-bg","bbox":[720,330,500,202]}
+{"kind":"textbox","id":"sh/9c3698zm","slide":1,"name":"distinction-head","text":"THE DECISION BOUNDARY","textPreview":"THE DECISION BOUNDARY","textChars":21,"textLines":1,"bbox":[752,354,420,24]}
+{"kind":"textbox","id":"sh/ji90fm50","slide":1,"name":"more-title","text":"More than a tool loop","textPreview":"More than a tool loop","textChars":21,"textLines":1,"bbox":[752,393,205,25]}
+{"kind":"textbox","id":"sh/ihgzmhof","slide":1,"name":"more-copy","text":"The agent plans dependencies, reflects on results, and can pause/resume across turns.","textPreview":"The agent plans dependencies, reflects on results, and can pause/resume across turns.","textChars":85,"textLines":1,"bbox":[752,423,205,72]}
+{"kind":"shape","id":"sh/5krihwnq","slide":1,"name":"divider","bbox":[982,392,1,103]}
+{"kind":"textbox","id":"sh/4jihor6l","slide":1,"name":"not-title","text":"Not yet multi-agent","textPreview":"Not yet multi-agent","textChars":19,"textLines":1,"bbox":[1007,393,188,25]}
+{"kind":"textbox","id":"sh/vep0bm5o","slide":1,"name":"not-copy","text":"One coordinator owns the complete plan; tools do not delegate work to one another.","textPreview":"One coordinator owns the complete plan; tools do not delegate work to one another.","textChars":82,"textLines":1,"bbox":[1007,423,188,72]}
+{"kind":"shape","id":"sh/udgziho3","slide":1,"name":"next-bg","bbox":[58,559,1162,78]}
+{"kind":"textbox","id":"sh/hg7idwnu","slide":1,"name":"next-label","text":"ONE STEP FURTHER","textPreview":"ONE STEP FURTHER","textChars":16,"textLines":1,"bbox":[82,578,185,18]}
+{"kind":"textbox","id":"sh/wfyhkr69","slide":1,"name":"next-copy","text":"Independent Discovery, Evaluation, CV and Safety agents would delegate evidence to a coordinating agent.","textPreview":"Independent Discovery, Evaluation, CV and Safety agents would delegate evidence to a coordinating agent.","textChars":104,"textLines":1,"bbox":[270,570,915,40]}
+{"kind":"notes","id":"nt/ya63vr","slide":1,"text":"The agent has moved through fixed orchestration, routing, and tool choice into a multi-step plan/act/observe/revise cycle. Stress that autonomy is determined by the process, not by the model name.\n\n[Sources]\n- User-provided assignment screenshots and implemented hiring-agent project audit (conversation, 2026-08-28).\n[/Sources]"}
+{"kind":"slide","id":"sl/gavgt9","slide":2,"title":"AI","textShapes":24}
+{"kind":"shape","id":"sh/2xcz2lof","slide":2,"name":"lavender-wash","bbox":[0,0,225,720]}
+{"kind":"shape","id":"sh/pknydgnq","slide":2,"name":"cyan-arc-1","bbox":[900,4,370,648]}
+{"kind":"shape","id":"sh/ozeh4b65","slide":2,"name":"cyan-arc-2","bbox":[958,18,302,610]}
+{"kind":"shape","id":"sh/fulg765o","slide":2,"name":"logo-mark","bbox":[1094,32,26,26]}
+{"kind":"textbox","id":"sh/etczy1o3","slide":2,"name":"logo-ai","text":"AI","textPreview":"AI","textChars":2,"textLines":1,"bbox":[1094,33,26,24]}
+{"kind":"textbox","id":"sh/1w3y9gnu","slide":2,"name":"logo-word","text":"AI Pioneers","textPreview":"AI Pioneers","textChars":11,"textLines":1,"bbox":[1127,33,112,26]}
+{"kind":"shape","id":"sh/gvuh0b69","slide":2,"name":"footer-rule","bbox":[54,674,1172,1]}
+{"kind":"textbox","id":"sh/7q1g365s","slide":2,"name":"footer-left","text":"ASSIGNMENT 5  ·  ADD A CHECKPOINT","textPreview":"ASSIGNMENT 5  ·  ADD A CHECKPOINT","textChars":33,"textLines":1,"bbox":[58,686,460,18]}
+{"kind":"textbox","id":"sh/6psfu1o7","slide":2,"name":"footer-right","text":"AI Pioneers  ·  TUM     2","textPreview":"AI Pioneers  ·  TUM     2","textChars":25,"textLines":1,"bbox":[1010,686,215,18]}
+{"kind":"textbox","id":"sh/4ji5w321","slide":2,"name":"eyebrow","text":"HUMAN-IN-THE-LOOP  ·  DRAFT-THEN-SEND GATE","textPreview":"HUMAN-IN-THE-LOOP  ·  DRAFT-THEN-SEND GATE","textChars":42,"textLines":1,"bbox":[58,38,650,24]}
+{"kind":"textbox","id":"sh/5kr6p8j6","slide":2,"name":"title","text":"A human gate blocks the final CV","textPreview":"A human gate blocks the final CV","textChars":32,"textLines":1,"bbox":[58,72,960,52]}
+{"kind":"textbox","id":"sh/ix0nudkv","slide":2,"name":"subtitle","text":"Approval protects an external employer-facing action without slowing low-risk research and drafting.","textPreview":"Approval protects an external employer-facing action without slowing low-risk research and drafting.","textChars":100,"textLines":1,"bbox":[58,127,980,36]}
+{"kind":"shape","id":"sh/3i9ony1g","slide":2,"name":"retrieve","bbox":[58,229,177,78]}
+{"kind":"shape","id":"sh/gvi5s32p","slide":2,"name":"match","bbox":[268,229,177,78]}
+{"kind":"shape","id":"sh/hwr6l83a","slide":2,"name":"validate","bbox":[478,229,177,78]}
+{"kind":"shape","id":"sh/utgnqtkj","slide":2,"name":"human-gate","bbox":[704,207,232,122]}
+{"kind":"shape","id":"sh/vu94jyl4","slide":2,"name":"pdf","bbox":[1002,229,177,78]}
+{"kind":"shape","id":"sh/0r254n29","slide":2,"bbox":[235,268,33,0]}
+{"kind":"shape","id":"sh/1sb6xsje","slide":2,"bbox":[445,268,33,0]}
+{"kind":"shape","id":"sh/98r6hsbi","slide":2,"bbox":[655,268,49,0]}
+{"kind":"shape","id":"sh/o7y58nud","slide":2,"bbox":[936,268,66,0]}
+{"kind":"textbox","id":"sh/n6pofits","slide":2,"name":"retrieve-t","text":"Retrieve job\nevidence","textPreview":"Retrieve job | evidence","textChars":21,"textLines":2,"bbox":[74,246,145,43]}
+{"kind":"textbox","id":"sh/m5gn6dc7","slide":2,"name":"match-t","text":"Match verified\nCV facts","textPreview":"Match verified | CV facts","textChars":23,"textLines":2,"bbox":[284,246,145,43]}
+{"kind":"textbox","id":"sh/147md8bm","slide":2,"name":"validate-t","text":"Validate draft\n+ fact IDs","textPreview":"Validate draft | + fact IDs","textChars":25,"textLines":2,"bbox":[494,246,145,43]}
+{"kind":"textbox","id":"sh/03y54nu1","slide":2,"name":"gate-tag","text":"REQUIRED CHECKPOINT","textPreview":"REQUIRED CHECKPOINT","textChars":19,"textLines":1,"bbox":[728,224,184,18]}
+{"kind":"textbox","id":"sh/zip4bitg","slide":2,"name":"gate-t","text":"Human reviews\nand decides","textPreview":"Human reviews | and decides","textChars":25,"textLines":2,"bbox":[728,251,184,48]}
+{"kind":"textbox","id":"sh/ehgn2dcv","slide":2,"name":"pdf-t","text":"Generate &\ndownload PDF","textPreview":"Generate & | download PDF","textChars":23,"textLines":2,"bbox":[1018,246,145,43]}
+{"kind":"shape","id":"sh/dg7m98bq","slide":2,"name":"gate-stem","bbox":[820,330,1,44]}
+{"kind":"shape","id":"sh/cfe503u5","slide":2,"name":"branch","bbox":[690,374,260,1]}
+{"kind":"shape","id":"sh/i9sbu5or","slide":2,"name":"branch-APPROVE","bbox":[710,374,1,18]}
+{"kind":"shape","id":"sh/3a1cna5c","slide":2,"name":"outcome-APPROVE","bbox":[665,392,90,31]}
+{"kind":"textbox","id":"sh/4butwf6h","slide":2,"name":"outcome-label-APPROVE","text":"APPROVE","textPreview":"APPROVE","textChars":7,"textLines":1,"bbox":[665,400,90,16]}
+{"kind":"textbox","id":"sh/5c3upkn2","slide":2,"name":"outcome-copy-APPROVE","text":"Unlock PDF","textPreview":"Unlock PDF","textChars":10,"textLines":1,"bbox":[650,431,120,18]}
+{"kind":"shape","id":"sh/u5sbq5of","slide":2,"name":"branch-REVISE","bbox":[845,374,1,18]}
+{"kind":"shape","id":"sh/v61cja50","slide":2,"name":"outcome-REVISE","bbox":[800,392,90,31]}
+{"kind":"textbox","id":"sh/g7atsf6l","slide":2,"name":"outcome-label-REVISE","text":"REVISE","textPreview":"REVISE","textChars":6,"textLines":1,"bbox":[800,400,90,16]}
+{"kind":"textbox","id":"sh/h8julkn6","slide":2,"name":"outcome-copy-REVISE","text":"Return to draft","textPreview":"Return to draft","textChars":15,"textLines":1,"bbox":[785,431,120,18]}
+{"kind":"shape","id":"sh/6h8bmloj","slide":2,"name":"branch-REJECT","bbox":[980,374,1,18]}
+{"kind":"shape","id":"sh/72hsfq54","slide":2,"name":"outcome-REJECT","bbox":[935,392,90,31]}
+{"kind":"textbox","id":"sh/zu18r69k","slide":2,"name":"outcome-label-REJECT","text":"REJECT","textPreview":"REJECT","textChars":6,"textLines":1,"bbox":[935,400,90,16]}
+{"kind":"textbox","id":"sh/yts7y1sz","slide":2,"name":"outcome-copy-REJECT","text":"Stop the run","textPreview":"Stop the run","textChars":12,"textLines":1,"bbox":[920,431,120,18]}
+{"kind":"textbox","id":"sh/lwjqtwrq","slide":2,"name":"details-head","text":"WHAT THE REVIEWER SEES","textPreview":"WHAT THE REVIEWER SEES","textChars":22,"textLines":1,"bbox":[58,485,330,24]}
+{"kind":"textbox","id":"sh/0vap0ba5","slide":2,"name":"details-body","text":"Target job + company  ·  tailored profile and bullets  ·  stable fact IDs  ·  validation result","textPreview":"Target job + company  ·  tailored profile and bullets  ·  stable fact IDs  ·  validation result","textChars":95,"textLines":1,"bbox":[58,516,655,52]}
+{"kind":"textbox","id":"sh/bq18nm9o","slide":2,"name":"reason-head","text":"WHY HUMAN ATTENTION IS REQUIRED","textPreview":"WHY HUMAN ATTENTION IS REQUIRED","textChars":31,"textLines":1,"bbox":[760,485,420,24]}
+{"kind":"textbox","id":"sh/qps7uhs3","slide":2,"name":"reason-body","text":"The CV reaches an external employer. Ambiguous wording or invented claims can damage credibility and are hard to undo.","textPreview":"The CV reaches an external employer. Ambiguous wording or invented claims can damage credibility and are hard to undo.","textChars":118,"textLines":1,"bbox":[760,516,430,68]}
+{"kind":"shape","id":"sh/dsjqpwru","slide":2,"name":"implemented","bbox":[58,602,1132,44]}
+{"kind":"textbox","id":"sh/crapwra9","slide":2,"name":"implemented-text","text":"IMPLEMENTED: persistent checkpoint  ·  approve / revise / reject  ·  PDF remains blocked until approval","textPreview":"IMPLEMENTED: persistent checkpoint  ·  approve / revise / reject  ·  PDF remains blocked until approval","textChars":103,"textLines":1,"bbox":[78,614,1090,19]}
+{"kind":"notes","id":"nt/gavgt9","slide":2,"text":"The gate sits after evidence validation and before the final downloadable PDF. Approval triggers revalidation and PDF generation. Revision returns the run to drafting, rejection stops it, and no response leaves the run paused.\n\n[Sources]\n- User-provided assignment screenshots and implemented hiring-agent project audit (conversation, 2026-08-28).\n[/Sources]"}

@@ -72,11 +72,11 @@ import {
   type StudyRun,
 } from "@/lib/assessment-model";
 import {
-  analyseFca,
   summarizeProfile,
   type IntervalPoint,
   type RestrictionWindow,
 } from "@/lib/fca-engine";
+import { runCanonicalFcaProfile } from "@/features/analytics/fca-client";
 import { screenGermanOperator } from "@/lib/german-grid-screening";
 
 export const Route = createFileRoute("/assessments/$id")({
@@ -612,7 +612,7 @@ function ExecutionRoom({
       notes: `Invitee role: ${invitedRole}. Send the invitation through your approved company email channel.`,
     });
     form.reset();
-    toast.success("Collaborator registered; they can accept after signing in");
+    toast.success("Collaborator registered");
     await refresh();
   }
   async function removeCollaborator(id: string) {
@@ -855,7 +855,7 @@ function ExecutionRoom({
               </span>
               {!item.accepted_at ? (
                 <a
-                  href={`mailto:${encodeURIComponent(item.invited_email)}?subject=${encodeURIComponent(`GridPulse review invitation: ${site.name}`)}&body=${encodeURIComponent(`You have been invited to review ${site.name} as ${label(item.role)}. Sign in to GridPulse using this email address to accept access.\n\nOpen the dedicated review portal: https://gridpulseinsights.com/operator-review/${site.id}`)}`}
+                  href={`mailto:${encodeURIComponent(item.invited_email)}?subject=${encodeURIComponent(`GridPulse review invitation: ${site.name}`)}&body=${encodeURIComponent(`You have been invited to review ${site.name} as ${label(item.role)}.\n\nOpen the dedicated review portal: https://gridpulseinsights.com/operator-review/${site.id}`)}`}
                 >
                   Send invitation
                 </a>
@@ -2248,7 +2248,7 @@ function Scenarios({
           }
         : null;
     const analysis = profile
-      ? analyseFca(profile.points, mode, importLimit, exportLimit, restrictionWindow, energyValue)
+      ? await runCanonicalFcaProfile(profile.points, mode, importLimit, exportLimit, restrictionWindow, energyValue)
       : null;
     const { error } = await supabase.from("connection_scenarios").insert({
       site_id: site.id,

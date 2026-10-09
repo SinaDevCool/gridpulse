@@ -1,0 +1,1117 @@
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import {
+  Activity,
+  BatteryCharging,
+  Bolt,
+  Gauge,
+  Info,
+  Settings2,
+  ShieldCheck,
+  TrendingDown,
+  Zap,
+} from "lucide-react";
+import {
+  Area,
+  CartesianGrid,
+  ComposedChart,
+  Line,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import { type EvidencedValue } from "./evidence";
+import { OperationsEvidenceBadge, OperationsMetricCard } from "./components";
+import {
+  buildOperationsScenario,
+  defaultOperationsScenario,
+  operationsScenarioSchema,
+  type OperationsOverviewModel,
+  type OperationsScenario,
+  type OperationsScenarioKind,
+} from "./scenario-engine";
+import { ComputeWorkloadsView } from "./ComputeWorkloadsView";
+import { PowerBatteryView } from "./PowerBatteryView";
+import { fetchOperationsCapabilities, requestOperationsAssessment } from "@/lib/operations-api";
+import {
+  ChartSummaryMetric,
+  OperationsChartLegend,
+  OperationsChartSummary,
+  OperationsTooltipShell,
+  TooltipRow,
+  formatDurationFromIntervals,
+  formatMw,
+} from "./visualization";
+import {
+  operatingWindowLabels,
+  operationsModeLabels,
+  scopeOperationsModel,
+  type OperatingWindowPreset,
+  type OperationsDataMode,
+} from "./operating-context";
+import { OperationsSelect } from "./OperationsSelect";
+import { CanonicalPlanningWorkbench } from "../analytics/CanonicalPlanningWorkbench";
+import { formatOperationsTime } from "./presentation";
+import { assessOperationsCompliance, authorizeDispatch } from "./operations-assurance";
+import {
+  OperatingEnvelopeMap,
+  OperationsDecisionBrief,
+  OperationsEvidenceRail,
+  OperationsLifecycle,
+  ScenarioDecisionTable,
+} from "./OperationsDecision";
+
+export type OperationsView = "overview" | "compute" | "power";
+
+const number = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
+const integer = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
+
+export function OperationsDashboard({
+  view,
+  window,
+  mode,
+}: {
+  view: OperationsView;
+  window: OperatingWindowPreset;
+  mode: OperationsDataMode;
+}) {
+  const navigate = useNavigate({ from: "/operations" });
+  const [scenario, setScenario] = useState(defaultOperationsScenario);
+  const [selected, setSelected] = useState<OperationsScenarioKind>("battery_workload");
+  const [announcement, setAnnouncement] = useState("Default scenario loaded.");
+  const [serverModel, setServerModel] = useState<OperationsOverviewModel | null>(null);
+  const [assessmentIdentity, setAssessmentIdentity] = useState<{
+    id: string;
+    fingerprint: string;
+    generatedAt: string;
+  } | null>(null);
+  const [backendState, setBackendState] = useState<"checking" | "verified" | "unavailable">(
+    "checking",
+  );
+  const fullModel = serverModel ?? buildOperationsScenario(scenario);
+  const model = scopeOperationsModel(fullModel, window);
+  const viewCopy =
+    view === "power"
+      ? {
+          eyebrow: "Data-Centre Power Operations",
+          title: "Power & Battery",
+          description: "Optimise facility power with battery storage and workload flexibility.",
+          evidence:
+            "Facility and battery values are scenario assumptions until measured evidence is connected.",
+        }
+      : view === "compute"
+        ? {
+            eyebrow: "Data-Centre Power Operations",
+            title: "Power Operations",
+            description: "Translate facility limits into compute and workload decisions.",
+            evidence:
+              "GPU workload behaviour uses the configured scenario until accepted telemetry is connected.",
+          }
+        : {
+            eyebrow: "Data-Centre Power Operations",
+            title: "Power Operations",
+            description: "Translate facility limits into compute, battery, and workload decisions.",
+            evidence:
+              "Results use configured assumptions until measured facility evidence is connected.",
+          };
+
+  useEffect(() => {
+    let active = true;
+    Promise.all([
+      requestOperationsAssessment<OperationsOverviewModel>({ kind: "overview", scenario }),
+      fetchOperationsCapabilities(),
+    ])
+      .then(([assessment]) => {
+        if (!active) return;
+        setServerModel(assessment.result);
+        setAssessmentIdentity({
+          id: assessment.assessmentId,
+          fingerprint: assessment.inputFingerprint,
+          generatedAt: assessment.generatedAt,
+        });
+        setBackendState("verified");
+      })
+      .catch(() => {
+        if (!active) return;
+        setBackendState("unavailable");
+      });
+    return () => {
+      active = false;
+    };
+  }, [scenario]);
+
+  return (
+    <main id="main-content" className={`operations-v2 operations-v2--${view}`}>
+      <header className="operations-v2-header">
+        <div>
+          <p className="context-label">{viewCopy.eyebrow}</p>
+          <h1>{viewCopy.title}</h1>
+          <p>{viewCopy.description}</p>
+        </div>
+        <div className="operations-v2-context">
+          <ScenarioEditor
+            scenario={scenario}
+            onApply={(next) => {
+              setServerModel(null);
+              setAssessmentIdentity(null);
+              setBackendState("checking");
+              setScenario(next);
+              setAnnouncement("Scenario assumptions updated. Dashboard results recalculated.");
+            }}
+          />
+        </div>
+      </header>
+
+      <div className="operations-v2-nav-row">
+        <nav className="operations-v2-tabs" aria-label="Power Operations views">
+          <OperationsTab
+            id="overview"
+            label="Overview"
+            current={view}
+            window={window}
+            mode={mode}
+          />
+          <OperationsTab
+            id="compute"
+            label="Compute & Workloads"
+            current={view}
+            window={window}
+            mode={mode}
+          />
+          <OperationsTab
+            id="power"
+            label="Power & Battery"
+            current={view}
+            window={window}
+            mode={mode}
+          />
+        </nav>
+        <p className="operations-v2-provenance">
+          <Info aria-hidden="true" />
+          <span>
+            <strong>Scenario assessment—not live control</strong>
+          </span>
+        </p>
+      </div>
+
+      <section className="operations-context-strip" aria-label="Operating context">
+        <div className="operations-context-field">
+          <span>Facility</span>
+          <strong>{scenario.facilityName}</strong>
+        </div>
+        <div className="operations-context-field">
+          <OperationsSelect
+            name="operating-window"
+            label={mode === "historical" ? "Scenario window (inactive)" : "Operating Window"}
+            disabled={mode === "historical"}
+            value={window}
+            options={Object.entries(operatingWindowLabels).map(([value, label]) => ({
+              value: value as OperatingWindowPreset,
+              label,
+            }))}
+            onChange={(nextWindow) =>
+              navigate({
+                search: { view, window: nextWindow, mode },
+                replace: true,
+              })
+            }
+          />
+        </div>
+        <div className="operations-context-field">
+          <OperationsSelect
+            name="data-mode"
+            label="Data Mode"
+            value={mode}
+            options={Object.entries(operationsModeLabels).map(([value, label]) => ({
+              value: value as OperationsDataMode,
+              label,
+              disabled: value === "live" || (value === "historical" && view !== "power"),
+              description:
+                value === "scenario"
+                  ? "Configured inputs"
+                  : value === "historical"
+                    ? "Power & Battery evidence workspace"
+                    : "Live connector not connected",
+            }))}
+            onChange={(nextMode) =>
+              navigate({
+                search: { view, window, mode: nextMode },
+                replace: true,
+              })
+            }
+          />
+        </div>
+        <div className="operations-context-health" role="status">
+          <i className={backendState} aria-hidden="true" />
+          <span>
+            <strong>
+              {backendState === "verified"
+                ? "Calculation service available"
+                : backendState === "checking"
+                  ? "Calculation pending…"
+                  : "Browser calculation"}
+            </strong>
+            {mode === "historical"
+              ? "Uploaded evidence workspace"
+              : `${model.intervals.length} displayed intervals · Scenario only`}
+          </span>
+        </div>
+      </section>
+      <p className="operations-assessment-date" hidden={mode === "historical"}>
+        Scenario data: {formatOperationsTime(model.intervals[0].timestamp, true)} –{" "}
+        {formatOperationsTime(model.intervals.at(-1)!.timestamp)}. Window presets select simulated
+        intervals, not a live forecast.
+      </p>
+
+      <p className="sr-only" aria-live="polite">
+        {announcement}
+      </p>
+      {view === "overview" ? (
+        <OverviewView model={model} selected={selected} onSelect={setSelected} />
+      ) : null}
+      {/* Keep evidence workspaces mounted across tab navigation. Native hidden
+          removes inactive controls from both layout and accessibility tree. */}
+      <div hidden={view !== "compute"}>
+        <ComputeWorkloadsView model={fullModel} displayModel={model} />
+      </div>
+      <div hidden={view !== "power"}>
+        <PowerBatteryView
+          model={fullModel}
+          displayModel={model}
+          mode={mode === "historical" ? "historical" : "scenario"}
+          onModeChange={(nextMode) =>
+            navigate({ search: { view: "power", window, mode: nextMode }, replace: true })
+          }
+        />
+      </div>
+      <details className="operations-assurance-panel operations-technical-details">
+        <summary>Assessment details & advanced planning</summary>
+        <p>
+          {assessmentIdentity
+            ? `Assessment ${assessmentIdentity.id} · Calculated ${formatOperationsTime(assessmentIdentity.generatedAt, true)}`
+            : "Calculation pending or browser demonstration—not an operational plan"}
+        </p>
+        <p>
+          Full planning horizon: {fullModel.intervals.length} intervals. Recovery and battery state
+          are calculated over this horizon before display-window filtering.
+        </p>
+        <details>
+          <summary>Canonical planning, rolling analysis & historical replay</summary>
+          <p>
+            Authenticated model-contract workspace; separate from the aggregate scenario
+            demonstration. No physical commands are issued.
+          </p>
+          <CanonicalPlanningWorkbench />
+        </details>
+      </details>
+    </main>
+  );
+}
+
+function OperationsTab({
+  id,
+  label,
+  current,
+  window,
+  mode,
+}: {
+  id: OperationsView;
+  label: string;
+  current: OperationsView;
+  window: OperatingWindowPreset;
+  mode: OperationsDataMode;
+}) {
+  return (
+    <Link
+      to="/operations"
+      search={{ view: id, window, mode: id === "power" ? mode : "scenario" }}
+      className={current === id ? "active" : undefined}
+      aria-current={current === id ? "page" : undefined}
+    >
+      {label}
+    </Link>
+  );
+}
+
+function OverviewView({
+  model,
+  selected,
+  onSelect,
+}: {
+  model: OperationsOverviewModel;
+  selected: OperationsScenarioKind;
+  onSelect: (kind: OperationsScenarioKind) => void;
+}) {
+  const selectedSummary =
+    model.summaries.find((item) => item.kind === selected) ?? model.summaries[2];
+  const snapshot = peakInterval(model);
+  const compliance = assessOperationsCompliance({
+    facilityEnergyMwh: null,
+    itEnergyMwh: null,
+    renewableSharePercent: null,
+    wasteHeatMwh: null,
+    heatTemperatureC: null,
+    measurementCoveragePercent: 0,
+  });
+  const dispatchGate = authorizeDispatch({
+    mode: "scenario",
+    evidenceReady: compliance.evidenceReady,
+    connectorHealthy: false,
+    agreementCurrent: false,
+    approvalCount: 0,
+    automaticDispatchEnabled: false,
+  });
+  return (
+    <section className="operations-v2-view" aria-labelledby="operations-overview-title">
+      <h2 id="operations-overview-title" className="sr-only">
+        Operations Overview
+      </h2>
+      <OperationsDecisionBrief model={model} selected={selected} />
+      <div className="operations-v2-kpis operations-v2-kpis--outcomes">
+        <MetricCard
+          icon={<Activity />}
+          label="Peak import after response"
+          metric={{ ...model.metrics.facilityDemand, value: selectedSummary.peakDemandMw }}
+          note={`${selectedSummary.label} · maximum in selected window`}
+        />
+        <MetricCard
+          icon={<Bolt />}
+          label="Operational Limit"
+          metric={model.metrics.operationalLimit}
+          note="Configured facility limit"
+        />
+        <MetricCard
+          icon={<Gauge />}
+          label="Minimum target headroom"
+          metric={{
+            ...model.metrics.remainingMargin,
+            value:
+              model.scenario.importLimitMw -
+              model.scenario.safetyReserveMw -
+              selectedSummary.peakDemandMw,
+          }}
+          note="Safety target minus selected peak import"
+        />
+      </div>
+
+      <div className="operations-v2-overview-grid">
+        <DemandChart model={model} selected={selected} />
+        <article id="operations-response" className="operations-v2-recommendation">
+          <header>
+            <Zap aria-hidden="true" />
+            <div>
+              <p className="context-label">Selected response</p>
+              <h3>{selectedSummary.label}</h3>
+            </div>
+          </header>
+          <p className="operations-v2-recommendation-copy">
+            Test up to{" "}
+            <strong>
+              {number.format(
+                selected === "baseline" || selected === "workload"
+                  ? 0
+                  : model.recommendation.batteryMw,
+              )}
+              &nbsp;MW
+            </strong>{" "}
+            of battery response and shift{" "}
+            <strong>
+              {number.format(
+                selected === "battery_workload"
+                  ? model.recommendation.workloadMwh
+                  : selected === "workload"
+                    ? model.intervals.reduce(
+                        (sum, point) => sum + point.workloadOnlyShiftMw * 0.25,
+                        0,
+                      )
+                    : 0,
+              )}
+              &nbsp;MWh
+            </strong>{" "}
+            of flexible demand.
+          </p>
+          <dl>
+            <ImpactRow
+              label="Required Response"
+              value={`${number.format(Math.max(0, snapshot.baselineDemandMw - (model.scenario.importLimitMw - model.scenario.safetyReserveMw)))} MW`}
+            />
+            <ImpactRow
+              label="Battery Contribution"
+              value={`${number.format(selected === "baseline" || selected === "workload" ? 0 : model.recommendation.batteryMw)} MW`}
+            />
+            <ImpactRow
+              label="Workload Contribution"
+              value={`${number.format(selected === "battery_workload" ? Math.max(...model.intervals.map((point) => point.workloadShiftMw)) : selected === "workload" ? Math.max(...model.intervals.map((point) => point.workloadOnlyShiftMw)) : 0)} MW`}
+            />
+            <ImpactRow
+              label="Violation Intervals Avoided"
+              value={integer.format(
+                Math.max(
+                  0,
+                  model.summaries[0].violationIntervals - selectedSummary.violationIntervals,
+                ),
+              )}
+            />
+            <ImpactRow
+              label="Reference GPU-hour equivalent (not delivered compute)"
+              value={`${integer.format(selectedSummary.additionalGpuHours)} h`}
+            />
+          </dl>
+          <div className="operations-v2-readonly">
+            <ShieldCheck aria-hidden="true" />
+            <span>Read-only scenario. No physical control command will be sent.</span>
+          </div>
+        </article>
+      </div>
+      <section
+        className="operations-scenario-comparison"
+        aria-labelledby="scenario-comparison-title"
+      >
+        <p className="context-label">Scenario comparison</p>
+        <h3 id="scenario-comparison-title">Compare operational responses</h3>
+        <p className="operations-chart-purpose">
+          Peak and exposure use the selected display window. Recovery obligations remain assessed
+          over the full planning horizon.
+        </p>
+        <ScenarioDecisionTable model={model} selected={selected} onSelect={onSelect} />
+      </section>
+      <details className="operations-assurance-panel">
+        <summary>Operating envelope & uncertainty</summary>
+        <OperatingEnvelopeMap model={model} />
+      </details>
+      <OperationsEvidenceRail model={model} />
+      <details className="operations-assurance-panel">
+        <summary>Planning assumptions & recovery obligations</summary>
+        <OperationsLifecycle />
+        <ul>
+          {model.planningWarnings.map((warning) => (
+            <li key={warning}>{warning}</li>
+          ))}
+        </ul>
+        <p>
+          Cost unavailable until a reviewed tariff and full-horizon canonical calculation are
+          supplied.
+        </p>
+      </details>
+      <details id="operations-assurance" className="operations-assurance-panel">
+        <summary>Evidence, verification and control readiness</summary>
+        <div className="operations-assurance-grid">
+          <section>
+            <span>Measured verification</span>
+            <strong>Awaiting observed response</strong>
+            <p>
+              Predicted and delivered response remain separate until interval evidence is imported.
+            </p>
+          </section>
+          <section>
+            <span>Operational evidence</span>
+            <strong>{compliance.evidenceReady ? "Evidence ready" : "Evidence incomplete"}</strong>
+            <p>{compliance.missing.slice(0, 2).join(" · ") || "Required evidence is aligned."}</p>
+          </section>
+          <section>
+            <span>Economics</span>
+            <strong>Disabled in scenario mode</strong>
+            <p>Cost selection follows technical feasibility and never changes the safe envelope.</p>
+          </section>
+          <section>
+            <span>Physical dispatch</span>
+            <strong>{dispatchGate.authorized ? "Authorized" : "Locked"}</strong>
+            <p>{dispatchGate.reasons[0]}</p>
+          </section>
+        </div>
+      </details>
+    </section>
+  );
+}
+
+function DemandChart({
+  model,
+  selected,
+  compact = false,
+}: {
+  model: OperationsOverviewModel;
+  selected: OperationsScenarioKind;
+  compact?: boolean;
+}) {
+  const selectedKey =
+    selected === "baseline"
+      ? "baselineDemandMw"
+      : selected === "battery"
+        ? "batteryDemandMw"
+        : selected === "workload"
+          ? "workloadDemandMw"
+          : "combinedDemandMw";
+  const baseline = model.summaries[0];
+  const selectedSummary =
+    model.summaries.find((summary) => summary.kind === selected) ?? model.summaries[2];
+  const selectedName =
+    selected === "baseline"
+      ? "Baseline"
+      : selected === "battery"
+        ? "Battery response"
+        : selected === "workload"
+          ? "Workload only"
+          : "Battery + workload";
+  const targetMw = model.scenario.importLimitMw - model.scenario.safetyReserveMw;
+  const [showUncertainty, setShowUncertainty] = useState(false);
+  const chartData = model.intervals.map((point, index) => {
+    const uncertainty = Math.max(0.8, point.baselineDemandMw * (0.018 + index * 0.00008));
+    return {
+      ...point,
+      riskAdjustedCeilingMw:
+        model.operatingEnvelope.intervals[index]?.riskAdjustedCeilingMw ?? targetMw,
+      forecastBand: [
+        Number(Math.max(0, point.baselineDemandMw - uncertainty).toFixed(2)),
+        Number((point.baselineDemandMw + uncertainty).toFixed(2)),
+      ],
+    };
+  });
+  return (
+    <article className={`operations-v2-chart-card${compact ? " compact" : ""}`}>
+      <ChartHeader
+        eyebrow="24-Hour Scenario"
+        title="Facility Demand vs Operating Target"
+        badge="Simulated"
+      />
+      <p className="operations-chart-purpose">
+        Baseline compared with <strong>{selectedName}</strong>. The safety target preserves the
+        configured reserve below the facility limit.
+      </p>
+      <label className="operations-chart-option">
+        <input
+          type="checkbox"
+          checked={showUncertainty}
+          onChange={(event) => setShowUncertainty(event.target.checked)}
+        />
+        Show illustrative planning range & risk-adjusted envelope
+      </label>
+      <OperationsChartSummary>
+        <ChartSummaryMetric label="Baseline Peak" value={formatMw(baseline.peakDemandMw)} />
+        <ChartSummaryMetric
+          label="Response Peak"
+          value={formatMw(selectedSummary.peakDemandMw)}
+          tone="response"
+        />
+        <ChartSummaryMetric
+          label="Peak Reduction"
+          value={formatMw(Math.max(0, baseline.peakDemandMw - selectedSummary.peakDemandMw))}
+          tone={selectedSummary.feasible ? "positive" : undefined}
+        />
+        <ChartSummaryMetric
+          label="Limit Exposure"
+          value={`${formatDurationFromIntervals(baseline.violationIntervals)} → ${formatDurationFromIntervals(selectedSummary.violationIntervals)}`}
+          tone={!selectedSummary.feasible ? "limit" : "positive"}
+        />
+      </OperationsChartSummary>
+      <OperationsChartLegend
+        items={[
+          {
+            label: "Baseline demand",
+            detail: "MW · before response",
+            tone: "demand",
+            mark: "area",
+          },
+          ...(showUncertainty
+            ? [
+                {
+                  label: "Planning range",
+                  detail: "MW · illustrative, not calibrated",
+                  tone: "neutral" as const,
+                  mark: "area" as const,
+                },
+              ]
+            : []),
+          ...(selected !== "baseline"
+            ? [{ label: selectedName, detail: "MW · selected response", tone: "response" as const }]
+            : []),
+          {
+            label: "Safety target",
+            detail: `${formatMw(targetMw)} · assumption`,
+            tone: "target",
+            mark: "dash",
+          },
+          {
+            label: "Facility limit",
+            detail: `${formatMw(model.scenario.importLimitMw)} · assumption`,
+            tone: "limit",
+            mark: "dash",
+          },
+          ...(showUncertainty
+            ? [
+                {
+                  label: "Risk-adjusted envelope",
+                  detail: "MW · uncertainty adjusted",
+                  tone: "positive" as const,
+                  mark: "dash" as const,
+                },
+              ]
+            : []),
+        ]}
+      />
+      <div
+        className="operations-v2-chart"
+        role="img"
+        aria-label="Facility demand scenarios compared with the configured operating limit"
+      >
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart
+            data={chartData}
+            margin={{ top: 12, right: 18, left: 4, bottom: 4 }}
+            accessibilityLayer
+          >
+            <CartesianGrid stroke="var(--ops-chart-grid)" vertical={false} />
+            <XAxis dataKey="label" minTickGap={36} tickLine={false} axisLine={false} />
+            <YAxis
+              domain={[
+                0,
+                Math.ceil(
+                  Math.max(
+                    model.scenario.importLimitMw * 1.15,
+                    ...model.intervals.map((point) => point.baselineDemandMw),
+                  ) / 10,
+                ) * 10,
+              ]}
+              unit=" MW"
+              tickLine={false}
+              axisLine={false}
+            />
+            <Tooltip content={<OperationsTooltip />} />
+            <ReferenceLine
+              y={targetMw}
+              stroke="var(--ops-target)"
+              strokeDasharray="3 5"
+              label={{
+                value: `${number.format(targetMw)} MW target`,
+                fill: "var(--ops-target)",
+                position: "insideTopRight",
+              }}
+            />
+            {showUncertainty ? (
+              <Line
+                dataKey="riskAdjustedCeilingMw"
+                name="Risk-adjusted envelope"
+                stroke="var(--ops-positive)"
+                strokeWidth={1.5}
+                strokeDasharray="2 5"
+                dot={false}
+                isAnimationActive={false}
+              />
+            ) : null}
+            <ReferenceLine
+              y={model.scenario.importLimitMw}
+              stroke="var(--ops-limit)"
+              strokeDasharray="7 5"
+              label={{
+                value: `${model.scenario.importLimitMw} MW limit`,
+                fill: "var(--ops-limit)",
+                position: "insideBottomLeft",
+              }}
+            />
+            {showUncertainty ? (
+              <Area
+                dataKey="forecastBand"
+                name="Planning range"
+                stroke="none"
+                fill="var(--ops-forecast-fill)"
+                fillOpacity={0.55}
+                isAnimationActive={false}
+              />
+            ) : null}
+            <Area
+              dataKey="baselineDemandMw"
+              name="Baseline Demand"
+              stroke="var(--ops-demand)"
+              fill="var(--ops-demand-fill)"
+              strokeWidth={2}
+            />
+            {selected !== "baseline" ? (
+              <Line
+                dataKey={selectedKey}
+                name={selected === "battery" ? "Battery Response" : "Battery + Workload"}
+                stroke="var(--ops-response)"
+                strokeWidth={3}
+                dot={false}
+              />
+            ) : null}
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+      <AccessibleIntervalTable model={model} mode="power" />
+    </article>
+  );
+}
+
+function ScenarioComparison({
+  model,
+  selected,
+  onSelect,
+  compact = false,
+}: {
+  model: OperationsOverviewModel;
+  selected: OperationsScenarioKind;
+  onSelect: (kind: OperationsScenarioKind) => void;
+  compact?: boolean;
+}) {
+  return (
+    <section
+      className={`operations-v2-comparison${compact ? " compact" : ""}`}
+      aria-labelledby={`scenario-comparison-${compact ? "compact" : "full"}`}
+    >
+      <header>
+        <div>
+          <p className="context-label">Scenario Comparison</p>
+          <h3 id={`scenario-comparison-${compact ? "compact" : "full"}`}>
+            Compare Operational Responses
+          </h3>
+        </div>
+        <small>All results simulated</small>
+      </header>
+      <div className="operations-v2-comparison-grid">
+        {model.summaries.map((summary) => (
+          <button
+            type="button"
+            key={summary.kind}
+            className={selected === summary.kind ? "selected" : ""}
+            onClick={() => onSelect(summary.kind)}
+            aria-pressed={selected === summary.kind}
+          >
+            <span>
+              <i aria-hidden="true" />
+              {summary.label}
+            </span>
+            <dl>
+              <div>
+                <dt>Limit Violations</dt>
+                <dd>{summary.violationIntervals}</dd>
+              </div>
+              <div>
+                <dt>Peak Demand</dt>
+                <dd>{number.format(summary.peakDemandMw)} MW</dd>
+              </div>
+              {!compact ? (
+                <div>
+                  <dt>Total Energy</dt>
+                  <dd>{number.format(summary.totalEnergyMwh)} MWh</dd>
+                </div>
+              ) : null}
+              <div>
+                <dt>GPU-Hours</dt>
+                <dd>{integer.format(summary.additionalGpuHours)} h</dd>
+              </div>
+            </dl>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ScenarioEditor({
+  scenario,
+  onApply,
+}: {
+  scenario: OperationsScenario;
+  onApply: (scenario: OperationsScenario) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState(scenario);
+  const [error, setError] = useState("");
+  const [interactive, setInteractive] = useState(false);
+  useEffect(() => setInteractive(true), []);
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    const parsed = operationsScenarioSchema.safeParse(draft);
+    if (!parsed.success) {
+      setError(parsed.error.issues[0]?.message ?? "Check the scenario assumptions.");
+      return;
+    }
+    onApply(parsed.data);
+    setError("");
+    setOpen(false);
+  }
+  return (
+    <div className="operations-v2-editor">
+      <button
+        type="button"
+        className="operations-v2-configure"
+        disabled={!interactive}
+        onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+      >
+        <Settings2 aria-hidden="true" />
+        Configure Scenario
+      </button>
+      {open ? (
+        <form onSubmit={submit} className="operations-v2-editor-panel">
+          <header>
+            <div>
+              <p className="context-label">Scenario Assumptions</p>
+              <h2>Configure Scenario</h2>
+            </div>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              aria-label="Close scenario configuration"
+            >
+              ×
+            </button>
+          </header>
+          <div className="operations-v2-editor-grid">
+            <NumberField
+              label="Facility Limit"
+              unit="MW"
+              value={draft.importLimitMw}
+              onChange={(value) => setDraft({ ...draft, importLimitMw: value })}
+            />
+            <NumberField
+              label="Safety Reserve"
+              unit="MW"
+              value={draft.safetyReserveMw}
+              onChange={(value) => setDraft({ ...draft, safetyReserveMw: value })}
+            />
+            <NumberField
+              label="PUE"
+              value={draft.pue}
+              step="0.01"
+              onChange={(value) => setDraft({ ...draft, pue: value })}
+            />
+            <NumberField
+              label="GPU Count"
+              value={draft.gpuCount}
+              step="1"
+              onChange={(value) => setDraft({ ...draft, gpuCount: value })}
+            />
+            <NumberField
+              label="GPU Active Power"
+              unit="W"
+              value={draft.gpuActivePowerWatts}
+              onChange={(value) => setDraft({ ...draft, gpuActivePowerWatts: value })}
+            />
+            <NumberField
+              label="Battery Power"
+              unit="MW"
+              value={draft.battery.maximumPowerMw}
+              onChange={(value) =>
+                setDraft({ ...draft, battery: { ...draft.battery, maximumPowerMw: value } })
+              }
+            />
+            <NumberField
+              label="Battery Energy"
+              unit="MWh"
+              value={draft.battery.usableEnergyMwh}
+              onChange={(value) =>
+                setDraft({ ...draft, battery: { ...draft.battery, usableEnergyMwh: value } })
+              }
+            />
+            <NumberField
+              label="Shiftable Workload"
+              unit="%"
+              value={draft.maximumShiftablePercent}
+              onChange={(value) => setDraft({ ...draft, maximumShiftablePercent: value })}
+            />
+          </div>
+          {error ? (
+            <p role="alert" className="operations-v2-form-error">
+              {error}
+            </p>
+          ) : null}
+          <footer>
+            <OperationsEvidenceBadge kind="user_assumption" />
+            <button type="submit" className="primary-button">
+              Recalculate Scenario
+            </button>
+          </footer>
+        </form>
+      ) : null}
+    </div>
+  );
+}
+
+function NumberField({
+  label,
+  value,
+  onChange,
+  unit,
+  step = "0.1",
+}: {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+  unit?: string;
+  step?: string;
+}) {
+  const id = `ops-${label.toLowerCase().replaceAll(" ", "-")}`;
+  return (
+    <label htmlFor={id}>
+      {label}
+      <span>
+        <input
+          id={id}
+          name={id}
+          type="number"
+          inputMode="decimal"
+          autoComplete="off"
+          min="0"
+          step={step}
+          value={value}
+          onChange={(event) => onChange(Number(event.target.value))}
+        />
+        {unit ? <em>{unit}</em> : null}
+      </span>
+    </label>
+  );
+}
+
+function MetricCard<T>({
+  icon,
+  label,
+  metric,
+  note,
+  tone,
+  format,
+}: {
+  icon: ReactNode;
+  label: string;
+  metric: EvidencedValue<T>;
+  note: string;
+  tone?: "warning" | "danger";
+  format?: "integer";
+}) {
+  const value =
+    metric.value == null
+      ? "Unavailable"
+      : typeof metric.value === "number"
+        ? format === "integer"
+          ? integer.format(metric.value)
+          : number.format(metric.value)
+        : String(metric.value);
+  return (
+    <OperationsMetricCard
+      icon={icon}
+      label={label}
+      evidence={metric.evidenceClass}
+      tone={tone}
+      value={
+        <>
+          {value}
+          {metric.value != null && metric.unit ? <small>&nbsp;{metric.unit}</small> : null}
+          {label === "Additional GPUs Supportable" && metric.value != null ? (
+            <small>&nbsp;GPU{Number(metric.value) === 1 ? "" : "s"}</small>
+          ) : null}
+        </>
+      }
+      note={note}
+    />
+  );
+}
+
+function ChartHeader({ eyebrow, title, badge }: { eyebrow: string; title: string; badge: string }) {
+  return (
+    <header className="operations-v2-chart-header">
+      <div>
+        <p className="context-label">{eyebrow}</p>
+        <h3>{title}</h3>
+      </div>
+      <span>{badge}</span>
+    </header>
+  );
+}
+
+function ImpactRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt>{label}</dt>
+      <dd>{value}</dd>
+    </div>
+  );
+}
+
+function OperationsTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: Array<{ name?: string; value?: number; color?: string }>;
+  label?: string;
+}) {
+  if (!active || !payload?.length) return null;
+  return (
+    <OperationsTooltipShell label={label}>
+      {payload.map((item) => (
+        <TooltipRow
+          key={item.name}
+          label={item.name ?? "Series"}
+          value={formatMw(item.value ?? 0)}
+          tone={item.name === "Baseline Demand" ? "demand" : "response"}
+          detail="Simulated"
+        />
+      ))}
+    </OperationsTooltipShell>
+  );
+}
+
+function AccessibleIntervalTable({
+  model,
+  mode,
+}: {
+  model: OperationsOverviewModel;
+  mode: "power" | "compute";
+}) {
+  return (
+    <details className="operations-v2-chart-data">
+      <summary>View Chart Data</summary>
+      <div>
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Time</th>
+              {mode === "power" ? (
+                <>
+                  <th scope="col">Baseline (MW)</th>
+                  <th scope="col">Battery Response (MW)</th>
+                  <th scope="col">Combined Response (MW)</th>
+                </>
+              ) : (
+                <>
+                  <th scope="col">Active GPUs</th>
+                  <th scope="col">Utilisation (%)</th>
+                  <th scope="col">GPU Power (MW)</th>
+                </>
+              )}
+            </tr>
+          </thead>
+          <tbody>
+            {model.intervals.map((point) => (
+              <tr key={point.timestamp}>
+                <th scope="row">{point.label}</th>
+                {mode === "power" ? (
+                  <>
+                    <td>{number.format(point.baselineDemandMw)} MW</td>
+                    <td>{number.format(point.batteryDemandMw)} MW</td>
+                    <td>{number.format(point.combinedDemandMw)} MW</td>
+                  </>
+                ) : (
+                  <>
+                    <td>{integer.format(point.activeGpuCount)}</td>
+                    <td>{number.format(point.utilizationPercent)}%</td>
+                    <td>{number.format(point.gpuPowerMw)} MW</td>
+                  </>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </details>
+  );
+}
+
+function peakInterval(model: OperationsOverviewModel) {
+  return model.intervals.reduce(
+    (peak, interval) => (interval.baselineDemandMw > peak.baselineDemandMw ? interval : peak),
+    model.intervals[0],
+  );
+}

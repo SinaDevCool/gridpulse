@@ -88,11 +88,11 @@ export function buildPortfolioIntelligence(
   )
     .map(([, value]) => value)
     .sort((left, right) => right.requestedMw - left.requestedMw);
-  const totalMw = rows.reduce((sum, row) => sum + row.requested_import_mw, 0);
-  const atRiskMw = rows
+  const totalMw = filtered.reduce((sum, row) => sum + row.requested_import_mw, 0);
+  const atRiskMw = filtered
     .filter((row) => row.evidence_score < 65)
     .reduce((sum, row) => sum + row.requested_import_mw, 0);
-  const indicatedMw = rows.reduce((sum, row) => sum + (row.indicated_import_mw ?? 0), 0);
+  const indicatedMw = filtered.reduce((sum, row) => sum + (row.indicated_import_mw ?? 0), 0);
   return {
     rows: filtered,
     operators: operatorGroups,
@@ -101,10 +101,11 @@ export function buildPortfolioIntelligence(
       atRiskMw,
       indicatedMw,
       evidenceGapMw: Math.max(0, totalMw - indicatedMw),
-      urgentProjects: enriched.filter(
+      urgentProjects: filtered.filter(
         (row) => row.risk.severity === "critical" || row.risk.severity === "warning",
       ).length,
-      confirmedProjects: rows.filter((row) => row.evidence_state === "operator_confirmed").length,
+      confirmedProjects: filtered.filter((row) => row.evidence_state === "operator_confirmed")
+        .length,
     },
     boundary:
       "Portfolio exposure aggregates recorded project requirements and evidence maturity. It does not aggregate available grid capacity or predict connection success.",

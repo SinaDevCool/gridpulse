@@ -1667,6 +1667,12 @@ export type Database = {
       };
       can_edit_assessment: { Args: { p_site_id: string }; Returns: boolean };
       can_read_assessment: { Args: { p_site_id: string }; Returns: boolean };
+      import_property_batch: { Args: { p_properties: Json }; Returns: string[] };
+      property_capacity_dossier: { Args: { p_site_id: string }; Returns: Json };
+      save_finder_property: {
+        Args: { p_project: Json; p_candidates?: Json };
+        Returns: string;
+      };
     };
     Enums: {
       [_ in never]: never;

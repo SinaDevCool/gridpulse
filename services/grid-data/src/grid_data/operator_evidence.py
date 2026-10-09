@@ -10,7 +10,6 @@ from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
 
-
 USER_AGENT = "GridPulse grid-data/0.1 (+https://gridpulseinsights.com)"
 
 
@@ -137,7 +136,7 @@ def fetch_operator_sources(output_path: Path) -> dict[str, Any]:
                     }
                 )
             records.append(record)
-        except Exception as error:  # a failed source is evidence-health output, not silent success
+        except Exception as error:  # noqa: BLE001 - source failures become explicit health output
             errors.append(
                 {"endpoint_key": source.endpoint_key, "url": source.url, "error": str(error)}
             )
@@ -155,5 +154,7 @@ def fetch_operator_sources(output_path: Path) -> dict[str, Any]:
         ),
     }
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    output_path.write_text(
+        json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
     return report

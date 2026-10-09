@@ -1,0 +1,86 @@
+{
+  "schema_version": "gridpulse-benchmark-c-v1",
+  "generated_at": "2026-08-10T22:22:24.429371+00:00",
+  "purpose": "Model-to-operator-reference reconciliation and promotion gate",
+  "mode": "synthetic_rehearsal",
+  "validation_class": "synthetic_demonstration",
+  "capacity_claim": false,
+  "display_as_capacity": false,
+  "numerical_reconciliation_passed": true,
+  "operator_validation_passed": false,
+  "benchmark_execution_passed": true,
+  "numerical_gates": {
+    "minimum_observation_count": true,
+    "pair_coverage": true,
+    "active_power_error": true,
+    "reactive_power_error": true,
+    "voltage_error": true,
+    "loading_error": true,
+    "all_channel_coverage": true
+  },
+  "evidence_gates": {
+    "operator_supplied_origin": false,
+    "cgmes_model": false,
+    "independent_conversion": false,
+    "operator_authorized": false,
+    "permission_to_use": true,
+    "cgmes_hash": false,
+    "reference_results_hash": true,
+    "trusted_authority_signature": false
+  },
+  "channel_coverage": {
+    "active_power_mw": 1.0,
+    "reactive_power_mvar": 1.0,
+    "voltage_pu": 1.0,
+    "loading_percent": 1.0
+  },
+  "reconciliation": {
+    "schema_version": "gridpulse-c4-reconciliation-v1",
+    "status": "passed",
+    "promotion_allowed": true,
+    "metrics": {
+      "usable_observations": 4,
+      "matched_observations": 4,
+      "coverage": 1.0,
+      "active_power_mae_mw": 0.08,
+      "active_power_rmse_mw": 0.08,
+      "voltage_mae_pu": 0.001,
+      "reactive_power_mae_mvar": 0.03,
+      "loading_mae_percent": 0.2,
+      "missing_data_rate": 0.0
+    },
+    "thresholds": {
+      "minimum_coverage": 0.95,
+      "active_power_mae_limit_mw": 0.5,
+      "voltage_mae_limit_pu": 0.01,
+      "reactive_power_mae_limit_mvar": 0.25,
+      "loading_mae_limit_percent": 1.0
+    },
+    "limitations": [
+      "Passing reconciliation supports operator_model_reconciled only; it is not operator approval.",
+      "Protection, fault level and dynamic behaviour require separate studies."
+    ],
+    "result_sha256": "e2546fcb2b9e7be57de7879bc9a4d3d6de8403699294e081ae9ff217eb81218c"
+  },
+  "evidence": {
+    "evidence_origin": "synthetic_fixture",
+    "model_format": "synthetic_json",
+    "independently_converted": false,
+    "operator_authorized": false,
+    "permission_to_use": true,
+    "cgmes_package_sha256": null,
+    "reference_results_sha256": "2f608c4511748948a5b14c77620470de183bf88de9ebbb174f428abc47d5e336",
+    "label": "Synthetic reconciliation rehearsal \u2014 no operator or location claim"
+  },
+  "input_sha256": {
+    "observed": "be004e1f95bcec84c6a2377721ef67b3b572e828ad478dc71b435bb7575c3f10",
+    "simulated": "2f608c4511748948a5b14c77620470de183bf88de9ebbb174f428abc47d5e336",
+    "evidence": "7d5682ce498e5d96b9a2d648964497ad8502cd9cb98e9d3e48ca0e1a191024e9"
+  },
+  "limitations": [
+    "Synthetic rehearsal passing does not reconcile or validate an operator model.",
+    "Capacity publication still requires operator review and representation permission.",
+    "Protection, short-circuit, harmonics and dynamics remain separate studies."
+  ],
+  "benchmark_sha256": "dbf767ef34896775942985cd44916d13ad53da89bad8a239eb9bd9723dddc53c"
+}
