@@ -2,6 +2,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import { env } from "cloudflare:workers";
 import { z } from "zod";
 import {
+  OperationsPayloadError,
+  operationsFingerprint,
+  readOperationsJson,
+} from "@/lib/operations-request";
+import {
   operationsAssessmentRequestSchema,
   runOperationsAssessment,
 } from "@/features/operations/operations-service";
@@ -24,7 +29,7 @@ export const Route = createFileRoute("/api/operations/assess")({
         ).PUBLIC_FINDER_RATE_LIMITER;
         if (limiter) {
           const permitted = await limiter.limit({
-            key: `operations-assess:${new URL(request.url).hostname}`,
+            key: `operations-assess:${request.headers.get("cf-connecting-ip") ?? "local"}`,
           });
           if (!permitted.success)
             return Response.json(
@@ -33,12 +38,10 @@ export const Route = createFileRoute("/api/operations/assess")({
             );
         }
         try {
-          const input = operationsAssessmentRequestSchema.parse(await request.json());
-          const bytes = new TextEncoder().encode(JSON.stringify(input));
-          const hash = await crypto.subtle.digest("SHA-256", bytes);
-          const inputFingerprint = [...new Uint8Array(hash)]
-            .map((value) => value.toString(16).padStart(2, "0"))
-            .join("");
+          const input = operationsAssessmentRequestSchema.parse(
+            await readOperationsJson(request, 8_000_000),
+          );
+          const inputFingerprint = await operationsFingerprint(input);
           return Response.json(
             {
               ...runOperationsAssessment(input),
@@ -50,6 +53,23 @@ export const Route = createFileRoute("/api/operations/assess")({
             },
           );
         } catch (error) {
+          if (error instanceof OperationsPayloadError)
+            return Response.json(
+              { error: error.message },
+              { status: error.status, headers: { "cache-control": "no-store" } },
+            );
+          if (!(error instanceof z.ZodError)) {
+            console.error(
+              JSON.stringify({
+                event: "operations_assessment_failed",
+                requestId: crypto.randomUUID(),
+              }),
+            );
+            return Response.json(
+              { error: "Operations assessment could not be calculated." },
+              { status: 500, headers: { "cache-control": "no-store" } },
+            );
+          }
           return Response.json(
             {
               error: "Operations evidence is invalid.",

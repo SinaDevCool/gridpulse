@@ -24,6 +24,7 @@ jobs:
       - run: npm run check:encoding
       - run: npm run typecheck
       - run: npm run test
+      - run: npm run test:operations:database
       - run: npm run grid:test
       - run: npm run grid:audit:release
       - run: npm run build
@@ -32,6 +33,10 @@ jobs:
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
       - run: npm run check:performance-budgets
       - run: npx playwright install --with-deps chromium
+      - name: Validate Operations controls
+        run: npx playwright test tests/e2e/activation-operations-ui.spec.ts tests/e2e/operations-redesign-ui.spec.ts tests/e2e/operations-release-controls.spec.ts --workers=1
+        env:
+          GRIDPULSE_PRODUCT_MODE: full
       - run: npm run test:e2e:finder
         env:
           GRIDPULSE_PRODUCT_MODE: finder

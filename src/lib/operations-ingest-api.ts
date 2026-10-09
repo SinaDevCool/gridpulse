@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { OperationsPayloadError, readOperationsJson, sha256 } from "./operations-request";
 
 export type OperationsIngestEnv = {
   SUPABASE_URL?: string;
@@ -6,7 +7,7 @@ export type OperationsIngestEnv = {
   OPERATIONS_INGEST_TOKEN?: string;
 };
 
-const metricSchema = z.enum([
+export const operationsMetricSchema = z.enum([
   "facility_grid_import_mw",
   "it_load_mw",
   "gpu_power_mw",
@@ -33,7 +34,7 @@ const ingestSchema = z.object({
   measurements: z
     .array(
       z.object({
-        metricKey: metricSchema,
+        metricKey: operationsMetricSchema,
         assetId: z.string().trim().min(1).max(240).default("facility"),
         eventAt: z.string().datetime(),
         intervalSeconds: z.number().int().positive().max(86_400).nullable().default(null),
@@ -56,13 +57,24 @@ export async function handleOperationsIngest(request: Request, env: OperationsIn
   if (request.method !== "POST") return response({ error: "Method not allowed." }, 405);
   if (Number(request.headers.get("content-length") ?? 0) > 2_000_000)
     return response({ error: "Ingestion batch is too large." }, 413);
-  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY || !env.OPERATIONS_INGEST_TOKEN)
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY)
     return response({ error: "Operations ingestion is not configured." }, 503);
   const supplied = request.headers.get("x-operations-token") ?? "";
-  if (!(await equalSecrets(supplied, env.OPERATIONS_INGEST_TOKEN)))
+  if (supplied.length < 32 || supplied.length > 512)
     return response({ error: "Invalid connector credential." }, 401);
 
-  const parsed = ingestSchema.safeParse(await request.json().catch(() => null));
+  let payload: unknown;
+  try {
+    payload = await readOperationsJson(request, 2_000_000);
+  } catch (error) {
+    return response(
+      {
+        error: error instanceof OperationsPayloadError ? error.message : "Invalid ingestion batch.",
+      },
+      error instanceof OperationsPayloadError ? error.status : 400,
+    );
+  }
+  const parsed = ingestSchema.safeParse(payload);
   if (!parsed.success)
     return response(
       {
@@ -78,88 +90,73 @@ export async function handleOperationsIngest(request: Request, env: OperationsIn
     if (item.metricKey.endsWith("_mw"))
       return item.unit !== "MW" || (item.metricKey !== "bess_power_mw" && item.value < 0);
     if (item.metricKey.endsWith("_mwh")) return item.unit !== "MWh" || item.value < 0;
-    if (item.metricKey.endsWith("_count")) return !Number.isInteger(item.value) || item.value < 0;
-    return item.metricKey.endsWith("_temperature_c") && (item.value < -50 || item.value > 200);
+    if (item.metricKey.endsWith("_count"))
+      return item.unit !== "count" || !Number.isInteger(item.value) || item.value < 0;
+    return (
+      item.metricKey.endsWith("_temperature_c") &&
+      (item.unit !== "C" || item.value < -50 || item.value > 200)
+    );
   });
   if (invalid)
     return response({ error: `Invalid unit or physical range for ${invalid.metricKey}.` }, 400);
   const rows = body.measurements.map((item) => ({
-    facility_id: body.facilityId,
-    source_id: body.sourceId,
     metric_key: item.metricKey,
     asset_id: item.assetId,
     event_at: item.eventAt,
     interval_seconds: item.intervalSeconds,
     value: item.value,
     unit: item.unit,
-    value_kind: "observed",
-    quality: "accepted",
     source_record_id: item.sourceRecordId,
-    ingestion_batch_id: body.batchId,
   }));
   const headers = {
     apikey: env.SUPABASE_SERVICE_ROLE_KEY,
     authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
     "content-type": "application/json",
-    prefer: "resolution=ignore-duplicates,return=minimal",
   };
-  const write = await fetch(
-    `${env.SUPABASE_URL}/rest/v1/operations_measurements?on_conflict=source_id,source_record_id,metric_key,asset_id`,
-    {
+  try {
+    const write = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/operations_ingest_connector_batch`, {
       method: "POST",
       headers,
-      body: JSON.stringify(rows),
-      signal: AbortSignal.timeout(12_000),
-    },
-  );
-  if (!write.ok) return response({ error: "The telemetry store rejected the batch." }, 502);
-  const latestEventAt = rows.reduce(
-    (latest, row) => (row.event_at > latest ? row.event_at : latest),
-    rows[0].event_at,
-  );
-  await Promise.all([
-    fetch(
-      `${env.SUPABASE_URL}/rest/v1/operations_sources?id=eq.${encodeURIComponent(body.sourceId)}`,
-      {
-        method: "PATCH",
-        headers,
-        body: JSON.stringify({
-          health: "healthy",
-          last_received_at: new Date().toISOString(),
-          connector_version: body.connectorVersion,
-        }),
-        signal: AbortSignal.timeout(8_000),
-      },
-    ),
-    fetch(`${env.SUPABASE_URL}/rest/v1/operations_source_watermarks?on_conflict=source_id`, {
-      method: "POST",
-      headers: { ...headers, prefer: "resolution=merge-duplicates,return=minimal" },
       body: JSON.stringify({
-        source_id: body.sourceId,
-        facility_id: body.facilityId,
-        latest_event_at: latestEventAt,
-        latest_received_at: new Date().toISOString(),
-        consecutive_failures: 0,
-        last_error_code: null,
+        p_facility_id: body.facilityId,
+        p_source_id: body.sourceId,
+        p_batch_id: body.batchId,
+        p_records: rows,
+        p_token_hash: await sha256(supplied),
+        p_connector_version: body.connectorVersion,
       }),
-      signal: AbortSignal.timeout(8_000),
-    }),
-  ]);
-  return response(
-    { accepted: rows.length, batchId: body.batchId, latestEventAt, controlMode: "read_only" },
-    202,
-  );
-}
-
-async function equalSecrets(left: string, right: string) {
-  const encoder = new TextEncoder();
-  const [a, b] = await Promise.all(
-    [left, right].map((value) => crypto.subtle.digest("SHA-256", encoder.encode(value))),
-  );
-  const leftBytes = new Uint8Array(a);
-  const rightBytes = new Uint8Array(b);
-  let difference = leftBytes.length ^ rightBytes.length;
-  for (let index = 0; index < Math.max(leftBytes.length, rightBytes.length); index += 1)
-    difference |= (leftBytes[index] ?? 0) ^ (rightBytes[index] ?? 0);
-  return difference === 0;
+      signal: AbortSignal.timeout(12_000),
+    });
+    if (!write.ok) {
+      const failure = z
+        .object({ code: z.string().optional() })
+        .passthrough()
+        .safeParse(await write.json().catch(() => null));
+      if (failure.success && failure.data.code === "42501")
+        return response({ error: "Invalid connector scope or credential." }, 403);
+      if (failure.success && failure.data.code === "22023")
+        return response({ error: "Conflicting or invalid telemetry batch." }, 409);
+      return response({ error: "The telemetry store rejected the batch." }, 502);
+    }
+    const result = z
+      .object({
+        inserted: z.number().int().nonnegative(),
+        duplicates: z.number().int().nonnegative(),
+        latestEventAt: z.string().datetime().nullable(),
+      })
+      .parse(await write.json());
+    return response(
+      {
+        accepted: result.inserted,
+        duplicates: result.duplicates,
+        batchId: body.batchId,
+        latestEventAt: result.latestEventAt,
+        controlMode: "read_only",
+      },
+      202,
+    );
+  } catch {
+    console.error(JSON.stringify({ event: "operations_ingest_failed", batchId: body.batchId }));
+    return response({ error: "Operations ingestion is temporarily unavailable." }, 502);
+  }
 }

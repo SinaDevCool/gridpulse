@@ -11,6 +11,7 @@
     "preview": "vite preview",
     "test": "vitest run --config vitest.config.ts",
     "test:watch": "vitest --config vitest.config.ts",
+    "test:operations:database": "node scripts/test-operations-database.mjs",
     "test:product:navigation": "vitest run src/components/product/product-navigation.test.ts src/config/product-mode.test.ts",
     "test:product:theme": "vitest run src/features/theme/theme-contract.test.ts",
     "test:product:operations": "vitest run src/features/operations src/features/grid-connection/operations-readiness.test.ts",
@@ -92,6 +93,7 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
     "@cloudflare/vite-plugin": "^1.45.1",
+    "@electric-sql/pglite": "^0.5.8",
     "@eslint/js": "^9.32.0",
     "@playwright/test": "^1.61.1",
     "@types/geojson": "^7946.0.16",

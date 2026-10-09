@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import json
-import importlib.metadata
 import hashlib
+import importlib.metadata
+import json
 import logging
 import os
 import sys
@@ -23,24 +23,26 @@ from grid_data.api.models import (
     C3SecurityFlexibilityRequest,
     C4ReconciliationRequest,
     CapacityRequirementRequest,
-    FacilityPlanRequest,
-    FcaIntervalRequest,
-    FacilityUncertaintyRequest,
     FacilityHistoricalReplayRequest,
-    MarketQualificationRequest,
-    RollingFacilityPlanRequest,
-    OperatorEnquiryPackageRequest,
-    ShadowVerificationRequest,
+    FacilityPlanRequest,
+    FacilityUncertaintyRequest,
+    FcaIntervalRequest,
     GraphGuidedStudyRequest,
     HealthReport,
     JobAccepted,
+    MarketQualificationRequest,
+    OperatorEnquiryPackageRequest,
     P0P4PermutationRequest,
     ReferenceTopologyRequest,
     Release3ShadowValidationRequest,
     ReleaseBNetworkRequest,
+    RollingFacilityPlanRequest,
+    ShadowVerificationRequest,
     SyntheticCapacityRequest,
     UserIdentity,
 )
+from grid_data.api.replan_policy import ReplanPolicyRequest, assess_replan_policy
+from grid_data.api.request_limits import OperationsBodyLimit
 from grid_data.api.store import InMemoryJobStore, JobStore, SupabaseJobStore
 
 SERVICE_VERSION = "0.1.0"
@@ -92,7 +94,6 @@ class _UnavailableExecutor:
 
     def execute_reference_topology(self, job_id: UUID) -> None:
         raise RuntimeError(f"job executor is not configured for {job_id}")
-
 
     def execute_facility_plan(self, job_id: UUID) -> None:
         raise RuntimeError(f"job executor is not configured for {job_id}")
@@ -167,6 +168,7 @@ def create_app(
         docs_url="/docs" if os.environ.get("GRIDPULSE_API_DOCS") == "enabled" else None,
         redoc_url=None,
     )
+    app.add_middleware(OperationsBodyLimit)
     allowed_origins = [
         origin.strip()
         for origin in os.environ.get(
@@ -185,7 +187,12 @@ def create_app(
     )
     app.state.job_store = job_store
     app.state.executor = executor
-    app.state.dispatch_mode = os.environ.get("GRIDPULSE_JOB_DISPATCH_MODE", "inline")
+    app.state.dispatch_mode = os.environ.get(
+        "GRIDPULSE_JOB_DISPATCH_MODE",
+        "worker" if isinstance(job_store, SupabaseJobStore) else "inline",
+    )
+    if app.state.dispatch_mode not in {"inline", "worker"}:
+        raise RuntimeError("GRIDPULSE_JOB_DISPATCH_MODE must be inline or worker")
 
     def dispatch(background_tasks: BackgroundTasks, method: Callable, job_id: UUID) -> None:
         if app.state.dispatch_mode == "inline":
@@ -200,14 +207,14 @@ def create_app(
         existing = app.state.job_store.find_by_fingerprint(owner_id, job_type, fingerprint)
         if existing is not None:
             return existing, False
-        return app.state.job_store.create(
-            AnalyticsJob(
-                owner_id=owner_id,
-                job_type=job_type,
-                input_payload=payload,
-                input_fingerprint=fingerprint,
-            )
-        ), True
+        proposed = AnalyticsJob(
+            owner_id=owner_id,
+            job_type=job_type,
+            input_payload=payload,
+            input_fingerprint=fingerprint,
+        )
+        created = app.state.job_store.create(proposed)
+        return created, created.id == proposed.id
 
     @app.middleware("http")
     async def request_context(request: Request, call_next):
@@ -270,6 +277,33 @@ def create_app(
                 "gridpulse-shadow-verification-request-v1",
             ],
         )
+
+    @app.post("/v1/operations/replan-policy")
+    def replan_policy(
+        request: ReplanPolicyRequest, user: UserIdentity = Depends(auth_dependency)
+    ) -> dict[str, object]:
+        return assess_replan_policy(request)
+
+    @app.get("/v1/operations/readiness")
+    def operations_readiness(user: UserIdentity = Depends(auth_dependency)) -> dict[str, object]:
+        try:
+            engine_version = importlib.metadata.version("gridpulse-capacity-backtest")
+            from capacity_backtest.application import contract_manifest
+
+            contract_manifest()
+            engine_ready = engine_version.startswith("0.2.")
+        except (ImportError, importlib.metadata.PackageNotFoundError):
+            engine_ready = False
+        durable = isinstance(app.state.job_store, SupabaseJobStore)
+        return {
+            "durable_store_configured": durable,
+            "dispatch_mode": app.state.dispatch_mode,
+            "canonical_engine_ready": engine_ready,
+            "deployment_ready": durable and engine_ready and app.state.dispatch_mode == "worker",
+            "live_facility_connected": False,
+            "automatic_dispatch_authorized": False,
+            "note": "Configuration check only. Database, worker liveness and facility evidence need separate operational probes.",
+        }
 
     @app.get("/v1/contracts")
     def contracts() -> dict[str, object]:
@@ -444,7 +478,9 @@ def create_app(
             payload=request.model_dump(mode="json"),
         )
         if created:
-            dispatch(background_tasks, app.state.executor.execute_facility_historical_replay, job.id)
+            dispatch(
+                background_tasks, app.state.executor.execute_facility_historical_replay, job.id
+            )
         return JobAccepted(job_id=job.id, status=job.status)
 
     @app.post(

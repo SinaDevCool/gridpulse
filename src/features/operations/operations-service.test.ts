@@ -18,7 +18,7 @@ describe("operations backend service", () => {
       [{ timestamp: "2026-09-26T12:00:00.000Z", facilityImportMw: 98, operatingLimitMw: 100 }],
       [
         {
-          timestamp: "2026-09-26T12:02:00.000Z",
+          timestamp: "2026-09-26T11:58:00.000Z",
           socPercent: 60,
           activePowerMw: 2,
           allowedDischargeMw: 5,
@@ -33,12 +33,12 @@ describe("operations backend service", () => {
     expect(aligned[0].battery?.socPercent).toBe(60);
   });
 
-  it("rejects BMS observations outside the evidence tolerance", () => {
+  it("rejects future BMS observations even within the evidence tolerance", () => {
     const aligned = alignPowerEvidence(
       [{ timestamp: "2026-09-26T12:00:00.000Z", facilityImportMw: 98, operatingLimitMw: 100 }],
       [
         {
-          timestamp: "2026-09-26T12:06:00.000Z",
+          timestamp: "2026-09-26T12:02:00.000Z",
           socPercent: 60,
           activePowerMw: 2,
           allowedDischargeMw: 5,
@@ -57,25 +57,40 @@ describe("operations backend service", () => {
     const response = runOperationsAssessment({
       kind: "assurance",
       quality: {
-        expectedIntervals: 4, receivedIntervals: 4,
+        expectedIntervals: 4,
+        receivedIntervals: 4,
         newestEvidenceAt: "2026-10-06T10:00:00.000Z",
         assessedAt: "2026-10-06T10:05:00.000Z",
         powerBalanceResidualPercent: 1,
       },
       verification: null,
       compliance: {
-        facilityEnergyMwh: 125, itEnergyMwh: 100, renewableSharePercent: 100,
-        wasteHeatMwh: 10, heatTemperatureC: 35, measurementCoveragePercent: 100,
+        facilityEnergyMwh: 125,
+        itEnergyMwh: 100,
+        renewableSharePercent: 100,
+        wasteHeatMwh: 10,
+        heatTemperatureC: 35,
+        measurementCoveragePercent: 100,
       },
       economics: {
-        avoidedPeakMw: 5, durationHours: 1, energyPriceEurPerMwh: 100,
-        capacityValueEurPerMw: 0, batteryEnergyMwh: 5,
-        batteryDegradationEurPerMwh: 10, shiftedEnergyMwh: 0,
-        workloadCostEurPerMwh: 0, flexibilityPaymentEur: 0, slaPenaltyEur: 0,
+        avoidedPeakMw: 5,
+        durationHours: 1,
+        energyPriceEurPerMwh: 100,
+        capacityValueEurPerMw: 0,
+        batteryEnergyMwh: 5,
+        batteryDegradationEurPerMwh: 10,
+        shiftedEnergyMwh: 0,
+        workloadCostEurPerMwh: 0,
+        flexibilityPaymentEur: 0,
+        slaPenaltyEur: 0,
       },
       dispatch: {
-        mode: "shadow", evidenceReady: true, connectorHealthy: true,
-        agreementCurrent: true, approvalCount: 2, automaticDispatchEnabled: false,
+        mode: "shadow",
+        evidenceReady: true,
+        connectorHealthy: true,
+        agreementCurrent: true,
+        approvalCount: 2,
+        automaticDispatchEnabled: false,
       },
     });
     expect(response.result).toMatchObject({

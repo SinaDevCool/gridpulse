@@ -17,6 +17,11 @@ const evidenceSchema = z.enum([
 export const operationsWorkspaceSchema = z.object({
   schemaVersion: z.literal("gridpulse-operations-workspace-v1"),
   generatedAt: z.string().datetime(),
+  evidenceWindow: z.object({ start: z.string().datetime(), end: z.string().datetime() }).optional(),
+  inputFingerprint: z
+    .string()
+    .regex(/^[a-f0-9]{64}$/)
+    .optional(),
   automaticDispatchAuthorized: z.literal(false),
   facility: z.object({
     id: z.string().uuid(),
@@ -26,27 +31,33 @@ export const operationsWorkspaceSchema = z.object({
     limitEvidence: evidenceSchema,
     limitValidUntil: z.string().datetime().nullable(),
   }),
-  sources: z.array(z.object({
-    id: z.string().uuid(),
-    type: z.string(),
-    name: z.string(),
-    health: z.string(),
-    readOnly: z.boolean(),
-    lastReceivedAt: z.string().datetime().nullable(),
-    latestEventAt: z.string().datetime().nullable(),
-    consecutiveFailures: z.number().int().nonnegative(),
-    lastErrorCode: z.string().nullable(),
-  })),
-  measurements: z.array(z.object({
-    metricKey: z.string(),
-    assetId: z.string(),
-    eventAt: z.string().datetime(),
-    value: z.number(),
-    unit: z.string(),
-    valueKind: z.string(),
-    quality: z.string(),
-    sourceId: z.string().uuid(),
-  })),
+  sources: z.array(
+    z.object({
+      id: z.string().uuid(),
+      type: z.string(),
+      name: z.string(),
+      health: z.string(),
+      readOnly: z.boolean(),
+      lastReceivedAt: z.string().datetime().nullable(),
+      latestEventAt: z.string().datetime().nullable(),
+      consecutiveFailures: z.number().int().nonnegative(),
+      lastErrorCode: z.string().nullable(),
+    }),
+  ),
+  measurements: z.array(
+    z.object({
+      metricKey: z.string(),
+      assetId: z.string(),
+      eventAt: z.string().datetime(),
+      receivedAt: z.string().datetime().optional(),
+      intervalSeconds: z.number().int().positive().nullable().optional(),
+      value: z.number(),
+      unit: z.string(),
+      valueKind: z.string(),
+      quality: z.string(),
+      sourceId: z.string().uuid(),
+    }),
+  ),
   batteryAssets: z.array(z.record(z.string(), z.unknown())),
   workloads: z.array(z.record(z.string(), z.unknown())),
   latestForecast: z.record(z.string(), z.unknown()).nullable(),

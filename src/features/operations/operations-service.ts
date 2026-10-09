@@ -16,7 +16,7 @@ import {
   verifyOperationsResponse,
 } from "./operations-assurance";
 
-export const OPERATIONS_CALCULATION_VERSION = "operations-backend-v3-conserved-recovery";
+export const OPERATIONS_CALCULATION_VERSION = "operations-backend-v4-cutoff-safe";
 
 const facilityObservationSchema = z.object({
   timestamp: z.string().datetime(),
@@ -243,6 +243,7 @@ export function alignPowerEvidence(
       for (const candidate of [orderedBattery[cursor], orderedBattery[cursor + 1]].filter(
         (item): item is BatteryObservation => Boolean(item),
       )) {
+        if (Date.parse(candidate.timestamp) > target) continue;
         const candidateDistance = Math.abs(Date.parse(candidate.timestamp) - target);
         if (candidateDistance < distance) {
           closest = candidate;

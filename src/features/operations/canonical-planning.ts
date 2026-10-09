@@ -29,6 +29,28 @@ export function prepareCanonicalFacilityPlan(
     blockers.push("At least four accepted facility-import intervals are required.");
   if (new Set(imports.map((point) => point.eventAt)).size !== imports.length)
     blockers.push("Duplicate facility-import intervals require reconciliation.");
+  const cutoff = Date.parse(workspace.evidenceWindow?.end ?? workspace.generatedAt);
+  if (
+    imports.some(
+      (point) =>
+        Date.parse(point.eventAt) > cutoff ||
+        (point.receivedAt && Date.parse(point.receivedAt) > cutoff),
+    )
+  )
+    blockers.push("Facility-import evidence includes data after the planning cutoff.");
+  const durations = imports
+    .slice(1)
+    .map((point, index) => Date.parse(point.eventAt) - Date.parse(imports[index].eventAt));
+  if (durations.some((duration) => duration <= 0 || duration !== durations[0]))
+    blockers.push(
+      "Facility-import intervals are irregular or contain gaps; reconcile them before planning.",
+    );
+  if (
+    imports.some((point) => point.unit !== "MW" || point.value < 0 || !Number.isFinite(point.value))
+  )
+    blockers.push("Facility-import values or units are invalid.");
+  if (workspace.readiness.mode !== "historical" && workspace.readiness.blockers.length)
+    blockers.push(...workspace.readiness.blockers);
   if (
     !workspace.sources.some(
       (source) => source.type === "facility_meter" && source.health === "healthy",

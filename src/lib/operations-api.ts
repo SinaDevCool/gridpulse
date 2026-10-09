@@ -22,6 +22,7 @@ export async function requestOperationsAssessment<T>(input: OperationsAssessment
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(input),
+    signal: AbortSignal.timeout(30_000),
   });
   const body = (await response.json()) as OperationsAssessmentEnvelope<T> | { error: string };
   if (!response.ok || "error" in body)
@@ -32,6 +33,7 @@ export async function requestOperationsAssessment<T>(input: OperationsAssessment
 export async function fetchOperationsCapabilities() {
   const response = await fetch("/api/operations/capabilities", {
     headers: { accept: "application/json" },
+    signal: AbortSignal.timeout(15_000),
   });
   if (!response.ok) throw new Error("Operations connector status is unavailable.");
   return response.json() as Promise<{
@@ -56,6 +58,7 @@ export async function fetchOperationsWorkspace(facilityId: string) {
     `/api/operations/workspace?facilityId=${encodeURIComponent(facilityId)}`,
     {
       headers: { accept: "application/json", authorization: `Bearer ${session.access_token}` },
+      signal: AbortSignal.timeout(30_000),
     },
   );
   const body = await response.json();

@@ -44,6 +44,7 @@ import { Route as ApiPowerFinderViewportRouteImport } from './routes/api.power-f
 import { Route as ApiPowerFinderStudyRouteImport } from './routes/api.power-finder.study'
 import { Route as ApiPowerFinderScenarioRouteImport } from './routes/api.power-finder.scenario'
 import { Route as ApiOperationsWorkspaceRouteImport } from './routes/api.operations.workspace'
+import { Route as ApiOperationsRunsRouteImport } from './routes/api.operations.runs'
 import { Route as ApiOperationsIngestRouteImport } from './routes/api.operations.ingest'
 import { Route as ApiOperationsCapabilitiesRouteImport } from './routes/api.operations.capabilities'
 import { Route as ApiOperationsAssessRouteImport } from './routes/api.operations.assess'
@@ -225,6 +226,11 @@ const ApiOperationsWorkspaceRoute = ApiOperationsWorkspaceRouteImport.update({
   path: '/api/operations/workspace',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiOperationsRunsRoute = ApiOperationsRunsRouteImport.update({
+  id: '/api/operations/runs',
+  path: '/api/operations/runs',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiOperationsIngestRoute = ApiOperationsIngestRouteImport.update({
   id: '/api/operations/ingest',
   path: '/api/operations/ingest',
@@ -287,6 +293,7 @@ export interface FileRoutesByFullPath {
   '/api/operations/assess': typeof ApiOperationsAssessRoute
   '/api/operations/capabilities': typeof ApiOperationsCapabilitiesRoute
   '/api/operations/ingest': typeof ApiOperationsIngestRoute
+  '/api/operations/runs': typeof ApiOperationsRunsRoute
   '/api/operations/workspace': typeof ApiOperationsWorkspaceRoute
   '/api/power-finder/scenario': typeof ApiPowerFinderScenarioRoute
   '/api/power-finder/study': typeof ApiPowerFinderStudyRoute
@@ -329,6 +336,7 @@ export interface FileRoutesByTo {
   '/api/operations/assess': typeof ApiOperationsAssessRoute
   '/api/operations/capabilities': typeof ApiOperationsCapabilitiesRoute
   '/api/operations/ingest': typeof ApiOperationsIngestRoute
+  '/api/operations/runs': typeof ApiOperationsRunsRoute
   '/api/operations/workspace': typeof ApiOperationsWorkspaceRoute
   '/api/power-finder/scenario': typeof ApiPowerFinderScenarioRoute
   '/api/power-finder/study': typeof ApiPowerFinderStudyRoute
@@ -372,6 +380,7 @@ export interface FileRoutesById {
   '/api/operations/assess': typeof ApiOperationsAssessRoute
   '/api/operations/capabilities': typeof ApiOperationsCapabilitiesRoute
   '/api/operations/ingest': typeof ApiOperationsIngestRoute
+  '/api/operations/runs': typeof ApiOperationsRunsRoute
   '/api/operations/workspace': typeof ApiOperationsWorkspaceRoute
   '/api/power-finder/scenario': typeof ApiPowerFinderScenarioRoute
   '/api/power-finder/study': typeof ApiPowerFinderStudyRoute
@@ -416,6 +425,7 @@ export interface FileRouteTypes {
     | '/api/operations/assess'
     | '/api/operations/capabilities'
     | '/api/operations/ingest'
+    | '/api/operations/runs'
     | '/api/operations/workspace'
     | '/api/power-finder/scenario'
     | '/api/power-finder/study'
@@ -458,6 +468,7 @@ export interface FileRouteTypes {
     | '/api/operations/assess'
     | '/api/operations/capabilities'
     | '/api/operations/ingest'
+    | '/api/operations/runs'
     | '/api/operations/workspace'
     | '/api/power-finder/scenario'
     | '/api/power-finder/study'
@@ -500,6 +511,7 @@ export interface FileRouteTypes {
     | '/api/operations/assess'
     | '/api/operations/capabilities'
     | '/api/operations/ingest'
+    | '/api/operations/runs'
     | '/api/operations/workspace'
     | '/api/power-finder/scenario'
     | '/api/power-finder/study'
@@ -540,6 +552,7 @@ export interface RootRouteChildren {
   ApiOperationsAssessRoute: typeof ApiOperationsAssessRoute
   ApiOperationsCapabilitiesRoute: typeof ApiOperationsCapabilitiesRoute
   ApiOperationsIngestRoute: typeof ApiOperationsIngestRoute
+  ApiOperationsRunsRoute: typeof ApiOperationsRunsRoute
   ApiOperationsWorkspaceRoute: typeof ApiOperationsWorkspaceRoute
   ApiPowerFinderScenarioRoute: typeof ApiPowerFinderScenarioRoute
   ApiPowerFinderStudyRoute: typeof ApiPowerFinderStudyRoute
@@ -796,6 +809,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiOperationsWorkspaceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/operations/runs': {
+      id: '/api/operations/runs'
+      path: '/api/operations/runs'
+      fullPath: '/api/operations/runs'
+      preLoaderRoute: typeof ApiOperationsRunsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/operations/ingest': {
       id: '/api/operations/ingest'
       path: '/api/operations/ingest'
@@ -901,6 +921,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiOperationsAssessRoute: ApiOperationsAssessRoute,
   ApiOperationsCapabilitiesRoute: ApiOperationsCapabilitiesRoute,
   ApiOperationsIngestRoute: ApiOperationsIngestRoute,
+  ApiOperationsRunsRoute: ApiOperationsRunsRoute,
   ApiOperationsWorkspaceRoute: ApiOperationsWorkspaceRoute,
   ApiPowerFinderScenarioRoute: ApiPowerFinderScenarioRoute,
   ApiPowerFinderStudyRoute: ApiPowerFinderStudyRoute,

@@ -72,6 +72,7 @@ async function authenticatedRequest<T>(path: string, init?: RequestInit): Promis
 
   const response = await fetch(`${analyticsBaseUrl()}${path}`, {
     ...init,
+    signal: init?.signal ?? AbortSignal.timeout(30_000),
     headers: {
       authorization: `Bearer ${session.access_token}`,
       "content-type": "application/json",
@@ -107,14 +108,16 @@ export function startFacilityPlan(input: FacilityPlanRequest): Promise<JobAccept
 export function startFcaInterval(input: FcaIntervalRequest): Promise<JobAccepted> {
   const payload = fcaIntervalRequestSchema.parse(input);
   return authenticatedRequest<JobAccepted>("/v1/jobs/fca-interval", {
-    method: "POST", body: JSON.stringify(payload),
+    method: "POST",
+    body: JSON.stringify(payload),
   });
 }
 
 export function startFcaProfile(input: FcaProfileRequest): Promise<JobAccepted> {
   const payload = fcaProfileRequestSchema.parse(input);
   return authenticatedRequest<JobAccepted>("/v1/jobs/fca-profile", {
-    method: "POST", body: JSON.stringify(payload),
+    method: "POST",
+    body: JSON.stringify(payload),
   });
 }
 
@@ -134,7 +137,9 @@ export function startFacilityUncertainty(input: FacilityUncertaintyRequest): Pro
   });
 }
 
-export function startFacilityHistoricalReplay(input: FacilityHistoricalReplayRequest): Promise<JobAccepted> {
+export function startFacilityHistoricalReplay(
+  input: FacilityHistoricalReplayRequest,
+): Promise<JobAccepted> {
   const payload = facilityHistoricalReplayRequestSchema.parse(input);
   return authenticatedRequest<JobAccepted>("/v1/jobs/facility-historical-replay", {
     method: "POST",
@@ -158,7 +163,9 @@ export function startRollingFacilityPlan(input: RollingFacilityPlanRequest): Pro
   });
 }
 
-export function startOperatorEnquiryPackage(input: OperatorEnquiryPackageRequest): Promise<JobAccepted> {
+export function startOperatorEnquiryPackage(
+  input: OperatorEnquiryPackageRequest,
+): Promise<JobAccepted> {
   const payload = operatorEnquiryPackageRequestSchema.parse(input);
   return authenticatedRequest<JobAccepted>("/v1/jobs/operator-enquiry-package", {
     method: "POST",
@@ -193,7 +200,9 @@ export function loadAnalyticsJob(jobId: string): Promise<AnalyticsJob> {
 }
 
 export function listAnalyticsJobs(limit = 100): Promise<AnalyticsJob[]> {
-  return authenticatedRequest<AnalyticsJob[]>(`/v1/jobs?limit=${Math.min(Math.max(limit, 1), 200)}`);
+  return authenticatedRequest<AnalyticsJob[]>(
+    `/v1/jobs?limit=${Math.min(Math.max(limit, 1), 200)}`,
+  );
 }
 
 export function cancelAnalyticsJob(jobId: string): Promise<AnalyticsJob> {
@@ -204,6 +213,7 @@ export function cancelAnalyticsJob(jobId: string): Promise<AnalyticsJob> {
 
 export function safeAnalyticsError(job: AnalyticsJob): string | null {
   if (job.status !== "failed") return null;
-  return job.error ? "The study could not complete. Review quarantined cases or retry." :
-    "The study could not complete.";
+  return job.error
+    ? "The study could not complete. Review quarantined cases or retry."
+    : "The study could not complete.";
 }
