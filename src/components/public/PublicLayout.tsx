@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 import { trackEvent } from "@/lib/analytics";
 import { isFinderMvp } from "@/config/product-mode";
 import { FinderShell } from "@/components/product/FinderShell";
+import "@/public.css";
 
 const publicNavigation = [
   { label: "How It Works", to: "/", hash: "how-it-works" },

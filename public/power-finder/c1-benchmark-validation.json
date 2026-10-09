@@ -1,6 +1,6 @@
 {
   "schema_version": "gridpulse-c1-validation-v1",
-  "generated_at": "2026-08-08T14:29:24.299111+00:00",
+  "generated_at": "2026-10-09T23:12:58.967028+00:00",
   "model_id": "simbench:1-MV-urban--0-sw",
   "model_version": "simbench-open-model-v1",
   "validation_class": "synthetic_demonstration",
@@ -93,10 +93,11 @@
       "converged": true,
       "values": {
         "converged": true,
-        "base_case_capacity_mw": 5.812,
-        "firm_import_capacity_mw": 5.812,
+        "base_case_capacity_mw": 3.812,
+        "firm_import_capacity_mw": 3.812,
         "binding_case": "base_case",
-        "binding_constraint": "line_thermal_loading",
+        "binding_constraint": "minimum_bus_voltage",
+        "capacity_is_lower_bound": false,
         "contingencies": [],
         "search_tolerance_mw": 0.1,
         "voltage_limits_pu": [
@@ -104,6 +105,7 @@
           1.05
         ],
         "thermal_limit_percent": 100.0,
+        "incremental_load_power_factor": 1.0,
         "model_id": "simbench:1-MV-urban--0-sw",
         "model_version": "simbench-open-model-v1",
         "validation_class": "synthetic_demonstration",

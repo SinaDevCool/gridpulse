@@ -153,12 +153,16 @@ class OperatorHealthExecutor:
 
             result = run_fca_interval(job.input_payload)
             self._store.update(
-                job_id, status=JobStatus.SUCCEEDED, result_payload=result,
+                job_id,
+                status=JobStatus.SUCCEEDED,
+                result_payload=result,
                 completed_at=datetime.now(timezone.utc),
             )
         except Exception as error:  # noqa: BLE001 - canonical job fails closed
             self._store.update(
-                job_id, status=JobStatus.FAILED, error=str(error)[:2000],
+                job_id,
+                status=JobStatus.FAILED,
+                error=str(error)[:2000],
                 completed_at=datetime.now(timezone.utc),
             )
 
@@ -170,12 +174,16 @@ class OperatorHealthExecutor:
 
             result = run_facility_uncertainty(job.input_payload)
             self._store.update(
-                job_id, status=JobStatus.SUCCEEDED, result_payload=result,
+                job_id,
+                status=JobStatus.SUCCEEDED,
+                result_payload=result,
                 completed_at=datetime.now(timezone.utc),
             )
         except Exception as error:  # noqa: BLE001 - canonical job fails closed
             self._store.update(
-                job_id, status=JobStatus.FAILED, error=str(error)[:2000],
+                job_id,
+                status=JobStatus.FAILED,
+                error=str(error)[:2000],
                 completed_at=datetime.now(timezone.utc),
             )
 
@@ -187,12 +195,16 @@ class OperatorHealthExecutor:
 
             result = run_market_qualification(job.input_payload)
             self._store.update(
-                job_id, status=JobStatus.SUCCEEDED, result_payload=result,
+                job_id,
+                status=JobStatus.SUCCEEDED,
+                result_payload=result,
                 completed_at=datetime.now(timezone.utc),
             )
         except Exception as error:  # noqa: BLE001 - canonical job fails closed
             self._store.update(
-                job_id, status=JobStatus.FAILED, error=str(error)[:2000],
+                job_id,
+                status=JobStatus.FAILED,
+                error=str(error)[:2000],
                 completed_at=datetime.now(timezone.utc),
             )
 
@@ -204,12 +216,16 @@ class OperatorHealthExecutor:
 
             result = run_rolling_facility_plan(job.input_payload)
             self._store.update(
-                job_id, status=JobStatus.SUCCEEDED, result_payload=result,
+                job_id,
+                status=JobStatus.SUCCEEDED,
+                result_payload=result,
                 completed_at=datetime.now(timezone.utc),
             )
         except Exception as error:  # noqa: BLE001 - canonical job fails closed
             self._store.update(
-                job_id, status=JobStatus.FAILED, error=str(error)[:2000],
+                job_id,
+                status=JobStatus.FAILED,
+                error=str(error)[:2000],
                 completed_at=datetime.now(timezone.utc),
             )
 
@@ -221,12 +237,16 @@ class OperatorHealthExecutor:
 
             result = run_facility_historical_replay(job.input_payload)
             self._store.update(
-                job_id, status=JobStatus.SUCCEEDED, result_payload=result,
+                job_id,
+                status=JobStatus.SUCCEEDED,
+                result_payload=result,
                 completed_at=datetime.now(timezone.utc),
             )
         except Exception as error:  # noqa: BLE001 - canonical job fails closed
             self._store.update(
-                job_id, status=JobStatus.FAILED, error=str(error)[:2000],
+                job_id,
+                status=JobStatus.FAILED,
+                error=str(error)[:2000],
                 completed_at=datetime.now(timezone.utc),
             )
 
@@ -238,12 +258,16 @@ class OperatorHealthExecutor:
 
             result = run_evidence_package(job.input_payload)
             self._store.update(
-                job_id, status=JobStatus.SUCCEEDED, result_payload=result,
+                job_id,
+                status=JobStatus.SUCCEEDED,
+                result_payload=result,
                 completed_at=datetime.now(timezone.utc),
             )
         except Exception as error:  # noqa: BLE001 - canonical job fails closed
             self._store.update(
-                job_id, status=JobStatus.FAILED, error=str(error)[:2000],
+                job_id,
+                status=JobStatus.FAILED,
+                error=str(error)[:2000],
                 completed_at=datetime.now(timezone.utc),
             )
 
@@ -255,12 +279,16 @@ class OperatorHealthExecutor:
 
             result = run_shadow_verification(job.input_payload)
             self._store.update(
-                job_id, status=JobStatus.SUCCEEDED, result_payload=result,
+                job_id,
+                status=JobStatus.SUCCEEDED,
+                result_payload=result,
                 completed_at=datetime.now(timezone.utc),
             )
         except Exception as error:  # noqa: BLE001 - canonical job fails closed
             self._store.update(
-                job_id, status=JobStatus.FAILED, error=str(error)[:2000],
+                job_id,
+                status=JobStatus.FAILED,
+                error=str(error)[:2000],
                 completed_at=datetime.now(timezone.utc),
             )
 
@@ -272,12 +300,16 @@ class OperatorHealthExecutor:
 
             result = run_capacity_requirement(job.input_payload)
             self._store.update(
-                job_id, status=JobStatus.SUCCEEDED, result_payload=result,
+                job_id,
+                status=JobStatus.SUCCEEDED,
+                result_payload=result,
                 completed_at=datetime.now(timezone.utc),
             )
         except Exception as error:  # noqa: BLE001 - canonical job fails closed
             self._store.update(
-                job_id, status=JobStatus.FAILED, error=str(error)[:2000],
+                job_id,
+                status=JobStatus.FAILED,
+                error=str(error)[:2000],
                 completed_at=datetime.now(timezone.utc),
             )
 

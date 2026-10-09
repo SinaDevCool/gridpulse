@@ -94,9 +94,7 @@ def discover_state_manifest(output_path: Path) -> dict[str, Any]:
         head = urllib.request.Request(url, method="HEAD", headers={"User-Agent": USER_AGENT})
         with urllib.request.urlopen(head, timeout=60) as response:
             headers = response.headers
-        checksum_request = urllib.request.Request(
-            f"{url}.md5", headers={"User-Agent": USER_AGENT}
-        )
+        checksum_request = urllib.request.Request(f"{url}.md5", headers={"User-Agent": USER_AGENT})
         with urllib.request.urlopen(checksum_request, timeout=60) as response:
             checksum = response.read(1024).decode("ascii", errors="replace").split()[0]
         if not re.fullmatch(r"[a-fA-F0-9]{32}", checksum):
@@ -125,7 +123,9 @@ def discover_state_manifest(output_path: Path) -> dict[str, Any]:
         "accepted": False,
     }
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    output_path.write_text(
+        json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
     return report
 
 
@@ -137,7 +137,9 @@ def verify_pbf(path: Path, expected_md5: str) -> str:
             digest.update(chunk)
     actual = digest.hexdigest()
     if actual.casefold() != expected_md5.casefold():
-        raise ValueError(f"checksum mismatch for {path.name}: expected {expected_md5}, got {actual}")
+        raise ValueError(
+            f"checksum mismatch for {path.name}: expected {expected_md5}, got {actual}"
+        )
     return actual
 
 

@@ -83,7 +83,9 @@ class FacilityUncertaintyRequest(BaseModel):
     bounds: dict[str, Any]
     scenario_count: int = Field(ge=1, le=1_000)
     seed: int
-    risk_policy: Literal["chance_constrained", "distributionally_robust", "cvar"] = "chance_constrained"
+    risk_policy: Literal["chance_constrained", "distributionally_robust", "cvar"] = (
+        "chance_constrained"
+    )
     confidence: float = Field(default=0.9, gt=0, lt=1)
 
 

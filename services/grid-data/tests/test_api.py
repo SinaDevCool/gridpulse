@@ -51,7 +51,8 @@ class SuccessfulExecutor:
 
     def execute_fca_interval(self, job_id: UUID) -> None:
         self.store.update(
-            job_id, status=JobStatus.SUCCEEDED,
+            job_id,
+            status=JobStatus.SUCCEEDED,
             result_payload={
                 "schema_version": "gridpulse-fca-interval-application-result-v1",
                 "capacity_claim": False,
@@ -87,7 +88,8 @@ class SuccessfulExecutor:
 
     def execute_market_qualification(self, job_id: UUID) -> None:
         self.store.update(
-            job_id, status=JobStatus.SUCCEEDED,
+            job_id,
+            status=JobStatus.SUCCEEDED,
             result_payload={
                 "schema_version": "gridpulse-market-qualification-application-result-v1",
                 "capacity_claim": False,
@@ -97,7 +99,8 @@ class SuccessfulExecutor:
 
     def execute_rolling_facility_plan(self, job_id: UUID) -> None:
         self.store.update(
-            job_id, status=JobStatus.SUCCEEDED,
+            job_id,
+            status=JobStatus.SUCCEEDED,
             result_payload={
                 "schema_version": "gridpulse-rolling-facility-plan-application-result-v1",
                 "capacity_claim": False,
@@ -108,7 +111,8 @@ class SuccessfulExecutor:
     def execute_facility_historical_replay(self, job_id: UUID) -> None:
         job = self.store.get_internal(job_id)
         self.store.update(
-            job_id, status=JobStatus.SUCCEEDED,
+            job_id,
+            status=JobStatus.SUCCEEDED,
             result_payload={
                 "schema_version": "gridpulse-facility-historical-replay-application-result-v1",
                 "input_schema": job.input_payload["schema_version"],
@@ -120,7 +124,8 @@ class SuccessfulExecutor:
     def execute_operator_enquiry_package(self, job_id: UUID) -> None:
         job = self.store.get_internal(job_id)
         self.store.update(
-            job_id, status=JobStatus.SUCCEEDED,
+            job_id,
+            status=JobStatus.SUCCEEDED,
             result_payload={
                 "schema_version": "gridpulse-operator-enquiry-package-application-result-v1",
                 "input_schema": job.input_payload["schema_version"],
@@ -131,7 +136,8 @@ class SuccessfulExecutor:
 
     def execute_shadow_verification(self, job_id: UUID) -> None:
         self.store.update(
-            job_id, status=JobStatus.SUCCEEDED,
+            job_id,
+            status=JobStatus.SUCCEEDED,
             result_payload={
                 "schema_version": "gridpulse-shadow-verification-application-result-v1",
                 "read_only": True,
@@ -196,9 +202,14 @@ class SuccessfulExecutor:
         )
 
     def execute_graph_guided_study(self, job_id: UUID) -> None:
-        self.store.update(job_id, status=JobStatus.SUCCEEDED, result_payload={
-            "public_visibility": "private_internal_only", "capacity_claim": False,
-        })
+        self.store.update(
+            job_id,
+            status=JobStatus.SUCCEEDED,
+            result_payload={
+                "public_visibility": "private_internal_only",
+                "capacity_claim": False,
+            },
+        )
 
 
 class AnalyticsApiTests(unittest.TestCase):
@@ -232,8 +243,11 @@ class AnalyticsApiTests(unittest.TestCase):
         self.assertEqual(
             {item["operation"] for item in payload["contracts"]},
             {
-                "capacity_requirement", "facility_plan", "facility_uncertainty",
-                "facility_historical_replay", "operator_enquiry_package",
+                "capacity_requirement",
+                "facility_plan",
+                "facility_uncertainty",
+                "facility_historical_replay",
+                "operator_enquiry_package",
                 "shadow_verification",
                 "fca_interval",
                 "market_qualification",
@@ -285,17 +299,17 @@ class AnalyticsApiTests(unittest.TestCase):
 
     def test_canonical_facility_plan_uses_existing_job_boundary(self) -> None:
         payload = {
-                "schema_version": "gridpulse-facility-plan-request-v1",
-                "portfolio_id": "portfolio-a",
-                "requirement": {"requirement_id": "requirement-a"},
-                "intervals": [{"index": 0}],
-                "facility": {"facility_id": "facility-a"},
-                "workloads": [{"workload_id": "job-a"}],
-                "profiles": [{"profile_id": "profile-a"}],
-                "policy": {"event_intervals": [True]},
-                "economics": {"import_price_eur_per_mwh": [100]},
-                "cooling": {"baseline_power_mw": 1},
-            }
+            "schema_version": "gridpulse-facility-plan-request-v1",
+            "portfolio_id": "portfolio-a",
+            "requirement": {"requirement_id": "requirement-a"},
+            "intervals": [{"index": 0}],
+            "facility": {"facility_id": "facility-a"},
+            "workloads": [{"workload_id": "job-a"}],
+            "profiles": [{"profile_id": "profile-a"}],
+            "policy": {"event_intervals": [True]},
+            "economics": {"import_price_eur_per_mwh": [100]},
+            "cooling": {"baseline_power_mw": 1},
+        }
         accepted = self.client.post("/v1/jobs/facility-plan", json=payload)
         self.assertEqual(accepted.status_code, 202)
         job = self.client.get(f"/v1/jobs/{accepted.json()['job_id']}")
@@ -313,11 +327,16 @@ class AnalyticsApiTests(unittest.TestCase):
             "analysis_kind": "dispatch",
             "points": [{"timestamp": "2026-01-01T00:00:00+00:00", "import_mw": 60, "export_mw": 0}],
             "settings": {
-                "firm_import_mw": 50, "conditional_import_mw": 0,
-                "minimum_critical_load_mw": 40, "shiftable_load_mw": 5,
-                "battery_power_mw": 10, "battery_energy_mwh": 5,
-                "battery_round_trip_efficiency": 1, "battery_minimum_soc": 0,
-                "initial_battery_soc": 1, "energy_value_eur_mwh": 200,
+                "firm_import_mw": 50,
+                "conditional_import_mw": 0,
+                "minimum_critical_load_mw": 40,
+                "shiftable_load_mw": 5,
+                "battery_power_mw": 10,
+                "battery_energy_mwh": 5,
+                "battery_round_trip_efficiency": 1,
+                "battery_minimum_soc": 0,
+                "initial_battery_soc": 1,
+                "energy_value_eur_mwh": 200,
                 "battery_degradation_eur_mwh": 20,
             },
         }
@@ -587,28 +606,43 @@ class AnalyticsApiTests(unittest.TestCase):
         self.assertEqual(workspace_spoof.status_code, 422)
 
     def test_graph_guided_study_reuses_private_job_boundary(self) -> None:
-        response = self.client.post("/v1/jobs/graph-guided-study", json={
-            "network_model": {"model_id": "synthetic"},
-            "scenarios": [{"scenario_id": "normal"}],
-            "source_bus": "a", "target_buses": ["b"],
-            "mandatory_contingencies": [], "solver_budget": 1,
-        })
+        response = self.client.post(
+            "/v1/jobs/graph-guided-study",
+            json={
+                "network_model": {"model_id": "synthetic"},
+                "scenarios": [{"scenario_id": "normal"}],
+                "source_bus": "a",
+                "target_buses": ["b"],
+                "mandatory_contingencies": [],
+                "solver_budget": 1,
+            },
+        )
         self.assertEqual(response.status_code, 202)
         job = self.client.get(f"/v1/jobs/{response.json()['job_id']}").json()
         self.assertFalse(job["result_payload"]["capacity_claim"])
-        spoofed = self.client.post("/v1/jobs/graph-guided-study", json={
-            "workspace_id": "00000000-0000-0000-0000-000000000001",
-            "network_model": {"model_id": "synthetic"},
-            "scenarios": [{"scenario_id": "normal"}],
-            "source_bus": "a", "target_buses": ["b"], "solver_budget": 1,
-        })
+        spoofed = self.client.post(
+            "/v1/jobs/graph-guided-study",
+            json={
+                "workspace_id": "00000000-0000-0000-0000-000000000001",
+                "network_model": {"model_id": "synthetic"},
+                "scenarios": [{"scenario_id": "normal"}],
+                "source_bus": "a",
+                "target_buses": ["b"],
+                "solver_budget": 1,
+            },
+        )
         self.assertEqual(spoofed.status_code, 422)
-        promoted = self.client.post("/v1/jobs/graph-guided-study", json={
-            "network_model": {"model_id": "synthetic"},
-            "scenarios": [{"scenario_id": "normal"}],
-            "source_bus": "a", "target_buses": ["b"], "solver_budget": 1,
-            "validation_mode": "promoted",
-        })
+        promoted = self.client.post(
+            "/v1/jobs/graph-guided-study",
+            json={
+                "network_model": {"model_id": "synthetic"},
+                "scenarios": [{"scenario_id": "normal"}],
+                "source_bus": "a",
+                "target_buses": ["b"],
+                "solver_budget": 1,
+                "validation_mode": "promoted",
+            },
+        )
         self.assertEqual(promoted.status_code, 422)
 
 
