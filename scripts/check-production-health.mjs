@@ -58,9 +58,9 @@ const checks = [
         throw new Error("Operations heading is missing");
       }
       if (
-        !html.includes("Simulated assessment") ||
-        !html.includes("No automatic dispatch") ||
-        !html.includes("No live telemetry")
+        !html.includes("Scenario assessment—not live control") ||
+        !html.includes("No physical control command will be sent") ||
+        !html.includes("Not connected")
       ) {
         throw new Error("Operations evidence boundary is missing");
       }
