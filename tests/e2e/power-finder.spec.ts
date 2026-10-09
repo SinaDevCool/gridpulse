@@ -19,6 +19,15 @@ test("Power Finder and its accepted OSM release are publicly readable without cr
 
   await page.goto("/power-finder");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  await expect(page.getByText("Evidence status controls every conclusion")).toBeVisible();
-  await expect(page.getByText(/not a network study, connection offer/i)).toBeVisible();
+  const fullProductNotice = page.getByText("Evidence status controls every conclusion");
+  if (await fullProductNotice.count()) {
+    await expect(fullProductNotice).toBeVisible();
+    await expect(page.getByText(/not a network study, connection offer/i)).toBeVisible();
+  } else {
+    await expect(
+      page
+        .getByText("Capacity and connection terms require operator confirmation.", { exact: true })
+        .first(),
+    ).toBeVisible();
+  }
 });

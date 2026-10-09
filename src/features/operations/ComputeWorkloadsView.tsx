@@ -25,6 +25,7 @@ import {
 import type { EvidenceClass } from "./evidence";
 import { OperationsEvidenceBadge, OperationsMetricCard } from "./components";
 import { requestOperationsAssessment } from "@/lib/operations-api";
+import { stableOperationsJson } from "@/lib/operations-request";
 import type { OperationsOverviewModel } from "./scenario-engine";
 import {
   assessWorkloads,
@@ -61,6 +62,11 @@ export function ComputeWorkloadsView({
   displayModel?: OperationsOverviewModel;
 }) {
   const importRevision = useRef(0);
+  const modelSignature = stableOperationsJson({
+    scenario: model.scenario,
+    intervals: model.intervals,
+  });
+  const previousModelSignature = useRef(modelSignature);
   const { data: capabilities } = useOperationsCapabilities();
   const [workloads, setWorkloads] = useState<ComputeWorkload[]>(() =>
     buildScenarioWorkloads(model),
@@ -106,6 +112,9 @@ export function ComputeWorkloadsView({
 
   useEffect(() => setInteractive(true), []);
   useEffect(() => {
+    // A server refresh with identical inputs must not cancel an in-flight import.
+    if (previousModelSignature.current === modelSignature) return;
+    previousModelSignature.current = modelSignature;
     importRevision.current += 1;
     setBackendAssessment(null);
     setWorkloads((current) =>
@@ -116,7 +125,7 @@ export function ComputeWorkloadsView({
     setMessage(
       "Inputs changed. Workload estimates recalculated; canonical schedule validation is still required.",
     );
-  }, [model]);
+  }, [model, modelSignature]);
 
   async function importWorkloadFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];

@@ -57,7 +57,17 @@ try {
     undefined,
     { timeout: 30_000 },
   );
-  await page.waitForTimeout(5_000);
+  await page.waitForFunction(
+    () => {
+      const stage = document.querySelector(".power-finder-stage");
+      return ["grid", "registry"].every((source) => {
+        const status = stage?.getAttribute(`data-${source}-source-status`);
+        return status && status !== "loading";
+      });
+    },
+    undefined,
+    { timeout: 60_000 },
+  );
 
   const result = await page.evaluate(() => {
     const canvas = document.querySelector(".maplibregl-canvas");

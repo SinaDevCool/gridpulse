@@ -141,6 +141,21 @@ test("Compute & Workloads keeps scenario evidence distinct and supports workload
 test("Compute & Workloads imports real scheduler and DCGM-compatible evidence", async ({
   page,
 }) => {
+  let releaseOverview!: () => void;
+  const overviewGate = new Promise<void>((resolve) => {
+    releaseOverview = resolve;
+  });
+  let overviewReleased = false;
+  await page.route("**/api/operations/assess", async (route) => {
+    if (route.request().postDataJSON()?.kind === "overview") {
+      const response = await route.fetch();
+      await overviewGate;
+      await route.fulfill({ response });
+      overviewReleased = true;
+    } else {
+      await route.continue();
+    }
+  });
   await page.goto("/operations?view=compute");
   const connectEvidence = page.getByRole("button", { name: "Connect Evidence" });
   await expect(connectEvidence).toBeVisible();
@@ -157,6 +172,9 @@ test("Compute & Workloads imports real scheduler and DCGM-compatible evidence", 
       ].join("\n"),
     ),
   });
+  await expect(page.getByText("1 scheduler records loaded from workloads.csv.")).toBeVisible();
+  releaseOverview();
+  await expect.poll(() => overviewReleased).toBe(true);
   await expect(page.getByText("1 scheduler records loaded from workloads.csv.")).toBeVisible();
   await page.getByLabel(/GPU telemetry CSV/).setInputFiles({
     name: "gpu.csv",

@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { canonicalOperatorName } from "./operator-normalization";
+import { canonicalOperatorName, knownOperatorRole } from "./operator-normalization";
 import { mergeOperatorBounds, type OperatorBounds } from "./operator-map-navigation";
 
 export type GridOperatorOption = {
@@ -37,7 +37,10 @@ export async function loadGridOperatorCatalog(): Promise<GridOperatorOption[]> {
       : [];
     merged.set(name, {
       name,
-      type: previous?.type === "TSO" || item.type === "TSO" ? "TSO" : "DSO / other",
+      type:
+        knownOperatorRole(name) === "TSO" || previous?.type === "TSO" || item.type === "TSO"
+          ? "TSO"
+          : "DSO / other",
       featureCount: (previous?.featureCount ?? 0) + Number(item.featureCount ?? 0),
       bounds: mergeOperatorBounds(previous?.bounds ?? null, bounds),
       tsoNames: [...new Set([...(previous?.tsoNames ?? []), ...tsoNames])].sort(),

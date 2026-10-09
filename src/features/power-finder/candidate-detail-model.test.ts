@@ -52,6 +52,11 @@ const tso: GridOperatorOption = {
 };
 
 describe("candidate detail model", () => {
+  it("does not turn a known TSO into a joint operator when catalogue fallback conflicts", () => {
+    const context = resolveCandidateOperatorContext(candidate, [{ ...tso, type: "DSO / other" }]);
+    expect(context.mappedRole).toBe("TSO");
+    expect(context.upstreamTso).toBeNull();
+  });
   it("identifies a directly mapped TSO without inventing a DSO", () => {
     const context = resolveCandidateOperatorContext(candidate, [tso]);
     expect(context.mappedOperator).toBe("TenneT TSO GmbH");
@@ -96,20 +101,17 @@ describe("candidate detail model", () => {
   );
 
   it("keeps jointly mapped TSO and DSO identities visible", () => {
-    const context = resolveCandidateOperatorContext(
-      { ...candidate, operator: "TenneT; Avacon" },
-      [
-        tso,
-        {
-          name: "Avacon Netz GmbH",
-          type: "DSO / other",
-          featureCount: 1,
-          bounds: null,
-          tsoNames: ["TenneT TSO GmbH"],
-          relationshipBasis: "mapped_proximity",
-        },
-      ],
-    );
+    const context = resolveCandidateOperatorContext({ ...candidate, operator: "TenneT; Avacon" }, [
+      tso,
+      {
+        name: "Avacon Netz GmbH",
+        type: "DSO / other",
+        featureCount: 1,
+        bounds: null,
+        tsoNames: ["TenneT TSO GmbH"],
+        relationshipBasis: "mapped_proximity",
+      },
+    ]);
 
     expect(context.mappedOperator).toBe("TenneT TSO GmbH · Avacon Netz GmbH");
     expect(context.mappedRole).toBe("TSO & DSO");
