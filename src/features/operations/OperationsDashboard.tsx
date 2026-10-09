@@ -53,6 +53,7 @@ import {
   type OperationsDataMode,
 } from "./operating-context";
 import { OperationsSelect } from "./OperationsSelect";
+import { formatOperationsTime } from "./presentation";
 import { assessOperationsCompliance, authorizeDispatch } from "./operations-assurance";
 import {
   OperatingEnvelopeMap,
@@ -148,7 +149,7 @@ export function OperationsDashboard({
           <span className={`operations-v2-backend ${backendState}`} role="status">
             <i aria-hidden="true" />
             {backendState === "verified"
-              ? "Assessment service online"
+              ? "Assessment service available"
               : backendState === "checking"
                 ? "Checking assessment service…"
                 : "Using browser fallback"}
@@ -156,6 +157,8 @@ export function OperationsDashboard({
           <ScenarioEditor
             scenario={scenario}
             onApply={(next) => {
+              setServerModel(null);
+              setBackendState("checking");
               setScenario(next);
               setAnnouncement("Scenario assumptions updated. Dashboard results recalculated.");
             }}
@@ -190,7 +193,7 @@ export function OperationsDashboard({
         <p className="operations-v2-provenance">
           <Info aria-hidden="true" />
           <span>
-            <strong>Scenario workspace</strong> {viewCopy.evidence} No control commands are issued.
+            <strong>Simulated assessment · No automatic dispatch</strong>
           </span>
         </p>
       </div>
@@ -243,10 +246,15 @@ export function OperationsDashboard({
             <strong>
               {backendState === "verified" ? "Assessment Current" : "Local Assessment"}
             </strong>
-            {operationsModeLabels[mode]} · {model.intervals.length} intervals
+            {operationsModeLabels[mode]} · {model.intervals.length} intervals · No live telemetry
           </span>
         </div>
       </section>
+      <p className="operations-assessment-date">
+        Scenario data: {formatOperationsTime(model.intervals[0].timestamp, true)} –{" "}
+        {formatOperationsTime(model.intervals.at(-1)!.timestamp)}. Window presets select simulated
+        intervals, not a live forecast.
+      </p>
 
       <p className="sr-only" aria-live="polite">
         {announcement}
@@ -319,14 +327,13 @@ function OverviewView({
         Operations Overview
       </h2>
       <OperationsLifecycle />
-      <OperationsDecisionBrief model={model} />
-      <OperatingEnvelopeMap model={model} />
+      <OperationsDecisionBrief model={model} selected={selected} />
       <div className="operations-v2-kpis operations-v2-kpis--outcomes">
         <MetricCard
           icon={<Activity />}
-          label="Facility Demand"
-          metric={model.metrics.facilityDemand}
-          note={`Peak scenario snapshot at ${snapshot.label}`}
+          label="Peak import after response"
+          metric={{ ...model.metrics.facilityDemand, value: selectedSummary.peakDemandMw }}
+          note={`${selectedSummary.label} · maximum in selected window`}
         />
         <MetricCard
           icon={<Bolt />}
@@ -336,9 +343,15 @@ function OverviewView({
         />
         <MetricCard
           icon={<Gauge />}
-          label="Headroom After Reserve"
-          metric={model.metrics.remainingMargin}
-          note="After safety reserve"
+          label="Minimum target headroom"
+          metric={{
+            ...model.metrics.remainingMargin,
+            value:
+              model.scenario.importLimitMw -
+              model.scenario.safetyReserveMw -
+              selectedSummary.peakDemandMw,
+          }}
+          note="Safety target minus selected peak import"
         />
       </div>
 
@@ -348,15 +361,23 @@ function OverviewView({
           <header>
             <Zap aria-hidden="true" />
             <div>
-              <p className="context-label">Recommended Scenario</p>
-              <h3>Battery + Workload Response</h3>
+              <p className="context-label">Selected response</p>
+              <h3>{selectedSummary.label}</h3>
             </div>
           </header>
           <p className="operations-v2-recommendation-copy">
-            Test up to <strong>{number.format(model.recommendation.batteryMw)}&nbsp;MW</strong> of
-            battery response and shift{" "}
-            <strong>{number.format(model.recommendation.workloadMwh)}&nbsp;MWh</strong> of flexible
-            demand.
+            Test up to{" "}
+            <strong>
+              {number.format(selected === "baseline" ? 0 : model.recommendation.batteryMw)}&nbsp;MW
+            </strong>{" "}
+            of battery response and shift{" "}
+            <strong>
+              {number.format(
+                selected === "battery_workload" ? model.recommendation.workloadMwh : 0,
+              )}
+              &nbsp;MWh
+            </strong>{" "}
+            of flexible demand.
           </p>
           <dl>
             <ImpactRow
@@ -365,27 +386,24 @@ function OverviewView({
             />
             <ImpactRow
               label="Battery Contribution"
-              value={`${number.format(model.recommendation.batteryMw)} MW`}
+              value={`${number.format(selected === "baseline" ? 0 : model.recommendation.batteryMw)} MW`}
             />
             <ImpactRow
               label="Workload Contribution"
-              value={`${number.format(model.recommendation.peakReductionMw - model.recommendation.batteryMw)} MW`}
+              value={`${number.format(selected === "battery_workload" ? Math.max(...model.intervals.map((point) => point.workloadShiftMw)) : 0)} MW`}
             />
             <ImpactRow
               label="Violation Intervals Avoided"
-              value={integer.format(model.recommendation.violationsAvoided)}
-            />
-            <ImpactRow
-              label="Peak Reduction"
-              value={`${number.format(model.recommendation.peakReductionMw)} MW`}
+              value={integer.format(
+                Math.max(
+                  0,
+                  model.summaries[0].violationIntervals - selectedSummary.violationIntervals,
+                ),
+              )}
             />
             <ImpactRow
               label="GPU-Hours Enabled"
-              value={`${integer.format(model.recommendation.additionalGpuHours)} h`}
-            />
-            <ImpactRow
-              label="Selected Peak"
-              value={`${number.format(selectedSummary.peakDemandMw)} MW`}
+              value={`${integer.format(selectedSummary.additionalGpuHours)} h`}
             />
           </dl>
           <div className="operations-v2-readonly">
@@ -402,6 +420,10 @@ function OverviewView({
         <h3 id="scenario-comparison-title">Compare operational responses</h3>
         <ScenarioDecisionTable model={model} selected={selected} onSelect={onSelect} />
       </section>
+      <details className="operations-assurance-panel">
+        <summary>Operating envelope & uncertainty</summary>
+        <OperatingEnvelopeMap model={model} />
+      </details>
       <OperationsEvidenceRail model={model} />
       <details id="operations-assurance" className="operations-assurance-panel">
         <summary>Evidence, verification and control readiness</summary>
@@ -459,6 +481,7 @@ function DemandChart({
         ? "Battery response"
         : "Battery + workload";
   const targetMw = model.scenario.importLimitMw - model.scenario.safetyReserveMw;
+  const [showUncertainty, setShowUncertainty] = useState(false);
   const chartData = model.intervals.map((point, index) => {
     const uncertainty = Math.max(0.8, point.baselineDemandMw * (0.018 + index * 0.00008));
     return {
@@ -482,6 +505,14 @@ function DemandChart({
         Baseline compared with <strong>{selectedName}</strong>. The safety target preserves the
         configured reserve below the facility limit.
       </p>
+      <label className="operations-chart-option">
+        <input
+          type="checkbox"
+          checked={showUncertainty}
+          onChange={(event) => setShowUncertainty(event.target.checked)}
+        />
+        Show illustrative planning range & risk-adjusted envelope
+      </label>
       <OperationsChartSummary>
         <ChartSummaryMetric label="Baseline Peak" value={formatMw(baseline.peakDemandMw)} />
         <ChartSummaryMetric
@@ -508,12 +539,16 @@ function DemandChart({
             tone: "demand",
             mark: "area",
           },
-          {
-            label: "Planning range",
-            detail: "MW · scenario uncertainty",
-            tone: "neutral",
-            mark: "area",
-          },
+          ...(showUncertainty
+            ? [
+                {
+                  label: "Planning range",
+                  detail: "MW · illustrative, not calibrated",
+                  tone: "neutral" as const,
+                  mark: "area" as const,
+                },
+              ]
+            : []),
           ...(selected !== "baseline"
             ? [{ label: selectedName, detail: "MW · selected response", tone: "response" as const }]
             : []),
@@ -529,12 +564,16 @@ function DemandChart({
             tone: "limit",
             mark: "dash",
           },
-          {
-            label: "Risk-adjusted envelope",
-            detail: "MW · uncertainty adjusted",
-            tone: "positive",
-            mark: "dash",
-          },
+          ...(showUncertainty
+            ? [
+                {
+                  label: "Risk-adjusted envelope",
+                  detail: "MW · uncertainty adjusted",
+                  tone: "positive" as const,
+                  mark: "dash" as const,
+                },
+              ]
+            : []),
         ]}
       />
       <div
@@ -575,15 +614,17 @@ function DemandChart({
                 position: "insideTopRight",
               }}
             />
-            <Line
-              dataKey="riskAdjustedCeilingMw"
-              name="Risk-adjusted envelope"
-              stroke="var(--ops-positive)"
-              strokeWidth={1.5}
-              strokeDasharray="2 5"
-              dot={false}
-              isAnimationActive={false}
-            />
+            {showUncertainty ? (
+              <Line
+                dataKey="riskAdjustedCeilingMw"
+                name="Risk-adjusted envelope"
+                stroke="var(--ops-positive)"
+                strokeWidth={1.5}
+                strokeDasharray="2 5"
+                dot={false}
+                isAnimationActive={false}
+              />
+            ) : null}
             <ReferenceLine
               y={model.scenario.importLimitMw}
               stroke="var(--ops-limit)"
@@ -594,14 +635,16 @@ function DemandChart({
                 position: "insideBottomLeft",
               }}
             />
-            <Area
-              dataKey="forecastBand"
-              name="Planning range"
-              stroke="none"
-              fill="var(--ops-forecast-fill)"
-              fillOpacity={0.55}
-              isAnimationActive={false}
-            />
+            {showUncertainty ? (
+              <Area
+                dataKey="forecastBand"
+                name="Planning range"
+                stroke="none"
+                fill="var(--ops-forecast-fill)"
+                fillOpacity={0.55}
+                isAnimationActive={false}
+              />
+            ) : null}
             <Area
               dataKey="baselineDemandMw"
               name="Baseline Demand"
@@ -701,6 +744,8 @@ function ScenarioEditor({
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(scenario);
   const [error, setError] = useState("");
+  const [interactive, setInteractive] = useState(false);
+  useEffect(() => setInteractive(true), []);
   function submit(event: FormEvent) {
     event.preventDefault();
     const parsed = operationsScenarioSchema.safeParse(draft);
@@ -717,6 +762,7 @@ function ScenarioEditor({
       <button
         type="button"
         className="operations-v2-configure"
+        disabled={!interactive}
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
       >

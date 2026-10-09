@@ -13,10 +13,10 @@ export type OperatingWindowPreset = (typeof operatingWindowValues)[number];
 export type OperationsDataMode = (typeof operationsModeValues)[number];
 
 export const operatingWindowLabels: Record<OperatingWindowPreset, string> = {
-  now: "Now",
-  "next-4h": "Next 4 Hours",
-  today: "Today",
-  tomorrow: "Tomorrow",
+  now: "Assessed peak",
+  "next-4h": "4-hour risk window",
+  today: "Full scenario day",
+  tomorrow: "Repeat scenario day",
 };
 
 export const operationsModeLabels: Record<OperationsDataMode, string> = {

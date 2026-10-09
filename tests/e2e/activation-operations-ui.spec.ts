@@ -40,8 +40,9 @@ test("Operations exposes the focused three-view facility workflow", async ({ pag
   await expect(navigation.getByRole("link", { name: "Compute & Workloads" })).toBeVisible();
   await expect(navigation.getByRole("link", { name: "Power & Battery" })).toBeVisible();
   await expect(navigation.getByRole("link")).toHaveCount(3);
-  await expect(page.getByText("Scenario workspace", { exact: true })).toBeVisible();
-  await expect(page.getByText(/No control commands are issued/)).toBeVisible();
+  await expect(
+    page.getByText("Simulated assessment · No automatic dispatch", { exact: true }),
+  ).toBeVisible();
   await expect(page.getByText("GPU-Hours Enabled").locator("xpath=..").locator("dd")).toHaveText(
     /^\d[\d,.]* h$/,
   );
@@ -51,12 +52,14 @@ test("Operations context selectors are themed, keyboard-operable, and preserve U
   page,
 }) => {
   await page.goto("/operations?view=overview&window=today&mode=scenario");
-  await expect(page.getByText("Assessment service online")).toBeVisible();
-  const windowTrigger = page.locator(".operations-select-trigger").filter({ hasText: "Today" });
+  await expect(page.getByText("Assessment service available")).toBeVisible();
+  const windowTrigger = page
+    .locator(".operations-select-trigger")
+    .filter({ hasText: "Full scenario day" });
   await windowTrigger.click();
   const listbox = page.locator(".operations-select-popover").first();
   await expect(listbox).toBeVisible();
-  await page.getByRole("option", { name: "Next 4 Hours" }).click();
+  await page.getByRole("option", { name: "4-hour risk window" }).click();
   await expect(page).toHaveURL(/window=next-4h/);
 
   const modeTrigger = page.locator(".operations-select-trigger").filter({ hasText: "Scenario" });
@@ -110,7 +113,7 @@ test("Power & Battery explains when dispatch is unnecessary", async ({ page }) =
     }),
   ).toBeVisible();
   await expect(
-    page.locator(".power-kpis").filter({ hasText: "Sustainable response" }),
+    page.locator(".power-kpis").filter({ hasText: "Total discharge time" }),
   ).toContainText("Not required");
 });
 
@@ -173,14 +176,16 @@ test("Power & Battery exposes dispatch physics and imports measured evidence", a
   ).toBeVisible();
   await expect(page.getByText("Facility Power & Battery Response")).toBeVisible();
   await expect(page.getByText("Facility Power", { exact: true })).toBeVisible();
-  await expect(page.getByText("Battery Dispatch & State of Charge", { exact: true })).toBeVisible();
+  await expect(page.getByText("Battery Dispatch", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("Battery State of Charge", { exact: true })).toBeVisible();
   await expect(page.getByText("Supply balance", { exact: true })).toBeVisible();
   await expect(page.locator(".power-flow-equations span").first()).toContainText(
-    "101.6 + 5 = 106.6 MW",
+    "101.6 MW + 5 MW ≈ 106.6 MW",
   );
   await expect(page.locator(".power-flow-equations span").last()).toContainText(
-    "75.7 + 30.9 = 106.6 MW",
+    "75.7 MW + 30.9 MW ≈ 106.6 MW",
   );
+  await page.getByText("Evidence & connector readiness", { exact: true }).click();
   await expect(page.getByText("No live connectors configured")).toBeVisible();
   const connect = page.getByRole("button", { name: "Connect evidence" });
   await expect(connect).toBeEnabled();

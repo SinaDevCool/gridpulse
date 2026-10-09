@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ChangeEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -39,6 +39,8 @@ import {
   type WorkloadAssessment,
 } from "./workload-intelligence";
 import { useOperationsCapabilities } from "./use-operations-capabilities";
+import { formatMinutes, formatOperationsTime } from "./presentation";
+import { WorkloadSchedule } from "./WorkloadSchedule";
 import {
   ChartSummaryMetric,
   OperationsChartLegend,
@@ -197,7 +199,7 @@ export function ComputeWorkloadsView({ model }: { model: OperationsOverviewModel
           icon={<Server />}
           label="Compute Power"
           value={`${number.format(peakInterval.gpuPowerMw)} MW`}
-          evidence={telemetry.length ? "measured" : "simulated"}
+          evidence="simulated"
           note={
             telemetry.length
               ? `${number.format(assessment.telemetryCompletenessPercent)}% telemetry completeness`
@@ -227,6 +229,90 @@ export function ComputeWorkloadsView({ model }: { model: OperationsOverviewModel
           tone={assessment.deadlinesAtRisk ? "danger" : undefined}
         />
       </div>
+
+      <article className="compute-queue-card">
+        <header>
+          <div>
+            <p className="context-label">Workload Queue</p>
+            <h3>Jobs, Constraints and Recommended Action</h3>
+          </div>
+          <label>
+            Show{" "}
+            <select
+              value={status}
+              disabled={!interactive}
+              onChange={(event) => setStatus(event.target.value as typeof status)}
+            >
+              <option value="all">All statuses</option>
+              <option value="running">Running</option>
+              <option value="queued">Queued</option>
+              <option value="held">Held</option>
+              <option value="completed">Completed</option>
+            </select>
+          </label>
+        </header>
+        <div className="compute-table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Workload</th>
+                <th scope="col">Class</th>
+                <th scope="col">Status</th>
+                <th scope="col">GPUs</th>
+                <th scope="col">Power</th>
+                <th scope="col">Deadline slack</th>
+                <th scope="col">Decision</th>
+              </tr>
+            </thead>
+            <tbody>
+              {decisions.map((workload) => (
+                <tr
+                  key={workload.workloadId}
+                  className={`${selectedId === workload.workloadId ? "selected" : ""} ${workload.recommended ? "recommended" : ""}`}
+                >
+                  <th scope="row">
+                    <button
+                      type="button"
+                      disabled={!interactive}
+                      onClick={() => setSelectedId(workload.workloadId)}
+                    >
+                      {workload.name}
+                      <small>{workload.workloadId}</small>
+                    </button>
+                  </th>
+                  <td>{workload.workloadClass}</td>
+                  <td>
+                    <Status value={workload.status} />
+                  </td>
+                  <td>{integer.format(workload.requestedGpuCount)}</td>
+                  <td>
+                    {number.format(workload.estimatedPowerMw)} MW{" "}
+                    <small>{workload.powerEvidence}</small>
+                  </td>
+                  <td>{formatMinutes(workload.deadlineSlackMinutes)}</td>
+                  <td>
+                    <span
+                      className={
+                        workload.recommended
+                          ? "decision-recommended"
+                          : workload.eligible
+                            ? "decision-eligible"
+                            : "decision-protected"
+                      }
+                    >
+                      {workload.recommended
+                        ? "Recommended shift"
+                        : workload.eligible
+                          ? "Eligible—not selected"
+                          : "Protected workload"}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </article>
 
       <div className="compute-primary-grid">
         <article className="operations-v2-chart-card">
@@ -386,116 +472,35 @@ export function ComputeWorkloadsView({ model }: { model: OperationsOverviewModel
         </article>
       </div>
 
-      <article className="compute-queue-card">
-        <header>
+      <details className="operations-assurance-panel">
+        <summary>Evidence & connector readiness</summary>
+        <section className="compute-connectors" aria-labelledby="compute-connectors-title">
+          <header>
+            <div>
+              <p className="context-label">Live Integrations</p>
+              <h3 id="compute-connectors-title">Connector Readiness</h3>
+            </div>
+            <small>Credentials required for live customer data</small>
+          </header>
           <div>
-            <p className="context-label">Workload Queue</p>
-            <h3>Jobs, Constraints and Recommended Action</h3>
+            {(
+              capabilities?.connectors.filter((connector) =>
+                ["nvidia_dcgm", "kueue", "slurm"].includes(connector.id),
+              ) ?? []
+            ).map((connector) => (
+              <article key={connector.id}>
+                <Database aria-hidden="true" />
+                <div>
+                  <strong>{connector.label}</strong>
+                  <span>{connector.evidence.join(" · ")}</span>
+                </div>
+                <em>{connector.status.replaceAll("_", " ")}</em>
+              </article>
+            ))}
+            {!capabilities ? <p>Checking connector backend…</p> : null}
           </div>
-          <label>
-            Show{" "}
-            <select
-              value={status}
-              disabled={!interactive}
-              onChange={(event) => setStatus(event.target.value as typeof status)}
-            >
-              <option value="all">All statuses</option>
-              <option value="running">Running</option>
-              <option value="queued">Queued</option>
-              <option value="held">Held</option>
-              <option value="completed">Completed</option>
-            </select>
-          </label>
-        </header>
-        <div className="compute-table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th scope="col">Workload</th>
-                <th scope="col">Class</th>
-                <th scope="col">Status</th>
-                <th scope="col">GPUs</th>
-                <th scope="col">Power</th>
-                <th scope="col">Deadline slack</th>
-                <th scope="col">Decision</th>
-              </tr>
-            </thead>
-            <tbody>
-              {decisions.map((workload) => (
-                <tr
-                  key={workload.workloadId}
-                  className={selectedId === workload.workloadId ? "selected" : ""}
-                >
-                  <th scope="row">
-                    <button
-                      type="button"
-                      disabled={!interactive}
-                      onClick={() => setSelectedId(workload.workloadId)}
-                    >
-                      {workload.name}
-                      <small>{workload.workloadId}</small>
-                    </button>
-                  </th>
-                  <td>{workload.workloadClass}</td>
-                  <td>
-                    <Status value={workload.status} />
-                  </td>
-                  <td>{integer.format(workload.requestedGpuCount)}</td>
-                  <td>
-                    {number.format(workload.estimatedPowerMw)} MW{" "}
-                    <small>{workload.powerEvidence}</small>
-                  </td>
-                  <td>{integer.format(workload.deadlineSlackMinutes)} min</td>
-                  <td>
-                    <span
-                      className={
-                        workload.recommended
-                          ? "decision-recommended"
-                          : workload.eligible
-                            ? "decision-eligible"
-                            : "decision-protected"
-                      }
-                    >
-                      {workload.recommended
-                        ? "Move in scenario"
-                        : workload.eligible
-                          ? "Eligible reserve"
-                          : "Protect"}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </article>
-
-      <section className="compute-connectors" aria-labelledby="compute-connectors-title">
-        <header>
-          <div>
-            <p className="context-label">Live Integrations</p>
-            <h3 id="compute-connectors-title">Connector Readiness</h3>
-          </div>
-          <small>Credentials required for live customer data</small>
-        </header>
-        <div>
-          {(
-            capabilities?.connectors.filter((connector) =>
-              ["nvidia_dcgm", "kueue", "slurm"].includes(connector.id),
-            ) ?? []
-          ).map((connector) => (
-            <article key={connector.id}>
-              <Database aria-hidden="true" />
-              <div>
-                <strong>{connector.label}</strong>
-                <span>{connector.evidence.join(" · ")}</span>
-              </div>
-              <em>{connector.status.replaceAll("_", " ")}</em>
-            </article>
-          ))}
-          {!capabilities ? <p>Checking connector backend…</p> : null}
-        </div>
-      </section>
+        </section>
+      </details>
       {selected ? <WorkloadDrawer workload={selected} onClose={() => setSelectedId(null)} /> : null}
     </section>
   );
@@ -584,6 +589,10 @@ function EvidenceImport({
         </div>
         <OperationsEvidenceBadge kind="measured" label="Browser processed" />
       </header>
+      <p className="power-flow-note">
+        Files are parsed locally; parsed records are sent to the GridPulse assessment service.
+        Imported jobs do not turn the simulated facility timeline into live data.
+      </p>
       <div className="compute-import-grid">
         <label>
           <FileUp aria-hidden="true" />
@@ -618,6 +627,19 @@ function WorkloadDrawer({
   workload: WorkloadDecision;
   onClose: () => void;
 }) {
+  const closeRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    const previous = document.activeElement as HTMLElement | null;
+    closeRef.current?.focus();
+    const dismiss = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", dismiss);
+    return () => {
+      document.removeEventListener("keydown", dismiss);
+      if (previous?.isConnected) previous.focus();
+    };
+  }, [onClose]);
   return (
     <aside className="compute-drawer" aria-label={`Workload details: ${workload.name}`}>
       <header>
@@ -626,11 +648,12 @@ function WorkloadDrawer({
           <h3>{workload.name}</h3>
           <span>{workload.workloadId}</span>
         </div>
-        <button type="button" onClick={onClose} aria-label="Close workload details">
+        <button ref={closeRef} type="button" onClick={onClose} aria-label="Close workload details">
           <X aria-hidden="true" />
         </button>
       </header>
       <OperationsEvidenceBadge kind={workload.source === "scenario" ? "simulated" : "measured"} />
+      <WorkloadSchedule workload={workload} />
       <dl>
         <Row label="Class" value={workload.workloadClass} />
         <Row label="Status" value={workload.status} />
@@ -638,16 +661,13 @@ function WorkloadDrawer({
         <Row label="Power contribution" value={`${number.format(workload.estimatedPowerMw)} MW`} />
         <Row label="Checkpointable" value={workload.checkpointable ? "Yes" : "No"} />
         <Row label="Preemptible" value={workload.preemptible ? "Yes" : "No"} />
-        <Row
-          label="Deadline slack"
-          value={`${integer.format(workload.deadlineSlackMinutes)} min`}
-        />
+        <Row label="Deadline slack" value={formatMinutes(workload.deadlineSlackMinutes)} />
         <Row
           label="Proposed start"
-          value={new Date(workload.proposedStart).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
+          value={formatOperationsTime(
+            workload.recommended ? workload.proposedStart : workload.earliestStart,
+            true,
+          )}
         />
       </dl>
       <div

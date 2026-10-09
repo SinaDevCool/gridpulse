@@ -58,10 +58,9 @@ const checks = [
         throw new Error("Operations heading is missing");
       }
       if (
-        !html.includes(
-          "Results use configured assumptions until measured facility evidence is connected",
-        ) ||
-        !html.includes("No control commands are issued")
+        !html.includes("Simulated assessment") ||
+        !html.includes("No automatic dispatch") ||
+        !html.includes("No live telemetry")
       ) {
         throw new Error("Operations evidence boundary is missing");
       }

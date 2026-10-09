@@ -1,7 +1,9 @@
 import { AlertTriangle, ArrowRight, CheckCircle2, ShieldCheck } from "lucide-react";
+import { useEffect, useState } from "react";
 import type { OperationsOverviewModel, OperationsScenarioKind } from "./scenario-engine";
 import { OperationsEvidenceBadge } from "./components";
 import { formatDurationFromIntervals, formatMw, formatMwh } from "./visualization";
+import { formatOperationsTime } from "./presentation";
 
 const number = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
 
@@ -9,7 +11,13 @@ function humanConstraint(value: string) {
   return value.replaceAll("_", " ").replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
-export function OperationsDecisionBrief({ model }: { model: OperationsOverviewModel }) {
+export function OperationsDecisionBrief({
+  model,
+  selected = "battery_workload",
+}: {
+  model: OperationsOverviewModel;
+  selected?: OperationsScenarioKind;
+}) {
   const peak = model.intervals.reduce((current, interval) =>
     interval.baselineDemandMw > current.baselineDemandMw ? interval : current,
   );
@@ -17,12 +25,24 @@ export function OperationsDecisionBrief({ model }: { model: OperationsOverviewMo
     model.operatingEnvelope.intervals.find((interval) => interval.timestamp === peak.timestamp) ??
     model.operatingEnvelope.intervals[0];
   const requiredMw = Math.max(0, peak.baselineDemandMw - envelope.directCeilingMw);
-  const selectedResponseMw = envelope.batteryResponseMw + envelope.workloadResponseMw;
-  const residualMw = envelope.residualShortfallMw;
+  const key =
+    selected === "baseline"
+      ? "baselineDemandMw"
+      : selected === "battery"
+        ? "batteryDemandMw"
+        : "combinedDemandMw";
+  const selectedResponseMw = Math.max(0, peak.baselineDemandMw - peak[key]);
+  const residualMw = Math.max(
+    0,
+    ...model.intervals.map((point) => point[key] - envelope.directCeilingMw),
+  );
+  const firstAffected = model.intervals.find(
+    (point) => point.baselineDemandMw > envelope.directCeilingMw + 0.01,
+  );
   const state = residualMw > 0.01 ? "infeasible" : requiredMw > 0.01 ? "response" : "direct";
   const title =
     state === "infeasible"
-      ? "The proposed demand exceeds the supported envelope"
+      ? "The selected response leaves a shortfall to the safety target"
       : state === "response"
         ? "A coordinated response keeps demand inside the safe envelope"
         : "Demand remains inside the direct operating envelope";
@@ -40,12 +60,12 @@ export function OperationsDecisionBrief({ model }: { model: OperationsOverviewMo
           )}
         </span>
         <div>
-          <p className="context-label">Decision for the assessed peak · {peak.label}</p>
+          <p className="context-label">Assessed peak · {formatOperationsTime(peak.timestamp)}</p>
           <h3>{title}</h3>
           <p>
             {state === "direct"
               ? `The peak remains below the ${formatMw(envelope.directCeilingMw)} safety target.`
-              : `Use ${formatMw(envelope.batteryResponseMw)} of battery response and ${formatMw(envelope.workloadResponseMw)} of workload flexibility.`}
+              : `First affected interval: ${firstAffected ? formatOperationsTime(firstAffected.timestamp) : "none"}. Review the selected response below.`}
           </p>
         </div>
       </div>
@@ -59,7 +79,7 @@ export function OperationsDecisionBrief({ model }: { model: OperationsOverviewMo
           <dd>{formatMw(selectedResponseMw)}</dd>
         </div>
         <div>
-          <dt>Residual</dt>
+          <dt>Target shortfall</dt>
           <dd>{formatMw(residualMw)}</dd>
         </div>
         <div>
@@ -71,7 +91,15 @@ export function OperationsDecisionBrief({ model }: { model: OperationsOverviewMo
         <a href="#operations-response">
           Review response <ArrowRight aria-hidden="true" />
         </a>
-        <a href="#operations-assurance">Inspect evidence</a>
+        <a
+          href="#operations-assurance"
+          onClick={() => {
+            const panel = document.getElementById("operations-assurance");
+            if (panel instanceof HTMLDetailsElement) panel.open = true;
+          }}
+        >
+          Inspect evidence
+        </a>
       </div>
     </article>
   );
@@ -88,7 +116,7 @@ export function OperatingEnvelopeMap({ model }: { model: OperationsOverviewModel
   const direct = (envelope.directCeilingMw / maximum) * 100;
   const battery = ((envelope.batteryCeilingMw - envelope.directCeilingMw) / maximum) * 100;
   const workload = ((envelope.combinedCeilingMw - envelope.batteryCeilingMw) / maximum) * 100;
-  const infeasible = Math.max(4, 100 - direct - battery - workload);
+  const infeasible = Math.max(0, 100 - direct - battery - workload);
   const marker = Math.min(99, (peak.baselineDemandMw / maximum) * 100);
   const riskMarker = Math.min(99, (envelope.riskAdjustedCeilingMw / maximum) * 100);
 
@@ -128,15 +156,26 @@ export function OperatingEnvelopeMap({ model }: { model: OperationsOverviewModel
             <b>Unsupported</b>
           </span>
         </div>
-        <span className="operations-envelope-risk" style={{ left: `${riskMarker}%` }}>
+        <span
+          className="operations-envelope-risk"
+          style={{ left: `${riskMarker}%` }}
+          aria-hidden="true"
+        >
           <i />
-          Risk-adjusted {formatMw(envelope.riskAdjustedCeilingMw)}
         </span>
-        <span className="operations-envelope-current" style={{ left: `${marker}%` }}>
+        <span
+          className="operations-envelope-current"
+          style={{ left: `${marker}%` }}
+          aria-hidden="true"
+        >
           <i />
-          Peak {formatMw(peak.baselineDemandMw)}
         </span>
       </div>
+      <p className="operations-envelope-caption">
+        Linear MW scale · assessed peak {formatMw(peak.baselineDemandMw)} · risk-adjusted ceiling{" "}
+        {formatMw(envelope.riskAdjustedCeilingMw)}. Scenario boundaries, not verified connection
+        capacity.
+      </p>
       <dl className="operations-envelope-details">
         <div>
           <dt>Direct ceiling</dt>
@@ -229,6 +268,8 @@ export function ScenarioDecisionTable({
   onSelect: (kind: OperationsScenarioKind) => void;
 }) {
   const battery = model.recommendation.batteryMw;
+  const [interactive, setInteractive] = useState(false);
+  useEffect(() => setInteractive(true), []);
   return (
     <div className="operations-scenario-table-wrap">
       <table className="operations-scenario-table">
@@ -246,7 +287,12 @@ export function ScenarioDecisionTable({
           {model.summaries.map((summary) => (
             <tr key={summary.kind} className={summary.kind === selected ? "selected" : undefined}>
               <th>
-                <button type="button" onClick={() => onSelect(summary.kind)}>
+                <button
+                  type="button"
+                  aria-pressed={summary.kind === selected}
+                  disabled={!interactive}
+                  onClick={() => onSelect(summary.kind)}
+                >
                   {summary.label}
                 </button>
               </th>
@@ -261,7 +307,10 @@ export function ScenarioDecisionTable({
               <td>
                 {summary.violationIntervals
                   ? `${summary.violationIntervals} intervals`
-                  : "Feasible"}
+                  : summary.peakDemandMw >
+                      model.scenario.importLimitMw - model.scenario.safetyReserveMw + 0.01
+                    ? "Below limit; reserve shortfall"
+                    : "Within safety target"}
               </td>
             </tr>
           ))}

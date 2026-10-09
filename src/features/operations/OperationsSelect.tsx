@@ -24,8 +24,13 @@ export function OperationsSelect<T extends string>({
   const id = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  const selectedIndex = Math.max(0, options.findIndex((option) => option.value === value));
+  const selectedIndex = Math.max(
+    0,
+    options.findIndex((option) => option.value === value),
+  );
   const [open, setOpen] = useState(false);
+  const [interactive, setInteractive] = useState(false);
+  useEffect(() => setInteractive(true), []);
   const [activeIndex, setActiveIndex] = useState(selectedIndex);
   const selected = options[selectedIndex];
 
@@ -87,6 +92,7 @@ export function OperationsSelect<T extends string>({
       <span id={`${id}-label`}>{label}</span>
       <select
         className="operations-select-native"
+        disabled={!interactive}
         name={name}
         aria-label={label}
         value={value}
@@ -101,6 +107,7 @@ export function OperationsSelect<T extends string>({
       <button
         type="button"
         className="operations-select-trigger"
+        disabled={!interactive}
         aria-labelledby={`${id}-label ${id}-value`}
         aria-haspopup="listbox"
         aria-expanded={open}

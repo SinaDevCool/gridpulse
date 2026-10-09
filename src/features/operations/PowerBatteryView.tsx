@@ -48,7 +48,10 @@ import {
   OperationsEvidenceBadge,
   OperationsMetricCard,
 } from "./components";
-import { buildPowerBalancePresentation, flowWidth } from "./power-balance";
+import { buildPowerBalancePresentation } from "./power-balance";
+import { PowerBalanceDiagram } from "./PowerBalanceDiagram";
+import { formatOperationsTime, importThresholds } from "./presentation";
+import { OperationsSelect } from "./OperationsSelect";
 
 const number = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
 
@@ -96,7 +99,7 @@ export function PowerBatteryView({ model }: { model: OperationsOverviewModel }) 
   const requiredMw =
     mode === "scenario"
       ? Math.max(0, selectedScenario.baselineDemandMw - targetMw)
-      : selectedHistorical
+      : selectedHistorical?.facilityDemandMw != null
         ? Math.max(0, selectedHistorical.facilityDemandMw - targetMw)
         : null;
   const batteryMw =
@@ -108,14 +111,20 @@ export function PowerBatteryView({ model }: { model: OperationsOverviewModel }) 
       ? null
       : Math.max(0, requiredMw - Math.max(0, batteryMw));
   const feasible = shortfallMw != null && shortfallMw <= 0.01;
+  const thresholds = importThresholds(
+    selected ? valueOf(selected, "gridImportMw", "batteryDemandMw") : null,
+    model.scenario.importLimitMw,
+    model.scenario.safetyReserveMw,
+  );
   const responseRequired = requiredMw != null && requiredMw > 0.01;
-  const dispatchHeadline = !selected
-    ? "Load aligned meter and battery evidence"
-    : !responseRequired
-      ? "No battery response is required for the selected interval"
-      : feasible
-        ? "Battery response can hold the selected interval below target"
-        : "Battery response cannot fully cover the selected interval";
+  const dispatchHeadline =
+    !selected || requiredMw == null
+      ? "Load aligned meter and battery evidence"
+      : !responseRequired
+        ? "No battery response is required for the selected interval"
+        : feasible
+          ? "Battery response can hold the selected interval below target"
+          : "Battery response cannot fully cover the selected interval";
 
   async function verifyEvidence(
     facility: FacilityPowerObservation[],
@@ -198,13 +207,13 @@ export function PowerBatteryView({ model }: { model: OperationsOverviewModel }) 
           <span>
             {shortfallMw == null
               ? "Evidence incomplete"
-              : `${number.format(shortfallMw)} MW residual`}
+              : `${number.format(shortfallMw)} MW shortfall to safety target`}
           </span>
         </div>
       </article>
 
       <div className="power-toolbar">
-        <div className="power-mode" role="group" aria-label="Power evidence mode">
+        <div className="power-mode" role="group" aria-label="Power evidence source">
           <button
             type="button"
             className={mode === "scenario" ? "active" : ""}
@@ -239,10 +248,13 @@ export function PowerBatteryView({ model }: { model: OperationsOverviewModel }) 
         <article className="power-import">
           <header>
             <div>
-              <p className="context-label">Browser-only import</p>
+              <p className="context-label">Historical evidence import</p>
               <h3>Load facility meter and BMS/PCS records</h3>
             </div>
-            <span>Files are parsed locally and are not uploaded.</span>
+            <span>
+              CSV files are parsed in your browser. Parsed observations are sent to the GridPulse
+              assessment service for validation.
+            </span>
           </header>
           <div className="power-import-grid">
             <label>
@@ -290,7 +302,7 @@ export function PowerBatteryView({ model }: { model: OperationsOverviewModel }) 
           label="Grid import"
           value={
             selected
-              ? `${number.format(valueOf(selected, "gridImportMw", "batteryDemandMw"))} MW`
+              ? formatOptionalMw(valueOf(selected, "gridImportMw", "batteryDemandMw"))
               : "Unavailable"
           }
           evidence={mode}
@@ -312,17 +324,17 @@ export function PowerBatteryView({ model }: { model: OperationsOverviewModel }) 
           label="Battery SOC"
           value={
             selected && valueOf(selected, "socPercent", "batterySocPercent") != null
-              ? formatPercent(valueOf(selected, "socPercent", "batterySocPercent"))
+              ? formatOptionalPercent(valueOf(selected, "socPercent", "batterySocPercent"))
               : "Unavailable"
           }
           evidence={mode}
         />
         <PowerMetric
           icon={<Zap />}
-          label="Sustainable response"
+          label="Total discharge time"
           value={
             mode === "scenario"
-              ? responseRequired
+              ? model.recommendation.durationMinutes > 0
                 ? `${number.format(model.recommendation.durationMinutes / 60)} h`
                 : "Not required"
               : "Not derivable"
@@ -339,6 +351,35 @@ export function PowerBatteryView({ model }: { model: OperationsOverviewModel }) 
           mode={mode}
           selectedHistorical={selectedHistorical}
         />
+      </div>
+
+      <div className="power-interval-control">
+        <OperationsSelect
+          name="power-interval"
+          label="Selected interval (UTC)"
+          value={selected?.timestamp ?? ""}
+          options={series.map((point) => ({
+            value: point.timestamp,
+            label: formatOperationsTime(point.timestamp),
+          }))}
+          onChange={setSelectedTimestamp}
+        />
+        <span>
+          Above facility limit{" "}
+          <strong>
+            {thresholds.limitExceedanceMw == null
+              ? "Unavailable"
+              : formatMw(thresholds.limitExceedanceMw)}
+          </strong>
+        </span>
+        <span>
+          Shortfall to safety target{" "}
+          <strong>
+            {thresholds.targetShortfallMw == null
+              ? "Unavailable"
+              : formatMw(thresholds.targetShortfallMw)}
+          </strong>
+        </span>
       </div>
 
       <div className="power-primary-grid">
@@ -359,12 +400,14 @@ export function PowerBatteryView({ model }: { model: OperationsOverviewModel }) 
               <OperationsChartSummary>
                 <ChartSummaryMetric
                   label="Facility Demand"
-                  value={formatMw(valueOf(selected, "facilityDemandMw", "baselineDemandMw"))}
+                  value={formatOptionalMw(
+                    valueOf(selected, "facilityDemandMw", "baselineDemandMw"),
+                  )}
                   tone="demand"
                 />
                 <ChartSummaryMetric
                   label="Grid Import"
-                  value={formatMw(valueOf(selected, "gridImportMw", "batteryDemandMw"))}
+                  value={formatOptionalMw(valueOf(selected, "gridImportMw", "batteryDemandMw"))}
                   tone="response"
                 />
                 <ChartSummaryMetric
@@ -376,7 +419,7 @@ export function PowerBatteryView({ model }: { model: OperationsOverviewModel }) 
                   label="State of Charge"
                   value={
                     selected && valueOf(selected, "socPercent", "batterySocPercent") != null
-                      ? formatPercent(valueOf(selected, "socPercent", "batterySocPercent"))
+                      ? formatOptionalPercent(valueOf(selected, "socPercent", "batterySocPercent"))
                       : "Unavailable"
                   }
                   tone="soc"
@@ -416,7 +459,7 @@ export function PowerBatteryView({ model }: { model: OperationsOverviewModel }) 
                 data={series}
                 limitMw={model.scenario.importLimitMw}
                 targetMw={targetMw}
-                selectedTimestamp={selectedTimestamp}
+                selectedTimestamp={selected?.timestamp ?? null}
               />
             </>
           ) : (
@@ -442,17 +485,26 @@ export function PowerBatteryView({ model }: { model: OperationsOverviewModel }) 
         />
       </div>
 
-      <div className="power-detail-grid">
-        <OperatingEnvelope
-          model={model}
-          selected={selectedScenario}
-          mode={mode}
-          selectedHistorical={selectedHistorical}
-        />
-        <SelectedBalance selected={selected} mode={mode} targetMw={targetMw} />
-      </div>
-      <ResponseComparison model={model} />
-      <ConnectorStatus />
+      <details className="operations-assurance-panel power-supporting-details">
+        <summary>Battery constraints & balance provenance</summary>
+        <div className="power-detail-grid">
+          <OperatingEnvelope
+            model={model}
+            selected={selectedScenario}
+            mode={mode}
+            selectedHistorical={selectedHistorical}
+          />
+          <SelectedBalance selected={selected} mode={mode} targetMw={targetMw} />
+        </div>
+      </details>
+      <details className="operations-assurance-panel power-supporting-details">
+        <summary>Compare scenario responses</summary>
+        <ResponseComparison model={model} />
+      </details>
+      <details className="operations-assurance-panel power-supporting-details">
+        <summary>Evidence & connector readiness</summary>
+        <ConnectorStatus />
+      </details>
     </section>
   );
 }
@@ -510,7 +562,7 @@ function ResponseComparison({ model }: { model: OperationsOverviewModel }) {
 type HistoricalPoint = {
   timestamp: string;
   label: string;
-  facilityDemandMw: number;
+  facilityDemandMw: number | null;
   gridImportMw: number;
   batteryPowerMw: number | null;
   socPercent: number | null;
@@ -528,11 +580,8 @@ function buildHistoricalSeries(
       const batteryPoint = batteryByTime.get(point.timestamp) ?? null;
       return {
         timestamp: point.timestamp,
-        label: new Date(point.timestamp).toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-        facilityDemandMw: point.facilityImportMw,
+        label: formatOperationsTime(point.timestamp).replace(" UTC", ""),
+        facilityDemandMw: batteryPoint ? point.facilityImportMw + batteryPoint.activePowerMw : null,
         gridImportMw: point.facilityImportMw,
         batteryPowerMw: batteryPoint?.activePowerMw ?? null,
         socPercent: batteryPoint?.socPercent ?? null,
@@ -542,10 +591,15 @@ function buildHistoricalSeries(
     });
 }
 
-function valueOf(point: unknown, historicalKey: string, scenarioKey: string): number {
+const formatOptionalMw = (value: number | null) =>
+  value == null ? "Unavailable" : formatMw(value);
+const formatOptionalPercent = (value: number | null) =>
+  value == null ? "Unavailable" : formatPercent(value);
+
+function valueOf(point: unknown, historicalKey: string, scenarioKey: string): number | null {
   const record = point as Record<string, unknown>;
   const value = record[historicalKey] ?? record[scenarioKey];
-  return typeof value === "number" ? value : 0;
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
 function PowerTimeline({
@@ -566,7 +620,7 @@ function PowerTimeline({
     <div
       className="power-timeline"
       role="img"
-      aria-label="Two aligned charts show facility demand and grid import in megawatts, then battery dispatch in megawatts and state of charge in percent"
+      aria-label="Three aligned charts show facility demand and grid import in megawatts, battery dispatch in megawatts, and state of charge in percent"
     >
       <section className="power-timeline-panel power-timeline-panel--facility">
         <header>
@@ -626,8 +680,8 @@ function PowerTimeline({
       </section>
       <section className="power-timeline-panel power-timeline-panel--battery">
         <header>
-          <strong>Battery Dispatch & State of Charge</strong>
-          <span>MW / %</span>
+          <strong>Battery Dispatch</strong>
+          <span>MW</span>
         </header>
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
@@ -638,14 +692,6 @@ function PowerTimeline({
             <CartesianGrid stroke="var(--ops-chart-grid)" vertical={false} />
             <XAxis dataKey="label" minTickGap={28} tickLine={false} axisLine={false} />
             <YAxis yAxisId="dispatch" unit=" MW" tickLine={false} axisLine={false} />
-            <YAxis
-              yAxisId="soc"
-              orientation="right"
-              domain={[0, 100]}
-              unit="%"
-              tickLine={false}
-              axisLine={false}
-            />
             <Tooltip content={<PowerTooltip panel="battery" targetMw={targetMw} />} />
             <ReferenceLine yAxisId="dispatch" y={0} stroke="var(--ops-axis)" />
             {selectedLabel ? (
@@ -658,6 +704,27 @@ function PowerTimeline({
               fill="var(--ops-battery)"
               opacity={0.86}
             />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </section>
+      <section className="power-timeline-panel power-timeline-panel--battery">
+        <header>
+          <strong>Battery State of Charge</strong>
+          <span>%</span>
+        </header>
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart
+            data={data}
+            margin={{ top: 10, right: 18, left: 0, bottom: 4 }}
+            accessibilityLayer
+          >
+            <CartesianGrid stroke="var(--ops-chart-grid)" vertical={false} />
+            <XAxis dataKey="label" minTickGap={28} tickLine={false} axisLine={false} />
+            <YAxis yAxisId="soc" domain={[0, 100]} unit="%" tickLine={false} axisLine={false} />
+            <Tooltip content={<PowerTooltip panel="battery" targetMw={targetMw} />} />
+            {selectedLabel ? (
+              <ReferenceLine yAxisId="soc" x={selectedLabel} stroke="var(--ops-selection)" />
+            ) : null}
             <Line
               yAxisId="soc"
               dataKey="socPercent"
@@ -760,13 +827,13 @@ function PowerDataTable({
                     {String(row.label)}
                   </button>
                 </th>
-                <td>{number.format(valueOf(row, "facilityDemandMw", "baselineDemandMw"))} MW</td>
+                <td>{formatOptionalMw(valueOf(row, "facilityDemandMw", "baselineDemandMw"))}</td>
                 <td>
                   {typeof row.batteryPowerMw === "number"
                     ? `${number.format(row.batteryPowerMw)} MW`
                     : "—"}
                 </td>
-                <td>{number.format(valueOf(row, "gridImportMw", "batteryDemandMw"))} MW</td>
+                <td>{formatOptionalMw(valueOf(row, "gridImportMw", "batteryDemandMw"))}</td>
                 <td>
                   {typeof (row.socPercent ?? row.batterySocPercent) === "number"
                     ? `${number.format(Number(row.socPercent ?? row.batterySocPercent))}%`
@@ -828,7 +895,7 @@ function DispatchCard({
           }
         />
         <Row
-          label="Residual overload"
+          label="Shortfall to safety target"
           value={shortfallMw == null ? "Unavailable" : `${number.format(shortfallMw)} MW`}
         />
         <Row
@@ -836,7 +903,7 @@ function DispatchCard({
           value={`${number.format(model.scenario.battery.minimumSocPercent)}% SOC`}
         />
         <Row
-          label="Ending SOC"
+          label="Selected interval SOC"
           value={
             mode === "scenario"
               ? `${number.format(selected.batterySocPercent)}%`
@@ -978,10 +1045,10 @@ function SelectedBalance({
       </header>
       {selected ? (
         <dl>
-          <Row label="Timestamp" value={new Date(String(selected.timestamp)).toLocaleString()} />
+          <Row label="Timestamp" value={formatOperationsTime(String(selected.timestamp), true)} />
           <Row
             label="Facility demand"
-            value={`${number.format(valueOf(selected, "facilityDemandMw", "baselineDemandMw"))} MW`}
+            value={formatOptionalMw(valueOf(selected, "facilityDemandMw", "baselineDemandMw"))}
           />
           <Row
             label="Battery power"
@@ -993,7 +1060,7 @@ function SelectedBalance({
           />
           <Row
             label="Grid import"
-            value={`${number.format(valueOf(selected, "gridImportMw", "batteryDemandMw"))} MW`}
+            value={formatOptionalMw(valueOf(selected, "gridImportMw", "batteryDemandMw"))}
           />
           <Row label="Safety target" value={`${number.format(targetMw)} MW · assumption`} />
           <Row
@@ -1073,159 +1140,51 @@ function PowerBalanceFlow({
   const battery =
     selected && typeof selected.batteryPowerMw === "number" ? selected.batteryPowerMw : null;
   const gpu =
-    mode === "scenario" && selected && "gpuPowerMw" in selected
-      ? Number(selected.gpuPowerMw)
+    mode === "scenario" &&
+    selected &&
+    "gpuPowerMw" in selected &&
+    typeof selected.gpuPowerMw === "number"
+      ? selected.gpuPowerMw
       : null;
-  const other = facility != null && gpu != null ? Math.max(0, facility - gpu) : null;
   const balance =
     facility == null || grid == null
       ? null
-      : buildPowerBalancePresentation({ facilityMw: facility, gridMw: grid, batteryMw: battery, gpuMw: gpu });
-  const batteryLabel =
-    balance?.batteryMw == null
-      ? "Battery unavailable"
-      : balance.batteryDirection === "discharge"
-        ? `${number.format(balance.batteryMw)} MW discharge`
-        : balance.batteryDirection === "charge"
-          ? `${number.format(Math.abs(balance.batteryMw))} MW charging`
-          : "0 MW idle";
-  const largest = balance ? Math.max(balance.facilityMw, balance.gridMw, Math.abs(balance.batteryMw ?? 0)) : 1;
-  const batteryWidth = balance ? flowWidth(Math.abs(balance.batteryMw ?? 0), largest) : 0;
-
+      : buildPowerBalancePresentation({
+          facilityMw: facility,
+          gridMw: grid,
+          batteryMw: battery,
+          gpuMw: gpu,
+        });
   return (
     <article className="power-flow-card">
       <header>
         <div>
-          <p className="context-label">Selected interval</p>
+          <p className="context-label">
+            Selected interval ·{" "}
+            {selected && typeof selected.timestamp === "string"
+              ? formatOperationsTime(selected.timestamp, true)
+              : "Unavailable"}
+          </p>
           <h3>Facility Power Balance</h3>
         </div>
         <EvidencePill mode={mode} />
       </header>
-      {!balance ? (
-        <EmptyEvidence />
+      {balance ? (
+        <PowerBalanceDiagram balance={balance} />
+      ) : selected ? (
+        <p className="balance-warning" role="status">
+          Power balance unavailable: matching battery and facility readings are required. Missing
+          values are not assumed to be zero.
+        </p>
       ) : (
-        <div
-          className="power-flow"
-          role="img"
-          aria-label={`Power balance: grid import ${number.format(balance.gridMw)} megawatts; ${batteryLabel}; facility demand ${number.format(balance.facilityMw)} megawatts${balance.gpuMw == null ? "; facility sub-loads unavailable" : `; ${number.format(balance.gpuMw)} megawatts GPU power and ${number.format(balance.otherMw ?? 0)} megawatts other load`}.`}
-        >
-          <div className="power-flow-stage power-flow-sources">
-            <FlowNode
-              icon={<Cable />}
-              label="Grid import"
-              value={`${number.format(balance.gridMw)} MW`}
-              tone="grid"
-            />
-            <FlowNode
-              icon={<BatteryCharging />}
-              label="Battery"
-              value={batteryLabel}
-              tone="battery"
-            />
-          </div>
-          <div className="power-flow-graphic" aria-hidden="true">
-            <svg viewBox="0 0 1000 260" preserveAspectRatio="none">
-              <defs>
-                <marker id="flow-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
-                  <path d="M 0 0 L 10 5 L 0 10 z" />
-                </marker>
-              </defs>
-              <path className="flow-grid" d="M 0 60 C 120 60, 180 120, 285 130" style={{ strokeWidth: flowWidth(balance.gridMw, largest) }} markerEnd="url(#flow-arrow)" />
-              {batteryWidth ? (
-                <path
-                  className="flow-battery"
-                  d="M 0 200 C 120 200, 180 140, 285 130"
-                  style={{ strokeWidth: batteryWidth }}
-                  markerEnd={balance.batteryDirection === "charge" ? undefined : "url(#flow-arrow)"}
-                  markerStart={balance.batteryDirection === "charge" ? "url(#flow-arrow)" : undefined}
-                />
-              ) : null}
-              {balance.gpuMw != null ? (
-                <>
-                  <path className="flow-compute" d="M 715 130 C 820 120, 880 60, 1000 60" style={{ strokeWidth: flowWidth(balance.gpuMw, largest) }} markerEnd="url(#flow-arrow)" />
-                  <path className="flow-other" d="M 715 130 C 820 140, 880 200, 1000 200" style={{ strokeWidth: flowWidth(balance.otherMw ?? 0, largest) }} markerEnd="url(#flow-arrow)" />
-                </>
-              ) : null}
-            </svg>
-            <div className="power-flow-center">
-              <FlowNode
-                icon={<Bolt />}
-                label="Facility demand"
-                value={`${number.format(balance.facilityMw)} MW`}
-                tone="facility"
-                featured
-              />
-            </div>
-          </div>
-          <div className="power-flow-stage power-flow-loads">
-            {balance.gpuMw == null ? (
-              <FlowNode
-                icon={<Activity />}
-                label="Load allocation"
-                value="Not available"
-                tone="muted"
-              />
-            ) : (
-              <>
-                <FlowNode
-                  icon={<Zap />}
-                  label="GPU power"
-                value={`${number.format(balance.gpuMw)} MW`}
-                  tone="compute"
-                />
-                <FlowNode
-                  icon={<Activity />}
-                  label="Other facility load"
-                value={`${number.format(balance.otherMw ?? other ?? 0)} MW`}
-                  tone="muted"
-                />
-              </>
-            )}
-          </div>
-          <div className="power-flow-equations">
-            <span>
-              <strong>Supply balance</strong>
-              {balance.batteryMw == null
-                ? "Battery contribution unavailable"
-                : `${number.format(balance.gridMw)} ${balance.batteryMw >= 0 ? "+" : "−"} ${number.format(Math.abs(balance.batteryMw))} = ${number.format(balance.facilityMw)} MW`}
-            </span>
-            <span>
-              <strong>Load allocation</strong>
-              {balance.gpuMw == null
-                ? "Sub-load evidence unavailable"
-                : `${number.format(balance.gpuMw)} + ${number.format(balance.otherMw ?? 0)} = ${number.format(balance.facilityMw)} MW`}
-            </span>
-          </div>
-        </div>
+        <EmptyEvidence />
       )}
       <p className="power-flow-note">
         {mode === "scenario"
-          ? "GPU and other-load allocation comes from the configured scenario. Cooling and auxiliary loads are not invented as separate values."
-          : "Measured imports and battery power are shown without inferring unavailable facility sub-loads."}
+          ? "Scenario allocation. Other load includes all consumption not allocated to compute; individual cooling or UPS measurements are not inferred."
+          : "Facility demand is derived from aligned net-import and battery readings. Sub-loads are unavailable."}
       </p>
     </article>
-  );
-}
-
-function FlowNode({
-  icon,
-  label,
-  value,
-  tone,
-  featured = false,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  tone: string;
-  featured?: boolean;
-}) {
-  return (
-    <div className={`power-flow-node ${tone}${featured ? " featured" : ""}`}>
-      <span aria-hidden="true">{icon}</span>
-      <small>{label}</small>
-      <strong>{value}</strong>
-    </div>
   );
 }
 
@@ -1248,20 +1207,24 @@ function BatterySocPanel({
       ? battery.stateOfHealthPercent
       : (observation?.stateOfHealthPercent ?? null);
   const boundedSoc = Math.max(0, Math.min(100, soc ?? 0));
-  const circumference = 2 * Math.PI * 52;
-  const dash = (boundedSoc / 100) * circumference;
+  const energyAboveReserve =
+    mode === "scenario" && soc != null
+      ? (((battery.usableEnergyMwh * battery.stateOfHealthPercent) / 100) *
+          Math.max(0, soc - battery.minimumSocPercent)) /
+        100
+      : null;
   return (
     <article className="battery-soc-card">
       <header>
         <div>
           <p className="context-label">Battery reserve</p>
-          <h3>State of Charge</h3>
+          <h3>State of Charge & Reserve</h3>
         </div>
         <EvidencePill mode={mode} />
       </header>
       <div className="battery-soc-body">
         <div
-          className="battery-soc-gauge"
+          className="battery-reserve-gauge"
           role="img"
           aria-label={
             soc == null
@@ -1269,20 +1232,26 @@ function BatterySocPanel({
               : `Battery state of charge ${number.format(soc)} percent`
           }
         >
-          <svg viewBox="0 0 128 128" aria-hidden="true">
-            <circle cx="64" cy="64" r="52" className="track" />
-            <circle
-              cx="64"
-              cy="64"
-              r="52"
-              className="value"
-              strokeDasharray={`${dash} ${circumference - dash}`}
-            />
-          </svg>
-          <span>
+          <span className="battery-reserve-reading">
             <strong>{soc == null ? "—" : number.format(soc)}</strong>
             <small>{soc == null ? "Unavailable" : "% SOC"}</small>
           </span>
+          <div className="battery-reserve-track" aria-hidden="true">
+            <i className="battery-reserve-fill" style={{ width: `${boundedSoc}%` }} />
+            <i
+              className="battery-reserve-protected"
+              style={{ width: `${battery.minimumSocPercent}%` }}
+            />
+            <i
+              className="battery-reserve-marker"
+              style={{ left: `${battery.minimumSocPercent}%` }}
+            />
+            <i
+              className="battery-reserve-marker maximum"
+              style={{ left: `${battery.maximumSocPercent}%` }}
+            />
+          </div>
+          <p className="power-flow-note">Reserve and maximum markers use configured assumptions.</p>
         </div>
         <dl>
           <Row label="Minimum reserve" value={`${number.format(battery.minimumSocPercent)}%`} />
@@ -1292,11 +1261,23 @@ function BatterySocPanel({
             value={stateOfHealth == null ? "Unavailable" : `${number.format(stateOfHealth)}%`}
           />
           <Row
-            label="Sustainable duration"
+            label="Endurance at selected power"
             value={mode === "scenario" ? durationLabel(model, selected) : "Not derivable"}
+          />
+          <Row
+            label="Energy above reserve"
+            value={
+              energyAboveReserve == null
+                ? "Not derivable"
+                : `${number.format(energyAboveReserve)} MWh`
+            }
           />
         </dl>
       </div>
+      <p className="power-flow-note">
+        Endurance includes discharge efficiency and state of health; it is an estimate, not a backup
+        guarantee.
+      </p>
     </article>
   );
 }
