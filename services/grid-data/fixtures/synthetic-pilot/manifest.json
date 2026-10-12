@@ -1,0 +1,33 @@
+{
+  "dataset_id": "synthetic-brandenburg-pilot",
+  "dataset_version": "1.0.0",
+  "title": "Synthetic Brandenburg operator-pilot replacement pack",
+  "geographic_scope": "Fictional Brandenburg-like 110/20 kV network; not tied to a mapped substation",
+  "provenance": {
+    "evidence_class": "synthetic",
+    "validation_class": "synthetic_demonstration",
+    "is_synthetic": true,
+    "source_id": "synthetic-bb-pilot-v1",
+    "source_url": null,
+    "source_published_at": null,
+    "model_version": "synthetic-bb-pilot-network-v1",
+    "replacement_contract": "operator_pilot_data_v1",
+    "license": "GridPulse internal synthetic fixture",
+    "artifact_sha256": null
+  },
+  "file_hashes": {
+    "network.json": "62a320d7913da4fe7f3c3ad9936d710f57b4d2d1634f82a32d84842ca1aecf9d",
+    "observations.json": "4a370055ea645d3c8f5c0da21167f5d3e6b1225906d0dcf256e97f92989fd741",
+    "queue.json": "dc810a32450363bdd5e5546704ca9b3de336b63cc80552d386eadd44eb366073",
+    "reinforcements.json": "16882e565dc67ae109a6afda871830acc98d2cc95f187c5436a2dea182cc71b6",
+    "contingencies.json": "b630a3a6d5ca8e90e5dc9fd4da2b470f23ab8fde4c0bf607838d4c143db84bbd",
+    "security-criteria.json": "b040054b8c22ade8856e90c2fa7ee6168abf2f4c970b7af202eecc60f725e356",
+    "switching-states.json": "0edb4d98ee2a439d12a6fa1b79a06ad6111c308ff07b262c38350d90a92de3c6",
+    "planned-outages.json": "c65ab1c6173c6820cef19b6ec2fc230cf78110ad801b237f72bb303eb1e34462",
+    "customer-profiles.json": "503b4596e579e596abf4a616f088683bac9d7811bdd3b18108adbbef20bb418f",
+    "flexibility-assets.json": "b1ae390ea58bf6daf68056db79f44f14e65b45c8bf596bea1594b0c662825d9f",
+    "activation-policy.json": "b229a5ee13c451eb52b0fa11b2237e11c0fff4f55c060a6987acc2c72c87374d"
+  },
+  "created_at": "2026-08-08T00:00:00Z",
+  "warning": "SYNTHETIC DEMONSTRATION DATA. Not associated with an actual German substation, network operator, available capacity, connection offer, cost, or delivery date. Replace via operator_pilot_data_v1."
+}

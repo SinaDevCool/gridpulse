@@ -2,17 +2,18 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import urllib.parse
 import urllib.request
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Iterable
-
+from typing import Any
 
 DEFAULT_OVERPASS_URL = "https://overpass-api.de/api/interpreter"
 CONNECTOR_VERSION = "osm-overpass-v1"
-PARSER_VERSION = "osm-geojson-v1"
+PARSER_VERSION = "osm-geojson-v2-voltage-units"
 
 
 @dataclass(frozen=True)
@@ -56,15 +57,21 @@ def fetch_overpass(
 
 
 def _numbers(value: str | None) -> list[float]:
+    """Parse OSM power voltage values into kV.
+
+    OSM's power schema stores unitless voltage values in volts. Explicit V/kV
+    suffixes are accepted for defensive ingestion, but ambiguous text is ignored.
+    """
     if not value:
         return []
     numbers: set[float] = set()
     for token in value.replace(",", ";").split(";"):
-        try:
-            raw = float(token.strip())
-        except ValueError:
+        match = re.fullmatch(r"\s*(\d+(?:\.\d+)?)\s*(kv|v)?\s*", token, re.IGNORECASE)
+        if not match:
             continue
-        kv = raw / 1000 if raw >= 1000 else raw
+        raw = float(match.group(1))
+        unit = (match.group(2) or "v").lower()
+        kv = raw if unit == "kv" else raw / 1000
         if kv > 0:
             numbers.add(round(kv, 3))
     return sorted(numbers, reverse=True)
@@ -154,6 +161,9 @@ def overpass_to_geojson(
                     "name": tags.get("name") or f"Mapped {kind.replace('_', ' ')} {osm_id}",
                     "operator": tags.get("operator"),
                     "voltage_kv": _numbers(tags.get("voltage")),
+                    "voltage_evidence_status": (
+                        "accepted" if _numbers(tags.get("voltage")) else "missing"
+                    ),
                     "status": _status(tags),
                     "evidence_class": "open_mapping",
                     "capacity_state": "not_established",

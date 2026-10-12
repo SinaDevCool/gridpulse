@@ -9,7 +9,6 @@ from pathlib import Path
 from grid_data.mastr import parse_mastr_export, stream_mastr_export
 from grid_data.sql_export import write_mastr_sql
 
-
 FIXTURE = Path(__file__).parent / "fixtures" / "mastr-sample.xml"
 
 
@@ -64,8 +63,7 @@ class MastrConnectorTests(unittest.TestCase):
                 federal_state="Brandenburg",
             )
             records = [
-                json.loads(line)
-                for line in output_path.read_text(encoding="utf-8").splitlines()
+                json.loads(line) for line in output_path.read_text(encoding="utf-8").splitlines()
             ]
             validation = json.loads(
                 output_path.with_suffix(".ndjson.report.json").read_text(encoding="utf-8")
@@ -77,6 +75,26 @@ class MastrConnectorTests(unittest.TestCase):
             self.assertEqual(records[2]["asset_type"], "storage")
             self.assertTrue(validation["valid"])
             self.assertEqual(validation["asset_count"], 2)
+
+    def test_national_map_stream_keeps_only_exact_generation_and_storage(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            archive_path = Path(directory) / "mastr.zip"
+            output_path = Path(directory) / "assets.ndjson"
+            with zipfile.ZipFile(archive_path, "w") as archive:
+                archive.write(FIXTURE, "EinheitenSolar.xml")
+
+            report = stream_mastr_export(
+                archive_path,
+                output_path,
+                exact_map_points_only=True,
+            )
+            records = [
+                json.loads(line) for line in output_path.read_text(encoding="utf-8").splitlines()
+            ]
+
+            self.assertEqual(report.asset_count, 2)
+            self.assertTrue(records[0]["exact_map_points_only"])
+            self.assertTrue(all(record.get("longitude") for record in records[1:]))
 
 
 if __name__ == "__main__":

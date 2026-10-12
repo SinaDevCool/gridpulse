@@ -19,7 +19,9 @@ class OperatorEvidenceTests(unittest.TestCase):
         self.assertEqual(len(record["http"]["sha256"]), 64)
 
     def test_source_registry_marks_edis_monitor_as_not_demand_relevant(self) -> None:
-        monitor = next(source for source in OFFICIAL_SOURCES if source.endpoint_key == "generation-monitor")
+        monitor = next(
+            source for source in OFFICIAL_SOURCES if source.endpoint_key == "generation-monitor"
+        )
         self.assertEqual(monitor.demand_relevance, "none")
         self.assertIn("not evidence of demand headroom", monitor.legal_boundary)
 

@@ -72,6 +72,26 @@ function OperatorReviewPage() {
       ]);
       for (const result of [site, nodes, snapshots, documents, decisions, role])
         if (result.error) throw result.error;
+      const workspaceResult = await supabase
+        .from("operator_pilot_workspaces")
+        .select("*")
+        .eq("site_id", id)
+        .maybeSingle();
+      if (workspaceResult.error) throw workspaceResult.error;
+      const workspace = workspaceResult.data as Record<string, unknown> | null;
+      let c4 = { workspace, packages: [] as Record<string, unknown>[], reconciliations: [] as Record<string, unknown>[], agreements: [] as Record<string, unknown>[], reviews: [] as Record<string, unknown>[], audit: [] as Record<string, unknown>[] };
+      if (workspace?.id) {
+        const workspaceId = String(workspace.id);
+        const [packages, reconciliations, agreements, reviews, audit] = await Promise.all([
+          supabase.from("operator_data_packages").select("*").eq("workspace_id", workspaceId).order("created_at", { ascending: false }),
+          supabase.from("operator_model_reconciliations").select("*").eq("workspace_id", workspaceId).order("executed_at", { ascending: false }),
+          supabase.from("operator_pilot_agreements").select("*").eq("workspace_id", workspaceId).order("created_at", { ascending: false }),
+          supabase.from("operator_model_reviews").select("*").eq("workspace_id", workspaceId).order("signed_at", { ascending: false }),
+          supabase.from("operator_pilot_audit_events").select("*").eq("workspace_id", workspaceId).order("id", { ascending: false }).limit(50),
+        ]);
+        for (const result of [packages, reconciliations, agreements, reviews, audit]) if (result.error) throw result.error;
+        c4 = { workspace, packages: packages.data ?? [], reconciliations: reconciliations.data ?? [], agreements: agreements.data ?? [], reviews: reviews.data ?? [], audit: audit.data ?? [] };
+      }
       return {
         site: site.data as CandidateSite,
         nodes: nodes.data as NetworkNode[],
@@ -79,6 +99,7 @@ function OperatorReviewPage() {
         documents: documents.data as AssessmentDocument[],
         decisions: decisions.data as OperatorDecision[],
         role: String(role.data ?? "none"),
+        c4,
       };
     },
   });
@@ -107,7 +128,7 @@ function OperatorReviewPage() {
         </main>
       </AppShell>
     );
-  const { site, nodes, snapshots, documents, decisions, role } = query.data;
+  const { site, nodes, snapshots, documents, decisions, role, c4 } = query.data;
   const isOperator = role === "operator_reviewer";
   const operatorDocuments = documents.filter(
     (document) => document.source_classification === "operator_source",
@@ -316,6 +337,41 @@ function OperatorReviewPage() {
               </button>
             </form>
           ) : null}
+        </section>
+        <section className="workspace-card">
+          <div className="panel-heading">
+            <div>
+              <h2>C4 operator pilot data room</h2>
+              <p>Private model packages, measurement reconciliation and approval gates.</p>
+            </div>
+            <ShieldCheck />
+          </div>
+          {c4.workspace ? (
+            <>
+              <div className="operator-snapshot">
+                <b>{String(c4.workspace.pilot_name)} · {label(String(c4.workspace.status))}</b>
+                <span>Validation: {label(String(c4.workspace.validation_class))}</span>
+                <span>Substation: {String(c4.workspace.substation_name || "awaiting operator identification")}</span>
+                <span>{c4.workspace.real_operator_pilot ? "Real operator pilot recorded" : "Pilot partner not yet verified"}</span>
+              </div>
+              <div className="form-grid two-columns">
+                <div><b>Accepted packages</b><p>{c4.packages.filter((item) => item.status === "accepted").length} of {c4.packages.length}</p></div>
+                <div><b>Reconciliation</b><p>{c4.reconciliations[0] ? label(String(c4.reconciliations[0].status)) : "Not run"}</p></div>
+                <div><b>Signed agreements</b><p>{c4.agreements.filter((item) => item.status === "signed").length}</p></div>
+                <div><b>Operator reviews</b><p>{c4.reviews.length}</p></div>
+              </div>
+              <details>
+                <summary>Inspect immutable audit trail</summary>
+                {c4.audit.length ? c4.audit.map((event) => (
+                  <p key={String(event.id)}><b>{label(String(event.event_type))}</b> · {new Date(String(event.occurred_at)).toLocaleString()} · <code>{String(event.event_hash).slice(0, 16)}…</code></p>
+                )) : <p>No C4 audit event recorded.</p>}
+              </details>
+            </>
+          ) : (
+            <div className="compact-empty">
+              No real operator pilot workspace exists. Create one only after a participating DSO/TSO and bounded substation scope are identified.
+            </div>
+          )}
         </section>
         {isOperator ? (
           <form

@@ -1,0 +1,11 @@
+/* Ordered compatibility manifest: preserve cross-feature cascade precedence. */
+@import "./styles/00-foundation.css";
+@import "./styles/01-power-and-battery-decision-workspace.css";
+@import "./styles/02-compute-and-workload-decision-workspace.css";
+@import "./styles/03-2026-operations-workspace-decision-first-visual-system.css";
+@import "./styles/04-light-mode-is-intentionally-tuned-as-a-distinct-operating-su.css";
+@import "./styles/05-operations-visualization-language.css";
+@import "./styles/06-operational-power-balance-modules.css";
+@import "./styles/07-unified-operating-context-and-decision-hierarchy.css";
+@import "./styles/08-decision-first-operations-workspace.css";
+@import "./styles/09-operator-hierarchy-compact-context-readable-evidence-bounded.css";

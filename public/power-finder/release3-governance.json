@@ -1,0 +1,87 @@
+{
+  "schema_version": "gridpulse-release3-governance-v1",
+  "release": "Release 3",
+  "validation_class": "synthetic_demonstration",
+  "public_visibility": "governance_summary_only",
+  "capacity_claim": false,
+  "dataset": {
+    "dataset_id": "synthetic-brandenburg-pilot",
+    "dataset_sha256": "f1c3c4a9ff118084b8b82e159136b0d5f93167a342d51ce2a4ee53eb1dc9ce47",
+    "validation_class": "synthetic_demonstration",
+    "operator_data_used": false,
+    "expected_decision": "retain_challenger",
+    "reproducibility_command": "npm run grid:validate:r3"
+  },
+  "shadow": {
+    "scenario_count": 36,
+    "verified_count": 36,
+    "physics_coverage": 1.0,
+    "mae_mw": 0.499083,
+    "p95_absolute_error_mw": 4.116,
+    "bias_mw": 0.038194,
+    "false_safe_rate": 0.0,
+    "out_of_distribution_rate": 0.0,
+    "binding_accuracy": 1.0,
+    "mandatory_contingency_coverage": 1.0,
+    "unverified_scenario_count": 0,
+    "drift_status": "stable",
+    "model_dataset_hash": "842bb1677a7e24d44ecc1dcf91c38074a20d88953742f044f640748824a5df20"
+  },
+  "champion_decision": {
+    "schema_version": "gridpulse-release3-champion-decision-v1",
+    "decision": "retain_challenger",
+    "approved_for": null,
+    "capacity_claim": false,
+    "operator_confirmation_created": false,
+    "gates": {
+      "operator_validation_class": false,
+      "operator_training_authorized": false,
+      "operator_reviewed": false,
+      "minimum_shadow_cases": true,
+      "physics_coverage": true,
+      "mae": true,
+      "p95_error": true,
+      "false_safe": true,
+      "out_of_distribution": true,
+      "mandatory_contingencies": true,
+      "feature_drift": true
+    },
+    "failed_gates": [
+      "operator_validation_class",
+      "operator_training_authorized",
+      "operator_reviewed"
+    ],
+    "thresholds": {
+      "minimum_verified_cases": 30,
+      "maximum_mae_mw": 5.0,
+      "maximum_p95_error_mw": 10.0,
+      "maximum_false_safe_rate": 0.01,
+      "maximum_ood_rate": 0.1
+    },
+    "decision_sha256": "5f5ef1908ce21b641c23c185949ee8ae5ef3673bdf9fc7626f871c771e0cd5a4"
+  },
+  "operator_requirements": {
+    "accepted_model": true,
+    "signed_training_permission": true,
+    "operator_review": true
+  },
+  "private_observations_published": false,
+  "private_predictions_published": false,
+  "report_sha256": "bbd7f774440d4d063e6bf73e7ffc36b82592cc451f0711a1ea428730653b50e8",
+  "reproducibility": {
+    "command": "npm run grid:validate:r3",
+    "random_state": 41,
+    "split_method": "scenario_prefix_holdout",
+    "training_scenario_hash": "062613160460f6b865ba9b5a7473ec2e7d0380ded9bce61d2ef08498ec73c4bb",
+    "holdout_scenario_hash": "57892c903d19f166cbbf2eadaa5e8dfd128fe732f08450a735778e834fab9a91",
+    "shadow_scenario_hash": "ad1fa0c58067a4ccb4604f44c2e08290eda68f0ce05a96dc547ca074264a063b"
+  },
+  "public_capacity_boundary": {
+    "surrogate_applied_to_public_capacity": false,
+    "map_values_remain_physics_results": true,
+    "operator_confirmation_created": false,
+    "status": "private_shadow_validation_only"
+  },
+  "warning": "Shadow predictions are internal diagnostics; physics and operator review remain authoritative.",
+  "manifest_sha256": "6a8d2fd78f0a6e8611dd6efa2fac4a32b9ee9528cbad30a5e68f6c8b907fcc20"
+}

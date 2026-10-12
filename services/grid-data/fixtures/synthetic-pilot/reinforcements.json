@@ -1,0 +1,3 @@
+[
+  {"reinforcement_id": "synthetic-reinforcement-trafo-2", "affected_element_ids": ["synthetic-trafo-1"], "action": "add", "earliest_commissioning": "2028-01-01", "latest_commissioning": "2030-12-31", "parameter_changes": {"collection": "transformers", "element": {"id": "synthetic-trafo-2", "hv_bus": "synthetic-hv", "lv_bus": "synthetic-mv-a", "sn_mva": 63, "vn_hv_kv": 110, "vn_lv_kv": 20, "vk_percent": 12, "vkr_percent": 0.35, "max_loading_percent": 100}}, "is_synthetic": true}
+]

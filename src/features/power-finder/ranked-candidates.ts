@@ -5,12 +5,13 @@ import {
   type RankedCandidateResult,
 } from "./candidate-intelligence";
 import type { PowerFinderCollection } from "./fixture-data";
+import type { PowerFinderDataMode } from "./data-source";
 
 export async function loadRankedCandidates(
   collection: PowerFinderCollection,
   requiredImportMw: number,
   maxDistanceKm: number,
-  dataMode: "database" | "published_artifact",
+  dataMode: PowerFinderDataMode,
 ): Promise<RankedCandidateResult> {
   if (dataMode === "database") {
     const { data, error } = await supabase.rpc("power_finder_ranked_candidates", {

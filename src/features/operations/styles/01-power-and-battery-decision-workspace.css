@@ -1,0 +1,378 @@
+/* Power and battery decision workspace */
+
+.power-decision-bar,
+.power-import,
+.power-timeline-card,
+.power-dispatch-card,
+.power-detail-card,
+.power-connectors {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--card) 94%, transparent);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+}
+
+.power-decision-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.1rem;
+  border-left: 3px solid var(--ops-limit);
+}
+
+.power-decision-bar.feasible {
+  border-left-color: var(--ops-positive);
+}
+
+.power-decision-bar h3,
+.power-import h3,
+.power-timeline-card h3,
+.power-dispatch-card h3,
+.power-detail-card h3,
+.power-connectors h3 {
+  margin: 0.15rem 0 0;
+  font-size: 1.05rem;
+}
+
+.power-decision-bar p:last-child {
+  margin: 0.3rem 0 0;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+}
+
+.power-decision-summary {
+  display: grid;
+  justify-items: end;
+  gap: 0.3rem;
+  flex: 0 0 auto;
+}
+
+.power-decision-summary strong {
+  font-size: 0.86rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.power-decision-summary span:last-child {
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+}
+
+.power-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.power-toolbar button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.power-toolbar svg {
+  width: 16px;
+  height: 16px;
+}
+
+.power-mode {
+  display: flex;
+  padding: 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--card);
+}
+
+.power-mode button {
+  min-height: 38px;
+  padding: 0.45rem 0.8rem;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted-foreground);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.power-mode button.active {
+  background: color-mix(in srgb, var(--accent) 14%, var(--background));
+  color: var(--foreground);
+}
+
+.power-mode button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.power-import {
+  padding: 1rem;
+}
+
+.power-import > header,
+.power-timeline-card > header,
+.power-detail-card > header,
+.power-connectors > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.power-import > header > span,
+.power-connectors > header > span {
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+}
+
+.power-import-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.7rem;
+  margin-top: 0.8rem;
+}
+
+.power-import-grid label {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.2rem 0.65rem;
+  padding: 0.85rem;
+  border: 1px dashed var(--border);
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+.power-import-grid label:hover {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+
+.power-import-grid svg {
+  grid-row: 1 / span 2;
+  width: 20px;
+  color: var(--accent);
+}
+
+.power-import-grid strong {
+  font-size: 0.78rem;
+}
+
+.power-import-grid span {
+  color: var(--muted-foreground);
+  font-size: 0.66rem;
+}
+
+.power-import-grid input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.power-import-status {
+  margin: 0.7rem 0 0;
+  color: var(--ops-positive);
+  font-size: 0.72rem;
+}
+
+.power-kpis {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.power-primary-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2.25fr) minmax(18rem, 0.75fr);
+  gap: 1rem;
+}
+
+.power-timeline-card {
+  min-width: 0;
+  padding: 1rem;
+}
+
+.power-timeline {
+  height: 25rem;
+  margin-top: 0.5rem;
+}
+
+.power-dispatch-card {
+  padding: 1rem;
+}
+
+.power-dispatch-card > header {
+  display: flex;
+  gap: 0.7rem;
+  align-items: flex-start;
+}
+
+.power-dispatch-card > header > svg {
+  width: 22px;
+  color: var(--ops-assumption);
+}
+
+.power-decision-bar.feasible
+  + .power-toolbar
+  + .power-import
+  + .power-kpis
+  + .power-primary-grid
+  .power-dispatch-card
+  > header
+  > svg,
+.power-dispatch-card > header > svg:first-child:last-child {
+  color: var(--ops-positive);
+}
+
+.power-dispatch-card dl,
+.power-detail-card dl {
+  display: grid;
+  margin: 0.8rem 0 0;
+}
+
+.power-dispatch-card dl > div,
+.power-detail-card dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.62rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.power-dispatch-card dt,
+.power-detail-card dt {
+  color: var(--muted-foreground);
+  font-size: 0.7rem;
+}
+
+.power-dispatch-card dd,
+.power-detail-card dd {
+  margin: 0;
+  font-size: 0.73rem;
+  font-weight: 800;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.power-readonly {
+  display: flex;
+  gap: 0.55rem;
+  margin: 0.9rem 0 0;
+  padding: 0.7rem;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+  line-height: 1.45;
+}
+
+.power-readonly svg {
+  flex: 0 0 auto;
+  width: 17px;
+  color: var(--accent);
+}
+
+.power-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.power-detail-card {
+  padding: 1rem;
+}
+
+.power-connectors {
+  padding: 1rem;
+}
+
+.power-connectors > div {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+  margin-top: 0.8rem;
+}
+
+.power-connectors section {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.power-connectors section > span {
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+}
+
+.power-connectors section svg {
+  width: 18px;
+  height: 18px;
+}
+
+.power-connectors section div {
+  display: grid;
+  min-width: 0;
+  margin-right: auto;
+}
+
+.power-connectors strong {
+  font-size: 0.73rem;
+}
+
+.power-connectors small {
+  overflow: hidden;
+  color: var(--muted-foreground);
+  font-size: 0.62rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.power-connectors i {
+  color: var(--muted-foreground);
+  font: 700 0.56rem/1 var(--font-mono, monospace);
+  text-transform: uppercase;
+}
+
+.power-empty {
+  display: grid;
+  place-items: center;
+  min-height: 16rem;
+  padding: 2rem;
+  text-align: center;
+}
+
+.power-empty svg {
+  width: 28px;
+  color: var(--muted-foreground);
+}
+
+.power-empty strong {
+  margin-top: 0.7rem;
+}
+
+.power-empty span {
+  max-width: 30rem;
+  margin-top: 0.3rem;
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+}
+
+.operations-v2-chart-data tbody button {
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.operations-v2-chart-data tr.selected {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}

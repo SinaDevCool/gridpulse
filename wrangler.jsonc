@@ -3,6 +3,17 @@
   "name": "gridpulse-insights",
   "compatibility_date": "2026-07-18",
   "compatibility_flags": ["nodejs_compat"],
-  "main": "@tanstack/react-start/server-entry",
+  "main": "src/server.ts",
+  "assets": { "binding": "ASSETS" },
+  "vars": {
+    "PUBLIC_FINDER_EXPERIMENTAL_MODE": "false",
+  },
+  "ratelimits": [
+    {
+      "name": "PUBLIC_FINDER_RATE_LIMITER",
+      "namespace_id": "1001",
+      "simple": { "limit": 600, "period": 60 },
+    },
+  ],
   "observability": { "enabled": true },
 }

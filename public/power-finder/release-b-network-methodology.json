@@ -1,0 +1,34 @@
+{
+  "network_version": "de-bb-synthetic-reference-network-v1",
+  "ranking_version": "release-b-security-ranking-v1",
+  "evidence_status": "synthetic",
+  "validation_status": "unvalidated_reference_model",
+  "not_for_connection_decision": true,
+  "classification": "reference_network_security_screen_only",
+  "topology": {
+    "buses": 4,
+    "branches": 3,
+    "arrangement": "synthetic radial equivalent"
+  },
+  "analyses": [
+    "N-0 transfer screen",
+    "largest-branch-outage N-1 proxy",
+    "voltage-security proxy",
+    "base, high-load, outage and target-year sensitivities"
+  ],
+  "not_implemented": [
+    "AC power flow",
+    "DC power flow",
+    "fault-level calculation",
+    "protection coordination",
+    "operator contingency analysis",
+    "connection-queue analysis"
+  ],
+  "replacement_target": "Operator-supplied CGMES/planning topology, impedances, ratings, loading snapshots, security criteria, protection and connection queue",
+  "regulatory_context": "FCA restrictions for German storage and consuming facilities may be static or dynamic and remain subject to operator assessment and agreement.",
+  "limitations": [
+    "All electrical branch parameters and base loading are deterministic synthetic demonstration assumptions.",
+    "The result does not establish free, available, reserved, connectable or operator-confirmed capacity.",
+    "N-1 is a conservative proxy and not an operator security assessment."
+  ]
+}

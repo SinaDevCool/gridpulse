@@ -1,22 +1,24 @@
-import "./lib/error-capture";
-
-import { consumeLastCapturedError } from "./lib/error-capture";
+import { createStartHandler,defaultStreamHandler } from "@tanstack/react-start/server";
 import { renderErrorPage } from "./lib/error-page";
+import { buildSecurityHeaders } from "./lib/security-headers";
+import {
+consumeLastCapturedError,
+withRequestContext,
+} from "./server/observability/request-context.server";
 
-type ServerEntry = {
-  fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
-};
+const SECURITY_HEADERS = buildSecurityHeaders(import.meta.env.VITE_SUPABASE_URL);
 
-let serverEntryPromise: Promise<ServerEntry> | undefined;
-
-async function getServerEntry(): Promise<ServerEntry> {
-  if (!serverEntryPromise) {
-    serverEntryPromise = import("@tanstack/react-start/server-entry").then(
-      (m) => (m.default ?? m) as ServerEntry,
-    );
-  }
-  return serverEntryPromise;
+export function withSecurityHeaders(response: Response): Response {
+  const headers = new Headers(response.headers);
+  for (const [name, value] of Object.entries(SECURITY_HEADERS)) headers.set(name, value);
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
 }
+
+const startHandler = createStartHandler(defaultStreamHandler);
 
 // h3 swallows in-handler throws into a normal 500 Response with body
 // {"unhandled":true,"message":"HTTPError"} — try/catch alone never fires for those.
@@ -38,17 +40,20 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
 }
 
 export default {
-  async fetch(request: Request, env: unknown, ctx: unknown) {
-    try {
-      const handler = await getServerEntry();
-      const response = await handler.fetch(request, env, ctx);
-      return await normalizeCatastrophicSsrResponse(response);
-    } catch (error) {
-      console.error(error);
-      return new Response(renderErrorPage(), {
-        status: 500,
-        headers: { "content-type": "text/html; charset=utf-8" },
-      });
-    }
+  async fetch(request: Request) {
+    return withRequestContext(crypto.randomUUID(), async () => {
+      try {
+        const response = await startHandler(request);
+        return withSecurityHeaders(await normalizeCatastrophicSsrResponse(response));
+      } catch (error) {
+        console.error(error);
+        return withSecurityHeaders(
+          new Response(renderErrorPage(), {
+            status: 500,
+            headers: { "content-type": "text/html; charset=utf-8" },
+          }),
+        );
+      }
+    });
   },
 };

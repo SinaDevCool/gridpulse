@@ -6,25 +6,20 @@ import os
 import sys
 import time
 from collections.abc import Callable
-from uuid import UUID, uuid4
+from uuid import uuid4
 
-from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request, status
+from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from grid_data.api.auth import authenticated_user
+from grid_data.api.dependencies import ApiDependencies, UnavailableExecutor
 from grid_data.api.executor import JobExecutor, OperatorHealthExecutor
-from grid_data.api.models import (
-    AnalyticsJob,
-    FlexibilityOptimizationRequest,
-    HealthReport,
-    JobAccepted,
-    ReferenceTopologyRequest,
-    UserIdentity,
-)
+from grid_data.api.request_limits import OperationsBodyLimit
+from grid_data.api.routers import facility, health, jobs, network
 from grid_data.api.store import InMemoryJobStore, JobStore, SupabaseJobStore
-
-SERVICE_VERSION = "0.1.0"
+from grid_data.api.submission import JobSubmission
+from grid_data.api.version import SERVICE_VERSION
 
 
 class JsonFormatter(logging.Formatter):
@@ -55,7 +50,7 @@ def _production_dependencies() -> tuple[JobStore, JobExecutor]:
     service_role_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
     if not supabase_url or not service_role_key:
         store = InMemoryJobStore()
-        return store, _UnavailableExecutor()
+        return store, UnavailableExecutor()
     store = SupabaseJobStore(supabase_url, service_role_key)
     return (
         store,
@@ -65,17 +60,6 @@ def _production_dependencies() -> tuple[JobStore, JobExecutor]:
             service_role_key=service_role_key,
         ),
     )
-
-
-class _UnavailableExecutor:
-    def execute_operator_source_health(self, job_id: UUID) -> None:
-        raise RuntimeError(f"job executor is not configured for {job_id}")
-
-    def execute_reference_topology(self, job_id: UUID) -> None:
-        raise RuntimeError(f"job executor is not configured for {job_id}")
-
-    def execute_flexibility_optimization(self, job_id: UUID) -> None:
-        raise RuntimeError(f"job executor is not configured for {job_id}")
 
 
 def create_app(
@@ -96,6 +80,7 @@ def create_app(
         docs_url="/docs" if os.environ.get("GRIDPULSE_API_DOCS") == "enabled" else None,
         redoc_url=None,
     )
+    app.add_middleware(OperationsBodyLimit)
     allowed_origins = [
         origin.strip()
         for origin in os.environ.get(
@@ -114,6 +99,12 @@ def create_app(
     )
     app.state.job_store = job_store
     app.state.executor = executor
+    app.state.dispatch_mode = os.environ.get(
+        "GRIDPULSE_JOB_DISPATCH_MODE",
+        "worker" if isinstance(job_store, SupabaseJobStore) else "inline",
+    )
+    if app.state.dispatch_mode not in {"inline", "worker"}:
+        raise RuntimeError("GRIDPULSE_JOB_DISPATCH_MODE must be inline or worker")
 
     @app.middleware("http")
     async def request_context(request: Request, call_next):
@@ -151,80 +142,10 @@ def create_app(
             content={"detail": "Internal analytics service error"},
         )
 
-    @app.get("/health", response_model=HealthReport)
-    def health() -> HealthReport:
-        return HealthReport(
-            status="ok",
-            service="gridpulse-analytics",
-            version=SERVICE_VERSION,
-            job_store=type(app.state.job_store).__name__,
-        )
-
-    @app.post(
-        "/v1/jobs/operator-source-health",
-        response_model=JobAccepted,
-        status_code=status.HTTP_202_ACCEPTED,
-    )
-    def start_operator_health_job(
-        background_tasks: BackgroundTasks,
-        user: UserIdentity = Depends(auth_dependency),
-    ) -> JobAccepted:
-        job = app.state.job_store.create(
-            AnalyticsJob(owner_id=user.id, job_type="operator_source_health")
-        )
-        background_tasks.add_task(app.state.executor.execute_operator_source_health, job.id)
-        return JobAccepted(job_id=job.id, status=job.status)
-
-    @app.post(
-        "/v1/jobs/reference-topology",
-        response_model=JobAccepted,
-        status_code=status.HTTP_202_ACCEPTED,
-    )
-    def start_reference_topology_job(
-        request: ReferenceTopologyRequest,
-        background_tasks: BackgroundTasks,
-        user: UserIdentity = Depends(auth_dependency),
-    ) -> JobAccepted:
-        job = app.state.job_store.create(
-            AnalyticsJob(
-                owner_id=user.id,
-                job_type="reference_topology",
-                input_payload=request.model_dump(),
-            )
-        )
-        background_tasks.add_task(app.state.executor.execute_reference_topology, job.id)
-        return JobAccepted(job_id=job.id, status=job.status)
-
-    @app.post(
-        "/v1/jobs/flexibility-optimization",
-        response_model=JobAccepted,
-        status_code=status.HTTP_202_ACCEPTED,
-    )
-    def start_flexibility_optimization_job(
-        request: FlexibilityOptimizationRequest,
-        background_tasks: BackgroundTasks,
-        user: UserIdentity = Depends(auth_dependency),
-    ) -> JobAccepted:
-        job = app.state.job_store.create(
-            AnalyticsJob(
-                owner_id=user.id,
-                job_type="flexibility_optimization",
-                input_payload=request.model_dump(),
-            )
-        )
-        background_tasks.add_task(app.state.executor.execute_flexibility_optimization, job.id)
-        return JobAccepted(job_id=job.id, status=job.status)
-
-    @app.get("/v1/jobs/{job_id}", response_model=AnalyticsJob)
-    def get_job(
-        job_id: UUID,
-        user: UserIdentity = Depends(auth_dependency),
-    ) -> AnalyticsJob:
-        job = app.state.job_store.get(job_id, user.id)
-        if not job:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
-        return job
-
+    dependencies = ApiDependencies(job_store, executor, app.state.dispatch_mode)
+    submission = JobSubmission(dependencies.job_store, dependencies.dispatch_mode)
+    for group in (health, jobs, facility, network):
+        app.include_router(group.build_router(dependencies, auth_dependency, submission))
     return app
 
 

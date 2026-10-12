@@ -1,0 +1,4 @@
+[
+  {"state_id": "normal", "switch_positions": {"synthetic-switch-line-a": true}, "is_synthetic": true},
+  {"state_id": "line-a-open", "switch_positions": {"synthetic-switch-line-a": false}, "is_synthetic": true}
+]

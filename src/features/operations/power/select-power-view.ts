@@ -1,0 +1,78 @@
+import type { BatteryObservation,FacilityPowerObservation } from "../battery-dispatch";
+import { buildHistoricalSeries,valueOf,type EvidenceMode } from "../power/presentation";
+import { importThresholds } from "../presentation";
+import type { OperationsOverviewModel } from "../scenario-engine";
+export function selectPowerView(
+  model: OperationsOverviewModel,
+  displayModel: OperationsOverviewModel,
+  mode: EvidenceMode,
+  facilityObservations: FacilityPowerObservation[],
+  batteryObservations: BatteryObservation[],
+  selectedTimestamp: string | null,
+) {
+  const scenarioPeak = displayModel.intervals.reduce(
+    (peak, point) => (point.baselineDemandMw > peak.baselineDemandMw ? point : peak),
+    displayModel.intervals[0],
+  );
+  const selectedScenario =
+    displayModel.intervals.find((point) => point.timestamp === selectedTimestamp) ?? scenarioPeak;
+  const historical = buildHistoricalSeries(facilityObservations, batteryObservations);
+  const selectedHistorical =
+    historical.find((point) => point.timestamp === selectedTimestamp) ?? historical.at(-1) ?? null;
+  const targetMw = model.scenario.importLimitMw - model.scenario.safetyReserveMw;
+  const selected = mode === "scenario" ? selectedScenario : selectedHistorical;
+  const series =
+    mode === "scenario"
+      ? displayModel.intervals.map((point) => ({
+          ...point,
+          facilityDemandMw: point.baselineDemandMw,
+          gridImportMw: point.batteryDemandMw,
+          socPercent: point.batterySocPercent,
+        }))
+      : historical;
+  const requiredMw =
+    mode === "scenario"
+      ? Math.max(0, selectedScenario.baselineDemandMw - targetMw)
+      : selectedHistorical?.facilityDemandMw != null
+        ? Math.max(0, selectedHistorical.facilityDemandMw - targetMw)
+        : null;
+  const batteryMw =
+    mode === "scenario"
+      ? selectedScenario.batteryPowerMw
+      : (selectedHistorical?.batteryPowerMw ?? null);
+  const shortfallMw =
+    requiredMw == null || batteryMw == null
+      ? null
+      : Math.max(0, requiredMw - Math.max(0, batteryMw));
+  const feasible = shortfallMw != null && shortfallMw <= 0.01;
+  const thresholds = importThresholds(
+    selected ? valueOf(selected, "gridImportMw", "batteryDemandMw") : null,
+    model.scenario.importLimitMw,
+    model.scenario.safetyReserveMw,
+  );
+  const responseRequired = requiredMw != null && requiredMw > 0.01;
+  const dispatchHeadline =
+    !selected || requiredMw == null
+      ? "Load aligned meter and battery evidence"
+      : !responseRequired
+        ? "No battery response is required for the selected interval"
+        : feasible
+          ? "Battery response can hold the selected interval below target"
+          : "Battery response cannot fully cover the selected interval";
+  return {
+    scenarioPeak,
+    selectedScenario,
+    historical,
+    selectedHistorical,
+    targetMw,
+    selected,
+    series,
+    requiredMw,
+    batteryMw,
+    shortfallMw,
+    feasible,
+    thresholds,
+    responseRequired,
+    dispatchHeadline,
+  };
+}

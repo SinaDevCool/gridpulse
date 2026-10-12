@@ -1,0 +1,119 @@
+{"kind":"deck","id":"pr/c21dyx","name":"Deck"}
+{"kind":"layout","layoutId":"45520ec8-f5db-4535-aca9-e9ad919de035","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"67de6b93-ee9e-49c0-9e48-9b69cf37a537","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/udqlbt","slide":1,"title":"GRIDPULSE  INSIGHTS","textShapes":2}
+{"kind":"textbox","id":"sh/8faxgna1","slide":1,"name":"brand","text":"GRIDPULSE  INSIGHTS","textPreview":"GRIDPULSE  INSIGHTS","textChars":19,"textLines":1,"bbox":[0,272,1280,74]}
+{"kind":"textbox","id":"sh/7e1g7i9w","slide":1,"name":"tagline","text":"AI and physics for data-centre grid decisions","textPreview":"AI and physics for data-centre grid decisions","textChars":45,"textLines":1,"bbox":[0,360,1280,36]}
+{"kind":"notes","id":"nt/udqlbt","slide":1,"text":"Open with the outcome: knowing where a large load is most plausible before entering a long formal connection process.\n\n[Sources]\n- GridPulse prototype and user-provided GridPulse pitch deck."}
+{"kind":"slide","id":"sl/5ap3bh","slide":2,"title":"02   /   THE PROBLEM AND CUSTOMER","textShapes":13}
+{"kind":"textbox","id":"sh/lory54ni","slide":2,"name":"eyebrow-2","text":"02   /   THE PROBLEM AND CUSTOMER","textPreview":"02   /   THE PROBLEM AND CUSTOMER","textChars":33,"textLines":1,"bbox":[60,38,500,22]}
+{"kind":"textbox","id":"sh/y10zu9or","slide":2,"name":"problem-title","text":"A data-centre site can fail because the grid answer arrives too late.","textPreview":"A data-centre site can fail because the grid answer arrives too late.","textChars":69,"textLines":1,"bbox":[60,94,1140,105]}
+{"kind":"textbox","id":"sh/j29g3e5c","slide":2,"name":"customer","text":"FOR WHOM","textPreview":"FOR WHOM","textChars":8,"textLines":1,"bbox":[66,232,240,25]}
+{"kind":"textbox","id":"sh/8r2h0j6t","slide":2,"name":"customer-value","text":"Data-centre developers, investors and infrastructure teams","textPreview":"Data-centre developers, investors and infrastructure teams","textChars":58,"textLines":1,"bbox":[66,267,510,96]}
+{"kind":"shape","id":"sh/tsby9one","slide":2,"name":"problem-panel","bbox":[680,222,535,300]}
+{"kind":"textbox","id":"sh/6p0zy9on","slide":2,"name":"problem-panel-title","text":"The decision gap","textPreview":"The decision gap","textChars":16,"textLines":1,"bbox":[720,258,450,36]}
+{"kind":"textbox","id":"sh/7q9g7e58","slide":2,"name":"p1-dot","text":"•","textPreview":"•","textChars":1,"textLines":1,"bbox":[720,322,20,28]}
+{"kind":"textbox","id":"sh/ovyxof6p","slide":2,"name":"p1","text":"Sites are selected before grid feasibility is clear.","textPreview":"Sites are selected before grid feasibility is clear.","textChars":52,"textLines":1,"bbox":[745,322,405,52]}
+{"kind":"textbox","id":"sh/9w7yxk7a","slide":2,"name":"p2-dot","text":"•","textPreview":"•","textChars":1,"textLines":1,"bbox":[720,382,20,28]}
+{"kind":"textbox","id":"sh/hwb250f6","slide":2,"name":"p2","text":"Network evidence is fragmented across operators and datasets.","textPreview":"Network evidence is fragmented across operators and datasets.","textChars":61,"textLines":1,"bbox":[745,382,405,52]}
+{"kind":"textbox","id":"sh/wvi1wfel","slide":2,"name":"p3-dot","text":"•","textPreview":"•","textChars":1,"textLines":1,"bbox":[720,454,20,28]}
+{"kind":"textbox","id":"sh/vu9k3ax0","slide":2,"name":"p3","text":"A rejected request can restart months of work at a new location.","textPreview":"A rejected request can restart months of work at a new location.","textChars":64,"textLines":1,"bbox":[745,454,405,52]}
+{"kind":"textbox","id":"sh/at0ju5wf","slide":2,"name":"consequence","text":"Grid risk becomes capital risk.","textPreview":"Grid risk becomes capital risk.","textChars":31,"textLines":1,"bbox":[66,535,1110,54]}
+{"kind":"textbox","id":"sh/5kb29kf2","slide":2,"name":"footer-2","text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[1200,680,30,16]}
+{"kind":"notes","id":"nt/5ap3bh","slide":2,"text":"\n\n[Sources]\n- User-provided GridPulse pitch deck; GridPulse product research."}
+{"kind":"slide","id":"sl/pt9dpi","slide":3,"title":"03   /   THE PROPOSED SOLUTION","textShapes":10}
+{"kind":"textbox","id":"sh/8rq9ofe1","slide":3,"name":"eyebrow-3","text":"03   /   THE PROPOSED SOLUTION","textPreview":"03   /   THE PROPOSED SOLUTION","textChars":30,"textLines":1,"bbox":[60,38,500,22]}
+{"kind":"textbox","id":"sh/76hsfadw","slide":3,"name":"solution-title","text":"Drop a pin. GridPulse ranks the grid around it.","textPreview":"Drop a pin. GridPulse ranks the grid around it.","textChars":47,"textLines":1,"bbox":[60,96,1140,105]}
+{"kind":"shape","id":"sh/m5orm5wb","slide":3,"name":"solution-card-0","bbox":[64,255,320,250]}
+{"kind":"textbox","id":"sh/hwzalkvy","slide":3,"name":"solution-head-0","text":"1  SITE + LOAD","textPreview":"1  SITE + LOAD","textChars":14,"textLines":1,"bbox":[98,288,250,30]}
+{"kind":"textbox","id":"sh/wvq9sfed","slide":3,"name":"solution-body-0","text":"Location, MW profile, timing, reliability and flexibility.","textPreview":"Location, MW profile, timing, reliability and flexibility.","textChars":58,"textLines":1,"bbox":[98,345,250,120]}
+{"kind":"shape","id":"sh/vuhsjuds","slide":3,"name":"solution-card-1","bbox":[430,255,320,250]}
+{"kind":"textbox","id":"sh/ut8rqpw7","slide":3,"name":"solution-head-1","text":"2  SCREEN + MODEL","textPreview":"2  SCREEN + MODEL","textChars":17,"textLines":1,"bbox":[464,288,250,30]}
+{"kind":"textbox","id":"sh/50jap4vu","slide":3,"name":"solution-body-1","text":"Public grid evidence, candidate nodes, scenarios and electrical constraints.","textPreview":"Public grid evidence, candidate nodes, scenarios and electrical constraints.","textChars":76,"textLines":1,"bbox":[464,345,250,120]}
+{"kind":"shape","id":"sh/4zatwzu9","slide":3,"name":"solution-card-2","bbox":[796,255,320,250]}
+{"kind":"textbox","id":"sh/u54vupoj","slide":3,"name":"solution-head-2","text":"3  DECISION OUTPUT","textPreview":"3  DECISION OUTPUT","textChars":18,"textLines":1,"bbox":[830,288,250,30]}
+{"kind":"textbox","id":"sh/v6dwnup4","slide":3,"name":"solution-body-2","text":"Ranked connection hypotheses, capacity range, confidence and next action.","textPreview":"Ranked connection hypotheses, capacity range, confidence and next action.","textChars":73,"textLines":1,"bbox":[830,345,250,120]}
+{"kind":"textbox","id":"sh/g7mxwz6p","slide":3,"name":"solution-boundary","text":"The output is an evidence-backed screening estimate - not operator-confirmed capacity.","textPreview":"The output is an evidence-backed screening estimate - not operator-confirmed capacity.","textChars":86,"textLines":1,"bbox":[64,560,1090,52]}
+{"kind":"textbox","id":"sh/h8vep47a","slide":3,"name":"footer-3","text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[1200,680,30,16]}
+{"kind":"notes","id":"nt/pt9dpi","slide":3,"text":"\n\n[Sources]\n- GridPulse prototype and backtest architecture."}
+{"kind":"slide","id":"sl/om0tpz","slide":4,"title":"04   /   WHY AI IS CENTRAL","textShapes":13}
+{"kind":"textbox","id":"sh/svyxc36x","slide":4,"name":"eyebrow-4","text":"04   /   WHY AI IS CENTRAL","textPreview":"04   /   WHY AI IS CENTRAL","textChars":26,"textLines":1,"bbox":[60,38,500,22]}
+{"kind":"textbox","id":"sh/ru5w3i5c","slide":4,"name":"ai-title","text":"Incomplete grid data makes this an inference problem, not a database lookup.","textPreview":"Incomplete grid data makes this an inference problem, not a database lookup.","textChars":76,"textLines":1,"bbox":[60,94,1140,105]}
+{"kind":"textbox","id":"sh/qtwvador","slide":4,"name":"ai-num-0","text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[68,230,45,45]}
+{"kind":"textbox","id":"sh/5sne18nm","slide":4,"name":"ai-head-0","text":"RECONSTRUCT","textPreview":"RECONSTRUCT","textChars":11,"textLines":1,"bbox":[135,230,330,34]}
+{"kind":"textbox","id":"sh/4red8361","slide":4,"name":"ai-body-0","text":"Resolve inconsistent assets, operators and locations into candidate grid context.","textPreview":"Resolve inconsistent assets, operators and locations into candidate grid context.","textChars":81,"textLines":1,"bbox":[465,228,710,64]}
+{"kind":"textbox","id":"sh/3q5wzy5g","slide":4,"name":"ai-num-1","text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[68,346,45,45]}
+{"kind":"textbox","id":"sh/ipwv6tov","slide":4,"name":"ai-head-1","text":"PREDICT","textPreview":"PREDICT","textChars":7,"textLines":1,"bbox":[135,346,330,34]}
+{"kind":"textbox","id":"sh/honexona","slide":4,"name":"ai-body-1","text":"Estimate demand, generation and operating conditions across time and scenarios.","textPreview":"Estimate demand, generation and operating conditions across time and scenarios.","textChars":79,"textLines":1,"bbox":[465,344,710,64]}
+{"kind":"textbox","id":"sh/w3ed4j6p","slide":4,"name":"ai-num-2","text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[68,462,45,45]}
+{"kind":"textbox","id":"sh/y58vm5oz","slide":4,"name":"ai-head-2","text":"RANK WITH UNCERTAINTY","textPreview":"RANK WITH UNCERTAINTY","textChars":21,"textLines":1,"bbox":[135,462,330,34]}
+{"kind":"textbox","id":"sh/z6hcfa5k","slide":4,"name":"ai-body-2","text":"Score plausible nodes, calibrate confidence and abstain when evidence is insufficient.","textPreview":"Score plausible nodes, calibrate confidence and abstain when evidence is insufficient.","textChars":86,"textLines":1,"bbox":[465,460,710,64]}
+{"kind":"shape","id":"sh/krqdof65","slide":4,"name":"ai-callout","bbox":[64,590,1115,67]}
+{"kind":"textbox","id":"sh/lsjuhknq","slide":4,"name":"ai-callout-text","text":"Without AI, GridPulse can display data. With AI, it can infer, compare and quantify uncertainty across locations.","textPreview":"Without AI, GridPulse can display data. With AI, it can infer, compare and quantify uncertainty across locations.","textChars":113,"textLines":1,"bbox":[92,608,1060,35]}
+{"kind":"textbox","id":"sh/q18bi5o3","slide":4,"name":"footer-4","text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1200,680,30,16]}
+{"kind":"notes","id":"nt/om0tpz","slide":4,"text":"\n\n[Sources]\n- GridPulse technical design: entity resolution, forecasting, scenario ranking, confidence calibration and abstention."}
+{"kind":"slide","id":"sl/r48ypn","slide":5,"title":"05   /   TRUSTWORTHY TECHNICAL METHOD","textShapes":10}
+{"kind":"textbox","id":"sh/3uxc7mp8","slide":5,"name":"eyebrow-5","text":"05   /   TRUSTWORTHY TECHNICAL METHOD","textPreview":"05   /   TRUSTWORTHY TECHNICAL METHOD","textChars":37,"textLines":1,"bbox":[60,38,500,22]}
+{"kind":"textbox","id":"sh/4f6tgrqt","slide":5,"name":"method-title","text":"AI proposes. Power-system physics tests. Evidence controls the claim.","textPreview":"AI proposes. Power-system physics tests. Evidence controls the claim.","textChars":69,"textLines":1,"bbox":[60,94,1140,105]}
+{"kind":"shape","id":"sh/pgfu9w7e","slide":5,"name":"connector-1","bbox":[358,356,72,5]}
+{"kind":"shape","id":"sh/qhobi18z","slide":5,"name":"connector-2","bbox":[796,356,72,5]}
+{"kind":"shape","id":"sh/rixcb6p4","slide":5,"name":"method-card-0","bbox":[62,242,300,240]}
+{"kind":"textbox","id":"sh/cj6tkbqp","slide":5,"name":"method-head-0","text":"AI EVIDENCE LAYER","textPreview":"AI EVIDENCE LAYER","textChars":17,"textLines":1,"bbox":[90,280,245,35]}
+{"kind":"textbox","id":"sh/dkzudg7a","slide":5,"name":"method-body-0","text":"Reconstruct context\nForecast scenarios\nRank candidates","textPreview":"Reconstruct context | Forecast scenarios | Rank candidates","textChars":54,"textLines":3,"bbox":[90,340,245,110]}
+{"kind":"shape","id":"sh/el8bml8v","slide":5,"name":"method-card-1","bbox":[430,242,300,240]}
+{"kind":"textbox","id":"sh/zmhcf6pg","slide":5,"name":"method-head-1","text":"PHYSICS GATE","textPreview":"PHYSICS GATE","textChars":12,"textLines":1,"bbox":[458,280,245,35]}
+{"kind":"textbox","id":"sh/fy9sj6dk","slide":5,"name":"method-body-1","text":"AC power flow\nVoltage and thermal limits\nReproducible cases","textPreview":"AC power flow | Voltage and thermal limits | Reproducible cases","textChars":59,"textLines":3,"bbox":[458,340,245,110]}
+{"kind":"shape","id":"sh/ex0rq1wz","slide":5,"name":"method-card-2","bbox":[868,242,300,240]}
+{"kind":"textbox","id":"sh/10ralgvq","slide":5,"name":"method-head-2","text":"DECISION LAYER","textPreview":"DECISION LAYER","textChars":14,"textLines":1,"bbox":[896,280,245,35]}
+{"kind":"textbox","id":"sh/0zitsbe5","slide":5,"name":"method-body-2","text":"Capacity envelope\nConfidence class\nEscalate or abstain","textPreview":"Capacity envelope | Confidence class | Escalate or abstain","textChars":54,"textLines":3,"bbox":[896,340,245,110]}
+{"kind":"textbox","id":"sh/rupsfmdo","slide":5,"name":"method-rule","text":"No model may convert missing evidence into a confident MW claim.","textPreview":"No model may convert missing evidence into a confident MW claim.","textChars":64,"textLines":1,"bbox":[62,555,1100,45]}
+{"kind":"textbox","id":"sh/q9grmhw3","slide":5,"name":"footer-5","text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1200,680,30,16]}
+{"kind":"notes","id":"nt/r48ypn","slide":5,"text":"\n\n[Sources]\n- GridPulse backtest methodology and evidence-boundary design."}
+{"kind":"slide","id":"sl/bqbdp7","slide":6,"title":"06   /   WHAT WE HAVE BUILT AND TESTED","textShapes":17}
+{"kind":"textbox","id":"sh/s321kzuh","slide":6,"name":"eyebrow-6","text":"06   /   WHAT WE HAVE BUILT AND TESTED","textPreview":"06   /   WHAT WE HAVE BUILT AND TESTED","textChars":38,"textLines":1,"bbox":[60,38,500,22]}
+{"kind":"textbox","id":"sh/72tkbudw","slide":6,"name":"built-title","text":"The concept is already a working prototype, not only a research idea.","textPreview":"The concept is already a working prototype, not only a research idea.","textChars":69,"textLines":1,"bbox":[60,94,1140,105]}
+{"kind":"textbox","id":"sh/61kjipcb","slide":6,"name":"built-label","text":"BUILT","textPreview":"BUILT","textChars":5,"textLines":1,"bbox":[68,226,150,24]}
+{"kind":"textbox","id":"sh/50bi9kvq","slide":6,"name":"b1-dot","text":"•","textPreview":"•","textChars":1,"textLines":1,"bbox":[68,270,20,28]}
+{"kind":"textbox","id":"sh/kzi1gfu5","slide":6,"name":"b1","text":"Germany-wide Power Finder with site-to-node investigation.","textPreview":"Germany-wide Power Finder with site-to-node investigation.","textChars":58,"textLines":1,"bbox":[93,270,495,52]}
+{"kind":"textbox","id":"sh/jy907ad0","slide":6,"name":"b2-dot","text":"•","textPreview":"•","textChars":1,"textLines":1,"bbox":[68,335,20,28]}
+{"kind":"textbox","id":"sh/id0jepcf","slide":6,"name":"b2","text":"Backtesting pipeline for topology, scenarios and capacity envelopes.","textPreview":"Backtesting pipeline for topology, scenarios and capacity envelopes.","textChars":68,"textLines":1,"bbox":[93,335,495,52]}
+{"kind":"textbox","id":"sh/pwv2lova","slide":6,"name":"b3-dot","text":"•","textPreview":"•","textChars":1,"textLines":1,"bbox":[68,410,20,28]}
+{"kind":"textbox","id":"sh/4vm1sjup","slide":6,"name":"b3","text":"Data provenance, confidence classes and preliminary/validated boundaries.","textPreview":"Data provenance, confidence classes and preliminary/validated boundaries.","textChars":73,"textLines":1,"bbox":[93,410,495,52]}
+{"kind":"shape","id":"sh/atsr6tov","slide":6,"name":"validation-panel","bbox":[690,226,500,294]}
+{"kind":"textbox","id":"sh/bu1sfypg","slide":6,"name":"tested-label","text":"EARLY MARKET TEST","textPreview":"EARLY MARKET TEST","textChars":17,"textLines":1,"bbox":[728,260,300,24]}
+{"kind":"textbox","id":"sh/cvut836l","slide":6,"name":"metric-1","text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[728,300,100,70]}
+{"kind":"textbox","id":"sh/xw3ah876","slide":6,"name":"metric-1-label","text":"developer conversations","textPreview":"developer conversations","textChars":23,"textLines":1,"bbox":[810,324,300,32]}
+{"kind":"textbox","id":"sh/2psr2toj","slide":6,"name":"metric-2","text":"€2,000","textPreview":"€2,000","textChars":6,"textLines":1,"bbox":[728,388,210,62]}
+{"kind":"textbox","id":"sh/nq1sbep4","slide":6,"name":"metric-2-label","text":"monthly price tested","textPreview":"monthly price tested","textChars":20,"textLines":1,"bbox":[945,411,210,30]}
+{"kind":"textbox","id":"sh/ora94j6p","slide":6,"name":"tested-foot","text":"Interest expressed; no revenue yet.","textPreview":"Interest expressed; no revenue yet.","textChars":35,"textLines":1,"bbox":[728,472,390,24]}
+{"kind":"textbox","id":"sh/psjado7a","slide":6,"name":"built-next","text":"Next proof: independent technical benchmarking and a pilot using real project cases.","textPreview":"Next proof: independent technical benchmarking and a pilot using real project cases.","textChars":84,"textLines":1,"bbox":[68,574,1090,45]}
+{"kind":"textbox","id":"sh/mlcbedo3","slide":6,"name":"footer-6","text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[1200,680,30,16]}
+{"kind":"notes","id":"nt/bqbdp7","slide":6,"text":"\n\n[Sources]\n- User-provided GridPulse pitch deck: customer conversations and tested price, August 2026. GridPulse repositories: prototype and backtest components."}
+{"kind":"slide","id":"sl/ohfzrj","slide":7,"title":"07   /   WHAT WE HAVE LEARNED","textShapes":8}
+{"kind":"textbox","id":"sh/na10r254","slide":7,"name":"eyebrow-7","text":"07   /   WHAT WE HAVE LEARNED","textPreview":"07   /   WHAT WE HAVE LEARNED","textChars":29,"textLines":1,"bbox":[60,38,500,22]}
+{"kind":"textbox","id":"sh/obah0769","slide":7,"name":"learning-title","text":"The hardest lesson: screening is valuable only when its limits are visible.","textPreview":"The hardest lesson: screening is valuable only when its limits are visible.","textChars":75,"textLines":1,"bbox":[60,94,1140,105]}
+{"kind":"shape","id":"sh/9cjitcnu","slide":7,"name":"wrong","bbox":[68,235,500,258]}
+{"kind":"textbox","id":"sh/e58zuxo7","slide":7,"name":"wrong-head","text":"WHAT DID NOT WORK","textPreview":"WHAT DID NOT WORK","textChars":17,"textLines":1,"bbox":[104,272,370,28]}
+{"kind":"textbox","id":"sh/z6h0n25s","slide":7,"name":"wrong-copy","text":"Trying to turn public data directly into one exact available-capacity number.","textPreview":"Trying to turn public data directly into one exact available-capacity number.","textChars":77,"textLines":1,"bbox":[104,325,405,100]}
+{"kind":"shape","id":"sh/07qhw76d","slide":7,"name":"learned","bbox":[650,235,540,258]}
+{"kind":"textbox","id":"sh/18zipcny","slide":7,"name":"learned-head","text":"WHAT CHANGED","textPreview":"WHAT CHANGED","textChars":12,"textLines":1,"bbox":[686,272,370,28]}
+{"kind":"textbox","id":"sh/y1cj61or","slide":7,"name":"learned-copy","text":"GridPulse now produces a range, confidence, evidence class and explicit request for missing DSO/TSO inputs.","textPreview":"GridPulse now produces a range, confidence, evidence class and explicit request for missing DSO/TSO inputs.","textChars":107,"textLines":1,"bbox":[686,325,445,115]}
+{"kind":"textbox","id":"sh/j2l0zm5w","slide":7,"name":"learning-end","text":"Trust is not a disclaimer added later. It is part of the model architecture.","textPreview":"Trust is not a disclaimer added later. It is part of the model architecture.","textChars":76,"textLines":1,"bbox":[68,555,1090,53]}
+{"kind":"textbox","id":"sh/radwb2ls","slide":7,"name":"footer-7","text":"07","textPreview":"07","textChars":2,"textLines":1,"bbox":[1200,680,30,16]}
+{"kind":"notes","id":"nt/ohfzrj","slide":7,"text":"\n\n[Sources]\n- GridPulse methodology audits and validation-boundary work."}
+{"kind":"slide","id":"sl/co1cbv","slide":8,"title":"08   /   WHAT THIS COULD BECOME","textShapes":13}
+{"kind":"textbox","id":"sh/svqh4ze9","slide":8,"name":"eyebrow-8","text":"08   /   WHAT THIS COULD BECOME","textPreview":"08   /   WHAT THIS COULD BECOME","textChars":31,"textLines":1,"bbox":[60,38,500,22]}
+{"kind":"textbox","id":"sh/ruh0vuxo","slide":8,"name":"future-title","text":"A trusted grid-intelligence layer for Europe's next generation of AI infrastructure.","textPreview":"A trusted grid-intelligence layer for Europe's next generation of AI infrastructure.","textChars":84,"textLines":1,"bbox":[60,94,1140,105]}
+{"kind":"textbox","id":"sh/6toz2pg3","slide":8,"name":"future-copy","text":"If it works, GridPulse moves from screening one site to helping developers compare portfolios, prepare stronger operator enquiries and later coordinate flexible data-centre demand with grid conditions.","textPreview":"If it works, GridPulse moves from screening one site to helping developers compare portfolios, prepare stronger operator enquiries and la...","textChars":201,"textLines":1,"bbox":[68,232,720,160]}
+{"kind":"shape","id":"sh/1kzi14fq","slide":8,"name":"future-panel","bbox":[850,218,340,290]}
+{"kind":"textbox","id":"sh/gjqh8ze5","slide":8,"name":"future-panel-head","text":"THE LAB CAN HELP US PROVE","textPreview":"THE LAB CAN HELP US PROVE","textChars":25,"textLines":1,"bbox":[884,255,275,45]}
+{"kind":"textbox","id":"sh/fyh0zuxk","slide":8,"name":"f1-dot","text":"•","textPreview":"•","textChars":1,"textLines":1,"bbox":[884,325,20,28]}
+{"kind":"textbox","id":"sh/ex8z6pwz","slide":8,"name":"f1","text":"Technical reliability","textPreview":"Technical reliability","textChars":21,"textLines":1,"bbox":[909,325,235,52]}
+{"kind":"textbox","id":"sh/hofypkfm","slide":8,"name":"f2-dot","text":"•","textPreview":"•","textChars":1,"textLines":1,"bbox":[884,382,20,28]}
+{"kind":"textbox","id":"sh/w36hwfy1","slide":8,"name":"f2","text":"Customer urgency","textPreview":"Customer urgency","textChars":16,"textLines":1,"bbox":[909,382,235,52]}
+{"kind":"textbox","id":"sh/e10fu10f","slide":8,"name":"f3-dot","text":"•","textPreview":"•","textChars":1,"textLines":1,"bbox":[884,439,20,28]}
+{"kind":"textbox","id":"sh/z29g3610","slide":8,"name":"f3","text":"Pilot readiness","textPreview":"Pilot readiness","textChars":15,"textLines":1,"bbox":[909,439,235,52]}
+{"kind":"textbox","id":"sh/03ixwbil","slide":8,"name":"team","text":"Kshitij “Krish” Jindal - Business     |     Sina Khedmati - Product, data and model","textPreview":"Kshitij “Krish” Jindal - Business     |     Sina Khedmati - Product, data and model","textChars":83,"textLines":1,"bbox":[68,560,1100,36]}
+{"kind":"textbox","id":"sh/14ry5gj6","slide":8,"name":"close","text":"We want to prove where a large load can actually connect - and how confidently we know.","textPreview":"We want to prove where a large load can actually connect - and how confidently we know.","textChars":87,"textLines":1,"bbox":[68,622,1110,52]}
+{"kind":"textbox","id":"sh/m50fyl0r","slide":8,"name":"footer-8","text":"08","textPreview":"08","textChars":2,"textLines":1,"bbox":[1200,680,30,16]}
+{"kind":"notes","id":"nt/co1cbv","slide":8,"text":"\n\n[Sources]\n- GridPulse product roadmap and AI Entrepreneurs Lab application objectives."}

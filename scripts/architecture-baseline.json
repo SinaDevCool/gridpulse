@@ -1,0 +1,1546 @@
+{
+  "src/build-env.d.ts": {
+    "lines": 21,
+    "maximumFunctionLines": 0
+  },
+  "src/components/product/ActivationStudyPanel.tsx": {
+    "lines": 1269,
+    "maximumFunctionLines": 276
+  },
+  "src/components/product/AppShell.tsx": {
+    "lines": 68,
+    "maximumFunctionLines": 23
+  },
+  "src/components/product/CapabilityPrerequisite.tsx": {
+    "lines": 56,
+    "maximumFunctionLines": 51
+  },
+  "src/components/product/ConnectionCaseExperience.tsx": {
+    "lines": 447,
+    "maximumFunctionLines": 101
+  },
+  "src/components/product/FinderShell.tsx": {
+    "lines": 22,
+    "maximumFunctionLines": 17
+  },
+  "src/components/product/GermanyConnectionFinder.tsx": {
+    "lines": 130,
+    "maximumFunctionLines": 94
+  },
+  "src/components/product/InteractiveMapLegend.tsx": {
+    "lines": 150,
+    "maximumFunctionLines": 111
+  },
+  "src/components/product/OutcomeProjectIndex.tsx": {
+    "lines": 50,
+    "maximumFunctionLines": 43
+  },
+  "src/components/product/power-finder-map-data.ts": {
+    "lines": 24,
+    "maximumFunctionLines": 13
+  },
+  "src/components/product/PowerFinderCandidateDetail.tsx": {
+    "lines": 163,
+    "maximumFunctionLines": 139
+  },
+  "src/components/product/PowerFinderMap.tsx": {
+    "lines": 571,
+    "maximumFunctionLines": 533
+  },
+  "src/components/product/product-navigation.ts": {
+    "lines": 105,
+    "maximumFunctionLines": 11
+  },
+  "src/components/product/ProductChrome.tsx": {
+    "lines": 154,
+    "maximumFunctionLines": 81
+  },
+  "src/components/product/ProductTruthNotice.tsx": {
+    "lines": 45,
+    "maximumFunctionLines": 29
+  },
+  "src/components/product/PublicJourney.tsx": {
+    "lines": 59,
+    "maximumFunctionLines": 19
+  },
+  "src/components/product/ReferenceCapacityInset.tsx": {
+    "lines": 144,
+    "maximumFunctionLines": 131
+  },
+  "src/components/product/selected-asset-data.ts": {
+    "lines": 11,
+    "maximumFunctionLines": 0
+  },
+  "src/components/product/SelectedAssetContext.tsx": {
+    "lines": 48,
+    "maximumFunctionLines": 42
+  },
+  "src/components/product/WorkflowShowcase.tsx": {
+    "lines": 158,
+    "maximumFunctionLines": 28
+  },
+  "src/components/public/PublicLayout.tsx": {
+    "lines": 215,
+    "maximumFunctionLines": 67
+  },
+  "src/components/public/SectorPage.tsx": {
+    "lines": 128,
+    "maximumFunctionLines": 111
+  },
+  "src/config/product-mode.ts": {
+    "lines": 114,
+    "maximumFunctionLines": 15
+  },
+  "src/context/auth-context-core.ts": {
+    "lines": 12,
+    "maximumFunctionLines": 0
+  },
+  "src/context/AuthContext.tsx": {
+    "lines": 50,
+    "maximumFunctionLines": 44
+  },
+  "src/context/useAuth.ts": {
+    "lines": 9,
+    "maximumFunctionLines": 5
+  },
+  "src/features/activation/ActivationWorkspace.tsx": {
+    "lines": 34,
+    "maximumFunctionLines": 21
+  },
+  "src/features/analytics/CanonicalPlanningWorkbench.tsx": {
+    "lines": 138,
+    "maximumFunctionLines": 103
+  },
+  "src/features/analytics/contracts.ts": {
+    "lines": 448,
+    "maximumFunctionLines": 16
+  },
+  "src/features/analytics/fca-client.ts": {
+    "lines": 77,
+    "maximumFunctionLines": 45
+  },
+  "src/features/analytics/job-contracts.ts": {
+    "lines": 44,
+    "maximumFunctionLines": 0
+  },
+  "src/features/anonymous-workspace/data-centre-qualification.ts": {
+    "lines": 158,
+    "maximumFunctionLines": 65
+  },
+  "src/features/anonymous-workspace/factory.ts": {
+    "lines": 219,
+    "maximumFunctionLines": 117
+  },
+  "src/features/anonymous-workspace/local-evidence-state.ts": {
+    "lines": 51,
+    "maximumFunctionLines": 14
+  },
+  "src/features/anonymous-workspace/portfolio-projection.ts": {
+    "lines": 182,
+    "maximumFunctionLines": 88
+  },
+  "src/features/anonymous-workspace/repository.ts": {
+    "lines": 475,
+    "maximumFunctionLines": 100
+  },
+  "src/features/anonymous-workspace/schema.ts": {
+    "lines": 479,
+    "maximumFunctionLines": 113
+  },
+  "src/features/anonymous-workspace/screening-assessment.ts": {
+    "lines": 101,
+    "maximumFunctionLines": 41
+  },
+  "src/features/anonymous-workspace/site/Correspondence.tsx": {
+    "lines": 105,
+    "maximumFunctionLines": 100
+  },
+  "src/features/anonymous-workspace/site/Decision.tsx": {
+    "lines": 168,
+    "maximumFunctionLines": 157
+  },
+  "src/features/anonymous-workspace/site/EvidenceOperator.tsx": {
+    "lines": 386,
+    "maximumFunctionLines": 362
+  },
+  "src/features/anonymous-workspace/site/GridWorkspace.tsx": {
+    "lines": 152,
+    "maximumFunctionLines": 145
+  },
+  "src/features/anonymous-workspace/site/Overview.tsx": {
+    "lines": 241,
+    "maximumFunctionLines": 228
+  },
+  "src/features/anonymous-workspace/site/presentation.ts": {
+    "lines": 29,
+    "maximumFunctionLines": 6
+  },
+  "src/features/anonymous-workspace/site/primitives.tsx": {
+    "lines": 62,
+    "maximumFunctionLines": 38
+  },
+  "src/features/anonymous-workspace/site/Qualification.tsx": {
+    "lines": 206,
+    "maximumFunctionLines": 186
+  },
+  "src/features/assessments/ActivityRoom.tsx": {
+    "lines": 64,
+    "maximumFunctionLines": 59
+  },
+  "src/features/assessments/DocumentRoom.tsx": {
+    "lines": 182,
+    "maximumFunctionLines": 157
+  },
+  "src/features/assessments/EnvelopeRoom.tsx": {
+    "lines": 181,
+    "maximumFunctionLines": 165
+  },
+  "src/features/assessments/EvidenceRoom.tsx": {
+    "lines": 207,
+    "maximumFunctionLines": 196
+  },
+  "src/features/assessments/ExecutionRoom.tsx": {
+    "lines": 392,
+    "maximumFunctionLines": 359
+  },
+  "src/features/assessments/OperatorRoom.tsx": {
+    "lines": 331,
+    "maximumFunctionLines": 292
+  },
+  "src/features/assessments/Overview.tsx": {
+    "lines": 325,
+    "maximumFunctionLines": 291
+  },
+  "src/features/assessments/presentation.ts": {
+    "lines": 17,
+    "maximumFunctionLines": 8
+  },
+  "src/features/assessments/ProfileRoom.tsx": {
+    "lines": 225,
+    "maximumFunctionLines": 208
+  },
+  "src/features/assessments/Report.tsx": {
+    "lines": 246,
+    "maximumFunctionLines": 222
+  },
+  "src/features/assessments/repository.ts": {
+    "lines": 162,
+    "maximumFunctionLines": 132
+  },
+  "src/features/assessments/Scenarios.tsx": {
+    "lines": 207,
+    "maximumFunctionLines": 186
+  },
+  "src/features/constraint-exposure/client.ts": {
+    "lines": 13,
+    "maximumFunctionLines": 10
+  },
+  "src/features/constraint-exposure/contracts.ts": {
+    "lines": 94,
+    "maximumFunctionLines": 0
+  },
+  "src/features/constraint-exposure/mitigations.ts": {
+    "lines": 13,
+    "maximumFunctionLines": 8
+  },
+  "src/features/constraint-exposure/public-screening.ts": {
+    "lines": 80,
+    "maximumFunctionLines": 0
+  },
+  "src/features/data-centre-planner/analytics-charts.tsx": {
+    "lines": 192,
+    "maximumFunctionLines": 51
+  },
+  "src/features/data-centre-planner/benchmark.ts": {
+    "lines": 61,
+    "maximumFunctionLines": 12
+  },
+  "src/features/data-centre-planner/model.ts": {
+    "lines": 58,
+    "maximumFunctionLines": 29
+  },
+  "src/features/data-centre-planner/storage-lcos.ts": {
+    "lines": 42,
+    "maximumFunctionLines": 23
+  },
+  "src/features/grid-connection/calculations.ts": {
+    "lines": 94,
+    "maximumFunctionLines": 53
+  },
+  "src/features/grid-connection/commercial-decision.ts": {
+    "lines": 147,
+    "maximumFunctionLines": 117
+  },
+  "src/features/grid-connection/CommercialDecisionGate.tsx": {
+    "lines": 149,
+    "maximumFunctionLines": 126
+  },
+  "src/features/grid-connection/connection-options.ts": {
+    "lines": 211,
+    "maximumFunctionLines": 111
+  },
+  "src/features/grid-connection/ConnectionCandidatePanel.tsx": {
+    "lines": 189,
+    "maximumFunctionLines": 164
+  },
+  "src/features/grid-connection/ConnectionDecisionBoard.tsx": {
+    "lines": 209,
+    "maximumFunctionLines": 146
+  },
+  "src/features/grid-connection/customer-journey.ts": {
+    "lines": 53,
+    "maximumFunctionLines": 44
+  },
+  "src/features/grid-connection/decision-matrix.ts": {
+    "lines": 41,
+    "maximumFunctionLines": 28
+  },
+  "src/features/grid-connection/DecisionSnapshotPanel.tsx": {
+    "lines": 116,
+    "maximumFunctionLines": 99
+  },
+  "src/features/grid-connection/deliverables.ts": {
+    "lines": 147,
+    "maximumFunctionLines": 93
+  },
+  "src/features/grid-connection/domain.ts": {
+    "lines": 127,
+    "maximumFunctionLines": 0
+  },
+  "src/features/grid-connection/evidence.ts": {
+    "lines": 43,
+    "maximumFunctionLines": 20
+  },
+  "src/features/grid-connection/flexible-load.ts": {
+    "lines": 94,
+    "maximumFunctionLines": 59
+  },
+  "src/features/grid-connection/node-intelligence.ts": {
+    "lines": 32,
+    "maximumFunctionLines": 8
+  },
+  "src/features/grid-connection/NodeIntelligencePanel.tsx": {
+    "lines": 567,
+    "maximumFunctionLines": 535
+  },
+  "src/features/grid-connection/operations-readiness.ts": {
+    "lines": 73,
+    "maximumFunctionLines": 48
+  },
+  "src/features/grid-connection/operator-pdf.ts": {
+    "lines": 170,
+    "maximumFunctionLines": 158
+  },
+  "src/features/grid-connection/operator-qualification.ts": {
+    "lines": 172,
+    "maximumFunctionLines": 116
+  },
+  "src/features/grid-connection/OperatorEngagementControl.tsx": {
+    "lines": 524,
+    "maximumFunctionLines": 497
+  },
+  "src/features/grid-connection/OperatorEngagementTracker.tsx": {
+    "lines": 380,
+    "maximumFunctionLines": 317
+  },
+  "src/features/grid-connection/OperatorQualificationPanel.tsx": {
+    "lines": 187,
+    "maximumFunctionLines": 165
+  },
+  "src/features/grid-connection/option-sensitivity.ts": {
+    "lines": 41,
+    "maximumFunctionLines": 25
+  },
+  "src/features/grid-connection/phase45.ts": {
+    "lines": 286,
+    "maximumFunctionLines": 56
+  },
+  "src/features/grid-connection/phase5-operator.ts": {
+    "lines": 248,
+    "maximumFunctionLines": 79
+  },
+  "src/features/grid-connection/pilot-measurement.ts": {
+    "lines": 61,
+    "maximumFunctionLines": 31
+  },
+  "src/features/grid-connection/portfolio-intelligence.ts": {
+    "lines": 114,
+    "maximumFunctionLines": 63
+  },
+  "src/features/grid-connection/portfolio-model.ts": {
+    "lines": 193,
+    "maximumFunctionLines": 102
+  },
+  "src/features/grid-connection/PortfolioIntelligencePanel.tsx": {
+    "lines": 182,
+    "maximumFunctionLines": 157
+  },
+  "src/features/grid-connection/private-graph-workspace.ts": {
+    "lines": 198,
+    "maximumFunctionLines": 65
+  },
+  "src/features/grid-connection/PrivateGraphIntelligence.tsx": {
+    "lines": 642,
+    "maximumFunctionLines": 471
+  },
+  "src/features/grid-connection/PrivatePathwayGraph.tsx": {
+    "lines": 88,
+    "maximumFunctionLines": 77
+  },
+  "src/features/grid-connection/product-lifecycle.ts": {
+    "lines": 24,
+    "maximumFunctionLines": 15
+  },
+  "src/features/grid-connection/product-truth.ts": {
+    "lines": 20,
+    "maximumFunctionLines": 3
+  },
+  "src/features/grid-connection/profile-import.ts": {
+    "lines": 53,
+    "maximumFunctionLines": 36
+  },
+  "src/features/grid-connection/project-roles.ts": {
+    "lines": 42,
+    "maximumFunctionLines": 14
+  },
+  "src/features/grid-connection/site-comparison.ts": {
+    "lines": 51,
+    "maximumFunctionLines": 38
+  },
+  "src/features/grid-connection/strategy/command-addCandidate.ts": {
+    "lines": 61,
+    "maximumFunctionLines": 48
+  },
+  "src/features/grid-connection/strategy/command-archiveScenario.ts": {
+    "lines": 22,
+    "maximumFunctionLines": 16
+  },
+  "src/features/grid-connection/strategy/command-createStandardScenarios.ts": {
+    "lines": 111,
+    "maximumFunctionLines": 103
+  },
+  "src/features/grid-connection/strategy/command-duplicateScenario.ts": {
+    "lines": 18,
+    "maximumFunctionLines": 12
+  },
+  "src/features/grid-connection/strategy/command-persistPackage.ts": {
+    "lines": 57,
+    "maximumFunctionLines": 40
+  },
+  "src/features/grid-connection/strategy/command-preferScenario.ts": {
+    "lines": 22,
+    "maximumFunctionLines": 17
+  },
+  "src/features/grid-connection/strategy/command-runIntervalSimulation.ts": {
+    "lines": 51,
+    "maximumFunctionLines": 42
+  },
+  "src/features/grid-connection/strategy/command-saveDecision.ts": {
+    "lines": 61,
+    "maximumFunctionLines": 53
+  },
+  "src/features/grid-connection/strategy/command-saveFlexibility.ts": {
+    "lines": 35,
+    "maximumFunctionLines": 27
+  },
+  "src/features/grid-connection/strategy/command-savePilotSnapshot.ts": {
+    "lines": 47,
+    "maximumFunctionLines": 33
+  },
+  "src/features/grid-connection/strategy/contracts.ts": {
+    "lines": 10,
+    "maximumFunctionLines": 0
+  },
+  "src/features/grid-connection/strategy/presentation.ts": {
+    "lines": 37,
+    "maximumFunctionLines": 19
+  },
+  "src/features/grid-connection/strategy/repository-command-addCandidate.ts": {
+    "lines": 36,
+    "maximumFunctionLines": 31
+  },
+  "src/features/grid-connection/strategy/repository-command-archiveScenario.ts": {
+    "lines": 6,
+    "maximumFunctionLines": 3
+  },
+  "src/features/grid-connection/strategy/repository-command-createStandardScenarios.ts": {
+    "lines": 85,
+    "maximumFunctionLines": 83
+  },
+  "src/features/grid-connection/strategy/repository-command-duplicateScenario.ts": {
+    "lines": 31,
+    "maximumFunctionLines": 28
+  },
+  "src/features/grid-connection/strategy/repository-command-persistPackage.ts": {
+    "lines": 37,
+    "maximumFunctionLines": 32
+  },
+  "src/features/grid-connection/strategy/repository-command-preferScenario.ts": {
+    "lines": 17,
+    "maximumFunctionLines": 7
+  },
+  "src/features/grid-connection/strategy/repository-command-runIntervalSimulation.ts": {
+    "lines": 69,
+    "maximumFunctionLines": 53
+  },
+  "src/features/grid-connection/strategy/repository-command-saveDecision.ts": {
+    "lines": 85,
+    "maximumFunctionLines": 35
+  },
+  "src/features/grid-connection/strategy/repository-command-saveFlexibility.ts": {
+    "lines": 69,
+    "maximumFunctionLines": 49
+  },
+  "src/features/grid-connection/strategy/repository-command-savePilotSnapshot.ts": {
+    "lines": 26,
+    "maximumFunctionLines": 23
+  },
+  "src/features/grid-connection/strategy/repository-use-strategy-controller.ts": {
+    "lines": 36,
+    "maximumFunctionLines": 9
+  },
+  "src/features/grid-connection/strategy/StrategyComparison.tsx": {
+    "lines": 179,
+    "maximumFunctionLines": 175
+  },
+  "src/features/grid-connection/strategy/StrategyDeliverables.tsx": {
+    "lines": 146,
+    "maximumFunctionLines": 140
+  },
+  "src/features/grid-connection/strategy/StrategyFlexibility.tsx": {
+    "lines": 176,
+    "maximumFunctionLines": 173
+  },
+  "src/features/grid-connection/strategy/StrategyScreen.tsx": {
+    "lines": 82,
+    "maximumFunctionLines": 76
+  },
+  "src/features/grid-connection/strategy/StrategyScreening.tsx": {
+    "lines": 181,
+    "maximumFunctionLines": 176
+  },
+  "src/features/grid-connection/strategy/use-strategy-controller.ts": {
+    "lines": 323,
+    "maximumFunctionLines": 295
+  },
+  "src/features/grid-connection/StrategyWorkbench.tsx": {
+    "lines": 13,
+    "maximumFunctionLines": 7
+  },
+  "src/features/grid-connection/submission-package.ts": {
+    "lines": 104,
+    "maximumFunctionLines": 50
+  },
+  "src/features/grid-connection/submission-pdf.ts": {
+    "lines": 127,
+    "maximumFunctionLines": 119
+  },
+  "src/features/grid-connection/workflow-navigation.ts": {
+    "lines": 89,
+    "maximumFunctionLines": 3
+  },
+  "src/features/grid-forecast/client.ts": {
+    "lines": 8,
+    "maximumFunctionLines": 5
+  },
+  "src/features/grid-forecast/contracts.ts": {
+    "lines": 24,
+    "maximumFunctionLines": 0
+  },
+  "src/features/grid-forecast/RegionalGridOutlook.tsx": {
+    "lines": 27,
+    "maximumFunctionLines": 23
+  },
+  "src/features/legacy-planner/Benchmark.tsx": {
+    "lines": 113,
+    "maximumFunctionLines": 98
+  },
+  "src/features/legacy-planner/contracts.ts": {
+    "lines": 46,
+    "maximumFunctionLines": 0
+  },
+  "src/features/legacy-planner/Economics.tsx": {
+    "lines": 161,
+    "maximumFunctionLines": 146
+  },
+  "src/features/legacy-planner/Energy.tsx": {
+    "lines": 108,
+    "maximumFunctionLines": 97
+  },
+  "src/features/legacy-planner/Flexibility.tsx": {
+    "lines": 315,
+    "maximumFunctionLines": 290
+  },
+  "src/features/legacy-planner/Overview.tsx": {
+    "lines": 143,
+    "maximumFunctionLines": 130
+  },
+  "src/features/legacy-planner/presentation.ts": {
+    "lines": 133,
+    "maximumFunctionLines": 9
+  },
+  "src/features/legacy-planner/primitives.tsx": {
+    "lines": 142,
+    "maximumFunctionLines": 35
+  },
+  "src/features/map/contracts.ts": {
+    "lines": 78,
+    "maximumFunctionLines": 0
+  },
+  "src/features/map/feature-selection.ts": {
+    "lines": 160,
+    "maximumFunctionLines": 55
+  },
+  "src/features/map/icon-loader.ts": {
+    "lines": 26,
+    "maximumFunctionLines": 18
+  },
+  "src/features/map/initialize-map.ts": {
+    "lines": 140,
+    "maximumFunctionLines": 126
+  },
+  "src/features/map/layer-style.ts": {
+    "lines": 230,
+    "maximumFunctionLines": 27
+  },
+  "src/features/map/map-filter-state.ts": {
+    "lines": 80,
+    "maximumFunctionLines": 32
+  },
+  "src/features/map/map-layer-registry.ts": {
+    "lines": 175,
+    "maximumFunctionLines": 3
+  },
+  "src/features/map/map-runtime-health.ts": {
+    "lines": 25,
+    "maximumFunctionLines": 10
+  },
+  "src/features/map/map-source-registry.ts": {
+    "lines": 126,
+    "maximumFunctionLines": 35
+  },
+  "src/features/map/map-url-state.ts": {
+    "lines": 22,
+    "maximumFunctionLines": 6
+  },
+  "src/features/map/map-visual-registry.ts": {
+    "lines": 81,
+    "maximumFunctionLines": 3
+  },
+  "src/features/map/registerDataCentreLayers.ts": {
+    "lines": 142,
+    "maximumFunctionLines": 139
+  },
+  "src/features/map/registerDiscoveryLayers.ts": {
+    "lines": 117,
+    "maximumFunctionLines": 114
+  },
+  "src/features/map/registerInteractions.ts": {
+    "lines": 151,
+    "maximumFunctionLines": 142
+  },
+  "src/features/map/registerLocalAssetLayers.ts": {
+    "lines": 148,
+    "maximumFunctionLines": 138
+  },
+  "src/features/map/registerLocalGridLayers.ts": {
+    "lines": 116,
+    "maximumFunctionLines": 107
+  },
+  "src/features/map/registerNationalGenerationLayers.ts": {
+    "lines": 182,
+    "maximumFunctionLines": 167
+  },
+  "src/features/map/registerNationalGridLayers.ts": {
+    "lines": 121,
+    "maximumFunctionLines": 113
+  },
+  "src/features/map/registerNationalStorageLayers.ts": {
+    "lines": 129,
+    "maximumFunctionLines": 125
+  },
+  "src/features/map/registerSelectionLayers.ts": {
+    "lines": 79,
+    "maximumFunctionLines": 76
+  },
+  "src/features/map/registerSources.ts": {
+    "lines": 177,
+    "maximumFunctionLines": 170
+  },
+  "src/features/map/use-map-resources.ts": {
+    "lines": 167,
+    "maximumFunctionLines": 161
+  },
+  "src/features/operations/analytics.ts": {
+    "lines": 231,
+    "maximumFunctionLines": 90
+  },
+  "src/features/operations/battery-dispatch.ts": {
+    "lines": 289,
+    "maximumFunctionLines": 127
+  },
+  "src/features/operations/canonical-planning.ts": {
+    "lines": 99,
+    "maximumFunctionLines": 89
+  },
+  "src/features/operations/components.tsx": {
+    "lines": 44,
+    "maximumFunctionLines": 27
+  },
+  "src/features/operations/compute/ComputeChartData.tsx": {
+    "lines": 68,
+    "maximumFunctionLines": 30
+  },
+  "src/features/operations/compute/EvidenceImport.tsx": {
+    "lines": 59,
+    "maximumFunctionLines": 52
+  },
+  "src/features/operations/compute/presentation.ts": {
+    "lines": 4,
+    "maximumFunctionLines": 0
+  },
+  "src/features/operations/compute/primitives.tsx": {
+    "lines": 48,
+    "maximumFunctionLines": 26
+  },
+  "src/features/operations/compute/select-workload-queue.ts": {
+    "lines": 23,
+    "maximumFunctionLines": 20
+  },
+  "src/features/operations/compute/WorkloadDrawer.tsx": {
+    "lines": 83,
+    "maximumFunctionLines": 66
+  },
+  "src/features/operations/ComputeWorkloadsView.tsx": {
+    "lines": 495,
+    "maximumFunctionLines": 450
+  },
+  "src/features/operations/connector-adapters.ts": {
+    "lines": 152,
+    "maximumFunctionLines": 32
+  },
+  "src/features/operations/contracts.ts": {
+    "lines": 66,
+    "maximumFunctionLines": 0
+  },
+  "src/features/operations/evidence.ts": {
+    "lines": 29,
+    "maximumFunctionLines": 0
+  },
+  "src/features/operations/formatting.ts": {
+    "lines": 25,
+    "maximumFunctionLines": 8
+  },
+  "src/features/operations/hooks/evidence-store.ts": {
+    "lines": 32,
+    "maximumFunctionLines": 5
+  },
+  "src/features/operations/hooks/use-overview-assessment.ts": {
+    "lines": 42,
+    "maximumFunctionLines": 32
+  },
+  "src/features/operations/hooks/use-power-evidence.ts": {
+    "lines": 156,
+    "maximumFunctionLines": 141
+  },
+  "src/features/operations/hooks/use-workload-evidence.ts": {
+    "lines": 173,
+    "maximumFunctionLines": 156
+  },
+  "src/features/operations/import-report.ts": {
+    "lines": 36,
+    "maximumFunctionLines": 22
+  },
+  "src/features/operations/operating-context.ts": {
+    "lines": 208,
+    "maximumFunctionLines": 58
+  },
+  "src/features/operations/operating-envelope.ts": {
+    "lines": 163,
+    "maximumFunctionLines": 80
+  },
+  "src/features/operations/operations-assurance.ts": {
+    "lines": 212,
+    "maximumFunctionLines": 64
+  },
+  "src/features/operations/operations-service.ts": {
+    "lines": 257,
+    "maximumFunctionLines": 81
+  },
+  "src/features/operations/OperationsDashboard.tsx": {
+    "lines": 277,
+    "maximumFunctionLines": 202
+  },
+  "src/features/operations/OperationsDecision.tsx": {
+    "lines": 364,
+    "maximumFunctionLines": 120
+  },
+  "src/features/operations/OperationsEvidenceProvider.tsx": {
+    "lines": 62,
+    "maximumFunctionLines": 48
+  },
+  "src/features/operations/OperationsSelect.tsx": {
+    "lines": 161,
+    "maximumFunctionLines": 150
+  },
+  "src/features/operations/overview/DemandChart.tsx": {
+    "lines": 327,
+    "maximumFunctionLines": 216
+  },
+  "src/features/operations/overview/OverviewView.tsx": {
+    "lines": 211,
+    "maximumFunctionLines": 190
+  },
+  "src/features/operations/overview/presentation.ts": {
+    "lines": 13,
+    "maximumFunctionLines": 6
+  },
+  "src/features/operations/overview/primitives.tsx": {
+    "lines": 80,
+    "maximumFunctionLines": 42
+  },
+  "src/features/operations/overview/ScenarioComparison.tsx": {
+    "lines": 69,
+    "maximumFunctionLines": 64
+  },
+  "src/features/operations/overview/ScenarioEditor.tsx": {
+    "lines": 164,
+    "maximumFunctionLines": 120
+  },
+  "src/features/operations/power/BatterySocPanel.tsx": {
+    "lines": 100,
+    "maximumFunctionLines": 93
+  },
+  "src/features/operations/power/ConnectorStatus.tsx": {
+    "lines": 53,
+    "maximumFunctionLines": 48
+  },
+  "src/features/operations/power/DispatchCard.tsx": {
+    "lines": 88,
+    "maximumFunctionLines": 79
+  },
+  "src/features/operations/power/OperatingEnvelope.tsx": {
+    "lines": 102,
+    "maximumFunctionLines": 95
+  },
+  "src/features/operations/power/PowerBalanceFlow.tsx": {
+    "lines": 74,
+    "maximumFunctionLines": 61
+  },
+  "src/features/operations/power/PowerTimeline.tsx": {
+    "lines": 265,
+    "maximumFunctionLines": 138
+  },
+  "src/features/operations/power/presentation.ts": {
+    "lines": 86,
+    "maximumFunctionLines": 18
+  },
+  "src/features/operations/power/primitives.tsx": {
+    "lines": 58,
+    "maximumFunctionLines": 19
+  },
+  "src/features/operations/power/ResponseComparison.tsx": {
+    "lines": 56,
+    "maximumFunctionLines": 49
+  },
+  "src/features/operations/power/select-power-view.ts": {
+    "lines": 79,
+    "maximumFunctionLines": 74
+  },
+  "src/features/operations/power/SelectedBalance.tsx": {
+    "lines": 68,
+    "maximumFunctionLines": 53
+  },
+  "src/features/operations/power-balance.ts": {
+    "lines": 95,
+    "maximumFunctionLines": 42
+  },
+  "src/features/operations/PowerBalanceDiagram.tsx": {
+    "lines": 151,
+    "maximumFunctionLines": 90
+  },
+  "src/features/operations/PowerBatteryView.tsx": {
+    "lines": 372,
+    "maximumFunctionLines": 329
+  },
+  "src/features/operations/presentation.ts": {
+    "lines": 38,
+    "maximumFunctionLines": 13
+  },
+  "src/features/operations/scenario-engine.ts": {
+    "lines": 457,
+    "maximumFunctionLines": 238
+  },
+  "src/features/operations/transport-contracts.ts": {
+    "lines": 230,
+    "maximumFunctionLines": 1
+  },
+  "src/features/operations/use-operations-capabilities.ts": {
+    "lines": 24,
+    "maximumFunctionLines": 18
+  },
+  "src/features/operations/view-contracts.ts": {
+    "lines": 2,
+    "maximumFunctionLines": 0
+  },
+  "src/features/operations/visualization.tsx": {
+    "lines": 111,
+    "maximumFunctionLines": 26
+  },
+  "src/features/operations/workload-intelligence.ts": {
+    "lines": 408,
+    "maximumFunctionLines": 148
+  },
+  "src/features/operations/WorkloadSchedule.tsx": {
+    "lines": 59,
+    "maximumFunctionLines": 54
+  },
+  "src/features/operations/workspace-contract.ts": {
+    "lines": 78,
+    "maximumFunctionLines": 0
+  },
+  "src/features/operator-enquiry/readiness.ts": {
+    "lines": 30,
+    "maximumFunctionLines": 11
+  },
+  "src/features/power-finder/activation-evidence.ts": {
+    "lines": 91,
+    "maximumFunctionLines": 13
+  },
+  "src/features/power-finder/activation-study.ts": {
+    "lines": 376,
+    "maximumFunctionLines": 98
+  },
+  "src/features/power-finder/basemap-config.ts": {
+    "lines": 196,
+    "maximumFunctionLines": 38
+  },
+  "src/features/power-finder/c1-study.ts": {
+    "lines": 200,
+    "maximumFunctionLines": 81
+  },
+  "src/features/power-finder/calculated-capacity.ts": {
+    "lines": 538,
+    "maximumFunctionLines": 28
+  },
+  "src/features/power-finder/calculation-provenance.ts": {
+    "lines": 34,
+    "maximumFunctionLines": 13
+  },
+  "src/features/power-finder/candidate-comparison.ts": {
+    "lines": 23,
+    "maximumFunctionLines": 6
+  },
+  "src/features/power-finder/candidate-detail-model.ts": {
+    "lines": 120,
+    "maximumFunctionLines": 45
+  },
+  "src/features/power-finder/candidate-intelligence.ts": {
+    "lines": 498,
+    "maximumFunctionLines": 73
+  },
+  "src/features/power-finder/capacity-opportunity.ts": {
+    "lines": 115,
+    "maximumFunctionLines": 47
+  },
+  "src/features/power-finder/capacity-scenario-api.ts": {
+    "lines": 51,
+    "maximumFunctionLines": 45
+  },
+  "src/features/power-finder/capacity-scenario.ts": {
+    "lines": 357,
+    "maximumFunctionLines": 216
+  },
+  "src/features/power-finder/coverage.ts": {
+    "lines": 103,
+    "maximumFunctionLines": 20
+  },
+  "src/features/power-finder/data-source.ts": {
+    "lines": 90,
+    "maximumFunctionLines": 45
+  },
+  "src/features/power-finder/evidence-origin.ts": {
+    "lines": 33,
+    "maximumFunctionLines": 12
+  },
+  "src/features/power-finder/finder-project.ts": {
+    "lines": 128,
+    "maximumFunctionLines": 7
+  },
+  "src/features/power-finder/finder-report.ts": {
+    "lines": 505,
+    "maximumFunctionLines": 452
+  },
+  "src/features/power-finder/FinderCandidates.tsx": {
+    "lines": 209,
+    "maximumFunctionLines": 202
+  },
+  "src/features/power-finder/FinderCapacityCard.tsx": {
+    "lines": 198,
+    "maximumFunctionLines": 191
+  },
+  "src/features/power-finder/FinderDetailPanel.tsx": {
+    "lines": 573,
+    "maximumFunctionLines": 547
+  },
+  "src/features/power-finder/FinderDiscoveryIntro.tsx": {
+    "lines": 316,
+    "maximumFunctionLines": 304
+  },
+  "src/features/power-finder/FinderFilters.tsx": {
+    "lines": 189,
+    "maximumFunctionLines": 185
+  },
+  "src/features/power-finder/FinderLayersMenu.tsx": {
+    "lines": 206,
+    "maximumFunctionLines": 201
+  },
+  "src/features/power-finder/FinderProjectEditor.tsx": {
+    "lines": 26,
+    "maximumFunctionLines": 24
+  },
+  "src/features/power-finder/FinderRailHeader.tsx": {
+    "lines": 192,
+    "maximumFunctionLines": 184
+  },
+  "src/features/power-finder/FinderScreen.tsx": {
+    "lines": 173,
+    "maximumFunctionLines": 168
+  },
+  "src/features/power-finder/FinderScreeningControls.tsx": {
+    "lines": 491,
+    "maximumFunctionLines": 481
+  },
+  "src/features/power-finder/FinderSidebar.tsx": {
+    "lines": 119,
+    "maximumFunctionLines": 110
+  },
+  "src/features/power-finder/FinderStage.tsx": {
+    "lines": 579,
+    "maximumFunctionLines": 551
+  },
+  "src/features/power-finder/fixture-data.ts": {
+    "lines": 204,
+    "maximumFunctionLines": 39
+  },
+  "src/features/power-finder/german-rules-registry.ts": {
+    "lines": 93,
+    "maximumFunctionLines": 9
+  },
+  "src/features/power-finder/german-state-boundaries.ts": {
+    "lines": 76,
+    "maximumFunctionLines": 18
+  },
+  "src/features/power-finder/layer-availability.ts": {
+    "lines": 57,
+    "maximumFunctionLines": 33
+  },
+  "src/features/power-finder/location-discovery.ts": {
+    "lines": 199,
+    "maximumFunctionLines": 108
+  },
+  "src/features/power-finder/operator-catalog.ts": {
+    "lines": 57,
+    "maximumFunctionLines": 33
+  },
+  "src/features/power-finder/operator-evidence.ts": {
+    "lines": 54,
+    "maximumFunctionLines": 14
+  },
+  "src/features/power-finder/operator-map-navigation.ts": {
+    "lines": 20,
+    "maximumFunctionLines": 13
+  },
+  "src/features/power-finder/operator-normalization.ts": {
+    "lines": 66,
+    "maximumFunctionLines": 12
+  },
+  "src/features/power-finder/page-formatting.ts": {
+    "lines": 55,
+    "maximumFunctionLines": 19
+  },
+  "src/features/power-finder/page-support.tsx": {
+    "lines": 26,
+    "maximumFunctionLines": 4
+  },
+  "src/features/power-finder/project-store.ts": {
+    "lines": 59,
+    "maximumFunctionLines": 23
+  },
+  "src/features/power-finder/project-validation.ts": {
+    "lines": 33,
+    "maximumFunctionLines": 12
+  },
+  "src/features/power-finder/property-handoff.ts": {
+    "lines": 20,
+    "maximumFunctionLines": 11
+  },
+  "src/features/power-finder/public-data.ts": {
+    "lines": 75,
+    "maximumFunctionLines": 31
+  },
+  "src/features/power-finder/ranked-candidates.ts": {
+    "lines": 32,
+    "maximumFunctionLines": 22
+  },
+  "src/features/power-finder/ranking-config.ts": {
+    "lines": 67,
+    "maximumFunctionLines": 14
+  },
+  "src/features/power-finder/regional-discovery-sampling.ts": {
+    "lines": 54,
+    "maximumFunctionLines": 28
+  },
+  "src/features/power-finder/release-b-network.ts": {
+    "lines": 260,
+    "maximumFunctionLines": 93
+  },
+  "src/features/power-finder/screening-score.ts": {
+    "lines": 206,
+    "maximumFunctionLines": 88
+  },
+  "src/features/power-finder/search-contract.ts": {
+    "lines": 114,
+    "maximumFunctionLines": 2
+  },
+  "src/features/power-finder/shortlist.ts": {
+    "lines": 58,
+    "maximumFunctionLines": 52
+  },
+  "src/features/power-finder/site-screening-context.ts": {
+    "lines": 53,
+    "maximumFunctionLines": 15
+  },
+  "src/features/power-finder/synthetic-fixtures.ts": {
+    "lines": 21,
+    "maximumFunctionLines": 0
+  },
+  "src/features/power-finder/topology-intelligence.ts": {
+    "lines": 24,
+    "maximumFunctionLines": 12
+  },
+  "src/features/power-finder/use-finder-controller.ts": {
+    "lines": 1251,
+    "maximumFunctionLines": 1192
+  },
+  "src/features/power-finder/useFinderCapacityEffects.ts": {
+    "lines": 107,
+    "maximumFunctionLines": 84
+  },
+  "src/features/power-finder/useFinderCapacityState.ts": {
+    "lines": 53,
+    "maximumFunctionLines": 43
+  },
+  "src/features/power-finder/useFinderDataEffects.ts": {
+    "lines": 129,
+    "maximumFunctionLines": 106
+  },
+  "src/features/power-finder/useFinderDataState.ts": {
+    "lines": 71,
+    "maximumFunctionLines": 59
+  },
+  "src/features/power-finder/useFinderDiscoveryState.ts": {
+    "lines": 39,
+    "maximumFunctionLines": 31
+  },
+  "src/features/power-finder/useFinderInteractionState.ts": {
+    "lines": 78,
+    "maximumFunctionLines": 70
+  },
+  "src/features/power-finder/useFinderMapEffects.ts": {
+    "lines": 41,
+    "maximumFunctionLines": 27
+  },
+  "src/features/power-finder/useFinderMapState.ts": {
+    "lines": 114,
+    "maximumFunctionLines": 100
+  },
+  "src/features/power-finder/useFinderOperatorEffects.ts": {
+    "lines": 103,
+    "maximumFunctionLines": 83
+  },
+  "src/features/power-finder/useFinderProjectEffects.ts": {
+    "lines": 123,
+    "maximumFunctionLines": 102
+  },
+  "src/features/power-finder/useFinderProjectState.ts": {
+    "lines": 54,
+    "maximumFunctionLines": 48
+  },
+  "src/features/power-finder/useFinderSelectionEffects.ts": {
+    "lines": 78,
+    "maximumFunctionLines": 58
+  },
+  "src/features/power-finder/useFinderStudyEffects.ts": {
+    "lines": 146,
+    "maximumFunctionLines": 117
+  },
+  "src/features/power-finder/validation-class.ts": {
+    "lines": 25,
+    "maximumFunctionLines": 5
+  },
+  "src/features/power-finder/voltage-style.ts": {
+    "lines": 58,
+    "maximumFunctionLines": 19
+  },
+  "src/features/properties/capacity-dossier.ts": {
+    "lines": 210,
+    "maximumFunctionLines": 66
+  },
+  "src/features/properties/decision-package.ts": {
+    "lines": 220,
+    "maximumFunctionLines": 190
+  },
+  "src/features/properties/local-dossier.ts": {
+    "lines": 70,
+    "maximumFunctionLines": 64
+  },
+  "src/features/properties/property-enrichment.ts": {
+    "lines": 273,
+    "maximumFunctionLines": 84
+  },
+  "src/features/properties/property-export.ts": {
+    "lines": 109,
+    "maximumFunctionLines": 22
+  },
+  "src/features/properties/property-import.ts": {
+    "lines": 275,
+    "maximumFunctionLines": 60
+  },
+  "src/features/properties/property-screening-workflow.ts": {
+    "lines": 237,
+    "maximumFunctionLines": 125
+  },
+  "src/features/properties/PropertyEnrichmentPanel.tsx": {
+    "lines": 172,
+    "maximumFunctionLines": 164
+  },
+  "src/features/properties/PropertyImportPanel.tsx": {
+    "lines": 354,
+    "maximumFunctionLines": 326
+  },
+  "src/features/site-portfolio/portfolio-export.ts": {
+    "lines": 31,
+    "maximumFunctionLines": 26
+  },
+  "src/features/site-portfolio/portfolio-status.ts": {
+    "lines": 35,
+    "maximumFunctionLines": 0
+  },
+  "src/features/site-portfolio/PortfolioViews.tsx": {
+    "lines": 184,
+    "maximumFunctionLines": 87
+  },
+  "src/features/site-portfolio/use-site-portfolio.ts": {
+    "lines": 47,
+    "maximumFunctionLines": 38
+  },
+  "src/features/theme/theme-context.ts": {
+    "lines": 11,
+    "maximumFunctionLines": 0
+  },
+  "src/features/theme/theme-contract.ts": {
+    "lines": 13,
+    "maximumFunctionLines": 3
+  },
+  "src/features/theme/ThemeControl.tsx": {
+    "lines": 21,
+    "maximumFunctionLines": 17
+  },
+  "src/features/theme/ThemeProvider.tsx": {
+    "lines": 46,
+    "maximumFunctionLines": 32
+  },
+  "src/features/theme/use-theme.ts": {
+    "lines": 9,
+    "maximumFunctionLines": 5
+  },
+  "src/integrations/supabase/auth-attacher.ts": {
+    "lines": 16,
+    "maximumFunctionLines": 7
+  },
+  "src/integrations/supabase/auth-middleware.ts": {
+    "lines": 74,
+    "maximumFunctionLines": 65
+  },
+  "src/integrations/supabase/client.server.ts": {
+    "lines": 43,
+    "maximumFunctionLines": 22
+  },
+  "src/integrations/supabase/client.ts": {
+    "lines": 40,
+    "maximumFunctionLines": 25
+  },
+  "src/lib/analytics-api.ts": {
+    "lines": 210,
+    "maximumFunctionLines": 21
+  },
+  "src/lib/analytics.ts": {
+    "lines": 15,
+    "maximumFunctionLines": 6
+  },
+  "src/lib/assessment-model.ts": {
+    "lines": 451,
+    "maximumFunctionLines": 52
+  },
+  "src/lib/demo-case.ts": {
+    "lines": 123,
+    "maximumFunctionLines": 0
+  },
+  "src/lib/error-page.ts": {
+    "lines": 31,
+    "maximumFunctionLines": 30
+  },
+  "src/lib/fca-engine.ts": {
+    "lines": 258,
+    "maximumFunctionLines": 60
+  },
+  "src/lib/german-grid-screening.ts": {
+    "lines": 37,
+    "maximumFunctionLines": 27
+  },
+  "src/lib/german-grid-sources.ts": {
+    "lines": 143,
+    "maximumFunctionLines": 0
+  },
+  "src/lib/lovable-error-reporting.ts": {
+    "lines": 37,
+    "maximumFunctionLines": 16
+  },
+  "src/lib/operations-api.ts": {
+    "lines": 89,
+    "maximumFunctionLines": 22
+  },
+  "src/lib/operations-ingest-api.ts": {
+    "lines": 163,
+    "maximumFunctionLines": 107
+  },
+  "src/lib/operations-request.ts": {
+    "lines": 65,
+    "maximumFunctionLines": 33
+  },
+  "src/lib/operations-runs-api.ts": {
+    "lines": 102,
+    "maximumFunctionLines": 71
+  },
+  "src/lib/operations-workspace-api.ts": {
+    "lines": 232,
+    "maximumFunctionLines": 210
+  },
+  "src/lib/public-c1-study-api.ts": {
+    "lines": 67,
+    "maximumFunctionLines": 51
+  },
+  "src/lib/public-grid-stress-api.ts": {
+    "lines": 31,
+    "maximumFunctionLines": 18
+  },
+  "src/lib/public-power-finder-api.ts": {
+    "lines": 363,
+    "maximumFunctionLines": 123
+  },
+  "src/lib/public-property-enrichment-api.ts": {
+    "lines": 214,
+    "maximumFunctionLines": 68
+  },
+  "src/lib/security-headers.ts": {
+    "lines": 46,
+    "maximumFunctionLines": 34
+  },
+  "src/lib/validation-case.ts": {
+    "lines": 108,
+    "maximumFunctionLines": 44
+  },
+  "src/router.tsx": {
+    "lines": 17,
+    "maximumFunctionLines": 12
+  },
+  "src/routes/activation.$id.tsx": {
+    "lines": 83,
+    "maximumFunctionLines": 71
+  },
+  "src/routes/activation.tsx": {
+    "lines": 37,
+    "maximumFunctionLines": 26
+  },
+  "src/routes/api.forecasts.grid-stress.current.ts": {
+    "lines": 9,
+    "maximumFunctionLines": 1
+  },
+  "src/routes/api.operations.assess.ts": {
+    "lines": 88,
+    "maximumFunctionLines": 68
+  },
+  "src/routes/api.operations.capabilities.ts": {
+    "lines": 63,
+    "maximumFunctionLines": 53
+  },
+  "src/routes/api.operations.ingest.ts": {
+    "lines": 12,
+    "maximumFunctionLines": 1
+  },
+  "src/routes/api.operations.runs.ts": {
+    "lines": 8,
+    "maximumFunctionLines": 1
+  },
+  "src/routes/api.operations.workspace.ts": {
+    "lines": 8,
+    "maximumFunctionLines": 1
+  },
+  "src/routes/api.power-finder.scenario.ts": {
+    "lines": 137,
+    "maximumFunctionLines": 75
+  },
+  "src/routes/api.power-finder.study.ts": {
+    "lines": 16,
+    "maximumFunctionLines": 4
+  },
+  "src/routes/api.power-finder.tile.$z.$x.$y.ts": {
+    "lines": 18,
+    "maximumFunctionLines": 4
+  },
+  "src/routes/api.power-finder.viewport.ts": {
+    "lines": 23,
+    "maximumFunctionLines": 9
+  },
+  "src/routes/api.properties.enrich.ts": {
+    "lines": 16,
+    "maximumFunctionLines": 4
+  },
+  "src/routes/assessments.$id.tsx": {
+    "lines": 366,
+    "maximumFunctionLines": 287
+  },
+  "src/routes/assessments.new.tsx": {
+    "lines": 578,
+    "maximumFunctionLines": 509
+  },
+  "src/routes/capacity-dossiers.$id.tsx": {
+    "lines": 315,
+    "maximumFunctionLines": 220
+  },
+  "src/routes/data-centre-planner.tsx": {
+    "lines": 325,
+    "maximumFunctionLines": 267
+  },
+  "src/routes/data-centres.tsx": {
+    "lines": 49,
+    "maximumFunctionLines": 10
+  },
+  "src/routes/data-sources.tsx": {
+    "lines": 1053,
+    "maximumFunctionLines": 421
+  },
+  "src/routes/demo.tsx": {
+    "lines": 86,
+    "maximumFunctionLines": 49
+  },
+  "src/routes/energy-storage.tsx": {
+    "lines": 50,
+    "maximumFunctionLines": 10
+  },
+  "src/routes/evidence-review.tsx": {
+    "lines": 154,
+    "maximumFunctionLines": 123
+  },
+  "src/routes/evidence.tsx": {
+    "lines": 167,
+    "maximumFunctionLines": 145
+  },
+  "src/routes/hydrogen-industry.tsx": {
+    "lines": 50,
+    "maximumFunctionLines": 10
+  },
+  "src/routes/index.tsx": {
+    "lines": 354,
+    "maximumFunctionLines": 234
+  },
+  "src/routes/operations.$id.tsx": {
+    "lines": 9,
+    "maximumFunctionLines": 3
+  },
+  "src/routes/operations.tsx": {
+    "lines": 60,
+    "maximumFunctionLines": 13
+  },
+  "src/routes/operator-review.$id.tsx": {
+    "lines": 537,
+    "maximumFunctionLines": 493
+  },
+  "src/routes/pilot-case.$id.tsx": {
+    "lines": 628,
+    "maximumFunctionLines": 547
+  },
+  "src/routes/pilot-ready.tsx": {
+    "lines": 463,
+    "maximumFunctionLines": 341
+  },
+  "src/routes/pilot-requests.tsx": {
+    "lines": 244,
+    "maximumFunctionLines": 166
+  },
+  "src/routes/pilot.tsx": {
+    "lines": 784,
+    "maximumFunctionLines": 626
+  },
+  "src/routes/portfolio.$id.tsx": {
+    "lines": 235,
+    "maximumFunctionLines": 175
+  },
+  "src/routes/portfolio.tsx": {
+    "lines": 763,
+    "maximumFunctionLines": 511
+  },
+  "src/routes/power-finder.tsx": {
+    "lines": 27,
+    "maximumFunctionLines": 12
+  },
+  "src/routes/reports.tsx": {
+    "lines": 247,
+    "maximumFunctionLines": 198
+  },
+  "src/routes/service.tsx": {
+    "lines": 187,
+    "maximumFunctionLines": 137
+  },
+  "src/routes/submission-package.$id.tsx": {
+    "lines": 344,
+    "maximumFunctionLines": 303
+  },
+  "src/routes/synthetic-network-study.tsx": {
+    "lines": 30,
+    "maximumFunctionLines": 14
+  },
+  "src/routes/validation-case.tsx": {
+    "lines": 161,
+    "maximumFunctionLines": 138
+  },
+  "src/routes/workspaces.tsx": {
+    "lines": 8,
+    "maximumFunctionLines": 3
+  },
+  "src/routes/__root.tsx": {
+    "lines": 161,
+    "maximumFunctionLines": 40
+  },
+  "src/server/observability/request-context.server.ts": {
+    "lines": 23,
+    "maximumFunctionLines": 7
+  },
+  "src/server/operations/repository.ts": {
+    "lines": 66,
+    "maximumFunctionLines": 14
+  },
+  "src/server.ts": {
+    "lines": 60,
+    "maximumFunctionLines": 16
+  },
+  "src/shared/csv.ts": {
+    "lines": 62,
+    "maximumFunctionLines": 60
+  },
+  "src/start.ts": {
+    "lines": 28,
+    "maximumFunctionLines": 16
+  }
+}

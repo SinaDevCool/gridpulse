@@ -1,0 +1,190 @@
+{
+  "schema_version": "gridpulse-benchmark-b-v1",
+  "generated_at": "2026-08-10T22:15:28.414350+00:00",
+  "purpose": "Independent-engine AC base-state and capacity validation",
+  "validation_class": "open_benchmark",
+  "capacity_claim": false,
+  "reference_method": {
+    "engine": "pypower",
+    "algorithm": "fast_decoupled_xb",
+    "independence": "independent_solver_shared_pandapower_case_conversion",
+    "external_solver_validated": true,
+    "limitation": "Validates the AC solver/search boundary, not an independent model conversion, operator model, or measured grid headroom."
+  },
+  "thresholds": {
+    "n0_capacity_absolute_error_mw": 0.1,
+    "firm_capacity_absolute_error_mw": 0.1,
+    "voltage_absolute_error_pu": 0.0001,
+    "loading_absolute_error_percent": 0.1,
+    "binding_case_match_required": true,
+    "binding_constraint_match_required": true
+  },
+  "settings": {
+    "simbench_codes": [
+      "1-MV-urban--0-sw",
+      "1-MV-rural--0-sw"
+    ],
+    "contingency_limit_per_model": 2,
+    "maximum_capacity_mw": 25.0,
+    "incremental_load_power_factor": 0.96
+  },
+  "model_sha256": {
+    "1-MV-urban--0-sw": "4b272d72249cd72ed92bcd09d61c582610b02c7b613b6b0950dad310107d96be",
+    "1-MV-rural--0-sw": "f8bf4c9dece539d911bb94c5e65163e8d0193e2cd698680a530c0f6cee77f447"
+  },
+  "cases": [
+    {
+      "model_id": "simbench:1-MV-urban--0-sw",
+      "connection_bus": "bus-84",
+      "contingency_count": 2,
+      "production": {
+        "engine": "pandapower",
+        "algorithm": "newton_raphson",
+        "n0_import_mw": 0.938,
+        "firm_import_mw": 0.0,
+        "binding_case": "benchmark-line-0-out",
+        "binding_constraint": "unsupplied_load_bus",
+        "base": {
+          "converged": true,
+          "passes": true,
+          "violations": [],
+          "minimum_voltage_pu": 0.96616,
+          "maximum_voltage_pu": 1.025,
+          "maximum_line_loading_percent": 71.887,
+          "maximum_transformer_loading_percent": 40.166,
+          "model_id": "simbench:1-MV-urban--0-sw",
+          "model_version": "simbench-open-model-v1",
+          "validation_class": "synthetic_demonstration",
+          "study_year": 2026,
+          "provenance": {
+            "source": "SimBench",
+            "source_url": "https://simbench.de/en/download/",
+            "license": "ODbL-1.0",
+            "benchmark_code": "1-MV-urban--0-sw",
+            "geographic_truth": "representative German benchmark; not a real location"
+          }
+        }
+      },
+      "reference": {
+        "engine": "pypower",
+        "version": "5.1.21",
+        "algorithm": "fast_decoupled_xb",
+        "n0_import_mw": 0.938,
+        "firm_import_mw": 0.0,
+        "binding_case": "benchmark-line-0-out",
+        "binding_constraint": "unsupplied_load_bus",
+        "base": {
+          "converged": true,
+          "passes": true,
+          "violations": [],
+          "minimum_voltage_pu": 0.96616,
+          "maximum_voltage_pu": 1.025,
+          "maximum_line_loading_percent": 71.887,
+          "maximum_transformer_loading_percent": 40.136,
+          "model_id": "simbench:1-MV-urban--0-sw",
+          "model_version": "simbench-open-model-v1",
+          "validation_class": "synthetic_demonstration",
+          "study_year": 2026,
+          "provenance": {
+            "source": "SimBench",
+            "source_url": "https://simbench.de/en/download/",
+            "license": "ODbL-1.0",
+            "benchmark_code": "1-MV-urban--0-sw",
+            "geographic_truth": "representative German benchmark; not a real location"
+          }
+        }
+      },
+      "metrics": {
+        "n0_absolute_capacity_error_mw": 0.0,
+        "firm_absolute_capacity_error_mw": 0.0,
+        "minimum_voltage_error_pu": 0.0,
+        "maximum_voltage_error_pu": 0.0,
+        "line_loading_error_percent": 0.0,
+        "transformer_loading_error_percent": 0.03,
+        "binding_case_match": true,
+        "binding_constraint_match": true
+      },
+      "passed": true
+    },
+    {
+      "model_id": "simbench:1-MV-rural--0-sw",
+      "connection_bus": "bus-54",
+      "contingency_count": 2,
+      "production": {
+        "engine": "pandapower",
+        "algorithm": "newton_raphson",
+        "n0_import_mw": 4.625,
+        "firm_import_mw": 0.0,
+        "binding_case": "benchmark-line-0-out",
+        "binding_constraint": "unsupplied_load_bus",
+        "base": {
+          "converged": true,
+          "passes": true,
+          "violations": [],
+          "minimum_voltage_pu": 1.00302,
+          "maximum_voltage_pu": 1.04462,
+          "maximum_line_loading_percent": 54.521,
+          "maximum_transformer_loading_percent": 18.8,
+          "model_id": "simbench:1-MV-rural--0-sw",
+          "model_version": "simbench-open-model-v1",
+          "validation_class": "synthetic_demonstration",
+          "study_year": 2026,
+          "provenance": {
+            "source": "SimBench",
+            "source_url": "https://simbench.de/en/download/",
+            "license": "ODbL-1.0",
+            "benchmark_code": "1-MV-rural--0-sw",
+            "geographic_truth": "representative German benchmark; not a real location"
+          }
+        }
+      },
+      "reference": {
+        "engine": "pypower",
+        "version": "5.1.21",
+        "algorithm": "fast_decoupled_xb",
+        "n0_import_mw": 4.625,
+        "firm_import_mw": 0.0,
+        "binding_case": "benchmark-line-0-out",
+        "binding_constraint": "unsupplied_load_bus",
+        "base": {
+          "converged": true,
+          "passes": true,
+          "violations": [],
+          "minimum_voltage_pu": 1.00302,
+          "maximum_voltage_pu": 1.04462,
+          "maximum_line_loading_percent": 54.521,
+          "maximum_transformer_loading_percent": 18.823,
+          "model_id": "simbench:1-MV-rural--0-sw",
+          "model_version": "simbench-open-model-v1",
+          "validation_class": "synthetic_demonstration",
+          "study_year": 2026,
+          "provenance": {
+            "source": "SimBench",
+            "source_url": "https://simbench.de/en/download/",
+            "license": "ODbL-1.0",
+            "benchmark_code": "1-MV-rural--0-sw",
+            "geographic_truth": "representative German benchmark; not a real location"
+          }
+        }
+      },
+      "metrics": {
+        "n0_absolute_capacity_error_mw": 0.0,
+        "firm_absolute_capacity_error_mw": 0.0,
+        "minimum_voltage_error_pu": 0.0,
+        "maximum_voltage_error_pu": 0.0,
+        "line_loading_error_percent": 0.0,
+        "transformer_loading_error_percent": 0.023,
+        "binding_case_match": true,
+        "binding_constraint_match": true
+      },
+      "passed": true
+    }
+  ],
+  "summary": {
+    "case_count": 2,
+    "passed_count": 2,
+    "failed_count": 0,
+    "all_passed": true
+  },
+  "benchmark_sha256": "4cd0e6887cabcf1ea0fa7c00f8e47a9d80e90d97cef1923f47bf70bc46f0922c"
+}

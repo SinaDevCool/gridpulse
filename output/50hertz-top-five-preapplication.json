@@ -1,0 +1,740 @@
+{
+  "schema_version": "gridpulse-50hertz-preapplication-v1",
+  "generated_at": "2026-08-10T23:50:47.765675+00:00",
+  "methodology_version": "50hertz-top-five-preapplication-v1",
+  "project": {
+    "project_type": "large flexible electricity consumer",
+    "requested_import_mw": 500.0,
+    "target_connection_year": 2030,
+    "load_profile": "synthetic flat 24/7 demand at requested MW",
+    "power_factor": 0.97,
+    "maximum_ramp_mw_per_minute": 10.0,
+    "interruptible_fraction": 0.2,
+    "maximum_interruption_hours_per_event": 6,
+    "bess_power_mw": 100.0,
+    "bess_energy_mwh": 400.0,
+    "bess_duration_hours": 4,
+    "connection_voltage_preference_kv": 380,
+    "evidence_class": "applicant_assumption_to_be_confirmed"
+  },
+  "public_sources": {
+    "50hertz_connection": {
+      "url": "https://www.50hertz.com/de/Vertragspartner/Netzkunden/Netzanschluss",
+      "use": "Non-binding connection-capacity context and official application route."
+    },
+    "50hertz_total_load": {
+      "url": "https://www.50hertz.com/Transparency/GridData/Gridfigures/Totalload",
+      "use": "Definition and source route for control-area total load; not nodal SCADA."
+    },
+    "50hertz_outages": {
+      "url": "https://www.50hertz.com/en/Transparency/GridData/Congestionmanagement/OutageandPlanning",
+      "use": "Public market-relevant outage evidence; not the full security list."
+    },
+    "50hertz_hamburg_ost": {
+      "url": "https://www.50hertz.com/de/Netz/Netzausbau/ProjekteanLand/UmspannwerkHamburgOst",
+      "use": "Official substation restructuring and four phase-shifting transformers."
+    },
+    "50hertz_project_51": {
+      "url": "https://www.50hertz.com/de/Netz/Netzausbau/ProjekteanLand/Vorhaben51/%7B/",
+      "use": "Official planned Hamburg/Ost reinforcement; two 380 kV circuits at 4,000 A."
+    },
+    "mastr": {
+      "url": "https://www.marktstammdatenregister.de/MaStR/Datendownload",
+      "use": "Official public generation, storage and consumption-unit master-data source."
+    },
+    "osm": {
+      "url": "https://www.openstreetmap.org/",
+      "use": "Public candidate names, coordinates, operator tags and nominal voltages."
+    }
+  },
+  "site_dossiers": [
+    {
+      "candidate_id": "osm-way-1530564244",
+      "location": "Umspannwerk Gnewitz",
+      "coordinates": [
+        12.4808544,
+        54.0807233
+      ],
+      "public_source_url": "https://www.openstreetmap.org/way/1530564244",
+      "evidence_ledger": [
+        {
+          "field": "location",
+          "value": "Umspannwerk Gnewitz",
+          "evidence_class": "public_open_mapping",
+          "source": "osm",
+          "note": "Mapped substation name; operator spelling and completeness are not guaranteed."
+        },
+        {
+          "field": "coordinates",
+          "value": [
+            12.4808544,
+            54.0807233
+          ],
+          "evidence_class": "public_open_mapping",
+          "source": "osm",
+          "note": "Mapped feature centroid, not an approved connection-bay coordinate."
+        },
+        {
+          "field": "nominal_voltage_kv",
+          "value": 380.0,
+          "evidence_class": "public_open_mapping",
+          "source": "osm",
+          "note": "Public voltage tag; busbar arrangement is unknown."
+        },
+        {
+          "field": "electrical_topology",
+          "value": "synthetic nearest-neighbour mesh",
+          "evidence_class": "mocked",
+          "source": "gridpulse_regional_model",
+          "note": "Must be replaced by an authorized network model."
+        },
+        {
+          "field": "equipment_ratings",
+          "value": {
+            "conservative": {
+              "n0_mw": 584.0,
+              "n1_mw": 536.0,
+              "binding_case": "mock-380kv-031-out",
+              "binding_constraint": "line_thermal_loading",
+              "is_lower_bound": false
+            },
+            "central": {
+              "n0_mw": 1083.5,
+              "n1_mw": 808.0,
+              "binding_case": "mock-380kv-030-out",
+              "binding_constraint": "line_thermal_loading",
+              "is_lower_bound": false
+            },
+            "optimistic": {
+              "n0_mw": 1500.0,
+              "n1_mw": 1068.625,
+              "binding_case": "mock-380kv-030-out",
+              "binding_constraint": "line_thermal_loading",
+              "is_lower_bound": false
+            }
+          },
+          "evidence_class": "simulated_range",
+          "source": "gridpulse_regional_model",
+          "note": "Not actual line or transformer ratings."
+        },
+        {
+          "field": "operating_state",
+          "value": "27 deterministic hourly scenario classes",
+          "evidence_class": "simulated",
+          "source": "gridpulse_hourly_model",
+          "note": "50Hertz total load is zonal and cannot create nodal SCADA."
+        },
+        {
+          "field": "contingencies",
+          "value": "incident synthetic line outages",
+          "evidence_class": "mocked",
+          "source": "gridpulse_regional_model",
+          "note": "Public outage notices do not equal the approved security list."
+        },
+        {
+          "field": "connection_queue",
+          "value": {
+            "derating_fraction": 0.15
+          },
+          "evidence_class": "mocked",
+          "source": "gridpulse_queue_proxy",
+          "note": "No complete public prioritised queue with reserved MW was found."
+        }
+      ],
+      "frozen_prediction": {
+        "site_rank": 1,
+        "p10_firm_proxy_mw": 590.4,
+        "central_firm_proxy_mw": 808.0,
+        "p90_firm_proxy_mw": 1016.5,
+        "queue_adjusted_p10_proxy_mw": 501.84,
+        "flexible_proxy_mw": 868.732,
+        "bess_assisted_proxy_mw": 893.583,
+        "requested_mw": 500.0,
+        "p10_project_margin_mw": 90.4,
+        "queue_adjusted_project_margin_mw": 1.84,
+        "central_project_margin_mw": 308.0,
+        "passes_p10_screen": true,
+        "passes_mock_queue_adjusted_screen": true,
+        "passes_flexible_screen": true,
+        "passes_bess_screen": true,
+        "binding_constraint": "line_thermal_loading",
+        "binding_case": "mock-380kv-030-out",
+        "capacity_claim": false,
+        "display_as_capacity": false
+      },
+      "prediction_sha256": "3c65950ddcba3b36672acfe90cef582a4c4fd9cd54b6da2c814e90aa790047d5",
+      "operator_questions": [
+        "What connection bus and bay would 50Hertz study for this project?",
+        "What normal and emergency equipment ratings apply?",
+        "Which base cases, outages and security criteria govern the decision?",
+        "What prior queue commitments and reinforcements affect the requested year?",
+        "What firm, flexible and staged MW envelope would 50Hertz approve?"
+      ]
+    },
+    {
+      "candidate_id": "osm-way-460134233",
+      "location": "Umspannwerk Lubmin",
+      "coordinates": [
+        13.6855502,
+        54.1387305
+      ],
+      "public_source_url": "https://www.openstreetmap.org/way/460134233",
+      "evidence_ledger": [
+        {
+          "field": "location",
+          "value": "Umspannwerk Lubmin",
+          "evidence_class": "public_open_mapping",
+          "source": "osm",
+          "note": "Mapped substation name; operator spelling and completeness are not guaranteed."
+        },
+        {
+          "field": "coordinates",
+          "value": [
+            13.6855502,
+            54.1387305
+          ],
+          "evidence_class": "public_open_mapping",
+          "source": "osm",
+          "note": "Mapped feature centroid, not an approved connection-bay coordinate."
+        },
+        {
+          "field": "nominal_voltage_kv",
+          "value": 380.0,
+          "evidence_class": "public_open_mapping",
+          "source": "osm",
+          "note": "Public voltage tag; busbar arrangement is unknown."
+        },
+        {
+          "field": "electrical_topology",
+          "value": "synthetic nearest-neighbour mesh",
+          "evidence_class": "mocked",
+          "source": "gridpulse_regional_model",
+          "note": "Must be replaced by an authorized network model."
+        },
+        {
+          "field": "equipment_ratings",
+          "value": {
+            "conservative": {
+              "n0_mw": 612.0,
+              "n1_mw": 524.0,
+              "binding_case": "mock-380kv-035-out",
+              "binding_constraint": "line_thermal_loading",
+              "is_lower_bound": false
+            },
+            "central": {
+              "n0_mw": 1105.812,
+              "n1_mw": 800.0,
+              "binding_case": "mock-380kv-035-out",
+              "binding_constraint": "line_thermal_loading",
+              "is_lower_bound": false
+            },
+            "optimistic": {
+              "n0_mw": 1500.0,
+              "n1_mw": 1057.469,
+              "binding_case": "mock-380kv-035-out",
+              "binding_constraint": "line_thermal_loading",
+              "is_lower_bound": false
+            }
+          },
+          "evidence_class": "simulated_range",
+          "source": "gridpulse_regional_model",
+          "note": "Not actual line or transformer ratings."
+        },
+        {
+          "field": "operating_state",
+          "value": "27 deterministic hourly scenario classes",
+          "evidence_class": "simulated",
+          "source": "gridpulse_hourly_model",
+          "note": "50Hertz total load is zonal and cannot create nodal SCADA."
+        },
+        {
+          "field": "contingencies",
+          "value": "incident synthetic line outages",
+          "evidence_class": "mocked",
+          "source": "gridpulse_regional_model",
+          "note": "Public outage notices do not equal the approved security list."
+        },
+        {
+          "field": "connection_queue",
+          "value": {
+            "derating_fraction": 0.15
+          },
+          "evidence_class": "mocked",
+          "source": "gridpulse_queue_proxy",
+          "note": "No complete public prioritised queue with reserved MW was found."
+        }
+      ],
+      "frozen_prediction": {
+        "site_rank": 2,
+        "p10_firm_proxy_mw": 579.2,
+        "central_firm_proxy_mw": 800.0,
+        "p90_firm_proxy_mw": 1005.98,
+        "queue_adjusted_p10_proxy_mw": 492.32,
+        "flexible_proxy_mw": 886.622,
+        "bess_assisted_proxy_mw": 911.984,
+        "requested_mw": 500.0,
+        "p10_project_margin_mw": 79.2,
+        "queue_adjusted_project_margin_mw": -7.68,
+        "central_project_margin_mw": 300.0,
+        "passes_p10_screen": true,
+        "passes_mock_queue_adjusted_screen": false,
+        "passes_flexible_screen": true,
+        "passes_bess_screen": true,
+        "binding_constraint": "line_thermal_loading",
+        "binding_case": "mock-380kv-035-out",
+        "capacity_claim": false,
+        "display_as_capacity": false
+      },
+      "prediction_sha256": "6494804dba899f7ba86340e2d892fc903262a57acd4978e0129dbdc65177bf5e",
+      "operator_questions": [
+        "What connection bus and bay would 50Hertz study for this project?",
+        "What normal and emergency equipment ratings apply?",
+        "Which base cases, outages and security criteria govern the decision?",
+        "What prior queue commitments and reinforcements affect the requested year?",
+        "What firm, flexible and staged MW envelope would 50Hertz approve?"
+      ]
+    },
+    {
+      "candidate_id": "osm-way-947118608",
+      "location": "Umspannwerk Altentreptow S\u00fcd",
+      "coordinates": [
+        13.174669,
+        53.6236006
+      ],
+      "public_source_url": "https://www.openstreetmap.org/way/947118608",
+      "evidence_ledger": [
+        {
+          "field": "location",
+          "value": "Umspannwerk Altentreptow S\u00fcd",
+          "evidence_class": "public_open_mapping",
+          "source": "osm",
+          "note": "Mapped substation name; operator spelling and completeness are not guaranteed."
+        },
+        {
+          "field": "coordinates",
+          "value": [
+            13.174669,
+            53.6236006
+          ],
+          "evidence_class": "public_open_mapping",
+          "source": "osm",
+          "note": "Mapped feature centroid, not an approved connection-bay coordinate."
+        },
+        {
+          "field": "nominal_voltage_kv",
+          "value": 380.0,
+          "evidence_class": "public_open_mapping",
+          "source": "osm",
+          "note": "Public voltage tag; busbar arrangement is unknown."
+        },
+        {
+          "field": "electrical_topology",
+          "value": "synthetic nearest-neighbour mesh",
+          "evidence_class": "mocked",
+          "source": "gridpulse_regional_model",
+          "note": "Must be replaced by an authorized network model."
+        },
+        {
+          "field": "equipment_ratings",
+          "value": {
+            "conservative": {
+              "n0_mw": 620.0,
+              "n1_mw": 468.0,
+              "binding_case": "mock-380kv-013-out",
+              "binding_constraint": "line_thermal_loading",
+              "is_lower_bound": false
+            },
+            "central": {
+              "n0_mw": 1150.438,
+              "n1_mw": 868.0,
+              "binding_case": "mock-380kv-013-out",
+              "binding_constraint": "line_thermal_loading",
+              "is_lower_bound": false
+            },
+            "optimistic": {
+              "n0_mw": 1500.0,
+              "n1_mw": 1258.281,
+              "binding_case": "mock-380kv-013-out",
+              "binding_constraint": "line_thermal_loading",
+              "is_lower_bound": false
+            }
+          },
+          "evidence_class": "simulated_range",
+          "source": "gridpulse_regional_model",
+          "note": "Not actual line or transformer ratings."
+        },
+        {
+          "field": "operating_state",
+          "value": "27 deterministic hourly scenario classes",
+          "evidence_class": "simulated",
+          "source": "gridpulse_hourly_model",
+          "note": "50Hertz total load is zonal and cannot create nodal SCADA."
+        },
+        {
+          "field": "contingencies",
+          "value": "incident synthetic line outages",
+          "evidence_class": "mocked",
+          "source": "gridpulse_regional_model",
+          "note": "Public outage notices do not equal the approved security list."
+        },
+        {
+          "field": "connection_queue",
+          "value": {
+            "derating_fraction": 0.15
+          },
+          "evidence_class": "mocked",
+          "source": "gridpulse_queue_proxy",
+          "note": "No complete public prioritised queue with reserved MW was found."
+        }
+      ],
+      "frozen_prediction": {
+        "site_rank": 3,
+        "p10_firm_proxy_mw": 548.0,
+        "central_firm_proxy_mw": 868.0,
+        "p90_firm_proxy_mw": 1180.22,
+        "queue_adjusted_p10_proxy_mw": 465.8,
+        "flexible_proxy_mw": 920.317,
+        "bess_assisted_proxy_mw": 948.026,
+        "requested_mw": 500.0,
+        "p10_project_margin_mw": 48.0,
+        "queue_adjusted_project_margin_mw": -34.2,
+        "central_project_margin_mw": 368.0,
+        "passes_p10_screen": true,
+        "passes_mock_queue_adjusted_screen": false,
+        "passes_flexible_screen": true,
+        "passes_bess_screen": true,
+        "binding_constraint": "line_thermal_loading",
+        "binding_case": "mock-380kv-013-out",
+        "capacity_claim": false,
+        "display_as_capacity": false
+      },
+      "prediction_sha256": "9aac55afcc9d4f77fc7c4e18803799f95fd201cda74302d76bc0131163e7869e",
+      "operator_questions": [
+        "What connection bus and bay would 50Hertz study for this project?",
+        "What normal and emergency equipment ratings apply?",
+        "Which base cases, outages and security criteria govern the decision?",
+        "What prior queue commitments and reinforcements affect the requested year?",
+        "What firm, flexible and staged MW envelope would 50Hertz approve?"
+      ]
+    },
+    {
+      "candidate_id": "osm-way-30622610",
+      "location": "Umspannwerk Kernkraftwerk Brunsb\u00fcttel",
+      "coordinates": [
+        9.2015449,
+        53.8956326
+      ],
+      "public_source_url": "https://www.openstreetmap.org/way/30622610",
+      "evidence_ledger": [
+        {
+          "field": "location",
+          "value": "Umspannwerk Kernkraftwerk Brunsb\u00fcttel",
+          "evidence_class": "public_open_mapping",
+          "source": "osm",
+          "note": "Mapped substation name; operator spelling and completeness are not guaranteed."
+        },
+        {
+          "field": "coordinates",
+          "value": [
+            9.2015449,
+            53.8956326
+          ],
+          "evidence_class": "public_open_mapping",
+          "source": "osm",
+          "note": "Mapped feature centroid, not an approved connection-bay coordinate."
+        },
+        {
+          "field": "nominal_voltage_kv",
+          "value": 380.0,
+          "evidence_class": "public_open_mapping",
+          "source": "osm",
+          "note": "Public voltage tag; busbar arrangement is unknown."
+        },
+        {
+          "field": "electrical_topology",
+          "value": "synthetic nearest-neighbour mesh",
+          "evidence_class": "mocked",
+          "source": "gridpulse_regional_model",
+          "note": "Must be replaced by an authorized network model."
+        },
+        {
+          "field": "equipment_ratings",
+          "value": {
+            "conservative": {
+              "n0_mw": 464.0,
+              "n1_mw": 452.0,
+              "binding_case": "mock-380kv-032-out",
+              "binding_constraint": "line_thermal_loading",
+              "is_lower_bound": false
+            },
+            "central": {
+              "n0_mw": 860.0,
+              "n1_mw": 840.0,
+              "binding_case": "mock-380kv-032-out",
+              "binding_constraint": "line_thermal_loading",
+              "is_lower_bound": false
+            },
+            "optimistic": {
+              "n0_mw": 1243.406,
+              "n1_mw": 1124.406,
+              "binding_case": "mock-380kv-007-out",
+              "binding_constraint": "line_thermal_loading",
+              "is_lower_bound": false
+            }
+          },
+          "evidence_class": "simulated_range",
+          "source": "gridpulse_regional_model",
+          "note": "Not actual line or transformer ratings."
+        },
+        {
+          "field": "operating_state",
+          "value": "27 deterministic hourly scenario classes",
+          "evidence_class": "simulated",
+          "source": "gridpulse_hourly_model",
+          "note": "50Hertz total load is zonal and cannot create nodal SCADA."
+        },
+        {
+          "field": "contingencies",
+          "value": "incident synthetic line outages",
+          "evidence_class": "mocked",
+          "source": "gridpulse_regional_model",
+          "note": "Public outage notices do not equal the approved security list."
+        },
+        {
+          "field": "connection_queue",
+          "value": {
+            "derating_fraction": 0.15
+          },
+          "evidence_class": "mocked",
+          "source": "gridpulse_queue_proxy",
+          "note": "No complete public prioritised queue with reserved MW was found."
+        }
+      ],
+      "frozen_prediction": {
+        "site_rank": 4,
+        "p10_firm_proxy_mw": 529.6,
+        "central_firm_proxy_mw": 840.0,
+        "p90_firm_proxy_mw": 1067.52,
+        "queue_adjusted_p10_proxy_mw": 450.16,
+        "flexible_proxy_mw": 840.0,
+        "bess_assisted_proxy_mw": 840.0,
+        "requested_mw": 500.0,
+        "p10_project_margin_mw": 29.6,
+        "queue_adjusted_project_margin_mw": -49.84,
+        "central_project_margin_mw": 340.0,
+        "passes_p10_screen": true,
+        "passes_mock_queue_adjusted_screen": false,
+        "passes_flexible_screen": true,
+        "passes_bess_screen": true,
+        "binding_constraint": "line_thermal_loading",
+        "binding_case": "mock-380kv-032-out",
+        "capacity_claim": false,
+        "display_as_capacity": false
+      },
+      "prediction_sha256": "8ef018a5f9e1775db0d3a3d142d2f2dd59519bb342490de71b3790aad63c1bae",
+      "operator_questions": [
+        "What connection bus and bay would 50Hertz study for this project?",
+        "What normal and emergency equipment ratings apply?",
+        "Which base cases, outages and security criteria govern the decision?",
+        "What prior queue commitments and reinforcements affect the requested year?",
+        "What firm, flexible and staged MW envelope would 50Hertz approve?"
+      ]
+    },
+    {
+      "candidate_id": "osm-way-23583867",
+      "location": "Hamburg/Ost",
+      "coordinates": [
+        10.1594788,
+        53.5553753
+      ],
+      "public_source_url": "https://www.openstreetmap.org/way/23583867",
+      "evidence_ledger": [
+        {
+          "field": "location",
+          "value": "Hamburg/Ost",
+          "evidence_class": "public_open_mapping",
+          "source": "osm",
+          "note": "Mapped substation name; operator spelling and completeness are not guaranteed."
+        },
+        {
+          "field": "coordinates",
+          "value": [
+            10.1594788,
+            53.5553753
+          ],
+          "evidence_class": "public_open_mapping",
+          "source": "osm",
+          "note": "Mapped feature centroid, not an approved connection-bay coordinate."
+        },
+        {
+          "field": "nominal_voltage_kv",
+          "value": 380.0,
+          "evidence_class": "public_open_mapping",
+          "source": "osm",
+          "note": "Public voltage tag; busbar arrangement is unknown."
+        },
+        {
+          "field": "substation_restructuring",
+          "value": "four phase-shifting transformers",
+          "evidence_class": "official_50hertz_public",
+          "source": "50hertz_hamburg_ost",
+          "note": "Official project fact; individual ratings and current states are not published."
+        },
+        {
+          "field": "planned_reinforcement",
+          "value": "two 380 kV circuits, 4,000 A each",
+          "evidence_class": "official_50hertz_public",
+          "source": "50hertz_project_51",
+          "note": "Planned project parameter, not an available-capacity allocation."
+        },
+        {
+          "field": "observed_public_outage",
+          "value": "Hamburg/Ost-Hamburg/S\u00fcd circuit 971",
+          "evidence_class": "official_50hertz_public",
+          "source": "50hertz_outages",
+          "note": "Published market-relevant outage example; not a complete contingency policy."
+        },
+        {
+          "field": "electrical_topology",
+          "value": "synthetic nearest-neighbour mesh",
+          "evidence_class": "mocked",
+          "source": "gridpulse_regional_model",
+          "note": "Must be replaced by an authorized network model."
+        },
+        {
+          "field": "equipment_ratings",
+          "value": {
+            "conservative": {
+              "n0_mw": 464.0,
+              "n1_mw": 452.0,
+              "binding_case": "mock-380kv-006-out",
+              "binding_constraint": "line_thermal_loading",
+              "is_lower_bound": false
+            },
+            "central": {
+              "n0_mw": 860.0,
+              "n1_mw": 836.0,
+              "binding_case": "mock-380kv-006-out",
+              "binding_constraint": "line_thermal_loading",
+              "is_lower_bound": false
+            },
+            "optimistic": {
+              "n0_mw": 1250.844,
+              "n1_mw": 1135.562,
+              "binding_case": "mock-380kv-006-out",
+              "binding_constraint": "line_thermal_loading",
+              "is_lower_bound": false
+            }
+          },
+          "evidence_class": "simulated_range",
+          "source": "gridpulse_regional_model",
+          "note": "Not actual line or transformer ratings."
+        },
+        {
+          "field": "operating_state",
+          "value": "27 deterministic hourly scenario classes",
+          "evidence_class": "simulated",
+          "source": "gridpulse_hourly_model",
+          "note": "50Hertz total load is zonal and cannot create nodal SCADA."
+        },
+        {
+          "field": "contingencies",
+          "value": "incident synthetic line outages",
+          "evidence_class": "mocked",
+          "source": "gridpulse_regional_model",
+          "note": "Public outage notices do not equal the approved security list."
+        },
+        {
+          "field": "connection_queue",
+          "value": {
+            "derating_fraction": 0.15
+          },
+          "evidence_class": "mocked",
+          "source": "gridpulse_queue_proxy",
+          "note": "No complete public prioritised queue with reserved MW was found."
+        }
+      ],
+      "frozen_prediction": {
+        "site_rank": 5,
+        "p10_firm_proxy_mw": 528.8,
+        "central_firm_proxy_mw": 836.0,
+        "p90_firm_proxy_mw": 1075.65,
+        "queue_adjusted_p10_proxy_mw": 449.48,
+        "flexible_proxy_mw": 836.0,
+        "bess_assisted_proxy_mw": 836.0,
+        "requested_mw": 500.0,
+        "p10_project_margin_mw": 28.8,
+        "queue_adjusted_project_margin_mw": -50.52,
+        "central_project_margin_mw": 336.0,
+        "passes_p10_screen": true,
+        "passes_mock_queue_adjusted_screen": false,
+        "passes_flexible_screen": true,
+        "passes_bess_screen": true,
+        "binding_constraint": "line_thermal_loading",
+        "binding_case": "mock-380kv-006-out",
+        "capacity_claim": false,
+        "display_as_capacity": false
+      },
+      "prediction_sha256": "1c9894903ac5cc812f942b8dc1fa078163af440c28bc1aebc71cb915d4ba859a",
+      "operator_questions": [
+        "What connection bus and bay would 50Hertz study for this project?",
+        "What normal and emergency equipment ratings apply?",
+        "Which base cases, outages and security criteria govern the decision?",
+        "What prior queue commitments and reinforcements affect the requested year?",
+        "What firm, flexible and staged MW envelope would 50Hertz approve?"
+      ]
+    }
+  ],
+  "freeze_manifest": {
+    "methodology_version": "50hertz-top-five-preapplication-v1",
+    "regional_input_sha256": "9076e3e2d9cf3203a879a9adc2ed01aec897e2eb6898d6200edb747220180246",
+    "project_sha256": "77a755bdc7f148f6fd3a7d31579c4071bd61a477235e1ff04370fb532d4fc7f6",
+    "site_prediction_hashes": {
+      "osm-way-1530564244": "3c65950ddcba3b36672acfe90cef582a4c4fd9cd54b6da2c814e90aa790047d5",
+      "osm-way-460134233": "6494804dba899f7ba86340e2d892fc903262a57acd4978e0129dbdc65177bf5e",
+      "osm-way-947118608": "9aac55afcc9d4f77fc7c4e18803799f95fd201cda74302d76bc0131163e7869e",
+      "osm-way-30622610": "8ef018a5f9e1775db0d3a3d142d2f2dd59519bb342490de71b3790aad63c1bae",
+      "osm-way-23583867": "1c9894903ac5cc812f942b8dc1fa078163af440c28bc1aebc71cb915d4ba859a"
+    },
+    "frozen_before_operator_outcome": true
+  },
+  "reconciliation_schema": {
+    "required_operator_fields": [
+      "operator_case_id",
+      "candidate_id",
+      "studied_connection_bus",
+      "study_timestamp",
+      "study_year",
+      "approved_firm_mw",
+      "approved_flexible_mw",
+      "approved_bess_mw",
+      "binding_constraint",
+      "critical_contingency",
+      "queue_treatment",
+      "reinforcements_required",
+      "validity_conditions",
+      "reviewer",
+      "evidence_hash"
+    ],
+    "metrics_after_response": [
+      "absolute_error_mw",
+      "percentage_error",
+      "optimistic_or_conservative",
+      "constraint_match",
+      "contingency_match",
+      "project_fit_classification_match"
+    ],
+    "status": "awaiting_authorized_50hertz_outcome"
+  },
+  "summary": {
+    "site_count": 5,
+    "requested_mw": 500.0,
+    "passes_p10_count": 5,
+    "passes_mock_queue_adjusted_count": 1,
+    "operator_reconciled_count": 0
+  },
+  "capacity_claim": false,
+  "operator_confirmed": false,
+  "prohibited_interpretation": "Not an available-capacity result or a 50Hertz response.",
+  "package_sha256": "232ccd05e6340bb5f1332301619b6a6bf8ff4eed7c1ffdfe8a4bb117dbdae41a"
+}

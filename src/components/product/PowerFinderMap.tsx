@@ -1,284 +1,294 @@
 import "maplibre-gl/dist/maplibre-gl.css";
+import { initializeMap } from "../../features/map/initialize-map";
+import { useMapResources } from "../../features/map/use-map-resources";
 
-import { useEffect, useRef } from "react";
-import type { GeoJSONSource, Map as MapLibreMap, MapLayerMouseEvent, Source } from "maplibre-gl";
-import type {
-  PowerFinderCollection,
-  PowerFinderFeature,
-} from "@/features/power-finder/fixture-data";
-import type { PowerFinderBounds } from "@/features/power-finder/data-source";
+import { useEffect } from "react";
 
-type PowerFinderMapProps = {
-  collection: PowerFinderCollection;
-  selectedId: string | null;
-  mapMode: "voltage" | "evidence" | "capacity";
-  viewportTarget?: { center: [number, number]; zoom: number };
-  onSelect: (feature: PowerFinderFeature) => void;
-  onViewportChange?: (bounds: PowerFinderBounds) => void;
-};
+import type { ExpressionSpecification } from "maplibre-gl";
 
-function isGeoJsonSource(source: Source | undefined): source is GeoJSONSource {
-  return source?.type === "geojson";
-}
+import { splitMapCollection } from "@/components/product/power-finder-map-data";
+
+import { classifyCapacityOpportunity } from "@/features/power-finder/capacity-opportunity";
+
+import { voltageClassFilter,voltageColorExpression } from "@/features/power-finder/voltage-style";
+
+import {
+activateDataOnlyBasemap,
+applyBasemapVisibility,
+} from "@/features/power-finder/basemap-config";
+
+import { type PowerFinderMapProps } from "../../features/map/contracts";
+
+import {
+isGeoJsonSource,
+publishVisibleLayerCounts,
+withCapacityResults,
+} from "../../features/map/feature-selection";
+
+import {
+applyOverlayTheme,
+generationAssetFilter,
+registeredCapacityRadius,
+sourceIds,
+storageAssetFilter,
+} from "../../features/map/layer-style";
+
+export { type RzRegDataCentre } from "../../features/map/contracts";
 
 export function PowerFinderMap({
   collection,
-  selectedId,
+  enabledLayers,
+  selectedFeature,
+  previewFeature,
   mapMode,
+  basemapMode = "dark",
+  generationGroup = "all",
+  minimumGenerationMw = 0,
+  maximumGenerationMw = null,
+  minimumStorageMw = 0,
+  maximumStorageMw = null,
+  isolatedVoltageClass = null,
+  scaleMarkersByCapacity = true,
+  capacityNodes = [],
+  capacityMetric = "firm_import_mw",
+  requiredCapacityMw = 1,
+  capacityCoverage = null,
   viewportTarget,
+  navigationTarget,
   onSelect,
   onViewportChange,
+  projectSite,
+  onSitePlacement,
+  onVisibleLayerCounts,
+  discoveryLocations = null,
+  onDiscoverySelect,
+  showDataCentres = true,
+  onDataCentreSelect,
+  onBasemapStatusChange,
+  onDataSourceStatusChange,
 }: PowerFinderMapProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<MapLibreMap | null>(null);
-  const onSelectRef = useRef(onSelect);
-  const onViewportChangeRef = useRef(onViewportChange);
-  const collectionRef = useRef(collection);
-  onSelectRef.current = onSelect;
-  onViewportChangeRef.current = onViewportChange;
-  collectionRef.current = collection;
+  const resources = useMapResources({
+    collection,
+    enabledLayers,
+    selectedFeature,
+    previewFeature,
+    mapMode,
+    basemapMode,
+    generationGroup,
+    minimumGenerationMw,
+    maximumGenerationMw,
+    minimumStorageMw,
+    maximumStorageMw,
+    isolatedVoltageClass,
+    scaleMarkersByCapacity,
+    capacityNodes,
+    capacityMetric,
+    requiredCapacityMw,
+    capacityCoverage,
+    viewportTarget,
+    navigationTarget,
+    onSelect,
+    onViewportChange,
+    projectSite,
+    onSitePlacement,
+    onVisibleLayerCounts,
+    discoveryLocations,
+    onDiscoverySelect,
+    showDataCentres,
+    onDataCentreSelect,
+    onBasemapStatusChange,
+    onDataSourceStatusChange,
+  });
+  const {
+    containerRef,
+    mapRef,
+    onSelectRef,
+    onViewportChangeRef,
+    collectionRef,
+    projectSiteRef,
+    onSitePlacementRef,
+    onVisibleLayerCountsRef,
+    onDiscoverySelectRef,
+    discoveryLocationsRef,
+    onDataCentreSelectRef,
+    showDataCentresRef,
+    selectedFeatureRef,
+    previewFeatureRef,
+    capacityNodesRef,
+    capacityMetricRef,
+    requiredCapacityMwRef,
+    capacityCoverageRef,
+    basemapModeRef,
+    basemapLayerIdsRef,
+    basemapFallbackActiveRef,
+    onBasemapStatusChangeRef,
+    onDataSourceStatusChangeRef,
+    runtimeSourceStatusRef,
+    enabledLayersRef,
+    assetFilterRef,
+    isolatedVoltageClassRef,
+    scaleMarkersByCapacityRef,
+  } = resources;
+  useEffect(() => initializeMap(resources), [resources]);
 
   useEffect(() => {
-    if (!containerRef.current || mapRef.current) return;
-    let cancelled = false;
+    const map = mapRef.current;
+    if (!map) return;
+    const split = splitMapCollection(collection);
+    const updates = [
+      [sourceIds.line, split.lines],
+      [sourceIds.industrial_site, split.industrialSites],
+      [sourceIds.generation_asset, split.generationAssets],
+      [sourceIds.storage_asset, split.storageAssets],
+    ] as const;
+    for (const [sourceId, data] of updates) {
+      const source = map.getSource(sourceId);
+      if (isGeoJsonSource(source)) source.setData(data);
+    }
+  }, [collection, mapRef]);
 
-    void import("maplibre-gl").then(({ Map, NavigationControl }) => {
-      if (cancelled || !containerRef.current) return;
-      const map = new Map({
-        container: containerRef.current,
-        center: [13.36, 52.31],
-        zoom: 9.1,
-        attributionControl: {},
-        style: {
-          version: 8,
-          sources: {
-            carto: {
-              type: "raster",
-              tiles: [
-                "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
-                "https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
-                "https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
-              ],
-              tileSize: 256,
-              attribution: "© OpenStreetMap contributors © CARTO",
+  useEffect(() => {
+    const source = mapRef.current?.getSource(sourceIds.node);
+    if (!isGeoJsonSource(source)) return;
+    const split = splitMapCollection(
+      withCapacityResults(collection, capacityNodes, capacityMetric, requiredCapacityMw),
+    );
+    source.setData(split.nodes);
+  }, [collection, capacityNodes, capacityMetric, requiredCapacityMw, mapRef]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    const source = map?.getSource("berlin-capacity-coverage");
+    if (isGeoJsonSource(source)) {
+      source.setData(capacityCoverage ?? { type: "FeatureCollection", features: [] });
+    }
+    for (const layer of ["berlin-capacity-coverage-fill", "berlin-capacity-coverage-line"]) {
+      if (map?.getLayer(layer)) {
+        map.setLayoutProperty(
+          layer,
+          "visibility",
+          mapMode === "capacity" && capacityCoverage ? "visible" : "none",
+        );
+      }
+    }
+  }, [capacityCoverage, mapMode, mapRef]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const nationalLayers = {
+      "national-grid-lines": enabledLayers.line,
+      "national-grid-nodes": enabledLayers.node,
+      "national-industrial-sites": enabledLayers.industrial_site,
+      "national-industrial-overview": enabledLayers.industrial_site,
+      "national-generation-overview": enabledLayers.generation_asset,
+      "national-generation-overview-label": enabledLayers.generation_asset,
+      "national-generation-technology-glyph": enabledLayers.generation_asset,
+      "national-generation-assets": enabledLayers.generation_asset,
+      "national-generation-asset-labels": enabledLayers.generation_asset,
+      "national-storage-assets": enabledLayers.storage_asset,
+      "national-storage-technology-icon": enabledLayers.storage_asset,
+      "national-storage-asset-labels": enabledLayers.storage_asset,
+    } as const;
+    for (const [layer, visible] of Object.entries(nationalLayers)) {
+      if (map.getLayer(layer))
+        map.setLayoutProperty(layer, "visibility", visible ? "visible" : "none");
+    }
+    const localLayers = {
+      // Registry vector tiles already provide technology-separated regional
+      // aggregates and exact assets. Showing the bounded GeoJSON registry
+      // copy at the same time creates duplicate, mixed-technology grey
+      // clusters over the correctly coloured national symbols.
+      "generation-clusters": false,
+      "generation-cluster-count": false,
+      "generation-assets": false,
+      "storage-clusters": false,
+      "storage-cluster-count": false,
+      "storage-assets": false,
+    } as const;
+    for (const [layer, visible] of Object.entries(localLayers)) {
+      if (map.getLayer(layer))
+        map.setLayoutProperty(layer, "visibility", visible ? "visible" : "none");
+    }
+    map.once("idle", () => publishVisibleLayerCounts(map, onVisibleLayerCountsRef.current));
+  }, [enabledLayers, mapRef, onVisibleLayerCountsRef]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const voltage = voltageClassFilter(isolatedVoltageClass);
+    const nationalLineFilter = voltage
+      ? (["all", ["==", ["get", "kind"], "line"], voltage] as ExpressionSpecification)
+      : (["==", ["get", "kind"], "line"] as ExpressionSpecification);
+    const nationalNodeFilter = voltage
+      ? (["all", ["==", ["get", "kind"], "node"], voltage] as ExpressionSpecification)
+      : (["==", ["get", "kind"], "node"] as ExpressionSpecification);
+    const localNodeFilter = voltage
+      ? (["all", ["!", ["has", "point_count"]], voltage] as ExpressionSpecification)
+      : (["!", ["has", "point_count"]] as ExpressionSpecification);
+    if (map.getLayer("national-grid-lines"))
+      map.setFilter("national-grid-lines", nationalLineFilter);
+    if (map.getLayer("national-grid-nodes"))
+      map.setFilter("national-grid-nodes", nationalNodeFilter);
+    if (map.getLayer("grid-lines")) map.setFilter("grid-lines", voltage ?? ["has", "kind"]);
+    if (map.getLayer("grid-nodes")) map.setFilter("grid-nodes", localNodeFilter);
+    for (const layer of ["node-clusters", "node-cluster-count"]) {
+      if (map.getLayer(layer)) map.setLayoutProperty(layer, "visibility", "none");
+    }
+    map.once("idle", () => publishVisibleLayerCounts(map, onVisibleLayerCountsRef.current));
+  }, [isolatedVoltageClass, mapRef, onVisibleLayerCountsRef]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    for (const layer of [
+      "rzreg-data-centre-clusters",
+      "rzreg-data-centre-cluster-count",
+      "rzreg-data-centres-approximate-area",
+      "rzreg-data-centres-approximate",
+      "rzreg-data-centres-exact",
+    ]) {
+      if (map.getLayer(layer))
+        map.setLayoutProperty(layer, "visibility", showDataCentres ? "visible" : "none");
+    }
+  }, [mapRef, showDataCentres]);
+
+  useEffect(() => {
+    const source = mapRef.current?.getSource("finder-project-site");
+    if (!isGeoJsonSource(source)) return;
+    source.setData({
+      type: "FeatureCollection",
+      features: projectSite
+        ? [
+            {
+              type: "Feature",
+              properties: { kind: "project_site" },
+              geometry: { type: "Point", coordinates: projectSite },
             },
-          },
-          layers: [{ id: "carto", type: "raster", source: "carto" }],
-        },
-      });
-      mapRef.current = map;
-      map.addControl(new NavigationControl({ showCompass: false }), "top-right");
-      map.on("load", () => {
-        map.addSource("power-finder", {
-          type: "geojson",
-          data: collectionRef.current,
-          cluster: true,
-          clusterMaxZoom: 12,
-          clusterRadius: 38,
-        });
-        map.addLayer({
-          id: "industrial-sites",
-          type: "fill",
-          source: "power-finder",
-          filter: ["==", ["get", "kind"], "industrial_site"],
-          paint: {
-            "fill-color": "#17c3b2",
-            "fill-opacity": 0.2,
-            "fill-outline-color": "#5eead4",
-          },
-        });
-        map.addLayer({
-          id: "grid-lines",
-          type: "line",
-          source: "power-finder",
-          filter: ["==", ["get", "kind"], "line"],
-          paint: {
-            "line-color": [
-              "step",
-              ["number", ["get", "max_voltage_kv"], 0],
-              "#64748b",
-              20,
-              "#2dd4bf",
-              110,
-              "#7dd3fc",
-              220,
-              "#60a5fa",
-              380,
-              "#c084fc",
-            ],
-            "line-width": [
-              "step",
-              ["number", ["get", "max_voltage_kv"], 0],
-              1.2,
-              110,
-              1.8,
-              220,
-              2.4,
-              380,
-              3,
-            ],
-            "line-opacity": 0.85,
-          },
-        });
-        map.addLayer({
-          id: "node-clusters",
-          type: "circle",
-          source: "power-finder",
-          filter: ["has", "point_count"],
-          paint: {
-            "circle-radius": ["step", ["get", "point_count"], 15, 25, 19, 100, 24],
-            "circle-color": [
-              "step",
-              ["get", "point_count"],
-              "#f59e0b",
-              25,
-              "#f97316",
-              100,
-              "#ef4444",
-            ],
-            "circle-stroke-color": "#fff7d6",
-            "circle-stroke-width": 2,
-          },
-        });
-        map.addLayer({
-          id: "node-cluster-count",
-          type: "symbol",
-          source: "power-finder",
-          filter: ["has", "point_count"],
-          layout: {
-            "text-field": ["get", "point_count_abbreviated"],
-            "text-size": 11,
-          },
-          paint: { "text-color": "#07111f" },
-        });
-        map.addLayer({
-          id: "grid-nodes",
-          type: "circle",
-          source: "power-finder",
-          filter: ["all", ["!", ["has", "point_count"]], ["==", ["get", "kind"], "node"]],
-          paint: {
-            "circle-radius": 7,
-            "circle-color": "#f59e0b",
-            "circle-stroke-color": "#fff7d6",
-            "circle-stroke-width": 2,
-          },
-        });
-        map.addLayer({
-          id: "generation-assets",
-          type: "circle",
-          source: "power-finder",
-          filter: ["==", ["get", "kind"], "generation_asset"],
-          paint: {
-            "circle-radius": 4,
-            "circle-color": "#22c55e",
-            "circle-stroke-color": "#dcfce7",
-            "circle-stroke-width": 1,
-          },
-        });
-        map.addLayer({
-          id: "storage-assets",
-          type: "circle",
-          source: "power-finder",
-          filter: ["==", ["get", "kind"], "storage_asset"],
-          paint: {
-            "circle-radius": 5,
-            "circle-color": "#a855f7",
-            "circle-stroke-color": "#f3e8ff",
-            "circle-stroke-width": 1,
-          },
-        });
-        map.addLayer({
-          id: "selected-node",
-          type: "circle",
-          source: "power-finder",
-          filter: ["==", ["id"], "__none__"],
-          paint: {
-            "circle-radius": 12,
-            "circle-color": "rgba(0,0,0,0)",
-            "circle-stroke-color": "#ffffff",
-            "circle-stroke-width": 3,
-          },
-        });
-
-        const selectFeature = (event: MapLayerMouseEvent) => {
-          const id = event.features?.[0]?.id;
-          const feature = collectionRef.current.features.find(
-            (item) => String(item.id) === String(id),
-          );
-          if (feature) onSelectRef.current(feature);
-        };
-        for (const layer of ["grid-nodes", "industrial-sites"]) {
-          map.on("click", layer, selectFeature);
-          map.on("mouseenter", layer, () => {
-            map.getCanvas().style.cursor = "pointer";
-          });
-          map.on("mouseleave", layer, () => {
-            map.getCanvas().style.cursor = "";
-          });
-        }
-        map.on("click", "node-clusters", (event) => {
-          const cluster = event.features?.[0];
-          const clusterId = cluster?.properties?.cluster_id;
-          if (!cluster || typeof clusterId !== "number" || cluster.geometry.type !== "Point")
-            return;
-          const coordinates = cluster.geometry.coordinates as [number, number];
-          const source = map.getSource("power-finder");
-          if (!isGeoJsonSource(source)) return;
-          void source.getClusterExpansionZoom(clusterId).then((zoom) => {
-            map.easeTo({
-              center: coordinates,
-              zoom,
-              duration: 450,
-            });
-          });
-        });
-        map.on("mouseenter", "node-clusters", () => {
-          map.getCanvas().style.cursor = "pointer";
-        });
-        map.on("mouseleave", "node-clusters", () => {
-          map.getCanvas().style.cursor = "";
-        });
-        map.on("moveend", () => {
-          const bounds = map.getBounds();
-          onViewportChangeRef.current?.({
-            west: bounds.getWest(),
-            south: bounds.getSouth(),
-            east: bounds.getEast(),
-            north: bounds.getNorth(),
-          });
-        });
-      });
+          ]
+        : [],
     });
-
-    return () => {
-      cancelled = true;
-      mapRef.current?.remove();
-      mapRef.current = null;
-    };
-  }, []);
+    if (projectSite) {
+      mapRef.current?.easeTo({
+        center: projectSite,
+        zoom: Math.max(mapRef.current.getZoom(), 11.2),
+        duration: 650,
+      });
+    }
+  }, [mapRef, projectSite]);
 
   useEffect(() => {
-    const source = mapRef.current?.getSource("power-finder");
-    if (isGeoJsonSource(source)) source.setData(collection);
-  }, [collection]);
+    const source = mapRef.current?.getSource("finder-discovery-locations");
+    if (isGeoJsonSource(source)) {
+      source.setData(discoveryLocations ?? { type: "FeatureCollection", features: [] });
+    }
+  }, [discoveryLocations, mapRef]);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!map?.getLayer("grid-nodes")) return;
-    const voltageColour = [
-      "step",
-      ["number", ["get", "max_voltage_kv"], 0],
-      "#64748b",
-      20,
-      "#2dd4bf",
-      110,
-      "#f59e0b",
-      220,
-      "#f97316",
-      380,
-      "#ef4444",
-    ];
-    const evidenceColour = [
+    const voltageColour = voltageColorExpression();
+    const evidenceColour: ExpressionSpecification = [
       "match",
       ["get", "evidence_class"],
       "official_operator",
@@ -291,18 +301,58 @@ export function PowerFinderMap({
       "#f59e0b",
       "#64748b",
     ];
-    const capacityColour = [
+    const capacityColour: ExpressionSpecification = [
       "match",
-      ["get", "capacity_state"],
-      "published_exact",
-      "#22c55e",
-      "published_band",
-      "#84cc16",
-      "unavailable",
-      "#ef4444",
-      "feasible_no_mw",
+      ["get", "capacity_fit"],
+      "meets",
+      "#67e8f9",
+      "activation",
+      "#818cf8",
+      "below",
+      "#1e526a",
+      "stale",
       "#f59e0b",
-      "#64748b",
+      "#475569",
+    ];
+    const nationalCapacityColour: ExpressionSpecification = [
+      "match",
+      ["feature-state", "capacity_fit"],
+      "meets",
+      "#67e8f9",
+      "activation",
+      "#818cf8",
+      "below",
+      "#1e526a",
+      "#475569",
+    ];
+    const voltageClusterColour: ExpressionSpecification = [
+      "step",
+      ["get", "point_count"],
+      "#f59e0b",
+      25,
+      "#f97316",
+      100,
+      "#ef4444",
+    ];
+    const capacityClusterColour: ExpressionSpecification = [
+      "case",
+      [
+        ">=",
+        ["number", ["get", "capacity_meets"], 0],
+        ["*", ["number", ["get", "point_count"], 1], 0.5],
+      ],
+      "#67e8f9",
+      [
+        ">",
+        [
+          "+",
+          ["number", ["get", "capacity_meets"], 0],
+          ["number", ["get", "capacity_activation"], 0],
+        ],
+        0,
+      ],
+      "#a78bfa",
+      "#52657a",
     ];
     map.setPaintProperty(
       "grid-nodes",
@@ -313,7 +363,94 @@ export function PowerFinderMap({
           ? evidenceColour
           : voltageColour,
     );
-  }, [mapMode]);
+    if (map.getLayer("national-grid-nodes")) {
+      map.setPaintProperty(
+        "national-grid-nodes",
+        "circle-color",
+        mapMode === "capacity"
+          ? nationalCapacityColour
+          : mapMode === "evidence"
+            ? "#f59e0b"
+            : "#f59e0b",
+      );
+      map.setPaintProperty(
+        "national-grid-nodes",
+        "circle-stroke-color",
+        mapMode === "capacity" ? "#cbd5e1" : mapMode === "voltage" ? voltageColour : "#fff7d6",
+      );
+      map.setPaintProperty(
+        "national-grid-nodes",
+        "circle-radius",
+        mapMode === "capacity"
+          ? 5
+          : ["interpolate", ["linear"], ["zoom"], 4, 1, 7, 1.6, 8.5, 2.5, 11, 4.5, 14, 6],
+      );
+      map.setPaintProperty(
+        "national-grid-nodes",
+        "circle-opacity",
+        mapMode === "capacity" ? 0.92 : 0.88,
+      );
+    }
+    map.setPaintProperty("grid-nodes", "circle-radius", mapMode === "capacity" ? 9 : 7);
+    map.setPaintProperty(
+      "node-clusters",
+      "circle-color",
+      mapMode === "capacity" ? capacityClusterColour : voltageClusterColour,
+    );
+    map.setPaintProperty(
+      "node-clusters",
+      "circle-stroke-color",
+      mapMode === "capacity" ? "#dffaff" : "#fff7d6",
+    );
+    map.setPaintProperty(
+      "grid-nodes",
+      "circle-stroke-color",
+      mapMode === "capacity"
+        ? [
+            "case",
+            ["==", ["get", "capacity_fit"], "activation"],
+            "#c4b5fd",
+            ["==", ["get", "capacity_fit"], "below"],
+            "#47738a",
+            ["==", ["get", "capacity_fit"], "stale"],
+            "#fbbf24",
+            ["==", ["get", "capacity_validation_state"], "operator_confirmed"],
+            "#4ade80",
+            ["==", ["get", "capacity_validation_state"], "operator_reviewed"],
+            "#ffffff",
+            "#cbd5e1",
+          ]
+        : "#fff7d6",
+    );
+    const updateNationalCapacityStates = () => {
+      if (mapMode !== "capacity" || !map.getSource("power-finder-national-tiles")) return;
+      const ids = Array.from(
+        new Set(
+          map
+            .querySourceFeatures("power-finder-national-tiles", {
+              sourceLayer: "power_finder",
+              filter: ["==", ["get", "kind"], "node"],
+            })
+            .map((feature) => String(feature.id ?? feature.properties?.id ?? ""))
+            .filter(Boolean),
+        ),
+      );
+      const byNode = new Map(capacityNodes.map((node) => [node.publicNodeId, node]));
+      for (const id of ids) {
+        const node = byNode.get(id);
+        const result = classifyCapacityOpportunity(node, capacityMetric, requiredCapacityMw);
+        map.setFeatureState(
+          { source: "power-finder-national-tiles", sourceLayer: "power_finder", id },
+          { capacity_fit: result.fit, capacity_mw: result.valueMw },
+        );
+      }
+    };
+    updateNationalCapacityStates();
+    map.on("idle", updateNationalCapacityStates);
+    return () => {
+      map.off("idle", updateNationalCapacityStates);
+    };
+  }, [mapMode, capacityNodes, capacityMetric, requiredCapacityMw, mapRef]);
 
   useEffect(() => {
     if (!viewportTarget || !mapRef.current) return;
@@ -322,17 +459,102 @@ export function PowerFinderMap({
       zoom: viewportTarget.zoom,
       duration: 700,
     });
-  }, [viewportTarget]);
+  }, [mapRef, viewportTarget]);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map?.getLayer("selected-node")) return;
-    map.setFilter("selected-node", ["==", ["id"], selectedId ?? "__none__"]);
-    const selected = collection.features.find((feature) => feature.id === selectedId);
-    if (selected?.geometry.type === "Point") {
-      map.easeTo({ center: selected.geometry.coordinates as [number, number], duration: 500 });
+    if (!navigationTarget || !map) return;
+    if (navigationTarget.kind === "point") {
+      map.flyTo({
+        center: navigationTarget.center,
+        zoom: Math.max(map.getZoom(), navigationTarget.zoom ?? 11),
+        duration: 750,
+        essential: true,
+      });
+      return;
     }
-  }, [collection, selectedId]);
+    const [west, south, east, north] = navigationTarget.bounds;
+    map.fitBounds(
+      [
+        [west, south],
+        [east, north],
+      ],
+      {
+        padding: { top: 90, right: 110, bottom: 90, left: 110 },
+        maxZoom: navigationTarget.maxZoom ?? 9.5,
+        duration: 850,
+        essential: true,
+      },
+    );
+  }, [mapRef, navigationTarget]);
+
+  useEffect(() => {
+    const source = mapRef.current?.getSource("finder-selected-candidate");
+    if (!isGeoJsonSource(source)) return;
+    const highlighted = previewFeature ?? selectedFeature;
+    source.setData({
+      type: "FeatureCollection",
+      features: highlighted?.geometry.type === "Point" ? [highlighted] : [],
+    });
+  }, [mapRef, previewFeature, selectedFeature]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (basemapFallbackActiveRef.current) {
+      activateDataOnlyBasemap(map, basemapMode, basemapLayerIdsRef.current);
+      return;
+    }
+    applyBasemapVisibility(map, basemapMode, basemapLayerIdsRef.current);
+    applyOverlayTheme(map, basemapMode);
+  }, [basemapFallbackActiveRef, basemapLayerIdsRef, basemapMode, mapRef]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const generationFilter = generationAssetFilter(
+      generationGroup,
+      minimumGenerationMw,
+      maximumGenerationMw,
+    );
+    const storageFilter = storageAssetFilter(minimumStorageMw, maximumStorageMw);
+    for (const layer of [
+      "national-generation-overview",
+      "national-generation-overview-label",
+      "national-generation-technology-glyph",
+      "national-generation-assets",
+      "national-generation-asset-labels",
+    ])
+      if (map.getLayer(layer)) map.setFilter(layer, generationFilter);
+    for (const layer of [
+      "national-storage-assets",
+      "national-storage-technology-icon",
+      "national-storage-asset-labels",
+    ])
+      if (map.getLayer(layer)) map.setFilter(layer, storageFilter);
+  }, [
+    generationGroup,
+    mapRef,
+    maximumGenerationMw,
+    maximumStorageMw,
+    minimumGenerationMw,
+    minimumStorageMw,
+  ]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const radius = scaleMarkersByCapacity ? registeredCapacityRadius : 6;
+    for (const layer of [
+      "national-generation-overview",
+      "national-generation-assets",
+      "national-storage-assets",
+      "generation-assets",
+      "storage-assets",
+    ]) {
+      if (map.getLayer(layer)) map.setPaintProperty(layer, "circle-radius", radius);
+    }
+  }, [mapRef, scaleMarkersByCapacity]);
 
   return (
     <div
@@ -340,6 +562,9 @@ export function PowerFinderMap({
       className="power-finder-map"
       role="application"
       aria-label="Interactive grid and industrial-site screening map"
+      data-selected-feature={selectedFeature?.id ?? ""}
+      data-preview-feature={previewFeature?.id ?? ""}
+      data-basemap={basemapMode}
     />
   );
 }

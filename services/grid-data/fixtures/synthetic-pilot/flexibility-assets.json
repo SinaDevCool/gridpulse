@@ -1,0 +1,5 @@
+[
+  {"asset_id":"mock:de-pilot-01:flex:battery","asset_type":"battery","power_mw":10,"energy_mwh":30,"availability":0.97,"is_synthetic":true},
+  {"asset_id":"mock:de-pilot-01:flex:load","asset_type":"flexible_load","power_mw":4,"energy_mwh":8,"availability":0.9,"is_synthetic":true},
+  {"asset_id":"mock:de-pilot-01:flex:onsite","asset_type":"onsite_generation","power_mw":5,"energy_mwh":null,"availability":0.85,"is_synthetic":true}
+]

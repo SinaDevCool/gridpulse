@@ -2,11 +2,14 @@ import { createStart, createMiddleware } from "@tanstack/react-start";
 
 import { renderErrorPage } from "./lib/error-page";
 import { attachSupabaseAuth } from "@/integrations/supabase/auth-attacher";
+import { productCapabilities } from "@/config/product-mode";
 
 const errorMiddleware = createMiddleware().server(async ({ next }) => {
   try {
     return await next();
   } catch (error) {
+    const { recordCapturedError } = await import("./server/observability/request-context.server");
+    recordCapturedError(error);
     if (error != null && typeof error === "object" && "statusCode" in error) {
       throw error;
     }
@@ -19,6 +22,6 @@ const errorMiddleware = createMiddleware().server(async ({ next }) => {
 });
 
 export const startInstance = createStart(() => ({
-  functionMiddleware: [attachSupabaseAuth],
+  functionMiddleware: productCapabilities.authentication ? [attachSupabaseAuth] : [],
   requestMiddleware: [errorMiddleware],
 }));

@@ -1,0 +1,35 @@
+name: Frontend architecture and regression checks
+on:
+  pull_request:
+    paths:
+      [
+        "src/**",
+        "scripts/**",
+        "supabase/migrations/**",
+        "package*.json",
+        "*.config.*",
+        ".github/workflows/frontend-ci.yml",
+      ]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run check:architecture
+      - run: npm run lint:app
+      - run: npm test
+      - run: npm run test:operations:database
+      - run: node scripts/test-strategy-transactions.mjs
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test tests/e2e/operations-runtime-contracts.spec.ts

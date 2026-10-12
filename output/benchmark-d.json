@@ -1,0 +1,85 @@
+{
+  "schema_version": "gridpulse-benchmark-d-v1",
+  "generated_at": "2026-08-10T22:27:26.600354+00:00",
+  "purpose": "Backtest calculated N-0 and firm capacity against approved outcomes",
+  "mode": "synthetic_rehearsal",
+  "validation_class": "synthetic_demonstration",
+  "capacity_claim": false,
+  "display_as_capacity": false,
+  "numerical_outcome_backtest_passed": true,
+  "operator_outcome_validation_passed": false,
+  "benchmark_execution_passed": true,
+  "metrics": {
+    "reference_case_count": 4,
+    "matched_case_count": 4,
+    "coverage": 1.0,
+    "binding_constraint_accuracy": 1.0,
+    "unsafe_cases": [],
+    "n0_import_mw": {
+      "mae_mw": 0.075,
+      "p95_absolute_error_mw": 0.1,
+      "bias_mw": -0.025,
+      "maximum_overstatement_mw": 0.05,
+      "unsafe_overstatement_count": 0,
+      "unsafe_overstatement_rate": 0.0
+    },
+    "firm_import_mw": {
+      "mae_mw": 0.06,
+      "p95_absolute_error_mw": 0.08,
+      "bias_mw": -0.02,
+      "maximum_overstatement_mw": 0.04,
+      "unsafe_overstatement_count": 0,
+      "unsafe_overstatement_rate": 0.0
+    }
+  },
+  "thresholds": {
+    "minimum_cases": 4,
+    "minimum_coverage": 0.95,
+    "capacity_mae_limit_mw": 0.25,
+    "capacity_p95_limit_mw": 0.5,
+    "unsafe_overstatement_tolerance_mw": 0.25,
+    "maximum_unsafe_overstatement_rate": 0.0,
+    "minimum_constraint_accuracy": 0.95
+  },
+  "numerical_gates": {
+    "minimum_case_count": true,
+    "reference_coverage": true,
+    "n0_mae": true,
+    "firm_mae": true,
+    "n0_p95": true,
+    "firm_p95": true,
+    "zero_unsafe_overstatements": true,
+    "binding_constraint_accuracy": true
+  },
+  "evidence_gates": {
+    "operator_supplied_origin": false,
+    "approved_outcome_type": false,
+    "independent_reference": false,
+    "operator_approved": false,
+    "permission_to_use": true,
+    "prediction_hash": true,
+    "operator_reference_hash": true,
+    "trusted_authority_signature": false
+  },
+  "evidence": {
+    "evidence_origin": "synthetic_fixture",
+    "outcome_type": "synthetic_capacity_outcomes",
+    "independently_derived_reference": false,
+    "operator_approved": false,
+    "permission_to_use": true,
+    "prediction_results_sha256": "d19fde1b649b7905f8f21eaa7c4eb8b8a65b7dffa5a571e60e98b0f6e0c04741",
+    "operator_reference_sha256": "607731e77be568d55d00b6fc9c7f8edc70c6d290202a87c6a7f2574028d821e7",
+    "label": "Synthetic outcome rehearsal \u2014 no operator or location claim"
+  },
+  "input_sha256": {
+    "predictions": "d19fde1b649b7905f8f21eaa7c4eb8b8a65b7dffa5a571e60e98b0f6e0c04741",
+    "references": "607731e77be568d55d00b6fc9c7f8edc70c6d290202a87c6a7f2574028d821e7",
+    "evidence": "8b1aaa587b731978e49710c6ab789fbe395f7ea5a24b3e5bcf946326603629d5"
+  },
+  "limitations": [
+    "Synthetic outcomes are a software rehearsal, not measured or operator-approved capacity.",
+    "Operator-reviewed outcome agreement is not a connection offer or capacity reservation.",
+    "Prospective validation on unseen sites is required before general performance claims."
+  ],
+  "benchmark_sha256": "6e4cfe9ab2cea8edeaed9fa43c2d4889ede29566386ad1923ce1f7bd498e2814"
+}
