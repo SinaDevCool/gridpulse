@@ -163,3 +163,8 @@ All five commands retain invoker rights and authenticated execution; an unauthor
 editing probe was rejected. The deployment workflow now runs transaction and runtime
 checks. Separate Python analytics hosting and staging multi-user validation remain
 external deployment requirements; this web release does not provision those services.
+
+Clean-runner release validation additionally found an ignored workbook dependency and
+an early-interaction hydration race in map-layer checkboxes. The fictional workbook is
+now a versioned test fixture. Layer controls remain disabled until client initialization;
+the regression checks both the server-rendered disabled state and enabled interactions.

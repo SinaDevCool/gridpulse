@@ -5,6 +5,7 @@ import type { FinderControllerContract } from "./controller-contract";
 export function FinderLayersMenu({ model }: { model: FinderControllerContract }) {
   const {
     selected,
+    projectHydrated,
     setSelected,
     enabled,
     setEnabled,
@@ -50,6 +51,7 @@ export function FinderLayersMenu({ model }: { model: FinderControllerContract })
             type="button"
             className={mapFilters.preset === preset ? "is-active" : ""}
             aria-pressed={mapFilters.preset === preset}
+            disabled={!projectHydrated}
             onClick={() => applyMapPreset(preset)}
           >
             {label}
@@ -68,6 +70,7 @@ export function FinderLayersMenu({ model }: { model: FinderControllerContract })
             name="layer-rzreg-data-centres"
             type="checkbox"
             checked={showDataCentres}
+            disabled={!projectHydrated}
             onChange={(event) => {
               const checked = event.target.checked;
               setShowDataCentres(checked);
@@ -87,7 +90,7 @@ export function FinderLayersMenu({ model }: { model: FinderControllerContract })
               name={`layer-${kind}`}
               type="checkbox"
               checked={enabled[kind]}
-              disabled={false}
+              disabled={!projectHydrated}
               onChange={(event) => {
                 const checked = event.target.checked;
                 setEnabled((current) => ({ ...current, [kind]: checked }));

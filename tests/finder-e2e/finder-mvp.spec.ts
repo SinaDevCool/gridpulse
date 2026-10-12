@@ -740,6 +740,13 @@ test("viewport fallback does not disable the independent registry source", async
 test("unclustered grid lines and industrial polygons render in the Brandenburg view", async ({
   page,
 }) => {
+  // SSR controls must not accept clicks that hydration would subsequently overwrite.
+  const initialPage = await page.request.get(
+    "/power-finder?lat=52.232112&lng=13.305687&mw=20&distance=20&voltage=20&region=DE-BB",
+  );
+  expect(await initialPage.text()).toMatch(
+    /<input(?=[^>]*name="layer-industrial_site")(?=[^>]*disabled)[^>]*>/,
+  );
   await page.goto(
     "/power-finder?lat=52.232112&lng=13.305687&mw=20&distance=20&voltage=20&region=DE-BB",
   );
