@@ -150,3 +150,16 @@ Measured active-file sizes after this pass: Portfolio route 40 lines, Compute en
 485, Finder stage 432, Finder composition controller 743, Strategy controller 318, Python API app 152.
 The composition controller retains explicit wiring rather than introducing a second store or opaque
 generic framework. Its filtering, map presentation, editing, persistence and sampling logic live elsewhere.
+
+### Release validation — 12 October 2026
+
+Fresh validation passed: 381 TypeScript tests, 200 Python tests, typecheck, lint,
+architecture, Operations database checks, 36 Operations UI/runtime tests, build,
+performance budgets, production dependency audit and public-access security checks.
+Both new Strategy migrations were applied to the linked database. Live verification
+found inherited anonymous function grants; the forward-only privileges migration
+removes them, and regression tests now simulate Supabase default grants.
+All five commands retain invoker rights and authenticated execution; an unauthorized
+editing probe was rejected. The deployment workflow now runs transaction and runtime
+checks. Separate Python analytics hosting and staging multi-user validation remain
+external deployment requirements; this web release does not provision those services.

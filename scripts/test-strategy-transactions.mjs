@@ -6,7 +6,8 @@ const site = "11111111-1111-4111-8111-111111111111";
 const first = "22222222-2222-4222-8222-222222222222";
 const second = "33333333-3333-4333-8333-333333333333";
 try {
-  await db.exec(`create role authenticated; create schema auth;
+  await db.exec(`create role authenticated; create role anon; create schema auth;
+    alter default privileges in schema public grant execute on functions to anon;
     create function auth.uid() returns uuid language sql as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
     create function public.can_edit_assessment(uuid) returns boolean language sql as $$ select $1 = auth.uid() $$;
     create table connection_scenarios(id uuid primary key, site_id uuid, selection_status text, selection_rationale text);
@@ -28,6 +29,10 @@ try {
     grant usage on schema public,auth to authenticated;
     grant select,insert,update on all tables in schema public to authenticated;`);
   await db.exec(await readFile(new URL("../supabase/migrations/20261012190000_atomic_strategy_commands.sql", import.meta.url), "utf8"));
+  await db.exec(await readFile(new URL("../supabase/migrations/20261012210000_strategy_rpc_privileges.sql", import.meta.url), "utf8"));
+  const privileges = await db.query("select has_function_privilege('anon',oid,'EXECUTE') as anonymous, has_function_privilege('authenticated',oid,'EXECUTE') as authenticated from pg_proc where proname like 'gridpulse_%'");
+  assert.equal(privileges.rows.length, 5);
+  assert.ok(privileges.rows.every(row => !row.anonymous && row.authenticated));
   await db.query("insert into connection_scenarios values($1,$3,'preferred','old'),($2,$3,'candidate',null)", [first, second, site]);
   await db.exec(`set role authenticated; set request.jwt.claim.sub='${site}'`);
   await db.query("select gridpulse_prefer_strategy($1,$2,'new')", [site, second]);
