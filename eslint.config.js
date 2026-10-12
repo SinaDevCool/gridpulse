@@ -6,6 +6,22 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
+    files: [
+      "src/features/grid-connection/strategy/prefer-strategy.ts",
+      "src/features/grid-connection/strategy/record-decision.ts",
+      "src/features/grid-connection/strategy/application-contract.ts",
+      "src/features/operations/hooks/evidence-reducer.ts",
+      "src/server/operations/repository.ts",
+      "src/features/map/registration.ts",
+    ],
+    languageOptions: { parser: tseslint.parser, parserOptions: { projectService: true } },
+    plugins: { "@typescript-eslint": tseslint.plugin },
+    rules: {
+      "@typescript-eslint/no-floating-promises": "error",
+      "@typescript-eslint/no-misused-promises": "error",
+    },
+  },
+  {
     ignores: [
       "dist/**",
       ".output/**",
@@ -52,6 +68,22 @@ export default tseslint.config(
       ],
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       "@typescript-eslint/no-unused-vars": "off",
+    },
+  },
+  {
+    files: [
+      "src/features/grid-connection/strategy/prefer-strategy.ts",
+      "src/features/grid-connection/strategy/record-decision.ts",
+      "src/features/grid-connection/strategy/application-contract.ts",
+      "src/features/operations/hooks/evidence-reducer.ts",
+      "src/server/operations/repository.ts",
+      "src/features/map/registration.ts",
+    ],
+    rules: {
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+      ],
     },
   },
 );

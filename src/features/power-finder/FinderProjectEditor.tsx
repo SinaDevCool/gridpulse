@@ -1,5 +1,5 @@
-import type { useFinderController } from "./use-finder-controller";
-export function FinderProjectEditor({ model }: { model: ReturnType<typeof useFinderController> }) {
+import type { FinderControllerContract } from "./controller-contract";
+export function FinderProjectEditor({ model }: { model: FinderControllerContract }) {
   const { projectEditorOpen, setProjectEditorOpen } = model;
   return (
     <button

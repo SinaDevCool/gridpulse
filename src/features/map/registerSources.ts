@@ -1,43 +1,36 @@
+import { addMapSource } from "./registration";
 import { splitMapCollection } from "@/components/product/power-finder-map-data";
-import type { FeatureCollection,Point } from "geojson";
+import type { FeatureCollection, Point } from "geojson";
 import type { Map as MapLibreMap } from "maplibre-gl";
-import { isGeoJsonSource,withCapacityResults } from "./feature-selection";
+import { isGeoJsonSource, withCapacityResults } from "./feature-selection";
 import { sourceIds } from "./layer-style";
-import type { useMapResources } from "./use-map-resources";
+import type { MapResources } from "./resource-contract";
 export function registerSources(
   map: MapLibreMap,
-  resources: ReturnType<typeof useMapResources>,
+  resources: Pick<
+    MapResources,
+    | "collectionRef"
+    | "projectSiteRef"
+    | "discoveryLocationsRef"
+    | "capacityNodesRef"
+    | "capacityMetricRef"
+    | "requiredCapacityMwRef"
+    | "capacityCoverageRef"
+    | "onDataSourceStatusChangeRef"
+    | "runtimeSourceStatusRef"
+  >,
   isCancelled: () => boolean,
 ) {
   const {
-    containerRef,
-    mapRef,
-    onSelectRef,
-    onViewportChangeRef,
     collectionRef,
     projectSiteRef,
-    onSitePlacementRef,
-    onVisibleLayerCountsRef,
-    onDiscoverySelectRef,
     discoveryLocationsRef,
-    onDataCentreSelectRef,
-    showDataCentresRef,
-    selectedFeatureRef,
-    previewFeatureRef,
     capacityNodesRef,
     capacityMetricRef,
     requiredCapacityMwRef,
     capacityCoverageRef,
-    basemapModeRef,
-    basemapLayerIdsRef,
-    basemapFallbackActiveRef,
-    onBasemapStatusChangeRef,
     onDataSourceStatusChangeRef,
     runtimeSourceStatusRef,
-    enabledLayersRef,
-    assetFilterRef,
-    isolatedVoltageClassRef,
-    scaleMarkersByCapacityRef,
   } = resources;
   const split = splitMapCollection(
     withCapacityResults(
@@ -47,7 +40,7 @@ export function registerSources(
       requiredCapacityMwRef.current,
     ),
   );
-  map.addSource(sourceIds.node, {
+  addMapSource(map, sourceIds.node, {
     type: "geojson",
     data: split.nodes,
     cluster: true,
@@ -58,12 +51,12 @@ export function registerSources(
       capacity_activation: ["+", ["number", ["get", "capacity_activation"], 0]],
     },
   });
-  map.addSource(sourceIds.line, { type: "geojson", data: split.lines });
-  map.addSource(sourceIds.industrial_site, {
+  addMapSource(map, sourceIds.line, { type: "geojson", data: split.lines });
+  addMapSource(map, sourceIds.industrial_site, {
     type: "geojson",
     data: split.industrialSites,
   });
-  map.addSource(sourceIds.generation_asset, {
+  addMapSource(map, sourceIds.generation_asset, {
     type: "geojson",
     data: split.generationAssets,
     cluster: true,
@@ -83,7 +76,7 @@ export function registerSources(
       ],
     },
   });
-  map.addSource(sourceIds.storage_asset, {
+  addMapSource(map, sourceIds.storage_asset, {
     type: "geojson",
     data: split.storageAssets,
     cluster: true,
@@ -94,11 +87,11 @@ export function registerSources(
       known_mw_count: ["+", ["case", ["has", "net_capacity_mw"], 1, 0]],
     },
   });
-  map.addSource("berlin-capacity-coverage", {
+  addMapSource(map, "berlin-capacity-coverage", {
     type: "geojson",
     data: capacityCoverageRef.current ?? { type: "FeatureCollection", features: [] },
   });
-  map.addSource("power-finder-national-tiles", {
+  addMapSource(map, "power-finder-national-tiles", {
     type: "vector",
     promoteId: "id",
     tiles: [
@@ -109,7 +102,7 @@ export function registerSources(
     // detail is supplied by the bounded viewport GeoJSON source as it arrives.
     maxzoom: 8,
   });
-  map.addSource("power-finder-registry-tiles", {
+  addMapSource(map, "power-finder-registry-tiles", {
     type: "vector",
     tiles: [
       `${window.location.origin}/api/power-finder/tile/{z}/{x}/{y}?content=registry&v=20260926-tech-clusters-v2`,
@@ -132,7 +125,7 @@ export function registerSources(
     globalThis.performance?.mark(`gridpulse-map-${key}-ready`);
     onDataSourceStatusChangeRef.current?.(runtimeSourceStatusRef.current);
   });
-  map.addSource("finder-project-site", {
+  addMapSource(map, "finder-project-site", {
     type: "geojson",
     data: {
       type: "FeatureCollection",
@@ -147,11 +140,11 @@ export function registerSources(
         : [],
     },
   });
-  map.addSource("finder-discovery-locations", {
+  addMapSource(map, "finder-discovery-locations", {
     type: "geojson",
     data: discoveryLocationsRef.current ?? { type: "FeatureCollection", features: [] },
   });
-  map.addSource("rzreg-data-centres", {
+  addMapSource(map, "rzreg-data-centres", {
     type: "geojson",
     data: { type: "FeatureCollection", features: [] },
     cluster: true,

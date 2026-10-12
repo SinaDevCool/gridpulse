@@ -1,14 +1,14 @@
 import { productCapabilities } from "@/config/product-mode";
 import { loadC1Study } from "@/features/power-finder/c1-study";
 import {
-applyPreferredVoltageContext,
-rankCandidatesForLocation,
+  applyPreferredVoltageContext,
+  rankCandidatesForLocation,
 } from "@/features/power-finder/candidate-intelligence";
 import { loadOperatorEvidence } from "@/features/power-finder/operator-evidence";
 import { useEffect } from "react";
-import type { useFinderController } from "./use-finder-controller";
+import type { FinderControllerContract } from "./controller-contract";
 type Context = Pick<
-  ReturnType<typeof useFinderController>,
+  FinderControllerContract,
   | "project"
   | "selected"
   | "setSelected"

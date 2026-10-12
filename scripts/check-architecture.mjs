@@ -31,6 +31,29 @@ function inspect(file) {
   let maximumFunctionLines = 0;
   function visit(node) {
     if (
+      ts.isCallExpression(node) &&
+      node.expression.kind === ts.SyntaxKind.ImportKeyword &&
+      node.arguments.length === 1 &&
+      ts.isStringLiteral(node.arguments[0])
+    ) {
+      const module = node.arguments[0].text;
+      const resolved = ts.resolveModuleName(module, file, compilerOptions, ts.sys).resolvedModule
+        ?.resolvedFileName;
+      if (resolved && !resolved.includes("node_modules")) edges.push(path.resolve(resolved));
+      if (file.startsWith("src/features/") && /(?:\.server|\/server\/)/.test(module))
+        failures.push(`${file}: feature dynamically imports server implementation ${module}`);
+    }
+    if (
+      ts.isTypeReferenceNode(node) &&
+      node.typeName.getText(ast) === "ReturnType" &&
+      node.typeArguments?.some((argument) =>
+        /typeof use[A-Z]/.test(
+          argument.getText(ast),
+        ),
+      )
+    )
+      failures.push(`${file}: contract depends on hook implementation`);
+    if (
       (ts.isFunctionDeclaration(node) ||
         ts.isArrowFunction(node) ||
         ts.isMethodDeclaration(node)) &&
@@ -68,7 +91,7 @@ function inspect(file) {
       if (!file.includes(".test.") && file.startsWith("src/server/") && module === "react")
         failures.push(`${file}: server imports React`);
       if (
-        module.includes(".server") &&
+        /(?:\.server|\/server\/)/.test(module) &&
         /src\/features\//.test(file) &&
         !node.importClause?.isTypeOnly
       )

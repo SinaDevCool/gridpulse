@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { CandidateSite } from "@/lib/assessment-model";
-export function insertPilotMetrics1(
+export function insertPilotMetrics(
   values: readonly [
     readonly ["evidence_completion", number, "percent"],
     readonly ["candidate_sites_compared", number, "sites"],

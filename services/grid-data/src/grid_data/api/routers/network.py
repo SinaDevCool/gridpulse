@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from fastapi import APIRouter, BackgroundTasks, Depends, FastAPI, status
+from fastapi import APIRouter, BackgroundTasks, Depends, status
 
+from grid_data.api.dependencies import ApiDependencies
 from grid_data.api.models import (
     AnalyticsJob,
     C1NetworkStudyRequest,
@@ -23,7 +24,9 @@ from grid_data.api.models import (
 from grid_data.api.submission import JobSubmission
 
 
-def build_router(app: FastAPI, auth_dependency: Callable, submission: JobSubmission) -> APIRouter:
+def build_router(
+    dependencies: ApiDependencies, auth_dependency: Callable, submission: JobSubmission
+) -> APIRouter:
     router = APIRouter()
     dispatch = submission.dispatch
     canonical_job = submission.create
@@ -37,10 +40,10 @@ def build_router(app: FastAPI, auth_dependency: Callable, submission: JobSubmiss
         background_tasks: BackgroundTasks,
         user: UserIdentity = Depends(auth_dependency),
     ) -> JobAccepted:
-        job = app.state.job_store.create(
+        job = dependencies.job_store.create(
             AnalyticsJob(owner_id=user.id, job_type="operator_source_health")
         )
-        dispatch(background_tasks, app.state.executor.execute_operator_source_health, job.id)
+        dispatch(background_tasks, dependencies.execution_for("operator_source_health"), job.id)
         return JobAccepted(job_id=job.id, status=job.status)
 
     @router.post(
@@ -53,14 +56,14 @@ def build_router(app: FastAPI, auth_dependency: Callable, submission: JobSubmiss
         background_tasks: BackgroundTasks,
         user: UserIdentity = Depends(auth_dependency),
     ) -> JobAccepted:
-        job = app.state.job_store.create(
+        job = dependencies.job_store.create(
             AnalyticsJob(
                 owner_id=user.id,
                 job_type="reference_topology",
                 input_payload=request.model_dump(),
             )
         )
-        dispatch(background_tasks, app.state.executor.execute_reference_topology, job.id)
+        dispatch(background_tasks, dependencies.execution_for("reference_topology"), job.id)
         return JobAccepted(job_id=job.id, status=job.status)
 
     @router.post(
@@ -79,7 +82,9 @@ def build_router(app: FastAPI, auth_dependency: Callable, submission: JobSubmiss
             payload=request.model_dump(mode="json"),
         )
         if created:
-            dispatch(background_tasks, app.state.executor.execute_operator_enquiry_package, job.id)
+            dispatch(
+                background_tasks, dependencies.execution_for("operator_enquiry_package"), job.id
+            )
         return JobAccepted(job_id=job.id, status=job.status)
 
     @router.post(
@@ -92,14 +97,14 @@ def build_router(app: FastAPI, auth_dependency: Callable, submission: JobSubmiss
         background_tasks: BackgroundTasks,
         user: UserIdentity = Depends(auth_dependency),
     ) -> JobAccepted:
-        job = app.state.job_store.create(
+        job = dependencies.job_store.create(
             AnalyticsJob(
                 owner_id=user.id,
                 job_type="synthetic_capacity",
                 input_payload=request.model_dump(),
             )
         )
-        dispatch(background_tasks, app.state.executor.execute_synthetic_capacity, job.id)
+        dispatch(background_tasks, dependencies.execution_for("synthetic_capacity"), job.id)
         return JobAccepted(job_id=job.id, status=job.status)
 
     @router.post(
@@ -112,14 +117,14 @@ def build_router(app: FastAPI, auth_dependency: Callable, submission: JobSubmiss
         background_tasks: BackgroundTasks,
         user: UserIdentity = Depends(auth_dependency),
     ) -> JobAccepted:
-        job = app.state.job_store.create(
+        job = dependencies.job_store.create(
             AnalyticsJob(
                 owner_id=user.id,
                 job_type="release_b_network",
                 input_payload=request.model_dump(),
             )
         )
-        dispatch(background_tasks, app.state.executor.execute_release_b_network, job.id)
+        dispatch(background_tasks, dependencies.execution_for("release_b_network"), job.id)
         return JobAccepted(job_id=job.id, status=job.status)
 
     @router.post(
@@ -132,14 +137,14 @@ def build_router(app: FastAPI, auth_dependency: Callable, submission: JobSubmiss
         background_tasks: BackgroundTasks,
         user: UserIdentity = Depends(auth_dependency),
     ) -> JobAccepted:
-        job = app.state.job_store.create(
+        job = dependencies.job_store.create(
             AnalyticsJob(
                 owner_id=user.id,
                 job_type="c1_network_study",
                 input_payload=request.model_dump(),
             )
         )
-        dispatch(background_tasks, app.state.executor.execute_c1_network_study, job.id)
+        dispatch(background_tasks, dependencies.execution_for("c1_network_study"), job.id)
         return JobAccepted(job_id=job.id, status=job.status)
 
     @router.post(
@@ -152,14 +157,14 @@ def build_router(app: FastAPI, auth_dependency: Callable, submission: JobSubmiss
         background_tasks: BackgroundTasks,
         user: UserIdentity = Depends(auth_dependency),
     ) -> JobAccepted:
-        job = app.state.job_store.create(
+        job = dependencies.job_store.create(
             AnalyticsJob(
                 owner_id=user.id,
                 job_type="c2_hourly_capacity",
                 input_payload=request.model_dump(mode="json"),
             )
         )
-        dispatch(background_tasks, app.state.executor.execute_c2_hourly_capacity, job.id)
+        dispatch(background_tasks, dependencies.execution_for("c2_hourly_capacity"), job.id)
         return JobAccepted(job_id=job.id, status=job.status)
 
     @router.post(
@@ -172,14 +177,14 @@ def build_router(app: FastAPI, auth_dependency: Callable, submission: JobSubmiss
         background_tasks: BackgroundTasks,
         user: UserIdentity = Depends(auth_dependency),
     ) -> JobAccepted:
-        job = app.state.job_store.create(
+        job = dependencies.job_store.create(
             AnalyticsJob(
                 owner_id=user.id,
                 job_type="c3_security_flexibility",
                 input_payload=request.model_dump(mode="json"),
             )
         )
-        dispatch(background_tasks, app.state.executor.execute_c3_security_flexibility, job.id)
+        dispatch(background_tasks, dependencies.execution_for("c3_security_flexibility"), job.id)
         return JobAccepted(job_id=job.id, status=job.status)
 
     @router.post(
@@ -192,14 +197,14 @@ def build_router(app: FastAPI, auth_dependency: Callable, submission: JobSubmiss
         background_tasks: BackgroundTasks,
         user: UserIdentity = Depends(auth_dependency),
     ) -> JobAccepted:
-        job = app.state.job_store.create(
+        job = dependencies.job_store.create(
             AnalyticsJob(
                 owner_id=user.id,
                 job_type="c4_reconciliation",
                 input_payload=request.model_dump(mode="json"),
             )
         )
-        dispatch(background_tasks, app.state.executor.execute_c4_reconciliation, job.id)
+        dispatch(background_tasks, dependencies.execution_for("c4_reconciliation"), job.id)
         return JobAccepted(job_id=job.id, status=job.status)
 
     @router.post(
@@ -212,14 +217,14 @@ def build_router(app: FastAPI, auth_dependency: Callable, submission: JobSubmiss
         background_tasks: BackgroundTasks,
         user: UserIdentity = Depends(auth_dependency),
     ) -> JobAccepted:
-        job = app.state.job_store.create(
+        job = dependencies.job_store.create(
             AnalyticsJob(
                 owner_id=user.id,
                 job_type="p0_p4_permutation",
                 input_payload=request.model_dump(mode="json"),
             )
         )
-        dispatch(background_tasks, app.state.executor.execute_p0_p4_permutation, job.id)
+        dispatch(background_tasks, dependencies.execution_for("p0_p4_permutation"), job.id)
         return JobAccepted(job_id=job.id, status=job.status)
 
     @router.post(
@@ -232,14 +237,14 @@ def build_router(app: FastAPI, auth_dependency: Callable, submission: JobSubmiss
         background_tasks: BackgroundTasks,
         user: UserIdentity = Depends(auth_dependency),
     ) -> JobAccepted:
-        job = app.state.job_store.create(
+        job = dependencies.job_store.create(
             AnalyticsJob(
                 owner_id=user.id,
                 job_type="release3_shadow_validation",
                 input_payload=request.model_dump(mode="json"),
             )
         )
-        dispatch(background_tasks, app.state.executor.execute_release3_shadow_validation, job.id)
+        dispatch(background_tasks, dependencies.execution_for("release3_shadow_validation"), job.id)
         return JobAccepted(job_id=job.id, status=job.status)
 
     @router.post(
@@ -252,14 +257,14 @@ def build_router(app: FastAPI, auth_dependency: Callable, submission: JobSubmiss
         background_tasks: BackgroundTasks,
         user: UserIdentity = Depends(auth_dependency),
     ) -> JobAccepted:
-        job = app.state.job_store.create(
+        job = dependencies.job_store.create(
             AnalyticsJob(
                 owner_id=user.id,
                 job_type="graph_guided_study",
                 input_payload=request.model_dump(mode="json"),
             )
         )
-        dispatch(background_tasks, app.state.executor.execute_graph_guided_study, job.id)
+        dispatch(background_tasks, dependencies.execution_for("graph_guided_study"), job.id)
         return JobAccepted(job_id=job.id, status=job.status)
 
     return router

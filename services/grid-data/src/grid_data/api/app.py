@@ -6,13 +6,14 @@ import os
 import sys
 import time
 from collections.abc import Callable
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from grid_data.api.auth import authenticated_user
+from grid_data.api.dependencies import ApiDependencies, UnavailableExecutor
 from grid_data.api.executor import JobExecutor, OperatorHealthExecutor
 from grid_data.api.request_limits import OperationsBodyLimit
 from grid_data.api.routers import facility, health, jobs, network
@@ -49,7 +50,7 @@ def _production_dependencies() -> tuple[JobStore, JobExecutor]:
     service_role_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
     if not supabase_url or not service_role_key:
         store = InMemoryJobStore()
-        return store, _UnavailableExecutor()
+        return store, UnavailableExecutor()
     store = SupabaseJobStore(supabase_url, service_role_key)
     return (
         store,
@@ -59,68 +60,6 @@ def _production_dependencies() -> tuple[JobStore, JobExecutor]:
             service_role_key=service_role_key,
         ),
     )
-
-
-class _UnavailableExecutor:
-    def execute_operator_source_health(self, job_id: UUID) -> None:
-        raise RuntimeError(f"job executor is not configured for {job_id}")
-
-    def execute_reference_topology(self, job_id: UUID) -> None:
-        raise RuntimeError(f"job executor is not configured for {job_id}")
-
-    def execute_facility_plan(self, job_id: UUID) -> None:
-        raise RuntimeError(f"job executor is not configured for {job_id}")
-
-    def execute_fca_interval(self, job_id: UUID) -> None:
-        raise RuntimeError(f"job executor is not configured for {job_id}")
-
-    def execute_facility_uncertainty(self, job_id: UUID) -> None:
-        raise RuntimeError(f"job executor is not configured for {job_id}")
-
-    def execute_market_qualification(self, job_id: UUID) -> None:
-        raise RuntimeError(f"job executor is not configured for {job_id}")
-
-    def execute_rolling_facility_plan(self, job_id: UUID) -> None:
-        raise RuntimeError(f"job executor is not configured for {job_id}")
-
-    def execute_facility_historical_replay(self, job_id: UUID) -> None:
-        raise RuntimeError(f"job executor is not configured for {job_id}")
-
-    def execute_operator_enquiry_package(self, job_id: UUID) -> None:
-        raise RuntimeError(f"job executor is not configured for {job_id}")
-
-    def execute_shadow_verification(self, job_id: UUID) -> None:
-        raise RuntimeError(f"job executor is not configured for {job_id}")
-
-    def execute_capacity_requirement(self, job_id: UUID) -> None:
-        raise RuntimeError(f"job executor is not configured for {job_id}")
-
-    def execute_synthetic_capacity(self, job_id: UUID) -> None:
-        raise RuntimeError(f"job executor is not configured for {job_id}")
-
-    def execute_release_b_network(self, job_id: UUID) -> None:
-        raise RuntimeError(f"job executor is not configured for {job_id}")
-
-    def execute_c1_network_study(self, job_id: UUID) -> None:
-        raise RuntimeError(f"job executor is not configured for {job_id}")
-
-    def execute_c2_hourly_capacity(self, job_id: UUID) -> None:
-        raise RuntimeError(f"job executor is not configured for {job_id}")
-
-    def execute_c3_security_flexibility(self, job_id: UUID) -> None:
-        raise RuntimeError(f"job executor is not configured for {job_id}")
-
-    def execute_c4_reconciliation(self, job_id: UUID) -> None:
-        raise RuntimeError(f"job executor is not configured for {job_id}")
-
-    def execute_p0_p4_permutation(self, job_id: UUID) -> None:
-        raise RuntimeError(f"job executor is not configured for {job_id}")
-
-    def execute_release3_shadow_validation(self, job_id: UUID) -> None:
-        raise RuntimeError(f"job executor is not configured for {job_id}")
-
-    def execute_graph_guided_study(self, job_id: UUID) -> None:
-        raise RuntimeError(f"job executor is not configured for {job_id}")
 
 
 def create_app(
@@ -203,9 +142,10 @@ def create_app(
             content={"detail": "Internal analytics service error"},
         )
 
-    submission = JobSubmission(app.state.job_store, app.state.dispatch_mode)
+    dependencies = ApiDependencies(job_store, executor, app.state.dispatch_mode)
+    submission = JobSubmission(dependencies.job_store, dependencies.dispatch_mode)
     for group in (health, jobs, facility, network):
-        app.include_router(group.build_router(app, auth_dependency, submission))
+        app.include_router(group.build_router(dependencies, auth_dependency, submission))
     return app
 
 

@@ -5,9 +5,8 @@ from pathlib import Path
 
 from grid_data.api.jobs.context import JobContext
 from grid_data.api.models import AnalyticsJob
-from grid_data.network_study import NetworkModelInput, PandapowerProvider
+from grid_data.network_study import NetworkModelInput
 from grid_data.p0_foundation import PhysicsOutcome, ScenarioDefinition
-from grid_data.p0_p4_publish import publish_pipeline_result
 from grid_data.p1_permutation import execute_permutations
 from grid_data.p2_ensemble import summarize_uncertainty
 from grid_data.p3_surrogate import train_surrogates
@@ -24,8 +23,9 @@ def calculate(context: JobContext, job: AnalyticsJob) -> dict:
     train = bool(payload.pop("train_surrogate", False))
     batch_size = int(payload.pop("active_learning_batch_size", 32))
     solver_budget = int(payload.pop("solver_budget", 128))
+    release2_artifact_path = None
     model = NetworkModelInput(**payload)
-    provider = PandapowerProvider()
+    provider = context.network_provider()
     result = execute_permutations(model, scenarios, provider)
     outcomes = [PhysicsOutcome(**item) for item in result["outcomes"]]
     for outcome in outcomes:
@@ -39,6 +39,7 @@ def calculate(context: JobContext, job: AnalyticsJob) -> dict:
             release2_artifact_path = artifact_directory / f"{job.id}.joblib"
 
             def solve_batch(items: list[ScenarioDefinition]) -> list[PhysicsOutcome]:
+                context.checkpoint()
                 solved = execute_permutations(model, items, provider)
                 rows = [PhysicsOutcome(**item) for item in solved["outcomes"]]
                 for row in rows:
@@ -66,14 +67,8 @@ def calculate(context: JobContext, job: AnalyticsJob) -> dict:
                 solver_budget=solver_budget,
             )
     result["public_visibility"] = "private_internal_only"
-    result["ledger_publication"] = publish_pipeline_result(
-        job=job,
-        result=result,
-        scenarios=scenarios,
-        surrogate_registry=result.get("surrogate_registry"),
-        release2=result.get("release2"),
-        artifact_path=release2_artifact_path,
-        supabase_url=context.supabase_url,
-        service_role_key=context.service_role_key,
+    context.checkpoint()
+    result["ledger_publication"] = context.publisher.pipeline(
+        job, result, scenarios, release2_artifact_path
     )
     return result

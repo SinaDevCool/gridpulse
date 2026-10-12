@@ -1,4 +1,4 @@
-import type { ProjectSiteCandidate,Scenario } from "@/lib/assessment-model";
+import type { ProjectSiteCandidate, Scenario } from "@/lib/assessment-model";
 
 export const number = (form: FormData, key: string) => Math.max(0, Number(form.get(key)) || 0);
 

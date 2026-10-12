@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from fastapi import APIRouter, BackgroundTasks, Depends, FastAPI, status
+from fastapi import APIRouter, BackgroundTasks, Depends, status
 
+from grid_data.api.dependencies import ApiDependencies
 from grid_data.api.models import (
     CapacityRequirementRequest,
     FacilityHistoricalReplayRequest,
@@ -20,7 +21,9 @@ from grid_data.api.replan_policy import ReplanPolicyRequest, assess_replan_polic
 from grid_data.api.submission import JobSubmission
 
 
-def build_router(app: FastAPI, auth_dependency: Callable, submission: JobSubmission) -> APIRouter:
+def build_router(
+    dependencies: ApiDependencies, auth_dependency: Callable, submission: JobSubmission
+) -> APIRouter:
     router = APIRouter()
     dispatch = submission.dispatch
     canonical_job = submission.create
@@ -45,7 +48,7 @@ def build_router(app: FastAPI, auth_dependency: Callable, submission: JobSubmiss
             owner_id=user.id, job_type="fca_interval", payload=request.model_dump(mode="json")
         )
         if created:
-            dispatch(background_tasks, app.state.executor.execute_fca_interval, job.id)
+            dispatch(background_tasks, dependencies.execution_for("fca_interval"), job.id)
         return JobAccepted(job_id=job.id, status=job.status)
 
     @router.post(
@@ -62,7 +65,7 @@ def build_router(app: FastAPI, auth_dependency: Callable, submission: JobSubmiss
             owner_id=user.id, job_type="facility_plan", payload=request.model_dump(mode="json")
         )
         if created:
-            dispatch(background_tasks, app.state.executor.execute_facility_plan, job.id)
+            dispatch(background_tasks, dependencies.execution_for("facility_plan"), job.id)
         return JobAccepted(job_id=job.id, status=job.status)
 
     @router.post(
@@ -81,7 +84,7 @@ def build_router(app: FastAPI, auth_dependency: Callable, submission: JobSubmiss
             payload=request.model_dump(mode="json"),
         )
         if created:
-            dispatch(background_tasks, app.state.executor.execute_capacity_requirement, job.id)
+            dispatch(background_tasks, dependencies.execution_for("capacity_requirement"), job.id)
         return JobAccepted(job_id=job.id, status=job.status)
 
     @router.post(
@@ -100,7 +103,7 @@ def build_router(app: FastAPI, auth_dependency: Callable, submission: JobSubmiss
             payload=request.model_dump(mode="json"),
         )
         if created:
-            dispatch(background_tasks, app.state.executor.execute_facility_uncertainty, job.id)
+            dispatch(background_tasks, dependencies.execution_for("facility_uncertainty"), job.id)
         return JobAccepted(job_id=job.id, status=job.status)
 
     @router.post(
@@ -119,7 +122,7 @@ def build_router(app: FastAPI, auth_dependency: Callable, submission: JobSubmiss
             payload=request.model_dump(mode="json"),
         )
         if created:
-            dispatch(background_tasks, app.state.executor.execute_market_qualification, job.id)
+            dispatch(background_tasks, dependencies.execution_for("market_qualification"), job.id)
         return JobAccepted(job_id=job.id, status=job.status)
 
     @router.post(
@@ -138,7 +141,7 @@ def build_router(app: FastAPI, auth_dependency: Callable, submission: JobSubmiss
             payload=request.model_dump(mode="json"),
         )
         if created:
-            dispatch(background_tasks, app.state.executor.execute_rolling_facility_plan, job.id)
+            dispatch(background_tasks, dependencies.execution_for("rolling_facility_plan"), job.id)
         return JobAccepted(job_id=job.id, status=job.status)
 
     @router.post(
@@ -158,7 +161,7 @@ def build_router(app: FastAPI, auth_dependency: Callable, submission: JobSubmiss
         )
         if created:
             dispatch(
-                background_tasks, app.state.executor.execute_facility_historical_replay, job.id
+                background_tasks, dependencies.execution_for("facility_historical_replay"), job.id
             )
         return JobAccepted(job_id=job.id, status=job.status)
 
@@ -178,7 +181,7 @@ def build_router(app: FastAPI, auth_dependency: Callable, submission: JobSubmiss
             payload=request.model_dump(mode="json"),
         )
         if created:
-            dispatch(background_tasks, app.state.executor.execute_shadow_verification, job.id)
+            dispatch(background_tasks, dependencies.execution_for("shadow_verification"), job.id)
         return JobAccepted(job_id=job.id, status=job.status)
 
     return router

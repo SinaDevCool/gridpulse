@@ -1,10 +1,10 @@
-import type { GeoJSONSource,MapLayerMouseEvent,Map as MapLibreMap,Source } from "maplibre-gl";
+import type { GeoJSONSource, MapLayerMouseEvent, Map as MapLibreMap, Source } from "maplibre-gl";
 
 import type {
-PowerFinderCollection,
-PowerFinderFeature,
-PowerFinderKind,
-PowerFinderProperties,
+  PowerFinderCollection,
+  PowerFinderFeature,
+  PowerFinderKind,
+  PowerFinderProperties,
 } from "@/features/power-finder/fixture-data";
 
 import { type VisibleLayerCounts } from "@/components/product/power-finder-map-data";

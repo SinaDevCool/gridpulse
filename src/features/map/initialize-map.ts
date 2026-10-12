@@ -1,4 +1,4 @@
-import { activateDataOnlyBasemap,loadBasemapStyle } from "@/features/power-finder/basemap-config";
+import { activateDataOnlyBasemap, loadBasemapStyle } from "@/features/power-finder/basemap-config";
 import { preloadEnergyIconImages } from "./icon-loader";
 import { registerDataCentreLayers } from "./registerDataCentreLayers";
 import { registerDiscoveryLayers } from "./registerDiscoveryLayers";
@@ -10,8 +10,8 @@ import { registerNationalGridLayers } from "./registerNationalGridLayers";
 import { registerNationalStorageLayers } from "./registerNationalStorageLayers";
 import { registerSelectionLayers } from "./registerSelectionLayers";
 import { registerSources } from "./registerSources";
-import type { useMapResources } from "./use-map-resources";
-export function initializeMap(resources: ReturnType<typeof useMapResources>) {
+import type { MapResources } from "./resource-contract";
+export function initializeMap(resources: MapResources) {
   const {
     containerRef,
     mapRef,
@@ -44,6 +44,7 @@ export function initializeMap(resources: ReturnType<typeof useMapResources>) {
   } = resources;
   if (!containerRef.current || mapRef.current) return;
   let cancelled = false;
+  let disposeInteractions: (() => void) | undefined;
   globalThis.performance?.mark("gridpulse-map-initialise");
   onBasemapStatusChangeRef.current?.("loading");
   const startupDeadline = globalThis.setTimeout(
@@ -127,11 +128,12 @@ export function initializeMap(resources: ReturnType<typeof useMapResources>) {
       registerLocalGridLayers(map, resources, () => cancelled);
       registerLocalAssetLayers(map, resources, () => cancelled);
       registerSelectionLayers(map, resources, () => cancelled);
-      registerInteractions(map, resources, () => cancelled);
+      disposeInteractions = registerInteractions(map, resources, () => cancelled);
     });
   });
   return () => {
     cancelled = true;
+    disposeInteractions?.();
     globalThis.clearTimeout(startupDeadline);
     mapRef.current?.remove();
     mapRef.current = null;

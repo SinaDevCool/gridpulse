@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { operationsScenarioSchema } from "./scenario-engine";
-import { computeWorkloadSchema,workloadSourceSchema } from "./workload-intelligence";
+import { computeWorkloadSchema, workloadSourceSchema } from "./workload-intelligence";
 
 const finite = z.number().finite();
 const metric = z
@@ -202,10 +202,44 @@ export const powerResultSchema = z
 
 export const assuranceResultSchema = z
   .object({
-    quality: z.record(z.unknown()),
-    verification: z.record(z.unknown()).nullable(),
-    compliance: z.record(z.unknown()),
-    economics: z.record(z.unknown()),
+    quality: z.object({
+      completenessPercent: finite.min(0).max(100),
+      freshnessMinutes: finite.nullable(),
+      duplicateCount: finite.int().nonnegative(),
+      staleCount: finite.int().nonnegative(),
+      suspectCount: finite.int().nonnegative(),
+      powerBalanceResidualPercent: finite.nullable(),
+      status: z.enum(["ready", "limited", "scenario_only"]),
+      blockers: z.array(z.string()),
+    }),
+    verification: z
+      .object({
+        requestedReductionMw: finite,
+        deliveredReductionMw: finite,
+        deliveredEnergyMwh: finite,
+        batteryEnergyMwh: finite,
+        reboundEnergyMwh: finite,
+        netDeliveredEnergyMwh: finite,
+        performancePercent: finite,
+        verified: z.boolean(),
+        confidence: z.enum(["high", "medium", "low"]),
+      })
+      .nullable(),
+    compliance: z.object({
+      measuredPue: finite.nullable(),
+      evidenceReady: z.boolean(),
+      missing: z.array(z.string()),
+    }),
+    economics: z.object({
+      available: z.boolean(),
+      reason: z.string(),
+      avoidedEnergyCostEur: finite.nullable(),
+      avoidedCapacityCostEur: finite.nullable(),
+      batteryCostEur: finite.nullable(),
+      workloadCostEur: finite.nullable(),
+      grossValueEur: finite.nullable(),
+      netValueEur: finite.nullable(),
+    }),
     dispatch: z.object({
       authorized: z.boolean(),
       failClosed: z.literal(true),

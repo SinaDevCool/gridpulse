@@ -1,0 +1,20 @@
+[
+  {
+    "status": "running",
+    "attempt_count": 1,
+    "lease_owner": "fixture-worker",
+    "lease_expires_at": "2026-10-12T01:00:00Z",
+    "started_at": "2026-10-12T00:01:00Z"
+  },
+  {
+    "status": "succeeded",
+    "result_payload": { "contract_fixture_only": true },
+    "completed_at": "2026-10-12T00:02:00Z"
+  },
+  {
+    "status": "failed",
+    "error": "Fixture calculation failed",
+    "completed_at": "2026-10-12T00:02:00Z"
+  },
+  { "status": "cancelled", "cancellation_requested": true, "completed_at": "2026-10-12T00:02:00Z" }
+]

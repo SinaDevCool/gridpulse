@@ -1,42 +1,14 @@
+import { addMapLayer } from "./registration";
 import type { Map as MapLibreMap } from "maplibre-gl";
-import { registeredMwLabel,storageAssetFilter } from "./layer-style";
-import type { useMapResources } from "./use-map-resources";
+import { registeredMwLabel, storageAssetFilter } from "./layer-style";
+import type { MapResources } from "./resource-contract";
 export function registerNationalStorageLayers(
   map: MapLibreMap,
-  resources: ReturnType<typeof useMapResources>,
+  resources: Pick<MapResources, "enabledLayersRef" | "assetFilterRef">,
   isCancelled: () => boolean,
 ) {
-  const {
-    containerRef,
-    mapRef,
-    onSelectRef,
-    onViewportChangeRef,
-    collectionRef,
-    projectSiteRef,
-    onSitePlacementRef,
-    onVisibleLayerCountsRef,
-    onDiscoverySelectRef,
-    discoveryLocationsRef,
-    onDataCentreSelectRef,
-    showDataCentresRef,
-    selectedFeatureRef,
-    previewFeatureRef,
-    capacityNodesRef,
-    capacityMetricRef,
-    requiredCapacityMwRef,
-    capacityCoverageRef,
-    basemapModeRef,
-    basemapLayerIdsRef,
-    basemapFallbackActiveRef,
-    onBasemapStatusChangeRef,
-    onDataSourceStatusChangeRef,
-    runtimeSourceStatusRef,
-    enabledLayersRef,
-    assetFilterRef,
-    isolatedVoltageClassRef,
-    scaleMarkersByCapacityRef,
-  } = resources;
-  map.addLayer({
+  const { enabledLayersRef, assetFilterRef } = resources;
+  addMapLayer(map, {
     id: "national-storage-assets",
     type: "circle",
     source: "power-finder-registry-tiles",
@@ -67,7 +39,7 @@ export function registerNationalStorageLayers(
       "circle-stroke-width": 1,
     },
   });
-  map.addLayer({
+  addMapLayer(map, {
     id: "national-storage-technology-icon",
     type: "symbol",
     source: "power-finder-registry-tiles",
@@ -101,7 +73,7 @@ export function registerNationalStorageLayers(
       ],
     },
   });
-  map.addLayer({
+  addMapLayer(map, {
     id: "national-storage-asset-labels",
     type: "symbol",
     source: "power-finder-registry-tiles",

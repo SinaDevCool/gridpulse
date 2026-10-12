@@ -17,11 +17,30 @@ export function operationsPersistenceConfig(
   return url && publicKey ? { url, publicKey, serviceKey: env.SUPABASE_SERVICE_ROLE_KEY } : null;
 }
 
+const evidenceTables = [
+  "operations_facilities",
+  "operations_sources",
+  "operations_source_watermarks",
+  "operations_measurements",
+  "operations_battery_assets",
+  "operations_workloads",
+  "operations_forecasts",
+  "operations_recommendations",
+  "operations_verifications",
+  "operations_data_quality",
+  "operations_operating_agreements",
+  "operations_calculation_runs",
+  "operations_dispatch_approvals",
+] as const;
+export type OperationsEvidenceTable = (typeof evidenceTables)[number];
 export interface OperationsEvidenceReader {
-  readRows(table: string, parameters: string): Promise<Array<Record<string, unknown>>>;
+  readRows(
+    table: OperationsEvidenceTable,
+    parameters: string,
+  ): Promise<Array<Record<string, unknown>>>;
 }
 
-/** User reads always retain the supplied bearer token; privileged writes use a separate method. */
+/** User reads retain the supplied bearer token and never use service-role credentials. */
 export class SupabaseOperationsRepository implements OperationsEvidenceReader {
   constructor(
     private readonly config: OperationsPersistenceConfig,
@@ -35,9 +54,14 @@ export class SupabaseOperationsRepository implements OperationsEvidenceReader {
       signal: AbortSignal.timeout(10_000),
     });
   }
-  async readRows(table: string, parameters: string) {
-    if (!/^operations_[a-z_]+$/.test(table)) throw new Error("Invalid Operations table");
-    const result = await this.transport(`${this.config.url}/rest/v1/${table}?${parameters}`, {
+  async readRows(table: OperationsEvidenceTable, parameters: string) {
+    if (!evidenceTables.includes(table)) throw new Error("Invalid Operations table");
+    const query = new URLSearchParams(parameters);
+    const limit = Number(query.get("limit") ?? 10_000);
+    if (!Number.isInteger(limit) || limit < 1 || limit > 10_000)
+      throw new Error("Invalid Operations row limit");
+    query.set("limit", String(limit));
+    const result = await this.transport(`${this.config.url}/rest/v1/${table}?${query}`, {
       headers: {
         apikey: this.config.publicKey,
         authorization: this.authorization,
@@ -48,6 +72,19 @@ export class SupabaseOperationsRepository implements OperationsEvidenceReader {
     if (!result.ok) throw new Error(`${table}:${result.status}`);
     return z.array(z.record(z.unknown())).parse(await result.json());
   }
+}
+
+export interface OperationsCalculationWriter {
+  recordCalculation(payload: Record<string, unknown>): Promise<Response>;
+}
+
+/** Construct only after verifying user identity and facility access through the reader. */
+export class SupabaseOperationsCalculationWriter implements OperationsCalculationWriter {
+  constructor(
+    private readonly config: Pick<OperationsPersistenceConfig, "url" | "serviceKey">,
+    private readonly transport: typeof fetch = fetch,
+  ) {}
+
   recordCalculation(payload: Record<string, unknown>) {
     if (!this.config.serviceKey)
       throw new Error("Trusted assessment persistence is not configured");

@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-export function insertConnectionScenarios1(
+export function saveConnectionScenarios(
   rows: (
     | {
         site_id: string;

@@ -1,7 +1,7 @@
 import { Search } from "lucide-react";
-import { formatMw } from './page-formatting';
-import type { useFinderController } from "./use-finder-controller";
-export function FinderFilters({ model }: { model: ReturnType<typeof useFinderController> }) {
+import { formatMw } from "./page-formatting";
+import type { FinderControllerContract } from "./controller-contract";
+export function FinderFilters({ model }: { model: FinderControllerContract }) {
   const {
     search,
     project,

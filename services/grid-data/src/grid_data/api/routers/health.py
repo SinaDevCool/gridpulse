@@ -3,8 +3,9 @@ from __future__ import annotations
 import importlib.metadata
 from collections.abc import Callable
 
-from fastapi import APIRouter, Depends, FastAPI, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
+from grid_data.api.dependencies import ApiDependencies
 from grid_data.api.models import (
     HealthReport,
     UserIdentity,
@@ -14,7 +15,9 @@ from grid_data.api.submission import JobSubmission
 from grid_data.api.version import SERVICE_VERSION
 
 
-def build_router(app: FastAPI, auth_dependency: Callable, submission: JobSubmission) -> APIRouter:
+def build_router(
+    dependencies: ApiDependencies, auth_dependency: Callable, submission: JobSubmission
+) -> APIRouter:
     router = APIRouter()
 
     @router.get("/health", response_model=HealthReport)
@@ -27,7 +30,7 @@ def build_router(app: FastAPI, auth_dependency: Callable, submission: JobSubmiss
             status="ok",
             service="gridpulse-analytics",
             version=SERVICE_VERSION,
-            job_store=type(app.state.job_store).__name__,
+            job_store=type(dependencies.job_store).__name__,
             grid_core_version=importlib.metadata.version("gridpulse-grid-core"),
             capacity_engine_version=engine_version,
             canonical_job_schemas=[
@@ -53,12 +56,12 @@ def build_router(app: FastAPI, auth_dependency: Callable, submission: JobSubmiss
             engine_ready = engine_version.startswith("0.2.")
         except (ImportError, importlib.metadata.PackageNotFoundError):
             engine_ready = False
-        durable = isinstance(app.state.job_store, SupabaseJobStore)
+        durable = isinstance(dependencies.job_store, SupabaseJobStore)
         return {
             "durable_store_configured": durable,
-            "dispatch_mode": app.state.dispatch_mode,
+            "dispatch_mode": dependencies.dispatch_mode,
             "canonical_engine_ready": engine_ready,
-            "deployment_ready": durable and engine_ready and app.state.dispatch_mode == "worker",
+            "deployment_ready": durable and engine_ready and dependencies.dispatch_mode == "worker",
             "live_facility_connected": False,
             "automatic_dispatch_authorized": False,
             "note": "Configuration check only. Database, worker liveness and facility evidence need separate operational probes.",

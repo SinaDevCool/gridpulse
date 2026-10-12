@@ -1,8 +1,8 @@
 import { mapIsolationSearchPatch } from "@/features/map/map-url-state";
 import { type PowerFinderKind } from "@/features/power-finder/fixture-data";
-import { kindLabels } from './page-formatting';
-import type { useFinderController } from "./use-finder-controller";
-export function FinderLayersMenu({ model }: { model: ReturnType<typeof useFinderController> }) {
+import { kindLabels } from "./page-formatting";
+import type { FinderControllerContract } from "./controller-contract";
+export function FinderLayersMenu({ model }: { model: FinderControllerContract }) {
   const {
     selected,
     setSelected,

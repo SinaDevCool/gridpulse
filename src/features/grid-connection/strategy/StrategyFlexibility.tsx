@@ -1,10 +1,6 @@
-import { Info,ShieldAlert,Zap } from "lucide-react";
-import type { useStrategyController } from "./use-strategy-controller";
-export function StrategyFlexibility({
-  model,
-}: {
-  model: ReturnType<typeof useStrategyController>;
-}) {
+import { Info, ShieldAlert, Zap } from "lucide-react";
+import type { StrategyControllerContract } from "./controller-contract";
+export function StrategyFlexibility({ model }: { model: StrategyControllerContract }) {
   const {
     busy,
     intervalResult,

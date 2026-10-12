@@ -1,8 +1,8 @@
-import { Check,MapPin,ShieldAlert } from "lucide-react";
+import { Check, MapPin, ShieldAlert } from "lucide-react";
 import { assessCandidateDimensions } from "../site-comparison";
 import { candidateMaturitySummary } from "./presentation";
-import type { useStrategyController } from "./use-strategy-controller";
-export function StrategyScreening({ model }: { model: ReturnType<typeof useStrategyController> }) {
+import type { StrategyControllerContract } from "./controller-contract";
+export function StrategyScreening({ model }: { model: StrategyControllerContract }) {
   const { candidateBusy, input, candidates, maturity, operator, addCandidate, site, profiles } =
     model;
   return (

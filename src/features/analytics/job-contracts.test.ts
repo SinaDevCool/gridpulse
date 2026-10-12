@@ -6,6 +6,16 @@ const fixture = JSON.parse(
   readFileSync(new URL("../../../tests/contracts/analytics-job.json", import.meta.url), "utf8"),
 );
 describe("shared Python and browser job contract", () => {
+  it("accepts the shared running, failed, cancelled and successful metadata variants", () => {
+    const variants = JSON.parse(
+      readFileSync(
+        new URL("../../../tests/contracts/analytics-job-lifecycle.json", import.meta.url),
+        "utf8",
+      ),
+    );
+    for (const variant of variants)
+      expect(analyticsJobSchema.parse({ ...fixture, ...variant }).status).toBe(variant.status);
+  });
   it("accepts the full shared fixture and its deliberate summary projection", () => {
     expect(analyticsJobSchema.parse(fixture).status).toBe("queued");
     expect(analyticsJobSummarySchema.parse(fixture)).not.toHaveProperty("owner_id");

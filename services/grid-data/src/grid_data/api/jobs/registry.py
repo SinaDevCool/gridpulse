@@ -1,4 +1,13 @@
 from importlib import import_module
+from typing import Protocol, cast
+
+from grid_data.api.jobs.context import JobContext
+from grid_data.api.models import AnalyticsJob
+
+
+class CalculationHandler(Protocol):
+    def __call__(self, context: JobContext, job: AnalyticsJob) -> dict: ...
+
 
 JOB_TYPES = frozenset(
     [
@@ -26,7 +35,10 @@ JOB_TYPES = frozenset(
 )
 
 
-def calculation_for(job_type: str):
+def calculation_for(job_type: str) -> CalculationHandler:
     if job_type not in JOB_TYPES:
         raise ValueError(f"Unsupported analytics job type: {job_type}")
-    return import_module(f"grid_data.api.jobs.handlers.{job_type}").calculate
+    handler = import_module(f"grid_data.api.jobs.handlers.{job_type}").calculate
+    if not callable(handler):
+        raise TypeError(f"Invalid calculation handler: {job_type}")
+    return cast(CalculationHandler, handler)

@@ -1,41 +1,16 @@
+import { addMapLayer, addMapSource } from "./registration";
 import type { Map as MapLibreMap } from "maplibre-gl";
-import type { useMapResources } from "./use-map-resources";
+import type { MapResources } from "./resource-contract";
 export function registerDiscoveryLayers(
   map: MapLibreMap,
-  resources: ReturnType<typeof useMapResources>,
+  resources: Pick<
+    MapResources,
+    "onDiscoverySelectRef" | "selectedFeatureRef" | "previewFeatureRef"
+  >,
   isCancelled: () => boolean,
 ) {
-  const {
-    containerRef,
-    mapRef,
-    onSelectRef,
-    onViewportChangeRef,
-    collectionRef,
-    projectSiteRef,
-    onSitePlacementRef,
-    onVisibleLayerCountsRef,
-    onDiscoverySelectRef,
-    discoveryLocationsRef,
-    onDataCentreSelectRef,
-    showDataCentresRef,
-    selectedFeatureRef,
-    previewFeatureRef,
-    capacityNodesRef,
-    capacityMetricRef,
-    requiredCapacityMwRef,
-    capacityCoverageRef,
-    basemapModeRef,
-    basemapLayerIdsRef,
-    basemapFallbackActiveRef,
-    onBasemapStatusChangeRef,
-    onDataSourceStatusChangeRef,
-    runtimeSourceStatusRef,
-    enabledLayersRef,
-    assetFilterRef,
-    isolatedVoltageClassRef,
-    scaleMarkersByCapacityRef,
-  } = resources;
-  map.addLayer({
+  const { onDiscoverySelectRef, selectedFeatureRef, previewFeatureRef } = resources;
+  addMapLayer(map, {
     id: "finder-discovery-halos",
     type: "circle",
     source: "finder-discovery-locations",
@@ -47,7 +22,7 @@ export function registerDiscoveryLayers(
       "circle-stroke-width": 4,
     },
   });
-  map.addLayer({
+  addMapLayer(map, {
     id: "finder-discovery-locations",
     type: "circle",
     source: "finder-discovery-locations",
@@ -59,7 +34,7 @@ export function registerDiscoveryLayers(
       "circle-stroke-width": 3,
     },
   });
-  map.addLayer({
+  addMapLayer(map, {
     id: "finder-discovery-labels",
     type: "symbol",
     source: "finder-discovery-locations",
@@ -76,21 +51,21 @@ export function registerDiscoveryLayers(
     if (id) onDiscoverySelectRef.current?.(String(id));
   });
   const highlighted = previewFeatureRef.current ?? selectedFeatureRef.current;
-  map.addSource("finder-selected-candidate", {
+  addMapSource(map, "finder-selected-candidate", {
     type: "geojson",
     data: {
       type: "FeatureCollection",
       features: highlighted?.geometry.type === "Point" ? [highlighted] : [],
     },
   });
-  map.addLayer({
+  addMapLayer(map, {
     id: "berlin-capacity-coverage-fill",
     type: "fill",
     source: "berlin-capacity-coverage",
     layout: { visibility: "none" },
     paint: { "fill-color": "#38bdf8", "fill-opacity": 0.055 },
   });
-  map.addLayer({
+  addMapLayer(map, {
     id: "berlin-capacity-coverage-line",
     type: "line",
     source: "berlin-capacity-coverage",
@@ -102,7 +77,7 @@ export function registerDiscoveryLayers(
       "line-opacity": 0.9,
     },
   });
-  map.addLayer({
+  addMapLayer(map, {
     id: "finder-project-site",
     type: "circle",
     source: "finder-project-site",

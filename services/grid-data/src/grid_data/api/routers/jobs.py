@@ -3,8 +3,9 @@ from __future__ import annotations
 from collections.abc import Callable
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, FastAPI, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
+from grid_data.api.dependencies import ApiDependencies
 from grid_data.api.models import (
     AnalyticsJob,
     UserIdentity,
@@ -12,7 +13,9 @@ from grid_data.api.models import (
 from grid_data.api.submission import JobSubmission
 
 
-def build_router(app: FastAPI, auth_dependency: Callable, submission: JobSubmission) -> APIRouter:
+def build_router(
+    dependencies: ApiDependencies, auth_dependency: Callable, submission: JobSubmission
+) -> APIRouter:
     router = APIRouter()
 
     @router.get("/v1/jobs", response_model=list[AnalyticsJob])
@@ -20,14 +23,14 @@ def build_router(app: FastAPI, auth_dependency: Callable, submission: JobSubmiss
         limit: int = 100,
         user: UserIdentity = Depends(auth_dependency),
     ) -> list[AnalyticsJob]:
-        return app.state.job_store.list_for_owner(user.id, min(max(limit, 1), 200))
+        return dependencies.job_store.list_for_owner(user.id, min(max(limit, 1), 200))
 
     @router.get("/v1/jobs/{job_id}", response_model=AnalyticsJob)
     def get_job(
         job_id: UUID,
         user: UserIdentity = Depends(auth_dependency),
     ) -> AnalyticsJob:
-        job = app.state.job_store.get(job_id, user.id)
+        job = dependencies.job_store.get(job_id, user.id)
         if not job:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
         return job
@@ -37,7 +40,7 @@ def build_router(app: FastAPI, auth_dependency: Callable, submission: JobSubmiss
         job_id: UUID,
         user: UserIdentity = Depends(auth_dependency),
     ) -> AnalyticsJob:
-        job = app.state.job_store.request_cancel(job_id, user.id)
+        job = dependencies.job_store.request_cancel(job_id, user.id)
         if not job:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
         return job

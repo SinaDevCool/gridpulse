@@ -1,7 +1,7 @@
-import { ArrowRight, FileText } from "lucide-react";
-import { Link } from "@tanstack/react-router";
 import type { AnonymousSiteSummary } from "@/features/anonymous-workspace/portfolio-projection";
 import type { buildPortfolioIntelligence } from "@/features/grid-connection/portfolio-intelligence";
+import { Link } from "@tanstack/react-router";
+import { ArrowRight, FileText } from "lucide-react";
 type PortfolioIntelligence = ReturnType<typeof buildPortfolioIntelligence>;
 
 const number = new Intl.NumberFormat("en-GB", { maximumFractionDigits: 0 });

@@ -1,21 +1,26 @@
 import { toast } from "sonner";
-import * as strategyQueries from "./repository-command-preferScenario";
-import type { useStrategyController } from "./use-strategy-controller";
-type Context = Pick<ReturnType<typeof useStrategyController>, "site" | "refresh" | "setBusy">;
-export async function execute(context: Context, scenarioId: string): Promise<unknown> {
+import { preferredStrategyRepository } from "./repository-command-preferScenario";
+import { preferStrategy } from "./prefer-strategy";
+import type { StrategyControllerContract } from "./controller-contract";
+type Context = Pick<StrategyControllerContract, "site" | "refresh" | "setBusy">;
+export async function execute(context: Context, scenarioId: string): Promise<void> {
   const { site, refresh, setBusy } = context;
   const rationale = window.prompt("Why is this the preferred connection strategy?");
   if (!rationale?.trim()) return;
   setBusy(true);
-  const clear = await strategyQueries.updateConnectionScenarios1(site);
-  const select = clear.error
-    ? clear
-    : await strategyQueries.updateConnectionScenarios2(rationale, scenarioId);
-  setBusy(false);
-  if (select.error) toast.error(select.error.message);
-  else {
-    toast.success("Preferred strategy recorded");
-    await refresh();
+  try {
+    const outcome = await preferStrategy(preferredStrategyRepository, {
+      siteId: site.id,
+      scenarioId,
+      rationale,
+    });
+    if (!outcome.ok) toast.error(outcome.message);
+    else {
+      toast.success("Preferred strategy recorded");
+      await refresh();
+    }
+  } finally {
+    setBusy(false);
   }
   return;
 }

@@ -524,8 +524,9 @@ test("generation preset exposes governed capacity controls", async ({ page }) =>
   await expect(registryControls.or(unavailableState)).toHaveCount(1);
   if ((await registryControls.count()) > 0) {
     await page.getByRole("button", { name: "Show map legend" }).click();
-    await expect(page.getByLabel("Maximum", { exact: true })).toHaveCount(1);
-    await page.getByLabel("Maximum", { exact: true }).selectOption("100");
+    const storageMaximum = page.getByRole("combobox", { name: "Maximum", exact: true });
+    await expect(storageMaximum).toBeVisible();
+    await storageMaximum.selectOption("100");
     await expect(page).toHaveURL(/storageMaxMw=100/);
   } else {
     await expect(unavailableState).toHaveCount(1);

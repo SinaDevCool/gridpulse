@@ -1,11 +1,11 @@
 import {
-loadBerlinSyntheticCapacity,
-loadCalculatedCapacityViewport,
+  loadBerlinSyntheticCapacity,
+  loadCalculatedCapacityViewport,
 } from "@/features/power-finder/calculated-capacity";
 import { useEffect } from "react";
-import type { useFinderController } from "./use-finder-controller";
+import type { FinderControllerContract } from "./controller-contract";
 type Context = Pick<
-  ReturnType<typeof useFinderController>,
+  FinderControllerContract,
   | "search"
   | "collection"
   | "project"

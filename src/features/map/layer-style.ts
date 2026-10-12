@@ -1,4 +1,4 @@
-import type { ExpressionSpecification,Map as MapLibreMap } from "maplibre-gl";
+import type { ExpressionSpecification, Map as MapLibreMap } from "maplibre-gl";
 
 export const sourceIds = {
   node: "power-finder-nodes",

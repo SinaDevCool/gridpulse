@@ -1,16 +1,12 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { CandidateSite } from "@/lib/assessment-model";
-export function updateConnectionScenarios1(site: CandidateSite) {
-  return supabase
-    .from("connection_scenarios")
-    .update({ selection_status: "candidate" })
-    .eq("site_id", site.id)
-    .eq("selection_status", "preferred");
-}
-
-export function updateConnectionScenarios2(rationale: string, scenarioId: string) {
-  return supabase
-    .from("connection_scenarios")
-    .update({ selection_status: "preferred", selection_rationale: rationale.trim() })
-    .eq("id", scenarioId);
-}
+import type { PreferredStrategyRepository } from "./prefer-strategy";
+export const preferredStrategyRepository: PreferredStrategyRepository = {
+  async selectPreferred(siteId, scenarioId, rationale) {
+    const { error } = await supabase.rpc("gridpulse_prefer_strategy", {
+      p_site_id: siteId,
+      p_scenario_id: scenarioId,
+      p_rationale: rationale,
+    });
+    if (error) throw new Error(error.message);
+  },
+};

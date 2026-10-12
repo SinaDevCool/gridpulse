@@ -1,11 +1,11 @@
 import { defaultFinderProject } from "@/features/power-finder/finder-project";
 import { Link } from "@tanstack/react-router";
-import { BookmarkPlus,MapPin,MapPinned } from "lucide-react";
+import { BookmarkPlus, MapPin, MapPinned } from "lucide-react";
 import { FinderDiscoveryIntro } from "./FinderDiscoveryIntro";
 import { FinderProjectEditor } from "./FinderProjectEditor";
-import { formatMw } from './page-formatting';
-import type { useFinderController } from "./use-finder-controller";
-export function FinderRailHeader({ model }: { model: ReturnType<typeof useFinderController> }) {
+import { formatMw } from "./page-formatting";
+import type { FinderControllerContract } from "./controller-contract";
+export function FinderRailHeader({ model }: { model: FinderControllerContract }) {
   const {
     navigate,
     search,

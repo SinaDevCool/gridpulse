@@ -2,9 +2,9 @@ import { opportunityNode } from "@/features/power-finder/candidate-intelligence"
 import { classifyCapacityOpportunity } from "@/features/power-finder/capacity-opportunity";
 import { type PowerFinderFeature } from "@/features/power-finder/fixture-data";
 import { formatOperatorNames } from "@/features/power-finder/operator-normalization";
-import { distanceFormatter,formatScore,type CandidateSort } from './page-formatting';
-import type { useFinderController } from "./use-finder-controller";
-export function FinderCandidates({ model }: { model: ReturnType<typeof useFinderController> }) {
+import { distanceFormatter, formatScore, type CandidateSort } from "./page-formatting";
+import type { FinderControllerContract } from "./controller-contract";
+export function FinderCandidates({ model }: { model: FinderControllerContract }) {
   const {
     collection,
     project,

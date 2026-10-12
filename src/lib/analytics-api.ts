@@ -1,34 +1,35 @@
 import {
-capacityRequirementRequestSchema,
-facilityHistoricalReplayRequestSchema,
-facilityPlanRequestSchema,
-facilityUncertaintyRequestSchema,
-fcaIntervalRequestSchema,
-fcaProfileRequestSchema,
-marketQualificationRequestSchema,
-operatorEnquiryPackageRequestSchema,
-rollingFacilityPlanRequestSchema,
-shadowVerificationRequestSchema,
-type CapacityRequirementRequest,
-type FacilityHistoricalReplayRequest,
-type FacilityPlanRequest,
-type FacilityUncertaintyRequest,
-type FcaIntervalRequest,
-type FcaProfileRequest,
-type MarketQualificationRequest,
-type OperatorEnquiryPackageRequest,
-type RollingFacilityPlanRequest,
-type ShadowVerificationRequest,
+  capacityRequirementRequestSchema,
+  facilityHistoricalReplayRequestSchema,
+  facilityPlanRequestSchema,
+  facilityUncertaintyRequestSchema,
+  fcaIntervalRequestSchema,
+  fcaProfileRequestSchema,
+  marketQualificationRequestSchema,
+  operatorEnquiryPackageRequestSchema,
+  rollingFacilityPlanRequestSchema,
+  shadowVerificationRequestSchema,
+  type CapacityRequirementRequest,
+  type FacilityHistoricalReplayRequest,
+  type FacilityPlanRequest,
+  type FacilityUncertaintyRequest,
+  type FcaIntervalRequest,
+  type FcaProfileRequest,
+  type MarketQualificationRequest,
+  type OperatorEnquiryPackageRequest,
+  type RollingFacilityPlanRequest,
+  type ShadowVerificationRequest,
 } from "../features/analytics/contracts";
 import {
-analyticsJobSchema,
-jobAcceptedSchema,
-type AnalyticsJob,
-type JobAccepted,
+  analyticsJobSchema,
+  jobAcceptedSchema,
+  type AnalyticsJob,
+  type JobAccepted,
 } from "../features/analytics/job-contracts";
 import { supabase } from "../integrations/supabase/client";
+import { pollDelay } from "../features/analytics/poll-delay";
 
-export { type AnalyticsJob,type AnalyticsJobStatus } from "../features/analytics/job-contracts";
+export { type AnalyticsJob, type AnalyticsJobStatus } from "../features/analytics/job-contracts";
 
 export type GraphGuidedStudyRequest = {
   network_model: Record<string, unknown>;
@@ -54,7 +55,9 @@ async function authenticatedRequest(path: string, init?: RequestInit): Promise<u
 
   const response = await fetch(`${analyticsBaseUrl()}${path}`, {
     ...init,
-    signal: init?.signal ?? AbortSignal.timeout(30_000),
+    signal: init?.signal
+      ? AbortSignal.any([init.signal, AbortSignal.timeout(30_000)])
+      : AbortSignal.timeout(30_000),
     headers: {
       authorization: `Bearer ${session.access_token}`,
       "content-type": "application/json",
@@ -91,11 +94,15 @@ export function startFacilityPlan(input: FacilityPlanRequest): Promise<JobAccept
   });
 }
 
-export function startFcaInterval(input: FcaIntervalRequest): Promise<JobAccepted> {
+export function startFcaInterval(
+  input: FcaIntervalRequest,
+  signal?: AbortSignal,
+): Promise<JobAccepted> {
   const payload = fcaIntervalRequestSchema.parse(input);
   return acceptedRequest("/v1/jobs/fca-interval", {
     method: "POST",
     body: JSON.stringify(payload),
+    signal,
   });
 }
 
@@ -171,19 +178,21 @@ export async function waitForAnalyticsJob(
   jobId: string,
   onUpdate?: (job: AnalyticsJob) => void,
   intervalMs = 1500,
+  signal?: AbortSignal,
 ): Promise<AnalyticsJob> {
   for (let attempt = 0; attempt < 200; attempt += 1) {
-    const job = await loadAnalyticsJob(jobId);
+    signal?.throwIfAborted();
+    const job = await loadAnalyticsJob(jobId, signal);
     onUpdate?.(job);
     if (["succeeded", "failed", "cancelled"].includes(job.status)) return job;
-    await new Promise((resolve) => setTimeout(resolve, intervalMs));
+    await pollDelay(intervalMs, signal);
   }
   throw new Error("Analytics job polling timed out");
 }
 
-export async function loadAnalyticsJob(jobId: string): Promise<AnalyticsJob> {
+export async function loadAnalyticsJob(jobId: string, signal?: AbortSignal): Promise<AnalyticsJob> {
   return analyticsJobSchema.parse(
-    await authenticatedRequest(`/v1/jobs/${encodeURIComponent(jobId)}`),
+    await authenticatedRequest(`/v1/jobs/${encodeURIComponent(jobId)}`, { signal }),
   );
 }
 

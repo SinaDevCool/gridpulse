@@ -1,48 +1,19 @@
+import { addMapLayer } from "./registration";
 import type { Map as MapLibreMap } from "maplibre-gl";
 import {
-generationClusterColour,
-localGenerationColour,
-registeredCapacityRadius,
-registeredClusterRadius,
-sourceIds,
+  generationClusterColour,
+  localGenerationColour,
+  registeredCapacityRadius,
+  registeredClusterRadius,
+  sourceIds,
 } from "./layer-style";
-import type { useMapResources } from "./use-map-resources";
+import type { MapResources } from "./resource-contract";
 export function registerLocalAssetLayers(
   map: MapLibreMap,
-  resources: ReturnType<typeof useMapResources>,
+  resources: Pick<MapResources, never>,
   isCancelled: () => boolean,
 ) {
-  const {
-    containerRef,
-    mapRef,
-    onSelectRef,
-    onViewportChangeRef,
-    collectionRef,
-    projectSiteRef,
-    onSitePlacementRef,
-    onVisibleLayerCountsRef,
-    onDiscoverySelectRef,
-    discoveryLocationsRef,
-    onDataCentreSelectRef,
-    showDataCentresRef,
-    selectedFeatureRef,
-    previewFeatureRef,
-    capacityNodesRef,
-    capacityMetricRef,
-    requiredCapacityMwRef,
-    capacityCoverageRef,
-    basemapModeRef,
-    basemapLayerIdsRef,
-    basemapFallbackActiveRef,
-    onBasemapStatusChangeRef,
-    onDataSourceStatusChangeRef,
-    runtimeSourceStatusRef,
-    enabledLayersRef,
-    assetFilterRef,
-    isolatedVoltageClassRef,
-    scaleMarkersByCapacityRef,
-  } = resources;
-  map.addLayer({
+  addMapLayer(map, {
     id: "generation-clusters",
     type: "circle",
     source: sourceIds.generation_asset,
@@ -55,7 +26,7 @@ export function registerLocalAssetLayers(
       "circle-stroke-width": 2,
     },
   });
-  map.addLayer({
+  addMapLayer(map, {
     id: "generation-cluster-count",
     type: "symbol",
     source: sourceIds.generation_asset,
@@ -82,7 +53,7 @@ export function registerLocalAssetLayers(
       "text-halo-width": 1,
     },
   });
-  map.addLayer({
+  addMapLayer(map, {
     id: "generation-assets",
     type: "circle",
     source: sourceIds.generation_asset,
@@ -95,7 +66,7 @@ export function registerLocalAssetLayers(
       "circle-stroke-width": 1,
     },
   });
-  map.addLayer({
+  addMapLayer(map, {
     id: "storage-clusters",
     type: "circle",
     source: sourceIds.storage_asset,
@@ -108,7 +79,7 @@ export function registerLocalAssetLayers(
       "circle-stroke-width": 2,
     },
   });
-  map.addLayer({
+  addMapLayer(map, {
     id: "storage-cluster-count",
     type: "symbol",
     source: sourceIds.storage_asset,
@@ -131,7 +102,7 @@ export function registerLocalAssetLayers(
     filter: ["has", "point_count"],
     paint: { "text-color": "#2e1065" },
   });
-  map.addLayer({
+  addMapLayer(map, {
     id: "storage-assets",
     type: "circle",
     source: sourceIds.storage_asset,

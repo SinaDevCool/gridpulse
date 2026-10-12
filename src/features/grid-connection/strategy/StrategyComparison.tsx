@@ -1,7 +1,7 @@
 import { Info } from "lucide-react";
 import { strategyPathSummary } from "./presentation";
-import type { useStrategyController } from "./use-strategy-controller";
-export function StrategyComparison({ model }: { model: ReturnType<typeof useStrategyController> }) {
+import type { StrategyControllerContract } from "./controller-contract";
+export function StrategyComparison({ model }: { model: StrategyControllerContract }) {
   const {
     busy,
     activeScenarios,

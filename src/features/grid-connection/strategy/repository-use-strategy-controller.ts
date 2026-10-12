@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { CandidateSite } from "@/lib/assessment-model";
-export function selectProjectSiteCandidates1(site: CandidateSite) {
+export function listSiteCandidates(site: CandidateSite) {
   return supabase
     .from("project_site_candidates")
     .select("*")
@@ -8,7 +8,7 @@ export function selectProjectSiteCandidates1(site: CandidateSite) {
     .order("created_at", { ascending: true });
 }
 
-export function selectOperatorPackages2(site: CandidateSite) {
+export function listOperatorPackages(site: CandidateSite) {
   return supabase
     .from("operator_packages")
     .select("*")
@@ -16,7 +16,7 @@ export function selectOperatorPackages2(site: CandidateSite) {
     .order("version", { ascending: false });
 }
 
-export function selectPilotMetrics3(site: CandidateSite) {
+export function listPilotMetrics(site: CandidateSite) {
   return supabase
     .from("pilot_metrics")
     .select("*")
@@ -24,7 +24,7 @@ export function selectPilotMetrics3(site: CandidateSite) {
     .order("observed_at", { ascending: false });
 }
 
-export function selectOperatorEngagements4(site: CandidateSite) {
+export function readOperatorEngagement(site: CandidateSite) {
   return supabase
     .from("operator_engagements")
     .select("estimated_connection_cost_eur,indicated_connection_date")

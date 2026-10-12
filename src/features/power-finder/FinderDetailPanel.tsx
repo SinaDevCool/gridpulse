@@ -1,29 +1,22 @@
 import { productCapabilities } from "@/config/product-mode";
 import { capacityMetricLabels } from "@/features/power-finder/calculated-capacity";
 import {
-addComparisonCandidate,
-removeComparisonCandidate,
-serializeComparison,
+  addComparisonCandidate,
+  removeComparisonCandidate,
+  serializeComparison,
 } from "@/features/power-finder/candidate-comparison";
 import { featureSummary } from "@/features/power-finder/fixture-data";
 import { formatOperatorNames } from "@/features/power-finder/operator-normalization";
 import { savePowerFinderCandidate } from "@/features/power-finder/shortlist";
 import { Link } from "@tanstack/react-router";
-import {
-BookmarkPlus,
-CheckCircle2,
-ExternalLink,
-GitCompareArrows,
-MapPin,
-Network,
-ShieldCheck,
-Zap,
-} from "lucide-react";
+import { BookmarkPlus, GitCompareArrows, MapPin, Network, ShieldCheck, Zap } from "lucide-react";
 import { Suspense } from "react";
-import { distanceFormatter,kindLabels } from './page-formatting';
-import { PowerFinderCandidateDetail } from './page-support';
-import type { useFinderController } from "./use-finder-controller";
-export function FinderDetailPanel({ model }: { model: ReturnType<typeof useFinderController> }) {
+import type { FinderControllerContract } from "./controller-contract";
+import { FinderOperatorEvidence } from "./FinderOperatorEvidence";
+import { FinderSecurityStudy } from "./FinderSecurityStudy";
+import { distanceFormatter, kindLabels } from "./page-formatting";
+import { PowerFinderCandidateDetail } from "./page-support";
+export function FinderDetailPanel({ model }: { model: FinderControllerContract }) {
   const {
     navigate,
     search,
@@ -390,40 +383,7 @@ export function FinderDetailPanel({ model }: { model: ReturnType<typeof useFinde
               </Suspense>
             )}
             {selected.properties.kind === "node" && c1Study?.c3?.available && (
-              <details className="candidate-advanced-study">
-                <summary>Security &amp; flexibility study</summary>
-                <section className="finder-panel-card finder-panel-card--study">
-                  <p>This result is linked to an operator-reviewed model for the selected node.</p>
-                  <dl>
-                    <div>
-                      <dt>Firm import</dt>
-                      <dd>
-                        {c1Study.c3.security?.import_capacity?.values?.firm_import_capacity_mw ??
-                          "—"}{" "}
-                        MW
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>Firm export</dt>
-                      <dd>
-                        {c1Study.c3.security?.export_capacity?.values?.firm_export_capacity_mw ??
-                          "—"}{" "}
-                        MW
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>Contingencies assessed</dt>
-                      <dd>{c1Study.c3.security?.contingency_coverage?.assessed_count ?? 0}</dd>
-                    </div>
-                    <div>
-                      <dt>Constrained hours</dt>
-                      <dd>
-                        {c1Study.c3.flexibilitySummary?.constrained_hours?.toLocaleString() ?? "—"}
-                      </dd>
-                    </div>
-                  </dl>
-                </section>
-              </details>
+              <FinderSecurityStudy model={model} />
             )}
             {productCapabilities.workspace && selected.properties.kind === "node" && (
               <details className="candidate-advanced-study">
@@ -431,54 +391,7 @@ export function FinderDetailPanel({ model }: { model: ReturnType<typeof useFinde
                   <ShieldCheck aria-hidden="true" />
                   Operator evidence
                 </summary>
-                <section
-                  className="power-finder-operator-evidence"
-                  aria-label="Official operator evidence"
-                >
-                  <p>
-                    {operatorEvidence?.match_state === "accepted_node_evidence"
-                      ? "Reviewed node match"
-                      : operatorEvidence?.match_state === "operator_context_only"
-                        ? "Operator-level context"
-                        : "No reviewed node evidence"}
-                  </p>
-                  {operatorEvidenceState === "loading" && <p>Checking accepted evidence…</p>}
-                  {operatorEvidenceState === "unavailable" && (
-                    <p>Evidence service is temporarily unavailable.</p>
-                  )}
-                  {operatorEvidenceState === "idle" && dataMode === "published_artifact" && (
-                    <p>Operator source inspection is not included in the public Finder.</p>
-                  )}
-                  {operatorEvidenceState === "ready" &&
-                    (operatorEvidence?.items.length ? (
-                      <ul>
-                        {operatorEvidence.items.map((item) => (
-                          <li key={`${item.scope}-${item.url}`}>
-                            <span>
-                              {item.scope === "node_match" && (
-                                <CheckCircle2 aria-label="Reviewed node match" />
-                              )}
-                              <a href={item.url} target="_blank" rel="noreferrer">
-                                {item.title} <ExternalLink aria-hidden="true" />
-                              </a>
-                            </span>
-                            <small>
-                              {item.scope === "node_match" ? item.rationale : item.legal_boundary}
-                            </small>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p>
-                        No official publication is linked to this mapped node. Capacity remains
-                        unknown until the responsible operator responds.
-                      </p>
-                    ))}
-                  <footer>
-                    Operator-level pages explain process or network context. They do not establish
-                    capacity at this node.
-                  </footer>
-                </section>
+                <FinderOperatorEvidence model={model} />
               </details>
             )}
             {productCapabilities.workspace && coordinates && !selectedOpportunity && (

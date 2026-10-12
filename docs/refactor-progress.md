@@ -83,3 +83,70 @@ classes and protocols are used where stateful execution or infrastructure benefi
   five-second loading assertion under concurrent cleanup; the explicit loading timeout was corrected,
   and that check passed separately against the unchanged implementation. All 48 checks were verified.
 - No SQL migrations, private-engine implementation, production data, git history or deployment changed.
+
+## Next-level refactor — 2026-10-12
+
+Protected first-pass checkpoint: `18cbd26`. This pass changes the productive app and its API adapter,
+not the private analytical engine. UI structure, CSS cascade, ranking formulas and facility calculations
+remain unchanged. One-off transformation scripts were removed after use; reusable extraction tools remain.
+
+### Phase implementation
+
+1. **Owned contracts:** Finder data/actions, Strategy, Map resources, Compute and Portfolio have static
+   contracts. Leaf views use narrow field selections. Assessment result types follow the request kind;
+   assurance responses validate nested quality, verification, compliance and economics fields.
+2. **Operations lifecycle:** evidence uses atomic reducer transitions; presentation preferences have
+   a separate context. Capability status has one shared query and cannot fail the calculation query.
+   Workload/power imports abort superseded requests, retain revision checks and clear file inputs in
+   `finally`. Assessment cache identity includes calculation version. Lifecycle metadata distinguishes
+   ready, loading, stale, failed and cancelled. Strategy input/profile changes invalidate pending results.
+3. **Finder composition:** pure filtering/ranking selectors, candidate projection, editing, map
+   presentation and persistence have separate owners. Regional sampling is outside JSX, captures input
+   identity and stops later batches/retries after cancellation. Existing URLs, mapping and scoring remain.
+4. **Map lifecycle:** registration modules depend on explicit resource contracts and narrow references.
+   Overlay/source installation is idempotent. Interaction subscriptions are disposed before replacement
+   and removal. Late cluster-expansion results cannot act on a removed or replaced map.
+5. **Persistence:** numbered repository operations have semantic names. User-token reads and privileged
+   calculation writes have separate adapters. Reads use an allowlisted table contract and bounded row
+   limits. Preferred strategy, decision/actions/activity, flexibility profiles, simulation versions and
+   package versions use transactional RPCs. Busy-state cleanup runs in `finally`; application decision
+   and preference commands return typed outcomes without browser prompts or React setters.
+6. **Python boundaries:** routers receive explicit dependencies. A typed handler registry and injected
+   publisher, clock, solver factory and checkpoint isolate calculations from raw credentials. Job results
+   cannot overwrite a cancelled or replaced attempt. The repeated unavailable-executor methods became
+   one executor. Shared browser/Python fixtures cover lifecycle metadata, not fabricated business results.
+7. **Presentation:** Portfolio state and views are separate; Compute has separate state, queue,
+   recommendation and presentation modules. Finder comparison, operator evidence and security study
+   sections are separate. No new styling framework, optimizer or state-management framework was added.
+8. **Enforcement:** architecture checks include dynamic imports, server-only boundaries and hook-derived
+   contracts without resetting the size baseline. Scoped unused-variable and type-aware promise checks,
+   frontend PR CI, reducer/component/use-case tests, database transactions and Workers-runtime HTTP tests
+   protect the new boundaries. Production health checks remain separate from deterministic regressions.
+
+### Release and safety boundaries
+
+- Apply `20261012190000_atomic_strategy_commands.sql` before deploying this application revision.
+  It is forward-only, uses invoker rights and checks assessment permissions. It has **not** been applied
+  to production. Local PostgreSQL tests verify rollback, ownership, preferred uniqueness and version
+  allocation; real Supabase RLS/JWT and concurrent multi-connection staging verification remain release gates.
+- Cancellation is cooperative at handler checkpoints and client waiting boundaries. A running private
+  solver is not forcibly interrupted. Database owner/attempt checks remain the final result authority.
+- Legacy ledger publication retains existing upsert identities and checks the job checkpoint before
+  publishing. This does not claim an atomic, exactly-once transaction across every legacy ledger write.
+- No push, deployment, production-data mutation or published-history rewrite was requested or performed.
+
+### Validation for this pass
+
+- TypeScript: 381 tests; typecheck, lint and architecture ratchet passed.
+- Python: 200 tests; API Ruff lint and formatting checks passed.
+- Operations: 33 UI/accessibility/layout checks plus 3 real Workers-runtime HTTP checks passed.
+- Database: Operations migration/integrity suite and Strategy transaction suite passed.
+- Production build, performance budgets, text encoding, public-access checks and dependency audit passed.
+- Finder: all 48 checks passed in the final full run. The earlier nested-label lookup was replaced
+  with a semantic combobox locator; the control itself was unchanged. Third-party basemap glyph
+  warnings remain external-service warnings, not a claim that those services are always healthy.
+
+Measured active-file sizes after this pass: Portfolio route 40 lines, Compute entry 14, Finder detail
+485, Finder stage 432, Finder composition controller 743, Strategy controller 318, Python API app 152.
+The composition controller retains explicit wiring rather than introducing a second store or opaque
+generic framework. Its filtering, map presentation, editing, persistence and sampling logic live elsewhere.

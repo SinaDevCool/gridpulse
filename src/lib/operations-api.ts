@@ -1,15 +1,18 @@
 import type { FacilityPlanRequest } from "@/features/analytics/contracts";
 import { prepareCanonicalFacilityPlan } from "@/features/operations/canonical-planning";
 import type { OperationsAssessmentRequest } from "@/features/operations/operations-service";
+import type { OperationsOverviewModel } from "@/features/operations/scenario-engine";
+import type { WorkloadAssessment } from "@/features/operations/workload-intelligence";
+import type { z } from "zod";
 import { operationsWorkspaceSchema } from "@/features/operations/workspace-contract";
 import { supabase } from "@/integrations/supabase/client";
 import {
-assessmentEnvelopeSchema,
-assuranceResultSchema,
-operationsCapabilitiesSchema,
-overviewResultSchema,
-powerResultSchema,
-workloadResultSchema,
+  assessmentEnvelopeSchema,
+  assuranceResultSchema,
+  operationsCapabilitiesSchema,
+  overviewResultSchema,
+  powerResultSchema,
+  workloadResultSchema,
 } from "../features/operations/transport-contracts";
 import { startFacilityPlan } from "./analytics-api";
 
@@ -25,7 +28,18 @@ export type OperationsAssessmentEnvelope<T> = {
   result: T;
 };
 
-export async function requestOperationsAssessment<T>(
+type AssessmentResults = {
+  overview: OperationsOverviewModel;
+  compute: WorkloadAssessment;
+  power: z.infer<typeof powerResultSchema>;
+  assurance: z.infer<typeof assuranceResultSchema>;
+};
+
+export function requestOperationsAssessment<K extends OperationsAssessmentRequest["kind"]>(
+  input: Extract<OperationsAssessmentRequest, { kind: K }>,
+  signal?: AbortSignal,
+): Promise<OperationsAssessmentEnvelope<AssessmentResults[K]>>;
+export async function requestOperationsAssessment(
   input: OperationsAssessmentRequest,
   signal?: AbortSignal,
 ) {
@@ -37,15 +51,19 @@ export async function requestOperationsAssessment<T>(
       ? AbortSignal.any([signal, AbortSignal.timeout(30_000)])
       : AbortSignal.timeout(30_000),
   });
-  const body = (await response.json()) as OperationsAssessmentEnvelope<T> | { error: string };
-  if (!response.ok || "error" in body)
-    throw new Error("error" in body ? body.error : "The Operations assessment failed.");
+  const body: unknown = await response.json();
+  if (!response.ok || (body !== null && typeof body === "object" && "error" in body))
+    throw new Error(
+      body !== null && typeof body === "object" && "error" in body && typeof body.error === "string"
+        ? body.error
+        : "The Operations assessment failed.",
+    );
   const validated = assessmentEnvelopeSchema.parse(body);
   if (input.kind === "overview") overviewResultSchema.parse(validated.result);
   if (input.kind === "compute") workloadResultSchema.parse(validated.result);
   if (input.kind === "power") powerResultSchema.parse(validated.result);
   if (input.kind === "assurance") assuranceResultSchema.parse(validated.result);
-  return validated as OperationsAssessmentEnvelope<T>;
+  return validated;
 }
 
 export async function fetchOperationsCapabilities(signal?: AbortSignal) {

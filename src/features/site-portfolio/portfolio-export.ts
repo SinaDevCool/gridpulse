@@ -1,5 +1,5 @@
-import type { AnonymousProperty } from "@/features/anonymous-workspace/schema";
 import { projectAnonymousProperty } from "@/features/anonymous-workspace/portfolio-projection";
+import type { AnonymousProperty } from "@/features/anonymous-workspace/schema";
 import type { ExportableProperty } from "@/features/properties/property-export";
 
 export function portfolioExportRow(property: AnonymousProperty): ExportableProperty | null {

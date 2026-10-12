@@ -1,46 +1,18 @@
+import { addMapLayer } from "./registration";
 import {
-voltageClassFilter,
-voltageColorExpression,
-voltageWidthExpression,
+  voltageClassFilter,
+  voltageColorExpression,
+  voltageWidthExpression,
 } from "@/features/power-finder/voltage-style";
-import type { ExpressionSpecification,Map as MapLibreMap } from "maplibre-gl";
-import type { useMapResources } from "./use-map-resources";
+import type { ExpressionSpecification, Map as MapLibreMap } from "maplibre-gl";
+import type { MapResources } from "./resource-contract";
 export function registerNationalGridLayers(
   map: MapLibreMap,
-  resources: ReturnType<typeof useMapResources>,
+  resources: Pick<MapResources, "enabledLayersRef" | "isolatedVoltageClassRef">,
   isCancelled: () => boolean,
 ) {
-  const {
-    containerRef,
-    mapRef,
-    onSelectRef,
-    onViewportChangeRef,
-    collectionRef,
-    projectSiteRef,
-    onSitePlacementRef,
-    onVisibleLayerCountsRef,
-    onDiscoverySelectRef,
-    discoveryLocationsRef,
-    onDataCentreSelectRef,
-    showDataCentresRef,
-    selectedFeatureRef,
-    previewFeatureRef,
-    capacityNodesRef,
-    capacityMetricRef,
-    requiredCapacityMwRef,
-    capacityCoverageRef,
-    basemapModeRef,
-    basemapLayerIdsRef,
-    basemapFallbackActiveRef,
-    onBasemapStatusChangeRef,
-    onDataSourceStatusChangeRef,
-    runtimeSourceStatusRef,
-    enabledLayersRef,
-    assetFilterRef,
-    isolatedVoltageClassRef,
-    scaleMarkersByCapacityRef,
-  } = resources;
-  map.addLayer({
+  const { enabledLayersRef, isolatedVoltageClassRef } = resources;
+  addMapLayer(map, {
     id: "national-grid-lines",
     type: "line",
     source: "power-finder-national-tiles",
@@ -60,7 +32,7 @@ export function registerNationalGridLayers(
       "line-opacity": 0.82,
     },
   });
-  map.addLayer({
+  addMapLayer(map, {
     id: "national-grid-nodes",
     type: "circle",
     source: "power-finder-national-tiles",
@@ -81,7 +53,7 @@ export function registerNationalGridLayers(
       "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 4, 0.4, 9, 1],
     },
   });
-  map.addLayer({
+  addMapLayer(map, {
     id: "national-industrial-sites",
     type: "fill",
     source: "power-finder-national-tiles",
@@ -98,7 +70,7 @@ export function registerNationalGridLayers(
       "fill-outline-color": "#5eead4",
     },
   });
-  map.addLayer({
+  addMapLayer(map, {
     id: "national-industrial-overview",
     type: "circle",
     source: "power-finder-national-tiles",

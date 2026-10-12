@@ -1,32 +1,19 @@
-import { loadPowerFinderViewport } from "@/features/power-finder/data-source";
-import {
-type PowerFinderCollection,
-type PowerFinderFeature,
-} from "@/features/power-finder/fixture-data";
-import {
-discoverLocations,
-type DiscoveryStrategy,
-} from "@/features/power-finder/location-discovery";
-import { loadRegionalDiscoverySamples } from "@/features/power-finder/regional-discovery-sampling";
-import type { useFinderController } from "./use-finder-controller";
-export function FinderDiscoveryIntro({ model }: { model: ReturnType<typeof useFinderController> }) {
+import type { FinderControllerContract } from "./controller-contract";
+import type { DiscoveryStrategy } from "./location-discovery";
+import { useRegionalDiscovery } from "./use-regional-discovery";
+export function FinderDiscoveryIntro({ model }: { model: FinderControllerContract }) {
   const {
     search,
-    collection,
     project,
     bounds,
     maxDistanceKm,
     updateSearch,
     updateProject,
-    setInteractionNotice,
     discoveryStrategy,
     setDiscoveryStrategy,
     discoveryResultCount,
     setDiscoveryResultCount,
-    setDiscoveryResults,
-    setSelectedDiscoveryId,
     discoveryState,
-    setDiscoveryState,
     invalidateDiscoveryResults,
     generationGroup,
     setGenerationGroup,
@@ -39,6 +26,7 @@ export function FinderDiscoveryIntro({ model }: { model: ReturnType<typeof useFi
     regionCode,
     activeCoverage,
   } = model;
+  const runDiscovery = useRegionalDiscovery(model);
   return (
     <section className="finder-discovery-intro" aria-labelledby="finder-discovery-title">
       <p className="context-label">Regional opportunity discovery</p>
@@ -154,86 +142,7 @@ export function FinderDiscoveryIntro({ model }: { model: ReturnType<typeof useFi
         className="primary-button"
         disabled={discoveryState === "loading"}
         onClick={() => {
-          void (async () => {
-            setDiscoveryState("loading");
-            setInteractionNotice("Sampling accepted mapped context across the region…");
-            try {
-              const [west, south, east, north] = activeCoverage.bounds;
-              const columns = 4;
-              const rows = 4;
-              const longitudeStep = (east - west) / columns;
-              const latitudeStep = (north - south) / rows;
-              const sampleBounds = Array.from({ length: columns * rows }, (_, index) => {
-                const column = index % columns;
-                const row = Math.floor(index / columns);
-                return {
-                  west: west + column * longitudeStep,
-                  south: south + row * latitudeStep,
-                  east: west + (column + 1) * longitudeStep,
-                  north: south + (row + 1) * latitudeStep,
-                };
-              });
-              const { samples, fullContextCount, gridOnlyCount, unavailableCount } =
-                await loadRegionalDiscoverySamples(sampleBounds, (bounds, options) =>
-                  loadPowerFinderViewport(bounds, undefined, options),
-                );
-              if (samples.length === 0) {
-                throw new Error("No regional samples were available.");
-              }
-              const byId = new Map<string, PowerFinderFeature>();
-              for (const sample of samples) {
-                for (const feature of sample.collection.features) byId.set(feature.id, feature);
-              }
-              const regionalCollection: PowerFinderCollection = {
-                ...samples[0].collection,
-                features: [...byId.values()],
-                metadata: {
-                  ...samples[0].collection.metadata,
-                  title: `${activeCoverage.regionName} discovery sample`,
-                  record_count: byId.size,
-                  geographic_scope: activeCoverage.bounds,
-                },
-              };
-              const results = discoverLocations(regionalCollection, {
-                regionCode: activeCoverage.regionCode,
-                requiredMw: project.importMw,
-                preferredVoltageKv: project.preferredVoltageKv,
-                maxNodeDistanceKm: project.maxDistanceKm,
-                resultCount: discoveryResultCount,
-                strategy: discoveryStrategy,
-                generationGroup,
-                minimumGenerationMw,
-                minimumStorageMw,
-              });
-              setDiscoveryResults(results);
-              setSelectedDiscoveryId(results[0]?.id ?? null);
-              setMapNavigationTarget({
-                requestId: Date.now(),
-                kind: "bounds",
-                bounds: activeCoverage.bounds,
-                maxZoom: activeCoverage.zoom,
-              });
-              setDiscoveryState("ready");
-              setInteractionNotice(
-                results.length
-                  ? `${results.length} geographically distinct investigation locations found${
-                      gridOnlyCount > 0 || unavailableCount > 0
-                        ? ` from ${samples.length} of ${sampleBounds.length} available regional samples (${fullContextCount} with energy context, ${gridOnlyCount} grid-only)`
-                        : " after regional sampling and local refinement"
-                    }. ${
-                      unavailableCount > 0
-                        ? `${unavailableCount} unavailable area${unavailableCount === 1 ? " remains" : "s remain"} unassessed.`
-                        : gridOnlyCount > 0
-                          ? "Energy-ecosystem context was unavailable for some areas; their scores use grid context only."
-                          : ""
-                    }`
-                  : "No investigation locations met the current mapped-data criteria. Try a wider node distance.",
-              );
-            } catch {
-              setDiscoveryState("error");
-              setInteractionNotice("Regional data sampling was incomplete. Please try again.");
-            }
-          })();
+          void runDiscovery();
         }}
       >
         {discoveryState === "loading"

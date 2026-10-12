@@ -1,17 +1,13 @@
 import { finderMvpFeatures } from "@/config/product-mode";
 import {
-finderProjectTypes,
-isStorageProject,
-type FinderProject,
-type FinderProjectType,
+  finderProjectTypes,
+  isStorageProject,
+  type FinderProject,
+  type FinderProjectType,
 } from "@/features/power-finder/finder-project";
 import { FinderFilters } from "./FinderFilters";
-import type { useFinderController } from "./use-finder-controller";
-export function FinderScreeningControls({
-  model,
-}: {
-  model: ReturnType<typeof useFinderController>;
-}) {
+import type { FinderControllerContract } from "./controller-contract";
+export function FinderScreeningControls({ model }: { model: FinderControllerContract }) {
   const {
     search,
     project,

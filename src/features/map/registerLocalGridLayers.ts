@@ -1,47 +1,19 @@
+import { addMapLayer } from "./registration";
 import {
-voltageClassFilter,
-voltageColorExpression,
-voltageWidthExpression,
+  voltageClassFilter,
+  voltageColorExpression,
+  voltageWidthExpression,
 } from "@/features/power-finder/voltage-style";
-import type { ExpressionSpecification,Map as MapLibreMap } from "maplibre-gl";
+import type { ExpressionSpecification, Map as MapLibreMap } from "maplibre-gl";
 import { sourceIds } from "./layer-style";
-import type { useMapResources } from "./use-map-resources";
+import type { MapResources } from "./resource-contract";
 export function registerLocalGridLayers(
   map: MapLibreMap,
-  resources: ReturnType<typeof useMapResources>,
+  resources: Pick<MapResources, "isolatedVoltageClassRef">,
   isCancelled: () => boolean,
 ) {
-  const {
-    containerRef,
-    mapRef,
-    onSelectRef,
-    onViewportChangeRef,
-    collectionRef,
-    projectSiteRef,
-    onSitePlacementRef,
-    onVisibleLayerCountsRef,
-    onDiscoverySelectRef,
-    discoveryLocationsRef,
-    onDataCentreSelectRef,
-    showDataCentresRef,
-    selectedFeatureRef,
-    previewFeatureRef,
-    capacityNodesRef,
-    capacityMetricRef,
-    requiredCapacityMwRef,
-    capacityCoverageRef,
-    basemapModeRef,
-    basemapLayerIdsRef,
-    basemapFallbackActiveRef,
-    onBasemapStatusChangeRef,
-    onDataSourceStatusChangeRef,
-    runtimeSourceStatusRef,
-    enabledLayersRef,
-    assetFilterRef,
-    isolatedVoltageClassRef,
-    scaleMarkersByCapacityRef,
-  } = resources;
-  map.addLayer({
+  const { isolatedVoltageClassRef } = resources;
+  addMapLayer(map, {
     id: "industrial-sites",
     type: "fill",
     source: sourceIds.industrial_site,
@@ -52,7 +24,7 @@ export function registerLocalGridLayers(
       "fill-outline-color": "#5eead4",
     },
   });
-  map.addLayer({
+  addMapLayer(map, {
     id: "grid-lines",
     type: "line",
     source: sourceIds.line,
@@ -65,7 +37,7 @@ export function registerLocalGridLayers(
       "line-opacity": 0.85,
     },
   });
-  map.addLayer({
+  addMapLayer(map, {
     id: "node-clusters",
     type: "circle",
     source: sourceIds.node,
@@ -79,7 +51,7 @@ export function registerLocalGridLayers(
       "circle-stroke-width": 2,
     },
   });
-  map.addLayer({
+  addMapLayer(map, {
     id: "node-cluster-count",
     type: "symbol",
     source: sourceIds.node,
@@ -93,7 +65,7 @@ export function registerLocalGridLayers(
     },
     paint: { "text-color": "#07111f" },
   });
-  map.addLayer({
+  addMapLayer(map, {
     id: "grid-nodes",
     type: "circle",
     source: sourceIds.node,

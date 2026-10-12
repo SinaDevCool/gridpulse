@@ -1,16 +1,15 @@
-import type { OperatorPackage,ProjectSiteCandidate,Scenario } from "@/lib/assessment-model";
+import type { Scenario } from "@/lib/assessment-model";
 import type { DispatchAnalysis } from "@/lib/fca-engine";
 import { screenGermanOperator } from "@/lib/german-grid-screening";
-import { useQuery } from "@tanstack/react-query";
-import { useMemo,useState,type FormEvent } from "react";
-import { calculateFlexibility,calculateMaturity,canIssueOperatorPackage } from "../calculations";
-import { buildConnectionOptions,rankConnectionOptions } from "../connection-options";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { calculateFlexibility, calculateMaturity, canIssueOperatorPackage } from "../calculations";
+import { buildConnectionOptions, rankConnectionOptions } from "../connection-options";
 import { buildDecisionMatrix } from "../decision-matrix";
 import { buildOperatorPackage } from "../deliverables";
-import type { ProjectKind,SiteScreeningInput } from "../domain";
+import type { ProjectKind, SiteScreeningInput } from "../domain";
 import {
-validateFlexibleLoadSpecification,
-type FlexibleLoadSpecification,
+  validateFlexibleLoadSpecification,
+  type FlexibleLoadSpecification,
 } from "../flexible-load";
 import { execute as addCandidateCommand } from "./command-addCandidate";
 import { execute as archiveScenarioCommand } from "./command-archiveScenario";
@@ -23,39 +22,46 @@ import { execute as saveDecisionCommand } from "./command-saveDecision";
 import { execute as saveFlexibilityCommand } from "./command-saveFlexibility";
 import { execute as savePilotSnapshotCommand } from "./command-savePilotSnapshot";
 import { type Props } from "./contracts";
-import { number,optionKindForScenario } from "./presentation";
-import * as strategyQueries from "./repository-use-strategy-controller";
-export function useStrategyController({ site, evidence, scenarios, profiles, refresh }: Props) {
+import { initialStrategyInput } from "./default-input";
+import { number, optionKindForScenario } from "./presentation";
+import { useStrategyRecords } from "./use-strategy-records";
+export function useStrategyController({
+  site,
+  evidence,
+  scenarios,
+  profiles,
+  refresh,
+}: Props): import("./controller-contract").StrategyControllerContract {
   const [view, setView] = useState<"screen" | "options" | "flexibility" | "deliver">("screen");
   const [busy, setBusy] = useState(false);
   const [candidateBusy, setCandidateBusy] = useState(false);
   const [intervalResult, setIntervalResult] = useState<DispatchAnalysis | null>(null);
-  const [input, setInput] = useState<FlexibleLoadSpecification>({
-    requestedImportMw: site.requested_import_mw,
-    firmImportMw: Math.max(0, site.requested_import_mw * 0.65),
-    conditionalImportMw: Math.max(0, site.requested_import_mw * 0.15),
-    minimumCriticalLoadMw: Math.max(0, site.requested_import_mw * 0.5),
-    shiftableLoadMw: Math.max(0, site.requested_import_mw * 0.1),
-    batteryPowerMw: site.bess_power_mw ?? 0,
-    batteryEnergyMwh: site.bess_energy_mwh ?? 0,
-    restrictionDurationHours: 2,
-    restrictionEventsPerYear: 20,
-    energyValueEurMwh: 200,
-    batteryDegradationEurMwh: 20,
-    maximumEventsPerDay: 2,
-    recoveryHours: 4,
-    geographicTransferMw: 0,
-    notificationLeadMinutes: 30,
-    rampDownMwPerMinute: 0,
-    rampUpMwPerMinute: 0,
-    upsPowerMw: 0,
-    upsEnergyMwh: 0,
-    generatorPowerMw: 0,
-    generatorMaxHoursYear: 0,
-    batteryRoundTripEfficiency: 0.9,
-    batteryMinimumSoc: 0.1,
-    initialBatterySoc: 1,
-  });
+  const [input, setInput] = useState<FlexibleLoadSpecification>(() => initialStrategyInput(site));
+  const siteIdentity = JSON.stringify([
+    site.id,
+    site.requested_import_mw,
+    site.bess_power_mw,
+    site.bess_energy_mwh,
+  ]);
+  const previousSiteIdentity = useRef(siteIdentity);
+  useEffect(() => {
+    if (previousSiteIdentity.current === siteIdentity) return;
+    previousSiteIdentity.current = siteIdentity;
+    setInput(initialStrategyInput(site));
+    setIntervalResult(null);
+  }, [siteIdentity, site]);
+  const simulationIdentity = JSON.stringify([site.id, input, profiles]);
+  const latestSimulationIdentity = useRef(simulationIdentity);
+  latestSimulationIdentity.current = simulationIdentity;
+  const simulationRevision = useRef(0);
+  const simulationController = useRef<AbortController | null>(null);
+  useEffect(
+    () => () => {
+      simulationRevision.current++;
+      simulationController.current?.abort();
+    },
+    [simulationIdentity],
+  );
   const screeningInput: SiteScreeningInput = {
     projectKind: ((site.project_kind as ProjectKind | null) ??
       (site.project_type === "bess" ? "battery_storage" : "other_large_consumer")) as ProjectKind,
@@ -73,28 +79,7 @@ export function useStrategyController({ site, evidence, scenarios, profiles, ref
       (site.cable_route_status as SiteScreeningInput["cableRouteStatus"]) ?? "unknown",
     financeStatus: (site.finance_status as SiteScreeningInput["financeStatus"]) ?? "unknown",
   };
-  const { data: strategyRecords, refetch: refetchStrategyRecords } = useQuery({
-    queryKey: ["connection-strategy-records", site.id],
-    queryFn: async () => {
-      const [candidateResponse, packageResponse, metricResponse, engagementResponse] =
-        await Promise.all([
-          strategyQueries.selectProjectSiteCandidates1(site),
-          strategyQueries.selectOperatorPackages2(site),
-          strategyQueries.selectPilotMetrics3(site),
-          strategyQueries.selectOperatorEngagements4(site),
-        ]);
-      if (candidateResponse.error) throw candidateResponse.error;
-      if (packageResponse.error) throw packageResponse.error;
-      if (metricResponse.error) throw metricResponse.error;
-      if (engagementResponse.error) throw engagementResponse.error;
-      return {
-        candidates: candidateResponse.data as ProjectSiteCandidate[],
-        packages: packageResponse.data as OperatorPackage[],
-        metrics: metricResponse.data,
-        engagement: engagementResponse.data,
-      };
-    },
-  });
+  const { strategyRecords, refetchStrategyRecords } = useStrategyRecords(site);
   const candidates = strategyRecords?.candidates ?? [];
   const packages = strategyRecords?.packages ?? [];
   const metrics = strategyRecords?.metrics ?? [];
@@ -273,7 +258,18 @@ export function useStrategyController({ site, evidence, scenarios, profiles, ref
   }
 
   async function runIntervalSimulation() {
-    return runIntervalSimulationCommand({ site, scenarios, profiles, setIntervalResult, input });
+    simulationController.current?.abort();
+    const controller = new AbortController();
+    simulationController.current = controller;
+    const revision = ++simulationRevision.current;
+    const isCurrent = () =>
+      revision === simulationRevision.current &&
+      latestSimulationIdentity.current === simulationIdentity;
+    return runIntervalSimulationCommand(
+      { site, scenarios, profiles, setIntervalResult, input },
+      isCurrent,
+      controller.signal,
+    );
   }
   return {
     view,

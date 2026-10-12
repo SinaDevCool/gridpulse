@@ -1,13 +1,9 @@
-import { Download,ShieldAlert } from "lucide-react";
+import { Download, ShieldAlert } from "lucide-react";
 import { CommercialDecisionGate } from "../CommercialDecisionGate";
-import { buildDecisionMemo,downloadJson } from "../deliverables";
+import { buildDecisionMemo, downloadJson } from "../deliverables";
 import { downloadOperatorPackagePdf } from "../operator-pdf";
-import type { useStrategyController } from "./use-strategy-controller";
-export function StrategyDeliverables({
-  model,
-}: {
-  model: ReturnType<typeof useStrategyController>;
-}) {
+import type { StrategyControllerContract } from "./controller-contract";
+export function StrategyDeliverables({ model }: { model: StrategyControllerContract }) {
   const {
     busy,
     strategyRecords,

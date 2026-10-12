@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
-import type { CandidateSite,Scenario } from "@/lib/assessment-model";
-export function insertConnectionScenarios1(site: CandidateSite, scenario: Scenario) {
+import type { CandidateSite, Scenario } from "@/lib/assessment-model";
+export function saveConnectionScenarios(site: CandidateSite, scenario: Scenario) {
   return supabase.from("connection_scenarios").insert({
     site_id: site.id,
     user_id: site.user_id,

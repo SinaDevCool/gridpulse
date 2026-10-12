@@ -1,41 +1,13 @@
-import type { MapLayerMouseEvent,Map as MapLibreMap } from "maplibre-gl";
-import type { useMapResources } from "./use-map-resources";
+import { addMapLayer } from "./registration";
+import type { MapLayerMouseEvent, Map as MapLibreMap } from "maplibre-gl";
+import type { MapResources } from "./resource-contract";
 export function registerDataCentreLayers(
   map: MapLibreMap,
-  resources: ReturnType<typeof useMapResources>,
+  resources: Pick<MapResources, "onDataCentreSelectRef" | "showDataCentresRef">,
   isCancelled: () => boolean,
 ) {
-  const {
-    containerRef,
-    mapRef,
-    onSelectRef,
-    onViewportChangeRef,
-    collectionRef,
-    projectSiteRef,
-    onSitePlacementRef,
-    onVisibleLayerCountsRef,
-    onDiscoverySelectRef,
-    discoveryLocationsRef,
-    onDataCentreSelectRef,
-    showDataCentresRef,
-    selectedFeatureRef,
-    previewFeatureRef,
-    capacityNodesRef,
-    capacityMetricRef,
-    requiredCapacityMwRef,
-    capacityCoverageRef,
-    basemapModeRef,
-    basemapLayerIdsRef,
-    basemapFallbackActiveRef,
-    onBasemapStatusChangeRef,
-    onDataSourceStatusChangeRef,
-    runtimeSourceStatusRef,
-    enabledLayersRef,
-    assetFilterRef,
-    isolatedVoltageClassRef,
-    scaleMarkersByCapacityRef,
-  } = resources;
-  map.addLayer({
+  const { onDataCentreSelectRef, showDataCentresRef } = resources;
+  addMapLayer(map, {
     id: "rzreg-data-centre-clusters",
     type: "circle",
     source: "rzreg-data-centres",
@@ -49,7 +21,7 @@ export function registerDataCentreLayers(
       "circle-stroke-width": 2,
     },
   });
-  map.addLayer({
+  addMapLayer(map, {
     id: "rzreg-data-centre-cluster-count",
     type: "symbol",
     source: "rzreg-data-centres",
@@ -62,7 +34,7 @@ export function registerDataCentreLayers(
     },
     paint: { "text-color": "#07111f" },
   });
-  map.addLayer({
+  addMapLayer(map, {
     id: "rzreg-data-centres-approximate-area",
     type: "circle",
     source: "rzreg-data-centres",
@@ -79,7 +51,7 @@ export function registerDataCentreLayers(
       "circle-stroke-width": 1.25,
     },
   });
-  map.addLayer({
+  addMapLayer(map, {
     id: "rzreg-data-centres-approximate",
     type: "circle",
     source: "rzreg-data-centres",
@@ -96,7 +68,7 @@ export function registerDataCentreLayers(
       "circle-stroke-width": 2,
     },
   });
-  map.addLayer({
+  addMapLayer(map, {
     id: "rzreg-data-centres-exact",
     type: "circle",
     source: "rzreg-data-centres",

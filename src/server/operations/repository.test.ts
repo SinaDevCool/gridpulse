@@ -19,7 +19,9 @@ describe("Operations repository access boundaries", () => {
       vi.fn().mockResolvedValue(Response.json([1])),
     );
     await expect(repository.readRows("operations_facilities", "select=id")).rejects.toThrow();
-    await expect(repository.readRows("users", "select=*")).rejects.toThrow();
+    await expect(
+      repository.readRows("users" as "operations_facilities", "select=*"),
+    ).rejects.toThrow();
   });
   it("resolves configuration without weakening privilege requirements", () => {
     expect(operationsPersistenceConfig({})).toBeNull();

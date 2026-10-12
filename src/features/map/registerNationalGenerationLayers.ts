@@ -1,53 +1,28 @@
+import { addMapLayer } from "./registration";
 import {
-generationColourExpression,
-generationIconExpression,
+  generationColourExpression,
+  generationIconExpression,
 } from "@/features/map/map-visual-registry";
 import type { Map as MapLibreMap } from "maplibre-gl";
 import {
-generationAssetFilter,
-registeredAggregateIconSize,
-registeredAggregateLabel,
-registeredAggregateRadius,
-registeredCapacityRadius,
-registeredMwLabel,
+  generationAssetFilter,
+  registeredAggregateIconSize,
+  registeredAggregateLabel,
+  registeredAggregateRadius,
+  registeredCapacityRadius,
+  registeredMwLabel,
 } from "./layer-style";
-import type { useMapResources } from "./use-map-resources";
+import type { MapResources } from "./resource-contract";
 export function registerNationalGenerationLayers(
   map: MapLibreMap,
-  resources: ReturnType<typeof useMapResources>,
+  resources: Pick<
+    MapResources,
+    "enabledLayersRef" | "assetFilterRef" | "scaleMarkersByCapacityRef"
+  >,
   isCancelled: () => boolean,
 ) {
-  const {
-    containerRef,
-    mapRef,
-    onSelectRef,
-    onViewportChangeRef,
-    collectionRef,
-    projectSiteRef,
-    onSitePlacementRef,
-    onVisibleLayerCountsRef,
-    onDiscoverySelectRef,
-    discoveryLocationsRef,
-    onDataCentreSelectRef,
-    showDataCentresRef,
-    selectedFeatureRef,
-    previewFeatureRef,
-    capacityNodesRef,
-    capacityMetricRef,
-    requiredCapacityMwRef,
-    capacityCoverageRef,
-    basemapModeRef,
-    basemapLayerIdsRef,
-    basemapFallbackActiveRef,
-    onBasemapStatusChangeRef,
-    onDataSourceStatusChangeRef,
-    runtimeSourceStatusRef,
-    enabledLayersRef,
-    assetFilterRef,
-    isolatedVoltageClassRef,
-    scaleMarkersByCapacityRef,
-  } = resources;
-  map.addLayer({
+  const { enabledLayersRef, assetFilterRef, scaleMarkersByCapacityRef } = resources;
+  addMapLayer(map, {
     id: "national-generation-overview",
     type: "circle",
     source: "power-finder-registry-tiles",
@@ -70,7 +45,7 @@ export function registerNationalGenerationLayers(
       "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 6, 0.25, 9, 0.7],
     },
   });
-  map.addLayer({
+  addMapLayer(map, {
     id: "national-generation-overview-label",
     type: "symbol",
     source: "power-finder-registry-tiles",
@@ -104,7 +79,7 @@ export function registerNationalGenerationLayers(
       "text-halo-width": 1.5,
     },
   });
-  map.addLayer({
+  addMapLayer(map, {
     id: "national-generation-technology-glyph",
     type: "symbol",
     source: "power-finder-registry-tiles",
@@ -130,7 +105,7 @@ export function registerNationalGenerationLayers(
       ],
     },
   });
-  map.addLayer({
+  addMapLayer(map, {
     id: "national-generation-assets",
     type: "circle",
     source: "power-finder-registry-tiles",
@@ -153,7 +128,7 @@ export function registerNationalGenerationLayers(
     },
   });
   map.moveLayer("national-generation-technology-glyph");
-  map.addLayer({
+  addMapLayer(map, {
     id: "national-generation-asset-labels",
     type: "symbol",
     source: "power-finder-registry-tiles",

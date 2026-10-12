@@ -2,9 +2,9 @@ import { loadPowerFinderCoverage } from "@/features/power-finder/coverage";
 import { loadPowerFinderViewport } from "@/features/power-finder/data-source";
 import { loadGridOperatorCatalog } from "@/features/power-finder/operator-catalog";
 import { useEffect } from "react";
-import type { useFinderController } from "./use-finder-controller";
+import type { FinderControllerContract } from "./controller-contract";
 type Context = Pick<
-  ReturnType<typeof useFinderController>,
+  FinderControllerContract,
   | "collection"
   | "setCollection"
   | "project"

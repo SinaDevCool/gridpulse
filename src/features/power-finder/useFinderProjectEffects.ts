@@ -1,11 +1,11 @@
 import { finderMvpFeatures } from "@/config/product-mode";
 import { getAnonymousProperty } from "@/features/anonymous-workspace/repository";
-import { loadFinderProject,saveFinderProject } from "@/features/power-finder/project-store";
+import { loadFinderProject, saveFinderProject } from "@/features/power-finder/project-store";
 import { suggestScreeningVoltage } from "@/features/power-finder/site-screening-context";
 import { useEffect } from "react";
-import type { useFinderController } from "./use-finder-controller";
+import type { FinderControllerContract } from "./controller-contract";
 type Context = Pick<
-  ReturnType<typeof useFinderController>,
+  FinderControllerContract,
   | "navigate"
   | "search"
   | "project"

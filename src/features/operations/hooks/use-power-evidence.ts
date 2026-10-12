@@ -1,22 +1,22 @@
 import { requestOperationsAssessment } from "@/lib/operations-api";
 import { stableOperationsJson } from "@/lib/operations-request";
-import { useEffect,useRef,type ChangeEvent } from "react";
+import { useEffect, useRef, type ChangeEvent } from "react";
 import {
-parseBatteryCsv,
-parseFacilityPowerCsv,
-type BatteryObservation,
-type FacilityPowerObservation,
+  parseBatteryCsv,
+  parseFacilityPowerCsv,
+  type BatteryObservation,
+  type FacilityPowerObservation,
 } from "../battery-dispatch";
 import { buildImportReport } from "../import-report";
 import type { EvidenceMode } from "../power/presentation";
 import type { OperationsOverviewModel } from "../scenario-engine";
-import { useOperationsEvidenceStore } from "./evidence-store";
+import { useOperationsEvidenceDataStore } from "./evidence-store";
 
 export function usePowerEvidence(
   model: OperationsOverviewModel,
   onModeChange?: (mode: EvidenceMode) => void,
 ) {
-  const store = useOperationsEvidenceStore();
+  const store = useOperationsEvidenceDataStore();
   const [facilityObservations, setFacilityObservations] = store.facility;
   const [batteryObservations, setBatteryObservations] = store.battery;
   const [message, setMessage] = store.powerMessage;
@@ -84,26 +84,25 @@ export function usePowerEvidence(
       if (!pending.isCurrent()) return;
       const verified = await verifyEvidence(parsed, batteryObservations, pending.controller.signal);
       if (!pending.isCurrent()) return;
-      setFacilityObservations(parsed);
-      store.importReports[1]((current) => ({
-        ...current,
-        facility: buildImportReport(
+      store.dispatchEvidence({
+        type: "accept-power",
+        facility: parsed,
+        kind: "facility",
+        message: `${parsed.length} facility meter records loaded from ${file.name}${verified ? " and input-validated by the Operations backend (not dispatch-verified)" : ""}.`,
+        report: buildImportReport(
           "facility",
           file.name,
           parsed.map((row) => row.timestamp),
           Boolean(verified),
         ),
-      }));
+      });
       onModeChange?.("historical");
-      setMessage(
-        `${parsed.length} facility meter records loaded from ${file.name}${verified ? " and input-validated by the Operations backend (not dispatch-verified)" : ""}.`,
-      );
-      setError("");
     } catch (caught) {
       if (!pending.isCurrent()) return;
       setError(caught instanceof Error ? caught.message : "Could not read facility measurements.");
+    } finally {
+      event.target.value = "";
     }
-    event.target.value = "";
   }
 
   async function loadBattery(event: ChangeEvent<HTMLInputElement>) {
@@ -119,26 +118,25 @@ export function usePowerEvidence(
         pending.controller.signal,
       );
       if (!pending.isCurrent()) return;
-      setBatteryObservations(parsed);
-      store.importReports[1]((current) => ({
-        ...current,
-        battery: buildImportReport(
+      store.dispatchEvidence({
+        type: "accept-power",
+        battery: parsed,
+        kind: "battery",
+        message: `${parsed.length} BMS/PCS records loaded from ${file.name}${verified ? " and aligned by the Operations backend" : ""}.`,
+        report: buildImportReport(
           "battery",
           file.name,
           parsed.map((row) => row.timestamp),
           Boolean(verified),
         ),
-      }));
+      });
       onModeChange?.("historical");
-      setMessage(
-        `${parsed.length} BMS/PCS records loaded from ${file.name}${verified ? " and aligned by the Operations backend" : ""}.`,
-      );
-      setError("");
     } catch (caught) {
       if (!pending.isCurrent()) return;
       setError(caught instanceof Error ? caught.message : "Could not read battery measurements.");
+    } finally {
+      event.target.value = "";
     }
-    event.target.value = "";
   }
   return {
     facilityObservations,

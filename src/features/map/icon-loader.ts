@@ -1,6 +1,6 @@
 import {
-GENERATION_TECHNOLOGY_CLASSES,
-STORAGE_TECHNOLOGY,
+  GENERATION_TECHNOLOGY_CLASSES,
+  STORAGE_TECHNOLOGY,
 } from "@/features/map/map-visual-registry";
 
 import { type EnergyIconImage } from "./contracts";

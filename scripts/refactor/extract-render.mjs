@@ -55,8 +55,8 @@ const originalImports = ast.statements
   .join("\n");
 let body = text.slice(declaration.body.getStart(ast) + 1, result.getFullStart());
 body = body
-  .replaceAll("Route.useNavigate()", 'useNavigate({ from: "/power-finder" })')
-  .replaceAll("Route.useSearch()", 'useSearch({ from: "/power-finder" })');
+  .replaceAll("Route.useNavigate()", `useNavigate({ from: "${task.from ?? "/power-finder"}" })`)
+  .replaceAll("Route.useSearch()", `useSearch({ from: "${task.from ?? "/power-finder"}" })`);
 const controller =
   originalImports +
   '\nimport { useNavigate, useSearch } from "@tanstack/react-router";\n' +

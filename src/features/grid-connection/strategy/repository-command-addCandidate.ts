@@ -2,7 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { CandidateSite } from "@/lib/assessment-model";
 import type { OperatorScreening } from "@/lib/german-grid-screening";
 import { number } from "./presentation";
-export function insertProjectSiteCandidates1(
+export function addSiteCandidate(
   site: CandidateSite,
   form: FormData,
   screenedOperator: OperatorScreening,

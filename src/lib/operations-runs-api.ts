@@ -1,13 +1,16 @@
 import { z } from "zod";
 import {
-operationsAssessmentRequestSchema,
-runOperationsAssessment,
+  operationsAssessmentRequestSchema,
+  runOperationsAssessment,
 } from "../features/operations/operations-service";
-import { SupabaseOperationsRepository } from "../server/operations/repository";
 import {
-OperationsPayloadError,
-operationsFingerprint,
-readOperationsJson,
+  SupabaseOperationsRepository,
+  SupabaseOperationsCalculationWriter,
+} from "../server/operations/repository";
+import {
+  OperationsPayloadError,
+  operationsFingerprint,
+  readOperationsJson,
 } from "./operations-request";
 
 type RunsEnv = {
@@ -41,10 +44,7 @@ export async function handleOperationsRun(request: Request, env: RunsEnv) {
   try {
     const input = schema.parse(await readOperationsJson(request, 8_000_000));
     inputValidated = true;
-    const repository = new SupabaseOperationsRepository(
-      { url, publicKey, serviceKey: env.SUPABASE_SERVICE_ROLE_KEY },
-      authorization,
-    );
+    const repository = new SupabaseOperationsRepository({ url, publicKey }, authorization);
     const userResponse = await repository.verifyUser();
     if (!userResponse.ok)
       return reply({ error: "Authentication required." }, userResponse.status >= 500 ? 502 : 401);
@@ -69,7 +69,11 @@ export async function handleOperationsRun(request: Request, env: RunsEnv) {
       input.assessment.kind === "overview" || input.assessment.kind === "compute"
         ? "scenario"
         : "historical";
-    const written = await repository.recordCalculation({
+    const writer = new SupabaseOperationsCalculationWriter({
+      url,
+      serviceKey: env.SUPABASE_SERVICE_ROLE_KEY,
+    });
+    const written = await writer.recordCalculation({
       p_owner_id: user.id,
       p_facility_id: input.facilityId,
       p_input_snapshot: input.assessment,

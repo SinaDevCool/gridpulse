@@ -5,11 +5,26 @@ export const GENERATION_TECHNOLOGY_CLASSES = [
   { id: "wind", label: "Wind", color: "#38bdf8", icon: "/assets/energy-icons/wind.svg" },
   { id: "biomass", label: "Biomass", color: "#22c55e", icon: "/assets/energy-icons/biomass.svg" },
   { id: "hydro", label: "Hydro", color: "#06b6d4", icon: "/assets/energy-icons/hydro.svg" },
-  { id: "geothermal", label: "Geothermal", color: "#f97316", icon: "/assets/energy-icons/geothermal.svg" },
+  {
+    id: "geothermal",
+    label: "Geothermal",
+    color: "#f97316",
+    icon: "/assets/energy-icons/geothermal.svg",
+  },
   { id: "nuclear", label: "Nuclear", color: "#f472b6", icon: "/assets/energy-icons/nuclear.svg" },
   { id: "gas", label: "Gas", color: "#a78bfa", icon: "/assets/energy-icons/gas.svg" },
-  { id: "fossil_other", label: "Coal, oil & other fossil", color: "#ef4444", icon: "/assets/energy-icons/fossil.svg" },
-  { id: "other", label: "Other / unknown", color: "#94a3b8", icon: "/assets/energy-icons/other.svg" },
+  {
+    id: "fossil_other",
+    label: "Coal, oil & other fossil",
+    color: "#ef4444",
+    icon: "/assets/energy-icons/fossil.svg",
+  },
+  {
+    id: "other",
+    label: "Other / unknown",
+    color: "#94a3b8",
+    icon: "/assets/energy-icons/other.svg",
+  },
 ] as const;
 
 export type GenerationTechnologyId = (typeof GENERATION_TECHNOLOGY_CLASSES)[number]["id"];

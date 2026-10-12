@@ -16,16 +16,19 @@ async function loadBatches(
   bounds: PowerFinderBounds[],
   includeRegistryAssets: boolean,
   loader: Loader,
+  signal?: AbortSignal,
 ) {
   const loaded: RegionalDiscoverySample[] = [];
   const failed: PowerFinderBounds[] = [];
   for (let offset = 0; offset < bounds.length; offset += 2) {
+    signal?.throwIfAborted();
     const batchBounds = bounds.slice(offset, offset + 2);
     const batch = await Promise.allSettled(
       batchBounds.map((sampleBounds) =>
         loader(sampleBounds, { fallbackAllowed: false, includeRegistryAssets }),
       ),
     );
+    signal?.throwIfAborted();
     batch.forEach((result, index) => {
       if (result.status === "fulfilled") {
         loaded.push({
@@ -41,9 +44,13 @@ async function loadBatches(
   return { loaded, failed };
 }
 
-export async function loadRegionalDiscoverySamples(bounds: PowerFinderBounds[], loader: Loader) {
-  const primary = await loadBatches(bounds, true, loader);
-  const retry = await loadBatches(primary.failed, false, loader);
+export async function loadRegionalDiscoverySamples(
+  bounds: PowerFinderBounds[],
+  loader: Loader,
+  signal?: AbortSignal,
+) {
+  const primary = await loadBatches(bounds, true, loader, signal);
+  const retry = await loadBatches(primary.failed, false, loader, signal);
   return {
     samples: [...primary.loaded, ...retry.loaded],
     fullContextCount: primary.loaded.length,

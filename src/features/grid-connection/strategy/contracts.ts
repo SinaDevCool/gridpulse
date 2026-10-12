@@ -1,4 +1,4 @@
-import type { CandidateSite,Evidence,IntervalProfile,Scenario } from "@/lib/assessment-model";
+import type { CandidateSite, Evidence, IntervalProfile, Scenario } from "@/lib/assessment-model";
 
 export type Props = {
   site: CandidateSite;

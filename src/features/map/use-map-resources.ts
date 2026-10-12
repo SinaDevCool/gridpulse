@@ -1,7 +1,7 @@
 import type { MapRuntimeSourceStatus } from "@/features/map/map-source-registry";
 import { type BasemapLayerIds } from "@/features/power-finder/basemap-config";
 import type { Map as MapLibreMap } from "maplibre-gl";
-import { useMemo,useRef } from "react";
+import { useMemo, useRef } from "react";
 import { type PowerFinderMapProps } from "./contracts";
 export function useMapResources({
   collection,
@@ -34,7 +34,7 @@ export function useMapResources({
   onDataCentreSelect,
   onBasemapStatusChange,
   onDataSourceStatusChange,
-}: PowerFinderMapProps) {
+}: PowerFinderMapProps): import("./resource-contract").MapResources {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const onSelectRef = useRef(onSelect);

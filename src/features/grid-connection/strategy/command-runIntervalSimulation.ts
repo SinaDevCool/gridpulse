@@ -1,12 +1,16 @@
 import { runCanonicalFcaInterval } from "@/features/analytics/fca-client";
 import { toast } from "sonner";
 import * as strategyQueries from "./repository-command-runIntervalSimulation";
-import type { useStrategyController } from "./use-strategy-controller";
+import type { StrategyControllerContract } from "./controller-contract";
 type Context = Pick<
-  ReturnType<typeof useStrategyController>,
+  StrategyControllerContract,
   "site" | "scenarios" | "profiles" | "setIntervalResult" | "input"
 >;
-export async function execute(context: Context): Promise<unknown> {
+export async function execute(
+  context: Context,
+  isCurrent: () => boolean = () => true,
+  signal?: AbortSignal,
+): Promise<void> {
   const { site, scenarios, profiles, setIntervalResult, input } = context;
   const profile = profiles[0];
   if (!profile) {
@@ -14,28 +18,32 @@ export async function execute(context: Context): Promise<unknown> {
     return;
   }
   try {
-    const analysis = await runCanonicalFcaInterval(profile.points, {
-      firmImportMw: input.firmImportMw,
-      conditionalImportMw: input.conditionalImportMw,
-      minimumCriticalLoadMw: input.minimumCriticalLoadMw,
-      shiftableLoadMw: input.shiftableLoadMw,
-      batteryPowerMw: input.batteryPowerMw,
-      batteryEnergyMwh: input.batteryEnergyMwh,
-      batteryRoundTripEfficiency: input.batteryRoundTripEfficiency,
-      batteryMinimumSoc: input.batteryMinimumSoc,
-      initialBatterySoc: input.initialBatterySoc,
-      energyValueEurMwh: input.energyValueEurMwh,
-      batteryDegradationEurMwh: input.batteryDegradationEurMwh,
-      minimumViableImportMw: site.minimum_viable_import_mw ?? input.minimumCriticalLoadMw,
-    });
+    const analysis = await runCanonicalFcaInterval(
+      profile.points,
+      {
+        firmImportMw: input.firmImportMw,
+        conditionalImportMw: input.conditionalImportMw,
+        minimumCriticalLoadMw: input.minimumCriticalLoadMw,
+        shiftableLoadMw: input.shiftableLoadMw,
+        batteryPowerMw: input.batteryPowerMw,
+        batteryEnergyMwh: input.batteryEnergyMwh,
+        batteryRoundTripEfficiency: input.batteryRoundTripEfficiency,
+        batteryMinimumSoc: input.batteryMinimumSoc,
+        initialBatterySoc: input.initialBatterySoc,
+        energyValueEurMwh: input.energyValueEurMwh,
+        batteryDegradationEurMwh: input.batteryDegradationEurMwh,
+        minimumViableImportMw: site.minimum_viable_import_mw ?? input.minimumCriticalLoadMw,
+      },
+      signal,
+    );
+    if (!isCurrent()) return;
     setIntervalResult(analysis);
-    const existing = await strategyQueries.selectFlexibilitySimulations1(site, profile);
+    if (!isCurrent()) return;
     const { timeline, ...summary } = analysis;
-    const { error } = await strategyQueries.insertFlexibilitySimulations2(
+    const { error } = await strategyQueries.saveSimulation(
       site,
       profile,
       scenarios,
-      existing,
       input,
       analysis,
       summary,
@@ -44,6 +52,7 @@ export async function execute(context: Context): Promise<unknown> {
     if (error) toast.error(error.message);
     else toast.success("Versioned interval simulation saved");
   } catch (error) {
+    if (!isCurrent()) return;
     toast.error(error instanceof Error ? error.message : "Unable to simulate profile");
   }
   return;

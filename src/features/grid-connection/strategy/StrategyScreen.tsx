@@ -2,46 +2,9 @@ import { StrategyComparison } from "./StrategyComparison";
 import { StrategyDeliverables } from "./StrategyDeliverables";
 import { StrategyFlexibility } from "./StrategyFlexibility";
 import { StrategyScreening } from "./StrategyScreening";
-import type { useStrategyController } from "./use-strategy-controller";
-export function StrategyScreen({ model }: { model: ReturnType<typeof useStrategyController> }) {
-  const {
-    view,
-    setView,
-    busy,
-    candidateBusy,
-    intervalResult,
-    input,
-    strategyRecords,
-    candidates,
-    packages,
-    metrics,
-    activeScenarios,
-    preferredScenario,
-    maturity,
-    operator,
-    result,
-    specificationValidation,
-    liveOptions,
-    packageGate,
-    decisionMatrix,
-    preferredOption,
-    snapshot,
-    analyse,
-    saveFlexibility,
-    addCandidate,
-    persistPackage,
-    saveDecision,
-    savePilotSnapshot,
-    suggestedScenarios,
-    createStandardScenarios,
-    preferScenario,
-    duplicateScenario,
-    archiveScenario,
-    runIntervalSimulation,
-    site,
-    evidence,
-    profiles,
-  } = model;
+import type { StrategyControllerContract } from "./controller-contract";
+export function StrategyScreen({ model }: { model: StrategyControllerContract }) {
+  const { view, setView } = model;
   return (
     <section className="strategy-workbench">
       <header className="room-heading">

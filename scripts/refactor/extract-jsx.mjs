@@ -26,7 +26,11 @@ for (const section of task.sections) {
   const bindings = component.body.statements
     .filter(ts.isVariableStatement)
     .flatMap((n) => n.declarationList.declarations)
-    .filter((d) => ts.isObjectBindingPattern(d.name) && d.initializer?.getText(ast) === "model")
+    .filter(
+      (d) =>
+        ts.isObjectBindingPattern(d.name) &&
+        d.initializer?.getText(ast) === (task.modelBinding ?? "model"),
+    )
     .flatMap((d) => d.name.elements.map((e) => e.name.text))
     .filter((name) => ids.has(name));
   const imports = ast.statements
@@ -35,12 +39,12 @@ for (const section of task.sections) {
     .join("\n");
   const sectionText =
     imports +
-    `\nexport function ${section.name}({ model }: { model: ReturnType<typeof ${task.hook ?? "useFinderController"}> }) {\n` +
+    `\nexport function ${section.name}({ model }: { model: ${task.contract ?? `ReturnType<typeof ${task.hook ?? "useFinderController"}>`} }) {\n` +
     `const { ${bindings.join(", ")} } = model;\nreturn ${target.getText(ast)};\n}\n`;
   const next =
     `import { ${section.name} } from "./${section.name}";\n` +
     text.slice(0, target.getStart(ast)) +
-    `<${section.name} model={model} />` +
+    `<${section.name} model={${task.modelBinding ?? "model"}} />` +
     text.slice(target.end);
   const file = path.join(path.dirname(task.source), section.name + ".tsx");
   if (fs.existsSync(file)) throw new Error("Section file exists");

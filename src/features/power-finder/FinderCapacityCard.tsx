@@ -1,10 +1,10 @@
 import {
-capacityMetricLabels,
-type CapacityMetric,
+  capacityMetricLabels,
+  type CapacityMetric,
 } from "@/features/power-finder/calculated-capacity";
 import { ShieldCheck } from "lucide-react";
-import type { useFinderController } from "./use-finder-controller";
-export function FinderCapacityCard({ model }: { model: ReturnType<typeof useFinderController> }) {
+import type { FinderControllerContract } from "./controller-contract";
+export function FinderCapacityCard({ model }: { model: FinderControllerContract }) {
   const {
     search,
     project,

@@ -1,41 +1,12 @@
+import { addMapLayer } from "./registration";
 import type { Map as MapLibreMap } from "maplibre-gl";
-import type { useMapResources } from "./use-map-resources";
+import type { MapResources } from "./resource-contract";
 export function registerSelectionLayers(
   map: MapLibreMap,
-  resources: ReturnType<typeof useMapResources>,
+  resources: Pick<MapResources, never>,
   isCancelled: () => boolean,
 ) {
-  const {
-    containerRef,
-    mapRef,
-    onSelectRef,
-    onViewportChangeRef,
-    collectionRef,
-    projectSiteRef,
-    onSitePlacementRef,
-    onVisibleLayerCountsRef,
-    onDiscoverySelectRef,
-    discoveryLocationsRef,
-    onDataCentreSelectRef,
-    showDataCentresRef,
-    selectedFeatureRef,
-    previewFeatureRef,
-    capacityNodesRef,
-    capacityMetricRef,
-    requiredCapacityMwRef,
-    capacityCoverageRef,
-    basemapModeRef,
-    basemapLayerIdsRef,
-    basemapFallbackActiveRef,
-    onBasemapStatusChangeRef,
-    onDataSourceStatusChangeRef,
-    runtimeSourceStatusRef,
-    enabledLayersRef,
-    assetFilterRef,
-    isolatedVoltageClassRef,
-    scaleMarkersByCapacityRef,
-  } = resources;
-  map.addLayer({
+  addMapLayer(map, {
     id: "selected-candidate-halo",
     type: "circle",
     source: "finder-selected-candidate",
@@ -47,7 +18,7 @@ export function registerSelectionLayers(
       "circle-blur": 0.15,
     },
   });
-  map.addLayer({
+  addMapLayer(map, {
     id: "selected-candidate-core",
     type: "circle",
     source: "finder-selected-candidate",
@@ -58,7 +29,7 @@ export function registerSelectionLayers(
       "circle-stroke-width": 2,
     },
   });
-  map.addLayer({
+  addMapLayer(map, {
     id: "selected-candidate-label",
     type: "symbol",
     source: "finder-selected-candidate",

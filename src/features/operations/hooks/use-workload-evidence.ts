@@ -1,31 +1,40 @@
 import { requestOperationsAssessment } from "@/lib/operations-api";
 import { stableOperationsJson } from "@/lib/operations-request";
-import { useEffect,useMemo,useRef,type ChangeEvent } from "react";
+import { useEffect, useMemo, useRef, type ChangeEvent } from "react";
 import { buildImportReport } from "../import-report";
 import type { OperationsOverviewModel } from "../scenario-engine";
 import {
-assessWorkloads,
-buildScenarioWorkloads,
-parseGpuTelemetryCsv,
-parseWorkloadCsv,
-type WorkloadAssessment
+  assessWorkloads,
+  buildScenarioWorkloads,
+  parseGpuTelemetryCsv,
+  parseWorkloadCsv,
 } from "../workload-intelligence";
-import { useOperationsEvidenceStore } from "./evidence-store";
+import { useOperationsEvidenceDataStore } from "./evidence-store";
+import { OPERATIONS_CALCULATION_VERSION } from "../calculation-version";
 
 export function useWorkloadEvidence(
   model: OperationsOverviewModel,
   setSelectedId: (id: string | null) => void,
 ) {
   const importRevision = useRef(0);
+  const importController = useRef<AbortController | null>(null);
+
+  function beginImport() {
+    importController.current?.abort();
+    const controller = new AbortController();
+    importController.current = controller;
+    return { revision: ++importRevision.current, signal: controller.signal };
+  }
 
   const modelSignature = stableOperationsJson({
+    calculationVersion: OPERATIONS_CALCULATION_VERSION,
     scenario: model.scenario,
     intervals: model.intervals,
   });
 
   const previousModelSignature = useRef(modelSignature);
 
-  const store = useOperationsEvidenceStore();
+  const store = useOperationsEvidenceDataStore();
   const [workloads, setWorkloads] = store.workloads;
   const [telemetry, setTelemetry] = store.telemetry;
   const [message, setMessage] = store.workloadMessage;
@@ -49,6 +58,7 @@ export function useWorkloadEvidence(
     setStoredSignature(modelSignature);
     previousModelSignature.current = modelSignature;
     importRevision.current += 1;
+    importController.current?.abort();
     setBackendAssessment(null);
     setWorkloads((current) =>
       current.every((workload) => workload.source === "scenario")
@@ -71,6 +81,7 @@ export function useWorkloadEvidence(
   useEffect(
     () => () => {
       importRevision.current += 1;
+      importController.current?.abort();
     },
     [],
   );
@@ -78,31 +89,34 @@ export function useWorkloadEvidence(
   async function importWorkloadFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
-    const revision = ++importRevision.current;
+    const { revision, signal } = beginImport();
     try {
       const parsed = parseWorkloadCsv(await file.text());
-      const response = await requestOperationsAssessment<WorkloadAssessment>({
-        kind: "compute",
-        scenario: model.scenario,
-        workloads: parsed,
-        telemetry,
-      });
+      const response = await requestOperationsAssessment(
+        {
+          kind: "compute",
+          scenario: model.scenario,
+          workloads: parsed,
+          telemetry,
+        },
+        signal,
+      );
       if (revision !== importRevision.current) return;
-      setWorkloads(parsed);
-      store.importReports[1]((current) => ({
-        ...current,
-        scheduler: buildImportReport(
+      store.dispatchEvidence({
+        type: "accept-workloads",
+        workloads: parsed,
+        kind: "scheduler",
+        assessment: response.result,
+        signature: modelSignature,
+        message: `${parsed.length} scheduler records loaded from ${file.name}.`,
+        report: buildImportReport(
           "scheduler",
           file.name,
           parsed.map((row) => row.submittedAt),
           true,
         ),
-      }));
-      setBackendAssessment(response.result);
-      setStoredSignature(modelSignature);
+      });
       setSelectedId(null);
-      setError("");
-      setMessage(`${parsed.length} scheduler records loaded from ${file.name}.`);
     } catch (reason) {
       if (revision !== importRevision.current) return;
       setError(reason instanceof Error ? reason.message : "The workload file could not be read.");
@@ -114,30 +128,33 @@ export function useWorkloadEvidence(
   async function importTelemetryFile(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
-    const revision = ++importRevision.current;
+    const { revision, signal } = beginImport();
     try {
       const parsed = parseGpuTelemetryCsv(await file.text());
-      const response = await requestOperationsAssessment<WorkloadAssessment>({
-        kind: "compute",
-        scenario: model.scenario,
-        workloads,
-        telemetry: parsed,
-      });
+      const response = await requestOperationsAssessment(
+        {
+          kind: "compute",
+          scenario: model.scenario,
+          workloads,
+          telemetry: parsed,
+        },
+        signal,
+      );
       if (revision !== importRevision.current) return;
-      setTelemetry(parsed);
-      store.importReports[1]((current) => ({
-        ...current,
-        gpu: buildImportReport(
+      store.dispatchEvidence({
+        type: "accept-workloads",
+        telemetry: parsed,
+        kind: "gpu",
+        assessment: response.result,
+        signature: modelSignature,
+        message: `${parsed.length} GPU telemetry records loaded from ${file.name}.`,
+        report: buildImportReport(
           "gpu",
           file.name,
           parsed.map((row) => row.timestamp),
           true,
         ),
-      }));
-      setBackendAssessment(response.result);
-      setStoredSignature(modelSignature);
-      setError("");
-      setMessage(`${parsed.length} GPU telemetry records loaded from ${file.name}.`);
+      });
     } catch (reason) {
       if (revision !== importRevision.current) return;
       setError(reason instanceof Error ? reason.message : "The telemetry file could not be read.");
@@ -148,12 +165,12 @@ export function useWorkloadEvidence(
   return {
     restoreScenario() {
       importRevision.current += 1;
-      setBackendAssessment(null);
-      setWorkloads(buildScenarioWorkloads(model));
-      setTelemetry([]);
-      store.importReports[1](({ scheduler: _scheduler, gpu: _gpu, ...power }) => power);
-      setError("");
-      setMessage("Scenario workload set restored.");
+      importController.current?.abort();
+      store.dispatchEvidence({
+        type: "restore-workloads",
+        workloads: buildScenarioWorkloads(model),
+        signature: modelSignature,
+      });
     },
     workloads,
     telemetry,

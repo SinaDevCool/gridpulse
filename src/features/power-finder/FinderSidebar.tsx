@@ -1,12 +1,12 @@
 import { finderMvpFeatures } from "@/config/product-mode";
-import { AlertTriangle,Database } from "lucide-react";
+import { AlertTriangle, Database } from "lucide-react";
 import { FinderCandidates } from "./FinderCandidates";
 import { FinderCapacityCard } from "./FinderCapacityCard";
 import { FinderLayersMenu } from "./FinderLayersMenu";
 import { FinderRailHeader } from "./FinderRailHeader";
 import { FinderScreeningControls } from "./FinderScreeningControls";
-import type { useFinderController } from "./use-finder-controller";
-export function FinderSidebar({ model }: { model: ReturnType<typeof useFinderController> }) {
+import type { FinderControllerContract } from "./controller-contract";
+export function FinderSidebar({ model }: { model: FinderControllerContract }) {
   const {
     collection,
     project,

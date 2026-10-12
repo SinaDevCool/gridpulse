@@ -1,23 +1,12 @@
+import { recordedVersionReply } from "./record-contracts";
 import { supabase } from "@/integrations/supabase/client";
-import type { CandidateSite,IntervalProfile,Scenario } from "@/lib/assessment-model";
+import type { CandidateSite, IntervalProfile, Scenario } from "@/lib/assessment-model";
 import type { DispatchAnalysis } from "@/lib/fca-engine";
-import type { PostgrestSingleResponse } from "@supabase/supabase-js";
 import type { FlexibleLoadSpecification } from "../flexible-load";
-export function selectFlexibilitySimulations1(site: CandidateSite, profile: IntervalProfile) {
-  return supabase
-    .from("flexibility_simulations")
-    .select("version")
-    .eq("site_id", site.id)
-    .eq("profile_id", profile.id)
-    .order("version", { ascending: false })
-    .limit(1);
-}
-
-export function insertFlexibilitySimulations2(
+export async function saveSimulation(
   site: CandidateSite,
   profile: IntervalProfile,
   scenarios: Scenario[],
-  existing: PostgrestSingleResponse<{ version: number }[]>,
   input: FlexibleLoadSpecification,
   analysis: DispatchAnalysis,
   summary: {
@@ -47,22 +36,26 @@ export function insertFlexibilitySimulations2(
   },
   timeline: import("@/lib/fca-engine").DispatchInterval[],
 ) {
-  return supabase.from("flexibility_simulations").insert({
-    site_id: site.id,
-    profile_id: profile.id,
-    scenario_id: scenarios.find((item) => item.selection_status === "preferred")?.id ?? null,
-    version: (existing.data?.[0]?.version ?? 0) + 1,
-    settings: input,
-    summary,
-    timeline,
-    calculation_version: analysis.calculationVersion,
-    classification: analysis.classification,
-    input_manifest: {
-      profileId: profile.id,
-      profileVersion: profile.version,
-      profileHash: profile.source_hash,
-      sourceClassification: profile.source_classification,
-      scenarioId: scenarios.find((item) => item.selection_status === "preferred")?.id ?? null,
-    },
-  });
+  return recordedVersionReply(
+    await supabase.rpc("gridpulse_append_strategy_simulation", {
+      p_site_id: site.id,
+      p_simulation: {
+        site_id: site.id,
+        profile_id: profile.id,
+        scenario_id: scenarios.find((item) => item.selection_status === "preferred")?.id ?? null,
+        settings: input,
+        summary,
+        timeline,
+        calculation_version: analysis.calculationVersion,
+        classification: analysis.classification,
+        input_manifest: {
+          profileId: profile.id,
+          profileVersion: profile.version,
+          profileHash: profile.source_hash,
+          sourceClassification: profile.source_classification,
+          scenarioId: scenarios.find((item) => item.selection_status === "preferred")?.id ?? null,
+        },
+      },
+    }),
+  );
 }

@@ -1,8 +1,8 @@
 import { suggestOperatorFilters } from "@/features/power-finder/site-screening-context";
 import { useEffect } from "react";
-import type { useFinderController } from "./use-finder-controller";
+import type { FinderControllerContract } from "./controller-contract";
 type Context = Pick<
-  ReturnType<typeof useFinderController>,
+  FinderControllerContract,
   | "search"
   | "legacyOperator"
   | "selectedTso"

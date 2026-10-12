@@ -1,8 +1,8 @@
-import type { FeatureCollection,Point,Polygon } from "geojson";
+import type { FeatureCollection, Point, Polygon } from "geojson";
 
 import type {
-PowerFinderCollection,
-PowerFinderFeature,
+  PowerFinderCollection,
+  PowerFinderFeature,
 } from "@/features/power-finder/fixture-data";
 
 import type { PowerFinderBounds } from "@/features/power-finder/data-source";

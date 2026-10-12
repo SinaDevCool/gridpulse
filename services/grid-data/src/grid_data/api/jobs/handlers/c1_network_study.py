@@ -4,12 +4,12 @@ from dataclasses import asdict
 
 from grid_data.api.jobs.context import JobContext
 from grid_data.api.models import AnalyticsJob
-from grid_data.network_study import NetworkModelInput, PandapowerProvider
+from grid_data.network_study import NetworkModelInput
 
 
 def calculate(context: JobContext, job: AnalyticsJob) -> dict:
     model = NetworkModelInput(**job.input_payload)
-    provider = PandapowerProvider()
+    provider = context.network_provider()
     results = [
         asdict(provider.run_base_case(model)),
         asdict(provider.run_voltage_assessment(model)),

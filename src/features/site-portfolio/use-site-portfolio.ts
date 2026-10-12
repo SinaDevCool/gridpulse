@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { projectAnonymousProperty } from "@/features/anonymous-workspace/portfolio-projection";
 import {
   listAnonymousProperties,
   subscribeAnonymousWorkspace,
 } from "@/features/anonymous-workspace/repository";
 import type { AnonymousProperty } from "@/features/anonymous-workspace/schema";
-import { projectAnonymousProperty } from "@/features/anonymous-workspace/portfolio-projection";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 export function useSitePortfolio(selectedId?: string) {
   const [properties, setProperties] = useState<AnonymousProperty[]>([]);

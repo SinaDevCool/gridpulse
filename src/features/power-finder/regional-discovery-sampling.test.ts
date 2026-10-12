@@ -13,6 +13,24 @@ const collection = {
 } as unknown as PowerFinderCollection;
 
 describe("regional discovery sampling", () => {
+  it("does not start samples after cancellation", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    const loader = vi.fn();
+    await expect(loadRegionalDiscoverySamples(bounds, loader, controller.signal)).rejects.toThrow();
+    expect(loader).not.toHaveBeenCalled();
+  });
+  it("does not retry or start a later batch when superseded", async () => {
+    const controller = new AbortController();
+    const loader = vi.fn(async () => {
+      controller.abort();
+      return { collection, mode: "public_database" as const };
+    });
+    await expect(
+      loadRegionalDiscoverySamples([...bounds, ...bounds], loader, controller.signal),
+    ).rejects.toThrow();
+    expect(loader).toHaveBeenCalledTimes(2);
+  });
   it("retries unavailable full-context samples with the lighter grid dataset", async () => {
     const loader = vi.fn(async (sampleBounds, options) => {
       if (sampleBounds === bounds[1] && options.includeRegistryAssets) throw new Error("timeout");
