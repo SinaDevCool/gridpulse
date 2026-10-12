@@ -8,7 +8,7 @@ test("every visible workflow destination resolves to meaningful content", async 
   const expectations = [
     ["Sites", /Sites|portfolio/i],
     ["Power Finder", /Germany connection context/i],
-    ["Operations", /Run more compute within the power limit/i],
+    ["Operations", /Power Operations/i],
   ] as const;
   await expect(navigation.getByRole("link")).toHaveCount(3);
   await expect(navigation).not.toContainText(/\b0[123]\b/);
@@ -46,7 +46,7 @@ test("workspace destinations behave as independent navigation on mobile", async 
   await expect(toggle).toHaveAttribute("aria-expanded", "false");
   await toggle.click();
   await navigation.getByRole("link", { name: /Operations/ }).click();
-  await expect(page).toHaveURL(/\/operations\?view=overview$/);
+  await expect(page).toHaveURL(/\/operations(?:\?|$)/);
   await expect(page.getByRole("link", { name: /Operations/ })).toHaveAttribute(
     "aria-current",
     "page",
@@ -63,10 +63,10 @@ test("dormant workspace URLs redirect into the focused product", async ({ page }
     ["/data-centre-planner", /\/power-finder$/],
     ["/evidence", /\/power-finder$/],
     ["/evidence-review", /\/power-finder$/],
-    ["/constraint-explorer", /\/operations\?view=overview$/],
+    ["/constraint-explorer", /\/operations(?:\?|$)/],
     ["/reports", /\/portfolio$/],
     ["/activation", /\/power-finder$/],
-    ["/operations/site-1", /\/operations\?view=overview$/],
+    ["/operations/site-1", /\/operations(?:\?|$)/],
   ] as const) {
     await page.goto(path);
     await expect(page).toHaveURL(destination);
@@ -78,9 +78,7 @@ test("theme persists on the Operations workspace", async ({ page }) => {
     if (!localStorage.getItem("gridpulse-theme")) localStorage.setItem("gridpulse-theme", "dark");
   });
   await page.goto("/operations");
-  await expect(
-    page.getByRole("heading", { name: "Run more compute within the power limit" }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Power Operations" })).toBeVisible();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await expect
     .poll(() => page.evaluate(() => localStorage.getItem("gridpulse-theme")))
@@ -102,66 +100,60 @@ test("Power Finder rail follows the resolved light theme", async ({ page }) => {
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
   await expect(page.locator(".finder-workflow-switch")).toHaveCSS(
     "background-color",
-    "rgb(255, 255, 255)",
+    "rgb(244, 247, 249)",
   );
   await expect(page.locator(".finder-rail-sticky")).toHaveCSS(
     "background-color",
-    "rgba(255, 255, 255, 0.96)",
+    "rgba(244, 247, 249, 0.98)",
   );
   await page.getByText("Map view & optional layers", { exact: true }).click();
   await expect(page.locator(".power-finder-layer-list label").first()).toHaveCSS(
     "color",
-    "rgb(16, 24, 40)",
+    "rgb(23, 33, 43)",
   );
 });
 
-test("Operations loads a real CSV and keeps unaccepted forecasts unpublished", async ({ page }) => {
-  await page.goto("/operations");
-  await expect(page.locator("main.operations-page")).toHaveAttribute("data-hydrated", "true", {
-    timeout: 20_000,
-  });
-  await page.getByLabel("Facility name").fill("E2E Facility");
-  await page.getByLabel("Contracted import limit (MW)").fill("50");
-  await page.getByLabel("Limit evidence").selectOption("contract_reviewed");
-  const upload = page.getByLabel("Operational CSV");
-  await upload.setInputFiles(path.resolve("e2e/fixtures/operations-real-sample.csv"));
-  await expect(page.getByText(/valid measurements loaded/)).toBeVisible();
-  await page.getByRole("button", { name: "Analyse Measured History" }).click();
-
-  await expect(page.getByText("4 MW", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Power", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Power Envelope" })).toBeVisible();
-  await page.getByRole("button", { name: "Compute" }).click();
-  await expect(page.getByRole("heading", { name: "Compute intelligence" })).toBeVisible();
-  await page.getByRole("button", { name: "Battery" }).click();
-  await expect(page.getByRole("heading", { name: "Battery intelligence" })).toBeVisible();
-  await page.getByRole("button", { name: "Forecast" }).click();
-  await expect(page).toHaveURL(/view=forecast/);
-  await expect(page.getByText("No accepted forecast").first()).toBeVisible();
-  await page.getByRole("button", { name: "Verification" }).click();
-  await expect(page.getByText("Automatic dispatch: not authorized")).toBeVisible();
-  await page.getByRole("button", { name: "Data health" }).click();
-  await expect(page.getByText("NVIDIA DCGM-compatible field")).toBeVisible();
+test("Operations imports real history without presenting it as a forecast or dispatch approval", async ({
+  page,
+}) => {
+  await page.goto("/operations?view=power");
+  await expect(page.getByRole("button", { name: "Configure Scenario", exact: true })).toBeEnabled();
+  await page.getByRole("button", { name: "Connect evidence", exact: true }).click();
+  await page
+    .getByLabel("Facility meter CSV")
+    .setInputFiles(path.resolve("e2e/fixtures/operations-real-sample.csv"));
+  await expect(page.getByText(/facility meter records loaded/)).toBeVisible();
+  await expect(page).toHaveURL(/mode=historical/);
+  await expect(page.getByText(/No physical control commands are issued/).first()).toBeVisible();
+  await expect(page.getByRole("button", { name: /Execute dispatch/i })).toHaveCount(0);
+  await page.getByRole("link", { name: "Compute & Workloads", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Compute and Workloads", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("link", { name: "Power & Battery", exact: true }).click();
+  await expect(page.getByText(/facility meter records loaded/)).toBeVisible();
 });
 
-test("Operations explains incomplete evidence and focuses the correction", async ({ page }) => {
-  await page.goto("/operations");
-  await expect(page.locator("main.operations-page")).toHaveAttribute("data-hydrated", "true", {
-    timeout: 20_000,
+test("Operations rejects incomplete imported evidence without changing data mode", async ({
+  page,
+}) => {
+  await page.goto("/operations?view=power");
+  await expect(page.getByRole("button", { name: "Configure Scenario", exact: true })).toBeEnabled();
+  await page.getByRole("button", { name: "Connect evidence", exact: true }).click();
+  await page.getByLabel("Facility meter CSV").setInputFiles({
+    name: "invalid.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from("timestamp,value\n2026-09-25T00:00:00Z,42"),
   });
-  await page.getByRole("button", { name: "Analyse Measured History" }).click();
-  const alert = page.getByRole("alert");
-  await expect(alert).toContainText("Check the highlighted inputs and try again");
-  await expect(alert).toBeFocused();
+  await expect(page.getByRole("alert")).toContainText("Required columns");
+  await expect(page).not.toHaveURL(/mode=historical/);
 });
 
 test("Operations remains legible and free of horizontal overflow on mobile", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript(() => localStorage.setItem("gridpulse-theme", "dark"));
   await page.goto("/operations");
-  await expect(page.locator("main.operations-page")).toHaveAttribute("data-hydrated", "true", {
-    timeout: 20_000,
-  });
+  await expect(page.getByRole("button", { name: "Configure Scenario", exact: true })).toBeEnabled();
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
@@ -169,10 +161,10 @@ test("Operations remains legible and free of horizontal overflow on mobile", asy
   ).toBe(false);
   expect(
     await page
-      .getByRole("button", { name: "Analyse Measured History" })
+      .getByRole("button", { name: "Configure Scenario", exact: true })
       .evaluate((button) => Number.parseFloat(getComputedStyle(button).fontSize)),
   ).toBeGreaterThanOrEqual(13);
-  const tabSizes = await page.locator(".operations-tabs button").evaluateAll((buttons) =>
+  const tabSizes = await page.locator(".operations-v2-tabs a").evaluateAll((buttons) =>
     buttons.map((button) => ({
       width: button.getBoundingClientRect().width,
       height: button.getBoundingClientRect().height,

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { readCsv } from "../../shared/csv";
 import type { OperationsOverviewModel } from "./scenario-engine";
 
 export const workloadClassSchema = z.enum(["training", "inference", "batch", "critical"]);
@@ -93,13 +94,7 @@ const numberValue = (value: string, field: string, row: number) => {
 };
 
 export function parseWorkloadCsv(text: string, source: "csv" | "slurm" = "csv"): ComputeWorkload[] {
-  const lines = text
-    .replace(/^\uFEFF/, "")
-    .split(/\r?\n/)
-    .filter((line) => line.trim());
-  if (lines.length < 2)
-    throw new Error("The workload file must contain a header and at least one row.");
-  const headers = lines[0].split(",").map((value) => value.trim().toLowerCase());
+  const { headers, rows } = readCsv(text);
   const required = [
     "workload_id",
     "name",
@@ -114,9 +109,8 @@ export function parseWorkloadCsv(text: string, source: "csv" | "slurm" = "csv"):
   const missing = required.filter((field) => !headers.includes(field));
   if (missing.length) throw new Error(`Missing workload columns: ${missing.join(", ")}.`);
   const at = (cells: string[], key: string) => cells[headers.indexOf(key)]?.trim() ?? "";
-  return lines.slice(1).map((line, index) => {
+  return rows.map((cells, index) => {
     const row = index + 2;
-    const cells = line.split(",");
     const requested = numberValue(at(cells, "requested_gpu_count"), "requested_gpu_count", row);
     const earliest = new Date(at(cells, "earliest_start"));
     const deadline = new Date(at(cells, "deadline"));
@@ -153,21 +147,14 @@ export function parseWorkloadCsv(text: string, source: "csv" | "slurm" = "csv"):
 }
 
 export function parseGpuTelemetryCsv(text: string): GpuTelemetry[] {
-  const lines = text
-    .replace(/^\uFEFF/, "")
-    .split(/\r?\n/)
-    .filter((line) => line.trim());
-  if (lines.length < 2)
-    throw new Error("The telemetry file must contain a header and at least one row.");
-  const headers = lines[0].split(",").map((value) => value.trim().toLowerCase());
+  const { headers, rows } = readCsv(text);
   const required = ["timestamp", "workload_id", "gpu_uuid", "power_watts"];
   const missing = required.filter((field) => !headers.includes(field));
   if (missing.length) throw new Error(`Missing telemetry columns: ${missing.join(", ")}.`);
   const at = (cells: string[], key: string) => cells[headers.indexOf(key)]?.trim() ?? "";
   const optionalNumber = (cells: string[], key: string) =>
     at(cells, key) ? Number(at(cells, key)) : null;
-  return lines.slice(1).map((line, index) => {
-    const cells = line.split(",");
+  return rows.map((cells, index) => {
     const timestamp = new Date(at(cells, "timestamp"));
     if (!Number.isFinite(timestamp.getTime()))
       throw new Error(`Invalid telemetry timestamp on row ${index + 2}.`);

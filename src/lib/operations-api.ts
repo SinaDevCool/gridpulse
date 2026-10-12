@@ -1,9 +1,17 @@
+import type { FacilityPlanRequest } from "@/features/analytics/contracts";
+import { prepareCanonicalFacilityPlan } from "@/features/operations/canonical-planning";
 import type { OperationsAssessmentRequest } from "@/features/operations/operations-service";
 import { operationsWorkspaceSchema } from "@/features/operations/workspace-contract";
 import { supabase } from "@/integrations/supabase/client";
-import { prepareCanonicalFacilityPlan } from "@/features/operations/canonical-planning";
+import {
+assessmentEnvelopeSchema,
+assuranceResultSchema,
+operationsCapabilitiesSchema,
+overviewResultSchema,
+powerResultSchema,
+workloadResultSchema,
+} from "../features/operations/transport-contracts";
 import { startFacilityPlan } from "./analytics-api";
-import type { FacilityPlanRequest } from "@/features/analytics/contracts";
 
 export type OperationsAssessmentEnvelope<T> = {
   schemaVersion: "gridpulse-operations-assessment-v1";
@@ -17,36 +25,38 @@ export type OperationsAssessmentEnvelope<T> = {
   result: T;
 };
 
-export async function requestOperationsAssessment<T>(input: OperationsAssessmentRequest) {
+export async function requestOperationsAssessment<T>(
+  input: OperationsAssessmentRequest,
+  signal?: AbortSignal,
+) {
   const response = await fetch("/api/operations/assess", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(input),
-    signal: AbortSignal.timeout(30_000),
+    signal: signal
+      ? AbortSignal.any([signal, AbortSignal.timeout(30_000)])
+      : AbortSignal.timeout(30_000),
   });
   const body = (await response.json()) as OperationsAssessmentEnvelope<T> | { error: string };
   if (!response.ok || "error" in body)
     throw new Error("error" in body ? body.error : "The Operations assessment failed.");
-  return body;
+  const validated = assessmentEnvelopeSchema.parse(body);
+  if (input.kind === "overview") overviewResultSchema.parse(validated.result);
+  if (input.kind === "compute") workloadResultSchema.parse(validated.result);
+  if (input.kind === "power") powerResultSchema.parse(validated.result);
+  if (input.kind === "assurance") assuranceResultSchema.parse(validated.result);
+  return validated as OperationsAssessmentEnvelope<T>;
 }
 
-export async function fetchOperationsCapabilities() {
+export async function fetchOperationsCapabilities(signal?: AbortSignal) {
   const response = await fetch("/api/operations/capabilities", {
     headers: { accept: "application/json" },
-    signal: AbortSignal.timeout(15_000),
+    signal: signal
+      ? AbortSignal.any([signal, AbortSignal.timeout(15_000)])
+      : AbortSignal.timeout(15_000),
   });
   if (!response.ok) throw new Error("Operations connector status is unavailable.");
-  return response.json() as Promise<{
-    schemaVersion: string;
-    persistence: { configured: boolean; provider: string };
-    connectors: Array<{
-      id: string;
-      label: string;
-      status: string;
-      transport: string;
-      evidence: string[];
-    }>;
-  }>;
+  return operationsCapabilitiesSchema.parse(await response.json());
 }
 
 export async function fetchOperationsWorkspace(facilityId: string) {

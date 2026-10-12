@@ -1,7 +1,8 @@
 import {
-  operationsWorkspaceSchema,
-  type OperationsWorkspace,
+operationsWorkspaceSchema,
+type OperationsWorkspace,
 } from "../features/operations/workspace-contract";
+import { SupabaseOperationsRepository } from "../server/operations/repository";
 import { operationsMetricSchema } from "./operations-ingest-api";
 import { operationsFingerprint } from "./operations-request";
 
@@ -52,21 +53,11 @@ export async function handleOperationsWorkspace(request: Request, env: Operation
   if (!supabaseUrl || !apiKey)
     return response({ error: "Operations persistence is not configured." }, 503);
 
-  const headers = { apikey: apiKey, authorization, accept: "application/json" };
-  const query = async (table: string, parameters: string) => {
-    const result = await fetch(`${supabaseUrl}/rest/v1/${table}?${parameters}`, {
-      headers,
-      signal: AbortSignal.timeout(10_000),
-    });
-    if (!result.ok) throw new Error(`${table}:${result.status}`);
-    const rows: unknown = await result.json();
-    if (
-      !Array.isArray(rows) ||
-      rows.some((row) => !row || typeof row !== "object" || Array.isArray(row))
-    )
-      throw new Error("Invalid persistence response");
-    return rows as Array<Record<string, unknown>>;
-  };
+  const repository = new SupabaseOperationsRepository(
+    { url: supabaseUrl, publicKey: apiKey },
+    authorization,
+  );
+  const query = repository.readRows.bind(repository);
   const facilityFilter = `facility_id=eq.${encodeURIComponent(facilityId)}`;
   const readMeasurements = async () => {
     const pages = await Promise.all(

@@ -1,5 +1,5 @@
+import { formatMinutes,formatOperationsTime } from "./presentation";
 import type { WorkloadDecision } from "./workload-intelligence";
-import { formatMinutes, formatOperationsTime } from "./presentation";
 
 /** Visualises declared windows, not actual scheduler execution or dispatch. */
 export function WorkloadSchedule({ workload }: { workload: WorkloadDecision }) {

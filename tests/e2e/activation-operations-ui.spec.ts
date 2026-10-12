@@ -189,6 +189,12 @@ test("Compute & Workloads imports real scheduler and DCGM-compatible evidence", 
   await expect(page.getByText("1 GPU telemetry records loaded from gpu.csv.")).toBeVisible();
   await expect(page.getByRole("button", { name: /Customer batch/ })).toBeVisible();
   await expect(page.getByText("measured", { exact: true }).first()).toBeVisible();
+  await page.getByRole("link", { name: "Overview", exact: true }).click();
+  await page.getByRole("link", { name: "Compute & Workloads", exact: true }).click();
+  await expect(page.getByRole("button", { name: /Customer batch/ })).toBeVisible();
+  await expect(page.getByText("1 GPU telemetry records loaded from gpu.csv.")).toBeVisible();
+  await page.getByRole("button", { name: "Restore Scenario", exact: true }).click();
+  await expect(page.getByRole("button", { name: /Customer batch/ })).toHaveCount(0);
 });
 
 test("Power & Battery exposes dispatch physics and imports measured evidence", async ({ page }) => {

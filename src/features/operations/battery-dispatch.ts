@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { readCsv } from "../../shared/csv";
 
 export type BatteryConstraintCode =
   | "none"
@@ -192,20 +193,6 @@ export function simulateBatteryDispatch(
   });
 }
 
-function parseCsv(text: string) {
-  const lines = text
-    .replace(/^\uFEFF/, "")
-    .split(/\r?\n/)
-    .filter((line) => line.trim());
-  if (lines.length < 2)
-    throw new Error("The file must contain a header and at least one data row.");
-  const headers = lines[0].split(",").map((value) => value.trim().toLowerCase());
-  return {
-    headers,
-    rows: lines.slice(1).map((line) => line.split(",").map((value) => value.trim())),
-  };
-}
-
 function numeric(cells: string[], index: number, row: number, label: string, nullable = false) {
   if (index < 0 || cells[index] === "") {
     if (nullable) return null;
@@ -217,7 +204,7 @@ function numeric(cells: string[], index: number, row: number, label: string, nul
 }
 
 export function parseFacilityPowerCsv(text: string): FacilityPowerObservation[] {
-  const { headers, rows } = parseCsv(text);
+  const { headers, rows } = readCsv(text);
   const timestampIndex = headers.indexOf("timestamp");
   const importIndex = headers.findIndex(
     (header) => header === "facility_import_mw" || header === "grid_import_mw",
@@ -245,7 +232,7 @@ export function parseFacilityPowerCsv(text: string): FacilityPowerObservation[] 
 }
 
 export function parseBatteryCsv(text: string): BatteryObservation[] {
-  const { headers, rows } = parseCsv(text);
+  const { headers, rows } = readCsv(text);
   const indexOf = (name: string) => headers.indexOf(name);
   if (indexOf("timestamp") < 0 || indexOf("soc_percent") < 0 || indexOf("active_power_mw") < 0) {
     throw new Error("Required columns: timestamp, soc_percent, active_power_mw.");

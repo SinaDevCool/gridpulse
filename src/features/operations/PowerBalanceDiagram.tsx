@@ -1,7 +1,7 @@
-import { ResponsiveContainer, Sankey } from "recharts";
-import type { NodeProps, LinkProps } from "recharts/types/chart/Sankey";
-import { buildPowerBalanceSankey, type PowerBalancePresentation } from "./power-balance";
-import { formatMw } from "./visualization";
+import { ResponsiveContainer,Sankey } from "recharts";
+import type { LinkProps,NodeProps } from "recharts/types/chart/Sankey";
+import { formatMw } from "./formatting";
+import { buildPowerBalanceSankey,type PowerBalancePresentation } from "./power-balance";
 
 function BalanceNode({ x, y, width, height, payload }: NodeProps) {
   const data = payload as typeof payload & { name: string; tone: string; mw: number };

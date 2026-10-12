@@ -1,52 +1,34 @@
-import { supabase } from "../integrations/supabase/client";
 import {
-  capacityRequirementRequestSchema,
-  facilityPlanRequestSchema,
-  fcaIntervalRequestSchema,
-  fcaProfileRequestSchema,
-  facilityUncertaintyRequestSchema,
-  facilityHistoricalReplayRequestSchema,
-  marketQualificationRequestSchema,
-  rollingFacilityPlanRequestSchema,
-  operatorEnquiryPackageRequestSchema,
-  shadowVerificationRequestSchema,
-  type CapacityRequirementRequest,
-  type FacilityPlanRequest,
-  type FcaIntervalRequest,
-  type FcaProfileRequest,
-  type FacilityUncertaintyRequest,
-  type FacilityHistoricalReplayRequest,
-  type MarketQualificationRequest,
-  type RollingFacilityPlanRequest,
-  type OperatorEnquiryPackageRequest,
-  type ShadowVerificationRequest,
+capacityRequirementRequestSchema,
+facilityHistoricalReplayRequestSchema,
+facilityPlanRequestSchema,
+facilityUncertaintyRequestSchema,
+fcaIntervalRequestSchema,
+fcaProfileRequestSchema,
+marketQualificationRequestSchema,
+operatorEnquiryPackageRequestSchema,
+rollingFacilityPlanRequestSchema,
+shadowVerificationRequestSchema,
+type CapacityRequirementRequest,
+type FacilityHistoricalReplayRequest,
+type FacilityPlanRequest,
+type FacilityUncertaintyRequest,
+type FcaIntervalRequest,
+type FcaProfileRequest,
+type MarketQualificationRequest,
+type OperatorEnquiryPackageRequest,
+type RollingFacilityPlanRequest,
+type ShadowVerificationRequest,
 } from "../features/analytics/contracts";
+import {
+analyticsJobSchema,
+jobAcceptedSchema,
+type AnalyticsJob,
+type JobAccepted,
+} from "../features/analytics/job-contracts";
+import { supabase } from "../integrations/supabase/client";
 
-export type AnalyticsJobStatus = "queued" | "running" | "succeeded" | "failed" | "cancelled";
-
-export interface AnalyticsJob {
-  id: string;
-  owner_id: string;
-  job_type: string;
-  status: AnalyticsJobStatus;
-  input_payload: Record<string, unknown>;
-  result_payload: Record<string, unknown> | null;
-  error: string | null;
-  created_at: string;
-  started_at: string | null;
-  completed_at: string | null;
-  attempt_count: number;
-  lease_owner: string | null;
-  lease_expires_at: string | null;
-  heartbeat_at: string | null;
-  checkpoint_payload: Record<string, unknown>;
-  cancellation_requested: boolean;
-}
-
-interface JobAccepted {
-  job_id: string;
-  status: AnalyticsJobStatus;
-}
+export { type AnalyticsJob,type AnalyticsJobStatus } from "../features/analytics/job-contracts";
 
 export type GraphGuidedStudyRequest = {
   network_model: Record<string, unknown>;
@@ -64,7 +46,7 @@ function analyticsBaseUrl(): string {
   return configured.replace(/\/$/, "");
 }
 
-async function authenticatedRequest<T>(path: string, init?: RequestInit): Promise<T> {
+async function authenticatedRequest(path: string, init?: RequestInit): Promise<unknown> {
   const {
     data: { session },
   } = await supabase.auth.getSession();
@@ -83,15 +65,19 @@ async function authenticatedRequest<T>(path: string, init?: RequestInit): Promis
     const payload = (await response.json().catch(() => null)) as { detail?: string } | null;
     throw new Error(payload?.detail ?? `Analytics request failed with HTTP ${response.status}`);
   }
-  return (await response.json()) as T;
+  return response.json();
+}
+
+async function acceptedRequest(path: string, init?: RequestInit): Promise<JobAccepted> {
+  return jobAcceptedSchema.parse(await authenticatedRequest(path, init));
 }
 
 export function startOperatorSourceHealthJob(): Promise<JobAccepted> {
-  return authenticatedRequest<JobAccepted>("/v1/jobs/operator-source-health", { method: "POST" });
+  return acceptedRequest("/v1/jobs/operator-source-health", { method: "POST" });
 }
 
 export function startGraphGuidedStudy(input: GraphGuidedStudyRequest): Promise<JobAccepted> {
-  return authenticatedRequest<JobAccepted>("/v1/jobs/graph-guided-study", {
+  return acceptedRequest("/v1/jobs/graph-guided-study", {
     method: "POST",
     body: JSON.stringify(input),
   });
@@ -99,7 +85,7 @@ export function startGraphGuidedStudy(input: GraphGuidedStudyRequest): Promise<J
 
 export function startFacilityPlan(input: FacilityPlanRequest): Promise<JobAccepted> {
   const payload = facilityPlanRequestSchema.parse(input);
-  return authenticatedRequest<JobAccepted>("/v1/jobs/facility-plan", {
+  return acceptedRequest("/v1/jobs/facility-plan", {
     method: "POST",
     body: JSON.stringify(payload),
   });
@@ -107,7 +93,7 @@ export function startFacilityPlan(input: FacilityPlanRequest): Promise<JobAccept
 
 export function startFcaInterval(input: FcaIntervalRequest): Promise<JobAccepted> {
   const payload = fcaIntervalRequestSchema.parse(input);
-  return authenticatedRequest<JobAccepted>("/v1/jobs/fca-interval", {
+  return acceptedRequest("/v1/jobs/fca-interval", {
     method: "POST",
     body: JSON.stringify(payload),
   });
@@ -115,7 +101,7 @@ export function startFcaInterval(input: FcaIntervalRequest): Promise<JobAccepted
 
 export function startFcaProfile(input: FcaProfileRequest): Promise<JobAccepted> {
   const payload = fcaProfileRequestSchema.parse(input);
-  return authenticatedRequest<JobAccepted>("/v1/jobs/fca-profile", {
+  return acceptedRequest("/v1/jobs/fca-profile", {
     method: "POST",
     body: JSON.stringify(payload),
   });
@@ -123,7 +109,7 @@ export function startFcaProfile(input: FcaProfileRequest): Promise<JobAccepted> 
 
 export function startCapacityRequirement(input: CapacityRequirementRequest): Promise<JobAccepted> {
   const payload = capacityRequirementRequestSchema.parse(input);
-  return authenticatedRequest<JobAccepted>("/v1/jobs/capacity-requirement", {
+  return acceptedRequest("/v1/jobs/capacity-requirement", {
     method: "POST",
     body: JSON.stringify(payload),
   });
@@ -131,7 +117,7 @@ export function startCapacityRequirement(input: CapacityRequirementRequest): Pro
 
 export function startFacilityUncertainty(input: FacilityUncertaintyRequest): Promise<JobAccepted> {
   const payload = facilityUncertaintyRequestSchema.parse(input);
-  return authenticatedRequest<JobAccepted>("/v1/jobs/facility-uncertainty", {
+  return acceptedRequest("/v1/jobs/facility-uncertainty", {
     method: "POST",
     body: JSON.stringify(payload),
   });
@@ -141,7 +127,7 @@ export function startFacilityHistoricalReplay(
   input: FacilityHistoricalReplayRequest,
 ): Promise<JobAccepted> {
   const payload = facilityHistoricalReplayRequestSchema.parse(input);
-  return authenticatedRequest<JobAccepted>("/v1/jobs/facility-historical-replay", {
+  return acceptedRequest("/v1/jobs/facility-historical-replay", {
     method: "POST",
     body: JSON.stringify(payload),
   });
@@ -149,7 +135,7 @@ export function startFacilityHistoricalReplay(
 
 export function startMarketQualification(input: MarketQualificationRequest): Promise<JobAccepted> {
   const payload = marketQualificationRequestSchema.parse(input);
-  return authenticatedRequest<JobAccepted>("/v1/jobs/market-qualification", {
+  return acceptedRequest("/v1/jobs/market-qualification", {
     method: "POST",
     body: JSON.stringify(payload),
   });
@@ -157,7 +143,7 @@ export function startMarketQualification(input: MarketQualificationRequest): Pro
 
 export function startRollingFacilityPlan(input: RollingFacilityPlanRequest): Promise<JobAccepted> {
   const payload = rollingFacilityPlanRequestSchema.parse(input);
-  return authenticatedRequest<JobAccepted>("/v1/jobs/rolling-facility-plan", {
+  return acceptedRequest("/v1/jobs/rolling-facility-plan", {
     method: "POST",
     body: JSON.stringify(payload),
   });
@@ -167,7 +153,7 @@ export function startOperatorEnquiryPackage(
   input: OperatorEnquiryPackageRequest,
 ): Promise<JobAccepted> {
   const payload = operatorEnquiryPackageRequestSchema.parse(input);
-  return authenticatedRequest<JobAccepted>("/v1/jobs/operator-enquiry-package", {
+  return acceptedRequest("/v1/jobs/operator-enquiry-package", {
     method: "POST",
     body: JSON.stringify(payload),
   });
@@ -175,7 +161,7 @@ export function startOperatorEnquiryPackage(
 
 export function startShadowVerification(input: ShadowVerificationRequest): Promise<JobAccepted> {
   const payload = shadowVerificationRequestSchema.parse(input);
-  return authenticatedRequest<JobAccepted>("/v1/jobs/shadow-verification", {
+  return acceptedRequest("/v1/jobs/shadow-verification", {
     method: "POST",
     body: JSON.stringify(payload),
   });
@@ -195,20 +181,24 @@ export async function waitForAnalyticsJob(
   throw new Error("Analytics job polling timed out");
 }
 
-export function loadAnalyticsJob(jobId: string): Promise<AnalyticsJob> {
-  return authenticatedRequest<AnalyticsJob>(`/v1/jobs/${encodeURIComponent(jobId)}`);
-}
-
-export function listAnalyticsJobs(limit = 100): Promise<AnalyticsJob[]> {
-  return authenticatedRequest<AnalyticsJob[]>(
-    `/v1/jobs?limit=${Math.min(Math.max(limit, 1), 200)}`,
+export async function loadAnalyticsJob(jobId: string): Promise<AnalyticsJob> {
+  return analyticsJobSchema.parse(
+    await authenticatedRequest(`/v1/jobs/${encodeURIComponent(jobId)}`),
   );
 }
 
-export function cancelAnalyticsJob(jobId: string): Promise<AnalyticsJob> {
-  return authenticatedRequest<AnalyticsJob>(`/v1/jobs/${encodeURIComponent(jobId)}/cancel`, {
-    method: "POST",
-  });
+export async function listAnalyticsJobs(limit = 100): Promise<AnalyticsJob[]> {
+  return analyticsJobSchema
+    .array()
+    .parse(await authenticatedRequest(`/v1/jobs?limit=${Math.min(Math.max(limit, 1), 200)}`));
+}
+
+export async function cancelAnalyticsJob(jobId: string): Promise<AnalyticsJob> {
+  return analyticsJobSchema.parse(
+    await authenticatedRequest(`/v1/jobs/${encodeURIComponent(jobId)}/cancel`, {
+      method: "POST",
+    }),
+  );
 }
 
 export function safeAnalyticsError(job: AnalyticsJob): string | null {

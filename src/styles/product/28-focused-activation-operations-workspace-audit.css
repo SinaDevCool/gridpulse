@@ -1,0 +1,571 @@
+/* Focused Activation & Operations workspace audit */
+
+.product-header--minimal {
+  height: 58px;
+  justify-content: flex-start;
+  gap: 24px;
+  padding-inline: max(24px, calc((100vw - 1120px) / 2));
+}
+
+.product-marketing-navigation {
+  display: flex;
+  align-items: stretch;
+  align-self: stretch;
+  gap: 4px;
+}
+
+.product-marketing-navigation a {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding-inline: 14px;
+  color: #8da2af;
+  font-size: 0.72rem;
+  font-weight: 650;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.product-marketing-navigation a:not(.product-marketing-cta)::after {
+  position: absolute;
+  right: 14px;
+  bottom: 0;
+  left: 14px;
+  height: 2px;
+  background: transparent;
+  content: "";
+}
+
+.product-marketing-navigation a:hover,
+.product-marketing-navigation a:focus-visible,
+.product-marketing-navigation a.active {
+  color: #f0f8fb;
+}
+
+.product-marketing-navigation a.active::after {
+  background: #35dff1;
+}
+
+.product-marketing-navigation .product-marketing-cta {
+  align-self: center;
+  min-height: 36px;
+  margin-left: 10px;
+  background: #35dff1;
+  color: #041015;
+}
+
+.product-marketing-navigation .product-marketing-cta:hover,
+.product-marketing-navigation .product-marketing-cta:focus-visible {
+  background: #8decf7;
+  color: #041015;
+}
+
+.app-header .workspace-navigation {
+  display: flex;
+  align-self: stretch;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.workspace-navigation-item {
+  display: flex;
+  align-self: stretch;
+  align-items: center;
+  gap: 18px;
+}
+
+.workspace-navigation-divider {
+  width: 1px;
+  height: 26px;
+  margin-left: 14px;
+  background: #29404f;
+}
+
+.workspace-navigation a {
+  position: relative;
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  align-items: center;
+  align-self: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 6px 12px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  color: #7f96a5;
+  text-decoration: none;
+  touch-action: manipulation;
+}
+
+.workspace-navigation a::after {
+  position: absolute;
+  right: 12px;
+  bottom: 0;
+  left: 12px;
+  height: 2px;
+  border-radius: 999px;
+  background: transparent;
+  content: "";
+}
+
+.workspace-navigation a:hover,
+.workspace-navigation a:focus-visible {
+  background: rgb(53 223 241 / 4%);
+  color: #dce8ee;
+}
+
+.workspace-navigation a:focus-visible,
+.workspace-navigation-toggle:focus-visible {
+  outline: 2px solid #49d3ff;
+  outline-offset: 2px;
+}
+
+.workspace-navigation a.active {
+  border-color: rgb(53 223 241 / 18%);
+  background: rgb(53 223 241 / 7%);
+  color: #effbff;
+}
+
+.workspace-navigation a.active::after {
+  background: #20c4e8;
+}
+
+.workspace-navigation a > svg {
+  width: 18px;
+  height: 18px;
+  color: #20c4e8;
+}
+
+.workspace-navigation a > span:last-child {
+  min-width: 0;
+}
+
+.workspace-navigation strong,
+.workspace-navigation small {
+  display: block;
+}
+
+.workspace-navigation strong {
+  font-size: 0.8rem;
+  line-height: 1.15;
+}
+
+.workspace-navigation small {
+  margin-top: 2px;
+  overflow: hidden;
+  font-size: 0.62rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-navigation-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  margin-left: auto;
+  border: 1px solid #29404f;
+  border-radius: 8px;
+  background: transparent;
+  color: #dce8ee;
+}
+
+.workspace-navigation-toggle:hover {
+  border-color: #3f6275;
+  background: rgb(53 223 241 / 7%);
+}
+
+.workspace-navigation-toggle:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.workspace-navigation-toggle svg {
+  width: 20px;
+  height: 20px;
+}
+
+.product-shell--focused {
+  min-width: 0;
+  overflow-x: hidden;
+  background: #f6f8fa;
+  color: #101828;
+}
+
+.product-shell--focused .product-truth--compact {
+  width: min(1120px, calc(100% - 48px));
+  margin-top: 12px;
+  border: 0;
+  border-radius: 8px;
+  background: #102231;
+}
+
+.product-truth--compact .product-truth-heading {
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 0;
+}
+
+.product-truth--compact .product-truth-heading > svg {
+  margin-top: 0;
+}
+
+.product-truth--compact .product-truth-heading p {
+  margin-top: 2px;
+  max-width: 880px;
+}
+
+.product-shell--focused .section-page {
+  width: min(1120px, calc(100% - 48px));
+  padding: 28px 0 64px;
+}
+
+.product-shell--focused .page-heading {
+  align-items: center;
+  margin-bottom: 22px;
+}
+
+.product-shell--focused .page-heading h1 {
+  color: #101828;
+  font-size: clamp(1.65rem, 3vw, 2rem);
+  text-wrap: balance;
+}
+
+.product-shell--focused .page-heading > div {
+  min-width: 0;
+}
+
+.product-shell--focused .page-heading > div > p:last-child {
+  color: #667085;
+  text-wrap: pretty;
+}
+
+.product-shell--focused :where(h1, h2) {
+  text-wrap: balance;
+}
+
+.product-shell--focused :where(button, a) {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(21, 112, 239, 0.14);
+}
+
+.activation-status-line > span:last-child,
+.operations-mode p,
+.project-card-copy {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.activation-kpis strong,
+.activation-recommendation > strong,
+.activation-detail strong,
+.operations-main header > strong,
+.operations-side > strong,
+.operations-cards strong,
+.envelope-history > div,
+.operations-events time {
+  font-variant-numeric: tabular-nums;
+}
+
+.activation-chart-card,
+.activation-recommendation,
+.operations-main,
+.operations-side,
+.operations-events,
+.control-readiness {
+  border-radius: 10px;
+}
+
+.activation-chart-card,
+.operations-main {
+  overflow: hidden;
+}
+
+.activation-details-toggle {
+  min-height: 44px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.activation-details-toggle::-webkit-details-marker {
+  display: none;
+}
+
+.activation-details-toggle:hover {
+  border-color: #84adff;
+  background: #f8fbff;
+}
+
+.activation-details-toggle:focus-visible {
+  outline: 2px solid #1570ef;
+  outline-offset: 2px;
+}
+
+.activation-project-card {
+  min-height: 68px;
+  text-decoration: none;
+}
+
+.project-card-copy h2,
+.project-card-copy p {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-empty {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 48px 24px;
+  border: 1px dashed #cfd5de;
+  border-radius: 10px;
+  background: #fff;
+  text-align: center;
+}
+
+.workspace-empty > svg {
+  width: 22px;
+  color: #1570ef;
+}
+
+.workspace-empty h2,
+.workspace-empty p {
+  margin: 0;
+}
+
+.workspace-empty p {
+  max-width: 420px;
+  color: #667085;
+  font-size: 0.82rem;
+}
+
+.workspace-empty .primary-button {
+  margin-top: 8px;
+}
+
+.workspace-error {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  padding: 28px;
+  border: 1px solid #fecdca;
+  border-radius: 10px;
+  background: #fff7f6;
+}
+
+.workspace-error h1,
+.workspace-error h2,
+.workspace-error p {
+  margin: 0;
+}
+
+.workspace-error h1,
+.workspace-error h2 {
+  color: #912018;
+  font-size: 1rem;
+}
+
+.workspace-error p {
+  color: #667085;
+  font-size: 0.82rem;
+}
+
+.workspace-error button {
+  min-height: 44px;
+  margin-top: 6px;
+}
+
+.activation-detail > span:first-child,
+.operations-cards article > span:first-child {
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+.activation-detail > span:first-child svg,
+.operations-cards article > span:first-child svg {
+  width: 18px;
+}
+
+.product-shell--focused .product-footer {
+  border-top-color: #dfe3e8;
+  background: #eef1f4;
+  color: #667085;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .activation-details-toggle svg {
+    transition: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .product-header--minimal:has(.product-marketing-navigation) {
+    height: auto;
+    min-height: 58px;
+    align-items: stretch;
+    padding: 0 16px;
+    flex-direction: column;
+  }
+  .product-header--minimal:has(.product-marketing-navigation) > .brand {
+    min-height: 52px;
+    align-self: flex-start;
+  }
+  .product-marketing-navigation {
+    width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .product-marketing-navigation::-webkit-scrollbar {
+    display: none;
+  }
+  .product-marketing-navigation a {
+    min-height: 44px;
+    padding-inline: 12px;
+  }
+  .product-marketing-navigation .product-marketing-cta {
+    min-height: 34px;
+    margin-left: 6px;
+  }
+  .product-header--minimal:not(:has(.product-marketing-navigation)) {
+    gap: 10px;
+    padding-inline: 16px;
+  }
+  .product-header--minimal:not(:has(.product-marketing-navigation)) .theme-control {
+    margin-left: 0;
+  }
+  .workspace-navigation-toggle {
+    display: inline-flex;
+  }
+  .app-header .workspace-navigation {
+    position: fixed;
+    top: 58px;
+    right: 0;
+    left: 0;
+    z-index: 25;
+    display: grid;
+    align-content: start;
+    gap: 4px;
+    padding: 10px 16px 14px;
+    border-bottom: 1px solid #29404f;
+    background: rgb(7 19 31 / 98%);
+    box-shadow: 0 16px 40px rgb(0 0 0 / 28%);
+    overscroll-behavior: contain;
+    transform: translateY(-120%);
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      transform 160ms ease,
+      opacity 160ms ease;
+  }
+  .workspace-navigation[data-open="true"] {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .workspace-navigation-item {
+    display: block;
+  }
+  .workspace-navigation-divider {
+    display: block;
+    width: 100%;
+    height: 1px;
+    margin: 8px 0;
+  }
+  .workspace-navigation a {
+    width: 100%;
+    min-height: 54px;
+    padding: 8px 12px;
+  }
+  .workspace-navigation a::after {
+    top: 8px;
+    right: auto;
+    bottom: 8px;
+    left: 0;
+    width: 2px;
+    height: auto;
+  }
+  .product-shell--focused .product-truth--compact,
+  .product-shell--focused .section-page {
+    width: min(100% - 32px, 1120px);
+  }
+  .product-truth--compact .product-truth-heading p {
+    display: none;
+  }
+  .product-shell--focused .section-page {
+    padding-top: 20px;
+  }
+  .product-shell--focused .page-heading {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .product-shell--focused .page-heading .secondary-button {
+    width: 100%;
+    justify-content: center;
+    min-height: 44px;
+  }
+  .activation-status-line,
+  .operations-mode {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .activation-chart-card svg,
+  .operations-main svg {
+    height: clamp(180px, 52vw, 240px);
+  }
+  .control-readiness header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .control-readiness header > span {
+    margin-left: 0;
+  }
+  .operations-events > div {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .operations-events time {
+    grid-column: 2;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workspace-navigation {
+    transition: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .activation-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .activation-kpis article {
+    padding: 1rem;
+  }
+  .activation-kpis strong {
+    font-size: 1.55rem;
+  }
+  .activation-recommendation {
+    grid-template-columns: 1fr;
+  }
+  .activation-recommendation > svg,
+  .activation-recommendation > strong {
+    grid-column: 1;
+  }
+}
+
+@media (max-width: 520px) {
+  .activation-kpis {
+    grid-template-columns: 1fr;
+  }
+  .activation-project-card {
+    grid-template-columns: auto 1fr;
+  }
+  .activation-project-card > strong {
+    grid-column: 2;
+  }
+}

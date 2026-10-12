@@ -13,37 +13,16 @@ from datetime import datetime, timezone
 from uuid import UUID
 
 from grid_data.api.executor import JobExecutor, OperatorHealthExecutor
+from grid_data.api.jobs.registry import JOB_TYPES
 from grid_data.api.models import JobStatus
 from grid_data.api.store import JobStore, SupabaseJobStore
 
 
 def executor_for(job_type: str, executor: JobExecutor) -> Callable[[UUID], None]:
-    methods = {
-        "operator_source_health": executor.execute_operator_source_health,
-        "reference_topology": executor.execute_reference_topology,
-        "facility_plan": executor.execute_facility_plan,
-        "fca_interval": executor.execute_fca_interval,
-        "capacity_requirement": executor.execute_capacity_requirement,
-        "facility_uncertainty": executor.execute_facility_uncertainty,
-        "market_qualification": executor.execute_market_qualification,
-        "rolling_facility_plan": executor.execute_rolling_facility_plan,
-        "facility_historical_replay": executor.execute_facility_historical_replay,
-        "operator_enquiry_package": executor.execute_operator_enquiry_package,
-        "shadow_verification": executor.execute_shadow_verification,
-        "synthetic_capacity": executor.execute_synthetic_capacity,
-        "release_b_network": executor.execute_release_b_network,
-        "c1_network_study": executor.execute_c1_network_study,
-        "c2_hourly_capacity": executor.execute_c2_hourly_capacity,
-        "c3_security_flexibility": executor.execute_c3_security_flexibility,
-        "c4_reconciliation": executor.execute_c4_reconciliation,
-        "p0_p4_permutation": executor.execute_p0_p4_permutation,
-        "release3_shadow_validation": executor.execute_release3_shadow_validation,
-        "graph_guided_study": executor.execute_graph_guided_study,
-    }
-    try:
-        return methods[job_type]
-    except KeyError as error:
-        raise ValueError(f"Unsupported analytics job type: {job_type}") from error
+    if job_type not in JOB_TYPES:
+        raise ValueError(f"Unsupported analytics job type: {job_type}")
+    execute = getattr(executor, "execute", None)
+    return execute if callable(execute) else getattr(executor, f"execute_{job_type}")
 
 
 def run_once(store: JobStore, executor: JobExecutor, worker_id: str) -> bool:

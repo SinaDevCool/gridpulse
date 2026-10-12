@@ -144,6 +144,8 @@ for (const view of ["overview", "compute", "power"]) {
       await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
       for (const width of [1440, 390]) {
         await page.setViewportSize({ width, height: 1000 });
+        // Recharts animates resized paths for 1500ms; capture the completed graph, not an intermediate ribbon.
+        await page.waitForTimeout(1700);
         const tabBounds = await page.locator(".operations-v2-tabs").boundingBox();
         expect(tabBounds!.height).toBeLessThan(110);
         expect(
@@ -175,13 +177,11 @@ test("large imported workload queues are bounded and paginate without losing rec
     (_, index) =>
       `job-${index},Batch ${index},batch,queued,10,2026-09-26T00:00:00Z,2026-09-26T20:00:00Z,60,8,4,true,true,120`,
   );
-  await page
-    .getByLabel(/Workload CSV/)
-    .setInputFiles({
-      name: "queue.csv",
-      mimeType: "text/csv",
-      buffer: Buffer.from([header, ...records].join("\n")),
-    });
+  await page.getByLabel(/Workload CSV/).setInputFiles({
+    name: "queue.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from([header, ...records].join("\n")),
+  });
   await expect(page.getByText("55 scheduler records loaded from queue.csv.")).toBeVisible();
   await expect(page.locator(".compute-table-wrap tbody tr")).toHaveCount(50);
   await page.getByRole("button", { name: "Next page", exact: true }).click();

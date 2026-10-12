@@ -1,0 +1,348 @@
+/* Operational power-balance modules */
+
+.power-insight-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2.15fr) minmax(21rem, 0.85fr);
+  gap: 1.25rem;
+}
+
+.power-flow-card,
+.battery-soc-card {
+  min-width: 0;
+  padding: 1.25rem;
+  border: 1px solid var(--ops-border-strong);
+  border-radius: 15px;
+  background: var(--ops-surface);
+  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.07);
+}
+
+.power-flow-card > header,
+.battery-soc-card > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.power-flow-card h3,
+.battery-soc-card h3 {
+  margin: 0.2rem 0 0;
+  font-size: 1.12rem;
+}
+
+.balance-diagram {
+  margin-top: 1rem;
+  min-width: 0;
+}
+
+.balance-sankey {
+  height: 280px;
+  width: 100%;
+}
+
+.balance-node-name {
+  fill: var(--ops-text);
+  font-size: 12px;
+}
+
+.balance-node-value {
+  fill: var(--ops-text);
+  font-size: 14px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+
+.balance-values {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 0 16px;
+}
+
+.balance-values div {
+  min-width: 0;
+  border-top: 2px solid var(--ops-border);
+  padding-top: 10px;
+}
+
+.balance-values dt {
+  color: var(--ops-muted);
+  font-size: 0.8rem;
+}
+
+.balance-values dd {
+  margin: 5px 0 0;
+  font-weight: 700;
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+
+.balance-warning {
+  padding: 20px;
+  color: var(--ops-target);
+  background: color-mix(in srgb, var(--ops-target) 8%, transparent);
+  border-radius: 8px;
+}
+
+.power-flow-equations {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  border-top: 1px solid var(--ops-border);
+  padding-top: 12px;
+}
+
+.power-flow-equations span {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  color: var(--ops-muted);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.power-flow-equations strong {
+  color: var(--ops-text);
+}
+
+.power-flow-note {
+  margin: 0.8rem 0 0;
+  color: var(--ops-muted);
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
+.battery-soc-body {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.battery-reserve-reading {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.battery-reserve-reading strong {
+  font-size: 2.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.battery-reserve-reading small {
+  color: var(--ops-muted);
+}
+
+.battery-reserve-track {
+  position: relative;
+  height: 20px;
+  border-radius: 5px;
+  background: var(--ops-border);
+}
+
+.battery-reserve-fill,
+.battery-reserve-protected {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 5px;
+  background: var(--ops-positive);
+}
+
+.battery-reserve-protected {
+  background: repeating-linear-gradient(135deg, var(--ops-border) 0 4px, var(--ops-muted) 4px 5px);
+}
+
+.battery-reserve-marker {
+  position: absolute;
+  top: -5px;
+  bottom: -5px;
+  width: 2px;
+  background: var(--ops-target);
+}
+
+.battery-reserve-marker.maximum {
+  background: var(--ops-reference);
+}
+
+.power-interval-control {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 16px 28px;
+  padding: 12px 0;
+}
+
+.power-interval-control > div {
+  min-width: 220px;
+}
+
+.power-interval-control > span {
+  display: grid;
+  gap: 6px;
+  color: var(--ops-muted);
+  font-size: 0.8rem;
+}
+
+.power-interval-control strong {
+  color: var(--ops-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.operations-assessment-date {
+  margin: 8px 0 16px;
+  font-size: 0.8rem;
+  color: var(--ops-muted);
+  line-height: 1.5;
+}
+
+.operations-chart-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0;
+  font-size: 0.8rem;
+  color: var(--ops-muted);
+  cursor: pointer;
+}
+
+.operations-chart-option input {
+  accent-color: var(--ops-accent);
+  width: 16px;
+  height: 16px;
+}
+
+.workload-schedule {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--ops-border);
+}
+
+.workload-schedule h4 {
+  margin: 0 0 6px;
+}
+
+.workload-schedule > p {
+  color: var(--ops-muted);
+  font-size: 0.8rem;
+}
+
+.workload-schedule-row {
+  display: grid;
+  grid-template-columns: 70px minmax(0, 1fr) 85px;
+  gap: 8px;
+  align-items: center;
+  margin: 16px 0;
+  font-size: 0.8rem;
+}
+
+.workload-schedule-row > div {
+  height: 12px;
+  background: var(--ops-border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.workload-schedule-row i {
+  display: block;
+  height: 100%;
+  background: var(--ops-reference);
+  border-radius: 3px;
+}
+
+.workload-schedule-row.proposed i {
+  background: var(--ops-response);
+}
+
+.workload-schedule-row strong {
+  font-size: 0.75rem;
+  text-align: right;
+}
+
+.compute-queue-card tr.recommended th {
+  border-left: 3px solid var(--ops-response);
+}
+
+.compute-drawer {
+  overscroll-behavior: contain;
+}
+
+.operations-v2 summary {
+  cursor: pointer;
+  min-height: 36px;
+  align-content: center;
+}
+
+.operations-v2 summary:focus-visible {
+  outline: 2px solid var(--ops-accent);
+  outline-offset: 4px;
+}
+
+.operations-envelope-caption {
+  color: var(--ops-muted);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 700px) {
+  .balance-sankey {
+    display: none;
+  }
+  .balance-values {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .power-interval-control {
+    align-items: stretch;
+  }
+  .power-interval-control > div {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (min-width: 1500px) {
+  .operations-v2-header {
+    min-height: 5.5rem;
+  }
+  .operations-v2-kpis,
+  .power-kpis {
+    gap: 0.9rem;
+  }
+  .operations-v2-metric {
+    min-height: 8.25rem;
+  }
+  .operations-v2-overview-grid,
+  .compute-primary-grid,
+  .power-primary-grid {
+    grid-template-columns: minmax(0, 3.25fr) minmax(21rem, 1fr);
+  }
+  .operations-v2-chart,
+  .compute-timeline {
+    min-height: 25rem;
+  }
+}
+
+.battery-soc-body dl {
+  margin: 0;
+}
+
+.battery-soc-body dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.battery-soc-body dt {
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+}
+
+.battery-soc-body dd {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}

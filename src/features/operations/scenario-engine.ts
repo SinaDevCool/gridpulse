@@ -1,10 +1,10 @@
 import { z } from "zod";
-import type { EvidencedValue } from "./evidence";
 import { simulateBatteryDispatch } from "./battery-dispatch";
+import type { EvidencedValue } from "./evidence";
 import {
-  calculateOperatingEnvelope,
-  summarizeOperatingEnvelope,
-  type OperatingEnvelopeInterval,
+calculateOperatingEnvelope,
+summarizeOperatingEnvelope,
+type OperatingEnvelopeInterval,
 } from "./operating-envelope";
 
 export const operationsScenarioSchema = z
@@ -202,8 +202,11 @@ function workloadUtilization(index: number) {
 
 export function buildOperationsScenario(
   raw: OperationsScenario = defaultOperationsScenario,
+  generatedAt = new Date().toISOString(),
 ): OperationsOverviewModel {
   const scenario = operationsScenarioSchema.parse(raw);
+  const evidenceAt = <T>(value: T, unit: string | undefined, sourceLabel: string) =>
+    evidenced(value, unit, sourceLabel, generatedAt);
   const intervalHours = 0.25;
   const targetMw = scenario.importLimitMw - scenario.safetyReserveMw;
   const baselineIntervals = Array.from({ length: 96 }, (_, index) => {
@@ -397,9 +400,9 @@ export function buildOperationsScenario(
         : []),
     ],
     scenario,
-    generatedAt: new Date().toISOString(),
+    generatedAt,
     metrics: {
-      facilityDemand: evidenced(current.combinedDemandMw, "MW", "Scenario engine"),
+      facilityDemand: evidenceAt(current.combinedDemandMw, "MW", "Scenario engine"),
       operationalLimit: {
         value: scenario.importLimitMw,
         unit: "MW",
@@ -407,17 +410,17 @@ export function buildOperationsScenario(
         sourceLabel: "Scenario input",
         quality: "accepted",
       },
-      remainingMargin: evidenced(
+      remainingMargin: evidenceAt(
         round(remainingMargin),
         "MW",
         "Limit less reserve and simulated demand",
       ),
-      additionalGpus: evidenced(
+      additionalGpus: evidenceAt(
         additionalGpus,
         undefined,
         "Margin divided by incremental facility power per GPU",
       ),
-      limitRisk: evidenced(risk, undefined, "Scenario comparison"),
+      limitRisk: evidenceAt(risk, undefined, "Scenario comparison"),
     },
     intervals,
     summaries,
@@ -436,13 +439,18 @@ export function buildOperationsScenario(
   };
 }
 
-function evidenced<T>(value: T, unit: string | undefined, sourceLabel: string): EvidencedValue<T> {
+function evidenced<T>(
+  value: T,
+  unit: string | undefined,
+  sourceLabel: string,
+  calculatedAt: string,
+): EvidencedValue<T> {
   return {
     value,
     unit,
     evidenceClass: "simulated",
     sourceLabel,
-    calculatedAt: new Date().toISOString(),
+    calculatedAt,
     quality: "accepted",
   };
 }

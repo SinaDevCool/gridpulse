@@ -254,8 +254,17 @@ test("the MVP decision package is concise and downloads a valid PDF", async ({
 
 test("the release workbook passes the browser import preview", async ({ page }, testInfo) => {
   test.setTimeout(120_000);
+  // Fixed accepted release: workbook workflow regression must not depend on live RPC availability.
+  await page.route("**/api/power-finder/viewport?**", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      path: "public/power-finder/brandenburg-osm.json",
+    }),
+  );
   await page.goto("/portfolio");
-  await expect(page.getByRole("heading", { name: "No Sites in the Pipeline" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "No Sites in the Pipeline" })).toBeVisible({
+    timeout: 20_000,
+  });
   await page.getByText("Workspace Data").click();
   await page.getByRole("button", { name: "Import Sites" }).click();
   await expect(page).toHaveURL(/import=open/);
@@ -294,13 +303,16 @@ test("the release workbook passes the browser import preview", async ({ page }, 
   await candidateDetail.getByRole("button", { name: "Compare", exact: true }).click();
   await page.getByRole("button", { name: "Close detail" }).click();
   await candidates.first().click();
-  const shortlist = page.getByRole("button", { name: /Shortlist for Brandenburg South Campus/i });
+  const shortlist = candidateDetail.getByRole("button", {
+    name: "Shortlist candidate",
+    exact: true,
+  });
   await expect(shortlist).toBeEnabled();
   await shortlist.click();
   await expect(page.locator('p.sr-only[role="status"]')).toContainText(
     "shortlisted for Brandenburg South Campus",
   );
-  await page.getByRole("link", { name: "Return to Site Workspace" }).first().click();
+  await candidateDetail.getByRole("link", { name: "Open Site Workspace", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Brandenburg South Campus" })).toBeVisible();
   await page.getByRole("button", { name: "Site Checks", exact: true }).click();
   await page.getByRole("button", { name: "Power Options", exact: true }).click();
@@ -415,7 +427,9 @@ test("comparison supports multiple candidates and resets when the site changes",
   await page.goto(
     "/power-finder?lat=52.31&lng=13.36&projectType=battery_storage&mw=50&exportMw=40",
   );
-  await expect(page.getByText(/candidate site-to-node matches/i).first()).toBeVisible();
+  await expect(page.getByText(/candidate site-to-node matches/i).first()).toBeVisible({
+    timeout: 20_000,
+  });
 
   const candidates = page.getByRole("button", { name: /Show .* on map, .*\/100/ });
   await candidates.nth(0).click();
@@ -510,8 +524,8 @@ test("generation preset exposes governed capacity controls", async ({ page }) =>
   await expect(registryControls.or(unavailableState)).toHaveCount(1);
   if ((await registryControls.count()) > 0) {
     await page.getByRole("button", { name: "Show map legend" }).click();
-    await expect(page.getByLabel("Maximum")).toHaveCount(1);
-    await page.getByLabel("Maximum").selectOption("100");
+    await expect(page.getByLabel("Maximum", { exact: true })).toHaveCount(1);
+    await page.getByLabel("Maximum", { exact: true }).selectOption("100");
     await expect(page).toHaveURL(/storageMaxMw=100/);
   } else {
     await expect(unavailableState).toHaveCount(1);
@@ -581,10 +595,16 @@ test("discover locations exposes generation and storage context filters", async 
   await expect(page.getByLabel("Discovery minimum registered storage power")).toHaveValue("1");
 });
 
-test("regional discovery runs on public backend data and invalidates stale results", async ({
+test("regional discovery consumes an accepted release contract and invalidates stale results", async ({
   page,
 }) => {
   test.setTimeout(120_000);
+  await page.route("**/api/power-finder/viewport?**", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      path: "public/power-finder/brandenburg-osm.json",
+    }),
+  );
   await page.goto("/power-finder?region=DE-BE");
   await expect(page.getByText("Loading map context…")).toHaveCount(0, { timeout: 20_000 });
   await page
@@ -604,6 +624,27 @@ test("regional discovery runs on public backend data and invalidates stale resul
     await page.getByLabel("Ranking strategy").selectOption("energy");
     await expect(rankedAreas).toHaveCount(0);
   }
+});
+
+test("regional discovery reports unavailable samples rather than inventing results", async ({
+  page,
+}) => {
+  await page.route("**/api/power-finder/viewport?**", (route) =>
+    route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: '{"error":"unavailable"}',
+    }),
+  );
+  await page.goto("/power-finder?region=DE-BE&workflow=discover");
+  await expect(page.locator(".power-finder-source")).toBeVisible({ timeout: 20_000 });
+  await page.getByRole("button", { name: "Find 10 investigation locations" }).click();
+  await expect(page.locator('p.sr-only[role="status"]')).toContainText(
+    "Regional data sampling was incomplete",
+    { timeout: 20_000 },
+  );
+  await expect(page.getByRole("heading", { name: "Ranked areas" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Find 10 investigation locations" })).toBeEnabled();
 });
 
 test("candidate detail and map legend can be dismissed on a laptop viewport", async ({ page }) => {
@@ -892,7 +933,9 @@ test("candidate operator context identifies known DSO and TSO records", async ({
 
   await page.getByRole("button", { name: /Show Rönnebeck on map/i }).click();
   let detail = page.locator(".power-finder-detail.open");
-  await expect(detail.getByText("wesernetz Bremen GmbH", { exact: true })).toBeVisible();
+  await expect(
+    detail.getByLabel("Operator context").getByText("wesernetz Bremen GmbH", { exact: true }),
+  ).toBeVisible();
   await expect(detail.getByText("DSO", { exact: true })).toBeVisible();
 
   await page.goto(
@@ -903,7 +946,9 @@ test("candidate operator context identifies known DSO and TSO records", async ({
   });
   await page.getByRole("button", { name: /Show Umspannwerk Neuenkirchen on map/i }).click();
   detail = page.locator(".power-finder-detail.open");
-  await expect(detail.getByText("TenneT TSO GmbH", { exact: true })).toBeVisible();
+  await expect(
+    detail.getByLabel("Operator context").getByText("TenneT TSO GmbH", { exact: true }),
+  ).toBeVisible();
   await expect(detail.getByText("TSO", { exact: true })).toBeVisible();
   expect(cspErrors).toEqual([]);
 });

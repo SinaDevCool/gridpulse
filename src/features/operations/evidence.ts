@@ -26,4 +26,3 @@ export const evidenceLabels: Record<EvidenceClass, string> = {
   simulated: "Simulated",
   unavailable: "Unavailable",
 };
-

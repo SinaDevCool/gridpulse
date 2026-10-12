@@ -6,6 +6,16 @@ import {
 } from "./scenario-engine";
 
 describe("operations scenario engine", () => {
+  it("is deterministic with an explicit clock and never changes numeric results with metadata time", () => {
+    const first = buildOperationsScenario(defaultOperationsScenario, "2026-10-12T00:00:00Z");
+    const same = buildOperationsScenario(defaultOperationsScenario, "2026-10-12T00:00:00Z");
+    const later = buildOperationsScenario(defaultOperationsScenario, "2026-10-13T00:00:00Z");
+    expect(first).toEqual(same);
+    expect(first.intervals).toEqual(later.intervals);
+    expect(first.summaries).toEqual(later.summaries);
+    expect(first.recommendation).toEqual(later.recommendation);
+    expect(first.metrics.facilityDemand.calculatedAt).toBe(first.generatedAt);
+  });
   it("keeps the configured operational limit as a user assumption", () => {
     const result = buildOperationsScenario();
     expect(result.metrics.operationalLimit.value).toBe(100);

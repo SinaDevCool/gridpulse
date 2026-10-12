@@ -1,12 +1,13 @@
 import { z } from "zod";
 import {
-  operationsAssessmentRequestSchema,
-  runOperationsAssessment,
+operationsAssessmentRequestSchema,
+runOperationsAssessment,
 } from "../features/operations/operations-service";
+import { SupabaseOperationsRepository } from "../server/operations/repository";
 import {
-  OperationsPayloadError,
-  operationsFingerprint,
-  readOperationsJson,
+OperationsPayloadError,
+operationsFingerprint,
+readOperationsJson,
 } from "./operations-request";
 
 type RunsEnv = {
@@ -40,19 +41,27 @@ export async function handleOperationsRun(request: Request, env: RunsEnv) {
   try {
     const input = schema.parse(await readOperationsJson(request, 8_000_000));
     inputValidated = true;
-    const userResponse = await fetch(`${url}/auth/v1/user`, {
-      headers: { apikey: publicKey, authorization },
-      signal: AbortSignal.timeout(10_000),
-    });
+    const repository = new SupabaseOperationsRepository(
+      { url, publicKey, serviceKey: env.SUPABASE_SERVICE_ROLE_KEY },
+      authorization,
+    );
+    const userResponse = await repository.verifyUser();
     if (!userResponse.ok)
       return reply({ error: "Authentication required." }, userResponse.status >= 500 ? 502 : 401);
     const user = z.object({ id: z.string().uuid() }).parse(await userResponse.json());
-    const facility = await fetch(
-      `${url}/rest/v1/operations_facilities?id=eq.${input.facilityId}&select=id&limit=1`,
-      { headers: { apikey: publicKey, authorization }, signal: AbortSignal.timeout(10_000) },
-    );
-    if (!facility.ok) return reply({ error: "Facility access could not be verified." }, 502);
-    const accessible = z.array(z.object({ id: z.string().uuid() })).parse(await facility.json());
+    let accessible;
+    try {
+      accessible = z
+        .array(z.object({ id: z.string().uuid() }))
+        .parse(
+          await repository.readRows(
+            "operations_facilities",
+            `id=eq.${input.facilityId}&select=id&limit=1`,
+          ),
+        );
+    } catch {
+      return reply({ error: "Facility access could not be verified." }, 502);
+    }
     if (!accessible.length) return reply({ error: "Facility not found." }, 404);
     const result = runOperationsAssessment(input.assessment);
     const fingerprint = await operationsFingerprint(input.assessment);
@@ -60,23 +69,14 @@ export async function handleOperationsRun(request: Request, env: RunsEnv) {
       input.assessment.kind === "overview" || input.assessment.kind === "compute"
         ? "scenario"
         : "historical";
-    const written = await fetch(`${url}/rest/v1/rpc/operations_record_calculation`, {
-      method: "POST",
-      headers: {
-        apikey: env.SUPABASE_SERVICE_ROLE_KEY,
-        authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        p_owner_id: user.id,
-        p_facility_id: input.facilityId,
-        p_input_snapshot: input.assessment,
-        p_result: result,
-        p_fingerprint: fingerprint,
-        p_calculation_version: result.calculationVersion,
-        p_mode: mode,
-      }),
-      signal: AbortSignal.timeout(12_000),
+    const written = await repository.recordCalculation({
+      p_owner_id: user.id,
+      p_facility_id: input.facilityId,
+      p_input_snapshot: input.assessment,
+      p_result: result,
+      p_fingerprint: fingerprint,
+      p_calculation_version: result.calculationVersion,
+      p_mode: mode,
     });
     if (!written.ok) return reply({ error: "Assessment could not be recorded." }, 502);
     const runId = z

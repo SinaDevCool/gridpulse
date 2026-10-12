@@ -1,0 +1,531 @@
+/* Phase 6 portfolio intelligence */
+
+.portfolio-intelligence-panel {
+  display: grid;
+  gap: 1rem;
+}
+
+.portfolio-intelligence-metrics {
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.portfolio-intelligence-metrics article {
+  background: rgba(14, 165, 233, 0.045);
+  border: 1px solid rgba(14, 165, 233, 0.16);
+  border-radius: 0.65rem;
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.8rem;
+}
+
+.portfolio-intelligence-metrics span {
+  color: #64748b;
+  font-size: 0.67rem;
+}
+
+.portfolio-intelligence-metrics strong {
+  color: #0f172a;
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.portfolio-concentration {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.portfolio-concentration h3 {
+  font-size: 0.82rem;
+  margin: 0;
+}
+
+.portfolio-concentration > div {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.portfolio-concentration article {
+  border: 1px solid var(--border-color);
+  border-radius: 0.55rem;
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+  padding: 0.65rem;
+}
+
+.portfolio-concentration span {
+  font-size: 0.7rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.portfolio-concentration b {
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.portfolio-concentration small {
+  color: #64748b;
+  font-size: 0.63rem;
+}
+
+.portfolio-intelligence-filters {
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: repeat(3, minmax(160px, 1fr));
+}
+
+.portfolio-intelligence-filters label {
+  display: grid;
+  font-size: 0.68rem;
+  gap: 0.3rem;
+}
+
+.portfolio-control-table {
+  min-width: 880px;
+}
+
+.portfolio-control-table tr[data-severity="critical"] td:first-child {
+  border-left: 3px solid #dc2626;
+}
+
+.portfolio-control-table tr[data-severity="warning"] td:first-child {
+  border-left: 3px solid #f59e0b;
+}
+
+.portfolio-control-table td,
+.portfolio-control-table th {
+  font-variant-numeric: tabular-nums;
+}
+
+.portfolio-control-table td small {
+  color: #64748b;
+  display: block;
+  margin-top: 0.2rem;
+}
+
+.portfolio-control-table a {
+  align-items: center;
+  color: #0369a1;
+  display: inline-flex;
+  gap: 0.3rem;
+  white-space: nowrap;
+}
+
+.portfolio-control-table a svg {
+  height: 13px;
+  width: 13px;
+}
+
+.portfolio-intelligence-boundary {
+  align-items: flex-start;
+  border-top: 1px solid var(--border-color);
+  color: #64748b;
+  display: flex;
+  font-size: 0.68rem;
+  gap: 0.5rem;
+  line-height: 1.45;
+  padding-top: 0.75rem;
+}
+
+.portfolio-intelligence-boundary svg {
+  flex: 0 0 auto;
+  height: 15px;
+  width: 15px;
+}
+
+@media (max-width: 720px) {
+  .portfolio-intelligence-filters {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Desktop Power Finder usability hardening */
+
+.power-finder-page {
+  color-scheme: inherit;
+}
+
+.power-finder-sidebar {
+  padding: 22px;
+}
+
+.power-finder-sidebar h2,
+.power-finder-candidates > header small,
+.power-finder-filter-grid label > span {
+  font-size: 0.75rem;
+  line-height: 1.3;
+}
+
+.power-finder-search,
+.power-finder-filter-grid label,
+.power-finder-candidates > header select,
+.finder-project-panel input,
+.finder-project-panel select {
+  min-height: 42px;
+}
+
+.power-finder-filter-grid select,
+.power-finder-filter-grid input,
+.power-finder-candidates > header select,
+.finder-project-panel input,
+.finder-project-panel select {
+  font-size: 0.82rem;
+}
+
+.power-finder-layer-list label {
+  font-size: 0.82rem;
+  min-height: 42px;
+}
+
+.power-finder-layer-list input {
+  height: 16px;
+  width: 16px;
+}
+
+.power-finder-layer-list small,
+.power-finder-candidates > header small,
+.layer-visibility-note {
+  font-size: 0.7rem;
+}
+
+.power-finder-candidates button {
+  min-height: 58px;
+  padding: 11px;
+}
+
+.power-finder-candidates b {
+  font-size: 0.82rem;
+}
+
+.power-finder-candidates small,
+.candidate-badges i,
+.candidate-badges strong {
+  font-size: 0.7rem;
+  line-height: 1.35;
+}
+
+.finder-clear-site {
+  background: transparent;
+  border: 1px solid #47627f;
+  border-radius: 7px;
+  color: #bae6fd;
+  cursor: pointer;
+  font-size: 0.78rem;
+  margin-top: 8px;
+  min-height: 36px;
+  padding: 7px 10px;
+}
+
+.finder-input-boundary,
+.finder-site-empty,
+.finder-ranking-method {
+  background: #0d1624;
+  border: 1px solid #26364d;
+  border-radius: 8px;
+  color: #a8bad0;
+  font-size: 0.74rem;
+  line-height: 1.5;
+  margin-top: 10px;
+  padding: 10px;
+}
+
+.finder-input-boundary p,
+.finder-site-empty p,
+.finder-ranking-method p {
+  margin: 0;
+}
+
+.finder-input-boundary p + p {
+  margin-top: 5px;
+}
+
+.finder-input-boundary strong,
+.finder-site-empty strong,
+.finder-ranking-method summary {
+  color: #e2e8f0;
+}
+
+.finder-ranking-method summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.finder-ranking-method[open] summary {
+  margin-bottom: 7px;
+}
+
+.candidate-intelligence .secondary-button {
+  bottom: auto;
+  position: static;
+  z-index: auto;
+}
+
+.power-finder-detail,
+.candidate-intelligence,
+.candidate-intelligence p,
+.candidate-intelligence li,
+.candidate-intelligence dt,
+.candidate-intelligence dd {
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.power-finder-detail h2,
+.candidate-intelligence h2,
+.candidate-intelligence h3 {
+  text-wrap: balance;
+}
+
+.power-finder-detail dd,
+.candidate-intelligence dd,
+.candidate-badges strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.candidate-comparison {
+  max-width: min(360px, calc(100% - 520px));
+  padding: 10px 12px;
+  width: auto;
+}
+
+.candidate-comparison.open {
+  max-height: min(560px, calc(100vh - 180px));
+  max-width: min(760px, calc(100% - 520px));
+  overflow-y: auto;
+  width: max-content;
+}
+
+.candidate-comparison > header {
+  margin-bottom: 0;
+  min-height: 28px;
+}
+
+.candidate-comparison.open > header {
+  margin-bottom: 9px;
+}
+
+.candidate-comparison > header,
+.candidate-comparison > header button {
+  font-size: 0.75rem;
+}
+
+.candidate-comparison-clear {
+  background: transparent;
+  border: 0;
+  color: #fca5a5;
+  cursor: pointer;
+  font-size: 0.72rem;
+  margin-top: 8px;
+  padding: 5px 0;
+}
+
+.candidate-truth-status {
+  background: rgb(245 158 11 / 10%);
+  border: 1px solid rgb(245 158 11 / 32%);
+  border-radius: 999px;
+  color: #fcd34d;
+  display: inline-flex;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.3;
+  margin-top: 0.65rem;
+  padding: 0.35rem 0.6rem;
+}
+
+.candidate-provenance-summary {
+  border-top: 1px solid #26364d;
+  margin-top: 0.75rem;
+  padding-top: 0.7rem;
+}
+
+.candidate-provenance-summary summary {
+  color: #bae6fd;
+  cursor: pointer;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.candidate-provenance-summary p {
+  color: #94a3b8;
+  font-size: 0.74rem;
+  line-height: 1.5;
+  margin: 0.65rem 0 0;
+}
+
+.candidate-fact-section,
+.candidate-unknown-section {
+  border-top: 1px solid #26364d;
+  margin-top: 1rem;
+  padding-top: 0.9rem;
+}
+
+.candidate-fact-section h3,
+.candidate-unknown-section h3,
+.candidate-next-step h3 {
+  color: #e2e8f0;
+  font-size: 0.8rem;
+  margin: 0 0 0.65rem;
+  text-wrap: balance;
+}
+
+.candidate-fact-section dl {
+  border: 0;
+  margin: 0;
+}
+
+.candidate-fact-section dl div {
+  border-bottom: 1px solid rgb(148 163 184 / 10%);
+  min-height: 42px;
+}
+
+.candidate-unknown-section {
+  background: rgb(245 158 11 / 6%);
+  border: 1px solid rgb(245 158 11 / 22%);
+  border-radius: 0.65rem;
+  padding: 0.8rem;
+}
+
+.candidate-unknown-section ul {
+  color: #cbd5e1;
+  display: grid;
+  font-size: 0.76rem;
+  gap: 0.45rem;
+  line-height: 1.45;
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.evidence-confidence {
+  background: rgb(15 23 42 / 78%);
+  border-color: #334155;
+}
+
+.evidence-confidence > summary b {
+  color: #94a3b8;
+  font-size: 0.7rem;
+}
+
+.evidence-confidence ul {
+  gap: 0;
+}
+
+.evidence-confidence li {
+  align-items: start;
+  display: grid;
+  gap: 0.45rem 0.65rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 0.65rem 0;
+}
+
+.evidence-confidence li > span {
+  display: grid;
+  min-width: 0;
+}
+
+.evidence-confidence li > span strong {
+  color: #e2e8f0;
+  font-size: 0.76rem;
+}
+
+.evidence-confidence li > span small {
+  color: #94a3b8;
+  font-size: 0.7rem;
+  overflow-wrap: anywhere;
+}
+
+.evidence-confidence li > b {
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  padding: 0.2rem 0.42rem;
+  text-transform: capitalize;
+}
+
+.evidence-confidence li > b[data-confidence-level="confirmed"] {
+  color: #86efac;
+}
+
+.evidence-confidence li > b[data-confidence-level="corroborated"] {
+  color: #67e8f9;
+}
+
+.evidence-confidence li > b[data-confidence-level="mapped"] {
+  color: #93c5fd;
+}
+
+.evidence-confidence li > b[data-confidence-level="inferred"] {
+  color: #fcd34d;
+}
+
+.evidence-confidence li > b[data-confidence-level="unknown"] {
+  color: #fca5a5;
+}
+
+.evidence-confidence li > p {
+  grid-column: 1 / -1;
+}
+
+.study-availability {
+  background: rgb(15 23 42 / 72%);
+  border-color: #334155;
+}
+
+.study-availability > summary b {
+  color: #fcd34d;
+}
+
+.study-availability a {
+  color: #7dd3fc;
+  display: inline-block;
+  font-size: 0.74rem;
+  margin-top: 0.65rem;
+}
+
+.candidate-next-step {
+  background: rgb(14 165 233 / 8%);
+  border: 1px solid rgb(56 189 248 / 24%);
+  border-radius: 0.65rem;
+  margin-top: 0.9rem;
+  padding: 0.75rem;
+}
+
+.candidate-next-step p {
+  margin: 0;
+}
+
+.candidate-model-reconciliation {
+  margin-bottom: 1rem;
+  border: 1px solid rgba(56, 215, 242, 0.24);
+  border-radius: 12px;
+  padding: 1rem;
+  background: rgba(7, 17, 31, 0.82);
+}
+
+.candidate-model-reconciliation > header,
+.candidate-model-suggestion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.candidate-model-reconciliation h4,
+.candidate-model-reconciliation p {
+  margin: 0.25rem 0 0;
+}
+
+.candidate-model-suggestion {
+  margin-top: 0.75rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.2);
+  padding-top: 0.75rem;
+}
+
+.candidate-model-suggestion span {
+  display: grid;
+  gap: 0.2rem;
+}

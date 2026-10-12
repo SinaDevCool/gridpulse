@@ -1,58 +1,45 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from "react";
-import {
-  AlertTriangle,
-  CheckCircle2,
-  Clock3,
-  Database,
-  FileUp,
-  Gauge,
-  PlugZap,
-  ShieldCheck,
-  TrendingDown,
-  X,
-} from "lucide-react";
-import {
-  Area,
-  CartesianGrid,
-  ComposedChart,
-  Line,
-  ReferenceLine,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import type { EvidenceClass } from "./evidence";
-import { OperationsEvidenceBadge, OperationsMetricCard } from "./components";
-import { requestOperationsAssessment } from "@/lib/operations-api";
-import { stableOperationsJson } from "@/lib/operations-request";
-import type { OperationsOverviewModel } from "./scenario-engine";
-import {
-  assessWorkloads,
-  buildScenarioWorkloads,
-  parseGpuTelemetryCsv,
-  parseWorkloadCsv,
-  type ComputeWorkload,
-  type GpuTelemetry,
-  type WorkloadDecision,
-  type WorkloadAssessment,
-} from "./workload-intelligence";
-import { useOperationsCapabilities } from "./use-operations-capabilities";
-import { formatMinutes, formatOperationsTime } from "./presentation";
-import { WorkloadSchedule } from "./WorkloadSchedule";
-import {
-  ChartSummaryMetric,
-  OperationsChartLegend,
-  OperationsChartSummary,
-  OperationsTooltipShell,
-  TooltipRow,
-  formatDurationFromIntervals,
-  formatMw,
-  formatMwh,
-} from "./visualization";
+import { useEffect,useMemo,useState } from "react";
+import { selectWorkloadQueue } from "./compute/select-workload-queue";
+import { useOperationsEvidenceStore } from "./hooks/evidence-store";
+import { useWorkloadEvidence } from "./hooks/use-workload-evidence";
 
-const number = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
-const integer = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
+import { AlertTriangle,Clock3,Database,PlugZap,ShieldCheck,TrendingDown } from "lucide-react";
+
+import {
+Area,
+CartesianGrid,
+ComposedChart,
+Line,
+ReferenceLine,
+ResponsiveContainer,
+Tooltip,
+XAxis,
+YAxis,
+} from "recharts";
+
+import type { EvidenceClass } from "./evidence";
+
+import { OperationsEvidenceBadge } from "./components";
+
+import type { OperationsOverviewModel } from "./scenario-engine";
+
+
+import { useOperationsCapabilities } from "./use-operations-capabilities";
+
+import { formatMinutes } from "./presentation";
+
+import { formatDurationFromIntervals,formatMw,formatMwh } from "./formatting";
+import { ChartSummaryMetric,OperationsChartLegend,OperationsChartSummary } from "./visualization";
+
+import { integer,number } from "./compute/presentation";
+
+import { EvidenceImport } from "./compute/EvidenceImport";
+
+import { Metric,Row,Status } from "./compute/primitives";
+
+import { ComputeChartData,ComputeTooltip } from "./compute/ComputeChartData";
+
+import { WorkloadDrawer } from "./compute/WorkloadDrawer";
 
 export function ComputeWorkloadsView({
   model,
@@ -61,32 +48,23 @@ export function ComputeWorkloadsView({
   model: OperationsOverviewModel;
   displayModel?: OperationsOverviewModel;
 }) {
-  const importRevision = useRef(0);
-  const modelSignature = stableOperationsJson({
-    scenario: model.scenario,
-    intervals: model.intervals,
-  });
-  const previousModelSignature = useRef(modelSignature);
   const { data: capabilities } = useOperationsCapabilities();
-  const [workloads, setWorkloads] = useState<ComputeWorkload[]>(() =>
-    buildScenarioWorkloads(model),
-  );
-  const [telemetry, setTelemetry] = useState<GpuTelemetry[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [status, setStatus] = useState<"all" | ComputeWorkload["status"]>("all");
-  const [queuePage, setQueuePage] = useState(0);
-  const [importOpen, setImportOpen] = useState(false);
+  const evidenceStore = useOperationsEvidenceStore();
+  const [selectedId, setSelectedId] = evidenceStore.workloadSelectedId;
+  const {
+    workloads,
+    telemetry,
+    message,
+    error,
+    assessment,
+    restoreScenario,
+    importWorkloadFile,
+    importTelemetryFile,
+  } = useWorkloadEvidence(model, setSelectedId);
+  const [status, setStatus] = evidenceStore.workloadStatus;
+  const [queuePage, setQueuePage] = evidenceStore.workloadPage;
+  const [importOpen, setImportOpen] = evidenceStore.workloadImportsOpen;
   const [interactive, setInteractive] = useState(false);
-  const [message, setMessage] = useState(
-    "Scenario workload set loaded. No customer telemetry is connected.",
-  );
-  const [error, setError] = useState("");
-  const [backendAssessment, setBackendAssessment] = useState<WorkloadAssessment | null>(null);
-  const localAssessment = useMemo(
-    () => assessWorkloads(workloads, telemetry, model),
-    [workloads, telemetry, model],
-  );
-  const assessment = backendAssessment ?? localAssessment;
   const peakInterval = useMemo(
     () =>
       displayModel.intervals.reduce(
@@ -95,87 +73,15 @@ export function ComputeWorkloadsView({
       ),
     [displayModel],
   );
-  const decisions =
-    status === "all"
-      ? assessment.decisions
-      : assessment.decisions.filter((workload) => workload.status === status);
-  const selected =
-    assessment.decisions.find((workload) => workload.workloadId === selectedId) ?? null;
-  const orderedDecisions = [...decisions].sort(
-    (a, b) => Number(b.recommended) - Number(a.recommended),
-  );
-  const pageCount = Math.max(1, Math.ceil(orderedDecisions.length / 50));
-  const visiblePage = Math.min(queuePage, pageCount - 1);
-  const visibleDecisions = orderedDecisions.slice(visiblePage * 50, (visiblePage + 1) * 50);
+  const { decisions, selected, orderedDecisions, pageCount, visiblePage, visibleDecisions } =
+    useMemo(
+      () => selectWorkloadQueue(assessment, status, selectedId, queuePage),
+      [assessment, status, selectedId, queuePage],
+    );
   const evidence: EvidenceClass =
     assessment.source === "scenario" ? "simulated" : telemetry.length ? "measured" : "reference";
 
   useEffect(() => setInteractive(true), []);
-  useEffect(() => {
-    // A server refresh with identical inputs must not cancel an in-flight import.
-    if (previousModelSignature.current === modelSignature) return;
-    previousModelSignature.current = modelSignature;
-    importRevision.current += 1;
-    setBackendAssessment(null);
-    setWorkloads((current) =>
-      current.every((workload) => workload.source === "scenario")
-        ? buildScenarioWorkloads(model)
-        : current,
-    );
-    setMessage(
-      "Inputs changed. Workload estimates recalculated; canonical schedule validation is still required.",
-    );
-  }, [model, modelSignature]);
-
-  async function importWorkloadFile(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    const revision = ++importRevision.current;
-    try {
-      const parsed = parseWorkloadCsv(await file.text());
-      const response = await requestOperationsAssessment<WorkloadAssessment>({
-        kind: "compute",
-        scenario: model.scenario,
-        workloads: parsed,
-        telemetry,
-      });
-      if (revision !== importRevision.current) return;
-      setWorkloads(parsed);
-      setBackendAssessment(response.result);
-      setSelectedId(null);
-      setError("");
-      setMessage(`${parsed.length} scheduler records loaded from ${file.name}.`);
-    } catch (reason) {
-      if (revision !== importRevision.current) return;
-      setError(reason instanceof Error ? reason.message : "The workload file could not be read.");
-    } finally {
-      event.target.value = "";
-    }
-  }
-  async function importTelemetryFile(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    const revision = ++importRevision.current;
-    try {
-      const parsed = parseGpuTelemetryCsv(await file.text());
-      const response = await requestOperationsAssessment<WorkloadAssessment>({
-        kind: "compute",
-        scenario: model.scenario,
-        workloads,
-        telemetry: parsed,
-      });
-      if (revision !== importRevision.current) return;
-      setTelemetry(parsed);
-      setBackendAssessment(response.result);
-      setError("");
-      setMessage(`${parsed.length} GPU telemetry records loaded from ${file.name}.`);
-    } catch (reason) {
-      if (revision !== importRevision.current) return;
-      setError(reason instanceof Error ? reason.message : "The telemetry file could not be read.");
-    } finally {
-      event.target.value = "";
-    }
-  }
 
   return (
     <section className="operations-v2-view operations-compute" aria-labelledby="compute-title">
@@ -217,12 +123,7 @@ export function ComputeWorkloadsView({
           onTelemetry={importTelemetryFile}
           message={message}
           error={error}
-          onScenario={() => {
-            setWorkloads(buildScenarioWorkloads(model));
-            setTelemetry([]);
-            setError("");
-            setMessage("Scenario workload set restored.");
-          }}
+          onScenario={restoreScenario}
         />
       ) : null}
 
@@ -589,223 +490,4 @@ export function ComputeWorkloadsView({
       {selected ? <WorkloadDrawer workload={selected} onClose={() => setSelectedId(null)} /> : null}
     </section>
   );
-}
-
-function ComputeTooltip({
-  active,
-  payload,
-  label,
-}: {
-  active?: boolean;
-  payload?: Array<{ name?: string; value?: number }>;
-  label?: string;
-}) {
-  if (!active || !payload?.length) return null;
-  return (
-    <OperationsTooltipShell label={label}>
-      {payload.map((item) => (
-        <TooltipRow
-          key={item.name}
-          label={item.name ?? "Series"}
-          value={formatMw(item.value ?? 0)}
-          tone={
-            item.name === "GPU power"
-              ? "compute"
-              : item.name === "After response"
-                ? "response"
-                : "demand"
-          }
-          detail="Simulated"
-        />
-      ))}
-    </OperationsTooltipShell>
-  );
-}
-
-function ComputeChartData({ model }: { model: OperationsOverviewModel }) {
-  return (
-    <details className="operations-v2-chart-data">
-      <summary>View Full Chart Data</summary>
-      <div>
-        <table>
-          <thead>
-            <tr>
-              <th scope="col">Time</th>
-              <th scope="col">Facility Demand (MW)</th>
-              <th scope="col">After Response (MW)</th>
-              <th scope="col">GPU Power (MW)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {model.intervals.map((point) => (
-              <tr key={point.timestamp}>
-                <th scope="row">{point.label}</th>
-                <td>{number.format(point.baselineDemandMw)}</td>
-                <td>{number.format(point.combinedDemandMw)}</td>
-                <td>{number.format(point.gpuPowerMw)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </details>
-  );
-}
-
-function EvidenceImport({
-  onWorkloads,
-  onTelemetry,
-  onScenario,
-  message,
-  error,
-}: {
-  onWorkloads: (event: ChangeEvent<HTMLInputElement>) => void;
-  onTelemetry: (event: ChangeEvent<HTMLInputElement>) => void;
-  onScenario: () => void;
-  message: string;
-  error: string;
-}) {
-  return (
-    <section className="compute-import" aria-labelledby="compute-import-title">
-      <header>
-        <div>
-          <p className="context-label">Real Exported Evidence</p>
-          <h3 id="compute-import-title">Load Scheduler and GPU Records</h3>
-        </div>
-        <OperationsEvidenceBadge kind="measured" label="Browser processed" />
-      </header>
-      <p className="power-flow-note">
-        Files are parsed locally; parsed records are sent to the GridPulse assessment service.
-        Imported jobs do not turn the simulated facility timeline into live data.
-      </p>
-      <div className="compute-import-grid">
-        <label>
-          <FileUp aria-hidden="true" />
-          <strong>Workload CSV</strong>
-          <span>Jobs, GPU requests, deadlines and policies</span>
-          <input type="file" accept=".csv,text/csv" onChange={onWorkloads} />
-        </label>
-        <label>
-          <FileUp aria-hidden="true" />
-          <strong>GPU telemetry CSV</strong>
-          <span>DCGM-compatible power and utilisation fields</span>
-          <input type="file" accept=".csv,text/csv" onChange={onTelemetry} />
-        </label>
-        <button type="button" className="secondary-button" onClick={onScenario}>
-          Restore Scenario
-        </button>
-      </div>
-      <p
-        className={error ? "compute-import-error" : "compute-import-status"}
-        role={error ? "alert" : "status"}
-      >
-        {error || message}
-      </p>
-    </section>
-  );
-}
-
-function WorkloadDrawer({
-  workload,
-  onClose,
-}: {
-  workload: WorkloadDecision;
-  onClose: () => void;
-}) {
-  const closeRef = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    const previous = document.activeElement as HTMLElement | null;
-    closeRef.current?.focus();
-    const dismiss = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", dismiss);
-    return () => {
-      document.removeEventListener("keydown", dismiss);
-      if (previous?.isConnected) previous.focus();
-    };
-  }, [onClose]);
-  return (
-    <aside className="compute-drawer" aria-label={`Workload details: ${workload.name}`}>
-      <header>
-        <div>
-          <p className="context-label">Selected Workload</p>
-          <h3>{workload.name}</h3>
-          <span>{workload.workloadId}</span>
-        </div>
-        <button ref={closeRef} type="button" onClick={onClose} aria-label="Close workload details">
-          <X aria-hidden="true" />
-        </button>
-      </header>
-      <OperationsEvidenceBadge kind={workload.source === "scenario" ? "simulated" : "measured"} />
-      <WorkloadSchedule workload={workload} />
-      <dl>
-        <Row label="Class" value={workload.workloadClass} />
-        <Row label="Status" value={workload.status} />
-        <Row label="Requested GPUs" value={integer.format(workload.requestedGpuCount)} />
-        <Row label="Power contribution" value={`${number.format(workload.estimatedPowerMw)} MW`} />
-        <Row label="Checkpointable" value={workload.checkpointable ? "Yes" : "No"} />
-        <Row label="Preemptible" value={workload.preemptible ? "Yes" : "No"} />
-        <Row label="Deadline slack" value={formatMinutes(workload.deadlineSlackMinutes)} />
-        <Row
-          label="Proposed start"
-          value={formatOperationsTime(
-            workload.recommended ? workload.proposedStart : workload.earliestStart,
-            true,
-          )}
-        />
-      </dl>
-      <div
-        className={workload.eligible ? "compute-decision-note eligible" : "compute-decision-note"}
-      >
-        {workload.eligible ? (
-          <CheckCircle2 aria-hidden="true" />
-        ) : (
-          <AlertTriangle aria-hidden="true" />
-        )}
-        <p>
-          <strong>{workload.eligible ? "Eligible for scenario" : "Protected from movement"}</strong>
-          <span>{workload.reason}</span>
-        </p>
-      </div>
-    </aside>
-  );
-}
-
-function Metric({
-  icon,
-  label,
-  value,
-  evidence,
-  note,
-  tone,
-}: {
-  icon: ReactNode;
-  label: string;
-  value: string;
-  evidence: EvidenceClass;
-  note: string;
-  tone?: "warning" | "danger";
-}) {
-  return (
-    <OperationsMetricCard
-      icon={icon}
-      label={label}
-      value={value}
-      evidence={evidence}
-      note={note}
-      tone={tone}
-    />
-  );
-}
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <dt>{label}</dt>
-      <dd>{value}</dd>
-    </div>
-  );
-}
-function Status({ value }: { value: ComputeWorkload["status"] }) {
-  return <span className={`compute-status ${value}`}>{value}</span>;
 }

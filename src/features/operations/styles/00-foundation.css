@@ -1,0 +1,314 @@
+.operations-v2 {
+  --ops-text: var(--foreground);
+  --ops-muted: var(--muted-foreground);
+  --ops-card: var(--card);
+  --ops-border: var(--border);
+  --ops-border-strong: color-mix(in srgb, var(--border) 85%, var(--foreground));
+  --ops-accent: var(--accent);
+  --ops-accent-contrast: var(--accent-foreground);
+  --ops-demand: #39c7e8;
+  --ops-demand-fill: color-mix(in srgb, var(--ops-demand) 13%, transparent);
+  --ops-response: #9b72ff;
+  --ops-compute: #d8a42a;
+  --ops-battery: #9b72ff;
+  --ops-soc: #42dc94;
+  --ops-target: #efb43a;
+  --ops-selection: #f4f8fb;
+  --ops-axis: color-mix(in srgb, var(--muted-foreground) 72%, transparent);
+  --ops-measured: #34d6f5;
+  --ops-measured-fill: color-mix(in srgb, var(--ops-measured) 18%, transparent);
+  --ops-public-trace: #7796ff;
+  --ops-assumption: #f4b72f;
+  --ops-reference: #a8b7c9;
+  --ops-simulated: #a873ff;
+  --ops-limit: #ff5c68;
+  --ops-positive: #42dc94;
+  --ops-chart-grid: color-mix(in srgb, var(--border) 75%, transparent);
+  width: min(100% - 3rem, 108rem);
+  min-height: calc(100vh - 128px);
+  margin-inline: auto;
+  padding: 1.5rem 0 4rem;
+  color: var(--foreground);
+}
+
+.operations-v2-header,
+.operations-v2-context,
+.operations-v2-nav-row,
+.operations-v2-chart-header,
+.operations-v2-comparison > header,
+.operations-v2-editor-panel > header,
+.operations-v2-editor-panel > footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.operations-v2-header > div:first-child {
+  min-width: 0;
+}
+
+.operations-v2-header h1 {
+  margin: 0.15rem 0 0.2rem;
+  font-size: clamp(2rem, 3vw, 3rem);
+  line-height: 1;
+  letter-spacing: -0.045em;
+  text-wrap: balance;
+}
+
+.operations-v2-header > div:first-child > p:last-child {
+  max-width: 52rem;
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.98rem;
+  text-wrap: pretty;
+}
+
+.operations-v2-context {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.operations-v2-facility,
+.operations-v2-configure {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 42px;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--card) 88%, transparent);
+  color: var(--foreground);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.operations-v2-facility svg,
+.operations-v2-configure svg {
+  width: 17px;
+  height: 17px;
+  color: var(--accent);
+}
+
+.operations-v2-backend {
+  align-items: center;
+  border: 1px solid var(--ops-border);
+  border-radius: 999px;
+  color: var(--ops-muted);
+  display: inline-flex;
+  font-size: 0.72rem;
+  font-weight: 700;
+  min-height: 2rem;
+  padding: 0.35rem 0.7rem;
+  white-space: nowrap;
+}
+
+.operations-v2-backend.verified {
+  border-color: color-mix(in srgb, var(--ops-good) 45%, var(--ops-border));
+  color: var(--ops-good);
+}
+
+.operations-v2-backend.unavailable {
+  border-color: color-mix(in srgb, var(--ops-danger) 45%, var(--ops-border));
+  color: var(--ops-danger);
+}
+
+.operations-v2-configure {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.operations-v2-configure:hover,
+.operations-v2-configure:focus-visible {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--card));
+}
+
+.operations-v2-nav-row {
+  margin-top: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--card) 90%, transparent);
+  overflow: hidden;
+}
+
+.operations-v2-tabs {
+  display: flex;
+  align-self: stretch;
+  flex: 1;
+}
+
+.operations-v2-tabs a {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  flex: 1;
+  min-height: 48px;
+  padding: 0.65rem 1rem;
+  border-right: 1px solid var(--border);
+  color: var(--muted-foreground);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+  touch-action: manipulation;
+}
+
+.operations-v2-tabs a:hover {
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+}
+
+.operations-v2-tabs a.active {
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  box-shadow: inset 0 -2px var(--accent);
+}
+
+.operations-v2-tabs a:focus-visible,
+.operations-v2 button:focus-visible,
+.operations-v2 summary:focus-visible,
+.operations-v2 input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.operations-v2-provenance {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.55rem 0 0;
+  justify-content: flex-end;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  text-wrap: pretty;
+}
+
+.operations-v2-provenance svg {
+  flex: 0 0 auto;
+  width: 15px;
+  height: 15px;
+  color: var(--accent);
+}
+
+.operations-v2-view {
+  display: grid;
+  gap: 1rem;
+  margin-top: 0.85rem;
+}
+
+.operations-v2-kpis {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.operations-v2-metric,
+.operations-v2-chart-card,
+.operations-v2-recommendation,
+.operations-v2-comparison,
+.operations-v2-detail-card,
+.operations-v2-balance-card,
+.operations-v2-battery-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--card) 94%, transparent);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+}
+
+.operations-v2-metric {
+  min-width: 0;
+  padding: 0.9rem 1rem;
+}
+
+.operations-v2-metric > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.operations-v2-metric > header > span:first-child {
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+}
+
+.operations-v2-metric > header svg {
+  width: 22px;
+  height: 22px;
+}
+
+.operations-v2-metric > p {
+  margin: 0.8rem 0 0.15rem;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.operations-v2-metric > strong {
+  display: block;
+  overflow: hidden;
+  color: var(--foreground);
+  font-size: clamp(1.35rem, 2vw, 2rem);
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+}
+
+.operations-v2-metric > strong small {
+  font-size: 0.62em;
+}
+
+.operations-v2-metric > small {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+  line-height: 1.3;
+}
+
+.operations-v2-metric.warning {
+  border-color: color-mix(in srgb, var(--ops-assumption) 48%, var(--border));
+}
+
+.operations-v2-metric.danger {
+  border-color: color-mix(in srgb, var(--ops-limit) 55%, var(--border));
+}
+
+.operations-v2-evidence {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0.24rem 0.45rem;
+  border: 1px solid currentColor;
+  border-radius: 5px;
+  color: var(--ops-reference);
+  font: 700 0.58rem/1 var(--font-mono, monospace);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.operations-v2-evidence.measured {
+  color: var(--ops-measured);
+}
+
+.operations-v2-evidence.public_trace {
+  color: var(--ops-public-trace);
+}
+
+.operations-v2-evidence.user_assumption {
+  color: var(--ops-assumption);
+}
+
+.operations-v2-evidence.simulated {
+  color: var(--ops-simulated);
+}
+
+.operations-v2-evidence.unavailable {
+  color: var(--muted-foreground);
+}

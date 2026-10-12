@@ -35,18 +35,20 @@ describe("operating envelope", () => {
   });
 
   it("limits battery response by usable energy", () => {
-    const [interval] = calculateOperatingEnvelope([{
-      timestamp: "2026-10-06T10:00:00.000Z",
-      durationMinutes: 60,
-      baselineDemandMw: 100,
-      proposedDemandMw: 105,
-      contractualLimitMw: 100,
-      safetyReserveMw: 0,
-      batteryAvailablePowerMw: 10,
-      batteryAvailableEnergyMwh: 2,
-      batteryDischargeEfficiency: 0.9,
-      workloadFlexibleMw: 0,
-    }]);
+    const [interval] = calculateOperatingEnvelope([
+      {
+        timestamp: "2026-10-06T10:00:00.000Z",
+        durationMinutes: 60,
+        baselineDemandMw: 100,
+        proposedDemandMw: 105,
+        contractualLimitMw: 100,
+        safetyReserveMw: 0,
+        batteryAvailablePowerMw: 10,
+        batteryAvailableEnergyMwh: 2,
+        batteryDischargeEfficiency: 0.9,
+        workloadFlexibleMw: 0,
+      },
+    ]);
     expect(interval.batteryCeilingMw).toBe(101.8);
     expect(interval.residualShortfallMw).toBe(3.2);
   });

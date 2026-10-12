@@ -16,12 +16,14 @@ export const operationsInputSchema = z.object({
   contractedLimitMw: z.number().positive().max(5_000),
   limitEvidence: z.enum(["customer_declared", "contract_reviewed", "operator_confirmed"]),
   measurements: z.array(operationalMeasurementSchema).min(4).max(100_000),
-  bess: z.object({
-    powerMw: z.number().nonnegative().max(2_000),
-    energyMwh: z.number().nonnegative().max(20_000),
-    minimumReservePercent: z.number().min(0).max(100),
-    roundTripEfficiency: z.number().gt(0).max(1),
-  }).nullable(),
+  bess: z
+    .object({
+      powerMw: z.number().nonnegative().max(2_000),
+      energyMwh: z.number().nonnegative().max(20_000),
+      minimumReservePercent: z.number().min(0).max(100),
+      roundTripEfficiency: z.number().gt(0).max(1),
+    })
+    .nullable(),
 });
 
 export type OperationalMeasurement = z.infer<typeof operationalMeasurementSchema>;

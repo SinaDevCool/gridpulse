@@ -1,9 +1,10 @@
-import "./lib/error-capture";
-
-import { createStartHandler, defaultStreamHandler } from "@tanstack/react-start/server";
-import { consumeLastCapturedError } from "./lib/error-capture";
+import { createStartHandler,defaultStreamHandler } from "@tanstack/react-start/server";
 import { renderErrorPage } from "./lib/error-page";
 import { buildSecurityHeaders } from "./lib/security-headers";
+import {
+consumeLastCapturedError,
+withRequestContext,
+} from "./server/observability/request-context.server";
 
 const SECURITY_HEADERS = buildSecurityHeaders(import.meta.env.VITE_SUPABASE_URL);
 
@@ -40,17 +41,19 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
 
 export default {
   async fetch(request: Request) {
-    try {
-      const response = await startHandler(request);
-      return withSecurityHeaders(await normalizeCatastrophicSsrResponse(response));
-    } catch (error) {
-      console.error(error);
-      return withSecurityHeaders(
-        new Response(renderErrorPage(), {
-          status: 500,
-          headers: { "content-type": "text/html; charset=utf-8" },
-        }),
-      );
-    }
+    return withRequestContext(crypto.randomUUID(), async () => {
+      try {
+        const response = await startHandler(request);
+        return withSecurityHeaders(await normalizeCatastrophicSsrResponse(response));
+      } catch (error) {
+        console.error(error);
+        return withSecurityHeaders(
+          new Response(renderErrorPage(), {
+            status: 500,
+            headers: { "content-type": "text/html; charset=utf-8" },
+          }),
+        );
+      }
+    });
   },
 };

@@ -72,7 +72,9 @@ export function calculateOperatingEnvelope(
         : [["operator_limit", interval.operatorLimitMw] as [OperatingConstraintCode, number]]),
       ...(interval.transformerLimitMw == null
         ? []
-        : [["transformer_limit", interval.transformerLimitMw] as [OperatingConstraintCode, number]]),
+        : [
+            ["transformer_limit", interval.transformerLimitMw] as [OperatingConstraintCode, number],
+          ]),
       ...(interval.upsLimitMw == null
         ? []
         : [["ups_limit", interval.upsLimitMw] as [OperatingConstraintCode, number]]),
@@ -87,10 +89,7 @@ export function calculateOperatingEnvelope(
     const energyLimitedBatteryMw =
       (interval.batteryAvailableEnergyMwh * interval.batteryDischargeEfficiency) /
       (interval.durationMinutes / 60);
-    const batteryResponseMw = Math.min(
-      interval.batteryAvailablePowerMw,
-      energyLimitedBatteryMw,
-    );
+    const batteryResponseMw = Math.min(interval.batteryAvailablePowerMw, energyLimitedBatteryMw);
     const batteryCeilingMw = directCeilingMw + batteryResponseMw;
     const combinedCeilingMw = Math.max(
       batteryCeilingMw,
@@ -108,7 +107,11 @@ export function calculateOperatingEnvelope(
     );
     const residualShortfallMw = Math.max(
       0,
-      proposedDemandMw + interval.workloadReboundMw - directCeilingMw - usedBatteryMw - workloadResponseMw,
+      proposedDemandMw +
+        interval.workloadReboundMw -
+        directCeilingMw -
+        usedBatteryMw -
+        workloadResponseMw,
     );
     const feasibleBand =
       proposedDemandMw <= directCeilingMw
@@ -118,7 +121,8 @@ export function calculateOperatingEnvelope(
           : proposedDemandMw <= combinedCeilingMw
             ? "battery_workload"
             : "infeasible";
-    const confidence = uncertaintyMw === 0 ? "high" : uncertaintyMw <= technicalLimitMw * 0.05 ? "medium" : "low";
+    const confidence =
+      uncertaintyMw === 0 ? "high" : uncertaintyMw <= technicalLimitMw * 0.05 ? "medium" : "low";
     return {
       ...interval,
       technicalLimitMw: round(technicalLimitMw),

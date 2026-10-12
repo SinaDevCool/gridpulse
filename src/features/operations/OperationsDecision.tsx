@@ -1,9 +1,9 @@
-import { AlertTriangle, ArrowRight, CheckCircle2, ShieldCheck } from "lucide-react";
-import { useEffect, useState } from "react";
-import type { OperationsOverviewModel, OperationsScenarioKind } from "./scenario-engine";
+import { AlertTriangle,ArrowRight,CheckCircle2,ShieldCheck } from "lucide-react";
+import { useEffect,useState } from "react";
 import { OperationsEvidenceBadge } from "./components";
-import { formatDurationFromIntervals, formatMw, formatMwh } from "./visualization";
+import { formatDurationFromIntervals,formatMw,formatMwh } from "./formatting";
 import { formatOperationsTime } from "./presentation";
+import type { OperationsOverviewModel,OperationsScenarioKind } from "./scenario-engine";
 
 const number = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
 

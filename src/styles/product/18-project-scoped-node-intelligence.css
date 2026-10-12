@@ -1,0 +1,382 @@
+/* Project-scoped node intelligence */
+
+.node-intelligence {
+  display: grid;
+  gap: 1rem;
+}
+
+.truth-banner {
+  display: flex;
+  gap: 0.8rem;
+  align-items: flex-start;
+  padding: 1rem 1.1rem;
+  border: 1px solid #735a24;
+  background: #171b19;
+}
+
+.truth-banner svg {
+  width: 1.1rem;
+  color: #d79b22;
+  flex: 0 0 auto;
+}
+
+.truth-banner p {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+}
+
+.node-summary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.node-summary article {
+  min-height: 7rem;
+  padding: 1rem;
+  border: 1px solid #253d4d;
+  background: #0b1b28;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.node-summary article svg {
+  width: 1rem;
+  color: #19c6ef;
+}
+
+.node-summary article span {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.node-summary article strong {
+  font-size: 1.6rem;
+}
+
+.node-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.node-form-grid details {
+  align-self: start;
+}
+
+.node-form-grid summary {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 700;
+  list-style: none;
+}
+
+.node-form-grid summary svg {
+  width: 1rem;
+  color: #19c6ef;
+}
+
+.node-form-grid .activation-form {
+  margin-top: 1rem;
+}
+
+.node-form-grid .form-hint {
+  color: var(--muted);
+  margin: 1rem 0 0;
+}
+
+.node-intelligence td small {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--muted);
+}
+
+.node-truth-confirmed {
+  color: #68d391;
+}
+
+.node-truth-reviewed {
+  color: #19c6ef;
+}
+
+.node-truth-screening,
+.node-truth-missing {
+  color: #d79b22;
+}
+
+.operator-review-entry {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.operator-review-entry .secondary-button {
+  white-space: nowrap;
+}
+
+.operator-review-page {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.operator-review-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(20rem, 0.6fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.operator-node-card {
+  border-top: 1px solid #253d4d;
+  padding: 1rem 0;
+}
+
+.operator-node-card > p {
+  color: var(--muted);
+}
+
+.operator-snapshot {
+  display: grid;
+  grid-template-columns: minmax(10rem, 1.2fr) 1fr 1fr;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  margin-top: 0.5rem;
+  border: 1px solid #253d4d;
+  background: #091824;
+}
+
+.operator-decision-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.operator-decision-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.9rem;
+  padding: 1rem 0;
+  border-top: 1px solid #253d4d;
+}
+
+.operator-decision-row > svg {
+  width: 1.1rem;
+  color: #19c6ef;
+}
+
+.operator-decision-row p,
+.operator-decision-row small {
+  color: var(--muted);
+}
+
+.operator-decision-row code {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: 0.72rem;
+  color: #7091a5;
+}
+
+.signature-attestation {
+  display: grid !important;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: 0.75rem;
+  padding: 0.9rem;
+  border: 1px solid #31566a;
+  background: #0b1b28;
+}
+
+.signature-attestation input {
+  margin-top: 0.15rem;
+}
+
+.pilot-case-page {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.pilot-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.pilot-kpi-grid article {
+  min-height: 7rem;
+  padding: 1rem;
+  border: 1px solid #253d4d;
+  background: #0b1b28;
+  display: grid;
+  align-content: space-between;
+}
+
+.pilot-kpi-grid span {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.pilot-kpi-grid strong {
+  font-size: 1.55rem;
+}
+
+.pilot-engagement-form,
+.pilot-observation-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.pilot-consent-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem 1rem;
+  padding: 1rem;
+  border: 1px solid #253d4d;
+  background: #091824;
+}
+
+.pilot-consent-grid label {
+  display: flex;
+  gap: 0.65rem;
+  align-items: flex-start;
+}
+
+.pilot-consent-grid input {
+  margin-top: 0.15rem;
+}
+
+.pilot-readiness-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.pilot-readiness-list > div {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem;
+  border: 1px solid #253d4d;
+}
+
+.pilot-readiness-list svg {
+  width: 1rem;
+}
+
+.pilot-readiness-list .complete {
+  color: #68d391;
+}
+
+.pilot-readiness-list .open {
+  color: #d79b22;
+}
+
+.pilot-observation-list article {
+  display: grid;
+  grid-template-columns: 8rem minmax(0, 1fr);
+  gap: 1rem;
+  padding: 1rem 0;
+  border-top: 1px solid #253d4d;
+}
+
+.pilot-observation-list p,
+.pilot-observation-list small {
+  color: var(--muted);
+}
+
+.submission-page {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.submission-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.submission-summary article {
+  min-height: 7rem;
+  padding: 1rem;
+  border: 1px solid #253d4d;
+  background: #0b1b28;
+  display: grid;
+  align-content: space-between;
+}
+
+.submission-summary span {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.submission-summary strong {
+  font-size: 1.65rem;
+}
+
+.submission-gates {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.submission-gates > div {
+  min-height: 6rem;
+  padding: 0.85rem;
+  border: 1px solid #253d4d;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.55rem;
+  align-content: start;
+}
+
+.submission-gates svg {
+  width: 1rem;
+}
+
+.submission-gates b {
+  grid-column: 2;
+  font-size: 0.75rem;
+}
+
+.submission-gates .complete {
+  color: #68d391;
+}
+
+.submission-gates .open {
+  color: #d79b22;
+}
+
+.submission-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.submission-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.submission-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.submission-actions svg {
+  width: 1rem;
+}
+
+.submission-history {
+  display: grid;
+}
+
+.submission-history article {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.2fr;
+  gap: 1rem;
+  padding: 0.85rem 0;
+  border-top: 1px solid #253d4d;
+}
+
+.submission-history span,
+.submission-history small {
+  color: var(--muted);
+}
