@@ -17,6 +17,7 @@ export function buildSecurityHeaders(
     "'self'",
     "https://tiles.openfreemap.org",
     ...(supabaseOrigin ? [supabaseOrigin] : []),
+    "https://cloudflareinsights.com",
   ];
 
   return {
@@ -26,7 +27,7 @@ export function buildSecurityHeaders(
       "frame-ancestors 'none'",
       "form-action 'self'",
       "object-src 'none'",
-      "script-src 'self' 'unsafe-inline'",
+      "script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' data: https://fonts.gstatic.com https://tiles.openfreemap.org",
       "img-src 'self' data: blob: https://tiles.openfreemap.org",

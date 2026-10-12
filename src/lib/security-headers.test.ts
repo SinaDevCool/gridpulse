@@ -2,6 +2,17 @@ import { describe, expect, it } from "vitest";
 import { buildSecurityHeaders, secureExternalOrigin } from "./security-headers";
 
 describe("security headers", () => {
+  it("permits the configured Cloudflare beacon without wildcard script or connection origins", () => {
+    const policy = buildSecurityHeaders()["content-security-policy"];
+    expect(policy).toContain(
+      "script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com;",
+    );
+    expect(policy).toContain(
+      "connect-src 'self' https://tiles.openfreemap.org https://cloudflareinsights.com;",
+    );
+    expect(policy).not.toContain("https://*");
+    expect(policy).not.toContain("unsafe-eval");
+  });
   it("allows only the configured Supabase HTTPS origin for browser connections", () => {
     const policy = buildSecurityHeaders("https://project-ref.supabase.co/rest/v1?ignored=true")[
       "content-security-policy"
