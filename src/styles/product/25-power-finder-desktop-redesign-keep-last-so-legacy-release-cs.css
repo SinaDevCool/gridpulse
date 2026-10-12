@@ -131,6 +131,10 @@
   .power-finder-sidebar {
     box-sizing: border-box;
     padding-inline: 14px;
+    /* Keep focused/scrolled controls below the sticky screening header. */
+    scroll-padding-block-start: 280px;
+    scroll-padding-block-end: 24px;
+    overflow-anchor: none;
   }
 
   .power-finder-sidebar :is(input, select, button) {

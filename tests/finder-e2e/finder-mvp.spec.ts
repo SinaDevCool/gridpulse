@@ -458,6 +458,11 @@ test("registered generation and storage are available without an account", async
   await expect(generation).toBeEnabled({ timeout: 15_000 });
   await expect(storage).toBeEnabled({ timeout: 15_000 });
   await generation.check();
+  const controlTop = await generation.evaluate((input) => input.getBoundingClientRect().top);
+  const headerBottom = await page
+    .locator(".finder-rail-sticky")
+    .evaluate((header) => header.getBoundingClientRect().bottom);
+  expect(controlTop).toBeGreaterThanOrEqual(headerBottom);
   await storage.check();
   await expect(generation).toBeChecked();
   await expect(storage).toBeChecked();
