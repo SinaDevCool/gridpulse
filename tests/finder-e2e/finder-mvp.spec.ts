@@ -270,7 +270,7 @@ test("the release workbook passes the browser import preview", async ({ page }, 
   await expect(page).toHaveURL(/import=open/);
   await page
     .locator('input[name="property-portfolio-file"]')
-    .setInputFiles("outputs/client-demo-portfolio/gridpulse-client-portfolio-sample.xlsx");
+    .setInputFiles("tests/fixtures/synthetic-property-portfolio.xlsx");
   await expect(page.getByText("10 rows")).toBeVisible();
   await expect(page.getByText("Ready to import")).toBeVisible();
   await expect(page.getByText("GP-DE-001")).toBeVisible();
