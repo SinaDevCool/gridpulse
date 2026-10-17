@@ -1,10 +1,11 @@
 import { z } from "zod";
 import { simulateBatteryDispatch } from "./battery-dispatch";
+import { batteryConfigurationFields, checkBatterySocBounds } from "./battery-configuration";
 import type { EvidencedValue } from "./evidence";
 import {
-calculateOperatingEnvelope,
-summarizeOperatingEnvelope,
-type OperatingEnvelopeInterval,
+  calculateOperatingEnvelope,
+  summarizeOperatingEnvelope,
+  type OperatingEnvelopeInterval,
 } from "./operating-envelope";
 
 export const operationsScenarioSchema = z
@@ -20,21 +21,10 @@ export const operationsScenarioSchema = z
     gpuIdlePowerWatts: z.number().nonnegative().max(5_000),
     maximumShiftablePercent: z.number().min(0).max(100),
     maximumDelayMinutes: z.number().int().nonnegative().max(1_440),
-    battery: z.object({
-      maximumPowerMw: z.number().nonnegative().max(2_000),
-      maximumChargePowerMw: z.number().nonnegative().max(2_000),
-      usableEnergyMwh: z.number().nonnegative().max(20_000),
-      initialSocPercent: z.number().min(0).max(100),
-      minimumSocPercent: z.number().min(0).max(100),
-      maximumSocPercent: z.number().min(0).max(100),
-      chargeEfficiency: z.number().gt(0).max(1),
-      dischargeEfficiency: z.number().gt(0).max(1),
-      rampRateMwPerMinute: z.number().positive().max(2_000),
-      minimumDwellMinutes: z.number().int().nonnegative().max(1_440),
-      stateOfHealthPercent: z.number().gt(0).max(100),
-      available: z.boolean(),
-      inverterAvailable: z.boolean(),
-    }),
+    battery: batteryConfigurationFields
+      .omit({ maximumDischargePowerMw: true })
+      .extend({ maximumPowerMw: batteryConfigurationFields.shape.maximumDischargePowerMw })
+      .superRefine(checkBatterySocBounds),
   })
   .superRefine((value, context) => {
     if (value.safetyReserveMw >= value.importLimitMw) {
@@ -42,20 +32,6 @@ export const operationsScenarioSchema = z
         code: "custom",
         path: ["safetyReserveMw"],
         message: "Safety reserve must be below the facility limit.",
-      });
-    }
-    if (value.battery.minimumSocPercent > value.battery.initialSocPercent) {
-      context.addIssue({
-        code: "custom",
-        path: ["battery", "minimumSocPercent"],
-        message: "Minimum SOC cannot exceed initial SOC.",
-      });
-    }
-    if (value.battery.initialSocPercent > value.battery.maximumSocPercent) {
-      context.addIssue({
-        code: "custom",
-        path: ["battery", "maximumSocPercent"],
-        message: "Maximum SOC cannot be below initial SOC.",
       });
     }
     if (value.gpuIdlePowerWatts > value.gpuActivePowerWatts) {
@@ -362,7 +338,7 @@ export function buildOperationsScenario(
     0,
   );
   const envelopeIntervals = calculateOperatingEnvelope(
-    intervals.map((point) => ({
+    intervals.map((point, index) => ({
       timestamp: point.timestamp,
       durationMinutes: 15,
       baselineDemandMw: point.baselineDemandMw,
@@ -376,10 +352,14 @@ export function buildOperationsScenario(
       demandUncertaintyMw: Math.max(0.8, point.baselineDemandMw * 0.02),
       resourceUncertaintyMw: point.availableDischargeMw > 0 ? point.availableDischargeMw * 0.03 : 0,
       batteryAvailablePowerMw: point.availableDischargeMw,
-      batteryAvailableEnergyMwh:
-        (scenario.battery.usableEnergyMwh *
-          Math.max(0, point.batterySocPercent - scenario.battery.minimumSocPercent)) /
-        100,
+      // Availability belongs to the start of this interval, before its dispatch.
+      batteryAvailableEnergyMwh: Math.max(
+        0,
+        dispatch[index].startingEnergyMwh -
+          (((scenario.battery.usableEnergyMwh * scenario.battery.stateOfHealthPercent) / 100) *
+            scenario.battery.minimumSocPercent) /
+            100,
+      ),
       batteryDischargeEfficiency: scenario.battery.dischargeEfficiency,
       workloadFlexibleMw: point.workloadShiftMw,
       workloadReboundMw: point.workloadRecoveryMw,

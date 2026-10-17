@@ -6,6 +6,34 @@ import {
 } from "./scenario-engine";
 
 describe("operations scenario engine", () => {
+  it("uses degraded starting energy, not ending SOC, for each envelope interval", () => {
+    const model = buildOperationsScenario();
+    const effectiveEnergy =
+      (model.scenario.battery.usableEnergyMwh * model.scenario.battery.stateOfHealthPercent) / 100;
+    model.operatingEnvelope.intervals.forEach((point, index) => {
+      const startingSoc =
+        index === 0
+          ? model.scenario.battery.initialSocPercent
+          : model.intervals[index - 1].batterySocPercent;
+      expect(point.batteryAvailableEnergyMwh).toBeCloseTo(
+        (effectiveEnergy * Math.max(0, startingSoc - model.scenario.battery.minimumSocPercent)) /
+          100,
+        10,
+      );
+    });
+  });
+  it("does not advertise battery-supported headroom for an unavailable inverter", () => {
+    const model = buildOperationsScenario({
+      ...defaultOperationsScenario,
+      battery: { ...defaultOperationsScenario.battery, inverterAvailable: false },
+    });
+    expect(
+      model.operatingEnvelope.intervals.every(
+        (point) => point.batteryCeilingMw === point.directCeilingMw,
+      ),
+    ).toBe(true);
+    expect(model.intervals.every((point) => point.batteryPowerMw === 0)).toBe(true);
+  });
   it("is deterministic with an explicit clock and never changes numeric results with metadata time", () => {
     const first = buildOperationsScenario(defaultOperationsScenario, "2026-10-12T00:00:00Z");
     const same = buildOperationsScenario(defaultOperationsScenario, "2026-10-12T00:00:00Z");

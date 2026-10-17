@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { readCsv } from "../../shared/csv";
+import { batteryConfigurationSchema, type BatteryConfiguration } from "./battery-configuration";
+export type { BatteryConfiguration } from "./battery-configuration";
 
 export type BatteryConstraintCode =
   | "none"
@@ -12,22 +14,6 @@ export type BatteryConstraintCode =
   | "minimum_dwell"
   | "asset_unavailable"
   | "inverter_unavailable";
-
-export type BatteryConfiguration = {
-  maximumDischargePowerMw: number;
-  maximumChargePowerMw: number;
-  usableEnergyMwh: number;
-  initialSocPercent: number;
-  minimumSocPercent: number;
-  maximumSocPercent: number;
-  dischargeEfficiency: number;
-  chargeEfficiency: number;
-  rampRateMwPerMinute: number;
-  minimumDwellMinutes: number;
-  stateOfHealthPercent: number;
-  available: boolean;
-  inverterAvailable: boolean;
-};
 
 export type BatteryDispatchInput = {
   timestamp: string;
@@ -43,6 +29,10 @@ export type BatteryDispatchInterval = BatteryDispatchInput & {
   availableChargeMw: number;
   shortfallMw: number;
   constraintCode: BatteryConstraintCode;
+  durationMinutes: number;
+  startingSocPercent: number;
+  startingEnergyMwh: number;
+  endingEnergyMwh: number;
 };
 
 export type FacilityPowerObservation = {
@@ -63,15 +53,27 @@ export type BatteryObservation = {
   alarms: string | null;
 };
 
-const round = (value: number, digits = 2) => Number(value.toFixed(digits));
+const dispatchInputSchema = z.object({
+  timestamp: z
+    .string()
+    .datetime({ offset: true })
+    .refine(
+      (value) => Number.isFinite(Date.parse(value)),
+      "Timestamp must identify a valid instant.",
+    ),
+  facilityDemandMw: z.number().finite().nonnegative(),
+  targetImportMw: z.number().finite().nonnegative(),
+});
 
 export function simulateBatteryDispatch(
   inputs: BatteryDispatchInput[],
-  config: BatteryConfiguration,
+  rawConfig: BatteryConfiguration,
   intervalMinutes: number,
 ): BatteryDispatchInterval[] {
   if (!(intervalMinutes > 0) || !Number.isFinite(intervalMinutes))
     throw new Error("A positive battery interval duration is required.");
+  const config = batteryConfigurationSchema.parse(rawConfig);
+  inputs = z.array(dispatchInputSchema).max(100_000).parse(inputs);
   const effectiveEnergyMwh = (config.usableEnergyMwh * config.stateOfHealthPercent) / 100;
   let storedEnergyMwh = (effectiveEnergyMwh * config.initialSocPercent) / 100;
   let previousPowerMw = 0;
@@ -86,6 +88,7 @@ export function simulateBatteryDispatch(
     if (!(duration > 0) || !Number.isFinite(duration))
       throw new Error("Battery timestamps must be valid, unique and chronological.");
     const dtHours = duration / 60;
+    const startingEnergyMwh = storedEnergyMwh;
     const socPercent = effectiveEnergyMwh ? (storedEnergyMwh / effectiveEnergyMwh) * 100 : 0;
     const dischargeEnergyMw =
       dtHours > 0
@@ -99,8 +102,11 @@ export function simulateBatteryDispatch(
           config.chargeEfficiency /
           dtHours
         : 0;
-    const availableDischargeMw = Math.min(config.maximumDischargePowerMw, dischargeEnergyMw);
-    const availableChargeMw = Math.min(config.maximumChargePowerMw, chargeEnergyMw);
+    const enabled = config.available && config.inverterAvailable;
+    const availableDischargeMw = enabled
+      ? Math.min(config.maximumDischargePowerMw, dischargeEnergyMw)
+      : 0;
+    const availableChargeMw = enabled ? Math.min(config.maximumChargePowerMw, chargeEnergyMw) : 0;
     const requiredDischargeMw = Math.max(0, input.facilityDemandMw - input.targetImportMw);
     const desiredChargeMw =
       requiredDischargeMw === 0 && socPercent < config.maximumSocPercent
@@ -176,19 +182,26 @@ export function simulateBatteryDispatch(
       constraintCode = "soc_maximum";
 
     const actualMode = batteryPowerMw > 0 ? "discharge" : batteryPowerMw < 0 ? "charge" : "idle";
-    modeMinutes = actualMode === previousMode ? modeMinutes + duration : duration;
-    previousMode = actualMode;
+    // An idle interval must not erase the last direction and bypass dwell protection.
+    modeMinutes =
+      actualMode === "idle" || actualMode === previousMode ? modeMinutes + duration : duration;
+    if (actualMode !== "idle") previousMode = actualMode;
     previousPowerMw = batteryPowerMw;
     const gridImportMw = Math.max(0, input.facilityDemandMw - batteryPowerMw);
     return {
       ...input,
-      gridImportMw: round(gridImportMw),
-      batteryPowerMw: round(batteryPowerMw),
-      socPercent: round(endingSoc),
-      availableDischargeMw: round(availableDischargeMw),
-      availableChargeMw: round(availableChargeMw),
-      shortfallMw: round(Math.max(0, gridImportMw - input.targetImportMw)),
+      // Preserve numerical precision for downstream calculations; views format values.
+      gridImportMw,
+      batteryPowerMw,
+      socPercent: endingSoc,
+      availableDischargeMw,
+      availableChargeMw,
+      shortfallMw: Math.max(0, gridImportMw - input.targetImportMw),
       constraintCode,
+      durationMinutes: duration,
+      startingSocPercent: socPercent,
+      startingEnergyMwh,
+      endingEnergyMwh: storedEnergyMwh,
     };
   });
 }
