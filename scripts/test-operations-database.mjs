@@ -29,6 +29,11 @@ try {
     "20261010130000_operations_worker_integrity.sql",
     "20261010140000_operations_review_integrity.sql",
     "20261010150000_operations_job_idempotency.sql",
+    "20261018120000_operations_worker_observability.sql",
+    "20261018130000_operations_consistent_workspace.sql",
+    "20261018140000_operations_execution_identity.sql",
+    "20261018150000_operations_bounded_retries.sql",
+    "20261018160000_operations_runtime_metrics.sql",
   ])
     await db.exec(
       await readFile(new URL(`../supabase/migrations/${file}`, import.meta.url), "utf8"),
@@ -189,6 +194,88 @@ try {
     ])
   ).rows[0];
   assert.equal(first.id, duplicate.id);
+  await assert.rejects(
+    db.query("update analytics_jobs set input_payload='{\"modified\":true}' where id=$1", [
+      first.id,
+    ]),
+    /immutable/,
+  );
+  await db.exec(`set role authenticated; set request.jwt.claim.sub='${owner}'`);
+  const snapshot = await db.query(
+    "select operations_workspace_snapshot($1,now()-interval '1 day',now()) as snapshot",
+    [facility],
+  );
+  assert.equal(snapshot.rows[0].snapshot.operations_facilities[0].id, facility);
+  await db.exec(`set request.jwt.claim.sub='${other}'`);
+  const deniedSnapshot = await db.query(
+    "select operations_workspace_snapshot($1,now()-interval '1 day',now()) as snapshot",
+    [facility],
+  );
+  assert.equal(deniedSnapshot.rows[0].snapshot, null);
+  await assert.rejects(
+    db.query("select operations_worker_heartbeat('unauthorized','test','test','idle')"),
+    /permission/,
+  );
+  await assert.rejects(db.query("select operations_runtime_metrics('test','test')"), /permission/);
+  await db.exec("reset role; set role service_role");
+  await db.query("select operations_worker_heartbeat('worker-test','test','test','idle')");
+  const fleet = (await db.query("select operations_runtime_metrics('test','test') as metrics"))
+    .rows[0].metrics;
+  assert.equal(fleet.available_workers, 1);
+  assert.equal(
+    (await db.query("select operations_runtime_metrics('test','other') as metrics")).rows[0].metrics
+      .available_workers,
+    0,
+  );
+  assert.equal(typeof fleet.queued_jobs, "number");
+  assert.equal(
+    (await db.query("select state from analytics_worker_heartbeats where worker_id='worker-test'"))
+      .rows[0].state,
+    "idle",
+  );
+  await db.exec("reset role");
+  await db.exec("set request.jwt.claim.role='service_role'");
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const retryJob = (await db.query("select * from claim_analytics_job('retry-worker',120)"))
+      .rows[0];
+    assert.equal(retryJob.attempt_count, attempt);
+    const deferred = (
+      await db.query("select * from defer_analytics_job($1,'retry-worker',$2)", [
+        retryJob.id,
+        attempt,
+      ])
+    ).rows[0];
+    assert.equal(deferred.status, attempt < 3 ? "queued" : "failed");
+    if (attempt < 3) {
+      assert.equal(
+        (await db.query("select * from claim_analytics_job('too-soon',120)")).rows.length,
+        0,
+      );
+      await db.query(
+        "update analytics_jobs set retry_after_at=now()-interval '1 second' where id=$1",
+        [retryJob.id],
+      );
+    }
+  }
+  for (let index = 0; index < 20; index++) {
+    await db.query("select * from create_analytics_job_once($1::jsonb)", [
+      JSON.stringify({
+        ...payload,
+        id: crypto.randomUUID(),
+        input_fingerprint: (index + 100).toString(16).padStart(64, "0"),
+      }),
+    ]);
+  }
+  await assert.rejects(
+    db.query("select * from create_analytics_job_once($1::jsonb)", [
+      JSON.stringify({
+        ...payload,
+        id: crypto.randomUUID(),
+        input_fingerprint: "f".repeat(64),
+      }),
+    ]),
+    /active job limit/,
+  );
   console.log(
     "Operations PostgreSQL migrations, scoped ingestion, deduplication, rollback, RLS and cancellation checks passed.",
   );

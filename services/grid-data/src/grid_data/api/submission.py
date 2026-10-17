@@ -1,11 +1,13 @@
-import hashlib
-import json
+import os
 from collections.abc import Callable
 from uuid import UUID
 
-from fastapi import BackgroundTasks
+from fastapi import BackgroundTasks, HTTPException
 
+from grid_data.api.assessment_identity import execution_identity
+from grid_data.api.failures import JobCapacityReached
 from grid_data.api.models import AnalyticsJob
+from grid_data.api.runtime import canonical_engine_ready
 from grid_data.api.store import JobSubmissionStore
 
 
@@ -21,9 +23,17 @@ class JobSubmission:
     def create(
         self, *, owner_id: UUID, job_type: str, payload: dict[str, object]
     ) -> tuple[AnalyticsJob, bool]:
-        fingerprint = hashlib.sha256(
-            json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
-        ).hexdigest()
+        if (
+            os.environ.get("GRIDPULSE_ENV") in {"staging", "production"}
+            and not canonical_engine_ready()
+        ):
+            raise HTTPException(status_code=503, detail="Approved canonical engine unavailable")
+        try:
+            fingerprint, manifest = execution_identity(job_type, payload)
+        except ValueError as error:
+            raise HTTPException(
+                status_code=422, detail="Calculation inputs must be finite JSON values"
+            ) from error
         existing = self.store.find_by_fingerprint(owner_id, job_type, fingerprint)
         if existing is not None:
             return existing, False
@@ -32,6 +42,14 @@ class JobSubmission:
             job_type=job_type,
             input_payload=payload,
             input_fingerprint=fingerprint,
+            execution_manifest=manifest,
         )
-        created = self.store.create(proposed)
+        try:
+            created = self.store.create(proposed)
+        except JobCapacityReached as error:
+            raise HTTPException(
+                status_code=429,
+                detail="Active assessment limit reached",
+                headers={"Retry-After": "30"},
+            ) from error
         return created, created.id == proposed.id

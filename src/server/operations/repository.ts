@@ -54,6 +54,30 @@ export class SupabaseOperationsRepository implements OperationsEvidenceReader {
       signal: AbortSignal.timeout(10_000),
     });
   }
+  async readWorkspaceSnapshot(facilityId: string, start: string, end: string) {
+    const result = await this.transport(
+      `${this.config.url}/rest/v1/rpc/operations_workspace_snapshot`,
+      {
+        method: "POST",
+        headers: {
+          apikey: this.config.publicKey,
+          authorization: this.authorization,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ p_facility_id: facilityId, p_start: start, p_end: end }),
+        signal: AbortSignal.timeout(12_000),
+      },
+    );
+    if (!result.ok) throw new Error(`operations_workspace_snapshot:${result.status}`);
+    const body: unknown = await result.json();
+    if (body === null) return null;
+    const schema = z.object(
+      Object.fromEntries(
+        evidenceTables.map((table) => [table, z.array(z.record(z.unknown())).max(15_000)]),
+      ),
+    );
+    return schema.parse(body);
+  }
   async readRows(table: OperationsEvidenceTable, parameters: string) {
     if (!evidenceTables.includes(table)) throw new Error("Invalid Operations table");
     const query = new URLSearchParams(parameters);

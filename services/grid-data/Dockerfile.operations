@@ -1,0 +1,20 @@
+FROM python:3.12-slim AS base
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PORT=8080
+WORKDIR /app
+COPY requirements-operations.lock ./
+RUN pip install --no-cache-dir -r requirements-operations.lock
+COPY pyproject.toml README.md ./
+COPY src ./src
+RUN pip install --no-cache-dir --no-deps . && pip check
+RUN useradd --create-home --uid 10001 gridpulse
+
+# No substitute engine is built. The approved private artifact is a release prerequisite.
+FROM base AS operations
+ARG ENGINE_SHA256
+COPY vendor/*.whl /opt/gridpulse/
+RUN python -c "import hashlib,os,pathlib,subprocess,sys; wheels=list(pathlib.Path('/opt/gridpulse').glob('*.whl')); assert len(wheels)==1, 'Exactly one approved wheel required'; p=wheels[0]; assert hashlib.file_digest(p.open('rb'),'sha256').hexdigest()==os.environ['ENGINE_SHA256'], 'Unapproved canonical artifact'; subprocess.run([sys.executable,'-m','pip','install','--no-cache-dir','--no-deps',str(p)],check=True)" \
+    && pip check
+# Configure GRIDPULSE_CANONICAL_WHEEL with the preserved wheel filename at runtime.
+USER gridpulse
+EXPOSE 8080
+CMD ["sh", "-c", "exec uvicorn grid_data.api.app:app --host 0.0.0.0 --port ${PORT}"]

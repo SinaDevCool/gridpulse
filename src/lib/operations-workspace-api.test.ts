@@ -67,15 +67,14 @@ describe("operations workspace API", () => {
       operations_recommendations: [],
       operations_verifications: [],
       operations_data_quality: [],
+      operations_operating_agreements: [],
+      operations_calculation_runs: [],
+      operations_dispatch_approvals: [],
     };
     vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
       const url = new URL(String(input));
       const table = url.pathname.split("/").at(-1)!;
-      if (
-        table === "operations_measurements" &&
-        url.searchParams.get("metric_key") !== "eq.facility_grid_import_mw"
-      )
-        return Response.json([]);
+      if (table === "operations_workspace_snapshot") return Response.json(tables);
       return Response.json(tables[table] ?? []);
     });
     const result = await handleOperationsWorkspace(
@@ -97,8 +96,7 @@ describe("operations workspace API", () => {
   it("does not hide missing migrations or authorization failures as empty optional evidence", async () => {
     vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
       const table = new URL(String(input)).pathname.split("/").at(-1);
-      if (table === "operations_facilities") return Response.json([{ id: facilityId }]);
-      if (table === "operations_dispatch_approvals")
+      if (table === "operations_workspace_snapshot")
         return Response.json({ error: "denied" }, { status: 403 });
       return Response.json([]);
     });

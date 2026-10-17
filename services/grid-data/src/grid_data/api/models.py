@@ -23,6 +23,7 @@ class AnalyticsJob(BaseModel):
     status: JobStatus = JobStatus.QUEUED
     input_payload: dict[str, Any] = Field(default_factory=dict)
     input_fingerprint: str | None = Field(default=None, pattern="^[a-f0-9]{64}$")
+    execution_manifest: dict[str, Any] = Field(default_factory=dict)
     result_payload: dict[str, Any] | None = None
     error: str | None = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -34,6 +35,7 @@ class AnalyticsJob(BaseModel):
     heartbeat_at: datetime | None = None
     checkpoint_payload: dict[str, Any] = Field(default_factory=dict)
     cancellation_requested: bool = False
+    retry_after_at: datetime | None = None
 
 
 class JobAccepted(BaseModel):

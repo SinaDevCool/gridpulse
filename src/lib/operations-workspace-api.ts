@@ -1,9 +1,8 @@
 import {
-operationsWorkspaceSchema,
-type OperationsWorkspace,
+  operationsWorkspaceSchema,
+  type OperationsWorkspace,
 } from "../features/operations/workspace-contract";
 import { SupabaseOperationsRepository } from "../server/operations/repository";
-import { operationsMetricSchema } from "./operations-ingest-api";
 import { operationsFingerprint } from "./operations-request";
 
 export type OperationsWorkspaceEnv = {
@@ -57,82 +56,25 @@ export async function handleOperationsWorkspace(request: Request, env: Operation
     { url: supabaseUrl, publicKey: apiKey },
     authorization,
   );
-  const query = repository.readRows.bind(repository);
-  const facilityFilter = `facility_id=eq.${encodeURIComponent(facilityId)}`;
-  const readMeasurements = async () => {
-    const pages = await Promise.all(
-      operationsMetricSchema.options.map(async (metric) => {
-        const rows: Array<Record<string, unknown>> = [];
-        for (let page = 0; page < 4; page++) {
-          const next = await query(
-            "operations_measurements",
-            `${facilityFilter}&metric_key=eq.${metric}&select=source_id,metric_key,asset_id,event_at,received_at,interval_seconds,value,unit,value_kind,quality&quality=eq.accepted&event_at=gte.${encodeURIComponent(start)}&event_at=lte.${encodeURIComponent(end)}&received_at=lte.${encodeURIComponent(end)}&order=event_at.asc,id.asc&limit=1000&offset=${page * 1000}`,
-          );
-          rows.push(...next);
-          if (next.length < 1000) return rows;
-        }
-        throw new Error("Evidence window exceeds the safe page bound; shorten the window.");
-      }),
-    );
-    return pages.flat().sort((a, b) => String(a.event_at).localeCompare(String(b.event_at)));
-  };
-
   try {
-    const facilities = await query(
-      "operations_facilities",
-      `id=eq.${facilityId}&select=id,name,timezone,contracted_import_limit_mw,limit_evidence,limit_valid_to&limit=1`,
-    );
+    const snapshot = await repository.readWorkspaceSnapshot(facilityId, start, end);
+    if (!snapshot) return response({ error: "Facility not found." }, 404);
+    const facilities = snapshot.operations_facilities;
     const facility = facilities[0];
     if (!facility) return response({ error: "Facility not found." }, 404);
 
-    const [
-      sources,
-      watermarks,
-      measurements,
-      batteries,
-      workloads,
-      forecasts,
-      recommendations,
-      verifications,
-      quality,
-      agreements,
-      calculationRuns,
-      approvals,
-    ] = await Promise.all([
-      query(
-        "operations_sources",
-        `${facilityFilter}&select=id,source_type,display_name,health,read_only,last_received_at,expected_interval_seconds&order=display_name.asc`,
-      ),
-      query(
-        "operations_source_watermarks",
-        `${facilityFilter}&select=source_id,latest_event_at,latest_received_at,consecutive_failures,last_error_code`,
-      ),
-      readMeasurements(),
-      query("operations_battery_assets", `${facilityFilter}&select=*&order=created_at.asc`),
-      query("operations_workloads", `${facilityFilter}&select=*&order=updated_at.desc&limit=500`),
-      query(
-        "operations_forecasts",
-        `${facilityFilter}&select=*&promotion_status=eq.accepted&generated_at=lte.${encodeURIComponent(end)}&evidence_cutoff=lte.${encodeURIComponent(end)}&order=generated_at.desc&limit=1`,
-      ),
-      query(
-        "operations_recommendations",
-        `${facilityFilter}&select=*&order=created_at.desc&limit=1`,
-      ),
-      query("operations_verifications", `${facilityFilter}&select=*&order=created_at.desc&limit=1`),
-      query("operations_data_quality", `${facilityFilter}&select=*&order=window_end.desc&limit=1`),
-      query(
-        "operations_operating_agreements",
-        `${facilityFilter}&select=*&order=valid_from.desc&limit=10`,
-      ),
-      query(
-        "operations_calculation_runs",
-        `${facilityFilter}&select=*&order=created_at.desc&limit=10`,
-      ),
-      query(
-        "operations_dispatch_approvals",
-        `${facilityFilter}&select=*&order=decision_at.desc&limit=50`,
-      ),
-    ]);
+    const sources = snapshot.operations_sources;
+    const watermarks = snapshot.operations_source_watermarks;
+    const measurements = snapshot.operations_measurements;
+    const batteries = snapshot.operations_battery_assets;
+    const workloads = snapshot.operations_workloads;
+    const forecasts = snapshot.operations_forecasts;
+    const recommendations = snapshot.operations_recommendations;
+    const verifications = snapshot.operations_verifications;
+    const quality = snapshot.operations_data_quality;
+    const agreements = snapshot.operations_operating_agreements;
+    const calculationRuns = snapshot.operations_calculation_runs;
+    const approvals = snapshot.operations_dispatch_approvals;
 
     const watermarkBySource = new Map(watermarks.map((item) => [item.source_id, item]));
     const freshestEvidenceAt = measurements

@@ -1,0 +1,48 @@
+# Provider-neutral staging recipe; does not create a paid service or production database.
+x-operations: &operations
+  image: gridpulse-operations:${GRIDPULSE_BUILD_SHA:?Set an immutable source revision}
+  build:
+    context: ./services/grid-data
+    dockerfile: Dockerfile.operations
+    target: operations
+    args:
+      ENGINE_SHA256: ${GRIDPULSE_ENGINE_SHA256:?Approved artifact checksum required}
+  env_file:
+    - ./deployment/operations/.env
+  environment:
+    GRIDPULSE_ENV: staging
+    GRIDPULSE_JOB_DISPATCH_MODE: worker
+    GRIDPULSE_BUILD_SHA: ${GRIDPULSE_BUILD_SHA:?Set an immutable source revision}
+    GRIDPULSE_ENGINE_SHA256: ${GRIDPULSE_ENGINE_SHA256:?Approved artifact checksum required}
+    GRIDPULSE_ENGINE_VERSION: ${GRIDPULSE_ENGINE_VERSION:?Exact private engine version required}
+    OPENBLAS_NUM_THREADS: "1"
+    OMP_NUM_THREADS: "1"
+  init: true
+  restart: unless-stopped
+  stop_grace_period: 30s
+  pids_limit: 128
+  cpus: 1.0
+  mem_limit: 2g
+services:
+  api:
+    <<: *operations
+    ports:
+      - "127.0.0.1:8080:8080"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health/live', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  worker:
+    <<: *operations
+    command: ["python", "-m", "grid_data.api.supervised_worker"]
+    environment:
+      GRIDPULSE_ENV: staging
+      GRIDPULSE_JOB_DISPATCH_MODE: worker
+      GRIDPULSE_BUILD_SHA: ${GRIDPULSE_BUILD_SHA:?Set an immutable source revision}
+      GRIDPULSE_ENGINE_SHA256: ${GRIDPULSE_ENGINE_SHA256:?Approved artifact checksum required}
+      GRIDPULSE_ENGINE_VERSION: ${GRIDPULSE_ENGINE_VERSION:?Exact private engine version required}
+      GRIDPULSE_JOB_TIMEOUT_SECONDS: "300"
+      GRIDPULSE_JOB_MEMORY_MB: "1536"
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"

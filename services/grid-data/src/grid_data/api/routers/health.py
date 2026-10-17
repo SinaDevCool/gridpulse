@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import importlib.metadata
+import logging
+import os
 from collections.abc import Callable
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -10,6 +12,7 @@ from grid_data.api.models import (
     HealthReport,
     UserIdentity,
 )
+from grid_data.api.runtime import canonical_engine_ready
 from grid_data.api.store import SupabaseJobStore
 from grid_data.api.submission import JobSubmission
 from grid_data.api.version import SERVICE_VERSION
@@ -19,6 +22,35 @@ def build_router(
     dependencies: ApiDependencies, auth_dependency: Callable, submission: JobSubmission
 ) -> APIRouter:
     router = APIRouter()
+
+    def readiness() -> dict[str, object]:
+        checks = {"database_reachable": False, "worker_available": False}
+        if isinstance(dependencies.job_store, SupabaseJobStore):
+            try:
+                checks = dependencies.job_store.operational_probe()
+            except (RuntimeError, OSError, ValueError, KeyError, TypeError):
+                logging.getLogger(__name__).warning("Operations readiness dependency probe failed")
+        engine_ready = canonical_engine_ready()
+        return {
+            **checks,
+            "canonical_engine_ready": engine_ready,
+            "ready": all(checks.values())
+            and engine_ready
+            and dependencies.dispatch_mode == "worker",
+            "live_facility_connected": False,
+            "automatic_dispatch_authorized": False,
+        }
+
+    @router.get("/health/live")
+    def liveness() -> dict[str, str]:
+        return {"status": "ok", "revision": os.environ.get("GRIDPULSE_BUILD_SHA", "development")}
+
+    @router.get("/health/ready")
+    def ready():
+        from fastapi.responses import JSONResponse
+
+        result = readiness()
+        return JSONResponse(result, status_code=200 if result["ready"] else 503)
 
     @router.get("/health", response_model=HealthReport)
     def health() -> HealthReport:
@@ -48,23 +80,16 @@ def build_router(
 
     @router.get("/v1/operations/readiness")
     def operations_readiness(user: UserIdentity = Depends(auth_dependency)) -> dict[str, object]:
-        try:
-            engine_version = importlib.metadata.version("gridpulse-capacity-backtest")
-            from capacity_backtest.application import contract_manifest
-
-            contract_manifest()
-            engine_ready = engine_version.startswith("0.2.")
-        except (ImportError, importlib.metadata.PackageNotFoundError):
-            engine_ready = False
         durable = isinstance(dependencies.job_store, SupabaseJobStore)
+        observed = readiness()
         return {
             "durable_store_configured": durable,
             "dispatch_mode": dependencies.dispatch_mode,
-            "canonical_engine_ready": engine_ready,
-            "deployment_ready": durable and engine_ready and dependencies.dispatch_mode == "worker",
+            **observed,
+            "deployment_ready": observed["ready"],
             "live_facility_connected": False,
             "automatic_dispatch_authorized": False,
-            "note": "Configuration check only. Database, worker liveness and facility evidence need separate operational probes.",
+            "note": "Operational dependency probes; facility evidence and pilot acceptance remain separate.",
         }
 
     @router.get("/v1/contracts")

@@ -3,6 +3,7 @@ from dataclasses import replace
 from datetime import datetime, timezone
 from uuid import UUID
 
+from grid_data.api.failures import retryable_failure
 from grid_data.api.jobs.context import JobCancelled, JobContext, JobLeaseLost
 from grid_data.api.jobs.registry import calculation_for
 from grid_data.api.models import JobStatus
@@ -53,9 +54,17 @@ class JobRunner:
             )
             raise
         except JobCancelled:
-            self._store.update(job_id, status=JobStatus.CANCELLED, completed_at=context.clock())
+            if self._store.get_internal(job_id).status != JobStatus.CANCELLED:
+                self._store.update(job_id, status=JobStatus.CANCELLED, completed_at=context.clock())
         except Exception as error:
             checkpoint()
+            if retryable_failure(error) and job.lease_owner:
+                self._store.defer(job_id, job.lease_owner, job.attempt_count)
+                LOGGER.warning(
+                    "transient calculation dependency failure; bounded retry scheduled",
+                    extra={"job_id": str(job_id)},
+                )
+                return
             self._store.update(
                 job_id,
                 status=JobStatus.FAILED,

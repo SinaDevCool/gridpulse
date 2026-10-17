@@ -36,6 +36,10 @@ jobs:
       - run: >-
           python -m ruff check
           services/grid-data/src/grid_data/api
+          services/grid-data/scripts/check_operations_runtime.py
+          services/grid-data/scripts/check_staging_isolation.py
+          services/grid-data/tests/test_operations_runtime_stability.py
+          services/grid-data/tests/test_operations_retries.py
           services/grid-data/src/grid_data/geofabrik.py
           services/grid-data/src/grid_data/c2_sources.py
           services/grid-data/src/grid_data/c2_hourly.py
@@ -50,6 +54,10 @@ jobs:
       - run: >-
           python -m ruff format --check
           services/grid-data/src/grid_data/api
+          services/grid-data/scripts/check_operations_runtime.py
+          services/grid-data/scripts/check_staging_isolation.py
+          services/grid-data/tests/test_operations_runtime_stability.py
+          services/grid-data/tests/test_operations_retries.py
           services/grid-data/src/grid_data/geofabrik.py
           services/grid-data/src/grid_data/c2_sources.py
           services/grid-data/src/grid_data/c2_hourly.py

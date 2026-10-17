@@ -9,141 +9,51 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as WorkspacesRouteImport } from './routes/workspaces'
-import { Route as ValidationCaseRouteImport } from './routes/validation-case'
-import { Route as SyntheticNetworkStudyRouteImport } from './routes/synthetic-network-study'
-import { Route as ServiceRouteImport } from './routes/service'
-import { Route as ReportsRouteImport } from './routes/reports'
-import { Route as PowerFinderRouteImport } from './routes/power-finder'
-import { Route as PortfolioRouteImport } from './routes/portfolio'
-import { Route as PilotRequestsRouteImport } from './routes/pilot-requests'
-import { Route as PilotReadyRouteImport } from './routes/pilot-ready'
-import { Route as PilotRouteImport } from './routes/pilot'
-import { Route as OperationsRouteImport } from './routes/operations'
-import { Route as HydrogenIndustryRouteImport } from './routes/hydrogen-industry'
-import { Route as EvidenceReviewRouteImport } from './routes/evidence-review'
-import { Route as EvidenceRouteImport } from './routes/evidence'
-import { Route as EnergyStorageRouteImport } from './routes/energy-storage'
-import { Route as DemoRouteImport } from './routes/demo'
-import { Route as DataSourcesRouteImport } from './routes/data-sources'
-import { Route as DataCentresRouteImport } from './routes/data-centres'
-import { Route as DataCentrePlannerRouteImport } from './routes/data-centre-planner'
-import { Route as ActivationRouteImport } from './routes/activation'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as SubmissionPackageIdRouteImport } from './routes/submission-package.$id'
-import { Route as PortfolioIdRouteImport } from './routes/portfolio.$id'
-import { Route as PilotCaseIdRouteImport } from './routes/pilot-case.$id'
-import { Route as OperatorReviewIdRouteImport } from './routes/operator-review.$id'
-import { Route as OperationsIdRouteImport } from './routes/operations.$id'
-import { Route as CapacityDossiersIdRouteImport } from './routes/capacity-dossiers.$id'
-import { Route as AssessmentsNewRouteImport } from './routes/assessments.new'
-import { Route as AssessmentsIdRouteImport } from './routes/assessments.$id'
+import { Route as ActivationRouteImport } from './routes/activation'
+import { Route as DataCentrePlannerRouteImport } from './routes/data-centre-planner'
+import { Route as DataCentresRouteImport } from './routes/data-centres'
+import { Route as DataSourcesRouteImport } from './routes/data-sources'
+import { Route as DemoRouteImport } from './routes/demo'
+import { Route as EnergyStorageRouteImport } from './routes/energy-storage'
+import { Route as EvidenceRouteImport } from './routes/evidence'
+import { Route as EvidenceReviewRouteImport } from './routes/evidence-review'
+import { Route as HydrogenIndustryRouteImport } from './routes/hydrogen-industry'
+import { Route as OperationsRouteImport } from './routes/operations'
+import { Route as PilotRouteImport } from './routes/pilot'
+import { Route as PilotReadyRouteImport } from './routes/pilot-ready'
+import { Route as PilotRequestsRouteImport } from './routes/pilot-requests'
+import { Route as PortfolioRouteImport } from './routes/portfolio'
+import { Route as PowerFinderRouteImport } from './routes/power-finder'
+import { Route as ReportsRouteImport } from './routes/reports'
+import { Route as ServiceRouteImport } from './routes/service'
+import { Route as SyntheticNetworkStudyRouteImport } from './routes/synthetic-network-study'
+import { Route as ValidationCaseRouteImport } from './routes/validation-case'
+import { Route as WorkspacesRouteImport } from './routes/workspaces'
 import { Route as ActivationIdRouteImport } from './routes/activation.$id'
-import { Route as ApiPropertiesEnrichRouteImport } from './routes/api.properties.enrich'
-import { Route as ApiPowerFinderViewportRouteImport } from './routes/api.power-finder.viewport'
-import { Route as ApiPowerFinderStudyRouteImport } from './routes/api.power-finder.study'
-import { Route as ApiPowerFinderScenarioRouteImport } from './routes/api.power-finder.scenario'
-import { Route as ApiOperationsWorkspaceRouteImport } from './routes/api.operations.workspace'
-import { Route as ApiOperationsRunsRouteImport } from './routes/api.operations.runs'
-import { Route as ApiOperationsIngestRouteImport } from './routes/api.operations.ingest'
-import { Route as ApiOperationsCapabilitiesRouteImport } from './routes/api.operations.capabilities'
+import { Route as AssessmentsIdRouteImport } from './routes/assessments.$id'
+import { Route as AssessmentsNewRouteImport } from './routes/assessments.new'
+import { Route as CapacityDossiersIdRouteImport } from './routes/capacity-dossiers.$id'
+import { Route as OperationsIdRouteImport } from './routes/operations.$id'
+import { Route as OperatorReviewIdRouteImport } from './routes/operator-review.$id'
+import { Route as PilotCaseIdRouteImport } from './routes/pilot-case.$id'
+import { Route as PortfolioIdRouteImport } from './routes/portfolio.$id'
+import { Route as SubmissionPackageIdRouteImport } from './routes/submission-package.$id'
 import { Route as ApiOperationsAssessRouteImport } from './routes/api.operations.assess'
+import { Route as ApiOperationsCapabilitiesRouteImport } from './routes/api.operations.capabilities'
+import { Route as ApiOperationsIngestRouteImport } from './routes/api.operations.ingest'
+import { Route as ApiOperationsRunsRouteImport } from './routes/api.operations.runs'
+import { Route as ApiOperationsWorkspaceRouteImport } from './routes/api.operations.workspace'
+import { Route as ApiPowerFinderScenarioRouteImport } from './routes/api.power-finder.scenario'
+import { Route as ApiPowerFinderStudyRouteImport } from './routes/api.power-finder.study'
+import { Route as ApiPowerFinderViewportRouteImport } from './routes/api.power-finder.viewport'
+import { Route as ApiPropertiesEnrichRouteImport } from './routes/api.properties.enrich'
 import { Route as ApiForecastsGridStressCurrentRouteImport } from './routes/api.forecasts.grid-stress.current'
 import { Route as ApiPowerFinderTileZXYRouteImport } from './routes/api.power-finder.tile.$z.$x.$y'
 
-const WorkspacesRoute = WorkspacesRouteImport.update({
-  id: '/workspaces',
-  path: '/workspaces',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ValidationCaseRoute = ValidationCaseRouteImport.update({
-  id: '/validation-case',
-  path: '/validation-case',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SyntheticNetworkStudyRoute = SyntheticNetworkStudyRouteImport.update({
-  id: '/synthetic-network-study',
-  path: '/synthetic-network-study',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ServiceRoute = ServiceRouteImport.update({
-  id: '/service',
-  path: '/service',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ReportsRoute = ReportsRouteImport.update({
-  id: '/reports',
-  path: '/reports',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PowerFinderRoute = PowerFinderRouteImport.update({
-  id: '/power-finder',
-  path: '/power-finder',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PortfolioRoute = PortfolioRouteImport.update({
-  id: '/portfolio',
-  path: '/portfolio',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PilotRequestsRoute = PilotRequestsRouteImport.update({
-  id: '/pilot-requests',
-  path: '/pilot-requests',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PilotReadyRoute = PilotReadyRouteImport.update({
-  id: '/pilot-ready',
-  path: '/pilot-ready',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PilotRoute = PilotRouteImport.update({
-  id: '/pilot',
-  path: '/pilot',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OperationsRoute = OperationsRouteImport.update({
-  id: '/operations',
-  path: '/operations',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const HydrogenIndustryRoute = HydrogenIndustryRouteImport.update({
-  id: '/hydrogen-industry',
-  path: '/hydrogen-industry',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const EvidenceReviewRoute = EvidenceReviewRouteImport.update({
-  id: '/evidence-review',
-  path: '/evidence-review',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const EvidenceRoute = EvidenceRouteImport.update({
-  id: '/evidence',
-  path: '/evidence',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const EnergyStorageRoute = EnergyStorageRouteImport.update({
-  id: '/energy-storage',
-  path: '/energy-storage',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DemoRoute = DemoRouteImport.update({
-  id: '/demo',
-  path: '/demo',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DataSourcesRoute = DataSourcesRouteImport.update({
-  id: '/data-sources',
-  path: '/data-sources',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DataCentresRoute = DataCentresRouteImport.update({
-  id: '/data-centres',
-  path: '/data-centres',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DataCentrePlannerRoute = DataCentrePlannerRouteImport.update({
-  id: '/data-centre-planner',
-  path: '/data-centre-planner',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ActivationRoute = ActivationRouteImport.update({
@@ -151,49 +61,99 @@ const ActivationRoute = ActivationRouteImport.update({
   path: '/activation',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const DataCentrePlannerRoute = DataCentrePlannerRouteImport.update({
+  id: '/data-centre-planner',
+  path: '/data-centre-planner',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SubmissionPackageIdRoute = SubmissionPackageIdRouteImport.update({
-  id: '/submission-package/$id',
-  path: '/submission-package/$id',
+const DataCentresRoute = DataCentresRouteImport.update({
+  id: '/data-centres',
+  path: '/data-centres',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PortfolioIdRoute = PortfolioIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => PortfolioRoute,
-} as any)
-const PilotCaseIdRoute = PilotCaseIdRouteImport.update({
-  id: '/pilot-case/$id',
-  path: '/pilot-case/$id',
+const DataSourcesRoute = DataSourcesRouteImport.update({
+  id: '/data-sources',
+  path: '/data-sources',
   getParentRoute: () => rootRouteImport,
 } as any)
-const OperatorReviewIdRoute = OperatorReviewIdRouteImport.update({
-  id: '/operator-review/$id',
-  path: '/operator-review/$id',
+const DemoRoute = DemoRouteImport.update({
+  id: '/demo',
+  path: '/demo',
   getParentRoute: () => rootRouteImport,
 } as any)
-const OperationsIdRoute = OperationsIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => OperationsRoute,
-} as any)
-const CapacityDossiersIdRoute = CapacityDossiersIdRouteImport.update({
-  id: '/capacity-dossiers/$id',
-  path: '/capacity-dossiers/$id',
+const EnergyStorageRoute = EnergyStorageRouteImport.update({
+  id: '/energy-storage',
+  path: '/energy-storage',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AssessmentsNewRoute = AssessmentsNewRouteImport.update({
-  id: '/assessments/new',
-  path: '/assessments/new',
+const EvidenceRoute = EvidenceRouteImport.update({
+  id: '/evidence',
+  path: '/evidence',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AssessmentsIdRoute = AssessmentsIdRouteImport.update({
-  id: '/assessments/$id',
-  path: '/assessments/$id',
+const EvidenceReviewRoute = EvidenceReviewRouteImport.update({
+  id: '/evidence-review',
+  path: '/evidence-review',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HydrogenIndustryRoute = HydrogenIndustryRouteImport.update({
+  id: '/hydrogen-industry',
+  path: '/hydrogen-industry',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OperationsRoute = OperationsRouteImport.update({
+  id: '/operations',
+  path: '/operations',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PilotRoute = PilotRouteImport.update({
+  id: '/pilot',
+  path: '/pilot',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PilotReadyRoute = PilotReadyRouteImport.update({
+  id: '/pilot-ready',
+  path: '/pilot-ready',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PilotRequestsRoute = PilotRequestsRouteImport.update({
+  id: '/pilot-requests',
+  path: '/pilot-requests',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PortfolioRoute = PortfolioRouteImport.update({
+  id: '/portfolio',
+  path: '/portfolio',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PowerFinderRoute = PowerFinderRouteImport.update({
+  id: '/power-finder',
+  path: '/power-finder',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportsRoute = ReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServiceRoute = ServiceRouteImport.update({
+  id: '/service',
+  path: '/service',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SyntheticNetworkStudyRoute = SyntheticNetworkStudyRouteImport.update({
+  id: '/synthetic-network-study',
+  path: '/synthetic-network-study',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ValidationCaseRoute = ValidationCaseRouteImport.update({
+  id: '/validation-case',
+  path: '/validation-case',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WorkspacesRoute = WorkspacesRouteImport.update({
+  id: '/workspaces',
+  path: '/workspaces',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ActivationIdRoute = ActivationIdRouteImport.update({
@@ -201,39 +161,49 @@ const ActivationIdRoute = ActivationIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => ActivationRoute,
 } as any)
-const ApiPropertiesEnrichRoute = ApiPropertiesEnrichRouteImport.update({
-  id: '/api/properties/enrich',
-  path: '/api/properties/enrich',
+const AssessmentsIdRoute = AssessmentsIdRouteImport.update({
+  id: '/assessments/$id',
+  path: '/assessments/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPowerFinderViewportRoute = ApiPowerFinderViewportRouteImport.update({
-  id: '/api/power-finder/viewport',
-  path: '/api/power-finder/viewport',
+const AssessmentsNewRoute = AssessmentsNewRouteImport.update({
+  id: '/assessments/new',
+  path: '/assessments/new',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPowerFinderStudyRoute = ApiPowerFinderStudyRouteImport.update({
-  id: '/api/power-finder/study',
-  path: '/api/power-finder/study',
+const CapacityDossiersIdRoute = CapacityDossiersIdRouteImport.update({
+  id: '/capacity-dossiers/$id',
+  path: '/capacity-dossiers/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPowerFinderScenarioRoute = ApiPowerFinderScenarioRouteImport.update({
-  id: '/api/power-finder/scenario',
-  path: '/api/power-finder/scenario',
+const OperationsIdRoute = OperationsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => OperationsRoute,
+} as any)
+const OperatorReviewIdRoute = OperatorReviewIdRouteImport.update({
+  id: '/operator-review/$id',
+  path: '/operator-review/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiOperationsWorkspaceRoute = ApiOperationsWorkspaceRouteImport.update({
-  id: '/api/operations/workspace',
-  path: '/api/operations/workspace',
+const PilotCaseIdRoute = PilotCaseIdRouteImport.update({
+  id: '/pilot-case/$id',
+  path: '/pilot-case/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiOperationsRunsRoute = ApiOperationsRunsRouteImport.update({
-  id: '/api/operations/runs',
-  path: '/api/operations/runs',
+const PortfolioIdRoute = PortfolioIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => PortfolioRoute,
+} as any)
+const SubmissionPackageIdRoute = SubmissionPackageIdRouteImport.update({
+  id: '/submission-package/$id',
+  path: '/submission-package/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiOperationsIngestRoute = ApiOperationsIngestRouteImport.update({
-  id: '/api/operations/ingest',
-  path: '/api/operations/ingest',
+const ApiOperationsAssessRoute = ApiOperationsAssessRouteImport.update({
+  id: '/api/operations/assess',
+  path: '/api/operations/assess',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiOperationsCapabilitiesRoute =
@@ -242,9 +212,39 @@ const ApiOperationsCapabilitiesRoute =
     path: '/api/operations/capabilities',
     getParentRoute: () => rootRouteImport,
   } as any)
-const ApiOperationsAssessRoute = ApiOperationsAssessRouteImport.update({
-  id: '/api/operations/assess',
-  path: '/api/operations/assess',
+const ApiOperationsIngestRoute = ApiOperationsIngestRouteImport.update({
+  id: '/api/operations/ingest',
+  path: '/api/operations/ingest',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiOperationsRunsRoute = ApiOperationsRunsRouteImport.update({
+  id: '/api/operations/runs',
+  path: '/api/operations/runs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiOperationsWorkspaceRoute = ApiOperationsWorkspaceRouteImport.update({
+  id: '/api/operations/workspace',
+  path: '/api/operations/workspace',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPowerFinderScenarioRoute = ApiPowerFinderScenarioRouteImport.update({
+  id: '/api/power-finder/scenario',
+  path: '/api/power-finder/scenario',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPowerFinderStudyRoute = ApiPowerFinderStudyRouteImport.update({
+  id: '/api/power-finder/study',
+  path: '/api/power-finder/study',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPowerFinderViewportRoute = ApiPowerFinderViewportRouteImport.update({
+  id: '/api/power-finder/viewport',
+  path: '/api/power-finder/viewport',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPropertiesEnrichRoute = ApiPropertiesEnrichRouteImport.update({
+  id: '/api/properties/enrich',
+  path: '/api/properties/enrich',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiForecastsGridStressCurrentRoute =
@@ -564,137 +564,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/workspaces': {
-      id: '/workspaces'
-      path: '/workspaces'
-      fullPath: '/workspaces'
-      preLoaderRoute: typeof WorkspacesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/validation-case': {
-      id: '/validation-case'
-      path: '/validation-case'
-      fullPath: '/validation-case'
-      preLoaderRoute: typeof ValidationCaseRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/synthetic-network-study': {
-      id: '/synthetic-network-study'
-      path: '/synthetic-network-study'
-      fullPath: '/synthetic-network-study'
-      preLoaderRoute: typeof SyntheticNetworkStudyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/service': {
-      id: '/service'
-      path: '/service'
-      fullPath: '/service'
-      preLoaderRoute: typeof ServiceRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reports': {
-      id: '/reports'
-      path: '/reports'
-      fullPath: '/reports'
-      preLoaderRoute: typeof ReportsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/power-finder': {
-      id: '/power-finder'
-      path: '/power-finder'
-      fullPath: '/power-finder'
-      preLoaderRoute: typeof PowerFinderRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/portfolio': {
-      id: '/portfolio'
-      path: '/portfolio'
-      fullPath: '/portfolio'
-      preLoaderRoute: typeof PortfolioRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/pilot-requests': {
-      id: '/pilot-requests'
-      path: '/pilot-requests'
-      fullPath: '/pilot-requests'
-      preLoaderRoute: typeof PilotRequestsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/pilot-ready': {
-      id: '/pilot-ready'
-      path: '/pilot-ready'
-      fullPath: '/pilot-ready'
-      preLoaderRoute: typeof PilotReadyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/pilot': {
-      id: '/pilot'
-      path: '/pilot'
-      fullPath: '/pilot'
-      preLoaderRoute: typeof PilotRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/operations': {
-      id: '/operations'
-      path: '/operations'
-      fullPath: '/operations'
-      preLoaderRoute: typeof OperationsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/hydrogen-industry': {
-      id: '/hydrogen-industry'
-      path: '/hydrogen-industry'
-      fullPath: '/hydrogen-industry'
-      preLoaderRoute: typeof HydrogenIndustryRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/evidence-review': {
-      id: '/evidence-review'
-      path: '/evidence-review'
-      fullPath: '/evidence-review'
-      preLoaderRoute: typeof EvidenceReviewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/evidence': {
-      id: '/evidence'
-      path: '/evidence'
-      fullPath: '/evidence'
-      preLoaderRoute: typeof EvidenceRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/energy-storage': {
-      id: '/energy-storage'
-      path: '/energy-storage'
-      fullPath: '/energy-storage'
-      preLoaderRoute: typeof EnergyStorageRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demo': {
-      id: '/demo'
-      path: '/demo'
-      fullPath: '/demo'
-      preLoaderRoute: typeof DemoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/data-sources': {
-      id: '/data-sources'
-      path: '/data-sources'
-      fullPath: '/data-sources'
-      preLoaderRoute: typeof DataSourcesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/data-centres': {
-      id: '/data-centres'
-      path: '/data-centres'
-      fullPath: '/data-centres'
-      preLoaderRoute: typeof DataCentresRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/data-centre-planner': {
-      id: '/data-centre-planner'
-      path: '/data-centre-planner'
-      fullPath: '/data-centre-planner'
-      preLoaderRoute: typeof DataCentrePlannerRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/activation': {
@@ -704,67 +578,137 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ActivationRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/data-centre-planner': {
+      id: '/data-centre-planner'
+      path: '/data-centre-planner'
+      fullPath: '/data-centre-planner'
+      preLoaderRoute: typeof DataCentrePlannerRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/submission-package/$id': {
-      id: '/submission-package/$id'
-      path: '/submission-package/$id'
-      fullPath: '/submission-package/$id'
-      preLoaderRoute: typeof SubmissionPackageIdRouteImport
+    '/data-centres': {
+      id: '/data-centres'
+      path: '/data-centres'
+      fullPath: '/data-centres'
+      preLoaderRoute: typeof DataCentresRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/portfolio/$id': {
-      id: '/portfolio/$id'
-      path: '/$id'
-      fullPath: '/portfolio/$id'
-      preLoaderRoute: typeof PortfolioIdRouteImport
-      parentRoute: typeof PortfolioRoute
-    }
-    '/pilot-case/$id': {
-      id: '/pilot-case/$id'
-      path: '/pilot-case/$id'
-      fullPath: '/pilot-case/$id'
-      preLoaderRoute: typeof PilotCaseIdRouteImport
+    '/data-sources': {
+      id: '/data-sources'
+      path: '/data-sources'
+      fullPath: '/data-sources'
+      preLoaderRoute: typeof DataSourcesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/operator-review/$id': {
-      id: '/operator-review/$id'
-      path: '/operator-review/$id'
-      fullPath: '/operator-review/$id'
-      preLoaderRoute: typeof OperatorReviewIdRouteImport
+    '/demo': {
+      id: '/demo'
+      path: '/demo'
+      fullPath: '/demo'
+      preLoaderRoute: typeof DemoRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/operations/$id': {
-      id: '/operations/$id'
-      path: '/$id'
-      fullPath: '/operations/$id'
-      preLoaderRoute: typeof OperationsIdRouteImport
-      parentRoute: typeof OperationsRoute
-    }
-    '/capacity-dossiers/$id': {
-      id: '/capacity-dossiers/$id'
-      path: '/capacity-dossiers/$id'
-      fullPath: '/capacity-dossiers/$id'
-      preLoaderRoute: typeof CapacityDossiersIdRouteImport
+    '/energy-storage': {
+      id: '/energy-storage'
+      path: '/energy-storage'
+      fullPath: '/energy-storage'
+      preLoaderRoute: typeof EnergyStorageRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/assessments/new': {
-      id: '/assessments/new'
-      path: '/assessments/new'
-      fullPath: '/assessments/new'
-      preLoaderRoute: typeof AssessmentsNewRouteImport
+    '/evidence': {
+      id: '/evidence'
+      path: '/evidence'
+      fullPath: '/evidence'
+      preLoaderRoute: typeof EvidenceRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/assessments/$id': {
-      id: '/assessments/$id'
-      path: '/assessments/$id'
-      fullPath: '/assessments/$id'
-      preLoaderRoute: typeof AssessmentsIdRouteImport
+    '/evidence-review': {
+      id: '/evidence-review'
+      path: '/evidence-review'
+      fullPath: '/evidence-review'
+      preLoaderRoute: typeof EvidenceReviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/hydrogen-industry': {
+      id: '/hydrogen-industry'
+      path: '/hydrogen-industry'
+      fullPath: '/hydrogen-industry'
+      preLoaderRoute: typeof HydrogenIndustryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/operations': {
+      id: '/operations'
+      path: '/operations'
+      fullPath: '/operations'
+      preLoaderRoute: typeof OperationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pilot': {
+      id: '/pilot'
+      path: '/pilot'
+      fullPath: '/pilot'
+      preLoaderRoute: typeof PilotRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pilot-ready': {
+      id: '/pilot-ready'
+      path: '/pilot-ready'
+      fullPath: '/pilot-ready'
+      preLoaderRoute: typeof PilotReadyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pilot-requests': {
+      id: '/pilot-requests'
+      path: '/pilot-requests'
+      fullPath: '/pilot-requests'
+      preLoaderRoute: typeof PilotRequestsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/portfolio': {
+      id: '/portfolio'
+      path: '/portfolio'
+      fullPath: '/portfolio'
+      preLoaderRoute: typeof PortfolioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/power-finder': {
+      id: '/power-finder'
+      path: '/power-finder'
+      fullPath: '/power-finder'
+      preLoaderRoute: typeof PowerFinderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reports': {
+      id: '/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof ReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/service': {
+      id: '/service'
+      path: '/service'
+      fullPath: '/service'
+      preLoaderRoute: typeof ServiceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/synthetic-network-study': {
+      id: '/synthetic-network-study'
+      path: '/synthetic-network-study'
+      fullPath: '/synthetic-network-study'
+      preLoaderRoute: typeof SyntheticNetworkStudyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/validation-case': {
+      id: '/validation-case'
+      path: '/validation-case'
+      fullPath: '/validation-case'
+      preLoaderRoute: typeof ValidationCaseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/workspaces': {
+      id: '/workspaces'
+      path: '/workspaces'
+      fullPath: '/workspaces'
+      preLoaderRoute: typeof WorkspacesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/activation/$id': {
@@ -774,53 +718,67 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ActivationIdRouteImport
       parentRoute: typeof ActivationRoute
     }
-    '/api/properties/enrich': {
-      id: '/api/properties/enrich'
-      path: '/api/properties/enrich'
-      fullPath: '/api/properties/enrich'
-      preLoaderRoute: typeof ApiPropertiesEnrichRouteImport
+    '/assessments/$id': {
+      id: '/assessments/$id'
+      path: '/assessments/$id'
+      fullPath: '/assessments/$id'
+      preLoaderRoute: typeof AssessmentsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/power-finder/viewport': {
-      id: '/api/power-finder/viewport'
-      path: '/api/power-finder/viewport'
-      fullPath: '/api/power-finder/viewport'
-      preLoaderRoute: typeof ApiPowerFinderViewportRouteImport
+    '/assessments/new': {
+      id: '/assessments/new'
+      path: '/assessments/new'
+      fullPath: '/assessments/new'
+      preLoaderRoute: typeof AssessmentsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/power-finder/study': {
-      id: '/api/power-finder/study'
-      path: '/api/power-finder/study'
-      fullPath: '/api/power-finder/study'
-      preLoaderRoute: typeof ApiPowerFinderStudyRouteImport
+    '/capacity-dossiers/$id': {
+      id: '/capacity-dossiers/$id'
+      path: '/capacity-dossiers/$id'
+      fullPath: '/capacity-dossiers/$id'
+      preLoaderRoute: typeof CapacityDossiersIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/power-finder/scenario': {
-      id: '/api/power-finder/scenario'
-      path: '/api/power-finder/scenario'
-      fullPath: '/api/power-finder/scenario'
-      preLoaderRoute: typeof ApiPowerFinderScenarioRouteImport
+    '/operations/$id': {
+      id: '/operations/$id'
+      path: '/$id'
+      fullPath: '/operations/$id'
+      preLoaderRoute: typeof OperationsIdRouteImport
+      parentRoute: typeof OperationsRoute
+    }
+    '/operator-review/$id': {
+      id: '/operator-review/$id'
+      path: '/operator-review/$id'
+      fullPath: '/operator-review/$id'
+      preLoaderRoute: typeof OperatorReviewIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/operations/workspace': {
-      id: '/api/operations/workspace'
-      path: '/api/operations/workspace'
-      fullPath: '/api/operations/workspace'
-      preLoaderRoute: typeof ApiOperationsWorkspaceRouteImport
+    '/pilot-case/$id': {
+      id: '/pilot-case/$id'
+      path: '/pilot-case/$id'
+      fullPath: '/pilot-case/$id'
+      preLoaderRoute: typeof PilotCaseIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/operations/runs': {
-      id: '/api/operations/runs'
-      path: '/api/operations/runs'
-      fullPath: '/api/operations/runs'
-      preLoaderRoute: typeof ApiOperationsRunsRouteImport
+    '/portfolio/$id': {
+      id: '/portfolio/$id'
+      path: '/$id'
+      fullPath: '/portfolio/$id'
+      preLoaderRoute: typeof PortfolioIdRouteImport
+      parentRoute: typeof PortfolioRoute
+    }
+    '/submission-package/$id': {
+      id: '/submission-package/$id'
+      path: '/submission-package/$id'
+      fullPath: '/submission-package/$id'
+      preLoaderRoute: typeof SubmissionPackageIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/operations/ingest': {
-      id: '/api/operations/ingest'
-      path: '/api/operations/ingest'
-      fullPath: '/api/operations/ingest'
-      preLoaderRoute: typeof ApiOperationsIngestRouteImport
+    '/api/operations/assess': {
+      id: '/api/operations/assess'
+      path: '/api/operations/assess'
+      fullPath: '/api/operations/assess'
+      preLoaderRoute: typeof ApiOperationsAssessRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/operations/capabilities': {
@@ -830,11 +788,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiOperationsCapabilitiesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/operations/assess': {
-      id: '/api/operations/assess'
-      path: '/api/operations/assess'
-      fullPath: '/api/operations/assess'
-      preLoaderRoute: typeof ApiOperationsAssessRouteImport
+    '/api/operations/ingest': {
+      id: '/api/operations/ingest'
+      path: '/api/operations/ingest'
+      fullPath: '/api/operations/ingest'
+      preLoaderRoute: typeof ApiOperationsIngestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/operations/runs': {
+      id: '/api/operations/runs'
+      path: '/api/operations/runs'
+      fullPath: '/api/operations/runs'
+      preLoaderRoute: typeof ApiOperationsRunsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/operations/workspace': {
+      id: '/api/operations/workspace'
+      path: '/api/operations/workspace'
+      fullPath: '/api/operations/workspace'
+      preLoaderRoute: typeof ApiOperationsWorkspaceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/power-finder/scenario': {
+      id: '/api/power-finder/scenario'
+      path: '/api/power-finder/scenario'
+      fullPath: '/api/power-finder/scenario'
+      preLoaderRoute: typeof ApiPowerFinderScenarioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/power-finder/study': {
+      id: '/api/power-finder/study'
+      path: '/api/power-finder/study'
+      fullPath: '/api/power-finder/study'
+      preLoaderRoute: typeof ApiPowerFinderStudyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/power-finder/viewport': {
+      id: '/api/power-finder/viewport'
+      path: '/api/power-finder/viewport'
+      fullPath: '/api/power-finder/viewport'
+      preLoaderRoute: typeof ApiPowerFinderViewportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/properties/enrich': {
+      id: '/api/properties/enrich'
+      path: '/api/properties/enrich'
+      fullPath: '/api/properties/enrich'
+      preLoaderRoute: typeof ApiPropertiesEnrichRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/forecasts/grid-stress/current': {

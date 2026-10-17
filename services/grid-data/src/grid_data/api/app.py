@@ -17,6 +17,7 @@ from grid_data.api.dependencies import ApiDependencies, UnavailableExecutor
 from grid_data.api.executor import JobExecutor, OperatorHealthExecutor
 from grid_data.api.request_limits import OperationsBodyLimit
 from grid_data.api.routers import facility, health, jobs, network
+from grid_data.api.runtime import validate_runtime
 from grid_data.api.store import InMemoryJobStore, JobStore, SupabaseJobStore
 from grid_data.api.submission import JobSubmission
 from grid_data.api.version import SERVICE_VERSION
@@ -30,7 +31,15 @@ class JsonFormatter(logging.Formatter):
             "logger": record.name,
             "message": record.getMessage(),
         }
-        for key in ("request_id", "job_id", "method", "path", "status_code", "elapsed_ms"):
+        for key in (
+            "request_id",
+            "job_id",
+            "method",
+            "path",
+            "status_code",
+            "elapsed_ms",
+            "outcome",
+        ):
             value = getattr(record, key, None)
             if value is not None:
                 payload[key] = value
@@ -46,6 +55,7 @@ def configure_logging() -> None:
 
 
 def _production_dependencies() -> tuple[JobStore, JobExecutor]:
+    validate_runtime(os.environ)
     supabase_url = os.environ.get("SUPABASE_URL")
     service_role_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
     if not supabase_url or not service_role_key:
@@ -108,7 +118,7 @@ def create_app(
 
     @app.middleware("http")
     async def request_context(request: Request, call_next):
-        request_id = request.headers.get("x-request-id", str(uuid4()))
+        request_id = str(uuid4())  # Do not echo arbitrary client identifiers into logs/headers.
         started = time.perf_counter()
         try:
             response = await call_next(request)

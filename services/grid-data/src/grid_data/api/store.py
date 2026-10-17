@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import threading
 import urllib.parse
 from contextlib import contextmanager
@@ -7,8 +8,9 @@ from datetime import datetime, timedelta, timezone
 from typing import Protocol
 from uuid import UUID
 
+from grid_data.api.failures import JobCapacityReached
 from grid_data.api.models import AnalyticsJob, JobStatus
-from grid_data.publish import SupabasePublisher
+from grid_data.publish import SupabasePublisher, SupabaseRequestError
 
 
 class JobSubmissionStore(Protocol):
@@ -19,6 +21,7 @@ class JobSubmissionStore(Protocol):
 
 
 class JobExecutionStore(Protocol):
+    def defer(self, job_id: UUID, worker_id: str, attempt: int) -> AnalyticsJob: ...
     def get_internal(self, job_id: UUID) -> AnalyticsJob: ...
     def update(
         self,
@@ -74,6 +77,15 @@ class InMemoryJobStore:
                 )
                 if existing is not None:
                     return existing.model_copy(deep=True)
+            if (
+                sum(
+                    item.owner_id == job.owner_id
+                    and item.status in {JobStatus.QUEUED, JobStatus.RUNNING}
+                    for item in self._jobs.values()
+                )
+                >= 20
+            ):
+                raise JobCapacityReached("Owner active job limit reached")
             self._jobs[job.id] = job.model_copy(deep=True)
             return job.model_copy(deep=True)
 
@@ -166,6 +178,7 @@ class InMemoryJobStore:
                     for job in self._jobs.values()
                     if not job.cancellation_requested
                     and job.attempt_count < 3
+                    and (job.retry_after_at is None or job.retry_after_at <= now)
                     and (
                         job.status == JobStatus.QUEUED
                         or (
@@ -192,6 +205,33 @@ class InMemoryJobStore:
             )
             self._jobs[current.id] = updated
             return updated.model_copy(deep=True)
+
+    def defer(self, job_id: UUID, worker_id: str, attempt: int) -> AnalyticsJob:
+        with self._lock:
+            job = self._jobs[job_id]
+            now = datetime.now(timezone.utc)
+            if (
+                job.lease_owner != worker_id
+                or job.attempt_count != attempt
+                or job.status != JobStatus.RUNNING
+                or job.cancellation_requested
+                or job.lease_expires_at is None
+                or job.lease_expires_at <= now
+            ):
+                raise RuntimeError("job execution lease is no longer valid")
+            job.status = JobStatus.FAILED if attempt >= 3 else JobStatus.QUEUED
+            job.error = (
+                "Transient dependency failure; retry limit exhausted"
+                if attempt >= 3
+                else "Transient dependency failure; retry scheduled"
+            )
+            job.retry_after_at = (
+                None if attempt >= 3 else now + timedelta(seconds=5 * 2 ** (attempt - 1))
+            )
+            job.completed_at = now if attempt >= 3 else None
+            job.lease_owner = None
+            job.lease_expires_at = None
+            return job.model_copy(deep=True)
 
     def heartbeat(self, job_id: UUID, worker_id: str, lease_seconds: int = 120) -> AnalyticsJob:
         now = datetime.now(timezone.utc)
@@ -248,8 +288,35 @@ class InMemoryJobStore:
 
 class SupabaseJobStore:
     def __init__(self, url: str, service_role_key: str) -> None:
-        self._publisher = SupabasePublisher(url, service_role_key)
+        self._publisher = SupabasePublisher(url, service_role_key, timeout_seconds=10)
         self._execution = threading.local()
+
+    def worker_heartbeat(self, worker_id: str, state: str) -> None:
+        self._publisher.request(
+            "POST",
+            "/rpc/operations_worker_heartbeat",
+            {
+                "p_worker_id": worker_id,
+                "p_environment": os.environ.get("GRIDPULSE_ENV", "development"),
+                "p_revision": os.environ.get("GRIDPULSE_BUILD_SHA", "development"),
+                "p_state": state,
+            },
+        )
+
+    def operational_probe(self) -> dict[str, bool]:
+        self._publisher.request("GET", "/analytics_jobs?select=id&limit=1")
+        environment = urllib.parse.quote(os.environ.get("GRIDPULSE_ENV", "development"))
+        revision = urllib.parse.quote(os.environ.get("GRIDPULSE_BUILD_SHA", "development"))
+        cutoff = urllib.parse.quote(
+            (datetime.now(timezone.utc) - timedelta(seconds=90)).isoformat()
+        )
+        workers = self._publisher.request(
+            "GET",
+            "/analytics_worker_heartbeats?select=worker_id"
+            f"&environment=eq.{environment}&revision=eq.{revision}&observed_at=gte.{cutoff}"
+            "&state=in.(idle,busy)&limit=1",
+        )
+        return {"database_reachable": True, "worker_available": bool(workers)}
 
     @contextmanager
     def execution_lease(self, worker_id: str, attempt: int):
@@ -260,11 +327,24 @@ class SupabaseJobStore:
             self._execution.lease = None
 
     def create(self, job: AnalyticsJob) -> AnalyticsJob:
+        try:
+            rows = self._publisher.request(
+                "POST", "/rpc/create_analytics_job_once", {"p_job": _job_row(job)}
+            )
+        except SupabaseRequestError as error:
+            if error.database_code == "53300":
+                raise JobCapacityReached("Owner active job limit reached") from error
+            raise
+        return AnalyticsJob.model_validate(rows[0])
+
+    def defer(self, job_id: UUID, worker_id: str, attempt: int) -> AnalyticsJob:
         rows = self._publisher.request(
             "POST",
-            "/rpc/create_analytics_job_once",
-            {"p_job": _job_row(job)},
+            "/rpc/defer_analytics_job",
+            {"p_job_id": str(job_id), "p_worker_id": worker_id, "p_attempt": attempt},
         )
+        if not rows:
+            raise RuntimeError("job execution lease is no longer valid")
         return AnalyticsJob.model_validate(rows[0])
 
     def get(self, job_id: UUID, owner_id: UUID) -> AnalyticsJob | None:
@@ -409,6 +489,7 @@ def _job_row(job: AnalyticsJob) -> dict:
         "status": job.status.value,
         "input_payload": job.input_payload,
         "input_fingerprint": job.input_fingerprint,
+        "execution_manifest": job.execution_manifest,
         "result_payload": job.result_payload,
         "error": job.error,
         "created_at": job.created_at.isoformat(),
