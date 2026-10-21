@@ -1,3 +1,4 @@
+import { openScenarioInputs, openComputeQueue, openEvidenceInputs } from "./operations-inputs";
 import { expect, test } from "@playwright/test";
 
 test("public product navigation focuses on property and grid qualification", async ({ page }) => {
@@ -41,21 +42,19 @@ test("Operations exposes the focused three-view facility workflow", async ({ pag
   await expect(navigation.getByRole("link", { name: "Power & Battery" })).toBeVisible();
   await expect(navigation.getByRole("link")).toHaveCount(3);
   await expect(
-    page.getByText("Scenario assessment—not live control", { exact: true }),
+    page.getByText("Scenario assessment—not live control.", { exact: true }),
   ).toBeVisible();
+  await page.getByText("Planning assumptions & recovery obligations", { exact: true }).click();
   await expect(
-    page
-      .getByText("Reference GPU-hour equivalent (not delivered compute)")
-      .locator("xpath=..")
-      .locator("dd"),
-  ).toHaveText(/^\d[\d,.]* h$/);
+    page.getByText(/Reference GPU-hour equivalents are not delivered compute/),
+  ).toBeVisible();
 });
 
 test("Operations context selectors are themed, keyboard-operable, and preserve URL state", async ({
   page,
 }) => {
   await page.goto("/operations?view=overview&window=today&mode=scenario");
-  await expect(page.getByText("Calculation service available")).toBeVisible();
+  await expect(page.locator(".ops-service-status")).toBeVisible();
   const windowTrigger = page
     .locator(".operations-select-trigger")
     .filter({ hasText: "Full scenario day" });
@@ -86,29 +85,25 @@ test("legacy Operations views resolve to a supported destination", async ({ page
 
 test("Operations scenario assumptions recalculate the dashboard", async ({ page }) => {
   await page.goto("/operations?view=overview");
-  const configureButton = page.getByRole("button", { name: "Configure Scenario" });
+  const configureButton = page.getByRole("button", { name: /^Inputs/ });
   await expect(configureButton).toBeVisible();
   await expect(page.locator(".recharts-wrapper").first()).toBeVisible();
   await page.waitForTimeout(250);
-  await configureButton.click();
-  const limitInput = page.locator("#ops-facility-limit");
+  await openScenarioInputs(page);
+  const limitInput = page.locator("#ops-importLimitMw");
   await expect(limitInput).toBeVisible();
   await limitInput.fill("95");
   await page.getByRole("button", { name: "Recalculate Scenario" }).click();
-  await expect(
-    page.locator(".operations-v2-metric").filter({ hasText: "Operational Limit" }),
-  ).toContainText("95 MW");
-  await expect(
-    page.getByText("Scenario assumptions updated. Dashboard results recalculated."),
-  ).toBeAttached();
+  await expect(page.getByRole("meter")).toHaveAttribute("aria-valuetext", /facility limit 95\sMW/);
+  await expect(page.getByRole("button", { name: "Discard changes" })).toBeDisabled();
 });
 
 test("Power & Battery explains when dispatch is unnecessary", async ({ page }) => {
   await page.goto("/operations?view=overview");
   await expect(page.locator(".recharts-wrapper").first()).toBeVisible();
   await page.waitForTimeout(250);
-  await page.getByRole("button", { name: "Configure Scenario" }).click();
-  await page.locator("#ops-facility-limit").fill("120");
+  await openScenarioInputs(page);
+  await page.locator("#ops-importLimitMw").fill("120");
   await page.getByRole("button", { name: "Recalculate Scenario" }).click();
   await page.getByRole("link", { name: "Power & Battery" }).click();
 
@@ -126,11 +121,15 @@ test("Compute & Workloads keeps scenario evidence distinct and supports workload
   page,
 }) => {
   await page.goto("/operations?view=compute");
+  await openComputeQueue(page);
   await expect(page.getByText("Power-Aware Workload Decision")).toBeVisible();
   await expect(page.getByText(/Eligibility is not a validated recovery schedule/i)).toBeVisible();
   await expect(page.getByRole("table")).toBeVisible();
   await expect(page.getByText("reference", { exact: true }).first()).toBeVisible();
-  await page.getByRole("button", { name: /Embedding refresh/ }).click();
+  await page
+    .locator(".compute-table-wrap")
+    .getByRole("button", { name: /Embedding refresh/ })
+    .click();
   await expect(
     page.getByRole("complementary", { name: /Workload details: Embedding refresh/ }),
   ).toBeVisible();
@@ -157,11 +156,9 @@ test("Compute & Workloads imports real scheduler and DCGM-compatible evidence", 
     }
   });
   await page.goto("/operations?view=compute");
-  const connectEvidence = page.getByRole("button", { name: "Connect Evidence" });
-  await expect(connectEvidence).toBeVisible();
-  await expect(connectEvidence).toBeEnabled();
-  await connectEvidence.click();
-  await expect(page.getByRole("heading", { name: "Load Scheduler and GPU Records" })).toBeVisible();
+  await openComputeQueue(page);
+  await openEvidenceInputs(page);
+  await expect(page.getByRole("heading", { name: "Inputs & evidence" })).toBeVisible();
   await page.getByLabel(/Workload CSV/).setInputFiles({
     name: "workloads.csv",
     mimeType: "text/csv",
@@ -172,10 +169,18 @@ test("Compute & Workloads imports real scheduler and DCGM-compatible evidence", 
       ].join("\n"),
     ),
   });
-  await expect(page.getByText("1 scheduler records loaded from workloads.csv.")).toBeVisible();
+  await expect(
+    page
+      .locator(".ops-evidence-inputs")
+      .getByText("1 scheduler records loaded from workloads.csv."),
+  ).toBeVisible();
   releaseOverview();
   await expect.poll(() => overviewReleased).toBe(true);
-  await expect(page.getByText("1 scheduler records loaded from workloads.csv.")).toBeVisible();
+  await expect(
+    page
+      .locator(".ops-evidence-inputs")
+      .getByText("1 scheduler records loaded from workloads.csv."),
+  ).toBeVisible();
   await page.getByLabel(/GPU telemetry CSV/).setInputFiles({
     name: "gpu.csv",
     mimeType: "text/csv",
@@ -186,15 +191,23 @@ test("Compute & Workloads imports real scheduler and DCGM-compatible evidence", 
       ].join("\n"),
     ),
   });
-  await expect(page.getByText("1 GPU telemetry records loaded from gpu.csv.")).toBeVisible();
-  await expect(page.getByRole("button", { name: /Customer batch/ })).toBeVisible();
+  await expect(
+    page.locator(".ops-evidence-inputs").getByText("1 GPU telemetry records loaded from gpu.csv."),
+  ).toBeVisible();
+  await expect(
+    page.locator(".compute-table-wrap").getByRole("button", { name: /Customer batch/ }),
+  ).toBeVisible();
   await expect(page.getByText("measured", { exact: true }).first()).toBeVisible();
   await page.getByRole("link", { name: "Overview", exact: true }).click();
   await page.getByRole("link", { name: "Compute & Workloads", exact: true }).click();
-  await expect(page.getByRole("button", { name: /Customer batch/ })).toBeVisible();
+  await expect(
+    page.locator(".compute-table-wrap").getByRole("button", { name: /Customer batch/ }),
+  ).toBeVisible();
   await expect(page.getByText("1 GPU telemetry records loaded from gpu.csv.")).toBeVisible();
-  await page.getByRole("button", { name: "Restore Scenario", exact: true }).click();
-  await expect(page.getByRole("button", { name: /Customer batch/ })).toHaveCount(0);
+  await page.getByRole("button", { name: "Restore Scenario Workloads", exact: true }).click();
+  await expect(
+    page.locator(".compute-table-wrap").getByRole("button", { name: /Customer batch/ }),
+  ).toHaveCount(0);
 });
 
 test("Power & Battery exposes dispatch physics and imports measured evidence", async ({ page }) => {
@@ -251,7 +264,7 @@ test("Operations charts expose explicit legends, units, targets, and full data a
   page,
 }) => {
   await page.goto("/operations?view=overview");
-  await expect(page.getByText("Facility Demand vs Operating Target")).toBeVisible();
+  await expect(page.getByText("Compare power responses")).toBeVisible();
   await expect(
     page
       .getByLabel("Operations Overview", { exact: true })
@@ -272,12 +285,16 @@ test("Operations charts expose explicit legends, units, targets, and full data a
   ).toHaveCount(96);
 
   await page.goto("/operations?view=compute");
+  await openComputeQueue(page);
+  await page.getByText("Chart options", { exact: true }).click();
+  await page.getByLabel("Show GPU power", { exact: true }).check();
   await expect(page.getByText("GPU power", { exact: true })).toBeVisible();
   await expect(page.getByText("MW · component of facility demand", { exact: true })).toBeVisible();
   await page.getByText("View Full Chart Data", { exact: true }).click();
   await expect(page.getByRole("columnheader", { name: "GPU Power (MW)" })).toBeVisible();
 
   await page.goto("/operations?view=power");
+  await expect(page.getByRole("button", { name: /^Inputs/ })).toBeEnabled();
   await expect(page.getByText("+ discharge / − charge", { exact: false })).toBeVisible();
   await expect(page.getByText("State of charge", { exact: true }).first()).toBeVisible();
   await page.getByText("View Full Interval Data", { exact: true }).click();
@@ -316,11 +333,15 @@ test("focused workspace navigation fits mobile without overflow", async ({ page 
 test("Compute & Workloads remains usable on a mobile viewport", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/operations?view=compute");
+  await openComputeQueue(page);
   await expect(page.getByText("Power-Aware Workload Decision")).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)).toBe(
     false,
   );
-  await page.getByRole("button", { name: /Embedding refresh/ }).click();
+  await page
+    .locator(".compute-table-wrap")
+    .getByRole("button", { name: /Embedding refresh/ })
+    .click();
   await expect(page.getByRole("complementary", { name: /Workload details/ })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)).toBe(
     false,

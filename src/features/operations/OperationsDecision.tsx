@@ -1,135 +1,14 @@
-import { AlertTriangle,ArrowRight,CheckCircle2,ShieldCheck } from "lucide-react";
-import { useEffect,useState } from "react";
+import { AlertTriangle, CheckCircle2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { OperationsEvidenceBadge } from "./components";
-import { formatDurationFromIntervals,formatMw,formatMwh } from "./formatting";
+import { formatDurationFromIntervals, formatMw, formatMwh } from "./formatting";
 import { formatOperationsTime } from "./presentation";
-import type { OperationsOverviewModel,OperationsScenarioKind } from "./scenario-engine";
+import type { OperationsOverviewModel, OperationsScenarioKind } from "./scenario-engine";
 
 const number = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
 
 function humanConstraint(value: string) {
   return value.replaceAll("_", " ").replace(/\b\w/g, (character) => character.toUpperCase());
-}
-
-export function OperationsDecisionBrief({
-  model,
-  selected = "battery_workload",
-}: {
-  model: OperationsOverviewModel;
-  selected?: OperationsScenarioKind;
-}) {
-  const peak = model.intervals.reduce((current, interval) =>
-    interval.baselineDemandMw > current.baselineDemandMw ? interval : current,
-  );
-  const envelope =
-    model.operatingEnvelope.intervals.find((interval) => interval.timestamp === peak.timestamp) ??
-    model.operatingEnvelope.intervals[0];
-  const requiredMw = Math.max(0, peak.baselineDemandMw - envelope.directCeilingMw);
-  const key =
-    selected === "baseline"
-      ? "baselineDemandMw"
-      : selected === "battery"
-        ? "batteryDemandMw"
-        : selected === "workload"
-          ? "workloadDemandMw"
-          : "combinedDemandMw";
-  const selectedResponseMw = Math.max(0, peak.baselineDemandMw - peak[key]);
-  const residualMw = Math.max(
-    0,
-    ...model.intervals.map((point) => point[key] - envelope.directCeilingMw),
-  );
-  const firstAffected = model.intervals.find(
-    (point) => point.baselineDemandMw > envelope.directCeilingMw + 0.01,
-  );
-  const selectedSummary = model.summaries.find((summary) => summary.kind === selected);
-  const state =
-    residualMw > 0.01 || !selectedSummary?.feasible
-      ? "infeasible"
-      : requiredMw > 0.01
-        ? "response"
-        : "direct";
-  const title =
-    residualMw > 0.01
-      ? `Selected response leaves a ${formatMw(residualMw)} shortfall to the safety target`
-      : (selectedSummary?.unresolvedWorkMwh ?? 0) > 0.001
-        ? `Power target met, but ${formatMwh(selectedSummary!.unresolvedWorkMwh)} of deferred work remains unrecovered`
-        : state === "infeasible"
-          ? "Power target met, but reserve or recovery constraints remain unresolved"
-          : state === "response"
-            ? "Aggregate response fits the target; job-level validation is still required"
-            : "Demand remains inside the direct operating envelope";
-
-  return (
-    <article className={`operations-decision-brief operations-decision-brief--${state}`}>
-      <div className="operations-decision-message">
-        <span className="operations-decision-icon" aria-hidden="true">
-          {state === "infeasible" ? (
-            <AlertTriangle />
-          ) : state === "response" ? (
-            <ShieldCheck />
-          ) : (
-            <CheckCircle2 />
-          )}
-        </span>
-        <div>
-          <p className="context-label">Assessed peak · {formatOperationsTime(peak.timestamp)}</p>
-          <h3>{title}</h3>
-          <p>
-            {state === "direct"
-              ? `The peak remains below the ${formatMw(envelope.directCeilingMw)} safety target.`
-              : `First affected interval: ${firstAffected ? formatOperationsTime(firstAffected.timestamp) : "none"}. Review the selected response below.`}
-          </p>
-        </div>
-      </div>
-      <dl className="operations-decision-facts">
-        <div>
-          <dt>Required</dt>
-          <dd>{formatMw(requiredMw)}</dd>
-        </div>
-        <div>
-          <dt>Selected response</dt>
-          <dd>{formatMw(selectedResponseMw)}</dd>
-        </div>
-        <div>
-          <dt>Target shortfall</dt>
-          <dd>{formatMw(residualMw)}</dd>
-        </div>
-        <div>
-          <dt>Evidence</dt>
-          <dd>{model.mode === "scenario" ? "Scenario only" : "Review provenance"}</dd>
-        </div>
-      </dl>
-      <p className="operations-decision-statuses">
-        <span>Power: {residualMw > 0.01 ? "Target not met" : "Target met"}</span>
-        <span>
-          Recovery:{" "}
-          {(selectedSummary?.unresolvedWorkMwh ?? 0) > 0.001
-            ? "Unrecovered work · full horizon"
-            : selected === "baseline" || selected === "battery"
-              ? "No workload shifting"
-              : "Aggregate only · job validation required"}
-        </span>
-        <span>Evidence: {model.mode === "scenario" ? "Scenario—not live" : "Review inputs"}</span>
-      </p>
-      <div className="operations-decision-actions">
-        <a href="#operations-response">
-          {(selectedSummary?.unresolvedWorkMwh ?? 0) > 0.001
-            ? "Review recovery"
-            : "Review response"}{" "}
-          <ArrowRight aria-hidden="true" />
-        </a>
-        <a
-          href="#operations-assurance"
-          onClick={() => {
-            const panel = document.getElementById("operations-assurance");
-            if (panel instanceof HTMLDetailsElement) panel.open = true;
-          }}
-        >
-          Inspect evidence
-        </a>
-      </div>
-    </article>
-  );
 }
 
 export function OperatingEnvelopeMap({ model }: { model: OperationsOverviewModel }) {
@@ -222,38 +101,6 @@ export function OperatingEnvelopeMap({ model }: { model: OperationsOverviewModel
         </div>
       </dl>
     </article>
-  );
-}
-
-export function OperationsEvidenceRail({ model }: { model: OperationsOverviewModel }) {
-  return (
-    <aside className="operations-evidence-rail" aria-label="Evidence and decision authority">
-      <div>
-        <span>Mode</span>
-        <strong>Scenario</strong>
-      </div>
-      <div>
-        <span>Calculation</span>
-        <strong>Assessment service</strong>
-      </div>
-      <div>
-        <span>Facility meter</span>
-        <strong>Not connected</strong>
-      </div>
-      <div>
-        <span>GPU telemetry</span>
-        <strong>Not connected</strong>
-      </div>
-      <div>
-        <span>Battery telemetry</span>
-        <strong>Not connected</strong>
-      </div>
-      <div>
-        <span>Authority</span>
-        <strong>Read only</strong>
-      </div>
-      <small>{model.intervals.length} assessed intervals</small>
-    </aside>
   );
 }
 

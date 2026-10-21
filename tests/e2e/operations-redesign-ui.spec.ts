@@ -1,3 +1,4 @@
+import { openScenarioInputs, openComputeQueue, openEvidenceInputs } from "./operations-inputs";
 import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
@@ -5,9 +6,7 @@ test("response selection updates overview values and illustrative uncertainty is
   page,
 }) => {
   await page.goto("/operations?view=overview");
-  const demand = page
-    .locator(".operations-v2-metric")
-    .filter({ hasText: "Peak import after response" });
+  const demand = page.getByRole("meter");
   await expect(demand).toContainText("98 MW");
   await page.getByRole("button", { name: "Baseline", exact: true }).click();
   await expect(demand).toContainText("106.6 MW");
@@ -15,6 +14,7 @@ test("response selection updates overview values and illustrative uncertainty is
   await expect(demand).toContainText("101.6 MW");
   await page.getByRole("button", { name: "Battery + Workload", exact: true }).click();
   await expect(demand).toContainText("98 MW");
+  await page.getByText("Chart options", { exact: true }).click();
   const range = page.getByRole("checkbox", { name: /Show illustrative planning range/ });
   await expect(range).not.toBeChecked();
   await range.check();
@@ -22,7 +22,7 @@ test("response selection updates overview values and illustrative uncertainty is
   await range.uncheck();
   await page.getByText("Operating envelope & uncertainty", { exact: true }).click();
   await expect(page.locator(".operations-envelope-map")).toBeVisible();
-  await page.getByRole("link", { name: "Inspect evidence" }).click();
+  await page.getByText("Evidence, verification and control readiness", { exact: true }).click();
   await expect(page.locator("#operations-assurance")).toHaveAttribute("open", "");
 });
 
@@ -30,19 +30,19 @@ test("battery configuration recalculates across all three tabs and invalid assum
   page,
 }) => {
   await page.goto("/operations?view=power");
-  await page.getByRole("button", { name: "Configure Scenario", exact: true }).click();
+  await openScenarioInputs(page);
   await page.locator("#ops-pue").fill("0.5");
   await page.getByRole("button", { name: "Recalculate Scenario" }).click();
-  await expect(page.locator(".operations-v2-form-error")).toBeVisible();
+  await expect(page.locator("#ops-pue-error")).toBeVisible();
   for (const [id, value] of Object.entries({
-    "facility-limit": "100",
-    "safety-reserve": "2",
+    importLimitMw: "100",
+    safetyReserveMw: "2",
     pue: "1.25",
-    "gpu-count": "125000",
-    "gpu-active-power": "700",
-    "battery-power": "10",
-    "battery-energy": "80",
-    "shiftable-workload": "18",
+    gpuCount: "125000",
+    gpuActivePowerWatts: "700",
+    "battery-maximumPowerMw": "10",
+    "battery-usableEnergyMwh": "80",
+    maximumShiftablePercent: "18",
   })) {
     await page.locator(`#ops-${id}`).fill(value);
   }
@@ -50,18 +50,17 @@ test("battery configuration recalculates across all three tabs and invalid assum
   await expect(page.locator(".power-kpis")).toContainText("98");
   await expect(page.locator(".power-flow-card")).toContainText("8.6");
   await page.getByRole("link", { name: "Compute & Workloads", exact: true }).click();
-  await expect(page.getByText("No workload movement is required", { exact: true })).toBeVisible();
+  await expect(page.getByText("No workload movement required", { exact: true })).toBeVisible();
   await page.getByRole("link", { name: "Overview", exact: true }).click();
-  await expect(
-    page.locator(".operations-v2-metric").filter({ hasText: "Peak import after response" }),
-  ).toContainText("98 MW");
-  await page.getByRole("button", { name: "Configure Scenario", exact: true }).click();
-  await expect(page.locator("#ops-battery-power")).toHaveValue("10");
-  await page.getByRole("button", { name: "Close scenario configuration" }).click();
+  await expect(page.getByRole("meter")).toContainText("98 MW");
+  await openScenarioInputs(page);
+  await expect(page.locator("#ops-battery-maximumPowerMw")).toHaveValue("10");
+  await page.getByRole("button", { name: "Close inputs" }).click();
 });
 
 test("all workload drawers and status filters work with keyboard dismissal", async ({ page }) => {
   await page.goto("/operations?view=compute");
+  await openComputeQueue(page);
   const buttons = page.locator(".compute-table-wrap tbody button");
   await expect(buttons).toHaveCount(5);
   for (let index = 0; index < 5; index++) {
@@ -133,9 +132,7 @@ for (const view of ["overview", "compute", "power"]) {
   test(`${view} fits desktop and mobile in both themes`, async ({ page }, testInfo) => {
     await page.goto(`/operations?view=${view}`);
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: "Configure Scenario", exact: true }),
-    ).toBeEnabled();
+    await expect(page.getByRole("button", { name: /^Inputs/, exact: true })).toBeEnabled();
     for (const theme of ["dark", "light"]) {
       const toggle = page.getByRole("button", {
         name: new RegExp(`Theme: ${theme === "dark" ? "light" : "dark"}`),
@@ -169,7 +166,8 @@ test("large imported workload queues are bounded and paginate without losing rec
   page,
 }) => {
   await page.goto("/operations?view=compute");
-  await page.getByRole("button", { name: "Connect Evidence", exact: true }).click();
+  await openComputeQueue(page);
+  await openEvidenceInputs(page);
   const header =
     "workload_id,name,workload_class,status,priority,earliest_start,deadline,expected_duration_minutes,requested_gpu_count,minimum_gpu_count,checkpointable,preemptible,maximum_delay_minutes";
   const records = Array.from(
@@ -194,7 +192,7 @@ test("window scopes every scenario timeline without truncating recovery calculat
   page,
 }) => {
   await page.goto("/operations?view=overview&window=next-4h&mode=scenario");
-  await expect(page.locator(".operations-context-health")).toContainText("16 displayed intervals");
+  await expect(page.locator(".ops-context-summary")).toContainText("4-hour risk window");
   await page.getByText("View Chart Data", { exact: true }).click();
   await expect(
     page
@@ -208,7 +206,7 @@ test("window scopes every scenario timeline without truncating recovery calculat
       .getByLabel("Compute and Workloads", { exact: true })
       .locator(".operations-v2-chart-data tbody tr"),
   ).toHaveCount(16);
-  await expect(page.getByText(/not the selected candidate job schedule/)).toBeVisible();
+  await expect(page.locator(".compute-window-lanes")).toContainText("not a validated schedule");
   await page.getByRole("link", { name: "Power & Battery", exact: true }).click();
   await page.getByText("View Full Interval Data", { exact: true }).click();
   await expect(
@@ -227,13 +225,10 @@ test("power compliance does not hide unrecovered work and advanced contracts are
   page,
 }) => {
   await page.goto("/operations?view=overview");
-  await expect(page.locator(".operations-decision-message")).toContainText(
-    /Power target met, but .* deferred work remains unrecovered/,
-  );
-  await expect(page.locator(".operations-decision-statuses")).toContainText(
-    "Unrecovered work · full horizon",
-  );
-  await expect(page.locator(".operations-decision-facts")).toContainText("Scenario only");
+  await expect(page.locator(".ops-plan-status")).toContainText("Power target met");
+  await expect(page.locator(".ops-plan-status")).toContainText("remains unrecovered");
+  await expect(page.locator(".ops-plan-status")).toContainText("Full-horizon recovery");
+  await expect(page.locator(".ops-plan-status")).toContainText("Scenario assessment only");
   await expect(page.locator(".operations-technical-details")).not.toHaveAttribute("open", "");
   const chart = await page.locator(".operations-v2-chart-card").first().boundingBox();
   const advanced = await page.locator(".operations-technical-details").boundingBox();
@@ -243,9 +238,7 @@ test("power compliance does not hide unrecovered work and advanced contracts are
 for (const view of ["overview", "compute", "power"]) {
   test(`${view} meets automated WCAG checks in both themes`, async ({ page }) => {
     await page.goto(`/operations?view=${view}`);
-    await expect(
-      page.getByRole("button", { name: "Configure Scenario", exact: true }),
-    ).toBeEnabled();
+    await expect(page.getByRole("button", { name: /^Inputs/, exact: true })).toBeEnabled();
     for (const theme of ["light", "dark"]) {
       const toggle = page.getByRole("button", {
         name: new RegExp(`Theme: ${theme === "dark" ? "light" : "dark"}`),

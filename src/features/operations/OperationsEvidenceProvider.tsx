@@ -80,7 +80,7 @@ function OperationsPresentationProvider({ children }: { children: ReactNode }) {
   const [workloadSelectedId, setWorkloadSelectedId] = useState<string | null>(null);
   const [workloadStatus, setWorkloadStatus] = useState<"all" | ComputeWorkload["status"]>("all");
   const [workloadPage, setWorkloadPage] = useState(0);
-  const [workloadImportsOpen, setWorkloadImportsOpen] = useState(false);
+  const [workloadQueueOpen, setWorkloadQueueOpen] = useState(false);
   const value = useMemo<OperationsPresentationStore>(
     () => ({
       powerTimestamp: [powerTimestamp, setPowerTimestamp],
@@ -88,7 +88,7 @@ function OperationsPresentationProvider({ children }: { children: ReactNode }) {
       workloadSelectedId: [workloadSelectedId, setWorkloadSelectedId],
       workloadStatus: [workloadStatus, setWorkloadStatus],
       workloadPage: [workloadPage, setWorkloadPage],
-      workloadImportsOpen: [workloadImportsOpen, setWorkloadImportsOpen],
+      workloadQueueOpen: [workloadQueueOpen, setWorkloadQueueOpen],
     }),
     [
       powerTimestamp,
@@ -96,7 +96,7 @@ function OperationsPresentationProvider({ children }: { children: ReactNode }) {
       workloadSelectedId,
       workloadStatus,
       workloadPage,
-      workloadImportsOpen,
+      workloadQueueOpen,
     ],
   );
   return (

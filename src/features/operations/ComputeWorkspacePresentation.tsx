@@ -1,256 +1,38 @@
-import { AlertTriangle, Clock3, Database, PlugZap, TrendingDown } from "lucide-react";
-import {
-  Area,
-  CartesianGrid,
-  ComposedChart,
-  Line,
-  ReferenceLine,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import { OperationsEvidenceBadge } from "./components";
+import { Database } from "lucide-react";
+import { useCallback } from "react";
+import { useOperationsPresentationStore } from "./hooks/evidence-store";
 import type { ComputeWorkspaceContract } from "./compute-workspace-contract";
-import { ComputeChartData, ComputeTooltip } from "./compute/ComputeChartData";
-import { EvidenceImport } from "./compute/EvidenceImport";
-import { integer, number } from "./compute/presentation";
-import { Metric, Row } from "./compute/primitives";
 import { WorkloadDrawer } from "./compute/WorkloadDrawer";
-import { ComputeRecommendation } from "./ComputeRecommendation";
 import { ComputeWorkloadQueue } from "./ComputeWorkloadQueue";
-import { formatDurationFromIntervals, formatMw, formatMwh } from "./formatting";
-import { ChartSummaryMetric, OperationsChartLegend, OperationsChartSummary } from "./visualization";
+import { ComputeOperatingSummary } from "./compute/ComputeOperatingSummary";
+import { ComputeTimeline } from "./compute/ComputeTimeline";
+import { integer, number } from "./compute/presentation";
+import { Row } from "./compute/primitives";
+import { formatMw, formatMwh } from "./formatting";
 export function ComputeWorkspacePresentation({
   model: workspace,
 }: {
   model: ComputeWorkspaceContract;
 }) {
-  const {
-    capabilities,
-    selectedId,
-    setSelectedId,
-    message,
-    error,
-    assessment,
-    restoreScenario,
-    importWorkloadFile,
-    importTelemetryFile,
-    status,
-    setStatus,
-    setQueuePage,
-    importOpen,
-    setImportOpen,
-    interactive,
-    peakInterval,
-    decisions,
-    selected,
-    pageCount,
-    visiblePage,
-    visibleDecisions,
-    evidence,
-    model,
-    displayModel,
-  } = workspace;
+  const { capabilities, selectedId, setSelectedId, assessment, peakInterval, selected, model } =
+    workspace;
+  const [queueOpen, setQueueOpen] = useOperationsPresentationStore().workloadQueueOpen;
+  const closeWorkload = useCallback(() => setSelectedId(null), [setSelectedId]);
   return (
     <section className="operations-v2-view operations-compute" aria-labelledby="compute-title">
       <h2 id="compute-title" className="sr-only">
         Compute and Workloads
       </h2>
-      <div className="compute-decision-bar">
-        <div>
-          <p className="context-label">Power-Aware Workload Decision</p>
-          <h3>
-            {assessment.recommendedJobs
-              ? `Review ${assessment.recommendedJobs} candidate workload${assessment.recommendedJobs === 1 ? "" : "s"} for shifting`
-              : "No workload movement is required"}
-          </h3>
-          <p>
-            {assessment.recommendedJobs
-              ? `Required workload reduction: ${number.format(assessment.requiredWorkloadResponseMw)} MW; selected candidate power: ${number.format(assessment.recommendedPowerMw)} MW. Eligibility is not a validated recovery schedule.`
-              : "The assessed profile remains inside the configured safe operating target."}
-          </p>
-        </div>
-        <div className="compute-decision-actions">
-          <OperationsEvidenceBadge kind={evidence} />
-          <button
-            type="button"
-            className="secondary-button"
-            onClick={() => setImportOpen((value) => !value)}
-            aria-expanded={importOpen}
-            disabled={!interactive}
-          >
-            <PlugZap aria-hidden="true" />
-            Connect Evidence
-          </button>
-        </div>
-      </div>
-
-      {importOpen ? (
-        <EvidenceImport
-          onWorkloads={importWorkloadFile}
-          onTelemetry={importTelemetryFile}
-          message={message}
-          error={error}
-          onScenario={restoreScenario}
-        />
-      ) : null}
-
-      <div className="operations-v2-kpis operations-v2-kpis--compute">
-        <Metric
-          icon={<TrendingDown />}
-          label="Required workload reduction"
-          value={`${number.format(assessment.requiredWorkloadResponseMw)} MW`}
-          evidence={evidence}
-          note="Full-horizon requirement after battery response"
-        />
-        <Metric
-          icon={<Clock3 />}
-          label="Candidate workloads"
-          value={integer.format(assessment.recommendedJobs)}
-          evidence={evidence}
-          note={`${number.format(assessment.recommendedPowerMw)} MW candidate power · eligibility only`}
-        />
-        <Metric
-          icon={<AlertTriangle />}
-          label="Declared deadline flags"
-          value={integer.format(assessment.deadlinesAtRisk)}
-          evidence={evidence}
-          note="Eligibility checks—not a validated recovery schedule"
-          tone={assessment.deadlinesAtRisk ? "danger" : undefined}
-        />
-      </div>
-
-      <ComputeWorkloadQueue model={workspace} />
-
-      <div className="compute-primary-grid">
-        <article className="operations-v2-chart-card">
-          <header className="operations-v2-chart-header">
-            <div>
-              <p className="context-label">Coordinated Timeline</p>
-              <h3>Compute Demand and Facility Limit</h3>
-            </div>
-            <OperationsEvidenceBadge kind="simulated" />
-          </header>
-          <p className="operations-chart-purpose">
-            Selected display window. The response curve is the aggregate battery + workload
-            scenario, not the selected candidate job schedule. Eligibility uses the full planning
-            horizon.
-          </p>
-          <OperationsChartSummary>
-            <ChartSummaryMetric
-              label="Baseline Exposure"
-              value={formatDurationFromIntervals(displayModel.summaries[0].violationIntervals)}
-              tone="limit"
-            />
-            <ChartSummaryMetric
-              label="Candidate power · full horizon"
-              value={formatMw(assessment.recommendedPowerMw)}
-              tone="response"
-            />
-            <ChartSummaryMetric
-              label="Candidate energy · full horizon"
-              value={formatMwh(assessment.recommendedEnergyMwh)}
-            />
-            <ChartSummaryMetric
-              label="Declared deadline flags"
-              value={integer.format(assessment.deadlinesAtRisk)}
-              tone={assessment.deadlinesAtRisk ? "limit" : undefined}
-            />
-          </OperationsChartSummary>
-          <OperationsChartLegend
-            items={[
-              {
-                label: "Facility demand",
-                detail: "MW · before response",
-                tone: "demand",
-                mark: "area",
-              },
-              {
-                label: "Aggregate scenario response",
-                detail: "MW · not a job schedule",
-                tone: "response",
-              },
-              { label: "GPU power", detail: "MW · component of facility demand", tone: "compute" },
-              {
-                label: "Safety target",
-                detail: `${formatMw(model.scenario.importLimitMw - model.scenario.safetyReserveMw)} · assumption`,
-                tone: "target",
-                mark: "dash",
-              },
-              {
-                label: "Facility limit",
-                detail: `${formatMw(model.scenario.importLimitMw)} · assumption`,
-                tone: "limit",
-                mark: "dash",
-              },
-            ]}
-          />
-          <div
-            className="operations-v2-chart compute-timeline"
-            role="img"
-            aria-label="GPU power and facility demand compared with the operating limit"
-          >
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart
-                data={displayModel.intervals}
-                margin={{ top: 12, right: 18, left: 4, bottom: 4 }}
-                accessibilityLayer
-              >
-                <CartesianGrid stroke="var(--ops-chart-grid)" vertical={false} />
-                <XAxis dataKey="label" minTickGap={36} tickLine={false} axisLine={false} />
-                <YAxis unit=" MW" tickLine={false} axisLine={false} />
-                <Tooltip content={<ComputeTooltip />} />
-                <ReferenceLine
-                  y={model.scenario.importLimitMw}
-                  stroke="var(--ops-limit)"
-                  strokeDasharray="7 5"
-                  label={{
-                    value: `${number.format(model.scenario.importLimitMw)} MW limit`,
-                    fill: "var(--ops-limit)",
-                    position: "insideBottomLeft",
-                  }}
-                />
-                <ReferenceLine
-                  y={model.scenario.importLimitMw - model.scenario.safetyReserveMw}
-                  stroke="var(--ops-target)"
-                  strokeDasharray="3 5"
-                  label={{
-                    value: `${number.format(model.scenario.importLimitMw - model.scenario.safetyReserveMw)} MW target`,
-                    fill: "var(--ops-target)",
-                    position: "insideTopRight",
-                  }}
-                />
-                <Area
-                  dataKey="baselineDemandMw"
-                  name="Facility demand"
-                  stroke="var(--ops-demand)"
-                  fill="var(--ops-demand-fill)"
-                  strokeWidth={2}
-                />
-                <Line
-                  dataKey="gpuPowerMw"
-                  name="GPU power"
-                  stroke="var(--ops-compute)"
-                  strokeWidth={2}
-                  strokeDasharray="4 3"
-                  dot={false}
-                />
-                <Line
-                  dataKey="combinedDemandMw"
-                  name="Aggregate scenario response"
-                  stroke="var(--ops-response)"
-                  strokeWidth={3}
-                  dot={false}
-                />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </div>
-          <ComputeChartData model={displayModel} />
-        </article>
-        <ComputeRecommendation model={workspace} />
-      </div>
-
+      <ComputeOperatingSummary workspace={workspace} />
+      <ComputeTimeline workspace={workspace} />
+      <details
+        className="compute-queue-disclosure operations-assurance-panel"
+        open={queueOpen}
+        onToggle={(event) => setQueueOpen(event.currentTarget.open)}
+      >
+        <summary>View workloads · {assessment.decisions.length}</summary>
+        <ComputeWorkloadQueue model={workspace} />
+      </details>
       <details className="operations-assurance-panel">
         <summary>Compute inventory & flexibility</summary>
         <dl className="compute-inventory">
@@ -309,7 +91,7 @@ export function ComputeWorkspacePresentation({
           </div>
         </section>
       </details>
-      {selected ? <WorkloadDrawer workload={selected} onClose={() => setSelectedId(null)} /> : null}
+      {selected ? <WorkloadDrawer workload={selected} onClose={closeWorkload} /> : null}
     </section>
   );
 }

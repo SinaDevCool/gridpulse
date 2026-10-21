@@ -1,9 +1,9 @@
-import { useEffect,useMemo,useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useOperationsEvidenceStore } from "./hooks/evidence-store";
-import { usePowerEvidence } from "./hooks/use-power-evidence";
+import { useOpenInputs } from "./configuration/input-panel-context";
 import { selectPowerView } from "./power/select-power-view";
 
-import { Activity,BatteryCharging,Bolt,Cable,Gauge,Upload,Zap } from "lucide-react";
+import { Bolt, Cable, Gauge, Upload, Zap } from "lucide-react";
 
 import type { OperationsOverviewModel } from "./scenario-engine";
 
@@ -14,20 +14,15 @@ import { formatOperationsTime } from "./presentation";
 
 import { OperationsSelect } from "./OperationsSelect";
 
-import {
-formatOptionalMw,
-number,
-valueOf,
-type EvidenceMode
-} from "./power/presentation";
+import { formatOptionalMw, number, valueOf, type EvidenceMode } from "./power/presentation";
 
-import { EmptyEvidence,EvidencePill,PowerMetric } from "./power/primitives";
+import { EmptyEvidence, EvidencePill, PowerMetric } from "./power/primitives";
 
 import { PowerBalanceFlow } from "./power/PowerBalanceFlow";
 
 import { BatterySocPanel } from "./power/BatterySocPanel";
 
-import { PowerDataTable,PowerTimeline } from "./power/PowerTimeline";
+import { PowerDataTable, PowerTimeline } from "./power/PowerTimeline";
 
 import { DispatchCard } from "./power/DispatchCard";
 
@@ -50,20 +45,10 @@ export function PowerBatteryView({
   mode?: EvidenceMode;
   onModeChange?: (mode: EvidenceMode) => void;
 }) {
-  const {
-    facilityObservations,
-    batteryObservations,
-    message,
-    error,
-    setFacilityObservations,
-    setBatteryObservations,
-    setMessage,
-    setError,
-    loadFacility,
-    loadBattery,
-  } = usePowerEvidence(model, onModeChange);
   const evidenceStore = useOperationsEvidenceStore();
-  const [importsOpen, setImportsOpen] = evidenceStore.powerImportsOpen;
+  const [facilityObservations] = evidenceStore.facility;
+  const [batteryObservations] = evidenceStore.battery;
+  const openInputs = useOpenInputs();
   const [selectedTimestamp, setSelectedTimestamp] = evidenceStore.powerTimestamp;
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => setHydrated(true), []);
@@ -130,66 +115,13 @@ export function PowerBatteryView({
         <button
           type="button"
           className="secondary-button"
-          onClick={() => setImportsOpen((value) => !value)}
+          onClick={() => openInputs(true)}
           disabled={!hydrated}
-          aria-expanded={importsOpen}
         >
           <Upload aria-hidden="true" />
           Connect evidence
         </button>
       </div>
-
-      {importsOpen ? (
-        <article className="power-import">
-          <header>
-            <div>
-              <p className="context-label">Historical evidence import</p>
-              <h3>Load facility meter and BMS/PCS records</h3>
-            </div>
-            <span>
-              CSV files are parsed in your browser. Parsed observations are sent to the GridPulse
-              assessment service for validation.
-            </span>
-          </header>
-          <div className="power-import-grid">
-            <label>
-              <Activity aria-hidden="true" />
-              <strong>Facility meter CSV</strong>
-              <span>timestamp, facility_import_mw, operating_limit_mw (optional)</span>
-              <input
-                type="file"
-                accept=".csv,text/csv"
-                aria-label="Facility meter CSV"
-                onChange={loadFacility}
-              />
-            </label>
-            <label>
-              <BatteryCharging aria-hidden="true" />
-              <strong>Battery telemetry CSV</strong>
-              <span>
-                timestamp, soc_percent, active_power_mw; optional limits, SOH, temperature, state,
-                alarms
-              </span>
-              <input
-                type="file"
-                accept=".csv,text/csv"
-                aria-label="Battery telemetry CSV"
-                onChange={loadBattery}
-              />
-            </label>
-          </div>
-          {message ? (
-            <p className="power-import-status" role="status">
-              {message}
-            </p>
-          ) : null}
-          {error ? (
-            <p className="operations-v2-form-error" role="alert">
-              {error}
-            </p>
-          ) : null}
-        </article>
-      ) : null}
 
       <div className="power-kpis">
         <PowerMetric
