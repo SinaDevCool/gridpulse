@@ -55,7 +55,7 @@ for (const width of [390, 768, 1280, 1920])
     test.setTimeout(90_000);
     await page.setViewportSize({ width, height: 1000 });
     await page.goto("/operations?view=compute");
-    await expect(page.getByRole("button", { name: /^Inputs/ })).toBeEnabled();
+    await expect(page.getByRole("button", { name: /^(Show|Hide) panel/ })).toBeEnabled();
     for (const theme of ["dark", "light"]) {
       const toggle = page.getByRole("button", {
         name: new RegExp(`Theme: ${theme === "dark" ? "light" : "dark"}`),

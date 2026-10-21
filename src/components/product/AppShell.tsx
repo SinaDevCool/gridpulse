@@ -22,15 +22,17 @@ function AuthenticatedBoundary({ children }: { children: ReactNode }) {
 export function AppShell({
   children,
   requireAuth = false,
+  workspace = false,
 }: {
   children: ReactNode;
   requireAuth?: boolean;
+  workspace?: boolean;
 }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const publicProduct = pathname.startsWith("/power-finder");
-  if (!productCapabilities.workspace) return <FinderShell>{children}</FinderShell>;
+  if (!productCapabilities.workspace) return <FinderShell workspace={workspace}>{children}</FinderShell>;
   const shell = (
-    <div className={`product-shell${publicProduct ? " product-shell--focused" : ""}`}>
+    <div className={`product-shell${publicProduct ? " product-shell--focused" : ""}${workspace ? " operations-workspace-shell" : ""}`}>
       <ProductHeader />
       {publicProduct ? <ProductTruthNotice compact /> : null}
       {children}

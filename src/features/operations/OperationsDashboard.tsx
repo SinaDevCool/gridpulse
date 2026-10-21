@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { PanelLeft } from "lucide-react";
+import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { OperationsEvidenceProvider } from "./OperationsEvidenceProvider";
 import {
   buildOperationsScenario,
@@ -20,7 +20,7 @@ import { CanonicalPlanningWorkbench } from "../analytics/CanonicalPlanningWorkbe
 import { formatOperationsTime } from "./presentation";
 import type { OperationsView } from "./view-contracts";
 import { OverviewView } from "./overview/OverviewView";
-import { ConfigurationForm } from "./configuration/ConfigurationForm";
+import { ConfigurationActions, ConfigurationForm } from "./configuration/ConfigurationForm";
 import { ConfigurationPanel } from "./configuration/ConfigurationPanel";
 import { WorkspaceInputs } from "./configuration/WorkspaceInputs";
 import { EvidenceInputs } from "./configuration/EvidenceInputs";
@@ -73,25 +73,18 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
           id="main-content"
           className={`operations-v2 operations-v2--${view} ops-control-layout ${layout.open && !layout.mobile ? "inputs-open" : ""}`}
         >
-          <header className="ops-workspace-header">
-            <div>
-              <p className="context-label">Data-centre power operations</p>
-              <h1>{view === "power" ? "Power & Battery" : "Power Operations"}</h1>
-            </div>
-            <button
-              ref={trigger}
-              type="button"
-              className="secondary-button ops-input-trigger"
-              disabled={!layout.ready}
-              aria-controls="operations-inputs"
-              aria-expanded={layout.open}
-              onClick={() => (layout.open ? closeInputs() : openInputs())}
-            >
-              <PanelLeft aria-hidden="true" />
-              Inputs{draft.dirty ? " · Unapplied changes" : ""}
-            </button>
-          </header>
-          <ConfigurationPanel open={layout.open} mobile={layout.mobile} onClose={closeInputs}>
+          <ConfigurationPanel
+            open={layout.open}
+            mobile={layout.mobile}
+            onClose={closeInputs}
+            actions={
+              <ConfigurationActions
+                dirty={draft.dirty}
+                busy={lifecycle === "loading" || lifecycle === "stale"}
+                onDiscard={draft.discard}
+              />
+            }
+          >
             <WorkspaceInputs
               model={fullModel}
               mode={mode}
@@ -142,106 +135,143 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
             </details>
           </ConfigurationPanel>
           <div className="ops-dashboard-canvas">
-            <nav className="operations-v2-tabs" aria-label="Power Operations views">
-              {[
-                ["overview", "Overview"],
-                ["compute", "Compute & Workloads"],
-                ["power", "Power & Battery"],
-              ].map(([id, label]) => (
-                <Link
-                  key={id}
-                  to="/operations"
-                  search={{ view: id, window, mode: id === "power" ? mode : "scenario" }}
-                  className={view === id ? "active" : undefined}
-                  aria-current={view === id ? "page" : undefined}
+            <div className="ops-canvas-toolbar">
+              <header className="ops-workspace-header">
+                <button
+                  ref={trigger}
+                  type="button"
+                  className="secondary-button ops-input-trigger"
+                  disabled={!layout.ready}
+                  aria-controls="operations-inputs"
+                  aria-expanded={layout.open}
+                  aria-label={layout.open ? "Hide panel" : "Show panel"}
+                  onClick={() => (layout.open ? closeInputs() : openInputs())}
                 >
-                  {label}
-                </Link>
-              ))}
-            </nav>
-            <div className="ops-context-summary">
-              <p>
-                {scenario.facilityName} ·{" "}
-                {mode === "historical" ? "Uploaded historical evidence" : "Scenario"} ·{" "}
-                {mode === "historical" ? "Complete uploaded range" : operatingWindowLabels[window]}{" "}
-                · UTC
-              </p>
-              <span className={`ops-service-status ${backendState}`} role="status">
-                {serviceLabel}
-              </span>
+                  {layout.open ? (
+                    <PanelLeftClose aria-hidden="true" />
+                  ) : (
+                    <PanelLeftOpen aria-hidden="true" />
+                  )}
+                  {layout.open ? "Hide panel" : "Show panel"}
+                  {draft.dirty ? (
+                    <span className="ops-draft-dot" aria-label="Unapplied changes">
+                      •
+                    </span>
+                  ) : null}
+                </button>
+                <h1>{view === "power" ? "Power & Battery" : "Power Operations"}</h1>
+              </header>
+              <nav className="operations-v2-tabs" aria-label="Power Operations views">
+                {[
+                  ["overview", "Overview"],
+                  ["compute", "Compute & Workloads"],
+                  ["power", "Power & Battery"],
+                ].map(([id, label]) => (
+                  <Link
+                    key={id}
+                    to="/operations"
+                    search={{ view: id, window, mode: id === "power" ? mode : "scenario" }}
+                    className={view === id ? "active" : undefined}
+                    aria-current={view === id ? "page" : undefined}
+                  >
+                    {label}
+                  </Link>
+                ))}
+              </nav>
             </div>
-            <p className="ops-assessment-notice" role="status">
-              {draft.dirty ? "Unapplied changes. Results still use the applied scenario. " : ""}
-              {mode === "historical"
-                ? "Uploaded evidence, not live control."
-                : "Scenario assessment—not live control."}
-              {lifecycle === "loading" || lifecycle === "stale"
-                ? " Calculation pending; browser preview is not a backend-validated plan."
-                : backendState === "unavailable"
-                  ? " Backend unavailable; browser demonstration only."
-                  : ""}
-            </p>
-            {view === "overview" ? (
-              <OverviewView
-                model={model}
-                fullModel={fullModel}
-                selected={selected}
-                onSelect={setSelected}
-              />
-            ) : null}
-            {view === "compute" ? (
-              <ComputeWorkloadsView model={fullModel} displayModel={model} />
-            ) : null}
-            {view === "power" ? (
-              <PowerBatteryView
-                model={fullModel}
-                displayModel={model}
-                mode={mode === "historical" ? "historical" : "scenario"}
-                onModeChange={(value) =>
-                  navigate({ search: { view: "power", window, mode: value }, replace: true })
-                }
-              />
-            ) : null}
-            <details
-              id="operations-assurance"
-              className="operations-assurance-panel operations-technical-details"
+            <div
+              className="ops-canvas-content"
+              role="region"
+              aria-label="Operations results"
+              tabIndex={0}
             >
-              <summary>Evidence & assumptions · assessment details</summary>
-              <p>
-                Scenario inputs only. Uploaded meter, BMS and workload records remain separately
-                identified in Inputs. No delivered response has been verified.
-              </p>
-              <p>
-                Physical dispatch is locked. Job-level validation, current operating agreements and
-                authorised equipment integrations are required before execution.
-              </p>
-              <p>
-                {assessmentIdentity
-                  ? `Assessment ${assessmentIdentity.id} · Calculated ${formatOperationsTime(assessmentIdentity.generatedAt, true)}`
-                  : "Calculation pending or browser demonstration—not an operational plan"}
-              </p>
-              <p>
-                Full planning horizon: {fullModel.intervals.length} intervals. Recovery and battery
-                state are calculated over this horizon before display-window filtering.
-              </p>
-              {fullModel.planningTime ? (
+              <div className="ops-context-summary">
                 <p>
-                  Calculation coverage:{" "}
-                  {formatOperationsTime(fullModel.planningTime.calculation.start, true)} –{" "}
-                  {formatOperationsTime(fullModel.planningTime.calculation.end, true)}. Purpose:
-                  synthetic scenario. Terminal policy: report unfinished work, not guaranteed
-                  completion. No forward forecast or rolling control is enabled.
+                  {scenario.facilityName} ·{" "}
+                  {mode === "historical" ? "Uploaded historical evidence" : "Scenario"} ·{" "}
+                  {mode === "historical"
+                    ? "Complete uploaded range"
+                    : operatingWindowLabels[window]}{" "}
+                  · UTC
                 </p>
+                <span className={`ops-service-status ${backendState}`} role="status">
+                  {serviceLabel}
+                </span>
+              </div>
+              <p className="ops-assessment-notice" role="status">
+                {draft.dirty ? "Unapplied changes. Results still use the applied scenario. " : ""}
+                {mode === "historical"
+                  ? "Uploaded evidence, not live control."
+                  : "Scenario assessment—not live control."}
+                {lifecycle === "loading" || lifecycle === "stale"
+                  ? " Calculation pending; browser preview is not a backend-validated plan."
+                  : backendState === "unavailable"
+                    ? " Backend unavailable; browser demonstration only."
+                    : ""}
+              </p>
+              {view === "overview" ? (
+                <OverviewView
+                  model={model}
+                  fullModel={fullModel}
+                  selected={selected}
+                  onSelect={setSelected}
+                />
               ) : null}
-              <p>
-                Transformer, UPS and cooling limits are not independently established by this
-                aggregate scenario. Backup autonomy and individual job deadlines are not validated.
-              </p>
-              <p>
-                Cost requires a reviewed tariff and a full-horizon canonical calculation. Reference
-                GPU-hour equivalents are not delivered compute.
-              </p>
-            </details>
+              {view === "compute" ? (
+                <ComputeWorkloadsView model={fullModel} displayModel={model} />
+              ) : null}
+              {view === "power" ? (
+                <PowerBatteryView
+                  model={fullModel}
+                  displayModel={model}
+                  mode={mode === "historical" ? "historical" : "scenario"}
+                  onModeChange={(value) =>
+                    navigate({ search: { view: "power", window, mode: value }, replace: true })
+                  }
+                />
+              ) : null}
+              <details
+                id="operations-assurance"
+                className="operations-assurance-panel operations-technical-details"
+              >
+                <summary>Evidence & assumptions · assessment details</summary>
+                <p>
+                  Scenario inputs only. Uploaded meter, BMS and workload records remain separately
+                  identified in Inputs. No delivered response has been verified.
+                </p>
+                <p>
+                  Physical dispatch is locked. Job-level validation, current operating agreements
+                  and authorised equipment integrations are required before execution.
+                </p>
+                <p>
+                  {assessmentIdentity
+                    ? `Assessment ${assessmentIdentity.id} · Calculated ${formatOperationsTime(assessmentIdentity.generatedAt, true)}`
+                    : "Calculation pending or browser demonstration—not an operational plan"}
+                </p>
+                <p>
+                  Full planning horizon: {fullModel.intervals.length} intervals. Recovery and
+                  battery state are calculated over this horizon before display-window filtering.
+                </p>
+                {fullModel.planningTime ? (
+                  <p>
+                    Calculation coverage:{" "}
+                    {formatOperationsTime(fullModel.planningTime.calculation.start, true)} –{" "}
+                    {formatOperationsTime(fullModel.planningTime.calculation.end, true)}. Purpose:
+                    synthetic scenario. Terminal policy: report unfinished work, not guaranteed
+                    completion. No forward forecast or rolling control is enabled.
+                  </p>
+                ) : null}
+                <p>
+                  Transformer, UPS and cooling limits are not independently established by this
+                  aggregate scenario. Backup autonomy and individual job deadlines are not
+                  validated.
+                </p>
+                <p>
+                  Cost requires a reviewed tariff and a full-horizon canonical calculation.
+                  Reference GPU-hour equivalents are not delivered compute.
+                </p>
+              </details>
+            </div>
           </div>
         </main>
       </InputPanelContext.Provider>

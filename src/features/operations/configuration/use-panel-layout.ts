@@ -14,7 +14,11 @@ export function usePanelLayout() {
     setReady(true);
     const changed = () => {
       setMobile(query.matches);
-      setOpen(false);
+      try {
+        setOpen(!query.matches && localStorage.getItem("gridpulse-operations-inputs") !== "closed");
+      } catch {
+        setOpen(!query.matches);
+      }
     };
     query.addEventListener("change", changed);
     return () => query.removeEventListener("change", changed);

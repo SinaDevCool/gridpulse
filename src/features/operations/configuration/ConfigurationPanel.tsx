@@ -4,11 +4,13 @@ export function ConfigurationPanel({
   mobile,
   onClose,
   children,
+  actions,
 }: {
   open: boolean;
   mobile: boolean;
   onClose: () => void;
   children: ReactNode;
+  actions: ReactNode;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -28,14 +30,14 @@ export function ConfigurationPanel({
     <>
       <header className="ops-input-header">
         <div>
-          <p className="context-label">Configuration</p>
           <h2 id="ops-input-title">Inputs & evidence</h2>
         </div>
         <button type="button" aria-label="Close inputs" onClick={onClose}>
           ×
         </button>
       </header>
-      {children}
+      <div className="ops-input-body">{children}</div>
+      {actions}
     </>
   );
   return mobile ? (

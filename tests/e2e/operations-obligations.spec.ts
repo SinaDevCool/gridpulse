@@ -3,7 +3,7 @@ import AxeBuilder from "@axe-core/playwright";
 
 test("cockpit integrates comparisons and retains full-horizon recovery", async ({ page }) => {
   await page.goto("/operations?view=overview&window=today&mode=scenario");
-  await expect(page.getByRole("button", { name: /^Inputs/ })).toBeEnabled();
+  await expect(page.getByRole("button", { name: /^(Show|Hide) panel/ })).toBeEnabled();
   const obligations = page.locator("#operations-recovery");
   await expect(obligations).toContainText("1.7 MWh has no recovery slot");
   const ledger = await obligations.getByRole("img").getAttribute("aria-label");
@@ -34,7 +34,7 @@ test("headroom, evidence and technical tools remain available without overcrowdi
   page,
 }, testInfo) => {
   await page.goto("/operations");
-  await expect(page.getByRole("button", { name: /^Inputs/ })).toBeEnabled();
+  await expect(page.getByRole("button", { name: /^(Show|Hide) panel/ })).toBeEnabled();
   await page.getByText("Inspect headroom", { exact: true }).click();
   await expect(page.getByRole("heading", { name: "Illustrative response envelope" })).toBeVisible();
   await expect(page.locator(".ops-headroom-detail")).toContainText("not calibrated confidence");
@@ -68,7 +68,7 @@ test("headroom, evidence and technical tools remain available without overcrowdi
 test("advanced model contracts remain usable inside mobile inputs", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/operations");
-  await page.getByRole("button", { name: /^Inputs/ }).click();
+  await page.getByRole("button", { name: /^(Show|Hide) panel/ }).click();
   const drawer = page.getByRole("dialog", { name: "Inputs & evidence" });
   await drawer.getByText("Advanced tools", { exact: true }).click();
   await drawer
