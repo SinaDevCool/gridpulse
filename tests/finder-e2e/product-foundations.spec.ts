@@ -152,7 +152,7 @@ test("Operations remains legible and free of horizontal overflow on mobile", asy
   await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript(() => localStorage.setItem("gridpulse-theme", "dark"));
   await page.goto("/operations");
-  await expect(page.getByRole("button", { name: /^Inputs/ })).toBeEnabled();
+  await expect(page.getByRole("button", { name: /^(Show|Hide) panel/ })).toBeEnabled();
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
@@ -160,7 +160,7 @@ test("Operations remains legible and free of horizontal overflow on mobile", asy
   ).toBe(false);
   expect(
     await page
-      .getByRole("button", { name: /^Inputs/ })
+      .getByRole("button", { name: /^(Show|Hide) panel/ })
       .evaluate((button) => Number.parseFloat(getComputedStyle(button).fontSize)),
   ).toBeGreaterThanOrEqual(13);
   const tabSizes = await page.locator(".operations-v2-tabs a").evaluateAll((buttons) =>
