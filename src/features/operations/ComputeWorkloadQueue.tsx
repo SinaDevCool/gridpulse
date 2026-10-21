@@ -2,9 +2,13 @@ import type { ComputeWorkspaceContract } from "./compute-workspace-contract";
 import { integer, number } from "./compute/presentation";
 import { Status } from "./compute/primitives";
 import { formatMinutes } from "./presentation";
+import { matchesReviewGroup, type ReviewGroup } from "./compute/select-review-groups";
+import { paginateWorkloadDecisions } from "./compute/select-workload-queue";
 export function ComputeWorkloadQueue({
   model,
+  group = "all",
 }: {
+  group?: ReviewGroup;
   model: Pick<
     ComputeWorkspaceContract,
     | "selectedId"
@@ -19,18 +23,12 @@ export function ComputeWorkloadQueue({
     | "visibleDecisions"
   >;
 }) {
-  const {
-    selectedId,
-    setSelectedId,
-    status,
-    setStatus,
-    setQueuePage,
-    interactive,
+  const { selectedId, setSelectedId, status, setStatus, setQueuePage, interactive } = model;
+  const decisions = model.decisions.filter((job) => matchesReviewGroup(job, group));
+  const { pageCount, visiblePage, visibleDecisions } = paginateWorkloadDecisions(
     decisions,
-    pageCount,
-    visiblePage,
-    visibleDecisions,
-  } = model;
+    model.visiblePage,
+  );
   return (
     <article className="compute-queue-card">
       <header>

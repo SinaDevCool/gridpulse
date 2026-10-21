@@ -1,20 +1,20 @@
 import {
-Area,
-Bar,
-CartesianGrid,
-ComposedChart,
-Line,
-ReferenceLine,
-ResponsiveContainer,
-Tooltip,
-XAxis,
-YAxis,
+  Area,
+  Bar,
+  CartesianGrid,
+  ComposedChart,
+  Line,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
 } from "recharts";
 
-import { formatMw,formatPercent } from "../formatting";
-import { OperationsTooltipShell,TooltipRow } from "../visualization";
+import { formatMw, formatPercent } from "../formatting";
+import { OperationsTooltipShell, TooltipRow } from "../visualization";
 
-import { formatOptionalMw,number,valueOf,type EvidenceMode } from "./presentation";
+import { formatOptionalMw, number, valueOf, type EvidenceMode } from "./presentation";
 
 export function PowerTimeline({
   data,
@@ -75,6 +75,7 @@ export function PowerTimeline({
               <ReferenceLine x={selectedLabel} stroke="var(--ops-selection)" />
             ) : null}
             <Area
+              isAnimationActive={false}
               dataKey="facilityDemandMw"
               name="Facility demand"
               stroke="var(--ops-demand)"
@@ -82,6 +83,7 @@ export function PowerTimeline({
               strokeWidth={2}
             />
             <Line
+              isAnimationActive={false}
               dataKey="gridImportMw"
               name="Grid import"
               stroke="var(--ops-response)"
@@ -112,6 +114,7 @@ export function PowerTimeline({
               <ReferenceLine yAxisId="dispatch" x={selectedLabel} stroke="var(--ops-selection)" />
             ) : null}
             <Bar
+              isAnimationActive={false}
               yAxisId="dispatch"
               dataKey="batteryPowerMw"
               name="Battery dispatch"
@@ -140,6 +143,7 @@ export function PowerTimeline({
               <ReferenceLine yAxisId="soc" x={selectedLabel} stroke="var(--ops-selection)" />
             ) : null}
             <Line
+              isAnimationActive={false}
               yAxisId="soc"
               dataKey="socPercent"
               name="State of charge"

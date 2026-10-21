@@ -25,6 +25,7 @@ export type OperationsEvidenceStore = {
   workloadStatus: State<"all" | ComputeWorkload["status"]>;
   workloadPage: State<number>;
   workloadQueueOpen: State<boolean>;
+  workloadDecisionGroup: State<import("../compute/select-review-groups").ReviewGroup>;
 };
 export type OperationsEvidenceDataStore = Pick<
   OperationsEvidenceStore,

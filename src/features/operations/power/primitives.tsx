@@ -1,28 +1,8 @@
 import { Database } from "lucide-react";
 
-import { OperationsEvidenceBadge,OperationsMetricCard } from "../components";
+import { OperationsEvidenceBadge } from "../components";
 
 import { type EvidenceMode } from "./presentation";
-
-export function PowerMetric({
-  icon,
-  label,
-  value,
-  evidence,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  evidence: EvidenceMode | "assumption";
-}) {
-  const evidenceClass =
-    evidence === "historical"
-      ? "measured"
-      : evidence === "scenario"
-        ? "simulated"
-        : "user_assumption";
-  return <OperationsMetricCard icon={icon} label={label} value={value} evidence={evidenceClass} />;
-}
 
 export function EvidencePill({ mode }: { mode: EvidenceMode | "assumption" }) {
   const kind =

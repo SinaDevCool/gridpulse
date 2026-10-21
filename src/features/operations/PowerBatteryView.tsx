@@ -3,7 +3,7 @@ import { useOperationsEvidenceStore } from "./hooks/evidence-store";
 import { useOpenInputs } from "./configuration/input-panel-context";
 import { selectPowerView } from "./power/select-power-view";
 
-import { Bolt, Cable, Gauge, Upload, Zap } from "lucide-react";
+import { Upload } from "lucide-react";
 
 import type { OperationsOverviewModel } from "./scenario-engine";
 
@@ -16,7 +16,7 @@ import { OperationsSelect } from "./OperationsSelect";
 
 import { formatOptionalMw, number, valueOf, type EvidenceMode } from "./power/presentation";
 
-import { EmptyEvidence, EvidencePill, PowerMetric } from "./power/primitives";
+import { EmptyEvidence, EvidencePill } from "./power/primitives";
 
 import { PowerBalanceFlow } from "./power/PowerBalanceFlow";
 
@@ -30,9 +30,7 @@ import { OperatingEnvelope } from "./power/OperatingEnvelope";
 
 import { SelectedBalance } from "./power/SelectedBalance";
 
-import { ResponseComparison } from "./power/ResponseComparison";
-
-import { ConnectorStatus } from "./power/ConnectorStatus";
+import { PowerResponseSummary } from "./power/PowerResponseSummary";
 
 export function PowerBatteryView({
   model,
@@ -54,9 +52,7 @@ export function PowerBatteryView({
   useEffect(() => setHydrated(true), []);
 
   const {
-    scenarioPeak,
     selectedScenario,
-    historical,
     selectedHistorical,
     targetMw,
     selected,
@@ -66,7 +62,6 @@ export function PowerBatteryView({
     shortfallMw,
     feasible,
     thresholds,
-    responseRequired,
     dispatchHeadline,
   } = useMemo(
     () =>
@@ -86,25 +81,14 @@ export function PowerBatteryView({
       <h2 id="power-title" className="sr-only">
         Power & Battery
       </h2>
-      <article className={`power-decision-bar ${feasible ? "feasible" : "limited"}`}>
-        <div>
-          <p className="context-label">Read-only dispatch assessment</p>
-          <h3>{dispatchHeadline}</h3>
-          <p>
-            Positive battery power means discharge; negative power means charge. No physical control
-            commands are issued.
-          </p>
-        </div>
-        <div className="power-decision-summary">
-          <EvidencePill mode={mode} />
-          <strong>{requiredMw == null ? "—" : `${number.format(requiredMw)} MW required`}</strong>
-          <span>
-            {shortfallMw == null
-              ? "Evidence incomplete"
-              : `${number.format(shortfallMw)} MW shortfall to safety target`}
-          </span>
-        </div>
-      </article>
+      <PowerResponseSummary
+        requiredMw={requiredMw}
+        batteryMw={batteryMw}
+        shortfallMw={shortfallMw}
+        constraint={selectedScenario.batteryConstraintCode}
+        headline={dispatchHeadline}
+        mode={mode}
+      />
 
       <div className="power-toolbar">
         <p className="operations-chart-purpose">
@@ -123,42 +107,34 @@ export function PowerBatteryView({
         </button>
       </div>
 
-      <div className="power-kpis">
-        <PowerMetric
-          icon={<Cable />}
-          label="Grid import"
-          value={
-            selected
+      <dl className="power-kpis ops-compact-facts">
+        <div>
+          <dt>Grid import</dt>
+          <dd>
+            {selected
               ? formatOptionalMw(valueOf(selected, "gridImportMw", "batteryDemandMw"))
-              : "Unavailable"
-          }
-          evidence={mode}
-        />
-        <PowerMetric
-          icon={<Bolt />}
-          label="Facility limit"
-          value={`${number.format(model.scenario.importLimitMw)} MW`}
-          evidence="assumption"
-        />
-        <PowerMetric
-          icon={<Gauge />}
-          label="Required response"
-          value={requiredMw == null ? "Unavailable" : `${number.format(requiredMw)} MW`}
-          evidence={mode}
-        />
-        <PowerMetric
-          icon={<Zap />}
-          label="Discharge time · full horizon"
-          value={
-            mode === "scenario"
+              : "Unavailable"}
+          </dd>
+        </div>
+        <div>
+          <dt>Facility limit · assumption</dt>
+          <dd>{formatMw(model.scenario.importLimitMw)}</dd>
+        </div>
+        <div>
+          <dt>Required response</dt>
+          <dd>{requiredMw == null ? "Unavailable" : formatMw(requiredMw)}</dd>
+        </div>
+        <div>
+          <dt>Discharge time · full horizon</dt>
+          <dd>
+            {mode === "scenario"
               ? model.recommendation.durationMinutes > 0
                 ? `${number.format(model.recommendation.durationMinutes / 60)} h`
                 : "Not required"
-              : "Not derivable"
-          }
-          evidence={mode}
-        />
-      </div>
+              : "Not derivable"}
+          </dd>
+        </div>
+      </dl>
 
       <div className="power-interval-control">
         <OperationsSelect
@@ -278,7 +254,7 @@ export function PowerBatteryView({
       </div>
 
       <details className="operations-assurance-panel power-supporting-details">
-        <summary>Battery constraints & balance provenance</summary>
+        <summary>Inspect equipment limits & calculation</summary>
         <div className="power-detail-grid">
           <OperatingEnvelope
             model={model}
@@ -288,14 +264,6 @@ export function PowerBatteryView({
           />
           <SelectedBalance selected={selected} mode={mode} targetMw={targetMw} />
         </div>
-      </details>
-      <details className="operations-assurance-panel power-supporting-details">
-        <summary>Compare scenario responses</summary>
-        <ResponseComparison model={model} />
-      </details>
-      <details className="operations-assurance-panel power-supporting-details">
-        <summary>Evidence & connector readiness</summary>
-        <ConnectorStatus />
       </details>
     </section>
   );
