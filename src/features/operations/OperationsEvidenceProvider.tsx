@@ -81,6 +81,8 @@ function OperationsPresentationProvider({ children }: { children: ReactNode }) {
   const [workloadStatus, setWorkloadStatus] = useState<"all" | ComputeWorkload["status"]>("all");
   const [workloadPage, setWorkloadPage] = useState(0);
   const [workloadQueueOpen, setWorkloadQueueOpen] = useState(false);
+  const [workloadDecisionGroup, setWorkloadDecisionGroup] =
+    useState<import("./compute/select-review-groups").ReviewGroup>("all");
   const value = useMemo<OperationsPresentationStore>(
     () => ({
       powerTimestamp: [powerTimestamp, setPowerTimestamp],
@@ -89,6 +91,7 @@ function OperationsPresentationProvider({ children }: { children: ReactNode }) {
       workloadStatus: [workloadStatus, setWorkloadStatus],
       workloadPage: [workloadPage, setWorkloadPage],
       workloadQueueOpen: [workloadQueueOpen, setWorkloadQueueOpen],
+      workloadDecisionGroup: [workloadDecisionGroup, setWorkloadDecisionGroup],
     }),
     [
       powerTimestamp,
@@ -97,6 +100,7 @@ function OperationsPresentationProvider({ children }: { children: ReactNode }) {
       workloadStatus,
       workloadPage,
       workloadQueueOpen,
+      workloadDecisionGroup,
     ],
   );
   return (

@@ -228,7 +228,7 @@ test("Power & Battery exposes dispatch physics and imports measured evidence", a
     "75.7 MW + 30.9 MW ≈ 106.6 MW",
   );
   await page
-    .getByLabel("Power & Battery", { exact: true })
+    .locator("#operations-inputs")
     .getByText("Evidence & connector readiness", { exact: true })
     .click();
   await expect(page.getByText("No live connectors configured")).toBeVisible();

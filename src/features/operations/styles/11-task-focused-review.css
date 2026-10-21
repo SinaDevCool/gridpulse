@@ -1,0 +1,278 @@
+.ops-task-review {
+  border: 1px solid var(--ops-border);
+  border-radius: 12px;
+  background: var(--ops-card);
+  padding: 1.25rem;
+  margin-block: 1rem;
+  color: var(--ops-text);
+}
+.ops-task-review > header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: start;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+.ops-task-review h3 {
+  margin: 0.25rem 0;
+  font-size: 1.1rem;
+}
+.ops-task-review p,
+.ops-task-review small,
+.ops-task-review > header > span {
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--ops-muted);
+}
+.compute-decision-distribution {
+  display: flex;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--ops-border);
+  margin-block: 1rem;
+}
+.compute-decision-distribution .candidate,
+.ops-group-mark.candidate {
+  background: var(--ops-response);
+}
+.compute-decision-distribution .eligible,
+.ops-group-mark.eligible {
+  background: var(--ops-demand);
+}
+.compute-decision-distribution .protected,
+.ops-group-mark.protected {
+  background: var(--ops-target);
+}
+.compute-review-groups {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+.compute-review-groups button {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  border: 1px solid var(--ops-border);
+  border-radius: 6px;
+  color: var(--ops-text);
+  padding: 0.75rem;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.compute-review-groups button[aria-pressed="true"],
+.compute-review-groups button:hover:not(:disabled) {
+  border-color: var(--ops-response);
+}
+.compute-review-groups button:disabled {
+  cursor: default;
+  opacity: 0.65;
+}
+.compute-review-groups button strong {
+  font-size: 1.4rem;
+  font-variant-numeric: tabular-nums;
+}
+.compute-review-groups button span:not(.ops-group-mark) {
+  font-size: 0.85rem;
+}
+.compute-review-groups button small {
+  margin-left: auto;
+}
+.ops-group-mark {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.compute-review-obligations {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 1.25rem;
+  margin-block: 1.25rem;
+  padding-block: 1rem;
+  border-block: 1px solid var(--ops-border);
+}
+.compute-review-obligations > div:last-child {
+  display: grid;
+  align-content: start;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+}
+.compute-review-obligations > div:last-child > span {
+  color: var(--ops-muted);
+}
+.ops-task-review details {
+  border-top: 1px solid var(--ops-border);
+  padding-block: 0.75rem;
+}
+.ops-task-review summary,
+.ops-source-readiness summary {
+  font-weight: 650;
+  cursor: pointer;
+  padding-block: 0.35rem;
+}
+.ops-task-review summary:focus-visible,
+.ops-source-readiness summary:focus-visible,
+.ops-task-review button:focus-visible,
+.ops-task-review select:focus-visible {
+  outline: 2px solid var(--ops-demand);
+  outline-offset: 3px;
+}
+.compute-review-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  font-size: 0.85rem;
+}
+.compute-review-filter select {
+  background: var(--ops-card);
+  color: var(--ops-text);
+  border: 1px solid var(--ops-border-strong);
+  border-radius: 6px;
+  padding: 0.6rem;
+  max-width: 100%;
+}
+.ops-compact-facts,
+.power-battery > .power-kpis.ops-compact-facts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+  padding: 0.75rem 0;
+}
+.ops-compact-facts > div {
+  min-width: 0;
+}
+.ops-compact-facts dt {
+  color: var(--ops-muted);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+.ops-compact-facts dd {
+  margin: 0.35rem 0 0;
+  font-size: 1.1rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.power-response-budget {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 2rem;
+  align-items: center;
+}
+.power-response-bars {
+  display: grid;
+  gap: 1rem;
+}
+.power-budget-row {
+  display: grid;
+  grid-template-columns: minmax(8rem, 1fr) minmax(3rem, 2fr) minmax(5rem, auto);
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+}
+.power-budget-row strong {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.power-budget-track {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--ops-border);
+  overflow: hidden;
+}
+.power-budget-track i {
+  display: block;
+  height: 100%;
+}
+.power-budget-track .required {
+  background: var(--ops-demand);
+}
+.power-budget-track .battery {
+  background: var(--ops-battery);
+}
+.power-budget-track .gap {
+  background: var(--ops-limit);
+}
+.power-binding-note {
+  display: grid;
+  gap: 0.6rem;
+  padding-left: 1rem;
+  border-left: 2px solid var(--ops-target);
+  font-size: 0.85rem;
+}
+.power-binding-note > span {
+  color: var(--ops-muted);
+}
+.power-binding-note a {
+  color: var(--ops-demand);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.ops-source-readiness {
+  padding-block: 0.75rem;
+  border-top: 1px solid var(--ops-border);
+}
+.ops-source-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0;
+}
+.ops-source-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.75rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--ops-border);
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+.ops-source-list strong {
+  text-align: right;
+}
+.ops-source-readiness p,
+.ops-source-readiness small {
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--ops-muted);
+}
+.ops-input-body .operations-technical-details {
+  margin: 0.75rem 0;
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+}
+.ops-input-body .operations-technical-details p {
+  line-height: 1.5;
+}
+@media (max-width: 1250px) {
+  .compute-review-groups {
+    grid-template-columns: 1fr;
+  }
+  .compute-review-obligations,
+  .power-response-budget {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  .ops-compact-facts,
+  .power-battery > .power-kpis.ops-compact-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .ops-task-review {
+    padding: 1rem;
+  }
+  .power-budget-row {
+    grid-template-columns: minmax(6rem, 1fr) minmax(2rem, 1fr) minmax(4rem, auto);
+    gap: 0.5rem;
+    font-size: 0.78rem;
+  }
+  .compute-review-filter {
+    flex-wrap: wrap;
+  }
+}

@@ -85,11 +85,7 @@ test("power interval selection and advanced panels expose consistent units", asy
   await page.getByRole("option", { name: "00:00 UTC", exact: true }).click();
   await expect(page.locator(".power-flow-card")).toContainText("00:00 UTC");
   await expect(page.locator(".power-flow-card")).toContainText("charge");
-  for (const name of [
-    "Battery constraints & balance provenance",
-    "Compare scenario responses",
-    "Evidence & connector readiness",
-  ]) {
+  for (const name of ["Inspect equipment limits & calculation"]) {
     await page
       .getByLabel("Power & Battery", { exact: true })
       .getByText(name, { exact: true })
@@ -132,7 +128,9 @@ for (const view of ["overview", "compute", "power"]) {
   test(`${view} fits desktop and mobile in both themes`, async ({ page }, testInfo) => {
     await page.goto(`/operations?view=${view}`);
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-    await expect(page.getByRole("button", { name: /^(Show|Hide) panel/, exact: true })).toBeEnabled();
+    await expect(
+      page.getByRole("button", { name: /^(Show|Hide) panel/, exact: true }),
+    ).toBeEnabled();
     for (const theme of ["dark", "light"]) {
       const toggle = page.getByRole("button", {
         name: new RegExp(`Theme: ${theme === "dark" ? "light" : "dark"}`),
@@ -238,7 +236,9 @@ test("power compliance does not hide unrecovered work and advanced contracts are
 for (const view of ["overview", "compute", "power"]) {
   test(`${view} meets automated WCAG checks in both themes`, async ({ page }) => {
     await page.goto(`/operations?view=${view}`);
-    await expect(page.getByRole("button", { name: /^(Show|Hide) panel/, exact: true })).toBeEnabled();
+    await expect(
+      page.getByRole("button", { name: /^(Show|Hide) panel/, exact: true }),
+    ).toBeEnabled();
     for (const theme of ["light", "dark"]) {
       const toggle = page.getByRole("button", {
         name: new RegExp(`Theme: ${theme === "dark" ? "light" : "dark"}`),

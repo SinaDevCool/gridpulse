@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { OperationsEvidenceProvider } from "./OperationsEvidenceProvider";
@@ -17,13 +17,14 @@ import {
   type OperationsDataMode,
 } from "./operating-context";
 import { CanonicalPlanningWorkbench } from "../analytics/CanonicalPlanningWorkbench";
-import { formatOperationsTime } from "./presentation";
+import { AssessmentRecord } from "./configuration/AssessmentRecord";
 import type { OperationsView } from "./view-contracts";
 import { OverviewView } from "./overview/OverviewView";
 import { ConfigurationActions, ConfigurationForm } from "./configuration/ConfigurationForm";
 import { ConfigurationPanel } from "./configuration/ConfigurationPanel";
 import { WorkspaceInputs } from "./configuration/WorkspaceInputs";
 import { EvidenceInputs } from "./configuration/EvidenceInputs";
+import { EvidenceReadiness } from "./configuration/EvidenceReadiness";
 import { useScenarioDraft } from "./configuration/use-scenario-draft";
 import { usePanelLayout } from "./configuration/use-panel-layout";
 import { InputPanelContext } from "./configuration/input-panel-context";
@@ -51,6 +52,14 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
   const model = useMemo(() => scopeOperationsModel(fullModel, window), [fullModel, window]);
   const layout = usePanelLayout();
   const trigger = useRef<HTMLButtonElement>(null);
+  const results = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (location.hash) return;
+    const frame = requestAnimationFrame(() =>
+      results.current?.scrollTo({ top: 0, left: 0, behavior: "instant" }),
+    );
+    return () => cancelAnimationFrame(frame);
+  }, [view]);
   const draft = useScenarioDraft(scenario, setScenario);
   const serviceLabel =
     backendState === "verified"
@@ -118,6 +127,10 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
                 }
               />
             </details>
+            <EvidenceReadiness />
+            {view !== "overview" ? (
+              <AssessmentRecord fullModel={fullModel} assessmentIdentity={assessmentIdentity} />
+            ) : null}
             <div className="ops-panel-service" role="status">
               <strong>{serviceLabel}</strong>
               <small>Read-only assessment · no physical commands</small>
@@ -180,6 +193,9 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
               </nav>
             </div>
             <div
+              key={view}
+              ref={results}
+              data-scroll-restoration-id={`operations-results-${view}`}
               className="ops-canvas-content"
               role="region"
               aria-label="Operations results"
@@ -230,47 +246,9 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
                   }
                 />
               ) : null}
-              <details
-                id="operations-assurance"
-                className="operations-assurance-panel operations-technical-details"
-              >
-                <summary>Evidence & assumptions · assessment details</summary>
-                <p>
-                  Scenario inputs only. Uploaded meter, BMS and workload records remain separately
-                  identified in Inputs. No delivered response has been verified.
-                </p>
-                <p>
-                  Physical dispatch is locked. Job-level validation, current operating agreements
-                  and authorised equipment integrations are required before execution.
-                </p>
-                <p>
-                  {assessmentIdentity
-                    ? `Assessment ${assessmentIdentity.id} · Calculated ${formatOperationsTime(assessmentIdentity.generatedAt, true)}`
-                    : "Calculation pending or browser demonstration—not an operational plan"}
-                </p>
-                <p>
-                  Full planning horizon: {fullModel.intervals.length} intervals. Recovery and
-                  battery state are calculated over this horizon before display-window filtering.
-                </p>
-                {fullModel.planningTime ? (
-                  <p>
-                    Calculation coverage:{" "}
-                    {formatOperationsTime(fullModel.planningTime.calculation.start, true)} –{" "}
-                    {formatOperationsTime(fullModel.planningTime.calculation.end, true)}. Purpose:
-                    synthetic scenario. Terminal policy: report unfinished work, not guaranteed
-                    completion. No forward forecast or rolling control is enabled.
-                  </p>
-                ) : null}
-                <p>
-                  Transformer, UPS and cooling limits are not independently established by this
-                  aggregate scenario. Backup autonomy and individual job deadlines are not
-                  validated.
-                </p>
-                <p>
-                  Cost requires a reviewed tariff and a full-horizon canonical calculation.
-                  Reference GPU-hour equivalents are not delivered compute.
-                </p>
-              </details>
+              {view === "overview" ? (
+                <AssessmentRecord fullModel={fullModel} assessmentIdentity={assessmentIdentity} />
+              ) : null}
             </div>
           </div>
         </main>
