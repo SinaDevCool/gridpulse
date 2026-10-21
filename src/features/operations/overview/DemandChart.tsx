@@ -1,40 +1,43 @@
 import { useState } from "react";
 
 import {
-Area,
-CartesianGrid,
-ComposedChart,
-Line,
-ReferenceLine,
-ResponsiveContainer,
-Tooltip,
-XAxis,
-YAxis,
+  Area,
+  CartesianGrid,
+  ComposedChart,
+  Line,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
 } from "recharts";
 
-import { type OperationsOverviewModel,type OperationsScenarioKind } from "../scenario-engine";
+import { type OperationsOverviewModel, type OperationsScenarioKind } from "../scenario-engine";
 
-import { formatDurationFromIntervals,formatMw } from "../formatting";
+import { formatDurationFromIntervals, formatMw } from "../formatting";
 import {
-ChartSummaryMetric,
-OperationsChartLegend,
-OperationsChartSummary,
-OperationsTooltipShell,
-TooltipRow,
+  ChartSummaryMetric,
+  OperationsChartLegend,
+  OperationsChartSummary,
+  OperationsTooltipShell,
+  TooltipRow,
 } from "../visualization";
 
 import { ChartHeader } from "./primitives";
 
-import { integer,number } from "./presentation";
+import { integer, number } from "./presentation";
+import { ResponseControls, ResponseBreakdown } from "./ResponseControls";
 
 export function DemandChart({
   model,
   selected,
   compact = false,
+  onSelect,
 }: {
   model: OperationsOverviewModel;
   selected: OperationsScenarioKind;
   compact?: boolean;
+  onSelect: (kind: OperationsScenarioKind) => void;
 }) {
   const selectedKey =
     selected === "baseline"
@@ -71,30 +74,24 @@ export function DemandChart({
   });
   return (
     <article className={`operations-v2-chart-card${compact ? " compact" : ""}`}>
-      <ChartHeader
-        eyebrow="24-Hour Scenario"
-        title="Facility Demand vs Operating Target"
-        badge="Simulated"
-      />
+      <ChartHeader eyebrow="24-Hour Scenario" title="Compare power responses" badge="Simulated" />
+      <ResponseControls model={model} selected={selected} onSelect={onSelect} />
       <p className="operations-chart-purpose">
         Baseline compared with <strong>{selectedName}</strong>. The safety target preserves the
         configured reserve below the facility limit.
       </p>
-      <label className="operations-chart-option">
-        <input
-          type="checkbox"
-          checked={showUncertainty}
-          onChange={(event) => setShowUncertainty(event.target.checked)}
-        />
-        Show illustrative planning range & risk-adjusted envelope
-      </label>
+      <details className="ops-chart-options">
+        <summary>Chart options</summary>
+        <label className="operations-chart-option">
+          <input
+            type="checkbox"
+            checked={showUncertainty}
+            onChange={(event) => setShowUncertainty(event.target.checked)}
+          />
+          Show illustrative planning range & risk-adjusted envelope
+        </label>
+      </details>
       <OperationsChartSummary>
-        <ChartSummaryMetric label="Baseline Peak" value={formatMw(baseline.peakDemandMw)} />
-        <ChartSummaryMetric
-          label="Response Peak"
-          value={formatMw(selectedSummary.peakDemandMw)}
-          tone="response"
-        />
         <ChartSummaryMetric
           label="Peak Reduction"
           value={formatMw(Math.max(0, baseline.peakDemandMw - selectedSummary.peakDemandMw))}
@@ -223,6 +220,7 @@ export function DemandChart({
             <Area
               dataKey="baselineDemandMw"
               name="Baseline Demand"
+              isAnimationActive={false}
               stroke="var(--ops-demand)"
               fill="var(--ops-demand-fill)"
               strokeWidth={2}
@@ -230,7 +228,8 @@ export function DemandChart({
             {selected !== "baseline" ? (
               <Line
                 dataKey={selectedKey}
-                name={selected === "battery" ? "Battery Response" : "Battery + Workload"}
+                isAnimationActive={false}
+                name={selectedName}
                 stroke="var(--ops-response)"
                 strokeWidth={3}
                 dot={false}
@@ -240,6 +239,7 @@ export function DemandChart({
         </ResponsiveContainer>
       </div>
       <AccessibleIntervalTable model={model} mode="power" />
+      <ResponseBreakdown model={model} selected={selected} />
     </article>
   );
 }
@@ -288,6 +288,7 @@ function AccessibleIntervalTable({
                 <>
                   <th scope="col">Baseline (MW)</th>
                   <th scope="col">Battery Response (MW)</th>
+                  <th scope="col">Workload Only (MW)</th>
                   <th scope="col">Combined Response (MW)</th>
                 </>
               ) : (
@@ -307,6 +308,7 @@ function AccessibleIntervalTable({
                   <>
                     <td>{number.format(point.baselineDemandMw)} MW</td>
                     <td>{number.format(point.batteryDemandMw)} MW</td>
+                    <td>{number.format(point.workloadDemandMw)} MW</td>
                     <td>{number.format(point.combinedDemandMw)} MW</td>
                   </>
                 ) : (

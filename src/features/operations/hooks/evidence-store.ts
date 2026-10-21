@@ -24,7 +24,7 @@ export type OperationsEvidenceStore = {
   workloadSelectedId: State<string | null>;
   workloadStatus: State<"all" | ComputeWorkload["status"]>;
   workloadPage: State<number>;
-  workloadImportsOpen: State<boolean>;
+  workloadQueueOpen: State<boolean>;
 };
 export type OperationsEvidenceDataStore = Pick<
   OperationsEvidenceStore,

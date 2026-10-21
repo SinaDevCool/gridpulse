@@ -1,5 +1,6 @@
-import { formatMinutes,formatOperationsTime } from "./presentation";
+import { formatMinutes, formatOperationsTime } from "./presentation";
 import type { WorkloadDecision } from "./workload-intelligence";
+import { workloadWindow } from "./compute/select-compute-summary";
 
 /** Visualises declared windows, not actual scheduler execution or dispatch. */
 export function WorkloadSchedule({ workload }: { workload: WorkloadDecision }) {
@@ -7,10 +8,10 @@ export function WorkloadSchedule({ workload }: { workload: WorkloadDecision }) {
   const deadline = Date.parse(workload.deadline);
   const proposed = workload.recommended ? Date.parse(workload.proposedStart) : start;
   const duration = workload.expectedDurationMinutes * 60_000;
-  const window = deadline - start;
+  const window = workloadWindow(workload, start, deadline);
   const slack = Math.max(0, (deadline - proposed - duration) / 60_000);
   const delay = Math.max(0, (proposed - start) / 60_000);
-  if (window <= 0 || !Number.isFinite(window)) return null;
+  if (!window) return null;
   return (
     <section className="workload-schedule" aria-label="Declared workload schedule comparison">
       <h4>{workload.recommended ? "Proposed schedule" : "Declared execution window"}</h4>
@@ -18,7 +19,7 @@ export function WorkloadSchedule({ workload }: { workload: WorkloadDecision }) {
       <div className="workload-schedule-row">
         <span>Earliest</span>
         <div>
-          <i style={{ width: `${Math.min(100, (duration / window) * 100)}%` }} />
+          <i style={{ width: `${window.declared?.width ?? 0}%` }} />
         </div>
         <strong>{formatOperationsTime(workload.earliestStart)}</strong>
       </div>
@@ -27,8 +28,8 @@ export function WorkloadSchedule({ workload }: { workload: WorkloadDecision }) {
         <div>
           <i
             style={{
-              marginLeft: `${Math.min(100, ((proposed - start) / window) * 100)}%`,
-              width: `${Math.min(100, (duration / window) * 100)}%`,
+              marginLeft: `${window.proposed?.left ?? 0}%`,
+              width: `${(workload.recommended ? window.proposed?.width : window.declared?.width) ?? 0}%`,
             }}
           />
         </div>
@@ -46,7 +47,7 @@ export function WorkloadSchedule({ workload }: { workload: WorkloadDecision }) {
           </dd>
         </div>
         <div>
-          <dt>Response contribution</dt>
+          <dt>Nominal candidate power—not validated response</dt>
           <dd>{workload.recommended ? `${workload.peakReductionMw} MW` : "Not selected"}</dd>
         </div>
       </dl>

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { selectWorkloadQueue } from "./compute/select-workload-queue";
 import type { EvidenceClass } from "./evidence";
 import { useOperationsPresentationStore } from "./hooks/evidence-store";
-import { useWorkloadEvidence } from "./hooks/use-workload-evidence";
+import { useSharedWorkloadEvidence } from "./hooks/workload-evidence-context";
 import type { OperationsOverviewModel } from "./scenario-engine";
 import { useOperationsCapabilities } from "./use-operations-capabilities";
 export function useComputeWorkspace({
@@ -15,19 +15,9 @@ export function useComputeWorkspace({
   const { data: capabilities } = useOperationsCapabilities();
   const evidenceStore = useOperationsPresentationStore();
   const [selectedId, setSelectedId] = evidenceStore.workloadSelectedId;
-  const {
-    workloads,
-    telemetry,
-    message,
-    error,
-    assessment,
-    restoreScenario,
-    importWorkloadFile,
-    importTelemetryFile,
-  } = useWorkloadEvidence(model, setSelectedId);
+  const { telemetry, assessment } = useSharedWorkloadEvidence();
   const [status, setStatus] = evidenceStore.workloadStatus;
   const [queuePage, setQueuePage] = evidenceStore.workloadPage;
-  const [importOpen, setImportOpen] = evidenceStore.workloadImportsOpen;
   const [interactive, setInteractive] = useState(false);
   const peakInterval = useMemo(
     () =>
@@ -50,17 +40,10 @@ export function useComputeWorkspace({
     capabilities,
     selectedId,
     setSelectedId,
-    message,
-    error,
     assessment,
-    restoreScenario,
-    importWorkloadFile,
-    importTelemetryFile,
     status,
     setStatus,
     setQueuePage,
-    importOpen,
-    setImportOpen,
     interactive,
     peakInterval,
     decisions,

@@ -1,18 +1,18 @@
-import { useEffect,useRef } from "react";
+import { useEffect, useRef } from "react";
 
-import { AlertTriangle,CheckCircle2,X } from "lucide-react";
+import { AlertTriangle, CheckCircle2, X } from "lucide-react";
 
 import { OperationsEvidenceBadge } from "../components";
 
 import { type WorkloadDecision } from "../workload-intelligence";
 
-import { formatMinutes,formatOperationsTime } from "../presentation";
+import { formatMinutes, formatOperationsTime } from "../presentation";
 
 import { WorkloadSchedule } from "../WorkloadSchedule";
 
 import { Row } from "./primitives";
 
-import { integer,number } from "./presentation";
+import { integer, number } from "./presentation";
 
 export function WorkloadDrawer({
   workload,
@@ -46,7 +46,13 @@ export function WorkloadDrawer({
           <X aria-hidden="true" />
         </button>
       </header>
-      <OperationsEvidenceBadge kind={workload.source === "scenario" ? "simulated" : "measured"} />
+      <OperationsEvidenceBadge
+        kind={workload.source === "scenario" ? "simulated" : workload.powerEvidence}
+      />
+      <p className="power-flow-note">
+        Record source: {workload.source} · Power basis: {workload.powerEvidence}. Imported records
+        are not proof of measured power or executed response.
+      </p>
       <WorkloadSchedule workload={workload} />
       <dl>
         <Row label="Class" value={workload.workloadClass} />

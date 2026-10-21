@@ -1,45 +1,37 @@
-import { useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { PanelLeft } from "lucide-react";
 import { OperationsEvidenceProvider } from "./OperationsEvidenceProvider";
-
-import { Link,useNavigate } from "@tanstack/react-router";
-
-import { Info } from "lucide-react";
-
 import {
-buildOperationsScenario,
-defaultOperationsScenario,
-type OperationsScenarioKind,
+  buildOperationsScenario,
+  defaultOperationsScenario,
+  type OperationsScenarioKind,
 } from "./scenario-engine";
-
 import { ComputeWorkloadsView } from "./ComputeWorkloadsView";
-
 import { PowerBatteryView } from "./PowerBatteryView";
-
 import { useOverviewAssessment } from "./hooks/use-overview-assessment";
-
 import {
-operatingWindowLabels,
-operationsModeLabels,
-scopeOperationsModel,
-type OperatingWindowPreset,
-type OperationsDataMode,
+  operatingWindowLabels,
+  scopeOperationsModel,
+  type OperatingWindowPreset,
+  type OperationsDataMode,
 } from "./operating-context";
-
-import { OperationsSelect } from "./OperationsSelect";
-
 import { CanonicalPlanningWorkbench } from "../analytics/CanonicalPlanningWorkbench";
-
 import { formatOperationsTime } from "./presentation";
-
-import { type OperationsView } from "./view-contracts";
-
-import { ScenarioEditor } from "./overview/ScenarioEditor";
-
+import type { OperationsView } from "./view-contracts";
 import { OverviewView } from "./overview/OverviewView";
+import { ConfigurationForm } from "./configuration/ConfigurationForm";
+import { ConfigurationPanel } from "./configuration/ConfigurationPanel";
+import { WorkspaceInputs } from "./configuration/WorkspaceInputs";
+import { EvidenceInputs } from "./configuration/EvidenceInputs";
+import { useScenarioDraft } from "./configuration/use-scenario-draft";
+import { usePanelLayout } from "./configuration/use-panel-layout";
+import { InputPanelContext } from "./configuration/input-panel-context";
+import { WorkloadEvidenceProvider } from "./WorkloadEvidenceProvider";
+export type { OperationsView } from "./view-contracts";
 
-export { type OperationsView } from "./view-contracts";
-
-export function OperationsDashboard(props: Parameters<typeof OperationsDashboardContent>[0]) {
+type Props = { view: OperationsView; window: OperatingWindowPreset; mode: OperationsDataMode };
+export function OperationsDashboard(props: Props) {
   return (
     <OperationsEvidenceProvider>
       <OperationsDashboardContent {...props} />
@@ -47,230 +39,176 @@ export function OperationsDashboard(props: Parameters<typeof OperationsDashboard
   );
 }
 
-function OperationsDashboardContent({
-  view,
-  window,
-  mode,
-}: {
-  view: OperationsView;
-  window: OperatingWindowPreset;
-  mode: OperationsDataMode;
-}) {
+function OperationsDashboardContent({ view, window, mode }: Props) {
   const navigate = useNavigate({ from: "/operations" });
   const [scenario, setScenario] = useState(defaultOperationsScenario);
   const [selected, setSelected] = useState<OperationsScenarioKind>("battery_workload");
-  const [announcement, setAnnouncement] = useState("Default scenario loaded.");
-  const { serverModel, assessmentIdentity, backendState } = useOverviewAssessment(scenario);
-  const fullModel = serverModel ?? buildOperationsScenario(scenario);
-  const model = scopeOperationsModel(fullModel, window);
-  const viewCopy =
-    view === "power"
-      ? {
-          eyebrow: "Data-Centre Power Operations",
-          title: "Power & Battery",
-          description: "Optimise facility power with battery storage and workload flexibility.",
-          evidence:
-            "Facility and battery values are scenario assumptions until measured evidence is connected.",
-        }
-      : view === "compute"
-        ? {
-            eyebrow: "Data-Centre Power Operations",
-            title: "Power Operations",
-            description: "Translate facility limits into compute and workload decisions.",
-            evidence:
-              "GPU workload behaviour uses the configured scenario until accepted telemetry is connected.",
-          }
-        : {
-            eyebrow: "Data-Centre Power Operations",
-            title: "Power Operations",
-            description: "Translate facility limits into compute, battery, and workload decisions.",
-            evidence:
-              "Results use configured assumptions until measured facility evidence is connected.",
-          };
-
+  const [evidenceOpen, setEvidenceOpen] = useState(false);
+  const { serverModel, assessmentIdentity, backendState, lifecycle } =
+    useOverviewAssessment(scenario);
+  const fallbackModel = useMemo(() => buildOperationsScenario(scenario), [scenario]);
+  const fullModel = serverModel ?? fallbackModel;
+  const model = useMemo(() => scopeOperationsModel(fullModel, window), [fullModel, window]);
+  const layout = usePanelLayout();
+  const trigger = useRef<HTMLButtonElement>(null);
+  const draft = useScenarioDraft(scenario, setScenario);
+  const serviceLabel =
+    backendState === "verified"
+      ? "Calculation service available"
+      : backendState === "checking"
+        ? "Calculation pending…"
+        : "Browser calculation · backend unavailable";
+  function closeInputs() {
+    layout.setOpen(false);
+    trigger.current?.focus();
+  }
+  function openInputs(evidence = false) {
+    layout.setOpen(true);
+    if (evidence) setEvidenceOpen(true);
+  }
   return (
-    <main id="main-content" className={`operations-v2 operations-v2--${view}`}>
-      <header className="operations-v2-header">
-        <div>
-          <p className="context-label">{viewCopy.eyebrow}</p>
-          <h1>{viewCopy.title}</h1>
-          <p>{viewCopy.description}</p>
-        </div>
-        <div className="operations-v2-context">
-          <ScenarioEditor
-            scenario={scenario}
-            onApply={(next) => {
-              setScenario(next);
-              setAnnouncement("Scenario assumptions updated. Dashboard results recalculated.");
-            }}
-          />
-        </div>
-      </header>
-
-      <div className="operations-v2-nav-row">
-        <nav className="operations-v2-tabs" aria-label="Power Operations views">
-          <OperationsTab
-            id="overview"
-            label="Overview"
-            current={view}
-            window={window}
-            mode={mode}
-          />
-          <OperationsTab
-            id="compute"
-            label="Compute & Workloads"
-            current={view}
-            window={window}
-            mode={mode}
-          />
-          <OperationsTab
-            id="power"
-            label="Power & Battery"
-            current={view}
-            window={window}
-            mode={mode}
-          />
-        </nav>
-        <p className="operations-v2-provenance">
-          <Info aria-hidden="true" />
-          <span>
-            <strong>Scenario assessment—not live control</strong>
-          </span>
-        </p>
-      </div>
-
-      <section className="operations-context-strip" aria-label="Operating context">
-        <div className="operations-context-field">
-          <span>Facility</span>
-          <strong>{scenario.facilityName}</strong>
-        </div>
-        <div className="operations-context-field">
-          <OperationsSelect
-            name="operating-window"
-            label={mode === "historical" ? "Scenario window (inactive)" : "Operating Window"}
-            disabled={mode === "historical"}
-            value={window}
-            options={Object.entries(operatingWindowLabels).map(([value, label]) => ({
-              value: value as OperatingWindowPreset,
-              label,
-            }))}
-            onChange={(nextWindow) =>
-              navigate({
-                search: { view, window: nextWindow, mode },
-                replace: true,
-              })
-            }
-          />
-        </div>
-        <div className="operations-context-field">
-          <OperationsSelect
-            name="data-mode"
-            label="Data Mode"
-            value={mode}
-            options={Object.entries(operationsModeLabels).map(([value, label]) => ({
-              value: value as OperationsDataMode,
-              label,
-              disabled: value === "live" || (value === "historical" && view !== "power"),
-              description:
-                value === "scenario"
-                  ? "Configured inputs"
-                  : value === "historical"
-                    ? "Power & Battery evidence workspace"
-                    : "Live connector not connected",
-            }))}
-            onChange={(nextMode) =>
-              navigate({
-                search: { view, window, mode: nextMode },
-                replace: true,
-              })
-            }
-          />
-        </div>
-        <div className="operations-context-health" role="status">
-          <i className={backendState} aria-hidden="true" />
-          <span>
-            <strong>
-              {backendState === "verified"
-                ? "Calculation service available"
-                : backendState === "checking"
-                  ? "Calculation pending…"
-                  : "Browser calculation"}
-            </strong>
-            {mode === "historical"
-              ? "Uploaded evidence workspace"
-              : `${model.intervals.length} displayed intervals · Scenario only`}
-          </span>
-        </div>
-      </section>
-      <p className="operations-assessment-date" hidden={mode === "historical"}>
-        Scenario data: {formatOperationsTime(model.intervals[0].timestamp, true)} –{" "}
-        {formatOperationsTime(model.intervals.at(-1)!.timestamp)}. Window presets select simulated
-        intervals, not a live forecast.
-      </p>
-
-      <p className="sr-only" aria-live="polite">
-        {announcement}
-      </p>
-      {view === "overview" ? (
-        <OverviewView model={model} selected={selected} onSelect={setSelected} />
-      ) : null}
-      {/* The workspace provider retains evidence and selection; inactive charts do not mount. */}
-      {view === "compute" ? <ComputeWorkloadsView model={fullModel} displayModel={model} /> : null}
-      {view === "power" ? (
-        <PowerBatteryView
-          model={fullModel}
-          displayModel={model}
-          mode={mode === "historical" ? "historical" : "scenario"}
-          onModeChange={(nextMode) =>
-            navigate({ search: { view: "power", window, mode: nextMode }, replace: true })
-          }
-        />
-      ) : null}
-      <details className="operations-assurance-panel operations-technical-details">
-        <summary>Assessment details & advanced planning</summary>
-        <p>
-          {assessmentIdentity
-            ? `Assessment ${assessmentIdentity.id} · Calculated ${formatOperationsTime(assessmentIdentity.generatedAt, true)}`
-            : "Calculation pending or browser demonstration—not an operational plan"}
-        </p>
-        <p>
-          Full planning horizon: {fullModel.intervals.length} intervals. Recovery and battery state
-          are calculated over this horizon before display-window filtering.
-        </p>
-        <details>
-          <summary>Canonical planning, rolling analysis & historical replay</summary>
-          <p>
-            Authenticated model-contract workspace; separate from the aggregate scenario
-            demonstration. No physical commands are issued.
-          </p>
-          <CanonicalPlanningWorkbench />
-        </details>
-      </details>
-    </main>
-  );
-}
-
-function OperationsTab({
-  id,
-  label,
-  current,
-  window,
-  mode,
-}: {
-  id: OperationsView;
-  label: string;
-  current: OperationsView;
-  window: OperatingWindowPreset;
-  mode: OperationsDataMode;
-}) {
-  return (
-    <Link
-      to="/operations"
-      search={{ view: id, window, mode: id === "power" ? mode : "scenario" }}
-      className={current === id ? "active" : undefined}
-      aria-current={current === id ? "page" : undefined}
-    >
-      {label}
-    </Link>
+    <WorkloadEvidenceProvider model={fullModel}>
+      <InputPanelContext.Provider value={openInputs}>
+        <main
+          id="main-content"
+          className={`operations-v2 operations-v2--${view} ops-control-layout ${layout.open && !layout.mobile ? "inputs-open" : ""}`}
+        >
+          <header className="ops-workspace-header">
+            <div>
+              <p className="context-label">Data-centre power operations</p>
+              <h1>{view === "power" ? "Power & Battery" : "Power Operations"}</h1>
+            </div>
+            <button
+              ref={trigger}
+              type="button"
+              className="secondary-button ops-input-trigger"
+              disabled={!layout.ready}
+              aria-controls="operations-inputs"
+              aria-expanded={layout.open}
+              onClick={() => (layout.open ? closeInputs() : openInputs())}
+            >
+              <PanelLeft aria-hidden="true" />
+              Inputs{draft.dirty ? " · Unapplied changes" : ""}
+            </button>
+          </header>
+          <ConfigurationPanel open={layout.open} mobile={layout.mobile} onClose={closeInputs}>
+            <WorkspaceInputs
+              model={fullModel}
+              mode={mode}
+              window={window}
+              view={view}
+              onWindow={(value) =>
+                navigate({ search: { view, window: value, mode }, replace: true })
+              }
+              onMode={(value) => navigate({ search: { view, window, mode: value }, replace: true })}
+            />
+            <ConfigurationForm
+              draft={draft.draft}
+              onChange={draft.setDraft}
+              dirty={draft.dirty}
+              errors={draft.errors}
+              busy={lifecycle === "loading" || lifecycle === "stale"}
+              historical={mode === "historical"}
+              onApply={draft.apply}
+              onDiscard={draft.discard}
+            />
+            <details
+              className="ops-evidence-section"
+              open={evidenceOpen}
+              onToggle={(event) => setEvidenceOpen(event.currentTarget.open)}
+            >
+              <summary>Evidence imports</summary>
+              <EvidenceInputs
+                model={fullModel}
+                onHistorical={() =>
+                  navigate({ search: { view: "power", window, mode: "historical" }, replace: true })
+                }
+              />
+            </details>
+            <div className="ops-panel-service" role="status">
+              <strong>{serviceLabel}</strong>
+              <small>Read-only assessment · no physical commands</small>
+            </div>
+          </ConfigurationPanel>
+          <div className="ops-dashboard-canvas">
+            <nav className="operations-v2-tabs" aria-label="Power Operations views">
+              {[
+                ["overview", "Overview"],
+                ["compute", "Compute & Workloads"],
+                ["power", "Power & Battery"],
+              ].map(([id, label]) => (
+                <Link
+                  key={id}
+                  to="/operations"
+                  search={{ view: id, window, mode: id === "power" ? mode : "scenario" }}
+                  className={view === id ? "active" : undefined}
+                  aria-current={view === id ? "page" : undefined}
+                >
+                  {label}
+                </Link>
+              ))}
+            </nav>
+            <div className="ops-context-summary">
+              <p>
+                {scenario.facilityName} ·{" "}
+                {mode === "historical" ? "Uploaded historical evidence" : "Scenario"} ·{" "}
+                {mode === "historical" ? "Complete uploaded range" : operatingWindowLabels[window]}{" "}
+                · UTC
+              </p>
+              <span className={`ops-service-status ${backendState}`} role="status">
+                {serviceLabel}
+              </span>
+            </div>
+            <p className="ops-assessment-notice" role="status">
+              {draft.dirty ? "Unapplied changes. Results still use the applied scenario. " : ""}
+              {mode === "historical"
+                ? "Uploaded evidence, not live control."
+                : "Scenario assessment—not live control."}
+              {lifecycle === "loading" || lifecycle === "stale"
+                ? " Calculation pending; browser preview is not a backend-validated plan."
+                : backendState === "unavailable"
+                  ? " Backend unavailable; browser demonstration only."
+                  : ""}
+            </p>
+            {view === "overview" ? (
+              <OverviewView model={model} selected={selected} onSelect={setSelected} />
+            ) : null}
+            {view === "compute" ? (
+              <ComputeWorkloadsView model={fullModel} displayModel={model} />
+            ) : null}
+            {view === "power" ? (
+              <PowerBatteryView
+                model={fullModel}
+                displayModel={model}
+                mode={mode === "historical" ? "historical" : "scenario"}
+                onModeChange={(value) =>
+                  navigate({ search: { view: "power", window, mode: value }, replace: true })
+                }
+              />
+            ) : null}
+            <details className="operations-assurance-panel operations-technical-details">
+              <summary>Assessment details & advanced planning</summary>
+              <p>
+                {assessmentIdentity
+                  ? `Assessment ${assessmentIdentity.id} · Calculated ${formatOperationsTime(assessmentIdentity.generatedAt, true)}`
+                  : "Calculation pending or browser demonstration—not an operational plan"}
+              </p>
+              <p>
+                Full planning horizon: {fullModel.intervals.length} intervals. Recovery and battery
+                state are calculated over this horizon before display-window filtering.
+              </p>
+              <details>
+                <summary>Canonical planning, rolling analysis & historical replay</summary>
+                <p>
+                  Separate authenticated model-contract interface. Engine availability is not
+                  established by the scenario service. No physical commands are issued.
+                </p>
+                <CanonicalPlanningWorkbench />
+              </details>
+            </details>
+          </div>
+        </main>
+      </InputPanelContext.Provider>
+    </WorkloadEvidenceProvider>
   );
 }

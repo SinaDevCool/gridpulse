@@ -18,19 +18,12 @@ export interface ComputeWorkspaceContract {
   }> | null;
   selectedId: string | null;
   setSelectedId: import("react").Dispatch<import("react").SetStateAction<string | null>>;
-  message: string;
-  error: string;
   assessment: import("./workload-intelligence").WorkloadAssessment;
-  restoreScenario: () => void;
-  importWorkloadFile: (event: import("react").ChangeEvent<HTMLInputElement>) => Promise<void>;
-  importTelemetryFile: (event: import("react").ChangeEvent<HTMLInputElement>) => Promise<void>;
   status: "running" | "queued" | "held" | "completed" | "all";
   setStatus: import("react").Dispatch<
     import("react").SetStateAction<"running" | "queued" | "held" | "completed" | "all">
   >;
   setQueuePage: import("react").Dispatch<import("react").SetStateAction<number>>;
-  importOpen: boolean;
-  setImportOpen: import("react").Dispatch<import("react").SetStateAction<boolean>>;
   interactive: boolean;
   peakInterval: import("./scenario-engine").OperationsInterval;
   decisions: import("./workload-intelligence").WorkloadDecision[];
