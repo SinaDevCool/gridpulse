@@ -20,9 +20,9 @@ test("response selection updates overview values and illustrative uncertainty is
   await range.check();
   await expect(range).toBeChecked();
   await range.uncheck();
-  await page.getByText("Operating envelope & uncertainty", { exact: true }).click();
-  await expect(page.locator(".operations-envelope-map")).toBeVisible();
-  await page.getByText("Evidence, verification and control readiness", { exact: true }).click();
+  await page.getByText("Inspect headroom", { exact: true }).click();
+  await expect(page.locator(".ops-headroom-detail")).toBeVisible();
+  await page.getByRole("link", { name: "Evidence & assumptions", exact: true }).click();
   await expect(page.locator("#operations-assurance")).toHaveAttribute("open", "");
 });
 

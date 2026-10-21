@@ -129,6 +129,17 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
               <strong>{serviceLabel}</strong>
               <small>Read-only assessment · no physical commands</small>
             </div>
+            <details className="ops-advanced-tools">
+              <summary>Advanced tools</summary>
+              <details>
+                <summary>Canonical planning, rolling analysis & historical replay</summary>
+                <p>
+                  Separate authenticated model-contract interface. Scenario service availability
+                  does not establish canonical engine availability. No physical commands are issued.
+                </p>
+                <CanonicalPlanningWorkbench />
+              </details>
+            </details>
           </ConfigurationPanel>
           <div className="ops-dashboard-canvas">
             <nav className="operations-v2-tabs" aria-label="Power Operations views">
@@ -171,7 +182,12 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
                   : ""}
             </p>
             {view === "overview" ? (
-              <OverviewView model={model} selected={selected} onSelect={setSelected} />
+              <OverviewView
+                model={model}
+                fullModel={fullModel}
+                selected={selected}
+                onSelect={setSelected}
+              />
             ) : null}
             {view === "compute" ? (
               <ComputeWorkloadsView model={fullModel} displayModel={model} />
@@ -186,8 +202,19 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
                 }
               />
             ) : null}
-            <details className="operations-assurance-panel operations-technical-details">
-              <summary>Assessment details & advanced planning</summary>
+            <details
+              id="operations-assurance"
+              className="operations-assurance-panel operations-technical-details"
+            >
+              <summary>Evidence & assumptions · assessment details</summary>
+              <p>
+                Scenario inputs only. Uploaded meter, BMS and workload records remain separately
+                identified in Inputs. No delivered response has been verified.
+              </p>
+              <p>
+                Physical dispatch is locked. Job-level validation, current operating agreements and
+                authorised equipment integrations are required before execution.
+              </p>
               <p>
                 {assessmentIdentity
                   ? `Assessment ${assessmentIdentity.id} · Calculated ${formatOperationsTime(assessmentIdentity.generatedAt, true)}`
@@ -206,14 +233,14 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
                   completion. No forward forecast or rolling control is enabled.
                 </p>
               ) : null}
-              <details>
-                <summary>Canonical planning, rolling analysis & historical replay</summary>
-                <p>
-                  Separate authenticated model-contract interface. Engine availability is not
-                  established by the scenario service. No physical commands are issued.
-                </p>
-                <CanonicalPlanningWorkbench />
-              </details>
+              <p>
+                Transformer, UPS and cooling limits are not independently established by this
+                aggregate scenario. Backup autonomy and individual job deadlines are not validated.
+              </p>
+              <p>
+                Cost requires a reviewed tariff and a full-horizon canonical calculation. Reference
+                GPU-hour equivalents are not delivered compute.
+              </p>
             </details>
           </div>
         </main>

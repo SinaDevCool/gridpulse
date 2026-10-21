@@ -129,7 +129,8 @@ test("gauge, response selection and recovery use the same assessment", async ({ 
     "5 MW",
   );
   await page.getByRole("link", { name: "Review recovery & assumptions" }).click();
-  await expect(page.locator("#operations-recovery")).toHaveAttribute("open", "");
+  await expect(page.locator("#operations-recovery")).toBeFocused();
+  await expect(page.locator("#operations-recovery")).toContainText("has no recovery slot");
   await page.getByText("Chart options", { exact: true }).click();
   await page.getByRole("checkbox", { name: /Show illustrative/ }).check();
 });

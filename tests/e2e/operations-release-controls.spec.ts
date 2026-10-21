@@ -9,9 +9,7 @@ test("window dropdown keyboard navigation and all tabs preserve context", async 
   await page.getByRole("option", { name: "Full scenario day", exact: true }).press("Home");
   await expect(page.getByRole("option", { name: "Assessed peak", exact: true })).toBeFocused();
   await page.getByRole("option", { name: "Assessed peak", exact: true }).press("End");
-  await expect(
-    page.getByRole("option", { name: "Full scenario day", exact: true }),
-  ).toBeFocused();
+  await expect(page.getByRole("option", { name: "Full scenario day", exact: true })).toBeFocused();
   await page.getByRole("option", { name: "Full scenario day", exact: true }).press("Escape");
   await expect(trigger).toBeFocused();
   for (const [label, value] of [
@@ -39,7 +37,9 @@ test("all canonical analysis choices reject invalid contracts without submitting
   await page.goto("/operations?view=overview");
   // Wait for React hydration before entering text into server-rendered controls.
   await expect(page.getByRole("button", { name: /^Inputs/, exact: true })).toBeEnabled();
-  await page.getByText("Assessment details & advanced planning", { exact: true }).click();
+  const inputs = page.getByRole("button", { name: /^Inputs/ });
+  if ((await inputs.getAttribute("aria-expanded")) !== "true") await inputs.click();
+  await page.getByText("Advanced tools", { exact: true }).click();
   await page
     .getByText("Canonical planning, rolling analysis & historical replay", { exact: true })
     .click();

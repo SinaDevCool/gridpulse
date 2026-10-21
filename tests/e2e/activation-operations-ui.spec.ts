@@ -44,7 +44,7 @@ test("Operations exposes the focused three-view facility workflow", async ({ pag
   await expect(
     page.getByText("Scenario assessment—not live control.", { exact: true }),
   ).toBeVisible();
-  await page.getByText("Planning assumptions & recovery obligations", { exact: true }).click();
+  await page.getByText("Evidence & assumptions · assessment details", { exact: true }).click();
   await expect(
     page.getByText(/Reference GPU-hour equivalents are not delivered compute/),
   ).toBeVisible();
