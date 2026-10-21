@@ -69,20 +69,34 @@ export function WorkspaceInputs({
         }))}
         onChange={onMode}
       />
-      <p>
-        Display selection does not recalculate the planning horizon. Battery state and unfinished
-        work remain full-horizon assessments.
-      </p>
-      {mode === "scenario" ? <p role="status">{describeDisplayWindow(model, window)}</p> : null}
-      <p>
-        Live control unavailable. Historical evidence is displayed in Power & Battery; other views
-        remain scenario comparisons.
-      </p>
-      <small>
-        Scenario data: {formatOperationsTime(model.intervals[0].timestamp, true)} –{" "}
-        {formatOperationsTime(model.intervals.at(-1)!.timestamp)}. Window presets select simulated
-        intervals, not a live forecast.
-      </small>
+      <span className="ops-context-status">
+        {mode === "historical" ? "Historical evidence" : "Scenario"} · Read-only
+      </span>
+      {mode === "scenario" ? (
+        <p role="status">{describeDisplayWindow(model, window).split(". ")[0]}.</p>
+      ) : null}
+      <details className="ops-about-assessment">
+        <summary>About this assessment</summary>
+        <p>
+          Display selection does not recalculate the planning horizon. Battery state and unfinished
+          work remain full-horizon assessments.
+        </p>
+        <p>
+          Live control unavailable. Historical evidence is displayed in Power & Battery; other views
+          remain scenario comparisons.
+        </p>
+        <small>
+          Scenario data:{" "}
+          {model.intervals.length
+            ? formatOperationsTime(model.intervals[0].timestamp, true)
+            : "Unavailable"}{" "}
+          –{" "}
+          {model.intervals.length
+            ? formatOperationsTime(model.intervals.at(-1)!.timestamp)
+            : "Unavailable"}
+          . Window presets select simulated intervals, not a live forecast.
+        </small>
+      </details>
     </section>
   );
 }

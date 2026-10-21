@@ -23,11 +23,11 @@ test("backend failures stay explicit and input preferences never save facility v
   );
   expect(preferences).toEqual({ "gridpulse-operations-inputs": "closed" });
   await page.reload();
-  await expect(page.getByRole("button", { name: /^Inputs/ })).toHaveAttribute(
+  await expect(page.getByRole("button", { name: /^(Show|Hide) panel/ })).toHaveAttribute(
     "aria-expanded",
     "false",
   );
-  await page.getByRole("button", { name: /^Inputs/ }).click();
+  await page.getByRole("button", { name: /^(Show|Hide) panel/ }).click();
   await expect(page.getByLabel("Facility Limit", { exact: false })).toHaveValue("100");
 });
 
@@ -59,7 +59,7 @@ test("mobile input dropdowns remain visible and keyboard navigation stays inside
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/operations");
-  await page.getByRole("button", { name: /^Inputs/ }).click();
+  await page.getByRole("button", { name: /^(Show|Hide) panel/ }).click();
   const dialog = page.getByRole("dialog", { name: "Inputs & evidence" });
   await dialog
     .getByRole("combobox", { name: "Display window", exact: true })
@@ -92,7 +92,7 @@ test("single input panel retains drafts, validates fields and recalculates every
   await expect(page.getByText(/Unapplied changes/).first()).toBeVisible();
   await panel.getByRole("button", { name: "Close inputs" }).click();
   await page.getByRole("link", { name: "Power & Battery", exact: true }).click();
-  await page.getByRole("button", { name: /^Inputs/ }).click();
+  await page.getByRole("button", { name: /^(Show|Hide) panel/ }).click();
   await expect(panel.getByLabel("Facility Limit", { exact: false })).toHaveValue("120");
   await panel.getByText("Facility assumptions", { exact: true }).click();
   await panel.getByLabel("PUE", { exact: false }).fill("0.5");
@@ -138,7 +138,7 @@ test("gauge, response selection and recovery use the same assessment", async ({ 
 test("mobile drawer traps focus, closes with Escape and preserves edits", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/operations");
-  const trigger = page.getByRole("button", { name: /^Inputs/ });
+  const trigger = page.getByRole("button", { name: /^(Show|Hide) panel/ });
   await trigger.click();
   const dialog = page.getByRole("dialog", { name: "Inputs & evidence" });
   await expect(dialog).toBeVisible();
@@ -167,7 +167,7 @@ test("sidebar and all tabs meet automated accessibility checks in both themes", 
     }, theme);
     for (const tab of ["Overview", "Compute & Workloads", "Power & Battery"]) {
       await page.getByRole("link", { name: tab, exact: true }).click();
-      await expect(page.getByRole("button", { name: /^Inputs/ })).toBeEnabled();
+      await expect(page.getByRole("button", { name: /^(Show|Hide) panel/ })).toBeEnabled();
       const result = await new AxeBuilder({ page })
         .include(".operations-v2")
         .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])

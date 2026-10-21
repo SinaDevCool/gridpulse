@@ -50,7 +50,7 @@ export const Route = createFileRoute("/operations")({
 function OperationsPage() {
   const { view, window, mode } = Route.useSearch();
   return (
-    <AppShell>
+    <AppShell workspace>
       <OperationsDashboard
         view={view as OperationsView}
         window={window as OperatingWindowPreset}

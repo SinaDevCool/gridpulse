@@ -132,7 +132,7 @@ for (const view of ["overview", "compute", "power"]) {
   test(`${view} fits desktop and mobile in both themes`, async ({ page }, testInfo) => {
     await page.goto(`/operations?view=${view}`);
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-    await expect(page.getByRole("button", { name: /^Inputs/, exact: true })).toBeEnabled();
+    await expect(page.getByRole("button", { name: /^(Show|Hide) panel/, exact: true })).toBeEnabled();
     for (const theme of ["dark", "light"]) {
       const toggle = page.getByRole("button", {
         name: new RegExp(`Theme: ${theme === "dark" ? "light" : "dark"}`),
@@ -238,7 +238,7 @@ test("power compliance does not hide unrecovered work and advanced contracts are
 for (const view of ["overview", "compute", "power"]) {
   test(`${view} meets automated WCAG checks in both themes`, async ({ page }) => {
     await page.goto(`/operations?view=${view}`);
-    await expect(page.getByRole("button", { name: /^Inputs/, exact: true })).toBeEnabled();
+    await expect(page.getByRole("button", { name: /^(Show|Hide) panel/, exact: true })).toBeEnabled();
     for (const theme of ["light", "dark"]) {
       const toggle = page.getByRole("button", {
         name: new RegExp(`Theme: ${theme === "dark" ? "light" : "dark"}`),

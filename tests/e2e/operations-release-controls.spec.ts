@@ -36,8 +36,8 @@ test("all canonical analysis choices reject invalid contracts without submitting
   });
   await page.goto("/operations?view=overview");
   // Wait for React hydration before entering text into server-rendered controls.
-  await expect(page.getByRole("button", { name: /^Inputs/, exact: true })).toBeEnabled();
-  const inputs = page.getByRole("button", { name: /^Inputs/ });
+  await expect(page.getByRole("button", { name: /^(Show|Hide) panel/, exact: true })).toBeEnabled();
+  const inputs = page.getByRole("button", { name: /^(Show|Hide) panel/ });
   if ((await inputs.getAttribute("aria-expanded")) !== "true") await inputs.click();
   await page.getByText("Advanced tools", { exact: true }).click();
   await page

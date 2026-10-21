@@ -8,7 +8,7 @@ test("display zoom does not request a new plan and legacy tomorrow is not a fore
   });
   await page.goto("/operations?window=tomorrow&view=overview");
   await expect(page).toHaveURL(/window=today/);
-  await expect(page.getByRole("button", { name: /^Inputs/ })).toBeEnabled();
+  await expect(page.getByRole("button", { name: /^(Show|Hide) panel/ })).toBeEnabled();
   const select = page.locator(".operations-context-strip .operations-select-trigger").first();
   await expect(page.locator('select[name="operating-window"] option')).toHaveCount(3);
   await expect(page.locator(".ops-service-status")).toContainText("Calculation service available");

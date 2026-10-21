@@ -85,7 +85,7 @@ test("legacy Operations views resolve to a supported destination", async ({ page
 
 test("Operations scenario assumptions recalculate the dashboard", async ({ page }) => {
   await page.goto("/operations?view=overview");
-  const configureButton = page.getByRole("button", { name: /^Inputs/ });
+  const configureButton = page.getByRole("button", { name: /^(Show|Hide) panel/ });
   await expect(configureButton).toBeVisible();
   await expect(page.locator(".recharts-wrapper").first()).toBeVisible();
   await page.waitForTimeout(250);
@@ -294,7 +294,7 @@ test("Operations charts expose explicit legends, units, targets, and full data a
   await expect(page.getByRole("columnheader", { name: "GPU Power (MW)" })).toBeVisible();
 
   await page.goto("/operations?view=power");
-  await expect(page.getByRole("button", { name: /^Inputs/ })).toBeEnabled();
+  await expect(page.getByRole("button", { name: /^(Show|Hide) panel/ })).toBeEnabled();
   await expect(page.getByText("+ discharge / − charge", { exact: false })).toBeVisible();
   await expect(page.getByText("State of charge", { exact: true }).first()).toBeVisible();
   await page.getByText("View Full Interval Data", { exact: true }).click();
