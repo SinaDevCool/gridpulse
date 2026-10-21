@@ -1,5 +1,6 @@
 import type { FacilityPlanRequest } from "@/features/analytics/contracts";
 import { prepareCanonicalFacilityPlan } from "@/features/operations/canonical-planning";
+import type { PlanningTime } from "@/features/operations/planning-time";
 import type { OperationsAssessmentRequest } from "@/features/operations/operations-service";
 import type { OperationsOverviewModel } from "@/features/operations/scenario-engine";
 import type { WorkloadAssessment } from "@/features/operations/workload-intelligence";
@@ -97,9 +98,10 @@ export async function fetchOperationsWorkspace(facilityId: string) {
 export async function startCanonicalOperationsPlan(
   facilityId: string,
   approvedRequest?: FacilityPlanRequest,
+  planningTime?: PlanningTime,
 ) {
   const workspace = await fetchOperationsWorkspace(facilityId);
-  const preparation = prepareCanonicalFacilityPlan(workspace, approvedRequest);
+  const preparation = prepareCanonicalFacilityPlan(workspace, approvedRequest, planningTime);
   if (!preparation.ready)
     throw new Error(`Canonical planning is blocked: ${preparation.blockers.join(" ")}`);
   return startFacilityPlan(preparation.request);

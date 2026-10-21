@@ -62,7 +62,7 @@ test("mobile input dropdowns remain visible and keyboard navigation stays inside
   await page.getByRole("button", { name: /^Inputs/ }).click();
   const dialog = page.getByRole("dialog", { name: "Inputs & evidence" });
   await dialog
-    .getByRole("combobox", { name: "Operating Window", exact: true })
+    .getByRole("combobox", { name: "Display window", exact: true })
     .selectOption("next-4h");
   await expect(page).toHaveURL(/window=next-4h/);
   await expect(

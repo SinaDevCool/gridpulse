@@ -11,6 +11,10 @@ test("Workers runtime calculates and identifies an overview assessment", async (
   expect(body.automaticDispatchAuthorized).toBe(false);
   expect(body.inputFingerprint).toMatch(/^[a-f0-9]{64}$/);
   expect(body.result.intervals).toHaveLength(96);
+  expect(body.result.planningTime.schemaVersion).toBe("gridpulse-planning-time-v1");
+  expect(body.result.planningTime.calculation.end).toBe("2026-09-27T00:00:00.000Z");
+  expect(body.result.planningTime.terminalPolicy).toBe("report_unfinished");
+  expect(body.result.planningTime.forecastIssuedAt).toBeNull();
   expect(body.result.recommendation.peakReductionMw).toBe(8.6);
 });
 test("Workers runtime rejects invalid calculations without dispatch", async ({ request }) => {

@@ -1,6 +1,7 @@
 import { OperationsSelect } from "../OperationsSelect";
 import {
   operatingWindowLabels,
+  describeDisplayWindow,
   operationsModeLabels,
   type OperatingWindowPreset,
   type OperationsDataMode,
@@ -34,13 +35,21 @@ export function WorkspaceInputs({
       </div>
       <OperationsSelect
         name="operating-window"
-        label={mode === "historical" ? "Scenario window (inactive)" : "Operating Window"}
+        label={mode === "historical" ? "Display window (inactive)" : "Display window"}
         disabled={mode === "historical"}
         value={window}
-        options={Object.entries(operatingWindowLabels).map(([value, label]) => ({
-          value: value as OperatingWindowPreset,
-          label,
-        }))}
+        options={Object.entries(operatingWindowLabels)
+          .filter(([value]) => value !== "tomorrow")
+          .map(([value, label]) => ({
+            value: value as OperatingWindowPreset,
+            label,
+            description:
+              value === "now"
+                ? "One baseline-peak interval; not the current time"
+                : value === "next-4h"
+                  ? "Near the first safety-target breach; available data only"
+                  : "All available synthetic intervals; not a forecast",
+          }))}
         onChange={onWindow}
       />
       <OperationsSelect
@@ -60,6 +69,11 @@ export function WorkspaceInputs({
         }))}
         onChange={onMode}
       />
+      <p>
+        Display selection does not recalculate the planning horizon. Battery state and unfinished
+        work remain full-horizon assessments.
+      </p>
+      {mode === "scenario" ? <p role="status">{describeDisplayWindow(model, window)}</p> : null}
       <p>
         Live control unavailable. Historical evidence is displayed in Power & Battery; other views
         remain scenario comparisons.

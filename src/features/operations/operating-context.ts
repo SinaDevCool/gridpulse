@@ -1,9 +1,10 @@
 import { summarizeOperatingEnvelope } from "./operating-envelope";
+import { intervalDurationsHours } from "./planning-time";
 import type {
-OperationsInterval,
-OperationsOverviewModel,
-OperationsScenarioKind,
-ScenarioSummary,
+  OperationsInterval,
+  OperationsOverviewModel,
+  OperationsScenarioKind,
+  ScenarioSummary,
 } from "./scenario-engine";
 
 export const operatingWindowValues = ["now", "next-4h", "today", "tomorrow"] as const;
@@ -14,9 +15,9 @@ export type OperationsDataMode = (typeof operationsModeValues)[number];
 
 export const operatingWindowLabels: Record<OperatingWindowPreset, string> = {
   now: "Assessed peak",
-  "next-4h": "4-hour risk window",
+  "next-4h": "4-hour risk inspection",
   today: "Full scenario day",
-  tomorrow: "Repeat scenario day",
+  tomorrow: "Full scenario day",
 };
 
 export const operationsModeLabels: Record<OperationsDataMode, string> = {
@@ -25,9 +26,12 @@ export const operationsModeLabels: Record<OperationsDataMode, string> = {
   historical: "Historical",
 };
 
-const intervalHours = 0.25;
-
-export function intervalsForWindow(intervals: OperationsInterval[], window: OperatingWindowPreset) {
+export function intervalsForWindow(
+  intervals: OperationsInterval[],
+  window: OperatingWindowPreset,
+  targetMw?: number,
+) {
+  if (!intervals.length) return [];
   if (window === "now") {
     const peakIndex = intervals.reduce(
       (best, point, index) =>
@@ -37,11 +41,22 @@ export function intervalsForWindow(intervals: OperationsInterval[], window: Oper
     return intervals.slice(peakIndex, peakIndex + 1);
   }
   if (window === "next-4h") {
-    const firstRisk = intervals.findIndex(
-      (point) => point.baselineDemandMw > point.combinedDemandMw,
+    const firstRisk = intervals.findIndex((point) =>
+      targetMw != null
+        ? point.baselineDemandMw > targetMw
+        : point.baselineDemandMw > point.combinedDemandMw,
     );
-    const start = Math.max(0, firstRisk < 0 ? 0 : firstRisk - 4);
-    return intervals.slice(start, start + 16);
+    const hours = intervalDurationsHours(intervals);
+    const end = Date.parse(intervals.at(-1)!.timestamp) + hours.at(-1)! * 3_600_000;
+    const risk = Date.parse(intervals[Math.max(0, firstRisk)].timestamp);
+    const start = Math.max(
+      Date.parse(intervals[0].timestamp),
+      Math.min(risk - 3_600_000, end - 4 * 3_600_000),
+    );
+    return intervals.filter(
+      (point) =>
+        Date.parse(point.timestamp) >= start && Date.parse(point.timestamp) < start + 4 * 3_600_000,
+    );
   }
   return intervals;
 }
@@ -50,19 +65,21 @@ export function scopeOperationsModel(
   model: OperationsOverviewModel,
   window: OperatingWindowPreset,
 ): OperationsOverviewModel {
-  const intervals = intervalsForWindow(model.intervals, window);
+  if (!model.intervals.length) return model;
+  const intervals = intervalsForWindow(
+    model.intervals,
+    window,
+    model.scenario.importLimitMw - model.scenario.safetyReserveMw,
+  );
   if (intervals.length === model.intervals.length) return model;
   const summaries = model.summaries.map((summary) => summarize(summary, intervals, model));
   const baseline = summaries[0];
   const combined = summaries[2];
-  const peak = intervals.reduce(
-    (best, point) => (point.baselineDemandMw > best.baselineDemandMw ? point : best),
-    intervals[0],
-  );
   const target = model.scenario.importLimitMw - model.scenario.safetyReserveMw;
-  const headroom = Math.max(0, target - peak.combinedDemandMw);
+  const headroom = Math.max(0, target - combined.peakDemandMw);
   const incrementalGpuMw = (model.scenario.gpuActivePowerWatts * model.scenario.pue) / 1_000_000;
   const intervalTimestamps = new Set(intervals.map((interval) => interval.timestamp));
+  const durations = durationMap(model);
   const envelopeIntervals = model.operatingEnvelope.intervals.filter((interval) =>
     intervalTimestamps.has(interval.timestamp),
   );
@@ -72,7 +89,7 @@ export function scopeOperationsModel(
     summaries,
     metrics: {
       ...model.metrics,
-      facilityDemand: { ...model.metrics.facilityDemand, value: peak.combinedDemandMw },
+      facilityDemand: { ...model.metrics.facilityDemand, value: combined.peakDemandMw },
       remainingMargin: { ...model.metrics.remainingMargin, value: headroom },
       additionalGpus: {
         ...model.metrics.additionalGpus,
@@ -90,9 +107,14 @@ export function scopeOperationsModel(
     },
     recommendation: {
       ...model.recommendation,
-      durationMinutes: intervals.filter((point) => point.batteryPowerMw > 0).length * 15,
+      durationMinutes: intervals.reduce(
+        (sum, point) => sum + (point.batteryPowerMw > 0 ? durations.get(point.timestamp)! * 60 : 0),
+        0,
+      ),
       workloadMwh: Number(
-        intervals.reduce((sum, point) => sum + point.workloadShiftMw * intervalHours, 0).toFixed(1),
+        intervals
+          .reduce((sum, point) => sum + point.workloadShiftMw * durations.get(point.timestamp)!, 0)
+          .toFixed(1),
       ),
       violationsAvoided: Math.max(0, baseline.violationIntervals - combined.violationIntervals),
       peakReductionMw: Number((baseline.peakDemandMw - combined.peakDemandMw).toFixed(1)),
@@ -110,6 +132,7 @@ function summarize(
   intervals: OperationsInterval[],
   model: OperationsOverviewModel,
 ): ScenarioSummary {
+  const durations = durationMap(model);
   const key: Record<OperationsScenarioKind, keyof OperationsInterval> = {
     baseline: "baselineDemandMw",
     battery: "batteryDemandMw",
@@ -123,9 +146,19 @@ function summarize(
     ...source,
     peakDemandMw: Number(Math.max(...values).toFixed(1)),
     violationIntervals: violations,
-    violationHours: Number((violations * intervalHours).toFixed(2)),
+    violationHours: Number(
+      intervals
+        .reduce(
+          (sum, point, i) =>
+            sum + (values[i] > model.scenario.importLimitMw ? durations.get(point.timestamp)! : 0),
+          0,
+        )
+        .toFixed(2),
+    ),
     totalEnergyMwh: Number(
-      values.reduce((sum, value) => sum + value * intervalHours, 0).toFixed(1),
+      values
+        .reduce((sum, value, i) => sum + value * durations.get(intervals[i].timestamp)!, 0)
+        .toFixed(1),
     ),
     additionalGpuHours:
       source.kind === "baseline"
@@ -137,12 +170,45 @@ function summarize(
                 (incrementalGpuMw
                   ? (Math.max(0, point.baselineDemandMw - Number(point[key[source.kind]])) /
                       incrementalGpuMw) *
-                    intervalHours
+                    durations.get(point.timestamp)!
                   : 0),
               0,
             ),
           ),
   };
+}
+
+function durationMap(model: OperationsOverviewModel) {
+  const explicit = new Map(
+    model.planningTime?.intervals.map((item) => [Date.parse(item.start), item]),
+  );
+  const hours = intervalDurationsHours(model.intervals);
+  return new Map(
+    model.intervals.map((point, index) => {
+      const interval = explicit.get(Date.parse(point.timestamp));
+      return [
+        point.timestamp,
+        interval
+          ? (Date.parse(interval.end) - Date.parse(interval.start)) / 3_600_000
+          : hours[index],
+      ];
+    }),
+  );
+}
+
+export function describeDisplayWindow(
+  model: OperationsOverviewModel,
+  window: OperatingWindowPreset,
+) {
+  const intervals = intervalsForWindow(
+    model.intervals,
+    window,
+    model.scenario.importLimitMw - model.scenario.safetyReserveMw,
+  );
+  if (!intervals.length) return "No intervals available";
+  const durations = durationMap(model);
+  const minutes = intervals.reduce((sum, point) => sum + durations.get(point.timestamp)! * 60, 0);
+  return `${minutes} minutes displayed${window === "next-4h" && minutes < 240 ? " · Partial coverage: fewer than four hours available" : ""}. Recovery and battery state retain the full calculation horizon.`;
 }
 
 export type OperationsAlert = {

@@ -197,6 +197,15 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
                 Full planning horizon: {fullModel.intervals.length} intervals. Recovery and battery
                 state are calculated over this horizon before display-window filtering.
               </p>
+              {fullModel.planningTime ? (
+                <p>
+                  Calculation coverage:{" "}
+                  {formatOperationsTime(fullModel.planningTime.calculation.start, true)} –{" "}
+                  {formatOperationsTime(fullModel.planningTime.calculation.end, true)}. Purpose:
+                  synthetic scenario. Terminal policy: report unfinished work, not guaranteed
+                  completion. No forward forecast or rolling control is enabled.
+                </p>
+              ) : null}
               <details>
                 <summary>Canonical planning, rolling analysis & historical replay</summary>
                 <p>

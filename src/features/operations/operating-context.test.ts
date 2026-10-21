@@ -5,6 +5,7 @@ import {
   intervalsForWindow,
   operationalPue,
   scopeOperationsModel,
+  describeDisplayWindow,
 } from "./operating-context";
 
 describe("operations operating context", () => {
@@ -36,5 +37,53 @@ describe("operations operating context", () => {
       evidence: "user_assumption",
       status: "Scenario assumption",
     });
+  });
+
+  it("keeps late-day risk inspection at four hours when coverage permits", () => {
+    const points = model.intervals.map((point, i) => ({
+      ...point,
+      baselineDemandMw: i === 94 ? 110 : 90,
+      combinedDemandMw: 90,
+    }));
+    const result = intervalsForWindow(points, "next-4h", 98);
+    expect(result).toHaveLength(16);
+    expect(result[0].label).toBe("20:00");
+  });
+  it("uses target breaches rather than response changes to locate risk", () => {
+    const points = model.intervals.map((point, i) => ({
+      ...point,
+      baselineDemandMw: i === 60 ? 110 : 90,
+      combinedDemandMw: i === 4 ? 85 : 90,
+    }));
+    expect(intervalsForWindow(points, "next-4h", 98)[0].label).toBe("14:00");
+  });
+  it("reports partial available coverage without fabricating intervals", () => {
+    const short = { ...model, planningTime: undefined, intervals: model.intervals.slice(0, 6) };
+    expect(describeDisplayWindow(short, "next-4h")).toContain("Partial coverage");
+    expect(intervalsForWindow([], "now")).toEqual([]);
+  });
+  it("display filters preserve planning identity, SOC and full-horizon recovery", () => {
+    const peak = scopeOperationsModel(model, "now");
+    expect(peak.planningTime).toBe(model.planningTime);
+    expect(peak.intervals[0]).toBe(
+      model.intervals.find((point) => point.timestamp === peak.intervals[0].timestamp),
+    );
+    expect(peak.summaries[2].unresolvedWorkMwh).toBe(model.summaries[2].unresolvedWorkMwh);
+  });
+  it("integrates irregular durations from the full timeline, not the sliced final interval", () => {
+    const irregular = {
+      ...model,
+      planningTime: undefined,
+      intervals: model.intervals
+        .slice(0, 3)
+        .map((p, i) => ({
+          ...p,
+          timestamp: new Date(Date.UTC(2026, 8, 26, 0, [0, 30, 45][i])).toISOString(),
+          baselineDemandMw: i === 0 ? 110 : 90,
+        })),
+    };
+    const result = scopeOperationsModel(irregular, "now");
+    expect(result.summaries[0].totalEnergyMwh).toBe(55);
+    expect(result.summaries[0].violationHours).toBe(0.5);
   });
 });
