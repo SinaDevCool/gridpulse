@@ -178,7 +178,7 @@ function summarize(
   };
 }
 
-function durationMap(model: OperationsOverviewModel) {
+export function durationMap(model: OperationsOverviewModel) {
   const explicit = new Map(
     model.planningTime?.intervals.map((item) => [Date.parse(item.start), item]),
   );

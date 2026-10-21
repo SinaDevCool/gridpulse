@@ -14,7 +14,8 @@ import {
 
 import { type OperationsOverviewModel, type OperationsScenarioKind } from "../scenario-engine";
 
-import { formatDurationFromIntervals, formatMw } from "../formatting";
+import { formatDurationHours, formatMw } from "../formatting";
+import { OperatingEnvelopeMap, ScenarioDecisionTable } from "../OperationsDecision";
 import {
   ChartSummaryMetric,
   OperationsChartLegend,
@@ -30,11 +31,13 @@ import { ResponseControls, ResponseBreakdown } from "./ResponseControls";
 
 export function DemandChart({
   model,
+  fullModel = model,
   selected,
   compact = false,
   onSelect,
 }: {
   model: OperationsOverviewModel;
+  fullModel?: OperationsOverviewModel;
   selected: OperationsScenarioKind;
   compact?: boolean;
   onSelect: (kind: OperationsScenarioKind) => void;
@@ -99,7 +102,7 @@ export function DemandChart({
         />
         <ChartSummaryMetric
           label="Limit Exposure"
-          value={`${formatDurationFromIntervals(baseline.violationIntervals)} → ${formatDurationFromIntervals(selectedSummary.violationIntervals)}`}
+          value={`${formatDurationHours(baseline.violationHours)} → ${formatDurationHours(selectedSummary.violationHours)}`}
           tone={!selectedSummary.feasible ? "limit" : "positive"}
         />
       </OperationsChartSummary>
@@ -240,6 +243,20 @@ export function DemandChart({
       </div>
       <AccessibleIntervalTable model={model} mode="power" />
       <ResponseBreakdown model={model} selected={selected} />
+      <details className="ops-chart-investigation">
+        <summary>Compare responses</summary>
+        <p>Peak and exposure: selected display window. Recovery: full planning horizon.</p>
+        <ScenarioDecisionTable
+          model={model}
+          fullModel={fullModel}
+          selected={selected}
+          onSelect={onSelect}
+        />
+      </details>
+      <details className="ops-chart-investigation">
+        <summary>Inspect headroom</summary>
+        <OperatingEnvelopeMap model={model} />
+      </details>
     </article>
   );
 }

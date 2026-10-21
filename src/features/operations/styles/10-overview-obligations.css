@@ -1,0 +1,219 @@
+/* The cockpit shows outcomes; investigation stays inside its owning visualization. */
+.ops-obligations {
+  background: var(--ops-card);
+  border: 1px solid var(--ops-border);
+  border-radius: 14px;
+  padding: 1.25rem;
+  scroll-margin-top: 6rem;
+  font-variant-numeric: tabular-nums;
+}
+.ops-obligations > header,
+.ops-obligations > footer,
+.ops-ledger-heading,
+.ops-ledger-labels,
+.ops-recovery-action {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+}
+.ops-obligations h3 {
+  margin: 0.3rem 0;
+  font-size: 1.1rem;
+}
+.ops-obligations > header > span,
+.ops-obligations > footer,
+.ops-ledger-labels,
+.ops-obligations small,
+.ops-no-obligation,
+.ops-chart-investigation > p,
+.ops-comparison-key,
+.ops-response-comparison > small,
+.ops-headroom-detail > p {
+  color: var(--ops-muted);
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+.ops-recovery-ledger {
+  margin-top: 1.25rem;
+}
+.ops-ledger-heading {
+  font-size: 0.9rem;
+}
+.ops-energy-ledger {
+  display: flex;
+  height: 16px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--ops-border);
+  margin: 0.75rem 0;
+}
+.ops-energy-ledger .returned {
+  background: var(--ops-soc, #38d99c);
+}
+.ops-energy-ledger .unrecovered {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--ops-limit) 0 4px,
+    color-mix(in srgb, var(--ops-limit) 50%, var(--ops-card)) 4px 8px
+  );
+}
+.ops-ledger-labels b {
+  color: var(--ops-text);
+  margin-left: 0.5rem;
+}
+.ops-recovery-action {
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+}
+.ops-recovery-action p {
+  margin: 0.3rem 0;
+}
+.ops-recovery-action.attention {
+  border-left: 3px solid var(--ops-limit);
+  padding-left: 0.75rem;
+}
+.ops-obligations a {
+  color: var(--ops-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.ops-obligations a:hover {
+  color: var(--ops-demand);
+}
+.ops-plan-checks {
+  margin: 1rem 0;
+}
+.ops-plan-checks > div {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr) auto;
+  gap: 0.5rem 1rem;
+  border-top: 1px solid var(--ops-border);
+  padding: 0.85rem 0;
+  align-items: baseline;
+  font-size: 0.8rem;
+}
+.ops-plan-checks dt {
+  color: var(--ops-muted);
+}
+.ops-plan-checks dd {
+  margin: 0;
+}
+.ops-plan-checks small {
+  grid-column: 3;
+}
+.ops-obligations > footer {
+  border-top: 1px solid var(--ops-border);
+  padding-top: 0.75rem;
+}
+.ops-chart-investigation {
+  border-top: 1px solid var(--ops-border);
+  padding: 0.85rem 0 0;
+  margin-top: 0.85rem;
+}
+.ops-chart-investigation > summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--ops-text);
+  min-height: 32px;
+}
+.ops-headroom-detail h3 {
+  margin: 0.75rem 0 0.5rem;
+}
+.ops-envelope-boundaries > div {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) minmax(0, 2fr);
+  gap: 1rem;
+  padding: 0.5rem 0;
+  font-size: 0.8rem;
+}
+.ops-envelope-boundaries dd,
+.ops-peak-comparison {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 0;
+}
+.ops-boundary-track {
+  position: relative;
+  display: block;
+  height: 8px;
+  flex: 1;
+  min-width: 65px;
+  background: var(--ops-border);
+}
+.ops-boundary-track i {
+  display: block;
+  height: 100%;
+  background: var(--ops-response);
+}
+.ops-boundary-track b {
+  position: absolute;
+  height: 16px;
+  top: -4px;
+  border-left: 2px solid var(--ops-text);
+}
+.ops-boundary-track b.target {
+  border-color: var(--ops-target);
+}
+.ops-boundary-track b.limit {
+  border-color: var(--ops-limit);
+}
+.ops-headroom-detail strong {
+  min-width: 85px;
+  text-align: right;
+}
+.ops-compact-comparison {
+  width: 100%;
+}
+.ops-compact-comparison td:nth-child(2) {
+  min-width: 180px;
+}
+.ops-advanced-tools {
+  overflow-wrap: anywhere;
+}
+.ops-advanced-tools > details {
+  padding: 0.75rem 0;
+}
+.ops-advanced-tools .data-panel {
+  min-width: 0;
+}
+.ops-advanced-tools .section-toolbar > span {
+  color: var(--ops-text);
+  font-size: 0.75rem;
+}
+.ops-advanced-tools > summary {
+  min-height: 44px;
+  padding-block: 0.75rem;
+  border-top: 1px solid var(--ops-border);
+  cursor: pointer;
+}
+.ops-advanced-tools textarea {
+  max-width: 100%;
+}
+.operations-v2
+  :is(.ops-obligations, .ops-chart-investigation)
+  :is(a, button, summary):focus-visible,
+.ops-obligations:focus-visible {
+  outline: 2px solid var(--ops-demand);
+  outline-offset: 4px;
+}
+@media (max-width: 760px) {
+  .ops-obligations {
+    padding: 1rem;
+  }
+  .ops-plan-checks > div {
+    grid-template-columns: 1fr;
+  }
+  .ops-plan-checks small {
+    grid-column: auto;
+  }
+  .ops-envelope-boundaries > div {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  .ops-compact-comparison {
+    min-width: 640px;
+  }
+}

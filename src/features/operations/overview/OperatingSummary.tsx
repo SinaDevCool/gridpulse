@@ -110,6 +110,7 @@ export function OperatingSummary({
           onClick={() => {
             const node = document.getElementById("operations-recovery");
             if (node instanceof HTMLDetailsElement) node.open = true;
+            node?.focus();
           }}
         >
           Review recovery & assumptions

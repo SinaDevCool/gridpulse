@@ -8,7 +8,11 @@ export const formatGpuCount = (value: number) =>
   `${new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(value)} GPU${value === 1 ? "" : "s"}`;
 
 export function formatDurationFromIntervals(intervals: number, minutes = 15) {
-  const total = Math.max(0, intervals * minutes);
+  return formatDurationHours((intervals * minutes) / 60);
+}
+
+export function formatDurationHours(value: number) {
+  const total = Math.max(0, Math.round(value * 60));
   const hours = Math.floor(total / 60);
   const remainder = total % 60;
   if (!hours) return `${remainder}\u00a0min`;
