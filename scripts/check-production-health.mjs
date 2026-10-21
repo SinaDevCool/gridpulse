@@ -59,8 +59,8 @@ const checks = [
       }
       if (
         !html.includes("Scenario assessment—not live control") ||
-        !html.includes("No physical control command will be sent") ||
-        !html.includes("Not connected")
+        !html.includes("Read-only assessment · no physical commands") ||
+        !html.includes("Live control unavailable")
       ) {
         throw new Error("Operations evidence boundary is missing");
       }
