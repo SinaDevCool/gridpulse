@@ -38,6 +38,8 @@ test("all canonical analysis choices reject invalid contracts without submitting
     if (request.method() === "POST" && request.url().includes("/v1/")) submitted++;
   });
   await page.goto("/operations?view=overview");
+  // Wait for React hydration before entering text into server-rendered controls.
+  await expect(page.getByRole("button", { name: "Configure Scenario", exact: true })).toBeEnabled();
   await page.getByText("Assessment details & advanced planning", { exact: true }).click();
   await page
     .getByText("Canonical planning, rolling analysis & historical replay", { exact: true })
