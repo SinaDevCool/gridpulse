@@ -1,5 +1,6 @@
 import { facilityPlanRequestSchema, type FacilityPlanRequest } from "../analytics/contracts";
 import type { OperationsWorkspace } from "./workspace-contract";
+import { planningTimeSchema, type PlanningTime } from "./planning-time";
 
 export type CanonicalPlanPreparation =
   | { ready: true; request: FacilityPlanRequest; blockers: []; warnings: string[] }
@@ -10,6 +11,7 @@ export type CanonicalPlanPreparation =
 export function prepareCanonicalFacilityPlan(
   workspace: OperationsWorkspace,
   approvedRequest?: FacilityPlanRequest,
+  time?: PlanningTime,
 ): CanonicalPlanPreparation {
   const blockers: string[] = [];
   const warnings: string[] = [];
@@ -72,6 +74,28 @@ export function prepareCanonicalFacilityPlan(
     blockers.push("The reviewed canonical request has an invalid transport contract.");
   if (parsed?.success) {
     const request = parsed.data;
+    const timing = planningTimeSchema.safeParse(time);
+    if (!timing.success)
+      blockers.push(
+        "Supply a validated planning-time contract with cutoff, calculation horizon, initial state reference and terminal policy.",
+      );
+    else {
+      if (timing.data.purpose === "scenario")
+        blockers.push(
+          "A synthetic scenario time contract cannot authorize a canonical operational plan.",
+        );
+      if (Date.parse(timing.data.assessedAt) !== cutoff)
+        blockers.push("Planning-time cutoff differs from the evidence snapshot cutoff.");
+      if (
+        request.intervals.length !== timing.data.intervals.length ||
+        request.intervals.some(
+          (point, index) =>
+            Date.parse(String(point.start)) !==
+            Date.parse(timing.data.intervals[index]?.start ?? ""),
+        )
+      )
+        blockers.push("Canonical intervals differ from the declared calculation horizon.");
+    }
     if (request.facility.facility_id !== workspace.facility.id)
       blockers.push("The canonical model belongs to a different facility.");
     if (request.facility.import_limit_mw !== workspace.facility.contractedImportLimitMw)

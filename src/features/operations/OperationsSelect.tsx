@@ -131,6 +131,8 @@ export function OperationsSelect<T extends string>({
                   optionRefs.current[index] = node;
                 }}
                 role="option"
+                aria-label={option.label}
+                aria-description={option.description}
                 aria-selected={option.value === value}
                 disabled={option.disabled}
                 tabIndex={index === activeIndex ? 0 : -1}

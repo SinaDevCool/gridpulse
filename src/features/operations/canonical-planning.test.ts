@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { operationsWorkspaceSchema } from "./workspace-contract";
 import { prepareCanonicalFacilityPlan } from "./canonical-planning";
+import { scenarioPlanningTime } from "./planning-time";
 
 function workspace() {
   return operationsWorkspaceSchema.parse({
@@ -67,6 +68,43 @@ describe("canonical Operations plan preparation", () => {
     );
     expect(result.warnings).toContain(
       "No battery asset configuration is available; battery response is zero.",
+    );
+  });
+  it("requires a matching time contract before forwarding an approved request", () => {
+    const w = workspace();
+    const time = scenarioPlanningTime(
+      w.measurements.map((p) => ({ timestamp: p.eventAt })),
+      w.generatedAt,
+    );
+    const request = {
+      schema_version: "gridpulse-facility-plan-request-v1" as const,
+      portfolio_id: "test",
+      facility: { facility_id: w.facility.id, import_limit_mw: 100, truth_class: "customer" },
+      requirement: { truth_class: "customer" },
+      intervals: time.intervals.map((p, index) => ({ index, start: p.start })),
+      workloads: [{ workload_id: "test" }],
+      profiles: [{ workload_id: "test", points: [] }],
+      policy: { event_intervals: [false, false, false, false] },
+      economics: { import_price_eur_per_mwh: [0, 0, 0, 0] },
+      cooling: {},
+    };
+    expect(prepareCanonicalFacilityPlan(w, request).blockers.join(" ")).toContain(
+      "planning-time contract",
+    );
+    expect(prepareCanonicalFacilityPlan(w, request, time).blockers.join(" ")).toContain(
+      "synthetic scenario",
+    );
+    const historical = { ...time, purpose: "historical" as const };
+    expect(prepareCanonicalFacilityPlan(w, request, historical).ready).toBe(true);
+    expect(
+      prepareCanonicalFacilityPlan(w, request, {
+        ...historical,
+        assessedAt: "2026-10-06T08:30:00Z",
+      }).blockers.join(" "),
+    ).toContain("cutoff differs");
+    request.intervals[0].start = "2026-10-06T07:00:00Z";
+    expect(prepareCanonicalFacilityPlan(w, request, historical).blockers.join(" ")).toContain(
+      "intervals differ",
     );
   });
 });

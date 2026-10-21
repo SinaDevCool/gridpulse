@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { scenarioPlanningTime, type PlanningTime } from "./planning-time";
 import { simulateBatteryDispatch } from "./battery-dispatch";
 import { batteryConfigurationFields, checkBatterySocBounds } from "./battery-configuration";
 import type { EvidencedValue } from "./evidence";
@@ -81,6 +82,7 @@ export type ScenarioSummary = {
 };
 
 export type OperationsOverviewModel = {
+  planningTime?: PlanningTime;
   mode: "scenario";
   scenario: OperationsScenario;
   generatedAt: string;
@@ -368,6 +370,7 @@ export function buildOperationsScenario(
 
   return {
     mode: "scenario",
+    planningTime: scenarioPlanningTime(intervals, generatedAt),
     planningWarnings: [
       "Aggregate scenario only: actual job completion and equipment limits require a canonical assessment.",
       ...(combinedRecovery.unresolvedWorkMwh > 0.001

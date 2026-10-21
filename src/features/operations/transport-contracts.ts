@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { planningTimeSchema } from "./planning-time";
 import { operationsScenarioSchema } from "./scenario-engine";
 import { computeWorkloadSchema, workloadSourceSchema } from "./workload-intelligence";
 
@@ -40,6 +41,7 @@ const interval = z
 
 export const overviewResultSchema = z
   .object({
+    planningTime: planningTimeSchema.optional(),
     mode: z.literal("scenario"),
     scenario: operationsScenarioSchema,
     generatedAt: z.string().datetime(),

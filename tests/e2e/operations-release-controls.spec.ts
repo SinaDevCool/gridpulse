@@ -10,14 +10,13 @@ test("window dropdown keyboard navigation and all tabs preserve context", async 
   await expect(page.getByRole("option", { name: "Assessed peak", exact: true })).toBeFocused();
   await page.getByRole("option", { name: "Assessed peak", exact: true }).press("End");
   await expect(
-    page.getByRole("option", { name: "Repeat scenario day", exact: true }),
+    page.getByRole("option", { name: "Full scenario day", exact: true }),
   ).toBeFocused();
-  await page.getByRole("option", { name: "Repeat scenario day", exact: true }).press("Escape");
+  await page.getByRole("option", { name: "Full scenario day", exact: true }).press("Escape");
   await expect(trigger).toBeFocused();
   for (const [label, value] of [
     ["Assessed peak", "now"],
-    ["4-hour risk window", "next-4h"],
-    ["Repeat scenario day", "tomorrow"],
+    ["4-hour risk inspection", "next-4h"],
     ["Full scenario day", "today"],
   ]) {
     await trigger.click();
@@ -78,7 +77,7 @@ test("measured import enables historical selection and switching back retains ev
   const mode = page.locator(".operations-context-strip .operations-select-trigger").last();
   await mode.click();
   await expect(page.getByRole("option", { name: /Live/ })).toBeDisabled();
-  await page.getByRole("option", { name: /^Scenario / }).click();
+  await page.getByRole("option", { name: "Scenario", exact: true }).click();
   await expect(page).toHaveURL(/mode=scenario/);
   await mode.click();
   const historical = page

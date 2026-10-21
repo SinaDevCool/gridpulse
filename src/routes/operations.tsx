@@ -30,6 +30,8 @@ export const Route = createFileRoute("/operations")({
   validateSearch: operationsSearchSchema,
   beforeLoad: ({ search }) => {
     const view = search.view;
+    if (search.window === "tomorrow")
+      throw redirect({ to: "/operations", search: { ...search, window: "today" }, replace: true });
     if (view === "overview" || view === "compute" || view === "power") return;
     throw redirect({
       to: "/operations",

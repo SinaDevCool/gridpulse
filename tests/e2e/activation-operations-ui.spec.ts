@@ -61,7 +61,7 @@ test("Operations context selectors are themed, keyboard-operable, and preserve U
   await windowTrigger.click();
   const listbox = page.locator(".operations-select-popover").first();
   await expect(listbox).toBeVisible();
-  await page.getByRole("option", { name: "4-hour risk window" }).click();
+  await page.getByRole("option", { name: "4-hour risk inspection", exact: true }).click();
   await expect(page).toHaveURL(/window=next-4h/);
 
   const modeTrigger = page.locator(".operations-select-trigger").filter({ hasText: "Scenario" });

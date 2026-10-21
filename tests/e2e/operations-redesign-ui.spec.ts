@@ -192,7 +192,7 @@ test("window scopes every scenario timeline without truncating recovery calculat
   page,
 }) => {
   await page.goto("/operations?view=overview&window=next-4h&mode=scenario");
-  await expect(page.locator(".ops-context-summary")).toContainText("4-hour risk window");
+  await expect(page.locator(".ops-context-summary")).toContainText("4-hour risk inspection");
   await page.getByText("View Chart Data", { exact: true }).click();
   await expect(
     page
