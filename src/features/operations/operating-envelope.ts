@@ -1,4 +1,5 @@
 import { z } from "zod";
+const finite = z.number().finite();
 
 export const operationsEvidenceClassSchema = z.enum([
   "measured",
@@ -16,32 +17,28 @@ export type OperationsEvidenceClass = z.infer<typeof operationsEvidenceClassSche
 
 export const operatingEnvelopeIntervalSchema = z.object({
   timestamp: z.string().datetime(),
-  durationMinutes: z.number().positive().max(1_440).default(15),
-  baselineDemandMw: z.number().nonnegative(),
-  proposedDemandMw: z.number().nonnegative().optional(),
-  contractualLimitMw: z.number().positive(),
-  operatorLimitMw: z.number().positive().nullable().default(null),
-  transformerLimitMw: z.number().positive().nullable().default(null),
-  upsLimitMw: z.number().positive().nullable().default(null),
-  coolingLimitMw: z.number().positive().nullable().default(null),
-  safetyReserveMw: z.number().nonnegative().default(0),
-  demandUncertaintyMw: z.number().nonnegative().default(0),
-  resourceUncertaintyMw: z.number().nonnegative().default(0),
-  batteryAvailablePowerMw: z.number().nonnegative().default(0),
-  batteryAvailableEnergyMwh: z.number().nonnegative().default(0),
-  batteryDischargeEfficiency: z.number().gt(0).max(1).default(1),
-  workloadFlexibleMw: z.number().nonnegative().default(0),
-  workloadReboundMw: z.number().nonnegative().default(0),
+  durationMinutes: finite.positive().max(1_440).default(15),
+  baselineDemandMw: finite.nonnegative(),
+  proposedDemandMw: finite.nonnegative().optional(),
+  contractualLimitMw: finite.positive(),
+  operatorLimitMw: finite.positive().nullable().default(null),
+  transformerLimitMw: finite.positive().nullable().default(null),
+  upsLimitMw: finite.positive().nullable().default(null),
+  coolingLimitMw: finite.positive().nullable().default(null),
+  safetyReserveMw: finite.nonnegative().default(0),
+  demandUncertaintyMw: finite.nonnegative().default(0),
+  resourceUncertaintyMw: finite.nonnegative().default(0),
+  batteryAvailablePowerMw: finite.nonnegative().default(0),
+  batteryAvailableEnergyMwh: finite.nonnegative().default(0),
+  batteryDischargeEfficiency: finite.gt(0).max(1).default(1),
+  workloadFlexibleMw: finite.nonnegative().default(0),
+  workloadReboundMw: finite.nonnegative().default(0),
 });
 
 export type OperatingEnvelopeIntervalInput = z.input<typeof operatingEnvelopeIntervalSchema>;
 type ParsedOperatingEnvelopeInterval = z.output<typeof operatingEnvelopeIntervalSchema>;
 export type OperatingConstraintCode =
-  | "operator_limit"
-  | "contractual_limit"
-  | "transformer_limit"
-  | "ups_limit"
-  | "cooling_limit";
+  "operator_limit" | "contractual_limit" | "transformer_limit" | "ups_limit" | "cooling_limit";
 
 export type OperatingEnvelopeInterval = ParsedOperatingEnvelopeInterval & {
   technicalLimitMw: number;
@@ -91,15 +88,20 @@ export function calculateOperatingEnvelope(
       (interval.durationMinutes / 60);
     const batteryResponseMw = Math.min(interval.batteryAvailablePowerMw, energyLimitedBatteryMw);
     const batteryCeilingMw = directCeilingMw + batteryResponseMw;
+    // Recovery from earlier intervals is an obligation, not optional flexibility.
     const combinedCeilingMw = Math.max(
-      batteryCeilingMw,
+      0,
       batteryCeilingMw + interval.workloadFlexibleMw - interval.workloadReboundMw,
     );
     const uncertaintyMw = interval.demandUncertaintyMw + interval.resourceUncertaintyMw;
     const riskAdjustedCeilingMw = Math.max(0, combinedCeilingMw - uncertaintyMw);
     const proposedDemandMw = interval.proposedDemandMw ?? interval.baselineDemandMw;
-    const directHeadroomMw = directCeilingMw - interval.baselineDemandMw;
-    const requiredResponseMw = Math.max(0, proposedDemandMw - directCeilingMw);
+    const directHeadroomMw =
+      directCeilingMw - interval.baselineDemandMw - interval.workloadReboundMw;
+    const requiredResponseMw = Math.max(
+      0,
+      proposedDemandMw + interval.workloadReboundMw - directCeilingMw,
+    );
     const usedBatteryMw = Math.min(requiredResponseMw, batteryResponseMw);
     const workloadResponseMw = Math.min(
       Math.max(0, requiredResponseMw - usedBatteryMw),
@@ -114,13 +116,15 @@ export function calculateOperatingEnvelope(
         workloadResponseMw,
     );
     const feasibleBand =
-      proposedDemandMw <= directCeilingMw
-        ? "direct"
-        : proposedDemandMw <= batteryCeilingMw
-          ? "battery"
-          : proposedDemandMw <= combinedCeilingMw
-            ? "battery_workload"
-            : "infeasible";
+      residualShortfallMw > 1e-9
+        ? "infeasible"
+        : proposedDemandMw + interval.workloadReboundMw <= directCeilingMw
+          ? "direct"
+          : proposedDemandMw + interval.workloadReboundMw <= batteryCeilingMw
+            ? "battery"
+            : proposedDemandMw <= combinedCeilingMw
+              ? "battery_workload"
+              : "infeasible";
     const confidence =
       uncertaintyMw === 0 ? "high" : uncertaintyMw <= technicalLimitMw * 0.05 ? "medium" : "low";
     return {
@@ -142,6 +146,7 @@ export function calculateOperatingEnvelope(
 }
 
 export function summarizeOperatingEnvelope(intervals: OperatingEnvelopeInterval[]) {
+  if (!intervals.length) throw new Error("At least one operating envelope interval is required.");
   const lowest = intervals.reduce((current, interval) =>
     interval.riskAdjustedCeilingMw < current.riskAdjustedCeilingMw ? interval : current,
   );
