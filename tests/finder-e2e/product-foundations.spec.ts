@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import path from "node:path";
+import { openEvidenceInputs } from "../e2e/operations-inputs";
 
 test("every visible workflow destination resolves to meaningful content", async ({ page }) => {
   await page.goto("/power-finder");
@@ -117,8 +118,7 @@ test("Operations imports real history without presenting it as a forecast or dis
   page,
 }) => {
   await page.goto("/operations?view=power");
-  await expect(page.getByRole("button", { name: "Configure Scenario", exact: true })).toBeEnabled();
-  await page.getByRole("button", { name: "Connect evidence", exact: true }).click();
+  await openEvidenceInputs(page);
   await page
     .getByLabel("Facility meter CSV")
     .setInputFiles(path.resolve("e2e/fixtures/operations-real-sample.csv"));
@@ -138,8 +138,7 @@ test("Operations rejects incomplete imported evidence without changing data mode
   page,
 }) => {
   await page.goto("/operations?view=power");
-  await expect(page.getByRole("button", { name: "Configure Scenario", exact: true })).toBeEnabled();
-  await page.getByRole("button", { name: "Connect evidence", exact: true }).click();
+  await openEvidenceInputs(page);
   await page.getByLabel("Facility meter CSV").setInputFiles({
     name: "invalid.csv",
     mimeType: "text/csv",
@@ -153,7 +152,7 @@ test("Operations remains legible and free of horizontal overflow on mobile", asy
   await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript(() => localStorage.setItem("gridpulse-theme", "dark"));
   await page.goto("/operations");
-  await expect(page.getByRole("button", { name: "Configure Scenario", exact: true })).toBeEnabled();
+  await expect(page.getByRole("button", { name: /^Inputs/ })).toBeEnabled();
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
@@ -161,7 +160,7 @@ test("Operations remains legible and free of horizontal overflow on mobile", asy
   ).toBe(false);
   expect(
     await page
-      .getByRole("button", { name: "Configure Scenario", exact: true })
+      .getByRole("button", { name: /^Inputs/ })
       .evaluate((button) => Number.parseFloat(getComputedStyle(button).fontSize)),
   ).toBeGreaterThanOrEqual(13);
   const tabSizes = await page.locator(".operations-v2-tabs a").evaluateAll((buttons) =>

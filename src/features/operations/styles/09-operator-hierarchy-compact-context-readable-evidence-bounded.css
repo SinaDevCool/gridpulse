@@ -327,7 +327,7 @@
   background: var(--ops-card);
   color: var(--ops-text);
   font: inherit;
-  font-size: 0.85rem;
+  font-size: max(13px, 0.85rem);
   cursor: pointer;
 }
 .ops-input-trigger svg {
@@ -833,7 +833,7 @@
   }
   .ops-input-trigger {
     padding: 0.5rem;
-    font-size: 0.78rem;
+    font-size: max(13px, 0.78rem);
   }
   .ops-control-layout .ops-operating-summary {
     grid-template-columns: minmax(0, 1fr);
