@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 
 test("overview links chart, time navigation, envelope, range and table without recalculation", async ({
   page,
@@ -10,6 +11,11 @@ test("overview links chart, time navigation, envelope, range and table without r
   const chart = page
     .locator(".operations-v2-chart-card")
     .filter({ hasText: "Compare power responses" });
+  await expect(page.locator(".ops-service-status").first()).toContainText("available");
+  let assessmentRequests = 0;
+  page.on("request", (request) => {
+    if (request.url().includes("/api/operations/assess")) assessmentRequests++;
+  });
   const before = await chart.locator(".operations-chart-summary").textContent();
   await chart
     .getByRole("combobox", { name: "Inspect time", exact: true })
@@ -39,6 +45,25 @@ test("overview links chart, time navigation, envelope, range and table without r
   const bounds = await plot.boundingBox();
   await plot.click({ position: { x: bounds!.width * 0.3, y: bounds!.height * 0.4 } });
   await expect(chart.locator(".ops-response-breakdown")).not.toContainText("08:00 UTC");
+  expect(assessmentRequests).toBe(0);
+});
+
+test("overview inspection controls fit mobile and remain accessible", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/operations?view=overview&window=today&mode=scenario");
+  await expect(page.getByRole("button", { name: /^(Show|Hide) panel/ })).toBeEnabled({
+    timeout: 20000,
+  });
+  await page.getByText("Set inspection range", { exact: true }).click();
+  await expect(page.getByRole("combobox", { name: "Range start" })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
+  const results = await new AxeBuilder({ page })
+    .include(".operations-v2-chart-card")
+    .withTags(["wcag2a", "wcag2aa"])
+    .analyze();
+  expect(results.violations).toEqual([]);
 });
 
 test("compute and battery legends toggle with keyboard and preserve interval facts", async ({

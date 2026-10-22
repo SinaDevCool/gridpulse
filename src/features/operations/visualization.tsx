@@ -77,6 +77,11 @@ export function OperationsChartLegend({
           </button>
         </li>
       ) : null}
+      {visibility && items.every((item) => !visibility.visible(item.id ?? item.label)) ? (
+        <li role="status">
+          All chart layers hidden. Reset chart to restore them. Calculated results are unchanged.
+        </li>
+      ) : null}
     </ul>
   );
 }
