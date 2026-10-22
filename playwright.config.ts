@@ -18,7 +18,8 @@ export default defineConfig({
     ? undefined
     : {
         command: "npm run dev -- --mode e2e --port 3002",
-        url: "http://127.0.0.1:3002/validation-case",
+        // Shared entry exists in finder/full and both single-solution deployments.
+        url: "http://127.0.0.1:3002/",
         reuseExistingServer: true,
         timeout: 120_000,
       },
