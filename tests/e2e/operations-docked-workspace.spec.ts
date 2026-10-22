@@ -45,6 +45,12 @@ for (const width of [390, 768, 1024, 1280, 1440, 2560]) {
     for (const label of ["Overview", "Compute & Workloads", "Power & Battery"]) {
       await page.getByRole("link", { name: label, exact: true }).click();
       await expect(page.locator(".ops-canvas-content")).toBeVisible();
+      await expect(page.locator(".ops-canvas-toolbar")).not.toContainText(
+        /Power Operations|Power & Battery/,
+      );
+      const heading = page.getByRole("heading", { level: 1 });
+      await expect(heading).toHaveClass("sr-only");
+      await expect(heading).toHaveText(label === "Power & Battery" ? label : "Power Operations");
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
         true,
       );
