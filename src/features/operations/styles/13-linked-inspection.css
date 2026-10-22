@@ -125,22 +125,9 @@
 }
 .ops-response-explorer {
   border-top: 1px solid var(--ops-chart-grid);
-  margin-top: 1rem;
-  padding-top: 1rem;
-}
-.ops-response-explorer > h3 {
-  font-size: 1.1rem;
-  margin-bottom: 0.4rem;
-}
-.ops-response-explorer .ops-obligations {
-  margin-top: 1rem;
 }
 .ops-impact-lanes {
-  padding: 0.75rem 0;
   font-variant-numeric: tabular-nums;
-}
-.ops-impact-lane {
-  margin: 0.75rem 18px 0.75rem 64px;
 }
 .ops-impact-lane > span {
   display: flex;
@@ -148,14 +135,8 @@
   gap: 0.75rem;
   margin-bottom: 0.35rem;
 }
-.ops-impact-lane span strong {
-  display: block;
-  font-size: 0.85rem;
-}
 .ops-impact-track {
   position: relative;
-  height: 26px;
-  background: var(--ops-demand-fill);
 }
 .ops-impact-track button {
   position: absolute;
@@ -163,7 +144,6 @@
   height: 100%;
   min-width: 3px;
   border: 0;
-  cursor: crosshair;
 }
 .ops-impact-track button.breach {
   background: var(--ops-limit);
@@ -230,10 +210,6 @@
   outline-offset: 3px;
 }
 @media (max-width: 700px) {
-  .ops-impact-lane {
-    margin-left: 0;
-    margin-right: 0;
-  }
   .ops-impact-lane > span {
     flex-wrap: wrap;
   }

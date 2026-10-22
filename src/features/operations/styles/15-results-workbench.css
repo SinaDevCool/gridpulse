@@ -1,0 +1,499 @@
+/* Result presentation only. Interval selection and all calculations keep their owners. */
+.operations-v2 .ops-response-breakdown > header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  font-size: 0.9375rem;
+}
+.ops-response-breakdown > header > span {
+  color: var(--ops-muted);
+  font-size: 0.8125rem;
+}
+.operations-v2 .ops-response-breakdown > p,
+.operations-v2 .ops-response-breakdown > small {
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+.operations-v2 .ops-response-breakdown > dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+.ops-response-breakdown > dl > div {
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--ops-border);
+  border-radius: 8px;
+}
+.ops-response-breakdown > dl dt {
+  font-size: 0.8125rem;
+  color: var(--ops-muted);
+}
+.ops-response-breakdown > dl dd {
+  margin: 0.3rem 0 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+.operations-v2 .ops-waterfall svg {
+  min-width: 680px;
+}
+.operations-v2 .ops-impact-track button:focus-visible {
+  outline-offset: -3px;
+}
+.operations-v2 .ops-impact-lanes {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.75fr) minmax(0, 3fr);
+  gap: 1.5rem;
+  padding: 1.25rem 0;
+  border-bottom: 1px solid var(--ops-border);
+}
+.ops-impact-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  justify-content: center;
+  padding: 0.5rem 1.25rem 0.5rem 0;
+  border-right: 1px solid var(--ops-border);
+}
+.ops-impact-summary > span {
+  color: var(--ops-muted);
+  font-size: 0.875rem;
+}
+.ops-impact-summary > strong {
+  font-size: clamp(1.75rem, 2.3vw, 2.5rem);
+  font-weight: 650;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  color: var(--ops-text);
+}
+.ops-impact-summary small {
+  color: var(--ops-text);
+  font-size: 0.9375rem;
+}
+.ops-impact-summary .ops-scope-caption {
+  font-size: 0.75rem;
+}
+.operations-v2 .ops-impact-lane {
+  margin: 0.5rem 0 0.75rem;
+}
+.operations-v2 .ops-impact-lane > span {
+  font-size: 0.875rem;
+  align-items: center;
+}
+.operations-v2 .ops-impact-lane span strong {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ops-text);
+}
+.operations-v2 .ops-impact-track {
+  height: 28px;
+  border-radius: 5px;
+  overflow: hidden;
+  background: var(--ops-border);
+}
+.operations-v2 .ops-impact-track button.breach {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--ops-limit) 0 4px,
+    color-mix(in srgb, var(--ops-limit) 65%, var(--ops-card)) 4px 8px
+  );
+  cursor: pointer;
+}
+.ops-result-help {
+  margin-top: 0.65rem;
+  color: var(--ops-muted);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+.ops-result-help > summary {
+  width: fit-content;
+  padding: 0.35rem 0;
+  cursor: pointer;
+  color: var(--ops-text);
+}
+.ops-result-help p {
+  margin: 0.5rem 0;
+  max-width: 80ch;
+}
+.operations-v2 .ops-inspection-caption {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  margin: 1rem 0 0.5rem;
+  color: var(--ops-muted);
+}
+.ops-inspection-caption strong {
+  font-weight: 500;
+  color: var(--ops-text);
+}
+.operations-v2 .ops-inspection-tools {
+  padding: 0.75rem;
+  border: 1px solid var(--ops-border);
+  border-radius: 10px;
+  gap: 0.5rem 1rem;
+  align-items: flex-start;
+}
+.operations-v2 .ops-interval-navigation {
+  gap: 0.4rem;
+}
+.operations-v2 .ops-interval-navigation :is(button, summary),
+.operations-v2 .ops-inspection-tools > button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--ops-border);
+  border-radius: 7px;
+  background: var(--ops-card);
+  color: var(--ops-text);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.4;
+  cursor: pointer;
+}
+.ops-interval-navigation svg {
+  width: 1rem;
+  height: 1rem;
+  flex: none;
+}
+.operations-v2 .ops-inspection-tools > button {
+  color: var(--ops-muted);
+  border-color: transparent;
+}
+.operations-v2 .ops-interval-navigation button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.operations-v2 .ops-interval-navigation button:hover:not(:disabled),
+.operations-v2 .ops-interval-navigation summary:hover {
+  border-color: var(--ops-demand);
+  background: var(--ops-demand-fill);
+}
+.operations-v2 .ops-time-picker {
+  min-width: 0;
+}
+.operations-v2 .ops-time-picker > summary {
+  list-style: none;
+  justify-content: flex-start;
+  background: var(--ops-demand-fill);
+  border-color: var(--ops-border-strong);
+}
+.ops-time-picker > summary::-webkit-details-marker {
+  display: none;
+}
+.operations-v2 .ops-time-menu {
+  box-sizing: border-box;
+  padding: 0.875rem;
+  border-radius: 10px;
+  background: var(--ops-card);
+  border-color: var(--ops-border-strong);
+}
+.ops-time-menu label {
+  font-size: 0.8125rem;
+}
+.operations-v2 .ops-time-list {
+  gap: 0.2rem;
+}
+.operations-v2 .ops-time-list button {
+  justify-content: flex-start;
+  width: 100%;
+  font-variant-numeric: tabular-nums;
+}
+.operations-v2 .ops-time-menu input {
+  box-sizing: border-box;
+  background: var(--background);
+  color: var(--ops-text);
+  font-size: 0.875rem;
+}
+.operations-v2 .ops-inspection-tools > details[open] {
+  flex-basis: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.ops-inspection-tools > details[open] > summary {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+.ops-inspection-tools > details label {
+  font-size: 0.875rem;
+}
+.operations-v2 .ops-response-explorer {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+}
+.ops-explorer-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin-bottom: 1rem;
+}
+.ops-explorer-heading h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+.ops-explorer-heading > span {
+  font-size: 0.8125rem;
+  color: var(--ops-muted);
+}
+.ops-response-explorer > .ops-response-selector {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  padding: 0.3rem;
+  background: var(--background);
+  border: 1px solid var(--ops-border);
+  border-radius: 10px;
+  margin-bottom: 1rem;
+}
+.operations-v2 .ops-response-explorer > .ops-response-selector button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 0.875rem;
+  min-height: 44px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  font: inherit;
+  font-size: 0.875rem;
+  background: transparent;
+  color: var(--ops-muted);
+}
+.ops-response-explorer > .ops-response-selector svg {
+  width: 1rem;
+  height: 1rem;
+}
+.operations-v2 .ops-response-explorer > .ops-response-selector button[aria-pressed="true"] {
+  background: var(--ops-demand-fill);
+  border-color: var(--ops-demand);
+  color: var(--ops-text);
+  box-shadow: none;
+}
+.operations-v2 .ops-response-explorer > .ops-response-selector button:hover {
+  color: var(--ops-text);
+  background: var(--ops-demand-fill);
+}
+.ops-response-explorer .ops-comparison-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+  font-size: 0.8125rem;
+  margin: 0.5rem 0 1rem;
+}
+.ops-comparison-key > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.ops-comparison-key i {
+  display: inline-block;
+  height: 12px;
+  border-left: 2px solid;
+}
+.ops-comparison-key i.target {
+  border-color: var(--ops-target);
+}
+.ops-comparison-key i.limit {
+  border-color: var(--ops-limit);
+}
+.operations-v2 .ops-compact-comparison :is(th, td) {
+  padding: 0.85rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+.operations-v2 .ops-compact-comparison thead th {
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  color: var(--ops-muted);
+  text-transform: none;
+  font-weight: 600;
+}
+.operations-v2 .ops-compact-comparison tbody th button {
+  font: inherit;
+  font-weight: 600;
+  min-height: 40px;
+  text-align: left;
+}
+.operations-v2 .ops-peak-comparison strong {
+  min-width: 5.5rem;
+  text-align: right;
+  font-size: 1rem;
+}
+.operations-v2 .ops-boundary-track {
+  border-radius: 4px;
+  height: 10px;
+}
+.operations-v2 .ops-boundary-track b {
+  height: 18px;
+}
+.operations-v2 .ops-envelope-boundaries > div {
+  grid-template-columns: minmax(180px, 1fr) minmax(0, 3fr);
+  padding: 0.85rem 0;
+  font-size: 0.875rem;
+  border-bottom: 1px solid var(--ops-border);
+  align-items: center;
+}
+.ops-headroom-context {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  align-items: baseline;
+}
+.ops-headroom-context strong {
+  color: var(--ops-text);
+  font-size: 0.875rem;
+}
+.operations-v2 .ops-headroom-detail > h3 {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  margin: 0.5rem 0;
+}
+.operations-v2 .ops-headroom-detail > p {
+  font-size: 0.8125rem;
+}
+.operations-v2 .ops-obligations {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(240px, 1fr);
+  gap: 1rem;
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-top: 1.5rem;
+}
+.ops-obligations > header,
+.ops-obligations > footer {
+  grid-column: 1 / -1;
+}
+.operations-v2 .ops-obligations h3 {
+  font-size: 1.125rem;
+  font-weight: 650;
+}
+.ops-obligations .ops-review-state {
+  display: inline-flex;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid var(--ops-border-strong);
+  border-radius: 6px;
+  font-size: 0.75rem;
+  color: var(--ops-text);
+}
+.operations-v2 .ops-recovery-ledger {
+  margin: 0;
+  padding: 1rem;
+  border: 1px solid var(--ops-border);
+  border-radius: 9px;
+  align-self: start;
+}
+.operations-v2 .ops-ledger-heading {
+  font-size: 0.875rem;
+}
+.operations-v2 .ops-ledger-heading > span {
+  font-size: 1.125rem;
+  font-weight: 650;
+}
+.operations-v2 .ops-ledger-labels {
+  font-size: 0.8125rem;
+}
+.operations-v2 .ops-ledger-labels b {
+  font-size: 1rem;
+}
+.operations-v2 .ops-recovery-action {
+  display: grid;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+.operations-v2 .ops-recovery-action a {
+  justify-self: start;
+}
+.operations-v2 .ops-plan-checks {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+}
+.operations-v2 .ops-plan-checks > div {
+  grid-template-columns: 1fr;
+  gap: 0.35rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--ops-border);
+  border-radius: 9px;
+  font-size: 0.875rem;
+}
+.ops-plan-checks dd strong {
+  font-weight: 600;
+}
+.ops-plan-checks dd small {
+  display: block;
+  font-size: 0.8125rem;
+  margin-top: 0.25rem;
+}
+.operations-v2 .ops-obligations a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  font-size: 0.8125rem;
+}
+.operations-v2
+  :is(
+    .ops-result-help summary,
+    .ops-inspection-tools > button,
+    .ops-response-comparison button,
+    .ops-obligations a
+  ):focus-visible {
+  outline: 2px solid var(--ops-demand);
+  outline-offset: 3px;
+}
+@media (max-width: 1000px) {
+  .operations-v2 .ops-obligations {
+    grid-template-columns: 1fr;
+  }
+  .operations-v2 .ops-plan-checks {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 700px) {
+  .operations-v2 .ops-impact-lanes {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  .ops-impact-summary {
+    padding: 0 0 1rem;
+    border: 0;
+    border-bottom: 1px solid var(--ops-border);
+  }
+  .operations-v2 .ops-inspection-tools {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  .operations-v2 .ops-inspection-tools > .ops-interval-navigation {
+    min-width: 0;
+  }
+  .operations-v2 .ops-time-picker {
+    order: -1;
+    width: 100%;
+  }
+  .ops-time-picker > summary span {
+    overflow-wrap: anywhere;
+  }
+  .ops-response-explorer > .ops-response-selector {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  .operations-v2 .ops-envelope-boundaries > div {
+    grid-template-columns: 1fr;
+    gap: 0.6rem;
+  }
+  .operations-v2 .ops-plan-checks {
+    grid-template-columns: 1fr;
+  }
+  .operations-v2 .ops-compact-comparison :is(th, td) {
+    font-size: 0.8125rem;
+  }
+}

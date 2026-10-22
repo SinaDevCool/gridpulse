@@ -67,24 +67,29 @@ export function CanonicalPlanningWorkbench() {
   }
 
   return (
-    <section className="data-panel" aria-labelledby="canonical-planning-title">
+    <section
+      className="data-panel canonical-planning-workbench"
+      aria-labelledby="canonical-planning-title"
+      aria-busy={busy}
+    >
       <div className="section-toolbar">
         <div>
           <p className="context-label">Canonical engine</p>
-          <h2 id="canonical-planning-title">Facility planning workbench</h2>
+          <h3 id="canonical-planning-title">Configure analysis</h3>
         </div>
         <span>
-          <ShieldCheck aria-hidden="true" /> Fail closed
+          <ShieldCheck aria-hidden="true" /> Read-only
         </span>
       </div>
       <p>
-        Submit a versioned contract exported from a project or integration. The browser validates
-        the transport shape; all electrical, workload, uncertainty, replay, and economic
-        calculations run in the canonical GridPulse analytics engine.
+        Choose an analysis and paste its versioned JSON contract. The browser checks the format; the
+        canonical engine performs the calculation.
       </p>
-      <label>
-        Analysis
+      <div className="canonical-field">
+        <label htmlFor="canonical-analysis-kind">Analysis</label>
         <select
+          id="canonical-analysis-kind"
+          name="analysis"
           disabled={busy}
           value={analysis}
           onChange={(event) => {
@@ -99,10 +104,12 @@ export function CanonicalPlanningWorkbench() {
           <option value="market_qualification">Market qualification and settlement</option>
           <option value="facility_historical_replay">Historical replay and economics</option>
         </select>
-      </label>
-      <label>
-        Canonical request JSON
+      </div>
+      <div className="canonical-field">
+        <label htmlFor="canonical-request-source">Canonical request JSON</label>
         <textarea
+          id="canonical-request-source"
+          name="canonicalRequest"
           disabled={busy}
           rows={12}
           value={source}
@@ -111,21 +118,22 @@ export function CanonicalPlanningWorkbench() {
             setJob(null);
             setError(null);
           }}
-          placeholder={`Paste ${analysis.replaceAll("_", " ")} request JSON`}
+          placeholder={`Paste a reviewed ${analysis.replaceAll("_", " ")} request…`}
           spellCheck={false}
         />
-      </label>
+      </div>
       <button
         className="primary-button"
         type="button"
         disabled={busy || !source.trim()}
         onClick={() => void run()}
       >
-        {busy ? <LoaderCircle aria-hidden="true" /> : <Play aria-hidden="true" />} Validate and run
+        {busy ? <LoaderCircle aria-hidden="true" /> : <Play aria-hidden="true" />}
+        {busy ? "Running analysis…" : "Validate and run"}
       </button>
       {error ? <p role="alert">{error}</p> : null}
       {job ? (
-        <div className="compact-result">
+        <div className="compact-result" role="status">
           <strong>{job.status}</strong>
           <span>Job {job.id}</span>
           {job.error ? <p>{job.error}</p> : null}

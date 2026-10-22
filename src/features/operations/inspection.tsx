@@ -1,5 +1,6 @@
 import { formatOperationsTime } from "./presentation";
 import { useState } from "react";
+import { ChevronLeft, ChevronRight, Clock3, CornerUpLeft } from "lucide-react";
 
 export function IntervalNavigation({
   points,
@@ -18,10 +19,11 @@ export function IntervalNavigation({
     <div className="ops-interval-navigation" role="group" aria-label="Inspect interval">
       <button
         type="button"
+        aria-label="Previous interval"
         disabled={index <= 0}
         onClick={() => onSelect(points[index - 1].timestamp)}
       >
-        Previous interval
+        <ChevronLeft aria-hidden="true" /> Previous
       </button>
       <details
         className="ops-time-picker"
@@ -39,7 +41,10 @@ export function IntervalNavigation({
         }}
       >
         <summary>
-          Inspect time · {timestamp ? formatOperationsTime(timestamp, true) : "Unavailable"} ▾
+          <Clock3 aria-hidden="true" />
+          <span>
+            Inspect time · {timestamp ? formatOperationsTime(timestamp, true) : "Unavailable"} ▾
+          </span>
         </summary>
         <div className="ops-time-menu">
           <label>
@@ -91,14 +96,15 @@ export function IntervalNavigation({
       </details>
       <button
         type="button"
+        aria-label="Next interval"
         disabled={index < 0 || index >= points.length - 1}
         onClick={() => onSelect(points[index + 1].timestamp)}
       >
-        Next interval
+        Next <ChevronRight aria-hidden="true" />
       </button>
       {peak ? (
         <button type="button" onClick={() => onSelect(peak)}>
-          Return to peak
+          <CornerUpLeft aria-hidden="true" /> Return to peak
         </button>
       ) : null}
     </div>

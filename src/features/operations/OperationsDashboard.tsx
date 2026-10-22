@@ -12,7 +12,7 @@ import {
   type OperatingWindowPreset,
   type OperationsDataMode,
 } from "./operating-context";
-import { CanonicalPlanningWorkbench } from "../analytics/CanonicalPlanningWorkbench";
+import { AdvancedAnalysis } from "./configuration/AdvancedAnalysis";
 import { AssessmentRecord } from "./configuration/AssessmentRecord";
 import type { OperationsView } from "./view-contracts";
 import { OverviewView } from "./overview/OverviewView";
@@ -132,17 +132,7 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
               <strong>{serviceLabel}</strong>
               <small>Read-only assessment · no physical commands</small>
             </div>
-            <details className="ops-advanced-tools">
-              <summary>Advanced tools</summary>
-              <details>
-                <summary>Canonical planning, rolling analysis & historical replay</summary>
-                <p>
-                  Separate authenticated model-contract interface. Scenario service availability
-                  does not establish canonical engine availability. No physical commands are issued.
-                </p>
-                <CanonicalPlanningWorkbench />
-              </details>
-            </details>
+            <AdvancedAnalysis />
           </ConfigurationPanel>
           <div className="ops-dashboard-canvas">
             <div className="ops-canvas-toolbar">

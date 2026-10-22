@@ -471,11 +471,6 @@
 .operations-v2-chart-data summary {
   min-height: 40px;
   padding: 0.8rem 0;
-  font-size: 0.78rem;
-}
-
-.operations-v2-chart-data table {
-  font-size: 0.76rem;
 }
 
 .operations-v2-editor-panel {

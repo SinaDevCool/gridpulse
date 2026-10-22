@@ -25,7 +25,9 @@ export function PlanObligations({
           <p className="context-label">Full planning horizon</p>
           <h3 id="ops-obligations-title">Remaining obligations</h3>
         </div>
-        <span>Aggregate scenario · not a validated job schedule</span>
+        <span className="ops-review-state">
+          {s.recoveryIncomplete ? "Recovery needs review" : "Scenario checks"}
+        </span>
       </header>
       {!s.available ? (
         <p>Assessment unavailable. Recovery and reserve checks cannot be established.</p>
@@ -74,11 +76,21 @@ export function PlanObligations({
             <div>
               <dt>Battery reserve</dt>
               <dd>
-                {!s.usesBattery
-                  ? "Not used in this response"
-                  : s.minSoc == null
-                    ? "Unavailable"
-                    : `${s.reserveFailed ? "Constraint failed" : "Within configured SOC bounds"} · minimum ${formatPercent(s.minSoc)} / floor ${formatPercent(fullModel.scenario.battery.minimumSocPercent)}`}
+                <strong>
+                  {!s.usesBattery
+                    ? "Not used in this response"
+                    : s.minSoc == null
+                      ? "Unavailable"
+                      : s.reserveFailed
+                        ? "Constraint failed"
+                        : "Within configured SOC bounds"}
+                </strong>
+                {s.usesBattery && s.minSoc != null ? (
+                  <small>
+                    Minimum {formatPercent(s.minSoc)} · Reserve floor{" "}
+                    {formatPercent(fullModel.scenario.battery.minimumSocPercent)}
+                  </small>
+                ) : null}
               </dd>
               <dd>
                 <Link to="/operations" search={{ ...search, view: "power", mode: "scenario" }}>
@@ -88,7 +100,9 @@ export function PlanObligations({
             </div>
             <div>
               <dt>Job schedule</dt>
-              <dd>Not validated</dd>
+              <dd>
+                <strong>Not validated</strong>
+              </dd>
               <dd>
                 <small>Energy recovery does not establish individual job completion.</small>
               </dd>

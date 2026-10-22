@@ -87,13 +87,13 @@ export function SignedResponseDiagram({
                   y={Math.min(y(step.start), y(step.end)) - 8}
                   textAnchor="middle"
                   fill="currentColor"
-                  fontSize="13"
+                  fontSize="15"
                   fontWeight="600"
                 >
                   {!step.total && step.value > 0 ? "+" : ""}
                   {formatMw(step.value)}
                 </text>
-                <text x={x + 49} y="180" textAnchor="middle" fill="currentColor" fontSize="11">
+                <text x={x + 49} y="180" textAnchor="middle" fill="currentColor" fontSize="12.5">
                   {step.label}
                 </text>
               </g>

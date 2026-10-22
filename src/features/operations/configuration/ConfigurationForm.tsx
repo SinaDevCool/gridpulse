@@ -1,4 +1,5 @@
 import type { OperationsScenario } from "../scenario-engine";
+import { Check, CircleDot, LoaderCircle, RotateCcw, Undo2 } from "lucide-react";
 import {
   readScenarioField,
   scenarioFieldGroups,
@@ -128,29 +129,48 @@ export function ConfigurationForm(props: Props) {
 
 export function ConfigurationActions(props: Pick<Props, "busy" | "dirty" | "onDiscard">) {
   return (
-    <footer className="ops-configuration-actions">
-      <p role="status">
+    <footer
+      className="ops-configuration-actions"
+      role="group"
+      aria-label="Scenario actions"
+      data-state={props.busy ? "busy" : props.dirty ? "dirty" : "applied"}
+    >
+      <p role="status" className="ops-configuration-state">
+        {props.busy ? (
+          <LoaderCircle aria-hidden="true" />
+        ) : props.dirty ? (
+          <CircleDot aria-hidden="true" />
+        ) : (
+          <Check aria-hidden="true" />
+        )}
         {props.busy
-          ? "Calculation pending…"
+          ? "Calculating scenario…"
           : props.dirty
-            ? "Unapplied changes · results use the applied configuration"
-            : "Applied scenario assumptions"}
+            ? "Changes ready to apply"
+            : "Scenario inputs applied"}
       </p>
+      <small>
+        {props.dirty
+          ? "Results use the previous inputs until recalculated."
+          : "What-if assessment · no equipment commands"}
+      </small>
       <button
         className="primary-button"
         type="submit"
         form="ops-scenario-form"
         disabled={props.busy}
+        aria-busy={props.busy}
       >
-        Recalculate Scenario
+        {props.busy ? <LoaderCircle aria-hidden="true" /> : <RotateCcw aria-hidden="true" />}
+        <span>{props.busy ? "Calculating…" : "Recalculate Scenario"}</span>
       </button>
       <button
         className="secondary-button"
         type="button"
-        disabled={!props.dirty}
+        disabled={!props.dirty || props.busy}
         onClick={props.onDiscard}
       >
-        Discard changes
+        <Undo2 aria-hidden="true" /> Discard changes
       </button>
     </footer>
   );
