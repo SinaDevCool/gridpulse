@@ -10,7 +10,7 @@ test("cockpit integrates comparisons and retains full-horizon recovery", async (
   await expect(
     page.getByText("Planning assumptions & recovery obligations", { exact: true }),
   ).toHaveCount(0);
-  await expect(page.locator(".ops-advanced-tools")).not.toHaveAttribute("open", "");
+  await expect(page.getByRole("dialog", { name: "Planning workbench" })).not.toBeVisible();
   await expect(page.getByRole("button", { name: "Compare plans", exact: true })).toHaveAttribute(
     "aria-pressed",
     "true",
@@ -73,16 +73,14 @@ test("advanced model contracts remain usable inside mobile inputs", async ({ pag
   await page.goto("/operations");
   await page.getByRole("button", { name: /^(Show|Hide) panel/ }).click();
   const drawer = page.getByRole("dialog", { name: "Inputs & evidence" });
-  await drawer.getByText("Advanced tools", { exact: true }).click();
-  await drawer
-    .getByText("Canonical planning, rolling analysis & historical replay", { exact: true })
-    .click();
-  await drawer.getByLabel("Canonical request JSON").fill("{}");
-  await drawer.getByRole("button", { name: "Validate and run" }).click();
-  await expect(drawer.getByRole("alert")).toBeVisible();
+  await drawer.getByRole("button", { name: "Open planning workbench" }).click();
+  const workbench = page.getByRole("dialog", { name: "Planning workbench" });
+  await workbench.getByLabel("Canonical request JSON").fill("{}");
+  await workbench.getByRole("button", { name: "Validate and run" }).click();
+  await expect(workbench.getByRole("alert")).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
   const results = await new AxeBuilder({ page })
-    .include("#operations-inputs")
+    .include(".ops-analysis-dialog")
     .withTags(["wcag2a", "wcag2aa"])
     .analyze();
   expect(
@@ -91,6 +89,9 @@ test("advanced model contracts remain usable inside mobile inputs", async ({ pag
       nodes: v.nodes.map((n) => ({ target: n.target, summary: n.failureSummary })),
     })),
   ).toEqual([]);
+  await page.keyboard.press("Escape");
+  await expect(workbench).not.toBeVisible();
+  await expect(drawer).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(drawer).not.toBeVisible();
 });

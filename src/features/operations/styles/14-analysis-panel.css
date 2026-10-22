@@ -1,0 +1,336 @@
+/* Specialist model entry is a dialog, never a JSON editor in the input rail. */
+.operations-v2 .ops-advanced-entry {
+  border-top: 1px solid var(--ops-border);
+  padding: 1rem 0 0.4rem;
+}
+.ops-advanced-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.ops-advanced-heading h3 {
+  font-size: 0.875rem;
+  margin: 0;
+  font-weight: 650;
+}
+.ops-advanced-heading > svg {
+  width: 1rem;
+  height: 1rem;
+  color: var(--ops-muted);
+}
+.ops-advanced-heading > span {
+  margin-left: auto;
+  font-size: 0.6875rem;
+  color: var(--ops-muted);
+  border: 1px solid var(--ops-border);
+  border-radius: 4px;
+  padding: 0.15rem 0.35rem;
+}
+.ops-advanced-entry > p {
+  font-size: 0.8125rem;
+  color: var(--ops-muted);
+  line-height: 1.6;
+  margin: 0.65rem 0;
+}
+.operations-v2 .ops-advanced-entry > button {
+  width: 100%;
+  justify-content: space-between;
+}
+.operations-v2 :is(.ops-advanced-entry > button, .ops-configuration-actions > button) {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.3;
+  cursor: pointer;
+  transition:
+    background-color 120ms,
+    border-color 120ms;
+}
+.operations-v2 :is(.ops-advanced-entry > button, .ops-configuration-actions > button) svg {
+  width: 1rem;
+  height: 1rem;
+  flex: none;
+}
+.operations-v2 .ops-configuration-actions {
+  gap: 0.5rem;
+  padding: 0.875rem;
+}
+.ops-configuration-actions .ops-configuration-state {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+.ops-configuration-state svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  flex: none;
+}
+.ops-configuration-actions[data-state="dirty"] .ops-configuration-state {
+  color: var(--ops-demand);
+}
+.ops-configuration-actions > small {
+  color: var(--ops-muted);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  margin-bottom: 0.25rem;
+}
+.operations-v2 .ops-configuration-actions > button {
+  justify-content: center;
+}
+.operations-v2 .ops-configuration-actions > .secondary-button {
+  background: transparent;
+  border-color: transparent;
+  color: var(--ops-muted);
+}
+.operations-v2 :is(.ops-advanced-entry > button, .ops-configuration-actions > button):disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.operations-v2
+  :is(.ops-advanced-entry > button, .ops-configuration-actions > .secondary-button):hover:not(
+    :disabled
+  ) {
+  background: var(--ops-card-raised, var(--ops-card));
+  border-color: var(--ops-border-strong);
+  color: var(--ops-text);
+}
+.operations-v2 .ops-configuration-actions > .primary-button:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.operations-v2 :is(.ops-advanced-entry button, .ops-configuration-actions button):focus-visible,
+.ops-analysis-dialog :is(button, select, textarea):focus-visible {
+  outline: 2px solid var(--ops-demand);
+  outline-offset: 3px;
+}
+.ops-analysis-dialog {
+  margin: auto;
+  width: min(880px, calc(100vw - 2rem));
+  max-width: none;
+  max-height: calc(100dvh - 2rem);
+  padding: 0;
+  border: 1px solid var(--ops-border-strong);
+  border-radius: 16px;
+  background: var(--ops-card);
+  color: var(--ops-text);
+  box-shadow: 0 24px 80px #0006;
+  font-family: inherit;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.ops-analysis-dialog::backdrop {
+  background: #020b16b8;
+}
+.ops-analysis-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--ops-card);
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  justify-content: space-between;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--ops-border);
+}
+.ops-analysis-header h2 {
+  margin: 0.3rem 0;
+  font-size: 1.5rem;
+  line-height: 1.3;
+  font-weight: 650;
+}
+.ops-analysis-header p {
+  margin: 0;
+  color: var(--ops-muted);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+.ops-analysis-header > button {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  border: 1px solid var(--ops-border);
+  background: transparent;
+  color: var(--ops-text);
+  cursor: pointer;
+}
+.ops-analysis-header > button:hover {
+  border-color: var(--ops-demand);
+}
+.ops-analysis-header > button svg {
+  width: 20px;
+  height: 20px;
+}
+.ops-analysis-content {
+  padding: 1.5rem;
+}
+.ops-analysis-prerequisites {
+  padding: 1rem;
+  border: 1px solid var(--ops-border);
+  border-left: 3px solid var(--ops-demand);
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+.ops-analysis-prerequisites strong {
+  font-size: 0.875rem;
+}
+.ops-analysis-prerequisites p,
+.ops-analysis-prerequisites small {
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--ops-muted);
+}
+.ops-analysis-prerequisites p {
+  margin: 0.4rem 0;
+}
+.ops-analysis-dialog .canonical-planning-workbench {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.ops-analysis-dialog .section-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
+.ops-analysis-dialog .section-toolbar > div {
+  display: block;
+  min-width: 0;
+}
+.ops-analysis-dialog .section-toolbar .context-label {
+  margin: 0;
+  font-size: 0.6875rem;
+  line-height: 1.5;
+}
+.ops-analysis-dialog .section-toolbar h3 {
+  margin: 0.25rem 0;
+  font-size: 1.125rem;
+}
+.ops-analysis-dialog .section-toolbar > span {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  color: var(--ops-muted);
+}
+.ops-analysis-dialog .section-toolbar svg {
+  width: 1rem;
+  height: 1rem;
+}
+.ops-analysis-dialog .canonical-planning-workbench > p {
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--ops-muted);
+}
+.ops-analysis-dialog .canonical-field {
+  display: grid;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+.ops-analysis-dialog .canonical-planning-workbench label {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.ops-analysis-dialog :is(select, textarea) {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 0.75rem;
+  border: 1px solid var(--ops-border-strong);
+  border-radius: 8px;
+  background: var(--background);
+  color: var(--ops-text);
+  font: inherit;
+}
+.ops-analysis-dialog textarea {
+  min-height: 180px;
+  resize: vertical;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.8125rem;
+  line-height: 1.65;
+  tab-size: 2;
+}
+.ops-analysis-dialog select {
+  min-height: 44px;
+}
+.ops-analysis-dialog .primary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.7rem 1rem;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.ops-analysis-dialog .primary-button svg {
+  width: 1rem;
+  height: 1rem;
+}
+.ops-analysis-dialog .primary-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.ops-analysis-dialog :is([role="alert"], .compact-result) {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--ops-border);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+.ops-analysis-dialog [role="alert"] {
+  border-color: var(--ops-limit);
+}
+.ops-analysis-dialog pre {
+  max-height: 300px;
+  overflow: auto;
+  font-size: 0.8125rem;
+}
+.ops-input-drawer .ops-input-header > button {
+  width: auto;
+  min-width: 44px;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.8125rem;
+}
+@media (max-width: 600px) {
+  .ops-analysis-dialog {
+    width: calc(100vw - 1rem);
+    max-height: calc(100dvh - 1rem);
+    border-radius: 12px;
+  }
+  .ops-analysis-header,
+  .ops-analysis-content {
+    padding: 1rem;
+  }
+  .ops-analysis-header h2 {
+    font-size: 1.25rem;
+  }
+  .ops-analysis-dialog .primary-button {
+    width: 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .operations-v2 :is(.ops-advanced-entry > button, .ops-configuration-actions > button) {
+    transition: none;
+  }
+}

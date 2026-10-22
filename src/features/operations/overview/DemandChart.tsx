@@ -296,10 +296,11 @@ export function DemandChart({
         selected={selected}
         onSelect={inspection.select}
       />
-      <p>
-        Inspection range: {inspectionPoints[0]?.label}–{inspectionPoints.at(-1)?.label} UTC. Peak
-        and exposure summaries retain the display window; recovery retains the full planning
-        horizon.
+      <p className="ops-inspection-caption">
+        <strong>
+          Inspection range: {inspectionPoints[0]?.label}–{inspectionPoints.at(-1)?.label} UTC
+        </strong>
+        <span>Peaks & durations: display window · Recovery: full horizon</span>
       </p>
       <div className="ops-inspection-tools">
         <InspectionRange

@@ -801,7 +801,7 @@
   width: fit-content;
   padding: 0.65rem 0;
   color: var(--muted-foreground);
-  font-size: 0.7rem;
+  font-size: 0.875rem;
   cursor: pointer;
 }
 
@@ -814,13 +814,13 @@
 .operations-v2-chart-data table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.7rem;
+  font-size: 0.875rem;
   font-variant-numeric: tabular-nums;
 }
 
 .operations-v2-chart-data th,
 .operations-v2-chart-data td {
-  padding: 0.45rem;
+  padding: 0.65rem;
   border-bottom: 1px solid var(--border);
   text-align: right;
 }

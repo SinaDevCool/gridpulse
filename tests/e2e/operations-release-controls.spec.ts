@@ -39,11 +39,8 @@ test("all canonical analysis choices reject invalid contracts without submitting
   await expect(page.getByRole("button", { name: /^(Show|Hide) panel/, exact: true })).toBeEnabled();
   const inputs = page.getByRole("button", { name: /^(Show|Hide) panel/ });
   if ((await inputs.getAttribute("aria-expanded")) !== "true") await inputs.click();
-  await page.getByText("Advanced tools", { exact: true }).click();
-  await page
-    .getByText("Canonical planning, rolling analysis & historical replay", { exact: true })
-    .click();
-  const panel = page.getByRole("region", { name: "Facility planning workbench" });
+  await page.getByRole("button", { name: "Open planning workbench" }).click();
+  const panel = page.getByRole("dialog", { name: "Planning workbench" });
   await expect(panel.getByRole("button", { name: "Validate and run" })).toBeDisabled();
   for (const value of [
     "facility_plan",

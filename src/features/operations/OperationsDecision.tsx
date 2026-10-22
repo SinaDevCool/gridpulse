@@ -30,9 +30,9 @@ export function OperatingEnvelopeMap({
   return (
     <article className="ops-headroom-detail" aria-labelledby="operations-envelope-title">
       <h3 id="operations-envelope-title">Illustrative response envelope</h3>
-      <p>
-        {formatOperationsTime(peak.timestamp, true)} · Point-in-time boundaries, not full-horizon
-        feasibility or verified connection capacity.
+      <p className="ops-headroom-context">
+        <strong>{formatOperationsTime(peak.timestamp, true)}</strong>
+        <span>At this interval · not verified connection capacity</span>
       </p>
       <dl className="ops-envelope-boundaries">
         {limits.map(([label, value]) => (
@@ -48,10 +48,14 @@ export function OperatingEnvelopeMap({
           </div>
         ))}
       </dl>
-      <p>
-        Inspected demand marker: {formatMw(peak.baselineDemandMw)}. Combined boundary includes
-        recovery demand and may be below the battery boundary.
-      </p>
+      <details className="ops-result-help">
+        <summary>How to read headroom</summary>
+        <p>
+          Point-in-time boundaries do not establish full-horizon feasibility. Inspected demand
+          marker: {formatMw(peak.baselineDemandMw)}. Combined boundary includes recovery demand and
+          may be below the battery boundary.
+        </p>
+      </details>
       <p>
         Governing modeled limit:{" "}
         {envelope.bindingConstraint === "contractual_limit"
@@ -81,8 +85,15 @@ export function ScenarioDecisionTable({
   return (
     <div className="ops-response-comparison">
       <p className="ops-comparison-key">
-        Shared MW scale · target {formatMw(target)} · limit {formatMw(limit)} · markers shown on
-        every row
+        <span>
+          <i className="target" aria-hidden="true" />
+          Target {formatMw(target)}
+        </span>
+        <span>
+          <i className="limit" aria-hidden="true" />
+          Limit {formatMw(limit)}
+        </span>
+        <span>Shared MW scale</span>
       </p>
       <div className="operations-scenario-table-wrap">
         <table className="operations-scenario-table ops-compact-comparison">
