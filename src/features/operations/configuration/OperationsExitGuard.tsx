@@ -24,6 +24,9 @@ export function OperationsExitGuard({ dirty }: { dirty: boolean }) {
       ref={dialog}
       aria-labelledby="ops-exit-title"
       aria-describedby="ops-exit-description"
+      onClose={() =>
+        document.querySelector<HTMLButtonElement>(".solution-switcher > button")?.focus()
+      }
       onCancel={(event) => {
         event.preventDefault();
         blocker.reset?.();

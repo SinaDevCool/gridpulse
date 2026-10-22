@@ -71,6 +71,9 @@ test("leaving protects drafts but switching Operations tabs does not reset them"
     ).violations,
   ).toEqual([]);
   await warning.getByRole("button", { name: "Stay in Operations" }).click();
+  await expect(
+    page.getByRole("button", { name: "Solution: Facility Operations", exact: true }),
+  ).toBeFocused();
   await expect(page).toHaveURL(/operations/);
   await page.getByRole("link", { name: "GridPulse home", exact: true }).click();
   await warning.getByRole("button", { name: "Leave without saving" }).click();
