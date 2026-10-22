@@ -11,11 +11,14 @@ import { buildImportReport } from "../import-report";
 import type { EvidenceMode } from "../power/presentation";
 import type { OperationsOverviewModel } from "../scenario-engine";
 import { useOperationsEvidenceDataStore } from "./evidence-store";
+import { useQueryClient } from "@tanstack/react-query";
+import { assessmentInput, assessmentQueryKey } from "../assessment-input";
 
 export function usePowerEvidence(
   model: OperationsOverviewModel,
   onModeChange?: (mode: EvidenceMode) => void,
 ) {
+  const queryClient = useQueryClient();
   const store = useOperationsEvidenceDataStore();
   const [facilityObservations, setFacilityObservations] = store.facility;
   const [batteryObservations, setBatteryObservations] = store.battery;
@@ -50,29 +53,15 @@ export function usePowerEvidence(
     battery: BatteryObservation[],
     signal: AbortSignal,
   ) {
-    if (facility.length < 4) return null;
-    return requestOperationsAssessment(
-      {
-        kind: "power",
-        facilityName: model.scenario.facilityName,
-        contractedLimitMw: model.scenario.importLimitMw,
-        limitEvidence: "customer_declared",
-        facility,
-        battery,
-        batteryConfiguration:
-          model.scenario.battery.usableEnergyMwh > 0
-            ? {
-                powerMw: model.scenario.battery.maximumPowerMw,
-                energyMwh: model.scenario.battery.usableEnergyMwh,
-                minimumReservePercent: model.scenario.battery.minimumSocPercent,
-                roundTripEfficiency:
-                  model.scenario.battery.chargeEfficiency *
-                  model.scenario.battery.dischargeEfficiency,
-              }
-            : null,
-      },
-      signal,
-    );
+    const input = assessmentInput(model.scenario, {
+      facility,
+      battery,
+      workloads: store.workloads[0],
+      telemetry: store.telemetry[0],
+    });
+    const response = await requestOperationsAssessment(input, signal);
+    if (!signal.aborted) queryClient.setQueryData(assessmentQueryKey(input), response);
+    return response;
   }
 
   async function loadFacility(event: ChangeEvent<HTMLInputElement>) {
@@ -88,7 +77,7 @@ export function usePowerEvidence(
         type: "accept-power",
         facility: parsed,
         kind: "facility",
-        message: `${parsed.length} facility meter records loaded from ${file.name}${verified ? " and input-validated by the Operations backend (not dispatch-verified)" : ""}.`,
+        message: `${parsed.length} facility meter records loaded from ${file.name}.`,
         report: buildImportReport(
           "facility",
           file.name,
@@ -122,7 +111,7 @@ export function usePowerEvidence(
         type: "accept-power",
         battery: parsed,
         kind: "battery",
-        message: `${parsed.length} BMS/PCS records loaded from ${file.name}${verified ? " and aligned by the Operations backend" : ""}.`,
+        message: `${parsed.length} BMS/PCS records loaded from ${file.name}.`,
         report: buildImportReport(
           "battery",
           file.name,

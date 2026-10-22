@@ -1,10 +1,11 @@
-import type { OperationsInterval,OperationsOverviewModel } from "../scenario-engine";
+import type { OperationsInterval, OperationsOverviewModel } from "../scenario-engine";
+import { batteryReserveEnergyMwh } from "../battery-configuration";
 
-import { alignPowerEvidence } from "../operations-service";
+import { alignPowerEvidence } from "../evidence-alignment";
 
-import { type BatteryObservation,type FacilityPowerObservation } from "../battery-dispatch";
+import { type BatteryObservation, type FacilityPowerObservation } from "../battery-dispatch";
 
-import { formatMw,formatPercent } from "../formatting";
+import { formatMw, formatPercent } from "../formatting";
 
 import { formatOperationsTime } from "../presentation";
 
@@ -26,13 +27,17 @@ export type HistoricalPoint = {
 export function buildHistoricalSeries(
   facility: FacilityPowerObservation[],
   battery: BatteryObservation[],
+  aligned = alignPowerEvidence(facility, battery),
 ): HistoricalPoint[] {
-  return alignPowerEvidence(facility, battery).map((point) => {
+  return aligned.map((point) => {
     const batteryPoint = point.battery;
     return {
       timestamp: point.timestamp,
       label: formatOperationsTime(point.timestamp).replace(" UTC", ""),
-      facilityDemandMw: batteryPoint ? point.facilityImportMw + batteryPoint.activePowerMw : null,
+      facilityDemandMw:
+        batteryPoint && point.facilityImportMw + batteryPoint.activePowerMw >= 0
+          ? point.facilityImportMw + batteryPoint.activePowerMw
+          : null,
       gridImportMw: point.facilityImportMw,
       batteryPowerMw: batteryPoint?.activePowerMw ?? null,
       socPercent: batteryPoint?.socPercent ?? null,
@@ -56,11 +61,14 @@ export function valueOf(point: unknown, historicalKey: string, scenarioKey: stri
 
 export function durationLabel(model: OperationsOverviewModel, selected: OperationsInterval) {
   const usable =
-    ((((model.scenario.battery.usableEnergyMwh * model.scenario.battery.stateOfHealthPercent) /
-      100) *
-      Math.max(0, selected.batterySocPercent - model.scenario.battery.minimumSocPercent)) /
-      100) *
-    model.scenario.battery.dischargeEfficiency;
+    Math.max(
+      0,
+      (((model.scenario.battery.usableEnergyMwh * model.scenario.battery.stateOfHealthPercent) /
+        100) *
+        selected.batterySocPercent) /
+        100 -
+        batteryReserveEnergyMwh(model.scenario.battery),
+    ) * model.scenario.battery.dischargeEfficiency;
   return selected.batteryPowerMw > 0
     ? `${number.format(usable / selected.batteryPowerMw)} h`
     : "Ready";

@@ -34,7 +34,8 @@ describe("operations assurance", () => {
     });
     expect(result.deliveredReductionMw).toBe(9.5);
     expect(result.netDeliveredEnergyMwh).toBe(4);
-    expect(result.verified).toBe(true);
+    expect(result.verified).toBe(false);
+    expect(result.dataEvaluable).toBe(true);
   });
 
   it("requires aligned energy before publishing measured PUE", () => {

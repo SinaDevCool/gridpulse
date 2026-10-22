@@ -18,6 +18,47 @@ export function AssessmentRecord({
         separately in Inputs; this record does not certify those observations. No delivered response
         has been verified.
       </p>
+      {fullModel.assessmentPlan ? (
+        <>
+          <p>
+            Shared assessment · synthetic comparison baseline. Accepted evidence:{" "}
+            {fullModel.assessmentPlan.evidenceCounts.facility} meter records,{" "}
+            {fullModel.assessmentPlan.evidenceCounts.battery} BMS records,{" "}
+            {fullModel.assessmentPlan.evidenceCounts.workloads} imported jobs,{" "}
+            {fullModel.assessmentPlan.evidenceCounts.telemetry} GPU samples.
+          </p>
+          <p>
+            Power target: {fullModel.assessmentPlan.status.powerTargetMet ? "met" : "not met"}.
+            Recovery:{" "}
+            {fullModel.assessmentPlan.status.recoveryComplete
+              ? "complete in aggregate scenario"
+              : "unfinished work"}
+            . Job schedule: not validated. Backup autonomy: not established.
+          </p>
+          <p>
+            Configured reserve:{" "}
+            {fullModel.assessmentPlan.status.reserveProtected
+              ? "protected in simulation"
+              : "constraint failed"}
+            . Aggregate scenario feasibility:{" "}
+            {fullModel.assessmentPlan.status.scenarioFeasible
+              ? "passed declared constraints"
+              : "not established"}
+            .
+          </p>
+          {fullModel.assessmentPlan.warnings.map((warning) => (
+            <p key={warning}>{warning}</p>
+          ))}
+          <details>
+            <summary>Canonical planning readiness</summary>
+            <ul>
+              {fullModel.assessmentPlan.canonical.blockers.map((blocker) => (
+                <li key={blocker}>{blocker}</li>
+              ))}
+            </ul>
+          </details>
+        </>
+      ) : null}
       <p>
         Physical dispatch is locked. Job-level validation, current operating agreements and
         authorised equipment integrations are required before execution.

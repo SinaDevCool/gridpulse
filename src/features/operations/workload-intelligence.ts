@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { readCsv } from "../../shared/csv";
 import type { OperationsOverviewModel } from "./scenario-engine";
+import { evidenceInstant } from "./evidence-validation";
 
 export const workloadClassSchema = z.enum(["training", "inference", "batch", "critical"]);
 export const workloadStatusSchema = z.enum(["running", "queued", "held", "completed"]);
@@ -112,8 +113,8 @@ export function parseWorkloadCsv(text: string, source: "csv" | "slurm" = "csv"):
   return rows.map((cells, index) => {
     const row = index + 2;
     const requested = numberValue(at(cells, "requested_gpu_count"), "requested_gpu_count", row);
-    const earliest = new Date(at(cells, "earliest_start"));
-    const deadline = new Date(at(cells, "deadline"));
+    const earliest = new Date(evidenceInstant(at(cells, "earliest_start")));
+    const deadline = new Date(evidenceInstant(at(cells, "deadline")));
     if (!Number.isFinite(earliest.getTime()) || !Number.isFinite(deadline.getTime()))
       throw new Error(`Invalid workload date on row ${row}.`);
     return computeWorkloadSchema.parse({
@@ -124,7 +125,7 @@ export function parseWorkloadCsv(text: string, source: "csv" | "slurm" = "csv"):
       workloadClass: at(cells, "workload_class"),
       status: at(cells, "status"),
       priority: numberValue(at(cells, "priority"), "priority", row),
-      submittedAt: new Date(at(cells, "submitted_at") || earliest).toISOString(),
+      submittedAt: evidenceInstant(at(cells, "submitted_at") || earliest.toISOString()),
       earliestStart: earliest.toISOString(),
       deadline: deadline.toISOString(),
       expectedDurationMinutes: numberValue(
@@ -155,7 +156,7 @@ export function parseGpuTelemetryCsv(text: string): GpuTelemetry[] {
   const optionalNumber = (cells: string[], key: string) =>
     at(cells, key) ? Number(at(cells, key)) : null;
   return rows.map((cells, index) => {
-    const timestamp = new Date(at(cells, "timestamp"));
+    const timestamp = new Date(evidenceInstant(at(cells, "timestamp")));
     if (!Number.isFinite(timestamp.getTime()))
       throw new Error(`Invalid telemetry timestamp on row ${index + 2}.`);
     return gpuTelemetrySchema.parse({
@@ -205,29 +206,37 @@ export function buildScenarioWorkloads(model: OperationsOverviewModel): ComputeW
     ["train-1048", "Vision fine-tuning", "training", "queued", 45, 12_000, 180, true, true, 240],
     ["batch-218", "Embedding refresh", "batch", "queued", 30, 8_000, 120, true, true, 360],
     ["eval-912", "Model evaluation", "batch", "held", 20, 4_000, 90, true, true, 480],
-  ].map((item, index) =>
-    computeWorkloadSchema.parse({
-      workloadId: item[0],
-      name: item[1],
-      source: "scenario",
-      sourceWorkloadId: item[0],
-      workloadClass: item[2],
-      status: item[3],
-      priority: item[4],
-      submittedAt: iso(index * 20),
-      earliestStart: iso(360 + index * 20),
-      deadline: iso(960 + Number(item[6])),
-      expectedDurationMinutes: item[6],
-      requestedGpuCount: item[5],
-      minimumGpuCount: item[5],
-      gpuModel: model.scenario.gpuModel,
-      checkpointable: item[7],
-      preemptible: item[8],
-      geographicallyPortable: false,
-      maximumDelayMinutes: item[9],
-      measuredPowerMw: null,
-    }),
-  );
+  ]
+    .filter(
+      (item) => Math.floor(Number(item[5]) * Math.min(1, model.scenario.gpuCount / 84_000)) > 0,
+    )
+    .map((item, index) =>
+      computeWorkloadSchema.parse({
+        workloadId: item[0],
+        name: item[1],
+        source: "scenario",
+        sourceWorkloadId: item[0],
+        workloadClass: item[2],
+        status: item[3],
+        priority: item[4],
+        submittedAt: iso(index * 20),
+        earliestStart: iso(360 + index * 20),
+        deadline: iso(960 + Number(item[6])),
+        expectedDurationMinutes: item[6],
+        requestedGpuCount: Math.floor(
+          Number(item[5]) * Math.min(1, model.scenario.gpuCount / 84_000),
+        ),
+        minimumGpuCount: Math.floor(
+          Number(item[5]) * Math.min(1, model.scenario.gpuCount / 84_000),
+        ),
+        gpuModel: model.scenario.gpuModel,
+        checkpointable: item[7],
+        preemptible: item[8],
+        geographicallyPortable: false,
+        maximumDelayMinutes: item[9],
+        measuredPowerMw: null,
+      }),
+    );
 }
 
 export function assessWorkloads(
@@ -239,6 +248,12 @@ export function assessWorkloads(
   const concurrentPower = new Map<string, Map<string, Map<string, number>>>();
   telemetry.forEach((point) => {
     if (point.powerWatts == null) return;
+    if (
+      Date.parse(point.timestamp) < Date.parse(model.intervals[0].timestamp) ||
+      Date.parse(point.timestamp) >=
+        Date.parse(model.planningTime?.calculation.end ?? model.intervals.at(-1)!.timestamp)
+    )
+      return;
     const intervals =
       concurrentPower.get(point.workloadId) ?? new Map<string, Map<string, number>>();
     const devices = intervals.get(point.timestamp) ?? new Map<string, number>();
@@ -257,30 +272,50 @@ export function assessWorkloads(
           (samples.length
             ? samples.reduce((sum, value) => sum + value, 0) / samples.length / 1_000_000
             : null));
-    const estimatedPowerMw = measured ?? workload.requestedGpuCount * referenceMwPerGpu;
+    // Both paths use facility-equivalent MW; measured_power_mw is device/IT-side.
+    const estimatedPowerMw =
+      measured != null
+        ? measured * model.scenario.pue
+        : workload.requestedGpuCount * referenceMwPerGpu;
     const windowMinutes =
       (Date.parse(workload.deadline) - Date.parse(workload.earliestStart)) / 60_000;
     const deadlineSlackMinutes = Math.max(0, windowMinutes - workload.expectedDurationMinutes);
     const delay = Math.min(workload.maximumDelayMinutes, model.scenario.maximumDelayMinutes);
+    const overlap = model.intervals.some(
+      (point) =>
+        point.batteryDemandMw > model.scenario.importLimitMw - model.scenario.safetyReserveMw &&
+        Date.parse(point.timestamp) >= Date.parse(workload.earliestStart) &&
+        Date.parse(point.timestamp) <
+          Date.parse(workload.earliestStart) + workload.expectedDurationMinutes * 60_000,
+    );
+    const interruptible =
+      workload.status !== "running" || (workload.checkpointable && workload.preemptible);
     const eligible =
       workload.workloadClass !== "critical" &&
       workload.status !== "completed" &&
-      workload.checkpointable &&
-      workload.preemptible &&
+      interruptible &&
+      workload.requestedGpuCount <= model.scenario.gpuCount &&
+      overlap &&
       delay > 0 &&
       deadlineSlackMinutes >= delay;
     const reason =
       workload.workloadClass === "critical"
         ? "Protected critical workload"
-        : !workload.checkpointable
-          ? "No checkpoint support"
-          : !workload.preemptible
-            ? "Preemption is disabled"
-            : delay <= 0
-              ? "No declared delay window"
-              : deadlineSlackMinutes < delay
-                ? "Insufficient deadline slack"
-                : "Eligible within declared deadline";
+        : workload.status === "completed"
+          ? "Workload completed"
+          : workload.requestedGpuCount > model.scenario.gpuCount
+            ? "GPU request exceeds configured inventory"
+            : !overlap
+              ? "No overlap with the assessed risk intervals"
+              : workload.status === "running" && !workload.checkpointable
+                ? "No checkpoint support"
+                : workload.status === "running" && !workload.preemptible
+                  ? "Preemption is disabled"
+                  : delay <= 0
+                    ? "No declared delay window"
+                    : deadlineSlackMinutes < delay
+                      ? "Insufficient deadline slack"
+                      : "Eligible within declared deadline";
     return {
       ...workload,
       estimatedPowerMw: Number(estimatedPowerMw.toFixed(2)),
@@ -346,7 +381,11 @@ export function assessWorkloads(
           (sum, workload) =>
             sum +
             (workload.estimatedPowerMw *
-              Math.min(workload.maximumDelayMinutes, model.scenario.maximumDelayMinutes)) /
+              Math.min(
+                workload.expectedDurationMinutes,
+                workload.maximumDelayMinutes,
+                model.scenario.maximumDelayMinutes,
+              )) /
               60,
           0,
         )
@@ -362,7 +401,11 @@ export function assessWorkloads(
           (sum, workload) =>
             sum +
             (workload.peakReductionMw *
-              Math.min(workload.maximumDelayMinutes, model.scenario.maximumDelayMinutes)) /
+              Math.min(
+                workload.expectedDurationMinutes,
+                workload.maximumDelayMinutes,
+                model.scenario.maximumDelayMinutes,
+              )) /
               60,
           0,
         ),

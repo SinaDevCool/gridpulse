@@ -55,6 +55,7 @@ export function PowerBatteryView({
     selectedScenario,
     selectedHistorical,
     targetMw,
+    limitMw,
     selected,
     series,
     requiredMw,
@@ -118,7 +119,7 @@ export function PowerBatteryView({
         </div>
         <div>
           <dt>Facility limit · assumption</dt>
-          <dd>{formatMw(model.scenario.importLimitMw)}</dd>
+          <dd>{formatMw(limitMw)}</dd>
         </div>
         <div>
           <dt>Required response</dt>
@@ -166,7 +167,7 @@ export function PowerBatteryView({
       </div>
 
       <div className="power-insight-grid">
-        <PowerBalanceFlow selected={selected} mode={mode} limitMw={model.scenario.importLimitMw} />
+        <PowerBalanceFlow selected={selected} mode={mode} limitMw={limitMw} />
         <BatterySocPanel
           model={model}
           selected={selectedScenario}
@@ -189,6 +190,9 @@ export function PowerBatteryView({
               <p className="operations-chart-purpose">
                 Facility power and battery behavior use aligned timelines so MW and state of charge
                 are never compared on the same axis.
+                {mode === "historical"
+                  ? " Limit lines show the selected interval's declared analysis reference, not a verified historical contract."
+                  : ""}
               </p>
               <OperationsChartLegend
                 items={[
@@ -214,7 +218,7 @@ export function PowerBatteryView({
                   },
                   {
                     label: "Facility limit",
-                    detail: `${formatMw(model.scenario.importLimitMw)} · assumption`,
+                    detail: `${formatMw(limitMw)} · selected interval assumption`,
                     tone: "limit",
                     mark: "dash",
                   },
@@ -222,7 +226,7 @@ export function PowerBatteryView({
               />
               <PowerTimeline
                 data={series}
-                limitMw={model.scenario.importLimitMw}
+                limitMw={limitMw}
                 targetMw={targetMw}
                 selectedTimestamp={selected?.timestamp ?? null}
               />

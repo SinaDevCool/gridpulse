@@ -146,7 +146,10 @@ test("Compute & Workloads imports real scheduler and DCGM-compatible evidence", 
   });
   let overviewReleased = false;
   await page.route("**/api/operations/assess", async (route) => {
-    if (route.request().postDataJSON()?.kind === "overview") {
+    if (
+      route.request().postDataJSON()?.kind === "overview" &&
+      !route.request().postDataJSON()?.evidence?.workloads?.length
+    ) {
       const response = await route.fetch();
       await overviewGate;
       await route.fulfill({ response });
@@ -165,7 +168,7 @@ test("Compute & Workloads imports real scheduler and DCGM-compatible evidence", 
     buffer: Buffer.from(
       [
         "workload_id,name,workload_class,status,priority,earliest_start,deadline,expected_duration_minutes,requested_gpu_count,minimum_gpu_count,checkpointable,preemptible,maximum_delay_minutes",
-        "job-live,Customer batch,batch,running,10,2026-09-02T01:00:00Z,2026-09-02T08:00:00Z,120,8,4,true,true,120",
+        "job-live,Customer batch,batch,running,10,2026-09-26T01:00:00Z,2026-09-26T08:00:00Z,120,8,4,true,true,120",
       ].join("\n"),
     ),
   });
@@ -187,7 +190,7 @@ test("Compute & Workloads imports real scheduler and DCGM-compatible evidence", 
     buffer: Buffer.from(
       [
         "timestamp,workload_id,gpu_uuid,power_watts,gpu_utilization_percent",
-        "2026-09-02T02:00:00Z,job-live,GPU-a,500000,75",
+        "2026-09-26T02:00:00Z,job-live,GPU-a,500000,75",
       ].join("\n"),
     ),
   });
@@ -225,7 +228,7 @@ test("Power & Battery exposes dispatch physics and imports measured evidence", a
     "101.6 MW + 5 MW ≈ 106.6 MW",
   );
   await expect(page.locator(".power-flow-equations span").last()).toContainText(
-    "75.7 MW + 30.9 MW ≈ 106.6 MW",
+    "75.6 MW + 30.9 MW ≈ 106.6 MW",
   );
   await page
     .locator("#operations-inputs")

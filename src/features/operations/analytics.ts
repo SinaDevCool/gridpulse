@@ -1,4 +1,9 @@
 import type { OperationalMeasurement, OperationsAssessment, OperationsInput } from "./contracts";
+import {
+  chronologicalEvidence,
+  evidenceCadenceWarnings,
+  invalidEvidence,
+} from "./evidence-validation";
 
 const round = (value: number, digits = 2) => Number(value.toFixed(digits));
 
@@ -101,11 +106,11 @@ export function assessOperations(input: OperationsInput): OperationsAssessment {
     input.contractedLimitMw <= 0
   )
     throw new Error("Accepted measurements and a positive import limit are required.");
-  const measurements = [...input.measurements].sort((a, b) =>
-    a.timestamp.localeCompare(b.timestamp),
-  );
-  if (new Set(measurements.map((point) => point.timestamp)).size !== measurements.length)
-    throw new Error("Duplicate measurement timestamps require reconciliation.");
+  const measurements = chronologicalEvidence(input.measurements);
+  if (evidenceCadenceWarnings(measurements).length)
+    invalidEvidence(
+      "Historical duration and forecast calculations require at least four regular, reconciled intervals. Gaps are not observed energy.",
+    );
   const intervalMinutes = inferIntervalMinutes(measurements);
   const values = measurements.map((point) => point.gridImportMw);
   const violationPoints = measurements.filter(

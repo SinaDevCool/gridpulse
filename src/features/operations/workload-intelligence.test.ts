@@ -20,7 +20,7 @@ describe("workload intelligence", () => {
         `2026-09-26T08:00:00Z,${workload.workloadId},GPU-a,500000`,
       ].join("\n"),
     );
-    expect(assessWorkloads([workload], telemetry, model).decisions[0].estimatedPowerMw).toBe(1.2);
+    expect(assessWorkloads([workload], telemetry, model).decisions[0].estimatedPowerMw).toBe(1.5);
   });
   it("keeps scenario workloads explicitly reference-based", () => {
     const assessment = assessWorkloads(buildScenarioWorkloads(model), [], model);
@@ -54,19 +54,19 @@ describe("workload intelligence", () => {
     const workloads = parseWorkloadCsv(
       [
         "workload_id,name,workload_class,status,priority,earliest_start,deadline,expected_duration_minutes,requested_gpu_count,minimum_gpu_count,checkpointable,preemptible,maximum_delay_minutes",
-        "job-1,Nightly training,training,running,20,2026-09-02T01:00:00Z,2026-09-02T08:00:00Z,120,8,4,true,true,120",
+        "job-1,Nightly training,training,running,20,2026-09-26T01:00:00Z,2026-09-26T08:00:00Z,120,8,4,true,true,120",
       ].join("\n"),
     );
     const telemetry = parseGpuTelemetryCsv(
       [
         "timestamp,workload_id,gpu_uuid,power_watts,gpu_utilization_percent",
-        "2026-09-02T02:00:00Z,job-1,GPU-a,500000,75",
-        "2026-09-02T02:05:00Z,job-1,GPU-b,700000,80",
+        "2026-09-26T02:00:00Z,job-1,GPU-a,500000,75",
+        "2026-09-26T02:05:00Z,job-1,GPU-b,700000,80",
       ].join("\n"),
     );
     const assessment = assessWorkloads(workloads, telemetry, model);
     expect(assessment.decisions[0].powerEvidence).toBe("measured");
-    expect(assessment.decisions[0].estimatedPowerMw).toBe(0.6);
+    expect(assessment.decisions[0].estimatedPowerMw).toBe(0.75);
     expect(assessment.telemetryCompletenessPercent).toBeGreaterThan(0);
   });
 

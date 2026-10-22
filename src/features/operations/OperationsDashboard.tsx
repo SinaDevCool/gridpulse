@@ -2,11 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { OperationsEvidenceProvider } from "./OperationsEvidenceProvider";
-import {
-  buildOperationsScenario,
-  defaultOperationsScenario,
-  type OperationsScenarioKind,
-} from "./scenario-engine";
+import { defaultOperationsScenario, type OperationsScenarioKind } from "./scenario-engine";
 import { ComputeWorkloadsView } from "./ComputeWorkloadsView";
 import { PowerBatteryView } from "./PowerBatteryView";
 import { useOverviewAssessment } from "./hooks/use-overview-assessment";
@@ -46,9 +42,8 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
   const [scenario, setScenario] = useState(defaultOperationsScenario);
   const [selected, setSelected] = useState<OperationsScenarioKind>("battery_workload");
   const [evidenceOpen, setEvidenceOpen] = useState(false);
-  const { serverModel, assessmentIdentity, backendState, lifecycle } =
+  const { serverModel, fallbackModel, assessmentIdentity, backendState, lifecycle } =
     useOverviewAssessment(scenario);
-  const fallbackModel = useMemo(() => buildOperationsScenario(scenario), [scenario]);
   const fullModel = serverModel ?? fallbackModel;
   const model = useMemo(() => scopeOperationsModel(fullModel, window), [fullModel, window]);
   const layout = usePanelLayout();
