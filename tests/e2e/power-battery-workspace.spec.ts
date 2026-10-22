@@ -6,6 +6,10 @@ test("constrained battery story, events and interval records share one selection
   page,
 }) => {
   await page.goto("/operations?view=power&window=today&mode=scenario");
+  // A cold CI Vite server may still be hydrating; wait for the real readiness gate, not a delay.
+  await expect(page.getByRole("button", { name: /^(Show|Hide) panel/ })).toBeEnabled({
+    timeout: 20000,
+  });
   const inputs = await openScenarioInputs(page);
   await inputs.getByLabel("Facility Limit", { exact: false }).fill("50");
   await inputs.getByRole("button", { name: "Recalculate Scenario" }).click();
