@@ -2,6 +2,7 @@ import { useState } from "react";
 import { formatMw, formatPercent } from "../formatting";
 import { intervalLabel, type BatteryTimelinePoint } from "./select-battery-workspace";
 import type { EvidenceMode } from "./presentation";
+import { intervalRow } from "../hooks/interval-row";
 
 type Filter = "all" | "target" | "limit" | "constraint" | "missing";
 export function PowerDataTable({
@@ -9,11 +10,15 @@ export function PowerDataTable({
   selectedTimestamp,
   onSelect,
   mode,
+  onPreview,
+  pinnedTimestamp = selectedTimestamp,
 }: {
   data: BatteryTimelinePoint[];
   selectedTimestamp: string | null;
   onSelect: (timestamp: string) => void;
   mode: EvidenceMode;
+  onPreview?: (timestamp: string | null) => void;
+  pinnedTimestamp?: string | null;
 }) {
   const [filter, setFilter] = useState<Filter>("all");
   const rows = data.filter(
@@ -66,8 +71,12 @@ export function PowerDataTable({
           <tbody>
             {rows.map((point) => (
               <tr
+                {...intervalRow(point.timestamp, onSelect, onPreview)}
                 key={point.timestamp}
-                className={point.timestamp === selectedTimestamp ? "selected" : ""}
+                aria-selected={point.timestamp === pinnedTimestamp}
+                data-preview={
+                  point.timestamp === selectedTimestamp && selectedTimestamp !== pinnedTimestamp
+                }
               >
                 <th scope="row">
                   <button

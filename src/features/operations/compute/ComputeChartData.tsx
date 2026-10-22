@@ -8,6 +8,7 @@ import { OperationsTooltipShell, TooltipRow } from "../visualization";
 
 import { number } from "./presentation";
 import { formatOperationsTime } from "../presentation";
+import { intervalRow } from "../hooks/interval-row";
 
 export function ComputeTooltip({
   active,
@@ -48,11 +49,15 @@ export function ComputeChartData({
   model,
   timestamp,
   onSelect,
+  onPreview,
+  pinnedTimestamp = timestamp,
   selected,
 }: {
   model: OperationsOverviewModel;
   timestamp?: string;
   onSelect: (value: string) => void;
+  onPreview?: (value: string | null) => void;
+  pinnedTimestamp?: string;
   selected?: WorkloadDecision;
 }) {
   const [context, setContext] = useState(false);
@@ -100,7 +105,12 @@ export function ComputeChartData({
           </thead>
           <tbody>
             {points.map((point) => (
-              <tr key={point.timestamp} aria-selected={point.timestamp === timestamp}>
+              <tr
+                {...intervalRow(point.timestamp, onSelect, onPreview)}
+                key={point.timestamp}
+                aria-selected={point.timestamp === pinnedTimestamp}
+                data-preview={point.timestamp === timestamp && timestamp !== pinnedTimestamp}
+              >
                 <th scope="row">
                   <button
                     type="button"

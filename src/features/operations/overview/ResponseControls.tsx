@@ -3,6 +3,7 @@ import { formatMw } from "../formatting";
 import { formatOperationsTime } from "../presentation";
 import type { OperationsOverviewModel, OperationsScenarioKind } from "../scenario-engine";
 import { responseOptions, selectOperatingSummary } from "./select-operating-summary";
+import { SignedResponseDiagram } from "./SignedResponseDiagram";
 
 export function ResponseControls({
   selected,
@@ -41,24 +42,21 @@ export function ResponseBreakdown({
   timestamp?: string;
 }) {
   const s = selectOperatingSummary(model, selected, timestamp);
-  const scale = Math.max(s.required, Math.max(0, s.battery) + s.workload, 1);
   return (
     <section className="ops-response-breakdown" aria-label="Selected response breakdown">
       <header>
         <strong>Inspecting interval · {formatOperationsTime(s.peak.timestamp)}</strong>
         <span>Same-interval contributions · not independent maxima</span>
       </header>
-      <div className="ops-contribution-bar" aria-hidden="true">
-        <i className="battery" style={{ width: `${(Math.max(0, s.battery) / scale) * 100}%` }} />
-        <i className="workload" style={{ width: `${(s.workload / scale) * 100}%` }} />
-      </div>
+      <SignedResponseDiagram summary={s} />
+      <p>
+        At this interval: {formatMw(s.target - (s.peak.baselineDemandMw - s.response))} margin to
+        safety target · {formatMw(s.limit - (s.peak.baselineDemandMw - s.response))} margin to
+        facility limit. Negative margin means exceedance.
+      </p>
       <dl>
         {[
           ["Required reduction", s.required],
-          [s.battery < 0 ? "Battery charging (negative)" : "Battery discharge", s.battery],
-          ["Workload reduction", s.workload],
-          ["Recovery load", s.recovery],
-          ["Net response", s.response],
           ["Target shortfall", s.residual],
         ].map(([label, value]) => (
           <div key={label}>

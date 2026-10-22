@@ -9,6 +9,7 @@ import { formatMw } from "../formatting";
 import { WorkloadWindowLanes } from "./WorkloadWindowLanes";
 import { selectComputeTimeline, workloadTimeRelationship } from "./select-compute-timeline";
 import { ComputeTimelinePlot } from "./ComputeTimelinePlot";
+import { IntervalNavigation } from "../inspection";
 
 export function ComputeTimeline({ workspace }: { workspace: ComputeWorkspaceContract }) {
   const { displayModel, model, assessment, selectedId, setSelectedId } = workspace;
@@ -109,6 +110,7 @@ export function ComputeTimeline({ workspace }: { workspace: ComputeWorkspaceCont
         }
       />
       <ComputeTimelinePlot
+        previewing={inspection.previewing}
         data={data}
         from={from}
         to={to}
@@ -120,6 +122,11 @@ export function ComputeTimeline({ workspace }: { workspace: ComputeWorkspaceCont
         onSelect={inspection.select}
       />
       <div className="compute-time-inspector">
+        <IntervalNavigation
+          points={points}
+          timestamp={inspection.pinnedTimestamp}
+          onSelect={inspection.select}
+        />
         <label htmlFor="compute-inspect-time">
           Inspect time · <strong>{formatOperationsTime(current.timestamp)}</strong>
         </label>
@@ -160,10 +167,12 @@ export function ComputeTimeline({ workspace }: { workspace: ComputeWorkspaceCont
         <p>Showing 5 windows. Open the workload queue to inspect all {pool.length}.</p>
       ) : null}
       <ComputeChartData
+        pinnedTimestamp={inspection.pinnedTimestamp}
         model={displayModel}
         timestamp={inspection.timestamp}
         onSelect={inspection.select}
         selected={inspected}
+        onPreview={inspection.preview}
       />
     </article>
   );

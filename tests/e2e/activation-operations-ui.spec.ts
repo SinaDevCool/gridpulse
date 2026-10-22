@@ -281,7 +281,7 @@ test("Operations charts expose explicit legends, units, targets, and full data a
       .getByLabel("Operations Overview", { exact: true })
       .getByText("Facility limit", { exact: true }),
   ).toBeVisible();
-  await expect(page.getByText("Peak Reduction", { exact: true }).first()).toBeVisible();
+  await expect(page.locator(".ops-impact-lanes")).toContainText("Peak reduced by");
   await page.getByText("View Chart Data", { exact: true }).click();
   await expect(page.getByRole("columnheader", { name: "Baseline (MW)" })).toBeVisible();
   await expect(

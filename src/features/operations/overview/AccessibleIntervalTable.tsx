@@ -1,15 +1,20 @@
 import type { OperationsOverviewModel } from "../scenario-engine";
 import { integer, number } from "./presentation";
+import { intervalRow } from "../hooks/interval-row";
 export function AccessibleIntervalTable({
   model,
   mode,
   timestamp,
   onSelect,
+  onPreview,
+  pinnedTimestamp = timestamp,
 }: {
   model: OperationsOverviewModel;
   mode: "power" | "compute";
   timestamp?: string;
   onSelect: (value: string) => void;
+  onPreview?: (value: string | null) => void;
+  pinnedTimestamp?: string;
 }) {
   return (
     <details className="operations-v2-chart-data">
@@ -47,7 +52,12 @@ export function AccessibleIntervalTable({
           </thead>
           <tbody>
             {model.intervals.map((point) => (
-              <tr key={point.timestamp} aria-selected={point.timestamp === timestamp}>
+              <tr
+                {...intervalRow(point.timestamp, onSelect, onPreview)}
+                key={point.timestamp}
+                aria-selected={point.timestamp === pinnedTimestamp}
+                data-preview={point.timestamp === timestamp && timestamp !== pinnedTimestamp}
+              >
                 <th scope="row">
                   <button
                     type="button"

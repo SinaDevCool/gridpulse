@@ -25,6 +25,7 @@ export function ComputeTimelinePlot({
   limit,
   visibility,
   onSelect,
+  previewing = false,
 }: {
   data: ReturnType<typeof selectComputeTimeline>;
   from: number;
@@ -35,6 +36,7 @@ export function ComputeTimelinePlot({
   limit: number;
   visibility: ChartVisibility;
   onSelect: (timestamp: string) => void;
+  previewing?: boolean;
 }) {
   const ceiling = facilityContext
     ? Math.max(limit, ...data.map((p) => p.baselineDemandMw))
@@ -97,7 +99,11 @@ export function ComputeTimelinePlot({
                 strokeOpacity={0}
               />
             ))}
-          <ReferenceLine x={timestamp} stroke="var(--ops-text)" strokeDasharray="3 3" />
+          <ReferenceLine
+            x={timestamp}
+            stroke="var(--ops-text)"
+            strokeDasharray={previewing ? "3 3" : undefined}
+          />
           {!facilityContext ? (
             <Area
               dataKey="requiredWorkloadMw"

@@ -1,5 +1,4 @@
 import type { OperationsOverviewModel, OperationsScenarioKind } from "../scenario-engine";
-import { PlanObligations } from "./PlanObligations";
 import { OperatingSummary } from "./OperatingSummary";
 import { DemandChart } from "./DemandChart";
 export function OverviewView({
@@ -27,7 +26,6 @@ export function OverviewView({
       </h2>
       <OperatingSummary model={model} selected={selected} />
       <DemandChart model={model} fullModel={fullModel} selected={selected} onSelect={onSelect} />
-      <PlanObligations fullModel={fullModel} selected={selected} />
     </section>
   );
 }
