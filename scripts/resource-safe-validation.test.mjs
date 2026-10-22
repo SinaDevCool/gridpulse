@@ -52,6 +52,23 @@ test("full pass orders unit tests before build before UI; Finder remains opt-in"
   assert.ok(!names.some((s) => s.includes("finder")));
   assert.ok(validationPlan("finder")[0].includes("test:e2e:finder"));
 });
+
+test("browser specs get separate bounded stages and compiled runtime is explicit", () => {
+  const specs = ["tests/e2e/operations-a.spec.ts", "tests/e2e/solution-b.spec.ts"];
+  const stages = validationPlan("ui", specs);
+  assert.equal(stages.length, 2);
+  assert.ok(stages.every((stage) => stage.at(-1) === "--workers=1"));
+  assert.ok(!stages[0].includes(specs[1]));
+  assert.equal(
+    validationPlan("full", [], specs).filter((stage) => stage.includes("playwright")).length,
+    2,
+  );
+  assert.deepEqual(validationPlan("runtime"), [["run", "test:operations:runtime"]]);
+  assert.deepEqual(validationPlan("build"), [
+    ["run", "build"],
+    ["run", "check:performance-budgets"],
+  ]);
+});
 test("preflight refuses low RAM, unknown memory, and existing heavy processes", () => {
   assert.throws(() => assertResources({ availableMb: 2000, busy: [] }), /3072/);
   assert.throws(() => assertResources({ availableMb: NaN, busy: [] }));

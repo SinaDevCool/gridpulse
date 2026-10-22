@@ -20,18 +20,20 @@ export function validationPlan(mode, targets = [], operationsSpecs = []) {
   if (mode === "checks") return checks;
   if (mode === "operations") return [npm("test:validation-tools"), npm("test:product:operations")];
   if (mode === "unit" && targets.length) return [npm("test", targets)];
+  if (mode === "build") return [npm("build"), npm("check:performance-budgets")];
+  if (mode === "runtime") return [npm("test:operations:runtime")];
   if (mode === "ui" && targets.length)
-    return [["exec", "playwright", "--", "test", ...targets, "--workers=1"]];
+    return targets.map((target) => ["exec", "playwright", "--", "test", target, "--workers=1"]);
   if (mode === "finder") return [npm("test:e2e:finder")];
   if (mode === "full")
     return [
       ...checks,
       ...["test", "build", "check:performance-budgets"].map((name) => npm(name)),
-      ["exec", "playwright", "--", "test", ...operationsSpecs, "--workers=1"],
+      ...operationsSpecs.map((spec) => ["exec", "playwright", "--", "test", spec, "--workers=1"]),
       npm("test:operations:runtime"),
     ];
   throw new Error(
-    "Use checks, operations, unit <test paths>, ui <spec paths>, finder, or full. Finder is intentionally opt-in.",
+    "Use checks, operations, unit <test paths>, ui <spec paths>, build, runtime, finder, or full. Finder is intentionally opt-in.",
   );
 }
 
@@ -168,7 +170,8 @@ export async function main(args = process.argv.slice(2)) {
           file,
         ) &&
         file.endsWith(".spec.ts") &&
-        file !== "operations-runtime-contracts.spec.ts",
+        file !== "operations-runtime-contracts.spec.ts" &&
+        file !== "solution-runtime-boundary.spec.ts",
     )
     .map((file) => `tests/e2e/${file}`);
   const plan = validationPlan(args[0] ?? "operations", args.slice(1), specs);
