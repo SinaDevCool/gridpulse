@@ -1,6 +1,22 @@
 import { expect, test } from "@playwright/test";
 import { openEvidenceInputs, openScenarioInputs } from "./operations-inputs";
 
+test("a mismatched calculation version cannot become an authoritative assessment", async ({
+  page,
+}) => {
+  await page.route("**/api/operations/assess", async (route) => {
+    const response = await route.fetch();
+    const body = await response.json();
+    await route.fulfill({
+      response,
+      json: { ...body, calculationVersion: "obsolete-calculation" },
+    });
+  });
+  await page.goto("/operations?view=overview&window=today&mode=scenario");
+  await expect(page.locator(".ops-service-status")).toContainText("backend unavailable");
+  await expect(page.locator(".ops-assessment-notice")).toContainText("browser demonstration only");
+});
+
 test("one accepted import produces one shared assessment across all three tabs", async ({
   page,
 }) => {
