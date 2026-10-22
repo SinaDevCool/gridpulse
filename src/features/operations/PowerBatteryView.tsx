@@ -87,7 +87,7 @@ export function PowerBatteryView({
       <div className="power-toolbar">
         <p className="operations-chart-purpose">
           {mode === "scenario"
-            ? `Full-horizon assessment: ${workspace.targetMet ? "target met" : "target unmet"} · ${workspace.reserveProtected ? "reserve protected" : "reserve requirement not satisfied"}. Display windows never reset battery state.`
+            ? `Battery-only comparison · workload shifting excluded. Full-horizon assessment: ${workspace.targetMet ? "target met" : "target unmet"} · ${workspace.reserveProtected ? "reserve protected" : "reserve requirement not satisfied"}. Display windows never reset battery state.`
             : "Uploaded observations only · missing battery evidence stays unknown. No dispatch constraint or backup autonomy is inferred."}
         </p>
         <button

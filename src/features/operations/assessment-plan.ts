@@ -1,4 +1,8 @@
-import { buildOperationsScenario, type OperationsScenario } from "./scenario-engine";
+import {
+  buildOperationsScenario,
+  type OperationsScenario,
+  type OperationsOverviewModel,
+} from "./scenario-engine";
 import {
   assessWorkloads,
   buildScenarioWorkloads,
@@ -41,20 +45,18 @@ export const emptyAssessmentEvidence: AssessmentEvidence = {
   battery: [],
 };
 
-/** One path for API and labelled browser fallback. Observations never silently
- * replace a synthetic baseline: meters cannot supply an electrical/job model. */
-export function buildAssessmentPlan(
-  scenario: OperationsScenario,
-  evidence = emptyAssessmentEvidence,
-  at = new Date().toISOString(),
+/** Both API entry points use the same workload screening and interval capacity cap.
+ * This is still an aggregate heuristic, never a canonical job optimisation. */
+export function assessSharedWorkloads(
+  initialModel: OperationsOverviewModel,
+  workloads: ComputeWorkload[],
+  telemetry: GpuTelemetry[],
 ) {
-  let model = buildOperationsScenario(scenario, at);
-  const imported = evidence.workloads.filter((workload) => workload.source !== "scenario");
-  const workloads = imported.length ? imported : buildScenarioWorkloads(model);
+  let model = initialModel;
   if (new Set(workloads.map((workload) => workload.workloadId)).size !== workloads.length)
     invalidEvidence("Duplicate workload identities require reconciliation.");
-  let assessment = assessWorkloads(workloads, evidence.telemetry, model);
-  if (imported.length) {
+  let assessment = assessWorkloads(workloads, telemetry, model);
+  if (workloads.some((workload) => workload.source !== "scenario")) {
     const capacity = model.intervals.map((point) =>
       assessment.decisions
         .filter(
@@ -68,13 +70,28 @@ export function buildAssessmentPlan(
         .reduce(
           (sum, job) =>
             sum +
-            job.estimatedPowerMw * (1 - scenario.gpuIdlePowerWatts / scenario.gpuActivePowerWatts),
+            job.estimatedPowerMw *
+              (1 - model.scenario.gpuIdlePowerWatts / model.scenario.gpuActivePowerWatts),
           0,
         ),
     );
-    model = buildOperationsScenario(scenario, at, capacity);
-    assessment = assessWorkloads(workloads, evidence.telemetry, model);
+    model = buildOperationsScenario(model.scenario, model.generatedAt, capacity);
+    assessment = assessWorkloads(workloads, telemetry, model);
   }
+  return { model, assessment };
+}
+
+/** One path for API and labelled browser fallback. Observations never silently
+ * replace a synthetic baseline: meters cannot supply an electrical/job model. */
+export function buildAssessmentPlan(
+  scenario: OperationsScenario,
+  evidence = emptyAssessmentEvidence,
+  at = new Date().toISOString(),
+) {
+  const initialModel = buildOperationsScenario(scenario, at);
+  const imported = evidence.workloads.filter((workload) => workload.source !== "scenario");
+  const workloads = imported.length ? imported : buildScenarioWorkloads(initialModel);
+  const { model, assessment } = assessSharedWorkloads(initialModel, workloads, evidence.telemetry);
   const alignedPower = alignPowerEvidence(evidence.facility, evidence.battery);
   const warnings = evidence.facility.length
     ? [

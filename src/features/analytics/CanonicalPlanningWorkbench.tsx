@@ -85,6 +85,10 @@ export function CanonicalPlanningWorkbench() {
         Choose an analysis and paste its versioned JSON contract. The browser checks the format; the
         canonical engine performs the calculation.
       </p>
+      <p>
+        Separate analysis only. Results here do not replace the scenario charts in Overview, Compute
+        & Workloads or Power & Battery. A successful job is not permission to dispatch.
+      </p>
       <div className="canonical-field">
         <label htmlFor="canonical-analysis-kind">Analysis</label>
         <select
