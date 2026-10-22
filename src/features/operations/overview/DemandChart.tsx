@@ -271,25 +271,27 @@ export function DemandChart({
               />
             ) : null}
             <ReferenceLine x={inspection.timestamp} stroke="var(--ops-selection)" />
-            <Brush
-              dataKey="timestamp"
-              tickFormatter={(value: string) => formatOperationsTime(value)}
-              fill="var(--ops-demand-fill)"
-              stroke="var(--ops-chart-grid)"
-              height={24}
-              startIndex={range?.startIndex ?? 0}
-              endIndex={range?.endIndex ?? model.intervals.length - 1}
-              onChange={(next) => {
-                if (next.startIndex != null && next.endIndex != null) {
-                  setInspectionRange({ startIndex: next.startIndex, endIndex: next.endIndex });
-                  const point = model.intervals.findIndex(
-                    (point) => point.timestamp === inspection.timestamp,
-                  );
-                  if (point < next.startIndex || point > next.endIndex)
-                    inspection.select(model.intervals[next.startIndex].timestamp);
-                }
-              }}
-            />
+            {chartData.length > 1 ? (
+              <Brush
+                dataKey="timestamp"
+                tickFormatter={(value: string) => formatOperationsTime(value)}
+                fill="var(--ops-demand-fill)"
+                stroke="var(--ops-chart-grid)"
+                height={24}
+                startIndex={range?.startIndex ?? 0}
+                endIndex={range?.endIndex ?? model.intervals.length - 1}
+                onChange={(next) => {
+                  if (next.startIndex != null && next.endIndex != null) {
+                    setInspectionRange({ startIndex: next.startIndex, endIndex: next.endIndex });
+                    const point = model.intervals.findIndex(
+                      (point) => point.timestamp === inspection.timestamp,
+                    );
+                    if (point < next.startIndex || point > next.endIndex)
+                      inspection.select(model.intervals[next.startIndex].timestamp);
+                  }
+                }}
+              />
+            ) : null}
           </ComposedChart>
         </ResponsiveContainer>
       </div>
