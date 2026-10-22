@@ -17,7 +17,7 @@ test("backend failures stay explicit and input preferences never save facility v
   await expect(page.locator(".ops-assessment-notice")).toContainText("browser demonstration only");
   const panel = await openScenarioInputs(page);
   await panel.getByLabel("Facility Limit", { exact: false }).fill("137");
-  await panel.getByRole("button", { name: "Close inputs" }).click();
+  await page.getByRole("button", { name: "Hide panel", exact: true }).click();
   const preferences = await page.evaluate(() =>
     Object.fromEntries(Object.entries(localStorage).filter(([key]) => key.includes("operations"))),
   );
@@ -90,7 +90,7 @@ test("single input panel retains drafts, validates fields and recalculates every
   await panel.getByLabel("Facility Limit", { exact: false }).fill("120");
   await expect(page.getByRole("meter")).toHaveAttribute("aria-valuenow", "98");
   await expect(page.getByText(/Unapplied changes/).first()).toBeVisible();
-  await panel.getByRole("button", { name: "Close inputs" }).click();
+  await page.getByRole("button", { name: "Hide panel", exact: true }).click();
   await page.getByRole("link", { name: "Power & Battery", exact: true }).click();
   await page.getByRole("button", { name: /^(Show|Hide) panel/ }).click();
   await expect(panel.getByLabel("Facility Limit", { exact: false })).toHaveValue("120");

@@ -46,7 +46,7 @@ jobs:
       - run: npm run check:performance-budgets
       - run: npx playwright install --with-deps chromium
       - name: Validate Operations controls
-        run: npx playwright test tests/e2e/activation-operations-ui.spec.ts tests/e2e/operations-redesign-ui.spec.ts tests/e2e/operations-release-controls.spec.ts tests/e2e/operations-control-panel.spec.ts tests/e2e/compute-visual-workspace.spec.ts tests/e2e/operations-window-semantics.spec.ts tests/e2e/operations-obligations.spec.ts tests/e2e/operations-docked-workspace.spec.ts tests/e2e/operations-task-review.spec.ts --workers=1
+        run: npx playwright test tests/e2e/activation-operations-ui.spec.ts tests/e2e/operations-redesign-ui.spec.ts tests/e2e/operations-release-controls.spec.ts tests/e2e/operations-control-panel.spec.ts tests/e2e/compute-visual-workspace.spec.ts tests/e2e/operations-window-semantics.spec.ts tests/e2e/operations-obligations.spec.ts tests/e2e/operations-docked-workspace.spec.ts tests/e2e/operations-task-review.spec.ts tests/e2e/solution-navigation.spec.ts --workers=1
         env:
           GRIDPULSE_PRODUCT_MODE: full
       - name: Validate compiled Operations calculation API without database access

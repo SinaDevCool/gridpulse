@@ -1,6 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { z } from "zod";
 import { AppShell } from "@/components/product/AppShell";
+import { OperationsNavigation } from "@/features/operations/OperationsNavigation";
 import {
   OperationsDashboard,
   type OperationsView,
@@ -50,7 +51,16 @@ export const Route = createFileRoute("/operations")({
 function OperationsPage() {
   const { view, window, mode } = Route.useSearch();
   return (
-    <AppShell workspace>
+    <AppShell
+      workspace
+      navigation={
+        <OperationsNavigation
+          view={view as OperationsView}
+          window={window as OperatingWindowPreset}
+          mode={mode as OperationsDataMode}
+        />
+      }
+    >
       <OperationsDashboard
         view={view as OperationsView}
         window={window as OperatingWindowPreset}

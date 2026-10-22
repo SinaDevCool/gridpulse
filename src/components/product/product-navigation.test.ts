@@ -4,9 +4,31 @@ import {
   isWorkspaceDestinationActive,
   workspaceLinks,
   workspaceDestinationsForMode,
+  solutionForPath,
+  solutionDestinations,
 } from "./product-navigation";
 
 describe("workspace outcome navigation", () => {
+  it("assigns routes to one customer solution without changing destinations", () => {
+    for (const path of [
+      "/portfolio",
+      "/portfolio/site-1",
+      "/workspaces",
+      "/capacity-dossiers/test",
+      "/power-finder",
+    ])
+      expect(solutionForPath(path).id).toBe("planning");
+    for (const path of ["/operations", "/operations/site-1"])
+      expect(solutionForPath(path).id).toBe("operations");
+    expect(solutionForPath("/operations-other").id).toBe("planning");
+    expect(solutionDestinations("/portfolio", "finder").map((item) => item.id)).toEqual([
+      "sites",
+      "finder",
+    ]);
+    expect(solutionDestinations("/operations", "full").map((item) => item.id)).toEqual([
+      "operations",
+    ]);
+  });
   it("exposes 3 independent primary workspace destinations", () => {
     expect(primaryWorkspaceDestinationIds).toEqual(["sites", "finder", "operations"]);
     expect(workspaceDestinationsForMode("finder").map((item) => item.to)).toEqual([

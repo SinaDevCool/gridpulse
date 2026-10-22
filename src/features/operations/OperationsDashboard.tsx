@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { OperationsEvidenceProvider } from "./OperationsEvidenceProvider";
 import {
@@ -21,6 +21,7 @@ import { AssessmentRecord } from "./configuration/AssessmentRecord";
 import type { OperationsView } from "./view-contracts";
 import { OverviewView } from "./overview/OverviewView";
 import { ConfigurationActions, ConfigurationForm } from "./configuration/ConfigurationForm";
+import { OperationsExitGuard } from "./configuration/OperationsExitGuard";
 import { ConfigurationPanel } from "./configuration/ConfigurationPanel";
 import { WorkspaceInputs } from "./configuration/WorkspaceInputs";
 import { EvidenceInputs } from "./configuration/EvidenceInputs";
@@ -78,6 +79,7 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
   return (
     <WorkloadEvidenceProvider model={fullModel}>
       <InputPanelContext.Provider value={openInputs}>
+        <OperationsExitGuard dirty={draft.dirty} />
         <main
           id="main-content"
           className={`operations-v2 operations-v2--${view} ops-control-layout ${layout.open && !layout.mobile ? "inputs-open" : ""}`}
@@ -174,23 +176,6 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
                 </button>
                 <h1>{view === "power" ? "Power & Battery" : "Power Operations"}</h1>
               </header>
-              <nav className="operations-v2-tabs" aria-label="Power Operations views">
-                {[
-                  ["overview", "Overview"],
-                  ["compute", "Compute & Workloads"],
-                  ["power", "Power & Battery"],
-                ].map(([id, label]) => (
-                  <Link
-                    key={id}
-                    to="/operations"
-                    search={{ view: id, window, mode: id === "power" ? mode : "scenario" }}
-                    className={view === id ? "active" : undefined}
-                    aria-current={view === id ? "page" : undefined}
-                  >
-                    {label}
-                  </Link>
-                ))}
-              </nav>
             </div>
             <div
               key={view}

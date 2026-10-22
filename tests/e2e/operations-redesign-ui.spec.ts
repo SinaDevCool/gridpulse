@@ -55,7 +55,7 @@ test("battery configuration recalculates across all three tabs and invalid assum
   await expect(page.getByRole("meter")).toContainText("98 MW");
   await openScenarioInputs(page);
   await expect(page.locator("#ops-battery-maximumPowerMw")).toHaveValue("10");
-  await page.getByRole("button", { name: "Close inputs" }).click();
+  await page.getByRole("button", { name: "Hide panel", exact: true }).click();
 });
 
 test("all workload drawers and status filters work with keyboard dismissal", async ({ page }) => {
@@ -141,7 +141,9 @@ for (const view of ["overview", "compute", "power"]) {
         await page.setViewportSize({ width, height: 1000 });
         // Recharts animates resized paths for 1500ms; capture the completed graph, not an intermediate ribbon.
         await page.waitForTimeout(1700);
-        const tabBounds = await page.locator(".operations-v2-tabs").boundingBox();
+        const tabBounds = await page
+          .getByRole("navigation", { name: "Power Operations views" })
+          .boundingBox();
         expect(tabBounds!.height).toBeLessThan(110);
         expect(
           await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth),

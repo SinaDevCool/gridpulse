@@ -1,0 +1,249 @@
+.product-header--application {
+  --shell-bg: #0c1d2a;
+  --shell-text: #e5f1f7;
+  --shell-muted: #a5bdce;
+  --shell-border: #345365;
+  --shell-active: #10394b;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  height: auto;
+  min-height: 64px;
+  padding: 0.5rem max(16px, env(safe-area-inset-left)) 0.5rem max(16px, env(safe-area-inset-left));
+  background: var(--shell-bg);
+  color: var(--shell-text);
+  overflow: visible;
+  z-index: 40;
+}
+:root[data-theme="light"] .product-header--application {
+  --shell-bg: #f5fafc;
+  --shell-text: #153347;
+  --shell-muted: #365b70;
+  --shell-border: #a4bdcb;
+  --shell-active: #d9eff7;
+}
+.product-header--application .brand {
+  flex-shrink: 0;
+  margin: 0;
+}
+.product-header--application .theme-control {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.solution-switcher {
+  position: relative;
+  flex-shrink: 0;
+}
+.solution-switcher > button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  min-height: 44px;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--shell-border);
+  border-radius: 8px;
+  background: var(--shell-bg);
+  color: var(--shell-text);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.solution-switcher svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+.solution-switcher > nav {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 60;
+  width: min(350px, calc(100vw - 32px));
+  padding: 8px;
+  background: var(--shell-bg);
+  border: 1px solid var(--shell-border);
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgb(0 0 0 / 20%);
+}
+.solution-switcher > nav[hidden] {
+  display: none;
+}
+.product-header--application .solution-switcher > nav {
+  display: block;
+}
+.product-header--application .solution-switcher > nav[hidden] {
+  display: none;
+}
+.product-shell .product-header--application .solution-switcher .solution-option {
+  display: flex;
+  color: var(--shell-text);
+  padding: 12px;
+  width: 100%;
+  white-space: normal;
+}
+.product-shell .product-header--application .solution-switcher .solution-option::after {
+  content: none;
+}
+.solution-switcher nav > p {
+  margin: 6px 12px;
+  font-size: 0.75rem;
+  color: var(--shell-muted);
+}
+.solution-switcher .solution-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--shell-text);
+  text-align: left;
+  text-decoration: none;
+  font: inherit;
+  cursor: pointer;
+  min-height: 68px;
+}
+.solution-option strong,
+.solution-option small {
+  display: block;
+}
+.solution-option strong {
+  font-size: 0.9rem;
+}
+.solution-option small {
+  font-size: 0.78rem;
+  color: var(--shell-muted);
+  margin-top: 3px;
+  line-height: 1.5;
+}
+.solution-option-spacer {
+  width: 18px;
+  flex-shrink: 0;
+}
+.solution-switcher .current,
+.solution-switcher .solution-option:hover,
+.solution-switcher > button:hover {
+  background: var(--shell-active);
+}
+.product-header--application .solution-ribbon {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.product-shell .product-header--application .solution-ribbon a {
+  color: var(--shell-muted);
+  font-size: max(13px, 0.85rem);
+  font-weight: 650;
+}
+.product-shell .product-header--application .solution-ribbon a.active,
+.product-shell .product-header--application .solution-ribbon a:hover {
+  color: var(--shell-text);
+}
+.product-shell .product-header--application .solution-ribbon a::after {
+  content: none;
+}
+.solution-ribbon a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0.65rem 0.9rem;
+  border-radius: 6px;
+  border-bottom: 2px solid transparent;
+  color: var(--shell-muted);
+  text-decoration: none;
+  white-space: nowrap;
+  font-size: 0.84rem;
+  font-weight: 650;
+}
+.solution-ribbon a.active {
+  color: var(--shell-text);
+  background: var(--shell-active);
+  border-bottom-color: #16b4d2;
+}
+.solution-ribbon a:hover {
+  color: var(--shell-text);
+  background: var(--shell-active);
+}
+.product-header--application :where(button, a):focus-visible {
+  outline: 2px solid #16b4d2;
+  outline-offset: 3px;
+}
+@media (max-width: 1199px) {
+  .product-header--application {
+    flex-wrap: wrap;
+    gap: 8px 16px;
+  }
+  .product-header--application .solution-ribbon {
+    order: 4;
+    flex-basis: 100%;
+    overflow-x: auto;
+  }
+}
+@media (max-width: 599px) {
+  .product-header--application:not(:has(.product-marketing-navigation)) {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+  .product-header--application .brand {
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+  }
+  .solution-switcher > button {
+    font-size: 0.78rem;
+    padding: 0.5rem;
+    gap: 4px;
+  }
+  .product-header--application .theme-control {
+    margin-left: auto;
+  }
+  .solution-switcher > nav {
+    left: auto;
+    right: -40px;
+  }
+  .solution-ribbon a {
+    font-size: 0.75rem;
+    padding-inline: 0.65rem;
+  }
+}
+.ops-exit-dialog {
+  max-width: min(480px, calc(100vw - 32px));
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--foreground);
+}
+.ops-exit-dialog::backdrop {
+  background: rgb(0 0 0 / 60%);
+}
+.product-shell .product-footer[data-solution] {
+  color: #b0c8d7;
+  background: #102838;
+}
+:root[data-theme="light"] .product-shell .product-footer[data-solution] {
+  color: #365366;
+  background: #edf5f9;
+}
+.product-shell .product-footer[data-solution] b {
+  color: inherit;
+}
+.product-shell .product-footer[data-solution] > span {
+  color: #b0c8d7;
+}
+:root[data-theme="light"] .product-shell .product-footer[data-solution] > span {
+  color: #365366;
+}
+.ops-exit-dialog p {
+  margin-block: 16px;
+  line-height: 1.6;
+}
+.ops-exit-dialog > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}

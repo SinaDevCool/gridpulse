@@ -1,8 +1,17 @@
 import type { ReactNode } from "react";
 import { useRouterState } from "@tanstack/react-router";
 import { ProductHeader } from "./ProductChrome";
+import { ProductFooter } from "./ProductFooter";
 
-export function FinderShell({ children, workspace = false }: { children: ReactNode; workspace?: boolean }) {
+export function FinderShell({
+  children,
+  workspace = false,
+  navigation,
+}: {
+  children: ReactNode;
+  workspace?: boolean;
+  navigation?: ReactNode;
+}) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const landingPage = pathname === "/";
   const methodologyPage = pathname === "/data-sources";
@@ -10,12 +19,9 @@ export function FinderShell({ children, workspace = false }: { children: ReactNo
     <div
       className={`product-shell product-shell--focused finder-shell${landingPage ? " finder-shell--landing" : ""}${methodologyPage ? " finder-shell--methodology" : ""}${workspace ? " operations-workspace-shell" : ""}`}
     >
-      <ProductHeader />
+      <ProductHeader navigation={navigation} />
       {children}
-      <footer className="product-footer">
-        <span>Property qualification &amp; grid connection decision intelligence.</span>
-        <b>Capacity and connection terms require operator confirmation.</b>
-      </footer>
+      <ProductFooter />
     </div>
   );
 }

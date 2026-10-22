@@ -4,9 +4,12 @@ test("workspace shell exposes the unified decision destinations", async ({ page 
   await page.goto("/portfolio?q=berlin&stage=screening&sort=name");
 
   const navigation = page.getByRole("navigation", { name: "GridPulse workspace" });
-  for (const destination of ["Sites", "Power Finder", "Operations"]) {
+  for (const destination of ["Sites", "Power Finder"]) {
     await expect(navigation.getByRole("link", { name: new RegExp(destination) })).toBeVisible();
   }
+  await expect(
+    page.getByRole("button", { name: "Solution: Site Selection", exact: true }),
+  ).toBeVisible();
   await expect(page).toHaveURL(/q=berlin/);
   await expect(page).toHaveURL(/stage=screening/);
   await expect(page).toHaveURL(/sort=name/);
