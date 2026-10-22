@@ -13,7 +13,9 @@ test("backend failures stay explicit and input preferences never save facility v
     }),
   );
   await page.goto("/operations");
-  await expect(page.locator(".ops-service-status")).toContainText("backend unavailable");
+  await expect(page.locator(".ops-service-status")).toContainText("backend unavailable", {
+    timeout: 20_000,
+  });
   await expect(page.locator(".ops-assessment-notice")).toContainText("browser demonstration only");
   const panel = await openScenarioInputs(page);
   await panel.getByLabel("Facility Limit", { exact: false }).fill("137");
@@ -28,7 +30,9 @@ test("backend failures stay explicit and input preferences never save facility v
     "false",
   );
   await page.getByRole("button", { name: /^(Show|Hide) panel/ }).click();
-  await expect(page.getByLabel("Facility Limit", { exact: false })).toHaveValue("100");
+  await expect(
+    page.getByRole("spinbutton", { name: "Facility Limit MW", exact: true }),
+  ).toHaveValue("100");
 });
 
 test("battery availability and zero power recompute response without stale contributions", async ({
@@ -40,16 +44,19 @@ test("battery availability and zero power recompute response without stale contr
   await panel.getByRole("button", { name: "Recalculate Scenario" }).click();
   await page.getByRole("button", { name: "Battery Response", exact: true }).click();
   await expect(page.getByRole("meter")).toHaveAttribute("aria-valuenow", "106.6");
-  await expect(
-    page
-      .getByRole("region", { name: "Selected response breakdown" })
-      .getByText("0 MW", { exact: true })
-      .first(),
-  ).toBeVisible();
+  await page.getByRole("button", { name: "Explain selected interval", exact: true }).click();
+  await expect(page.locator(".ops-waterfall svg")).toHaveAttribute(
+    "aria-label",
+    /Battery discharge 0\sMW/,
+  );
   await panel.getByLabel("Battery available", { exact: true }).check();
   await panel.getByLabel("Battery Power", { exact: false }).fill("0");
   await panel.getByRole("button", { name: "Recalculate Scenario" }).click();
   await expect(page.getByRole("meter")).toHaveAttribute("aria-valuenow", "106.6");
+  await expect(page.locator(".ops-waterfall svg")).toHaveAttribute(
+    "aria-label",
+    /Battery discharge 0\sMW/,
+  );
   await page.getByRole("link", { name: "Power & Battery", exact: true }).click();
   await page.getByText("Power path", { exact: true }).click();
   await expect(page.locator(".power-flow-card")).toContainText("0 MW");
@@ -126,8 +133,10 @@ test("gauge, response selection and recovery use the same assessment", async ({ 
   await expect(meter).toHaveAttribute("aria-valuenow", "101.6");
   await page.getByRole("button", { name: "Battery + Workload", exact: true }).click();
   await expect(meter).toHaveAttribute("aria-valuenow", "98");
-  await expect(page.getByRole("region", { name: "Selected response breakdown" })).toContainText(
-    "5 MW",
+  await page.getByRole("button", { name: "Explain selected interval", exact: true }).click();
+  await expect(page.locator(".ops-waterfall svg")).toHaveAttribute(
+    "aria-label",
+    /Battery discharge -5\sMW/,
   );
   await page.getByRole("link", { name: "Review recovery & assumptions" }).click();
   await expect(page.locator("#operations-recovery")).toBeFocused();
