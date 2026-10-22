@@ -187,6 +187,9 @@
 .ops-time-picker > summary::-webkit-details-marker {
   display: none;
 }
+.operations-v2 .ops-time-picker > summary > span {
+  color: var(--ops-text);
+}
 .operations-v2 .ops-time-menu {
   box-sizing: border-box;
   padding: 0.875rem;
