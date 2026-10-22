@@ -346,15 +346,8 @@ export function buildOperationsScenario(
   ];
   const baseline = summaries[0];
   const combined = summaries[2];
-  const current = intervals.reduce(
-    (peak, interval) => (interval.baselineDemandMw > peak.baselineDemandMw ? interval : peak),
-    intervals[0],
-  );
   const incrementalGpuMw = (scenario.gpuActivePowerWatts * scenario.pue) / 1_000_000;
-  const remainingMargin = Math.max(
-    0,
-    scenario.importLimitMw - scenario.safetyReserveMw - current.combinedDemandMw,
-  );
+  const remainingMargin = Math.max(0, targetMw - combined.peakDemandMw);
   const additionalGpus = incrementalGpuMw ? Math.floor(remainingMargin / incrementalGpuMw) : 0;
   const risk: "Low" | "Moderate" | "High" =
     baseline.violationIntervals === 0
@@ -414,7 +407,7 @@ export function buildOperationsScenario(
     scenario,
     generatedAt,
     metrics: {
-      facilityDemand: evidenceAt(current.combinedDemandMw, "MW", "Scenario engine"),
+      facilityDemand: evidenceAt(combined.peakDemandMw, "MW", "Scenario engine · response peak"),
       operationalLimit: {
         value: scenario.importLimitMw,
         unit: "MW",

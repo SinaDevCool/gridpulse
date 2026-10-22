@@ -14,6 +14,11 @@ export function AssessmentRecord({
     >
       <summary>Evidence & assumptions · assessment details</summary>
       <p>
+        Calculation method: aggregate scenario heuristic—not mathematical optimisation. Overview
+        compares responses; Compute screens workload candidates; Power & Battery inspects
+        battery-only dispatch. All use the same full-horizon assessment.
+      </p>
+      <p>
         Aggregate scenario assessment record. Uploaded meter, BMS and workload evidence is listed
         separately in Inputs; this record does not certify those observations. No delivered response
         has been verified.

@@ -16,11 +16,10 @@ import {
   verifyOperationsResponse,
 } from "./operations-assurance";
 import { buildOperationsScenario } from "./scenario-engine";
-import { assessWorkloads } from "./workload-intelligence";
 
 import { OPERATIONS_CALCULATION_VERSION } from "./calculation-version";
 import { alignPowerEvidence } from "./evidence-alignment";
-import { buildAssessmentPlan } from "./assessment-plan";
+import { assessSharedWorkloads, buildAssessmentPlan } from "./assessment-plan";
 export { alignPowerEvidence } from "./evidence-alignment";
 export { OPERATIONS_CALCULATION_VERSION } from "./calculation-version";
 
@@ -36,7 +35,7 @@ export function runOperationsAssessment(input: OperationsAssessmentRequest) {
 
   if (input.kind === "compute") {
     const model = buildOperationsScenario(input.scenario);
-    const result = assessWorkloads(input.workloads, input.telemetry, model);
+    const { assessment: result } = assessSharedWorkloads(model, input.workloads, input.telemetry);
     const measuredSamples = input.telemetry.filter((point) => point.powerWatts != null).length;
     return envelope(input.telemetry.length ? "measured" : "reference", result, {
       sampleCount: input.telemetry.length,
