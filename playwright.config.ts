@@ -4,8 +4,9 @@ const externalBaseUrl = process.env.GRIDPULSE_E2E_BASE_URL;
 
 export default defineConfig({
   testDir: "./tests/e2e",
-  testIgnore: "**/operations-runtime-contracts.spec.ts",
+  testIgnore: ["**/operations-runtime-contracts.spec.ts", "**/solution-runtime-boundary.spec.ts"],
   fullyParallel: false,
+  workers: 1,
   retries: 0,
   reporter: [["list"]],
   use: {

@@ -47,7 +47,10 @@ describe("Finder MVP route boundary", () => {
     expect(isRouteEnabledForMode("/reports", "full")).toBe(false);
     expect(isRouteEnabledForMode("/assessments/new", "full")).toBe(true);
     expect(capabilitiesForMode("connect").authentication).toBe(false);
-    expect(capabilitiesForMode("connect").operate).toBe(false);
+    expect(capabilitiesForMode("connect").operate).toBe(true);
     expect(capabilitiesForMode("full").operate).toBe(true);
+    expect(capabilitiesForMode("finder", ["operations"]).finder).toBe(false);
+    expect(capabilitiesForMode("finder", ["operations"]).operate).toBe(true);
+    expect(capabilitiesForMode("full", ["planning"]).operate).toBe(false);
   });
 });

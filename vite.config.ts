@@ -4,6 +4,7 @@ import viteReact from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { cloudflare } from "@cloudflare/vite-plugin";
 import { execSync } from "node:child_process";
+import { parseEnabledSolutions } from "./src/config/solution-availability";
 
 function buildRevision() {
   if (process.env.GRIDPULSE_BUILD_SHA) return process.env.GRIDPULSE_BUILD_SHA;
@@ -24,6 +25,9 @@ export default defineConfig(({ mode }) => ({
     viteReact(),
   ],
   define: {
+    __GRIDPULSE_SOLUTIONS__: JSON.stringify(
+      parseEnabledSolutions(process.env.GRIDPULSE_SOLUTIONS).join(","),
+    ),
     __GRIDPULSE_BUILD_SHA__: JSON.stringify(buildRevision()),
     __GRIDPULSE_BUILD_ENV__: JSON.stringify(process.env.GRIDPULSE_BUILD_ENV ?? "production"),
     __GRIDPULSE_PRODUCT_MODE__: JSON.stringify(

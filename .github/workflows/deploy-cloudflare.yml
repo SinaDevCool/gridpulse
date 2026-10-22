@@ -21,6 +21,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm run test:validation-tools
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -51,6 +52,8 @@ jobs:
           GRIDPULSE_PRODUCT_MODE: full
       - name: Validate compiled Operations calculation API without database access
         run: npm run test:operations:runtime
+      - name: Validate independent solution journeys
+        run: npx playwright test tests/e2e/solution-independence.spec.ts --workers=1
       - run: npm run test:e2e:finder
         env:
           GRIDPULSE_PRODUCT_MODE: finder

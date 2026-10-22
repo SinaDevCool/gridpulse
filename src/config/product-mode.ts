@@ -1,3 +1,4 @@
+import { enabledSolutions, solutionRouteAvailable, type SolutionId } from "./solutions";
 export type ProductMode = "finder" | "connect" | "full";
 
 function parseProductMode(value: string): ProductMode {
@@ -6,13 +7,16 @@ function parseProductMode(value: string): ProductMode {
 
 export const productMode = parseProductMode(__GRIDPULSE_PRODUCT_MODE__);
 
-export function capabilitiesForMode(mode: ProductMode) {
+export function capabilitiesForMode(
+  mode: ProductMode,
+  available: readonly SolutionId[] = enabledSolutions,
+) {
   return {
-    finder: true,
+    finder: available.includes("planning"),
     authentication: false,
     workspace: mode !== "finder",
     connect: mode === "connect" || mode === "full",
-    operate: mode === "full",
+    operate: available.includes("operations"),
     pilotIntake: mode !== "finder",
   } as const;
 }
@@ -81,10 +85,12 @@ const finderApiRoutes = new Set([
 ]);
 
 export function isRouteEnabledForMode(pathname: string, mode: ProductMode): boolean {
+  if (!solutionRouteAvailable(pathname)) return false;
   if (retiredWorkspaceDestination(pathname)) return false;
   if (mode !== "finder") return true;
   const normalized = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
   return (
+    pathname.startsWith("/solutions/") ||
     finderRoutes.has(normalized) ||
     finderApiRoutes.has(normalized) ||
     normalized.startsWith("/portfolio/") ||

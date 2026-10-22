@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { ChevronDown, Check } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { solutionForPath, solutions } from "./product-navigation";
+import { enabledSolutions } from "@/config/solutions";
 
 export function SolutionSwitcher({ pathname }: { pathname: string }) {
   const current = solutionForPath(pathname);
@@ -50,39 +51,44 @@ export function SolutionSwitcher({ pathname }: { pathname: string }) {
       </button>
       <nav id="solution-options" aria-label="Choose solution" hidden={!open}>
         <p>Choose solution</p>
-        {solutions.map((item) =>
-          item.id === current.id ? (
-            <button
-              key={item.id}
-              type="button"
-              className="solution-option current"
-              onClick={() => {
-                setOpen(false);
-                trigger.current?.focus();
-              }}
-              aria-label={`${item.label}, current solution`}
-            >
-              <Check aria-hidden="true" />
-              <span>
-                <strong>{item.label}</strong>
-                <small>{item.description}</small>
-              </span>
-            </button>
-          ) : (
-            <Link
-              key={item.id}
-              to={item.to}
-              className="solution-option"
-              onClick={() => setOpen(false)}
-            >
-              <span aria-hidden="true" className="solution-option-spacer" />
-              <span>
-                <strong>{item.label}</strong>
-                <small>{item.description}</small>
-              </span>
-            </Link>
-          ),
-        )}
+        {solutions
+          .filter((item) => enabledSolutions.includes(item.id))
+          .map((item) =>
+            item.id === current.id ? (
+              <button
+                key={item.id}
+                type="button"
+                className="solution-option current"
+                onClick={() => {
+                  setOpen(false);
+                  trigger.current?.focus();
+                }}
+                aria-label={`${item.label}, current solution`}
+              >
+                <Check aria-hidden="true" />
+                <span>
+                  <strong>{item.label}</strong>
+                  <small>{item.description}</small>
+                </span>
+              </button>
+            ) : (
+              <Link
+                key={item.id}
+                to={item.to}
+                className="solution-option"
+                onClick={() => setOpen(false)}
+              >
+                <span aria-hidden="true" className="solution-option-spacer" />
+                <span>
+                  <strong>{item.label}</strong>
+                  <small>{item.description}</small>
+                </span>
+              </Link>
+            ),
+          )}
+        <Link to={current.introduction} onClick={() => setOpen(false)} className="solution-option">
+          About {current.label}
+        </Link>
       </nav>
     </div>
   );

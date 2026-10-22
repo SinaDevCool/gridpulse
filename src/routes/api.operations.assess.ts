@@ -22,12 +22,17 @@ export const Route = createFileRoute("/api/operations/assess")({
           );
         const limiter = (
           env as {
-            PUBLIC_FINDER_RATE_LIMITER?: {
+            OPERATIONS_RATE_LIMITER?: {
               limit(input: { key: string }): Promise<{ success: boolean }>;
             };
           }
-        ).PUBLIC_FINDER_RATE_LIMITER;
-        if (limiter) {
+        ).OPERATIONS_RATE_LIMITER;
+        if (!limiter)
+          return Response.json(
+            { error: "Operations assessment protection is not configured." },
+            { status: 503, headers: { "cache-control": "no-store" } },
+          );
+        {
           const permitted = await limiter.limit({
             key: `operations-assess:${request.headers.get("cf-connecting-ip") ?? "local"}`,
           });
@@ -62,6 +67,7 @@ export const Route = createFileRoute("/api/operations/assess")({
             console.error(
               JSON.stringify({
                 event: "operations_assessment_failed",
+                solution: "operations",
                 requestId: crypto.randomUUID(),
               }),
             );

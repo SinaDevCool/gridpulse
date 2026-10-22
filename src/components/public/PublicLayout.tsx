@@ -3,7 +3,8 @@ import { ArrowRight, Menu, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { trackEvent } from "@/lib/analytics";
 import { isFinderMvp } from "@/config/product-mode";
-import { FinderShell } from "@/components/product/FinderShell";
+import { ProductShell } from "@/components/product/ProductShell";
+import { solutionRouteAvailable } from "@/config/solutions";
 import "@/public.css";
 
 const publicNavigation = [
@@ -38,7 +39,7 @@ export function PublicLayout({
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
-  if (isFinderMvp() && !forcePublicChrome) return <FinderShell>{children}</FinderShell>;
+  if (isFinderMvp() && !forcePublicChrome) return <ProductShell>{children}</ProductShell>;
   const onPilotPage = location.pathname === "/pilot";
   const navigation = finderMarketingChrome ? finderNavigation : publicNavigation;
   return (
@@ -111,9 +112,15 @@ export function PublicFooter({
           {finderMarketingChrome ? null : <Link to="/service">Assessment</Link>}
           {finderMarketingChrome ? null : <Link to="/demo">Product Tour</Link>}
           {finderMarketingChrome ? null : <Link to="/data-sources">Methodology &amp; Sources</Link>}
-          {finderMarketingChrome ? <Link to="/power-finder">Power Finder</Link> : null}
-          {finderMarketingChrome ? <Link to="/portfolio">Sites</Link> : null}
-          {finderMarketingChrome ? <Link to="/operations">Operations</Link> : null}
+          {finderMarketingChrome && solutionRouteAvailable("/power-finder") ? (
+            <Link to="/power-finder">Power Finder</Link>
+          ) : null}
+          {finderMarketingChrome && solutionRouteAvailable("/portfolio") ? (
+            <Link to="/portfolio">Sites</Link>
+          ) : null}
+          {finderMarketingChrome && solutionRouteAvailable("/operations") ? (
+            <Link to="/solutions/facility-operations">Facility Operations</Link>
+          ) : null}
           {finderMarketingChrome ? (
             <Link to="/data-sources">Evidence &amp; Methodology</Link>
           ) : (

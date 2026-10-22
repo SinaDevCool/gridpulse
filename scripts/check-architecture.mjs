@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import ts from "typescript";
+import { moduleOwner, solutionBoundaryViolation } from "./solution-boundaries.mjs";
 
 const baselineFile = "scripts/architecture-baseline.json";
 const pureOperations = new Set([
@@ -39,6 +40,7 @@ function inspect(file) {
       const module = node.arguments[0].text;
       const resolved = ts.resolveModuleName(module, file, compilerOptions, ts.sys).resolvedModule
         ?.resolvedFileName;
+      checkSolutionBoundary(file, resolved);
       if (resolved && !resolved.includes("node_modules")) edges.push(path.resolve(resolved));
       if (file.startsWith("src/features/") && /(?:\.server|\/server\/)/.test(module))
         failures.push(`${file}: feature dynamically imports server implementation ${module}`);
@@ -46,11 +48,7 @@ function inspect(file) {
     if (
       ts.isTypeReferenceNode(node) &&
       node.typeName.getText(ast) === "ReturnType" &&
-      node.typeArguments?.some((argument) =>
-        /typeof use[A-Z]/.test(
-          argument.getText(ast),
-        ),
-      )
+      node.typeArguments?.some((argument) => /typeof use[A-Z]/.test(argument.getText(ast)))
     )
       failures.push(`${file}: contract depends on hook implementation`);
     if (
@@ -67,6 +65,11 @@ function inspect(file) {
       );
     if (ts.isImportDeclaration(node) || (ts.isExportDeclaration(node) && node.moduleSpecifier)) {
       const module = node.moduleSpecifier.text;
+      checkSolutionBoundary(
+        file,
+        ts.resolveModuleName(module, file, compilerOptions, ts.sys).resolvedModule
+          ?.resolvedFileName,
+      );
       const bindings = node.importClause?.namedBindings ?? node.exportClause;
       const typeOnly =
         node.importClause?.isTypeOnly ||
@@ -111,6 +114,25 @@ function walk(directory) {
   }
 }
 walk("src");
+// Follow neutral adapters too, so domain -> lib -> other domain cannot evade the boundary.
+for (const [source] of dependencies) {
+  if (!["planning", "operations", "shared"].includes(moduleOwner(path.relative(".", source))))
+    continue;
+  const seen = new Set();
+  function trace(file) {
+    if (seen.has(file)) return;
+    seen.add(file);
+    checkSolutionBoundary(path.relative(".", source).replaceAll("\\", "/"), file);
+    for (const next of dependencies.get(file) ?? []) trace(next);
+  }
+  trace(source);
+}
+function checkSolutionBoundary(from, resolved) {
+  if (!resolved || resolved.includes("node_modules")) return;
+  const to = path.relative(".", path.resolve(resolved)).replaceAll("\\", "/");
+  if (solutionBoundaryViolation(from, to))
+    failures.push(`${from}: crosses solution ownership into ${to}`);
+}
 const visited = new Set(),
   visiting = new Set();
 function checkCycles(file, stack = []) {

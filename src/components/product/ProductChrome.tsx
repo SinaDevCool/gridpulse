@@ -8,6 +8,7 @@ import { productMode } from "@/config/product-mode";
 import { ThemeControl } from "@/features/theme/ThemeControl";
 import { SolutionSwitcher } from "./SolutionSwitcher";
 import type { ReactNode } from "react";
+import { enabledSolutions, solutions } from "@/config/solutions";
 
 export function ProductHeader({ navigation }: { navigation?: ReactNode }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
@@ -39,7 +40,10 @@ export function ProductHeader({ navigation }: { navigation?: ReactNode }) {
               {item.label}
             </Link>
           ))}
-          <Link to="/power-finder" className="product-marketing-cta">
+          <Link
+            to={solutions.find((item) => enabledSolutions.includes(item.id))!.to}
+            className="product-marketing-cta"
+          >
             Open Workspace
           </Link>
         </nav>
