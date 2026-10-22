@@ -2,6 +2,7 @@ import type { BatteryObservation, FacilityPowerObservation } from "../battery-di
 import { buildHistoricalSeries, valueOf, type EvidenceMode } from "../power/presentation";
 import { importThresholds } from "../presentation";
 import type { OperationsOverviewModel } from "../scenario-engine";
+import { historicalBatteryPoints, selectBatteryWorkspace } from "./select-battery-workspace";
 export function selectPowerView(
   model: OperationsOverviewModel,
   displayModel: OperationsOverviewModel,
@@ -30,15 +31,16 @@ export function selectPowerView(
       : model.scenario.importLimitMw;
   const targetMw = Math.max(0, limitMw - model.scenario.safetyReserveMw);
   const selected = mode === "scenario" ? selectedScenario : selectedHistorical;
+  const workspace = selectBatteryWorkspace(model);
+  const visibleTimes = new Set(displayModel.intervals.map((point) => point.timestamp));
   const series =
     mode === "scenario"
-      ? displayModel.intervals.map((point) => ({
-          ...point,
-          facilityDemandMw: point.baselineDemandMw,
-          gridImportMw: point.batteryDemandMw,
-          socPercent: point.batterySocPercent,
-        }))
-      : historical;
+      ? workspace.points.filter((point) => visibleTimes.has(point.timestamp))
+      : historicalBatteryPoints(
+          historical,
+          model.scenario.importLimitMw,
+          model.scenario.safetyReserveMw,
+        );
   const requiredMw =
     mode === "scenario"
       ? Math.max(0, selectedScenario.baselineDemandMw - targetMw)
@@ -84,5 +86,7 @@ export function selectPowerView(
     thresholds,
     responseRequired,
     dispatchHeadline,
+    workspace,
+    selectedPoint: series.find((point) => point.timestamp === selected?.timestamp) ?? null,
   };
 }

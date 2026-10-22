@@ -223,6 +223,7 @@ test("Power & Battery exposes dispatch physics and imports measured evidence", a
   await expect(page.getByText("Facility Power", { exact: true })).toBeVisible();
   await expect(page.getByText("Battery Dispatch", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("Battery State of Charge", { exact: true })).toBeVisible();
+  await page.getByText("Power path", { exact: true }).click();
   await expect(page.getByText("Supply balance", { exact: true })).toBeVisible();
   await expect(page.locator(".power-flow-equations span").first()).toContainText(
     "101.6 MW + 5 MW ≈ 106.6 MW",
