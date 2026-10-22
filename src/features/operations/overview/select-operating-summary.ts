@@ -7,10 +7,11 @@ export const responseOptions = [
   { value: "battery_workload", label: "Battery + Workload" },
 ] as const;
 
-/** Presentation only: all contributions refer to the same baseline-peak interval. */
+/** Presentation only: contributions share one interval; aggregate metrics retain their scope. */
 export function selectOperatingSummary(
   model: OperationsOverviewModel,
   selected: OperationsScenarioKind,
+  timestamp?: string,
 ) {
   const summary = model.summaries.find((item) => item.kind === selected)!;
   const key = {
@@ -19,9 +20,11 @@ export function selectOperatingSummary(
     workload: "workloadDemandMw",
     battery_workload: "combinedDemandMw",
   } as const;
-  const peak = model.intervals.reduce((best, point) =>
-    point.baselineDemandMw > best.baselineDemandMw ? point : best,
-  );
+  const peak =
+    model.intervals.find((point) => point.timestamp === timestamp) ??
+    model.intervals.reduce((best, point) =>
+      point.baselineDemandMw > best.baselineDemandMw ? point : best,
+    );
   const limit = model.scenario.importLimitMw;
   const target = limit - model.scenario.safetyReserveMw;
   const battery =

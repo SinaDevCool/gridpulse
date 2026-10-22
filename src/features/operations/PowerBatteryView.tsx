@@ -31,7 +31,8 @@ export function PowerBatteryView({
   const store = useOperationsEvidenceStore();
   const [facility] = store.facility;
   const [battery] = store.battery;
-  const [timestamp, setTimestamp] = store.powerTimestamp;
+  const [timestamp, setTimestamp] =
+    mode === "historical" ? store.historicalTimestamp : store.powerTimestamp;
   const openInputs = useOpenInputs();
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => setHydrated(true), []);

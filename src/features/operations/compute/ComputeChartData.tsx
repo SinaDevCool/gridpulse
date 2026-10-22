@@ -18,7 +18,9 @@ export function ComputeTooltip({
   if (!active || !payload?.length) return null;
   return (
     <OperationsTooltipShell
-      label={typeof label === "number" ? formatOperationsTime(new Date(label).toISOString()) : label}
+      label={
+        typeof label === "number" ? formatOperationsTime(new Date(label).toISOString()) : label
+      }
     >
       {payload.map((item) => (
         <TooltipRow
@@ -39,10 +41,28 @@ export function ComputeTooltip({
   );
 }
 
-export function ComputeChartData({ model }: { model: OperationsOverviewModel }) {
+export function ComputeChartData({
+  model,
+  timestamp,
+  onSelect,
+}: {
+  model: OperationsOverviewModel;
+  timestamp?: string;
+  onSelect: (value: string) => void;
+}) {
   return (
     <details className="operations-v2-chart-data">
       <summary>View Full Chart Data</summary>
+      <button
+        type="button"
+        onClick={(event) =>
+          event.currentTarget.parentElement
+            ?.querySelector('tr[aria-selected="true"]')
+            ?.scrollIntoView({ block: "nearest" })
+        }
+      >
+        Jump to selected interval
+      </button>
       <div>
         <table>
           <thead>
@@ -55,8 +75,16 @@ export function ComputeChartData({ model }: { model: OperationsOverviewModel }) 
           </thead>
           <tbody>
             {model.intervals.map((point) => (
-              <tr key={point.timestamp}>
-                <th scope="row">{point.label}</th>
+              <tr key={point.timestamp} aria-selected={point.timestamp === timestamp}>
+                <th scope="row">
+                  <button
+                    type="button"
+                    aria-pressed={point.timestamp === timestamp}
+                    onClick={() => onSelect(point.timestamp)}
+                  >
+                    {point.label}
+                  </button>
+                </th>
                 <td>{number.format(point.baselineDemandMw)}</td>
                 <td>{number.format(point.combinedDemandMw)}</td>
                 <td>{number.format(point.gpuPowerMw)}</td>

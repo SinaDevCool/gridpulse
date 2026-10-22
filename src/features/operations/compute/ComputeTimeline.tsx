@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Area,
   CartesianGrid,
@@ -13,7 +13,8 @@ import {
 } from "recharts";
 import type { ComputeWorkspaceContract } from "../compute-workspace-contract";
 import { ComputeChartData, ComputeTooltip } from "./ComputeChartData";
-import { OperationsChartLegend } from "../visualization";
+import { OperationsChartLegend, useChartVisibility } from "../visualization";
+import { useInspection } from "../hooks/use-inspection";
 import { OperationsEvidenceBadge } from "../components";
 import { formatOperationsTime } from "../presentation";
 import { formatMw } from "../formatting";
@@ -21,7 +22,7 @@ import { WorkloadWindowLanes } from "./WorkloadWindowLanes";
 
 export function ComputeTimeline({ workspace }: { workspace: ComputeWorkspaceContract }) {
   const { displayModel, model, assessment, selectedId, setSelectedId } = workspace;
-  const [index, setIndex] = useState(0);
+  const visibility = useChartVisibility();
   const [showGpu, setShowGpu] = useState(false);
   const [showAggregate, setShowAggregate] = useState(false);
   const [showEligible, setShowEligible] = useState(false);
@@ -29,9 +30,12 @@ export function ComputeTimeline({ workspace }: { workspace: ComputeWorkspaceCont
   const data = points.map((point) => ({ ...point, time: Date.parse(point.timestamp) }));
   const from = data[0].time,
     to = data.at(-1)!.time + 15 * 60_000;
-  const currentIndex = Math.min(index, points.length - 1);
+  const inspection = useInspection(points);
+  const currentIndex = Math.max(
+    0,
+    points.findIndex((point) => point.timestamp === inspection.timestamp),
+  );
   const current = data[currentIndex];
-  useEffect(() => setIndex(0), [from, to]);
   const target = model.scenario.importLimitMw - model.scenario.safetyReserveMw;
   const pool = assessment.decisions.filter(
     (job) => job.recommended || (showEligible && job.eligible),
@@ -74,6 +78,7 @@ export function ComputeTimeline({ workspace }: { workspace: ComputeWorkspaceCont
         </label>
       </details>
       <OperationsChartLegend
+        visibility={visibility}
         items={[
           {
             label: "Facility demand",
@@ -115,7 +120,7 @@ export function ComputeTimeline({ workspace }: { workspace: ComputeWorkspaceCont
       />
       <div
         className="operations-v2-chart compute-timeline"
-        role="img"
+        role="group"
         aria-label="Facility demand and constrained periods aligned with declared workload windows"
       >
         <ResponsiveContainer width="100%" height="100%">
@@ -123,11 +128,10 @@ export function ComputeTimeline({ workspace }: { workspace: ComputeWorkspaceCont
             data={data}
             margin={{ top: 12, right: 18, left: 0, bottom: 4 }}
             accessibilityLayer
+            throttledEvents={[]}
             onClick={(state) => {
-              if (state.activeTooltipIndex != null)
-                setIndex(
-                  Math.max(0, Math.min(points.length - 1, Number(state.activeTooltipIndex))),
-                );
+              const point = data.find((point) => point.time === Number(state.activeLabel));
+              if (point) inspection.select(point.timestamp);
             }}
           >
             <CartesianGrid stroke="var(--ops-chart-grid)" vertical={false} />
@@ -179,22 +183,30 @@ export function ComputeTimeline({ workspace }: { workspace: ComputeWorkspaceCont
               ))}
             <ReferenceLine
               y={target}
+              strokeOpacity={visibility.visible("Safety target") ? 1 : 0}
               stroke="var(--ops-target)"
               strokeDasharray="3 5"
-              label={{ value: `${formatMw(target)} target`, position: "insideTopRight" }}
+              label={{
+                value: visibility.visible("Safety target") ? `${formatMw(target)} target` : "",
+                position: "insideTopRight",
+              }}
             />
             <ReferenceLine
               y={model.scenario.importLimitMw}
+              strokeOpacity={visibility.visible("Facility limit") ? 1 : 0}
               stroke="var(--ops-limit)"
               strokeDasharray="7 5"
               label={{
-                value: `${formatMw(model.scenario.importLimitMw)} limit`,
+                value: visibility.visible("Facility limit")
+                  ? `${formatMw(model.scenario.importLimitMw)} limit`
+                  : "",
                 position: "insideBottomLeft",
               }}
             />
             <ReferenceLine x={current.time} stroke="var(--ops-muted)" />
             <Area
               dataKey="baselineDemandMw"
+              hide={!visibility.visible("Facility demand")}
               name="Facility demand"
               stroke="var(--ops-demand)"
               fill="var(--ops-demand-fill)"
@@ -204,6 +216,7 @@ export function ComputeTimeline({ workspace }: { workspace: ComputeWorkspaceCont
             {showGpu ? (
               <Line
                 dataKey="gpuPowerMw"
+                hide={!visibility.visible("GPU power")}
                 name="GPU power"
                 stroke="var(--ops-compute)"
                 strokeWidth={2}
@@ -215,6 +228,7 @@ export function ComputeTimeline({ workspace }: { workspace: ComputeWorkspaceCont
             {showAggregate ? (
               <Line
                 dataKey="combinedDemandMw"
+                hide={!visibility.visible("Aggregate scenario response")}
                 name="Aggregate scenario response"
                 stroke="var(--ops-response)"
                 strokeWidth={3}
@@ -236,7 +250,7 @@ export function ComputeTimeline({ workspace }: { workspace: ComputeWorkspaceCont
           min="0"
           max={points.length - 1}
           value={currentIndex}
-          onChange={(event) => setIndex(Number(event.target.value))}
+          onChange={(event) => inspection.select(points[Number(event.target.value)].timestamp)}
           aria-valuetext={formatOperationsTime(current.timestamp)}
         />
         <span>
@@ -267,7 +281,11 @@ export function ComputeTimeline({ workspace }: { workspace: ComputeWorkspaceCont
           .
         </p>
       ) : null}
-      <ComputeChartData model={displayModel} />
+      <ComputeChartData
+        model={displayModel}
+        timestamp={inspection.timestamp}
+        onSelect={inspection.select}
+      />
     </article>
   );
 }

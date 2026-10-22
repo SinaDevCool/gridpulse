@@ -76,6 +76,7 @@ export function OperationsEvidenceProvider({ children }: { children: ReactNode }
 
 function OperationsPresentationProvider({ children }: { children: ReactNode }) {
   const [powerTimestamp, setPowerTimestamp] = useState<string | null>(null);
+  const [historicalTimestamp, setHistoricalTimestamp] = useState<string | null>(null);
   const [powerImportsOpen, setPowerImportsOpen] = useState(false);
   const [workloadSelectedId, setWorkloadSelectedId] = useState<string | null>(null);
   const [workloadStatus, setWorkloadStatus] = useState<"all" | ComputeWorkload["status"]>("all");
@@ -86,6 +87,7 @@ function OperationsPresentationProvider({ children }: { children: ReactNode }) {
   const value = useMemo<OperationsPresentationStore>(
     () => ({
       powerTimestamp: [powerTimestamp, setPowerTimestamp],
+      historicalTimestamp: [historicalTimestamp, setHistoricalTimestamp],
       powerImportsOpen: [powerImportsOpen, setPowerImportsOpen],
       workloadSelectedId: [workloadSelectedId, setWorkloadSelectedId],
       workloadStatus: [workloadStatus, setWorkloadStatus],
@@ -95,6 +97,7 @@ function OperationsPresentationProvider({ children }: { children: ReactNode }) {
     }),
     [
       powerTimestamp,
+      historicalTimestamp,
       powerImportsOpen,
       workloadSelectedId,
       workloadStatus,
