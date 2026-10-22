@@ -14,7 +14,9 @@ export function WorkloadSchedule({ workload }: { workload: WorkloadDecision }) {
   if (!window) return null;
   return (
     <section className="workload-schedule" aria-label="Declared workload schedule comparison">
-      <h4>{workload.recommended ? "Proposed schedule" : "Declared execution window"}</h4>
+      <h4>
+        {workload.recommended ? "Proposed reference window" : "Earliest-start reference window"}
+      </h4>
       <p>Reference window—not an instruction to the scheduler.</p>
       <div className="workload-schedule-row">
         <span>Earliest</span>

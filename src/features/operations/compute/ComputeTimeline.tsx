@@ -1,42 +1,29 @@
 import { useState } from "react";
-import {
-  Area,
-  CartesianGrid,
-  ComposedChart,
-  Line,
-  ReferenceArea,
-  ReferenceLine,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 import type { ComputeWorkspaceContract } from "../compute-workspace-contract";
-import { ComputeChartData, ComputeTooltip } from "./ComputeChartData";
+import { ComputeChartData } from "./ComputeChartData";
 import { OperationsChartLegend, useChartVisibility } from "../visualization";
 import { useInspection } from "../hooks/use-inspection";
 import { OperationsEvidenceBadge } from "../components";
 import { formatOperationsTime } from "../presentation";
 import { formatMw } from "../formatting";
 import { WorkloadWindowLanes } from "./WorkloadWindowLanes";
+import { selectComputeTimeline, workloadTimeRelationship } from "./select-compute-timeline";
+import { ComputeTimelinePlot } from "./ComputeTimelinePlot";
 
 export function ComputeTimeline({ workspace }: { workspace: ComputeWorkspaceContract }) {
   const { displayModel, model, assessment, selectedId, setSelectedId } = workspace;
-  const visibility = useChartVisibility();
-  const [showGpu, setShowGpu] = useState(false);
-  const [showAggregate, setShowAggregate] = useState(false);
+  const visibility = useChartVisibility(["GPU power", "Aggregate scenario response"]);
   const [showEligible, setShowEligible] = useState(false);
+  const [facilityContext, setFacilityContext] = useState(false);
   const points = displayModel.intervals;
-  const data = points.map((point) => ({ ...point, time: Date.parse(point.timestamp) }));
-  const from = data[0].time,
-    to = data.at(-1)!.time + 15 * 60_000;
+  const target = model.scenario.importLimitMw - model.scenario.safetyReserveMw;
+  const data = selectComputeTimeline(points, target);
   const inspection = useInspection(points);
   const currentIndex = Math.max(
     0,
     points.findIndex((point) => point.timestamp === inspection.timestamp),
   );
   const current = data[currentIndex];
-  const target = model.scenario.importLimitMw - model.scenario.safetyReserveMw;
   const pool = assessment.decisions.filter(
     (job) => job.recommended || (showEligible && job.eligible),
   );
@@ -44,201 +31,94 @@ export function ComputeTimeline({ workspace }: { workspace: ComputeWorkspaceCont
   const inspected = assessment.decisions.find((job) => job.workloadId === selectedId);
   if (inspected && !jobs.some((job) => job.workloadId === inspected.workloadId))
     jobs.push(inspected);
+  if (!current) return <p role="status">No intervals available for workload inspection.</p>;
+  const from = data[0].time,
+    to = data.at(-1)!.end;
   return (
     <article className="operations-v2-chart-card compute-integrated-workspace">
       <header className="operations-v2-chart-header">
         <div>
           <p className="context-label">Power & workload workspace</p>
-          <h3>Compute Demand and Facility Limit</h3>
+          <h3>When is workload flexibility needed?</h3>
         </div>
         <OperationsEvidenceBadge kind="simulated" />
       </header>
       <p className="operations-chart-purpose">
-        Selected display window · shaded periods exceed the baseline safety target. Candidate
-        eligibility and recovery use the full horizon. Eligibility is not a validated recovery
-        schedule.
+        Required reduction after battery response, aligned with candidate timing. Windows are
+        reference estimates—not jointly validated schedules or delivered response.
       </p>
-      <details className="compute-chart-options">
-        <summary>Chart options</summary>
-        <label>
-          <input
-            type="checkbox"
-            checked={showGpu}
-            onChange={(event) => setShowGpu(event.target.checked)}
-          />
-          Show GPU power
-        </label>
-        <label>
-          <input
-            type="checkbox"
-            checked={showAggregate}
-            onChange={(event) => setShowAggregate(event.target.checked)}
-          />
-          Show aggregate scenario response—not a candidate-job schedule
-        </label>
-      </details>
+      <div className="compute-view-controls" aria-label="Timeline view">
+        <button
+          type="button"
+          aria-pressed={!facilityContext}
+          onClick={() => setFacilityContext(false)}
+        >
+          Workload reduction
+        </button>
+        <button
+          type="button"
+          aria-pressed={facilityContext}
+          onClick={() => setFacilityContext(true)}
+        >
+          Facility context
+        </button>
+      </div>
       <OperationsChartLegend
         visibility={visibility}
-        items={[
-          {
-            label: "Facility demand",
-            detail: "MW · before response",
-            tone: "demand",
-            mark: "area",
-          },
-          {
-            label: "Safety target",
-            detail: `${formatMw(target)} · assumption`,
-            tone: "target",
-            mark: "dash",
-          },
-          {
-            label: "Facility limit",
-            detail: `${formatMw(model.scenario.importLimitMw)} · assumption`,
-            tone: "limit",
-            mark: "dash",
-          },
-          ...(showGpu
+        label="Compute chart legend"
+        items={
+          facilityContext
             ? [
+                {
+                  label: "Facility demand",
+                  detail: "MW · before response",
+                  tone: "demand",
+                  mark: "area",
+                },
+                {
+                  label: "Safety target",
+                  detail: `${formatMw(target)} · assumption`,
+                  tone: "target",
+                  mark: "dash",
+                },
+                {
+                  label: "Facility limit",
+                  detail: `${formatMw(model.scenario.importLimitMw)} · assumption`,
+                  tone: "limit",
+                  mark: "dash",
+                },
                 {
                   label: "GPU power",
                   detail: "MW · component of facility demand",
-                  tone: "compute" as const,
+                  tone: "compute",
                 },
-              ]
-            : []),
-          ...(showAggregate
-            ? [
                 {
                   label: "Aggregate scenario response",
                   detail: "MW · not a job schedule",
-                  tone: "response" as const,
+                  tone: "response",
                 },
               ]
-            : []),
-        ]}
+            : [
+                {
+                  label: "Required after battery",
+                  detail: "MW · remaining reduction to safety target",
+                  tone: "response",
+                  mark: "area",
+                },
+              ]
+        }
       />
-      <div
-        className="operations-v2-chart compute-timeline"
-        role="group"
-        aria-label="Facility demand and constrained periods aligned with declared workload windows"
-      >
-        <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart
-            data={data}
-            margin={{ top: 12, right: 18, left: 0, bottom: 4 }}
-            accessibilityLayer
-            throttledEvents={[]}
-            onClick={(state) => {
-              const point = data.find((point) => point.time === Number(state.activeLabel));
-              if (point) inspection.select(point.timestamp);
-            }}
-          >
-            <CartesianGrid stroke="var(--ops-chart-grid)" vertical={false} />
-            <XAxis
-              type="number"
-              dataKey="time"
-              domain={[from, to]}
-              ticks={Array.from({ length: 5 }, (_, i) => from + ((to - from) * i) / 4)}
-              tickFormatter={(value) =>
-                formatOperationsTime(new Date(value).toISOString()) +
-                (new Date(value).getUTCDate() !== new Date(from).getUTCDate() ? " +1d" : "")
-              }
-              minTickGap={50}
-              tickLine={false}
-              axisLine={false}
-            />
-            <YAxis
-              width={60}
-              unit=" MW"
-              tickLine={false}
-              axisLine={false}
-              domain={[
-                0,
-                Math.ceil(
-                  Math.max(
-                    model.scenario.importLimitMw * 1.15,
-                    ...points.map((point) => point.baselineDemandMw),
-                  ) / 10,
-                ) * 10,
-              ]}
-            />
-            <Tooltip
-              content={<ComputeTooltip />}
-              labelFormatter={(value) =>
-                formatOperationsTime(new Date(Number(value)).toISOString())
-              }
-            />
-            {data
-              .filter((point) => point.baselineDemandMw > target)
-              .map((point) => (
-                <ReferenceArea
-                  key={point.time}
-                  x1={point.time}
-                  x2={Math.min(to, point.time + 15 * 60_000)}
-                  fill="var(--ops-target)"
-                  fillOpacity={0.09}
-                  strokeOpacity={0}
-                />
-              ))}
-            <ReferenceLine
-              y={target}
-              strokeOpacity={visibility.visible("Safety target") ? 1 : 0}
-              stroke="var(--ops-target)"
-              strokeDasharray="3 5"
-              label={{
-                value: visibility.visible("Safety target") ? `${formatMw(target)} target` : "",
-                position: "insideTopRight",
-              }}
-            />
-            <ReferenceLine
-              y={model.scenario.importLimitMw}
-              strokeOpacity={visibility.visible("Facility limit") ? 1 : 0}
-              stroke="var(--ops-limit)"
-              strokeDasharray="7 5"
-              label={{
-                value: visibility.visible("Facility limit")
-                  ? `${formatMw(model.scenario.importLimitMw)} limit`
-                  : "",
-                position: "insideBottomLeft",
-              }}
-            />
-            <ReferenceLine x={current.time} stroke="var(--ops-muted)" />
-            <Area
-              dataKey="baselineDemandMw"
-              hide={!visibility.visible("Facility demand")}
-              name="Facility demand"
-              stroke="var(--ops-demand)"
-              fill="var(--ops-demand-fill)"
-              strokeWidth={2}
-              isAnimationActive={false}
-            />
-            {showGpu ? (
-              <Line
-                dataKey="gpuPowerMw"
-                hide={!visibility.visible("GPU power")}
-                name="GPU power"
-                stroke="var(--ops-compute)"
-                strokeWidth={2}
-                strokeDasharray="4 3"
-                dot={false}
-                isAnimationActive={false}
-              />
-            ) : null}
-            {showAggregate ? (
-              <Line
-                dataKey="combinedDemandMw"
-                hide={!visibility.visible("Aggregate scenario response")}
-                name="Aggregate scenario response"
-                stroke="var(--ops-response)"
-                strokeWidth={3}
-                dot={false}
-                isAnimationActive={false}
-              />
-            ) : null}
-          </ComposedChart>
-        </ResponsiveContainer>
-      </div>
+      <ComputeTimelinePlot
+        data={data}
+        from={from}
+        to={to}
+        timestamp={current.time}
+        facilityContext={facilityContext}
+        target={target}
+        limit={model.scenario.importLimitMw}
+        visibility={visibility}
+        onSelect={inspection.select}
+      />
       <div className="compute-time-inspector">
         <label htmlFor="compute-inspect-time">
           Inspect time · <strong>{formatOperationsTime(current.timestamp)}</strong>
@@ -253,10 +133,11 @@ export function ComputeTimeline({ workspace }: { workspace: ComputeWorkspaceCont
           onChange={(event) => inspection.select(points[Number(event.target.value)].timestamp)}
           aria-valuetext={formatOperationsTime(current.timestamp)}
         />
-        <span>
-          Facility demand {formatMw(current.baselineDemandMw)} · Baseline reduction needed{" "}
-          {formatMw(Math.max(0, current.baselineDemandMw - target))}
-        </span>
+        <div className="compute-interval-facts" aria-live="polite">
+          <strong>Required after battery {formatMw(current.requiredWorkloadMw)}</strong>
+          <span>Facility demand {formatMw(current.baselineDemandMw)}</span>
+          <span>{workloadTimeRelationship(inspected, current.timestamp)}</span>
+        </div>
       </div>
       <label className="compute-show-eligible">
         <input
@@ -276,15 +157,13 @@ export function ComputeTimeline({ workspace }: { workspace: ComputeWorkspaceCont
         interactive={workspace.interactive}
       />
       {pool.length > 5 ? (
-        <p>
-          Showing 5 candidate/eligible windows. Open the workload queue to inspect all {pool.length}
-          .
-        </p>
+        <p>Showing 5 windows. Open the workload queue to inspect all {pool.length}.</p>
       ) : null}
       <ComputeChartData
         model={displayModel}
         timestamp={inspection.timestamp}
         onSelect={inspection.select}
+        selected={inspected}
       />
     </article>
   );

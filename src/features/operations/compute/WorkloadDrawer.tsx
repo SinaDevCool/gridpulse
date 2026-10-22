@@ -13,14 +13,21 @@ import { WorkloadSchedule } from "../WorkloadSchedule";
 import { Row } from "./primitives";
 
 import { integer, number } from "./presentation";
+import type { OperationsInterval } from "../scenario-engine";
+import { useInspection } from "../hooks/use-inspection";
+import { candidateInterval, workloadTimeRelationship } from "./select-compute-timeline";
 
 export function WorkloadDrawer({
   workload,
   onClose,
+  points,
 }: {
   workload: WorkloadDecision;
   onClose: () => void;
+  points: OperationsInterval[];
 }) {
+  const inspection = useInspection(points);
+  const jump = candidateInterval(workload, points);
   const closeRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
@@ -49,6 +56,21 @@ export function WorkloadDrawer({
       <OperationsEvidenceBadge
         kind={workload.source === "scenario" ? "simulated" : workload.powerEvidence}
       />
+      <section className="compute-inspector-time" aria-label="Selected workload timing">
+        <h4>
+          At{" "}
+          {formatOperationsTime(
+            inspection.timestamp ?? points[0]?.timestamp ?? workload.earliestStart,
+          )}
+        </h4>
+        <p>{workloadTimeRelationship(workload, inspection.timestamp ?? "")}</p>
+        <button type="button" disabled={!jump} onClick={() => jump && inspection.select(jump)}>
+          Jump to candidate window
+        </button>
+        <small>
+          Uses the nearest displayed interval. Selecting a job does not change the inspected time.
+        </small>
+      </section>
       <p className="power-flow-note">
         Record source: {workload.source} · Power basis: {workload.powerEvidence}. Imported records
         are not proof of measured power or executed response.
@@ -58,7 +80,10 @@ export function WorkloadDrawer({
         <Row label="Class" value={workload.workloadClass} />
         <Row label="Status" value={workload.status} />
         <Row label="Requested GPUs" value={integer.format(workload.requestedGpuCount)} />
-        <Row label="Power contribution" value={`${number.format(workload.estimatedPowerMw)} MW`} />
+        <Row
+          label="Nominal power estimate"
+          value={`${number.format(workload.estimatedPowerMw)} MW`}
+        />
         <Row label="Checkpointable" value={workload.checkpointable ? "Yes" : "No"} />
         <Row label="Preemptible" value={workload.preemptible ? "Yes" : "No"} />
         <Row label="Deadline slack" value={formatMinutes(workload.deadlineSlackMinutes)} />
@@ -83,6 +108,11 @@ export function WorkloadDrawer({
           <span>{workload.reason}</span>
         </p>
       </div>
+      <p className="power-flow-note">
+        Validation gaps: joint scheduling, restart overhead and delivered response are not
+        established. Aggregate recovery is not proof of this job’s completion. No scheduler
+        commands.
+      </p>
     </aside>
   );
 }

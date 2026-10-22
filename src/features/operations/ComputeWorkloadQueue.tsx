@@ -1,4 +1,5 @@
 import type { ComputeWorkspaceContract } from "./compute-workspace-contract";
+import { useState } from "react";
 import { integer, number } from "./compute/presentation";
 import { Status } from "./compute/primitives";
 import { formatMinutes } from "./presentation";
@@ -23,6 +24,7 @@ export function ComputeWorkloadQueue({
     | "visibleDecisions"
   >;
 }) {
+  const [inventory, setInventory] = useState(false);
   const { selectedId, setSelectedId, status, setStatus, setQueuePage, interactive } = model;
   const decisions = model.decisions.filter((job) => matchesReviewGroup(job, group));
   const { pageCount, visiblePage, visibleDecisions } = paginateWorkloadDecisions(
@@ -54,14 +56,22 @@ export function ComputeWorkloadQueue({
           </select>
         </label>
       </header>
+      <label className="compute-inventory-toggle">
+        <input
+          type="checkbox"
+          checked={inventory}
+          onChange={(event) => setInventory(event.target.checked)}
+        />
+        Show class & GPU inventory
+      </label>
       <div className="compute-table-wrap">
         <table>
           <thead>
             <tr>
               <th scope="col">Workload</th>
-              <th scope="col">Class</th>
+              {inventory ? <th scope="col">Class</th> : null}
               <th scope="col">Status</th>
-              <th scope="col">GPUs</th>
+              {inventory ? <th scope="col">GPUs</th> : null}
               <th scope="col">Power</th>
               <th scope="col">Deadline slack</th>
               <th scope="col">Decision</th>
@@ -71,6 +81,7 @@ export function ComputeWorkloadQueue({
             {visibleDecisions.map((workload) => (
               <tr
                 key={workload.workloadId}
+                aria-selected={selectedId === workload.workloadId}
                 className={`${selectedId === workload.workloadId ? "selected" : ""} ${workload.recommended ? "recommended" : ""}`}
               >
                 <th scope="row">
@@ -83,11 +94,11 @@ export function ComputeWorkloadQueue({
                     <small>{workload.workloadId}</small>
                   </button>
                 </th>
-                <td>{workload.workloadClass}</td>
+                {inventory ? <td>{workload.workloadClass}</td> : null}
                 <td>
                   <Status value={workload.status} />
                 </td>
-                <td>{integer.format(workload.requestedGpuCount)}</td>
+                {inventory ? <td>{integer.format(workload.requestedGpuCount)}</td> : null}
                 <td>
                   {number.format(workload.estimatedPowerMw)} MW{" "}
                   <small>{workload.powerEvidence}</small>

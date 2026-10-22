@@ -123,7 +123,9 @@ test("Compute & Workloads keeps scenario evidence distinct and supports workload
   await page.goto("/operations?view=compute");
   await openComputeQueue(page);
   await expect(page.getByText("Power-Aware Workload Decision")).toBeVisible();
-  await expect(page.getByText(/Eligibility is not a validated recovery schedule/i)).toBeVisible();
+  await expect(
+    page.getByText(/reference estimates—not jointly validated schedules/i),
+  ).toBeVisible();
   await expect(page.getByRole("table")).toBeVisible();
   await expect(page.getByText("reference", { exact: true }).first()).toBeVisible();
   await page
@@ -290,11 +292,12 @@ test("Operations charts expose explicit legends, units, targets, and full data a
 
   await page.goto("/operations?view=compute");
   await openComputeQueue(page);
-  await page.getByText("Chart options", { exact: true }).click();
-  await page.getByLabel("Show GPU power", { exact: true }).check();
+  await page.getByRole("button", { name: "Facility context", exact: true }).click();
+  await page.getByRole("button", { name: /^GPU power MW/ }).click();
   await expect(page.getByText("GPU power", { exact: true })).toBeVisible();
   await expect(page.getByText("MW · component of facility demand", { exact: true })).toBeVisible();
   await page.getByText("View Full Chart Data", { exact: true }).click();
+  await page.getByLabel("Include facility context columns").check();
   await expect(page.getByRole("columnheader", { name: "GPU Power (MW)" })).toBeVisible();
 
   await page.goto("/operations?view=power");

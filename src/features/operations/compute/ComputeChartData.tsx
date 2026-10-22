@@ -1,4 +1,7 @@
 import type { OperationsOverviewModel } from "../scenario-engine";
+import { useState } from "react";
+import type { WorkloadDecision } from "../workload-intelligence";
+import { selectComputeTimeline, workloadTimeRelationship } from "./select-compute-timeline";
 
 import { formatMw } from "../formatting";
 import { OperationsTooltipShell, TooltipRow } from "../visualization";
@@ -30,7 +33,7 @@ export function ComputeTooltip({
           tone={
             item.name === "GPU power"
               ? "compute"
-              : item.name?.startsWith("Aggregate")
+              : item.name?.startsWith("Aggregate") || item.name === "Required after battery"
                 ? "response"
                 : "demand"
           }
@@ -45,14 +48,29 @@ export function ComputeChartData({
   model,
   timestamp,
   onSelect,
+  selected,
 }: {
   model: OperationsOverviewModel;
   timestamp?: string;
   onSelect: (value: string) => void;
+  selected?: WorkloadDecision;
 }) {
+  const [context, setContext] = useState(false);
+  const points = selectComputeTimeline(
+    model.intervals,
+    model.scenario.importLimitMw - model.scenario.safetyReserveMw,
+  );
   return (
     <details className="operations-v2-chart-data">
       <summary>View Full Chart Data</summary>
+      <label>
+        <input
+          type="checkbox"
+          checked={context}
+          onChange={(event) => setContext(event.target.checked)}
+        />
+        Include facility context columns
+      </label>
       <button
         type="button"
         onClick={(event) =>
@@ -68,13 +86,20 @@ export function ComputeChartData({
           <thead>
             <tr>
               <th scope="col">Time</th>
-              <th scope="col">Facility Demand (MW)</th>
-              <th scope="col">Aggregate Scenario—not a Job Schedule (MW)</th>
-              <th scope="col">GPU Power (MW)</th>
+              <th scope="col">Required after battery (MW)</th>
+              <th scope="col">Aggregate shift / recovery (MW)</th>
+              <th scope="col">Selected workload window</th>
+              {context ? (
+                <>
+                  <th scope="col">Facility Demand (MW)</th>
+                  <th scope="col">Aggregate Scenario—not a Job Schedule (MW)</th>
+                  <th scope="col">GPU Power (MW)</th>
+                </>
+              ) : null}
             </tr>
           </thead>
           <tbody>
-            {model.intervals.map((point) => (
+            {points.map((point) => (
               <tr key={point.timestamp} aria-selected={point.timestamp === timestamp}>
                 <th scope="row">
                   <button
@@ -85,9 +110,18 @@ export function ComputeChartData({
                     {point.label}
                   </button>
                 </th>
-                <td>{number.format(point.baselineDemandMw)}</td>
-                <td>{number.format(point.combinedDemandMw)}</td>
-                <td>{number.format(point.gpuPowerMw)}</td>
+                <td>{number.format(point.requiredWorkloadMw)}</td>
+                <td>
+                  {number.format(point.workloadShiftMw)} / {number.format(point.workloadRecoveryMw)}
+                </td>
+                <td>{workloadTimeRelationship(selected, point.timestamp)}</td>
+                {context ? (
+                  <>
+                    <td>{number.format(point.baselineDemandMw)}</td>
+                    <td>{number.format(point.combinedDemandMw)}</td>
+                    <td>{number.format(point.gpuPowerMw)}</td>
+                  </>
+                ) : null}
               </tr>
             ))}
           </tbody>
