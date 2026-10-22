@@ -6,7 +6,10 @@ test("compiled Worker enforces independent solution availability for pages and A
   const enabled = process.env.GRIDPULSE_SOLUTIONS ?? "all";
   const planning = enabled === "all" || enabled.split(",").includes("planning");
   const operations = enabled === "all" || enabled.split(",").includes("operations");
-  expect((await request.get("/")).status()).toBe(200);
+  const home = await request.get("/");
+  expect(home.status()).toBe(200);
+  if (!planning)
+    expect(await home.text()).toContain("<title>Facility Operations | GridPulse</title>");
   for (const [path, available] of [
     ["/power-finder", planning],
     ["/portfolio", planning],

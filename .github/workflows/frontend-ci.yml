@@ -54,5 +54,4 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      - run: npx playwright install --with-deps chromium
       - run: npx playwright test --config playwright.runtime.config.ts tests/e2e/solution-runtime-boundary.spec.ts --workers=1

@@ -1,4 +1,4 @@
-import type { ProductMode } from "@/config/product-mode";
+import { capabilitiesForMode, type ProductMode } from "../../config/product-mode";
 import { enabledSolutions, solutionRouteAvailable, solutionForPath } from "../../config/solutions";
 export { solutions, solutionForPath } from "../../config/solutions";
 
@@ -83,11 +83,7 @@ export const workspaceLinks = [
 export type WorkspaceDestination = (typeof workspaceLinks)[number]["to"];
 
 export function capabilityAvailable(capability: ProductCapability, mode: ProductMode) {
-  if (capability === "operate") return enabledSolutions.includes("operations");
-  if (capability === "finder") return true;
-  if (capability === "workspace") return mode !== "finder";
-  if (capability === "connect") return mode === "connect" || mode === "full";
-  return mode === "full";
+  return capabilitiesForMode(mode)[capability];
 }
 
 export function workspaceDestinationsForMode(mode: ProductMode) {

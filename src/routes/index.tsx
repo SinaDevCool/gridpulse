@@ -19,28 +19,47 @@ import { enabledSolutions } from "@/config/solutions";
 import { SolutionIntroduction } from "@/components/product/SolutionIntroduction";
 
 export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
-      { title: "GridPulse | Data-Centre Site & Power Intelligence" },
-      {
-        name: "description",
-        content:
-          "Screen data-centre sites against mapped German grid infrastructure, compare connection candidates and carry evidence into one decision workspace.",
-      },
-      { property: "og:title", content: "GridPulse Data-Centre Site & Power Intelligence" },
-      {
-        property: "og:description",
-        content:
-          "Screen the grid before advancing the site. Compare candidates, inspect evidence and retain the next decision.",
-      },
-      { property: "og:url", content: "https://gridpulseinsights.com/" },
-      { name: "theme-color", content: "#05080f" },
-    ],
-    links: [
-      { rel: "canonical", href: "https://gridpulseinsights.com/" },
-      { rel: "preload", href: "/landing/german-grid-hero.webp", as: "image" },
-    ],
-  }),
+  head: () =>
+    !enabledSolutions.includes("planning")
+      ? {
+          meta: [
+            { title: "Facility Operations | GridPulse" },
+            {
+              name: "description",
+              content:
+                "Assess facility power constraints, battery reserves and workload flexibility. No site-selection project required.",
+            },
+            { property: "og:title", content: "Facility Operations | GridPulse" },
+            {
+              property: "og:description",
+              content:
+                "Power, battery and workload decision support for data-centre energy managers.",
+            },
+          ],
+          links: [{ rel: "canonical", href: "https://gridpulseinsights.com/" }],
+        }
+      : {
+          meta: [
+            { title: "GridPulse | Data-Centre Site & Power Intelligence" },
+            {
+              name: "description",
+              content:
+                "Screen data-centre sites against mapped German grid infrastructure, compare connection candidates and carry evidence into one decision workspace.",
+            },
+            { property: "og:title", content: "GridPulse Data-Centre Site & Power Intelligence" },
+            {
+              property: "og:description",
+              content:
+                "Screen the grid before advancing the site. Compare candidates, inspect evidence and retain the next decision.",
+            },
+            { property: "og:url", content: "https://gridpulseinsights.com/" },
+            { name: "theme-color", content: "#05080f" },
+          ],
+          links: [
+            { rel: "canonical", href: "https://gridpulseinsights.com/" },
+            { rel: "preload", href: "/landing/german-grid-hero.webp", as: "image" },
+          ],
+        },
   component: DataCentreLandingPage,
 });
 
