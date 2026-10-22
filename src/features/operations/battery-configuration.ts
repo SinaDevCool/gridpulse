@@ -65,3 +65,13 @@ export function batteryReserveEnergyMwh(
       config.dischargeEfficiency,
   );
 }
+
+/** Remaining DC energy above protected reserve; not a backup guarantee. */
+export function batteryEnergyAboveReserveMwh(
+  config: Parameters<typeof batteryReserveEnergyMwh>[0],
+  socPercent: number,
+  storedEnergyMwh = (((config.usableEnergyMwh * config.stateOfHealthPercent) / 100) * socPercent) /
+    100,
+) {
+  return Math.max(0, storedEnergyMwh - batteryReserveEnergyMwh(config));
+}

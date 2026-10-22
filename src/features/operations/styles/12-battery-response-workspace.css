@@ -1,0 +1,282 @@
+/* One time domain, one inspector. Supporting engineering records stay secondary. */
+.operations-v2 .battery-workspace {
+  gap: 0.75rem;
+}
+.battery-workspace .ops-task-review {
+  margin: 0;
+  padding: 1rem;
+}
+.battery-workspace .power-toolbar {
+  margin: 0;
+  align-items: center;
+}
+.battery-workspace > .power-kpis.ops-compact-facts {
+  margin: 0;
+  padding: 0.5rem 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.operations-v2 .battery-workspace .power-interval-control {
+  margin: 0;
+}
+.battery-workspace .power-timeline {
+  height: auto;
+  grid-template-rows: auto 18rem 9rem 11rem auto;
+}
+.battery-workspace .power-timeline-card {
+  overflow: visible;
+}
+.battery-workspace-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(17rem, 22rem);
+  gap: 1rem;
+  align-items: start;
+}
+.battery-workspace-grid > * {
+  min-width: 0;
+}
+.battery-interval-inspector {
+  border: 1px solid var(--ops-border);
+  border-radius: 12px;
+  background: var(--ops-card);
+  padding: 1rem;
+}
+.battery-interval-inspector > header {
+  display: grid;
+  gap: 0.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--ops-border);
+}
+.battery-interval-inspector > header > span {
+  color: var(--ops-muted);
+  font-size: 0.85rem;
+}
+.battery-interval-inspector .battery-soc-card {
+  padding: 1rem 0;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+}
+.battery-interval-inspector .battery-soc-body {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+}
+.battery-interval-inspector .battery-reserve-reading strong {
+  font-size: 2rem;
+}
+.battery-interval-inspector .power-detail-card {
+  border: 0;
+  padding: 0.5rem 0;
+  background: transparent;
+}
+.battery-interval-facts {
+  display: grid;
+  gap: 0.6rem;
+  padding-block: 0.8rem;
+  border-block: 1px solid var(--ops-border);
+}
+.battery-interval-facts > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+}
+.battery-interval-facts dt {
+  color: var(--ops-muted);
+}
+.battery-interval-facts dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.battery-workspace .power-kpis {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.battery-interval-stepper,
+.battery-events {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.battery-workspace button {
+  touch-action: manipulation;
+}
+.battery-interval-stepper button,
+.battery-events button {
+  background: var(--ops-card);
+  color: var(--ops-text);
+  border: 1px solid var(--ops-border);
+  border-radius: 6px;
+  padding: 0.6rem;
+  font: inherit;
+  font-size: 0.78rem;
+  cursor: pointer;
+  min-height: 40px;
+}
+.battery-interval-stepper button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.battery-events {
+  padding-top: 1rem;
+  border-top: 1px solid var(--ops-border);
+  margin-top: 1rem;
+}
+.battery-events > span {
+  flex-basis: 100%;
+  font-size: 0.8rem;
+  color: var(--ops-muted);
+}
+.battery-events button {
+  display: grid;
+  text-align: left;
+  gap: 0.3rem;
+}
+.battery-events button[aria-pressed="true"] {
+  outline: 2px solid var(--ops-response);
+  outline-offset: 1px;
+}
+.battery-events small {
+  color: var(--ops-muted);
+}
+.battery-constraint-strip {
+  margin-block: 0.8rem;
+}
+.battery-constraint-strip > span {
+  font-size: 0.8rem;
+  color: var(--ops-muted);
+}
+.battery-state-band {
+  display: flex;
+  gap: 2px;
+  padding-block: 0.5rem;
+}
+.battery-state-band > span {
+  flex-basis: 0;
+  min-width: 0;
+  height: 12px;
+  background: var(--ops-muted);
+  border-radius: 2px;
+}
+.battery-state-band > .battery-state--none {
+  background: var(--ops-soc);
+}
+.battery-state-band
+  > :is(
+    .battery-state--power_limited,
+    .battery-state--energy_limited,
+    .battery-state--soc_minimum
+  ) {
+  background: var(--ops-target);
+}
+.battery-state-band
+  > :is(
+    .battery-state--constraint_conflict,
+    .battery-state--asset_unavailable,
+    .battery-state--inverter_unavailable
+  ) {
+  background: var(--ops-limit);
+}
+.battery-constraint-strip select {
+  width: 100%;
+  min-width: 0;
+  font-size: 0.78rem;
+}
+.battery-state--missing_evidence {
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent,
+    transparent 5px,
+    var(--ops-border) 5px,
+    var(--ops-border) 6px
+  );
+}
+.battery-inspection-actions {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+.battery-inspection-actions > details {
+  border: 1px solid var(--ops-border);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin: 0;
+}
+.battery-table-scroll {
+  max-height: 26rem;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.battery-table-scroll table {
+  width: 100%;
+  min-width: 52rem;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+.battery-table-scroll th,
+.battery-table-scroll td {
+  text-align: left;
+  padding: 0.65rem;
+  border-bottom: 1px solid var(--ops-border);
+}
+.battery-table-scroll thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--ops-card);
+}
+.battery-table-scroll tr {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 48px;
+}
+.battery-table-scroll tr.selected {
+  background: var(--ops-demand-fill);
+}
+.battery-table-scroll button {
+  color: var(--ops-text);
+  text-align: left;
+  padding: 0.35rem;
+  background: transparent;
+  border: 1px solid var(--ops-border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.battery-table-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+}
+.battery-table-filter select {
+  background: var(--ops-card);
+  color: var(--ops-text);
+  border: 1px solid var(--ops-border);
+  border-radius: 4px;
+  padding: 0.5rem;
+}
+.battery-workspace button:hover:not(:disabled) {
+  border-color: var(--ops-response);
+}
+.battery-workspace :is(button, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--ops-response);
+  outline-offset: 3px;
+}
+@media (max-width: 1100px) {
+  .battery-workspace-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .battery-interval-inspector .battery-soc-body {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .battery-workspace > .power-kpis.ops-compact-facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .battery-workspace .power-kpis,
+  .battery-interval-inspector .battery-soc-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

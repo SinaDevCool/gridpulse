@@ -63,6 +63,10 @@ export type OperationsInterval = {
   combinedDemandMw: number;
   batteryPowerMw: number;
   batterySocPercent: number;
+  batteryStartingSocPercent?: number;
+  batteryStartingEnergyMwh?: number;
+  batteryEndingEnergyMwh?: number;
+  durationMinutes?: number;
   availableDischargeMw: number;
   availableChargeMw: number;
   batteryShortfallMw: number;
@@ -282,6 +286,10 @@ export function buildOperationsScenario(
         point.baselineDemandMw - workloadRecovery.shifts[index] + workloadRecovery.recovered[index],
       batteryPowerMw: battery.batteryPowerMw,
       batterySocPercent: battery.socPercent,
+      batteryStartingSocPercent: battery.startingSocPercent,
+      batteryStartingEnergyMwh: battery.startingEnergyMwh,
+      batteryEndingEnergyMwh: battery.endingEnergyMwh,
+      durationMinutes: battery.durationMinutes,
       availableDischargeMw: battery.availableDischargeMw,
       availableChargeMw: battery.availableChargeMw,
       batteryShortfallMw: battery.shortfallMw,

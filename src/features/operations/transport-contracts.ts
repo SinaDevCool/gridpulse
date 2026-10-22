@@ -36,6 +36,10 @@ const interval = z
       ].map((key) => [key, finite]),
     ),
     batteryConstraintCode: z.string(),
+    batteryStartingSocPercent: finite.min(0).max(100),
+    batteryStartingEnergyMwh: finite.nonnegative(),
+    batteryEndingEnergyMwh: finite.nonnegative(),
+    durationMinutes: finite.positive(),
   })
   .passthrough();
 

@@ -1,5 +1,5 @@
 import type { OperationsInterval, OperationsOverviewModel } from "../scenario-engine";
-import { batteryReserveEnergyMwh } from "../battery-configuration";
+import { batteryEnergyAboveReserveMwh } from "../battery-configuration";
 
 import { alignPowerEvidence } from "../evidence-alignment";
 
@@ -61,17 +61,14 @@ export function valueOf(point: unknown, historicalKey: string, scenarioKey: stri
 
 export function durationLabel(model: OperationsOverviewModel, selected: OperationsInterval) {
   const usable =
-    Math.max(
-      0,
-      (((model.scenario.battery.usableEnergyMwh * model.scenario.battery.stateOfHealthPercent) /
-        100) *
-        selected.batterySocPercent) /
-        100 -
-        batteryReserveEnergyMwh(model.scenario.battery),
+    batteryEnergyAboveReserveMwh(
+      model.scenario.battery,
+      selected.batterySocPercent,
+      selected.batteryEndingEnergyMwh,
     ) * model.scenario.battery.dischargeEfficiency;
   return selected.batteryPowerMw > 0
     ? `${number.format(usable / selected.batteryPowerMw)} h`
-    : "Ready";
+    : "Not discharging";
 }
 
 export function humanConstraint(code: string) {
@@ -85,6 +82,7 @@ export function humanConstraint(code: string) {
         soc_maximum: "Maximum SOC",
         ramp_limited: "Ramp rate",
         minimum_dwell: "Minimum dwell",
+        constraint_conflict: "Conflicting constraints",
         asset_unavailable: "Asset unavailable",
         inverter_unavailable: "Inverter unavailable",
       } as Record<string, string>

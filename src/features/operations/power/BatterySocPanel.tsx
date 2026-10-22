@@ -1,5 +1,6 @@
 import type { OperationsInterval, OperationsOverviewModel } from "../scenario-engine";
-import { batteryReserveEnergyMwh } from "../battery-configuration";
+
+import { selectedReserveEnergy } from "./select-battery-workspace";
 
 import { durationLabel, type EvidenceMode, type HistoricalPoint, number } from "./presentation";
 
@@ -10,28 +11,21 @@ export function BatterySocPanel({
   selected,
   mode,
   selectedHistorical,
+  protectedSocPercent,
 }: {
   model: OperationsOverviewModel;
   selected: OperationsInterval;
   mode: EvidenceMode;
   selectedHistorical: HistoricalPoint | null;
+  protectedSocPercent: number;
 }) {
   const battery = model.scenario.battery;
   const observation = selectedHistorical?.battery;
   const soc = mode === "scenario" ? selected.batterySocPercent : (observation?.socPercent ?? null);
-  const stateOfHealth =
-    mode === "scenario"
-      ? battery.stateOfHealthPercent
-      : (observation?.stateOfHealthPercent ?? null);
   const boundedSoc = Math.max(0, Math.min(100, soc ?? 0));
   const energyAboveReserve =
-    mode === "scenario" && soc != null
-      ? Math.max(
-          0,
-          (((battery.usableEnergyMwh * battery.stateOfHealthPercent) / 100) * soc) / 100 -
-            batteryReserveEnergyMwh(battery),
-        )
-      : null;
+    mode === "scenario" && soc != null ? selectedReserveEnergy(model, selected) : null;
+  const protectedSoc = protectedSocPercent;
   return (
     <article className="battery-soc-card">
       <header>
@@ -59,11 +53,11 @@ export function BatterySocPanel({
             <i className="battery-reserve-fill" style={{ width: `${boundedSoc}%` }} />
             <i
               className="battery-reserve-protected"
-              style={{ width: `${battery.minimumSocPercent}%` }}
+              style={{ width: `${Math.min(100, protectedSoc)}%` }}
             />
             <i
               className="battery-reserve-marker"
-              style={{ left: `${battery.minimumSocPercent}%` }}
+              style={{ left: `${Math.min(100, protectedSoc)}%` }}
             />
             <i
               className="battery-reserve-marker maximum"
@@ -77,18 +71,26 @@ export function BatterySocPanel({
           </p>
         </div>
         <dl>
-          <Row label="Minimum reserve" value={`${number.format(battery.minimumSocPercent)}%`} />
-          <Row label="Maximum SOC" value={`${number.format(battery.maximumSocPercent)}%`} />
+          <Row label="Minimum SOC floor" value={`${number.format(battery.minimumSocPercent)}%`} />
           <Row
-            label="State of health"
-            value={stateOfHealth == null ? "Unavailable" : `${number.format(stateOfHealth)}%`}
+            label="Effective protected reserve"
+            value={`${number.format(protectedSoc)}% · assumption`}
           />
+          {protectedSoc > battery.maximumSocPercent ? (
+            <p role="status">Required reserve exceeds the configured usable SOC range.</p>
+          ) : null}
+          {mode === "scenario" ? (
+            <Row
+              label="Start → end SOC"
+              value={`${selected.batteryStartingSocPercent == null ? "Unavailable" : number.format(selected.batteryStartingSocPercent)} → ${number.format(selected.batterySocPercent)}%`}
+            />
+          ) : null}
           <Row
             label="Endurance at selected power"
             value={mode === "scenario" ? durationLabel(model, selected) : "Not derivable"}
           />
           <Row
-            label="Energy above reserve"
+            label="Energy above reserve · DC"
             value={
               energyAboveReserve == null
                 ? "Not derivable"

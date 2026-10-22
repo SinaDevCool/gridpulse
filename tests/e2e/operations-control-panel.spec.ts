@@ -51,6 +51,7 @@ test("battery availability and zero power recompute response without stale contr
   await panel.getByRole("button", { name: "Recalculate Scenario" }).click();
   await expect(page.getByRole("meter")).toHaveAttribute("aria-valuenow", "106.6");
   await page.getByRole("link", { name: "Power & Battery", exact: true }).click();
+  await page.getByText("Power path", { exact: true }).click();
   await expect(page.locator(".power-flow-card")).toContainText("0 MW");
 });
 

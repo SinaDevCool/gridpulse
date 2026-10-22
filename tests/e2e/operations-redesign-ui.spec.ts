@@ -48,6 +48,7 @@ test("battery configuration recalculates across all three tabs and invalid assum
   }
   await page.getByRole("button", { name: "Recalculate Scenario" }).click();
   await expect(page.locator(".power-kpis")).toContainText("98");
+  await page.getByText("Power path", { exact: true }).click();
   await expect(page.locator(".power-flow-card")).toContainText("8.6");
   await page.getByRole("link", { name: "Compute & Workloads", exact: true }).click();
   await expect(page.getByText("No workload movement required", { exact: true })).toBeVisible();
@@ -83,6 +84,7 @@ test("power interval selection and advanced panels expose consistent units", asy
   await page.goto("/operations?view=power");
   await page.locator(".power-interval-control .operations-select-trigger").click();
   await page.getByRole("option", { name: "00:00 UTC", exact: true }).click();
+  await page.getByText("Power path", { exact: true }).click();
   await expect(page.locator(".power-flow-card")).toContainText("00:00 UTC");
   await expect(page.locator(".power-flow-card")).toContainText("charge");
   for (const name of ["Inspect equipment limits & calculation"]) {
@@ -114,6 +116,7 @@ test("historical import without battery evidence does not invent demand or SOC",
     ),
   });
   await expect(page.getByText("2 facility meter records loaded from facility.csv.")).toBeVisible();
+  await page.getByText("Power path", { exact: true }).click();
   await expect(page.locator(".power-flow-card")).toContainText("Power balance unavailable");
   await page.getByText("View Full Interval Data", { exact: true }).click();
   await expect(
@@ -150,7 +153,7 @@ for (const view of ["overview", "compute", "power"]) {
         ).toBe(false);
         if (view === "power" && theme === "dark" && width === 1440) {
           await page
-            .locator(".power-insight-grid")
+            .locator(".battery-workspace-grid")
             .screenshot({ path: testInfo.outputPath("power-balance-dark.png") });
         }
         await page.screenshot({
@@ -217,7 +220,7 @@ test("window scopes every scenario timeline without truncating recovery calculat
   await expect(page.getByText("Discharge time · full horizon", { exact: true })).toBeVisible();
   await expect(page.locator(".power-interval-control")).toBeVisible();
   const intervalBounds = await page.locator(".power-interval-control").boundingBox();
-  const flowBounds = await page.locator(".power-insight-grid").boundingBox();
+  const flowBounds = await page.locator(".battery-workspace-grid").boundingBox();
   expect(intervalBounds!.y).toBeLessThan(flowBounds!.y);
 });
 
