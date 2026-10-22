@@ -17,11 +17,17 @@ export function ComputeWorkspacePresentation({
         Compute and Workloads
       </h2>
       <ComputeOperatingSummary workspace={workspace} />
-      <ComputeTimeline workspace={workspace} />
+      <div className={`compute-coordinated-layout ${workspace.selected ? "has-inspector" : ""}`}>
+        <ComputeTimeline workspace={workspace} />
+        {workspace.selected ? (
+          <WorkloadDrawer
+            workload={workspace.selected}
+            onClose={closeWorkload}
+            points={workspace.displayModel.intervals}
+          />
+        ) : null}
+      </div>
       <ComputeReview workspace={workspace} />
-      {workspace.selected ? (
-        <WorkloadDrawer workload={workspace.selected} onClose={closeWorkload} />
-      ) : null}
     </section>
   );
 }

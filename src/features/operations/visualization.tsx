@@ -6,8 +6,8 @@ export type ChartVisibility = {
   toggle: (id: string) => void;
   reset: () => void;
 };
-export function useChartVisibility(): ChartVisibility {
-  const [hidden, setHidden] = useState<Set<string>>(() => new Set());
+export function useChartVisibility(initialHidden: string[] = []): ChartVisibility {
+  const [hidden, setHidden] = useState<Set<string>>(() => new Set(initialHidden));
   return {
     visible: (id: string) => !hidden.has(id),
     toggle: (id: string) =>

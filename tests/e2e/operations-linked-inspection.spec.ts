@@ -89,6 +89,7 @@ test("compute and battery legends toggle with keyboard and preserve interval fac
     timeout: 20000,
   });
   const compute = page.locator(".compute-integrated-workspace");
+  await compute.getByRole("button", { name: "Facility context", exact: true }).click();
   await compute.getByRole("button", { name: /Facility demand/ }).click();
   await expect(compute.getByRole("button", { name: /Facility demand/ })).toHaveAttribute(
     "aria-pressed",

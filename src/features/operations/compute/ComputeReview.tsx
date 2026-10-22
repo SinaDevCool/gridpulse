@@ -3,7 +3,8 @@ import { ComputeWorkloadQueue } from "../ComputeWorkloadQueue";
 import { useOperationsPresentationStore } from "../hooks/evidence-store";
 import { formatMw, formatMwh } from "../formatting";
 import { integer } from "./presentation";
-import { selectReviewGroups, type ReviewGroup } from "./select-review-groups";
+import { matchesReviewGroup, selectReviewGroups, type ReviewGroup } from "./select-review-groups";
+import { paginateWorkloadDecisions } from "./select-workload-queue";
 
 export function ComputeReview({ workspace }: { workspace: ComputeWorkspaceContract }) {
   const presentation = useOperationsPresentationStore();
@@ -12,6 +13,10 @@ export function ComputeReview({ workspace }: { workspace: ComputeWorkspaceContra
   const groups = selectReviewGroups(workspace.assessment.decisions);
   const summary = workspace.model.summaries.find((item) => item.kind === "battery_workload");
   const unresolved = summary?.unresolvedWorkMwh;
+  const visible = paginateWorkloadDecisions(
+    workspace.decisions.filter((job) => matchesReviewGroup(job, group)),
+    workspace.visiblePage,
+  ).visibleDecisions;
   return (
     <section className="ops-task-review" aria-labelledby="compute-review-title">
       <header>
@@ -111,6 +116,31 @@ export function ComputeReview({ workspace }: { workspace: ComputeWorkspaceContra
             ))}
           </select>
         </label>
+        {workspace.selected && !visible.some((job) => job.workloadId === workspace.selectedId) ? (
+          <p role="status">
+            Selected workload is hidden by the queue filters.{" "}
+            <button
+              type="button"
+              onClick={() => {
+                setGroup("all");
+                workspace.setStatus("all");
+                const ordered = [...workspace.assessment.decisions].sort(
+                  (a, b) => Number(b.recommended) - Number(a.recommended),
+                );
+                workspace.setQueuePage(
+                  Math.floor(
+                    Math.max(
+                      0,
+                      ordered.findIndex((job) => job.workloadId === workspace.selectedId),
+                    ) / 50,
+                  ),
+                );
+              }}
+            >
+              Reveal selected workload
+            </button>
+          </p>
+        ) : null}
         <ComputeWorkloadQueue model={workspace} group={group} />
       </details>
       <details className="compute-inventory-detail">

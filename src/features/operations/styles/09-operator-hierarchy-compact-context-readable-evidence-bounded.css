@@ -3,7 +3,7 @@
 /* Shared inputs and a single decision canvas. */
 .compute-operating-summary {
   display: grid;
-  grid-template-columns: minmax(150px, 0.7fr) minmax(0, 1.2fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 1.5rem;
   align-items: center;
   padding: 1.25rem;
@@ -12,89 +12,120 @@
   border-radius: 14px;
   margin-bottom: 1.25rem;
 }
-.compute-candidate-ring {
-  text-align: center;
-  font-size: 0.8rem;
+.compute-decision-headline h3 {
+  font-size: 1.875rem;
+  margin-block: 0.5rem;
+  font-variant-numeric: tabular-nums;
 }
-.compute-candidate-ring svg {
-  width: 150px;
-  max-width: 100%;
-  display: block;
-  margin: auto;
+.compute-decision-headline p:not(.context-label) {
+  font-size: 1rem;
+  line-height: 1.5;
 }
-.compute-candidate-ring circle {
-  fill: none;
-  stroke-width: 10;
+.compute-decision-headline strong {
+  font-size: 0.875rem;
+  color: var(--ops-muted);
 }
-.compute-ring-track {
-  stroke: var(--ops-border-strong);
+.compute-coordinated-layout {
+  display: grid;
+  gap: 1rem;
+  align-items: start;
+  min-width: 0;
 }
-.compute-ring-value {
-  stroke: var(--ops-response);
-  transform: rotate(-90deg);
-  transform-origin: 70px 70px;
+.compute-coordinated-layout > * {
+  min-width: 0;
 }
-.compute-candidate-ring text {
-  fill: var(--ops-muted);
+.compute-view-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-block: 1rem;
+}
+.compute-view-controls button,
+.compute-inspector-time button {
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--ops-border);
+  border-radius: 8px;
+}
+.compute-view-controls button[aria-pressed="true"] {
+  background: var(--ops-demand-fill);
+  border-color: var(--ops-demand);
+}
+.compute-interval-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  font-variant-numeric: tabular-nums;
+}
+.operations-compute .operations-chart-legend strong,
+.operations-compute .compute-table-wrap {
+  font-size: 0.875rem;
+}
+.operations-compute .operations-chart-legend small,
+.operations-compute .compute-table-wrap small {
+  font-size: 0.8125rem;
+}
+.operations-compute .compute-table-wrap th {
+  font-size: 0.8125rem;
+}
+.operations-compute .compute-table-wrap button {
+  min-height: 44px;
+}
+.operations-compute .recharts-cartesian-axis-tick text {
   font-size: 12px;
 }
-.compute-candidate-ring .compute-ring-number {
-  fill: var(--ops-text);
-  font-size: 34px;
-  font-weight: 750;
+.operations-compute .operations-v2-chart-header h3 {
+  font-size: 1.375rem;
+  text-wrap: balance;
 }
-.compute-power-comparison h3,
+.operations-compute :is(.operations-chart-purpose, .compute-lane-title, .compute-time-inspector) {
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+.operations-compute
+  :is(
+    .compute-lane-title span,
+    .compute-window-lane small,
+    .operations-v2-chart-data,
+    .compute-inventory-toggle
+  ) {
+  font-size: 0.8125rem;
+}
+.compute-inspector-time {
+  padding-block: 1rem;
+  border-bottom: 1px solid var(--ops-border);
+}
+.compute-inspector-time small {
+  display: block;
+  margin-top: 0.5rem;
+  color: var(--ops-muted);
+}
+@media (min-width: 1500px) {
+  .compute-coordinated-layout.has-inspector {
+    grid-template-columns: minmax(0, 1fr) 22rem;
+  }
+  .compute-coordinated-layout .compute-drawer {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    width: auto;
+    height: auto;
+    max-height: calc(100dvh - 12rem);
+    border: 1px solid var(--ops-border);
+    border-radius: 14px;
+    box-shadow: none;
+  }
+}
 .compute-validation-status h3 {
   font-size: 1.1rem;
   margin: 0.4rem 0 0.75rem;
 }
-.compute-power-comparison dl {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem 1.5rem;
-  margin: 0.5rem 0;
-}
-.compute-power-comparison dt {
-  font-size: 0.75rem;
-  color: var(--ops-muted);
-}
-.compute-power-comparison dd {
-  margin: 0.3rem 0;
-  font-size: 1.35rem;
-  font-weight: 650;
-  font-variant-numeric: tabular-nums;
-}
-.compute-bullet {
-  height: 12px;
-  background: var(--ops-border);
-  position: relative;
-  margin: 1rem 0 0.6rem;
-}
-.compute-bullet i {
+.compute-decision-headline small {
   display: block;
-  height: 100%;
-  background: var(--ops-response);
-}
-.compute-bullet b {
-  position: absolute;
-  top: -5px;
-  height: 22px;
-  border-left: 3px solid var(--ops-text);
-}
-.compute-bullet-scale {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.5rem;
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   color: var(--ops-muted);
-  margin-bottom: 0.7rem;
-}
-.compute-power-comparison small,
-.compute-validation-status small {
-  display: block;
-  font-size: 0.75rem;
+  margin-top: 0.75rem;
   line-height: 1.5;
-  color: var(--ops-muted);
 }
 .compute-validation-status {
   border-left: 3px solid var(--ops-target);
@@ -239,7 +270,11 @@
 .compute-lane-track .deadline {
   top: 0;
   height: 100%;
-  border-left: 2px solid var(--ops-target);
+  border-left: 2px solid var(--ops-text);
+}
+.compute-window-lanes .operations-chart-legend[aria-label="Workload timing legend"] .response {
+  background: repeating-linear-gradient(135deg, var(--ops-response) 0 3px, transparent 3px 6px);
+  border: 1px dashed var(--ops-response);
 }
 .compute-lane-track .compute-lane-cursor {
   top: 0;
@@ -259,31 +294,13 @@
   background: transparent;
   padding: 1rem 0 0;
 }
-@media (min-width: 1100px) and (max-width: 1399px) {
-  .inputs-open .compute-operating-summary {
-    grid-template-columns: minmax(130px, 0.7fr) minmax(0, 1.3fr);
-  }
-  .inputs-open .compute-validation-status {
-    grid-column: 1/-1;
-  }
-}
 @media (max-width: 799px) {
   .compute-operating-summary {
     grid-template-columns: minmax(0, 1fr);
     gap: 1rem;
   }
-  .compute-candidate-ring svg {
-    width: 120px;
-  }
-  .compute-power-comparison {
-    border-top: 1px solid var(--ops-border);
-    padding-top: 1rem;
-  }
   .compute-lane-title {
     display: grid;
-  }
-  .compute-bullet-scale {
-    flex-wrap: wrap;
   }
 }
 /* Match the global base-layer chart rule without inheriting its dark-only label colour. */
