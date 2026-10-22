@@ -1,0 +1,61 @@
+.operations-chart-legend li button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 40px;
+  color: inherit;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  padding: 0.35rem 0.5rem;
+  text-align: left;
+  cursor: pointer;
+}
+.operations-chart-legend li button:hover {
+  background: var(--ops-demand-fill);
+}
+.operations-chart-legend li button[aria-pressed="false"] {
+  opacity: 0.6;
+  text-decoration: line-through;
+}
+.operations-chart-legend li button:focus-visible,
+.ops-interval-navigation :focus-visible {
+  outline: 2px solid var(--ops-demand);
+  outline-offset: 2px;
+}
+.ops-interval-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+  margin: 1rem 0;
+}
+.ops-interval-navigation button,
+.ops-interval-navigation select,
+.operations-v2-chart-data th button {
+  min-height: 40px;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--ops-chart-grid);
+  background: var(--background);
+  color: inherit;
+  border-radius: 5px;
+}
+.ops-interval-navigation label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.operations-v2-chart-data tr[aria-selected="true"] {
+  background: var(--ops-demand-fill);
+  outline: 1px solid var(--ops-demand);
+  outline-offset: -1px;
+}
+.operations-v2-chart-data th button[aria-pressed="true"] {
+  border-color: var(--ops-demand);
+}
+@media (max-width: 600px) {
+  .ops-interval-navigation select {
+    max-width: 100%;
+  }
+}

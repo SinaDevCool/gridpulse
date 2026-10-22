@@ -1,4 +1,25 @@
-import type { CSSProperties,ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
+import { useState } from "react";
+
+export type ChartVisibility = {
+  visible: (id: string) => boolean;
+  toggle: (id: string) => void;
+  reset: () => void;
+};
+export function useChartVisibility(): ChartVisibility {
+  const [hidden, setHidden] = useState<Set<string>>(() => new Set());
+  return {
+    visible: (id: string) => !hidden.has(id),
+    toggle: (id: string) =>
+      setHidden((previous) => {
+        const next = new Set(previous);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        return next;
+      }),
+    reset: () => setHidden(new Set()),
+  };
+}
 
 export type OperationsSeriesTone =
   | "demand"
@@ -12,6 +33,7 @@ export type OperationsSeriesTone =
   | "positive";
 
 export type OperationsLegendItem = {
+  id?: string;
   label: string;
   detail?: string;
   tone: OperationsSeriesTone;
@@ -21,24 +43,45 @@ export type OperationsLegendItem = {
 export function OperationsChartLegend({
   items,
   label = "Chart legend",
+  visibility,
 }: {
   items: OperationsLegendItem[];
   label?: string;
+  visibility?: ChartVisibility;
 }) {
   return (
     <ul className="operations-chart-legend" aria-label={label}>
       {items.map((item) => (
         <li key={`${item.label}-${item.tone}`}>
-          <i
-            aria-hidden="true"
-            className={`operations-chart-mark ${item.tone} ${item.mark ?? "line"}`}
-          />
-          <span>
-            <strong>{item.label}</strong>
-            {item.detail ? <small>{item.detail}</small> : null}
-          </span>
+          <button
+            type="button"
+            disabled={!visibility}
+            aria-pressed={visibility?.visible(item.id ?? item.label) ?? true}
+            onClick={() => visibility?.toggle(item.id ?? item.label)}
+          >
+            <i
+              aria-hidden="true"
+              className={`operations-chart-mark ${item.tone} ${item.mark ?? "line"}`}
+            />
+            <span>
+              <strong>{item.label}</strong>
+              {item.detail ? <small>{item.detail}</small> : null}
+            </span>
+          </button>
         </li>
       ))}
+      {visibility ? (
+        <li>
+          <button type="button" onClick={visibility.reset}>
+            Reset chart
+          </button>
+        </li>
+      ) : null}
+      {visibility && items.every((item) => !visibility.visible(item.id ?? item.label)) ? (
+        <li role="status">
+          All chart layers hidden. Reset chart to restore them. Calculated results are unchanged.
+        </li>
+      ) : null}
     </ul>
   );
 }

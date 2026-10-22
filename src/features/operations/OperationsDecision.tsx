@@ -3,11 +3,19 @@ import { formatOperationsTime } from "./presentation";
 import type { OperationsOverviewModel, OperationsScenarioKind } from "./scenario-engine";
 import { selectPlanObligations } from "./overview/select-plan-obligations";
 
-export function OperatingEnvelopeMap({ model }: { model: OperationsOverviewModel }) {
-  const peak = model.intervals.reduce<OperationsOverviewModel["intervals"][number] | undefined>(
-    (best, point) => (!best || point.baselineDemandMw > best.baselineDemandMw ? point : best),
-    undefined,
-  );
+export function OperatingEnvelopeMap({
+  model,
+  timestamp,
+}: {
+  model: OperationsOverviewModel;
+  timestamp?: string;
+}) {
+  const peak =
+    model.intervals.find((point) => point.timestamp === timestamp) ??
+    model.intervals.reduce<OperationsOverviewModel["intervals"][number] | undefined>(
+      (best, point) => (!best || point.baselineDemandMw > best.baselineDemandMw ? point : best),
+      undefined,
+    );
   const envelope = model.operatingEnvelope.intervals.find(
     (point) => point.timestamp === peak?.timestamp,
   );
@@ -41,8 +49,8 @@ export function OperatingEnvelopeMap({ model }: { model: OperationsOverviewModel
         ))}
       </dl>
       <p>
-        Baseline peak marker: {formatMw(peak.baselineDemandMw)}. Combined boundary includes recovery
-        demand and may be below the battery boundary.
+        Inspected demand marker: {formatMw(peak.baselineDemandMw)}. Combined boundary includes
+        recovery demand and may be below the battery boundary.
       </p>
       <p>
         Governing modeled limit:{" "}

@@ -20,6 +20,7 @@ export type OperationsEvidenceStore = {
   powerMessage: State<string>;
   powerError: State<string>;
   powerTimestamp: State<string | null>;
+  historicalTimestamp: State<string | null>;
   powerImportsOpen: State<boolean>;
   workloadSelectedId: State<string | null>;
   workloadStatus: State<"all" | ComputeWorkload["status"]>;

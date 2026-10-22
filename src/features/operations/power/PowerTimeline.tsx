@@ -13,7 +13,12 @@ import {
 } from "recharts";
 
 import { formatMw, formatPercent } from "../formatting";
-import { OperationsChartLegend, OperationsTooltipShell, TooltipRow } from "../visualization";
+import {
+  OperationsChartLegend,
+  OperationsTooltipShell,
+  TooltipRow,
+  useChartVisibility,
+} from "../visualization";
 
 import { number, type EvidenceMode } from "./presentation";
 import { formatOperationsTime } from "../presentation";
@@ -38,6 +43,7 @@ export function PowerTimeline({
   mode: EvidenceMode;
 }) {
   const selectedLabel = selectedTimestamp;
+  const visibility = useChartVisibility();
   function selectChart(state: {
     activeIndex?: string | number | null;
     activeLabel?: string | number;
@@ -60,7 +66,12 @@ export function PowerTimeline({
       aria-label="Three aligned charts show facility demand and grid import in megawatts, battery dispatch in megawatts, and state of charge in percent"
     >
       <OperationsChartLegend
+        visibility={visibility}
         items={[
+          { label: "Safety target", tone: "target", mark: "dash" },
+          { label: "Facility limit", tone: "limit", mark: "dash" },
+          { label: "Available discharge", tone: "neutral", mark: "dash" },
+          { label: "Protected reserve", tone: "target", mark: "area" },
           { label: "Facility demand", detail: "MW · before battery", tone: "demand", mark: "area" },
           { label: "Grid import", detail: "MW · after battery", tone: "response" },
           {
@@ -93,15 +104,32 @@ export function PowerTimeline({
           >
             <CartesianGrid stroke="var(--ops-chart-grid)" vertical={false} />
             <XAxis dataKey="timestamp" hide />
-            <YAxis unit=" MW" tickLine={false} axisLine={false} />
+            <YAxis
+              domain={[
+                0,
+                Math.max(
+                  limitMw * 1.15,
+                  ...data.flatMap((point) => [
+                    point.facilityDemandMw ?? 0,
+                    point.gridImportMw ?? 0,
+                  ]),
+                ),
+              ]}
+              unit=" MW"
+              tickLine={false}
+              axisLine={false}
+            />
             <Tooltip content={<PowerTooltip panel="facility" targetMw={targetMw} />} />
             {mode === "scenario" ? (
               <ReferenceLine
                 y={limitMw}
+                strokeOpacity={visibility.visible("Facility limit") ? 1 : 0}
                 stroke="var(--ops-limit)"
                 strokeDasharray="7 5"
                 label={{
-                  value: `${number.format(limitMw)} MW limit`,
+                  value: visibility.visible("Facility limit")
+                    ? `${number.format(limitMw)} MW limit`
+                    : "",
                   fill: "var(--ops-limit)",
                   position: "insideBottomLeft",
                 }}
@@ -110,10 +138,13 @@ export function PowerTimeline({
             {mode === "scenario" ? (
               <ReferenceLine
                 y={targetMw}
+                strokeOpacity={visibility.visible("Safety target") ? 1 : 0}
                 stroke="var(--ops-target)"
                 strokeDasharray="3 5"
                 label={{
-                  value: `${number.format(targetMw)} MW target`,
+                  value: visibility.visible("Safety target")
+                    ? `${number.format(targetMw)} MW target`
+                    : "",
                   fill: "var(--ops-target)",
                   position: "insideTopRight",
                 }}
@@ -123,6 +154,7 @@ export function PowerTimeline({
               <>
                 <Line
                   dataKey="limitMw"
+                  hide={!visibility.visible("Facility limit")}
                   name="Declared limit"
                   stroke="var(--ops-limit)"
                   strokeDasharray="7 5"
@@ -132,6 +164,7 @@ export function PowerTimeline({
                 />
                 <Line
                   dataKey="targetMw"
+                  hide={!visibility.visible("Safety target")}
                   name="Analysis target"
                   stroke="var(--ops-target)"
                   strokeDasharray="3 5"
@@ -147,6 +180,7 @@ export function PowerTimeline({
             <Area
               isAnimationActive={false}
               dataKey="facilityDemandMw"
+              hide={!visibility.visible("Facility demand")}
               name="Facility demand"
               stroke="var(--ops-demand)"
               fill="var(--ops-demand-fill)"
@@ -155,6 +189,7 @@ export function PowerTimeline({
             <Line
               isAnimationActive={false}
               dataKey="gridImportMw"
+              hide={!visibility.visible("Grid import")}
               name="Grid import"
               stroke="var(--ops-response)"
               dot={false}
@@ -181,7 +216,22 @@ export function PowerTimeline({
           >
             <CartesianGrid stroke="var(--ops-chart-grid)" vertical={false} />
             <XAxis dataKey="timestamp" hide />
-            <YAxis yAxisId="dispatch" unit=" MW" tickLine={false} axisLine={false} />
+            <YAxis
+              yAxisId="dispatch"
+              domain={[
+                -Math.max(1, ...data.map((point) => Math.abs(point.batteryPowerMw ?? 0))),
+                Math.max(
+                  1,
+                  ...data.flatMap((point) => [
+                    point.batteryPowerMw ?? 0,
+                    point.availableDischargeMw ?? 0,
+                  ]),
+                ),
+              ]}
+              unit=" MW"
+              tickLine={false}
+              axisLine={false}
+            />
             <Tooltip content={<PowerTooltip panel="battery" targetMw={targetMw} />} />
             <ReferenceLine yAxisId="dispatch" y={0} stroke="var(--ops-axis)" />
             {selectedLabel ? (
@@ -191,6 +241,7 @@ export function PowerTimeline({
               isAnimationActive={false}
               yAxisId="dispatch"
               dataKey="batteryPowerMw"
+              hide={!visibility.visible("Battery dispatch")}
               name="Battery dispatch"
               fill="var(--ops-battery)"
               opacity={0.86}
@@ -198,6 +249,7 @@ export function PowerTimeline({
             <Line
               yAxisId="dispatch"
               dataKey="availableDischargeMw"
+              hide={!visibility.visible("Available discharge")}
               name={mode === "scenario" ? "Available discharge" : "Reported discharge allowance"}
               stroke="var(--ops-muted)"
               strokeDasharray="4 4"
@@ -233,7 +285,7 @@ export function PowerTimeline({
             />
             <YAxis yAxisId="soc" domain={[0, 100]} unit="%" tickLine={false} axisLine={false} />
             <Tooltip content={<PowerTooltip panel="battery" targetMw={targetMw} />} />
-            {Number.isFinite(protectedSocPercent) ? (
+            {Number.isFinite(protectedSocPercent) && visibility.visible("Protected reserve") ? (
               <>
                 <ReferenceArea
                   yAxisId="soc"
@@ -262,6 +314,7 @@ export function PowerTimeline({
               isAnimationActive={false}
               yAxisId="soc"
               dataKey="socPercent"
+              hide={!visibility.visible("State of charge")}
               name="State of charge"
               stroke="var(--ops-soc)"
               strokeWidth={2.5}

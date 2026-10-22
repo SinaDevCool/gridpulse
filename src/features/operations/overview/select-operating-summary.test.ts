@@ -4,6 +4,23 @@ import { scopeOperationsModel } from "../operating-context";
 import { responseOptions, selectOperatingSummary } from "./select-operating-summary";
 describe("operating summary presentation contract", () => {
   const model = buildOperationsScenario();
+  it.each(responseOptions)(
+    "inspects every interval without changing aggregate results: $value",
+    ({ value }) => {
+      const aggregate = selectOperatingSummary(model, value);
+      for (const point of model.intervals) {
+        const inspected = selectOperatingSummary(model, value, point.timestamp);
+        expect(inspected.peak.timestamp).toBe(point.timestamp);
+        expect(inspected.battery + inspected.workload - inspected.recovery).toBeCloseTo(
+          inspected.response,
+          1,
+        );
+        expect(inspected.summary).toEqual(aggregate.summary);
+        expect(inspected.headroom).toBe(aggregate.headroom);
+        expect(inspected.residual).toBeGreaterThanOrEqual(0);
+      }
+    },
+  );
   it("keeps overload on the meter scale and signed headroom", () => {
     const s = selectOperatingSummary(model, "baseline");
     expect(s.gaugeMaximum).toBeGreaterThan(s.summary.peakDemandMw);

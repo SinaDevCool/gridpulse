@@ -34,16 +34,18 @@ export function ResponseControls({
 export function ResponseBreakdown({
   model,
   selected,
+  timestamp,
 }: {
   model: OperationsOverviewModel;
   selected: OperationsScenarioKind;
+  timestamp?: string;
 }) {
-  const s = selectOperatingSummary(model, selected);
+  const s = selectOperatingSummary(model, selected, timestamp);
   const scale = Math.max(s.required, Math.max(0, s.battery) + s.workload, 1);
   return (
     <section className="ops-response-breakdown" aria-label="Selected response breakdown">
       <header>
-        <strong>At baseline peak · {formatOperationsTime(s.peak.timestamp)}</strong>
+        <strong>Inspecting interval · {formatOperationsTime(s.peak.timestamp)}</strong>
         <span>Same-interval contributions · not independent maxima</span>
       </header>
       <div className="ops-contribution-bar" aria-hidden="true">
