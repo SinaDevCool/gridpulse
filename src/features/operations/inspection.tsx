@@ -1,4 +1,5 @@
 import { formatOperationsTime } from "./presentation";
+import { useState } from "react";
 
 export function IntervalNavigation({
   points,
@@ -12,6 +13,7 @@ export function IntervalNavigation({
   peak?: string;
 }) {
   const index = points.findIndex((point) => point.timestamp === timestamp);
+  const [query, setQuery] = useState("");
   return (
     <div className="ops-interval-navigation" role="group" aria-label="Inspect interval">
       <button
@@ -21,16 +23,72 @@ export function IntervalNavigation({
       >
         Previous interval
       </button>
-      <label>
-        Inspect time{" "}
-        <select value={timestamp ?? ""} onChange={(event) => onSelect(event.target.value)}>
-          {points.map((point) => (
-            <option key={point.timestamp} value={point.timestamp}>
-              {formatOperationsTime(point.timestamp, true)}
-            </option>
-          ))}
-        </select>
-      </label>
+      <details
+        className="ops-time-picker"
+        onKeyDown={(event) => {
+          if (event.key === "Escape") {
+            event.currentTarget.open = false;
+            event.currentTarget.querySelector("summary")?.focus();
+          }
+        }}
+        onToggle={(event) => {
+          if (event.currentTarget.open)
+            event.currentTarget
+              .querySelector('button[aria-pressed="true"]')
+              ?.scrollIntoView({ block: "nearest" });
+        }}
+      >
+        <summary>
+          Inspect time · {timestamp ? formatOperationsTime(timestamp, true) : "Unavailable"} ▾
+        </summary>
+        <div className="ops-time-menu">
+          <label>
+            Find time (UTC)
+            <input
+              type="search"
+              name="inspection-time-search"
+              autoComplete="off"
+              spellCheck={false}
+              placeholder="08:15…"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+            />
+          </label>
+          <div className="ops-time-list">
+            {points
+              .filter((point) =>
+                formatOperationsTime(point.timestamp, true)
+                  .toLowerCase()
+                  .includes(query.toLowerCase()),
+              )
+              .map((point) => (
+                <button
+                  key={point.timestamp}
+                  type="button"
+                  aria-pressed={timestamp === point.timestamp}
+                  onClick={(event) => {
+                    onSelect(point.timestamp);
+                    const details = event.currentTarget.closest("details");
+                    if (details) {
+                      details.open = false;
+                      details.querySelector("summary")?.focus();
+                    }
+                  }}
+                >
+                  {formatOperationsTime(point.timestamp, true)}{" "}
+                  {point.timestamp === peak ? "· Peak" : ""}
+                </button>
+              ))}
+            {!points.some((point) =>
+              formatOperationsTime(point.timestamp, true)
+                .toLowerCase()
+                .includes(query.toLowerCase()),
+            ) ? (
+              <p>No available intervals match.</p>
+            ) : null}
+          </div>
+        </div>
+      </details>
       <button
         type="button"
         disabled={index < 0 || index >= points.length - 1}

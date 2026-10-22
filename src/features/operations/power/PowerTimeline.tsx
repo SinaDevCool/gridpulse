@@ -33,6 +33,7 @@ export function PowerTimeline({
   onSelect,
   protectedSocPercent,
   mode,
+  previewing = false,
 }: {
   data: BatteryTimelinePoint[];
   limitMw: number;
@@ -41,8 +42,14 @@ export function PowerTimeline({
   onSelect: (timestamp: string) => void;
   protectedSocPercent: number;
   mode: EvidenceMode;
+  previewing?: boolean;
 }) {
   const selectedLabel = selectedTimestamp;
+  const cursorProps = {
+    x: selectedLabel ?? undefined,
+    stroke: "var(--ops-selection)",
+    strokeDasharray: previewing ? "4 4" : undefined,
+  };
   const visibility = useChartVisibility();
   function selectChart(state: {
     activeIndex?: string | number | null;
@@ -174,9 +181,7 @@ export function PowerTimeline({
                 />
               </>
             ) : null}
-            {selectedLabel ? (
-              <ReferenceLine x={selectedLabel} stroke="var(--ops-selection)" />
-            ) : null}
+            {selectedLabel ? <ReferenceLine {...cursorProps} /> : null}
             <Area
               isAnimationActive={false}
               dataKey="facilityDemandMw"
@@ -234,9 +239,7 @@ export function PowerTimeline({
             />
             <Tooltip content={<PowerTooltip panel="battery" targetMw={targetMw} />} />
             <ReferenceLine yAxisId="dispatch" y={0} stroke="var(--ops-axis)" />
-            {selectedLabel ? (
-              <ReferenceLine yAxisId="dispatch" x={selectedLabel} stroke="var(--ops-selection)" />
-            ) : null}
+            {selectedLabel ? <ReferenceLine yAxisId="dispatch" {...cursorProps} /> : null}
             <Bar
               isAnimationActive={false}
               yAxisId="dispatch"
@@ -307,9 +310,7 @@ export function PowerTimeline({
                 />
               </>
             ) : null}
-            {selectedLabel ? (
-              <ReferenceLine yAxisId="soc" x={selectedLabel} stroke="var(--ops-selection)" />
-            ) : null}
+            {selectedLabel ? <ReferenceLine yAxisId="soc" {...cursorProps} /> : null}
             <Line
               isAnimationActive={false}
               yAxisId="soc"

@@ -11,7 +11,10 @@ test("cockpit integrates comparisons and retains full-horizon recovery", async (
     page.getByText("Planning assumptions & recovery obligations", { exact: true }),
   ).toHaveCount(0);
   await expect(page.locator(".ops-advanced-tools")).not.toHaveAttribute("open", "");
-  await page.getByText("Compare responses", { exact: true }).click();
+  await expect(page.getByRole("button", { name: "Compare plans", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
   const comparison = page.locator(".ops-response-comparison");
   await expect(comparison.locator("tbody tr")).toHaveCount(4);
   await comparison.getByRole("button", { name: "Select Workload Only comparison" }).click();
@@ -35,7 +38,7 @@ test("headroom, evidence and technical tools remain available without overcrowdi
 }, testInfo) => {
   await page.goto("/operations");
   await expect(page.getByRole("button", { name: /^(Show|Hide) panel/ })).toBeEnabled();
-  await page.getByText("Inspect headroom", { exact: true }).click();
+  await page.getByRole("button", { name: "Modeled headroom", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Illustrative response envelope" })).toBeVisible();
   await expect(page.locator(".ops-headroom-detail")).toContainText("not calibrated confidence");
   await page.getByRole("link", { name: "Evidence & assumptions", exact: true }).click();

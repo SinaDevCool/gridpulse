@@ -15,13 +15,13 @@ import {
 
 import { type OperationsOverviewModel, type OperationsScenarioKind } from "../scenario-engine";
 
-import { formatDurationHours, formatMw } from "../formatting";
-import { OperatingEnvelopeMap, ScenarioDecisionTable } from "../OperationsDecision";
+import { formatMw } from "../formatting";
+import { ResponseExplorer } from "./ResponseExplorer";
+import { ResponseImpact } from "./ResponseImpact";
+import { demandPeakMarkers } from "./demand-peak-markers";
 import {
-  ChartSummaryMetric,
   OperationsChartLegend,
   useChartVisibility,
-  OperationsChartSummary,
   OperationsTooltipShell,
   TooltipRow,
 } from "../visualization";
@@ -31,7 +31,7 @@ import { ChartHeader } from "./primitives";
 import { number } from "./presentation";
 import { AccessibleIntervalTable } from "./AccessibleIntervalTable";
 import { InspectionRange } from "./InspectionRange";
-import { ResponseControls, ResponseBreakdown } from "./ResponseControls";
+import { ResponseControls } from "./ResponseControls";
 import { IntervalNavigation } from "../inspection";
 import { useInspection } from "../hooks/use-inspection";
 import { selectOperatingSummary } from "./select-operating-summary";
@@ -58,9 +58,6 @@ export function DemandChart({
         : selected === "workload"
           ? "workloadDemandMw"
           : "combinedDemandMw";
-  const baseline = model.summaries[0];
-  const selectedSummary =
-    model.summaries.find((summary) => summary.kind === selected) ?? model.summaries[2];
   const selectedName =
     selected === "baseline"
       ? "Baseline"
@@ -103,18 +100,6 @@ export function DemandChart({
           Show illustrative planning range & risk-adjusted envelope
         </label>
       </details>
-      <OperationsChartSummary>
-        <ChartSummaryMetric
-          label="Peak Reduction"
-          value={formatMw(Math.max(0, baseline.peakDemandMw - selectedSummary.peakDemandMw))}
-          tone={selectedSummary.feasible ? "positive" : undefined}
-        />
-        <ChartSummaryMetric
-          label="Limit Exposure"
-          value={`${formatDurationHours(baseline.violationHours)} → ${formatDurationHours(selectedSummary.violationHours)}`}
-          tone={!selectedSummary.feasible ? "limit" : "positive"}
-        />
-      </OperationsChartSummary>
       <OperationsChartLegend
         visibility={visibility}
         items={[
@@ -270,7 +255,17 @@ export function DemandChart({
                 dot={false}
               />
             ) : null}
-            <ReferenceLine x={inspection.timestamp} stroke="var(--ops-selection)" />
+            <ReferenceLine
+              x={inspection.timestamp}
+              stroke="var(--ops-selection)"
+              strokeDasharray={inspection.previewing ? "4 4" : undefined}
+            />
+            {demandPeakMarkers(
+              model,
+              selectedKey,
+              visibility.visible("Baseline demand"),
+              selected !== "baseline" && visibility.visible(selectedName),
+            )}
             {chartData.length > 1 ? (
               <Brush
                 dataKey="timestamp"
@@ -295,52 +290,58 @@ export function DemandChart({
           </ComposedChart>
         </ResponsiveContainer>
       </div>
+      <ResponseImpact
+        model={model}
+        points={inspectionPoints}
+        selected={selected}
+        onSelect={inspection.select}
+      />
       <p>
         Inspection range: {inspectionPoints[0]?.label}–{inspectionPoints.at(-1)?.label} UTC. Peak
         and exposure summaries retain the display window; recovery retains the full planning
         horizon.
       </p>
-      <InspectionRange
-        model={model}
-        range={range}
-        setInspectionRange={setInspectionRange}
-        inspection={inspection}
-      />
-      <IntervalNavigation
-        points={inspectionPoints}
-        timestamp={inspection.timestamp}
-        onSelect={inspection.select}
-      />
-      <button
-        type="button"
-        onClick={() => {
-          setInspectionRange(null);
-          inspection.select(peak);
-        }}
-      >
-        Return to peak & reset range
-      </button>
-      <ResponseBreakdown model={model} selected={selected} timestamp={inspection.timestamp} />
+      <div className="ops-inspection-tools">
+        <InspectionRange
+          model={model}
+          range={range}
+          setInspectionRange={setInspectionRange}
+          inspection={inspection}
+        />
+        <IntervalNavigation
+          points={inspectionPoints}
+          timestamp={inspection.pinnedTimestamp}
+          onSelect={(timestamp) => {
+            if (!inspectionPoints.some((point) => point.timestamp === timestamp))
+              setInspectionRange(null);
+            inspection.select(timestamp);
+          }}
+          peak={peak}
+        />
+        <button
+          type="button"
+          onClick={() => {
+            setInspectionRange(null);
+          }}
+        >
+          Reset inspection range
+        </button>
+      </div>
       <AccessibleIntervalTable
+        pinnedTimestamp={inspection.pinnedTimestamp}
         model={{ ...model, intervals: inspectionPoints }}
         mode="power"
         timestamp={inspection.timestamp}
         onSelect={inspection.select}
+        onPreview={inspection.preview}
       />
-      <details className="ops-chart-investigation">
-        <summary>Compare responses</summary>
-        <p>Peak and exposure: selected display window. Recovery: full planning horizon.</p>
-        <ScenarioDecisionTable
-          model={model}
-          fullModel={fullModel}
-          selected={selected}
-          onSelect={onSelect}
-        />
-      </details>
-      <details className="ops-chart-investigation">
-        <summary>Inspect headroom</summary>
-        <OperatingEnvelopeMap model={model} timestamp={inspection.timestamp} />
-      </details>
+      <ResponseExplorer
+        model={model}
+        fullModel={fullModel}
+        selected={selected}
+        onSelect={onSelect}
+        timestamp={inspection.timestamp}
+      />
     </article>
   );
 }

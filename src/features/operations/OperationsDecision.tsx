@@ -99,6 +99,14 @@ export function ScenarioDecisionTable({
               const recovery = selectPlanObligations(fullModel, summary.kind);
               return (
                 <tr
+                  onClick={(event) => {
+                    if (
+                      !(event.target instanceof Element) ||
+                      event.target.closest("button,a,input,select")
+                    )
+                      return;
+                    onSelect(summary.kind);
+                  }}
                   key={summary.kind}
                   className={selected === summary.kind ? "selected" : undefined}
                 >
@@ -124,11 +132,28 @@ export function ScenarioDecisionTable({
                   </td>
                   <td>{formatDurationHours(summary.violationHours)}</td>
                   <td>
+                    {recovery.recoveryRequired &&
+                    recovery.deferred != null &&
+                    recovery.recovered != null &&
+                    recovery.unresolved != null ? (
+                      <span
+                        className="ops-mini-recovery"
+                        role="img"
+                        aria-label={`${formatMwh(recovery.recovered)} returned; ${formatMwh(recovery.unresolved)} unrecovered`}
+                      >
+                        <i
+                          style={{
+                            width: `${(100 * recovery.recovered) / Math.max(recovery.recovered + recovery.unresolved, 0.001)}%`,
+                          }}
+                        />
+                      </span>
+                    ) : null}
                     {recovery.unresolved == null
                       ? "Unavailable"
                       : recovery.recoveryRequired
                         ? formatMwh(recovery.unresolved)
                         : "No deferral"}
+                    {recovery.reserveFailed ? <small> · Reserve constraint failed</small> : null}
                   </td>
                 </tr>
               );

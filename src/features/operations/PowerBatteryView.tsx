@@ -31,8 +31,19 @@ export function PowerBatteryView({
   const store = useOperationsEvidenceStore();
   const [facility] = store.facility;
   const [battery] = store.battery;
-  const [timestamp, setTimestamp] =
+  const [pinnedTimestamp, pinTimestamp] =
     mode === "historical" ? store.historicalTimestamp : store.powerTimestamp;
+  const [preview, setPreview] = useState<{
+    mode: EvidenceMode;
+    model: OperationsOverviewModel;
+    timestamp: string;
+  } | null>(null);
+  const timestamp =
+    preview?.mode === mode && preview.model === model ? preview.timestamp : pinnedTimestamp;
+  const setTimestamp = (value: string) => {
+    setPreview(null);
+    pinTimestamp(value);
+  };
   const openInputs = useOpenInputs();
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => setHydrated(true), []);
@@ -153,6 +164,7 @@ export function PowerBatteryView({
           </p>
           {series.length ? (
             <PowerTimeline
+              previewing={timestamp !== pinnedTimestamp && preview != null}
               data={series}
               limitMw={limitMw}
               targetMw={targetMw}
@@ -221,6 +233,11 @@ export function PowerBatteryView({
       </div>
       <div className="battery-inspection-actions">
         <PowerDataTable
+          pinnedTimestamp={
+            pinnedTimestamp ??
+            (mode === "scenario" ? view.scenarioPeak?.timestamp : view.historical.at(-1)?.timestamp)
+          }
+          onPreview={(value) => setPreview(value ? { mode, model, timestamp: value } : null)}
           data={series}
           onSelect={setTimestamp}
           selectedTimestamp={selectedPoint?.timestamp ?? null}
