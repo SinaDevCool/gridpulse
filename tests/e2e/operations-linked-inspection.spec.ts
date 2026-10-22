@@ -1,6 +1,21 @@
 import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
+test("single-interval peak inspection renders without invalid SVG geometry", async ({ page }) => {
+  const invalid: string[] = [];
+  page.on("console", (message) => {
+    if (/NaN|not defined/.test(message.text())) invalid.push(message.text());
+  });
+  await page.goto("/operations?view=overview&window=now&mode=scenario");
+  await expect(page.getByRole("button", { name: /^(Show|Hide) panel/ })).toBeEnabled({
+    timeout: 20000,
+  });
+  await expect(page.getByRole("combobox", { name: "Inspect time", exact: true })).toBeVisible();
+  await expect(page.locator(".recharts-brush")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Next interval", exact: true })).toBeDisabled();
+  expect(invalid).toEqual([]);
+});
+
 test("overview links chart, time navigation, envelope, range and table without recalculation", async ({
   page,
 }) => {
