@@ -101,7 +101,86 @@
   touch-action: manipulation;
 }
 .battery-interval-stepper button,
-.battery-events button,
+.battery-events button {
+  background: var(--ops-card);
+  color: var(--ops-text);
+  border: 1px solid var(--ops-border);
+  border-radius: 6px;
+  padding: 0.6rem;
+  font: inherit;
+  font-size: 0.78rem;
+  cursor: pointer;
+  min-height: 40px;
+}
+.battery-interval-stepper button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.battery-events {
+  padding-top: 1rem;
+  border-top: 1px solid var(--ops-border);
+  margin-top: 1rem;
+}
+.battery-events > span {
+  flex-basis: 100%;
+  font-size: 0.8rem;
+  color: var(--ops-muted);
+}
+.battery-events button {
+  display: grid;
+  text-align: left;
+  gap: 0.3rem;
+}
+.battery-events button[aria-pressed="true"] {
+  outline: 2px solid var(--ops-response);
+  outline-offset: 1px;
+}
+.battery-events small {
+  color: var(--ops-muted);
+}
+.battery-constraint-strip {
+  margin-block: 0.8rem;
+}
+.battery-constraint-strip > span {
+  font-size: 0.8rem;
+  color: var(--ops-muted);
+}
+.battery-state-band {
+  display: flex;
+  gap: 2px;
+  padding-block: 0.5rem;
+}
+.battery-state-band > span {
+  flex-basis: 0;
+  min-width: 0;
+  height: 12px;
+  background: var(--ops-muted);
+  border-radius: 2px;
+}
+.battery-state-band > .battery-state--none {
+  background: var(--ops-soc);
+}
+.battery-state-band
+  > :is(
+    .battery-state--power_limited,
+    .battery-state--energy_limited,
+    .battery-state--soc_minimum
+  ) {
+  background: var(--ops-target);
+}
+.battery-state-band
+  > :is(
+    .battery-state--constraint_conflict,
+    .battery-state--asset_unavailable,
+    .battery-state--inverter_unavailable
+  ) {
+  background: var(--ops-limit);
+}
+.battery-constraint-strip select {
+  width: 100%;
+  min-width: 0;
+  font-size: 0.78rem;
+}
 .battery-state--missing_evidence {
   background-image: repeating-linear-gradient(
     135deg,

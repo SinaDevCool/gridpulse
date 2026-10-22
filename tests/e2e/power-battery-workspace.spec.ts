@@ -14,6 +14,14 @@ test("constrained battery story, events and interval records share one selection
   await expect(page.locator(".power-toolbar")).toContainText("target unmet · reserve protected");
   const reserveEvent = page.getByRole("button", { name: /Protected reserve reached in interval/ });
   await expect(reserveEvent).toContainText("08:30 UTC");
+  const stateBand = page.locator(".battery-state-band");
+  await expect(stateBand.locator("span")).toHaveCount(3);
+  const widths = await stateBand
+    .locator("span")
+    .evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().width));
+  expect(widths[0]).toBeGreaterThan(widths[1] * 20);
+  expect(widths[2]).toBeGreaterThan(widths[0]);
+  expect((await reserveEvent.boundingBox())!.height).toBeGreaterThanOrEqual(40);
   await reserveEvent.click();
   const inspector = page.getByRole("complementary", { name: "Selected battery interval" });
   await expect(inspector).toContainText("08:30 UTC – 08:45 UTC");
