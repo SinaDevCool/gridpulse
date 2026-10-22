@@ -9,6 +9,13 @@
   line-height: 1.15;
   max-width: 22ch;
 }
+.solution-introduction .context-label {
+  color: #9ec3d5;
+  font-size: 0.8rem;
+}
+:root[data-theme="light"] .solution-introduction .context-label {
+  color: #365b70;
+}
 .solution-introduction p {
   line-height: 1.65;
   max-width: 75ch;
