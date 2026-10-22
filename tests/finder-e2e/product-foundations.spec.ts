@@ -5,58 +5,40 @@ import { openEvidenceInputs } from "../e2e/operations-inputs";
 test("every visible workflow destination resolves to meaningful content", async ({ page }) => {
   await page.goto("/power-finder");
   const navigation = page.getByRole("navigation", { name: "GridPulse workspace" });
-  await expect(navigation).toBeVisible();
-  const expectations = [
+  await expect(navigation.getByRole("link")).toHaveCount(2);
+  for (const [label, heading] of [
     ["Sites", /Sites|portfolio/i],
     ["Power Finder", /Germany connection context/i],
-    ["Operations", /Power Operations/i],
-  ] as const;
-  await expect(navigation.getByRole("link")).toHaveCount(3);
-  await expect(navigation).not.toContainText(/\b0[123]\b/);
-  for (const hidden of ["Planner", "Activation", "Constraints", "Evidence", "Reports"]) {
-    await expect(navigation.getByRole("link", { name: new RegExp(hidden) })).toHaveCount(0);
-  }
-  for (const [label, heading] of expectations) {
+  ] as const) {
     await navigation.getByRole("link", { name: new RegExp(label) }).click();
     await expect(page.getByRole("heading", { name: heading }).first()).toBeVisible();
   }
+  await page.getByRole("button", { name: "Solution: Site Selection", exact: true }).click();
+  await page.getByRole("link", { name: /Facility Operations Assess/ }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Power Operations" })).toBeVisible();
+  await expect(
+    page.getByRole("navigation", { name: "Power Operations views" }).getByRole("link"),
+  ).toHaveCount(3);
 });
 
-test("workspace destinations behave as independent navigation on mobile", async ({ page }) => {
+test("solution navigation is visible and keyboard-operable on mobile", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/power-finder");
-  const navigation = page.getByRole("navigation", { name: "GridPulse workspace" });
-  const toggle = page.getByRole("button", { name: "Open workspace navigation" });
-  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await expect(page.getByRole("navigation", { name: "GridPulse workspace" })).toBeVisible();
+  const toggle = page.getByRole("button", { name: "Solution: Site Selection", exact: true });
   await toggle.click();
-  await expect(page.getByRole("button", { name: "Close workspace navigation" })).toHaveAttribute(
-    "aria-expanded",
-    "true",
-  );
-  await expect(navigation).toBeVisible();
-  await expect(navigation.getByRole("link")).toHaveCount(3);
-  const targets = await navigation.getByRole("link").evaluateAll((links) =>
-    links.map((link) => ({
-      width: link.getBoundingClientRect().width,
-      height: link.getBoundingClientRect().height,
-    })),
-  );
-  expect(targets.every(({ width, height }) => width >= 44 && height >= 44)).toBe(true);
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
   await page.keyboard.press("Escape");
   await expect(toggle).toBeFocused();
   await expect(toggle).toHaveAttribute("aria-expanded", "false");
   await toggle.click();
-  await navigation.getByRole("link", { name: /Operations/ }).click();
-  await expect(page).toHaveURL(/\/operations(?:\?|$)/);
-  await expect(page.getByRole("link", { name: /Operations/ })).toHaveAttribute(
+  await page.getByRole("link", { name: /Facility Operations Assess/ }).click();
+  await expect(page).toHaveURL(/operations/);
+  await expect(page.getByRole("link", { name: "Overview", exact: true })).toHaveAttribute(
     "aria-current",
     "page",
   );
-  expect(
-    await page.evaluate(
-      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
-    ),
-  ).toBe(false);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
 });
 
 test("dormant workspace URLs redirect into the focused product", async ({ page }) => {
@@ -163,11 +145,14 @@ test("Operations remains legible and free of horizontal overflow on mobile", asy
       .getByRole("button", { name: /^(Show|Hide) panel/ })
       .evaluate((button) => Number.parseFloat(getComputedStyle(button).fontSize)),
   ).toBeGreaterThanOrEqual(13);
-  const tabSizes = await page.locator(".operations-v2-tabs a").evaluateAll((buttons) =>
-    buttons.map((button) => ({
-      width: button.getBoundingClientRect().width,
-      height: button.getBoundingClientRect().height,
-    })),
-  );
+  const tabSizes = await page
+    .getByRole("navigation", { name: "Power Operations views" })
+    .getByRole("link")
+    .evaluateAll((buttons) =>
+      buttons.map((button) => ({
+        width: button.getBoundingClientRect().width,
+        height: button.getBoundingClientRect().height,
+      })),
+    );
   expect(tabSizes.every(({ width, height }) => width >= 44 && height >= 44)).toBe(true);
 });

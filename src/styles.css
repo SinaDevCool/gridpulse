@@ -1,5 +1,6 @@
 @import "tailwindcss" source(none);
 @import "./product.css";
+@import "./styles/product/29-solution-navigation.css";
 @source "../src";
 
 @custom-variant dark (&:is(.dark *));

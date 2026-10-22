@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { stableOperationsJson } from "@/lib/operations-request";
 import { operationsScenarioSchema, type OperationsScenario } from "../scenario-engine";
 import { scenarioFieldId } from "./scenario-fields";
@@ -9,15 +9,6 @@ export function useScenarioDraft(
   const [draft, setDraft] = useState(applied);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const dirty = stableOperationsJson(draft) !== stableOperationsJson(applied);
-  useEffect(() => {
-    if (!dirty) return;
-    const warn = (event: BeforeUnloadEvent) => {
-      event.preventDefault();
-      event.returnValue = "";
-    };
-    window.addEventListener("beforeunload", warn);
-    return () => window.removeEventListener("beforeunload", warn);
-  }, [dirty]);
   function apply() {
     const result = operationsScenarioSchema.safeParse(draft);
     if (!result.success) {

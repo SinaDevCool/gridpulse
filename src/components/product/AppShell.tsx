@@ -4,6 +4,7 @@ import { ProductTruthNotice } from "./ProductTruthNotice";
 import { productCapabilities } from "@/config/product-mode";
 import { FinderShell } from "./FinderShell";
 import { ProductHeader } from "./ProductChrome";
+import { ProductFooter } from "./ProductFooter";
 import { useAuth } from "@/context/useAuth";
 
 function AuthenticatedBoundary({ children }: { children: ReactNode }) {
@@ -23,23 +24,29 @@ export function AppShell({
   children,
   requireAuth = false,
   workspace = false,
+  navigation,
 }: {
   children: ReactNode;
   requireAuth?: boolean;
   workspace?: boolean;
+  navigation?: ReactNode;
 }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const publicProduct = pathname.startsWith("/power-finder");
-  if (!productCapabilities.workspace) return <FinderShell workspace={workspace}>{children}</FinderShell>;
+  if (!productCapabilities.workspace)
+    return (
+      <FinderShell workspace={workspace} navigation={navigation}>
+        {children}
+      </FinderShell>
+    );
   const shell = (
-    <div className={`product-shell${publicProduct ? " product-shell--focused" : ""}${workspace ? " operations-workspace-shell" : ""}`}>
-      <ProductHeader />
+    <div
+      className={`product-shell${publicProduct ? " product-shell--focused" : ""}${workspace ? " operations-workspace-shell" : ""}`}
+    >
+      <ProductHeader navigation={navigation} />
       {publicProduct ? <ProductTruthNotice compact /> : null}
       {children}
-      <footer className="product-footer">
-        <span>Property qualification &amp; grid connection decision intelligence.</span>
-        <b>Capacity and connection terms require operator confirmation.</b>
-      </footer>
+      <ProductFooter />
     </div>
   );
   return requireAuth ? <AuthenticatedBoundary>{shell}</AuthenticatedBoundary> : shell;

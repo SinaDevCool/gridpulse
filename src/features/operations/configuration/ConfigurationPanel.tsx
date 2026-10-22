@@ -32,9 +32,11 @@ export function ConfigurationPanel({
         <div>
           <h2 id="ops-input-title">Inputs & evidence</h2>
         </div>
-        <button type="button" aria-label="Close inputs" onClick={onClose}>
-          ×
-        </button>
+        {mobile ? (
+          <button type="button" aria-label="Close inputs" onClick={onClose}>
+            Close inputs
+          </button>
+        ) : null}
       </header>
       <div className="ops-input-body">{children}</div>
       {actions}

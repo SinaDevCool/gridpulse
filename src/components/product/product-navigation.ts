@@ -6,6 +6,30 @@ export type UnavailableBehavior = "explain" | "hide";
 export const primaryWorkspaceDestinationIds = ["sites", "finder", "operations"] as const;
 const primaryWorkspaceDestinations = new Set<string>(primaryWorkspaceDestinationIds);
 
+export const solutions = [
+  {
+    id: "planning",
+    label: "Site Selection",
+    description: "Evaluate locations and grid-connection options",
+    to: "/power-finder",
+  },
+  {
+    id: "operations",
+    label: "Facility Operations",
+    description: "Assess power, battery and workload decisions",
+    to: "/operations",
+  },
+] as const;
+export function solutionForPath(pathname: string) {
+  return solutions[pathname === "/operations" || pathname.startsWith("/operations/") ? 1 : 0];
+}
+
+export function solutionDestinations(pathname: string, mode: ProductMode) {
+  return workspaceDestinationsForMode(mode).filter(
+    (item) => item.group === solutionForPath(pathname).id,
+  );
+}
+
 export const workspaceLinks = [
   {
     id: "sites",

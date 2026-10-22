@@ -8,7 +8,8 @@ test("Finder exploration and local property portfolio are anonymous", async ({ p
   await expect(page.getByRole("heading", { level: 1 })).toContainText("connection context");
   const workspaceNavigation = page.getByRole("navigation", { name: "GridPulse workspace" });
   await expect(workspaceNavigation).toBeVisible();
-  await expect(workspaceNavigation.locator("a > svg")).toHaveCount(3);
+  await expect(workspaceNavigation.getByRole("link")).toHaveCount(2);
+  await expect(page.getByRole("button", { name: "Solution: Site Selection", exact: true })).toBeVisible();
   expect(
     await workspaceNavigation.evaluate((element) => element.scrollWidth > element.clientWidth),
   ).toBe(false);
