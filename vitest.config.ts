@@ -5,6 +5,8 @@ export default defineConfig({
     __GRIDPULSE_PRODUCT_MODE__: JSON.stringify("finder"),
   },
   test: {
+    // Explicit opt-in is required for any higher-concurrency run.
+    maxWorkers: 2,
     environment: "node",
     include: ["src/**/*.test.ts"],
     coverage: { reporter: ["text", "html"] },
