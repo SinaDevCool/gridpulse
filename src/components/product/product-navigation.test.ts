@@ -30,6 +30,7 @@ describe("workspace outcome navigation", () => {
     ]);
   });
   it("exposes 3 independent primary workspace destinations", () => {
+    expect(workspaceLinks.find((item) => item.id === "operations")?.capability).toBe("operate");
     expect(primaryWorkspaceDestinationIds).toEqual(["sites", "finder", "operations"]);
     expect(workspaceDestinationsForMode("finder").map((item) => item.to)).toEqual([
       "/portfolio",

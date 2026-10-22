@@ -1,28 +1,12 @@
 import type { ProductMode } from "@/config/product-mode";
+import { enabledSolutions, solutionRouteAvailable, solutionForPath } from "../../config/solutions";
+export { solutions, solutionForPath } from "../../config/solutions";
 
 export type ProductCapability = "finder" | "workspace" | "connect" | "operate";
 export type UnavailableBehavior = "explain" | "hide";
 
 export const primaryWorkspaceDestinationIds = ["sites", "finder", "operations"] as const;
 const primaryWorkspaceDestinations = new Set<string>(primaryWorkspaceDestinationIds);
-
-export const solutions = [
-  {
-    id: "planning",
-    label: "Site Selection",
-    description: "Evaluate locations and grid-connection options",
-    to: "/power-finder",
-  },
-  {
-    id: "operations",
-    label: "Facility Operations",
-    description: "Assess power, battery and workload decisions",
-    to: "/operations",
-  },
-] as const;
-export function solutionForPath(pathname: string) {
-  return solutions[pathname === "/operations" || pathname.startsWith("/operations/") ? 1 : 0];
-}
 
 export function solutionDestinations(pathname: string, mode: ProductMode) {
   return workspaceDestinationsForMode(mode).filter(
@@ -55,7 +39,7 @@ export const workspaceLinks = [
     detail: "Facility power",
     group: "operations",
     to: "/operations",
-    capability: "finder",
+    capability: "operate",
     unavailableBehavior: "explain",
   },
   {
@@ -99,6 +83,7 @@ export const workspaceLinks = [
 export type WorkspaceDestination = (typeof workspaceLinks)[number]["to"];
 
 export function capabilityAvailable(capability: ProductCapability, mode: ProductMode) {
+  if (capability === "operate") return enabledSolutions.includes("operations");
   if (capability === "finder") return true;
   if (capability === "workspace") return mode !== "finder";
   if (capability === "connect") return mode === "connect" || mode === "full";
@@ -108,6 +93,7 @@ export function capabilityAvailable(capability: ProductCapability, mode: Product
 export function workspaceDestinationsForMode(mode: ProductMode) {
   return workspaceLinks.filter(
     (item) =>
+      solutionRouteAvailable(item.to, enabledSolutions) &&
       primaryWorkspaceDestinations.has(item.id) &&
       (capabilityAvailable(item.capability, mode) || item.unavailableBehavior === "explain"),
   );

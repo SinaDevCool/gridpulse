@@ -5,7 +5,7 @@ const externalBaseUrl = process.env.GRIDPULSE_E2E_BASE_URL;
 /** Test the compiled Worker, not the Vite-to-Miniflare development proxy. Build first. */
 export default defineConfig({
   testDir: "./tests/e2e",
-  testMatch: "operations-runtime-contracts.spec.ts",
+  testMatch: ["operations-runtime-contracts.spec.ts", "solution-runtime-boundary.spec.ts"],
   workers: 1,
   retries: 0,
   reporter: [["list"]],

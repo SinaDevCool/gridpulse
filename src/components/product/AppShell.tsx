@@ -1,14 +1,14 @@
-import { Navigate, useRouterState } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import { ProductTruthNotice } from "./ProductTruthNotice";
 import { productCapabilities } from "@/config/product-mode";
-import { FinderShell } from "./FinderShell";
-import { ProductHeader } from "./ProductChrome";
-import { ProductFooter } from "./ProductFooter";
+import { ProductShell } from "./ProductShell";
+import { solutionForPath } from "@/config/solutions";
 import { useAuth } from "@/context/useAuth";
 
 function AuthenticatedBoundary({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const solution = solutionForPath(pathname);
   if (loading) {
     return (
       <main id="main-content" className="empty-page" role="status" aria-live="polite">
@@ -16,7 +16,17 @@ function AuthenticatedBoundary({ children }: { children: ReactNode }) {
       </main>
     );
   }
-  if (!user) return <Navigate to="/power-finder" replace />;
+  if (!user)
+    return (
+      <main id="main-content" className="empty-page">
+        <h1>Private {solution.label} access required</h1>
+        <p>
+          This workspace requires an authenticated account. Public scenarios do not grant
+          private-data access.
+        </p>
+        <Link to={solution.to}>Return to {solution.label}</Link>
+      </main>
+    );
   return children;
 }
 
@@ -33,21 +43,15 @@ export function AppShell({
 }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const publicProduct = pathname.startsWith("/power-finder");
-  if (!productCapabilities.workspace)
-    return (
-      <FinderShell workspace={workspace} navigation={navigation}>
-        {children}
-      </FinderShell>
-    );
   const shell = (
-    <div
-      className={`product-shell${publicProduct ? " product-shell--focused" : ""}${workspace ? " operations-workspace-shell" : ""}`}
+    <ProductShell
+      workspace={workspace}
+      navigation={navigation}
+      focused={!productCapabilities.workspace || publicProduct}
+      truthNotice={productCapabilities.workspace && publicProduct}
     >
-      <ProductHeader navigation={navigation} />
-      {publicProduct ? <ProductTruthNotice compact /> : null}
       {children}
-      <ProductFooter />
-    </div>
+    </ProductShell>
   );
   return requireAuth ? <AuthenticatedBoundary>{shell}</AuthenticatedBoundary> : shell;
 }

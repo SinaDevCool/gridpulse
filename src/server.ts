@@ -1,9 +1,11 @@
-import { createStartHandler,defaultStreamHandler } from "@tanstack/react-start/server";
+import { createStartHandler, defaultStreamHandler } from "@tanstack/react-start/server";
 import { renderErrorPage } from "./lib/error-page";
 import { buildSecurityHeaders } from "./lib/security-headers";
+import { unavailableSolutionResponse } from "./server/solution-boundary";
+import { solutionOwner } from "./config/solutions";
 import {
-consumeLastCapturedError,
-withRequestContext,
+  consumeLastCapturedError,
+  withRequestContext,
 } from "./server/observability/request-context.server";
 
 const SECURITY_HEADERS = buildSecurityHeaders(import.meta.env.VITE_SUPABASE_URL);
@@ -43,8 +45,15 @@ export default {
   async fetch(request: Request) {
     return withRequestContext(crypto.randomUUID(), async () => {
       try {
+        const unavailable = unavailableSolutionResponse(request);
+        if (unavailable) return withSecurityHeaders(unavailable);
         const response = await startHandler(request);
-        return withSecurityHeaders(await normalizeCatastrophicSsrResponse(response));
+        const secured = withSecurityHeaders(await normalizeCatastrophicSsrResponse(response));
+        secured.headers.set(
+          "x-gridpulse-solution",
+          solutionOwner(new URL(request.url).pathname) ?? "platform",
+        );
+        return secured;
       } catch (error) {
         console.error(error);
         return withSecurityHeaders(

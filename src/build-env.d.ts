@@ -14,6 +14,7 @@ interface ImportMeta {
 declare const __GRIDPULSE_BUILD_SHA__: string;
 declare const __GRIDPULSE_BUILD_ENV__: string;
 declare const __GRIDPULSE_PRODUCT_MODE__: string;
+declare const __GRIDPULSE_SOLUTIONS__: string | undefined;
 
 declare module "cloudflare:workers" {
   export const env: Record<string, unknown>;

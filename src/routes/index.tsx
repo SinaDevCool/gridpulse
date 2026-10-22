@@ -15,6 +15,8 @@ import { PublicLayout } from "@/components/public/PublicLayout";
 import { workspaceDestinationsForMode } from "@/components/product/product-navigation";
 import { trackEvent } from "@/lib/analytics";
 import "../landing.css";
+import { enabledSolutions } from "@/config/solutions";
+import { SolutionIntroduction } from "@/components/product/SolutionIntroduction";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -119,6 +121,7 @@ const workspaceIcons = {
 
 function DataCentreLandingPage() {
   const workspaces = workspaceDestinationsForMode("finder");
+  if (!enabledSolutions.includes("planning")) return <SolutionIntroduction id="operations" />;
   return (
     <PublicLayout forcePublicChrome finderMarketingChrome>
       <div className="landing-page home-landing">

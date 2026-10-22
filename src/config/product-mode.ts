@@ -1,3 +1,4 @@
+import { solutionRouteAvailable } from "./solutions";
 export type ProductMode = "finder" | "connect" | "full";
 
 function parseProductMode(value: string): ProductMode {
@@ -81,10 +82,12 @@ const finderApiRoutes = new Set([
 ]);
 
 export function isRouteEnabledForMode(pathname: string, mode: ProductMode): boolean {
+  if (!solutionRouteAvailable(pathname)) return false;
   if (retiredWorkspaceDestination(pathname)) return false;
   if (mode !== "finder") return true;
   const normalized = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
   return (
+    pathname.startsWith("/solutions/") ||
     finderRoutes.has(normalized) ||
     finderApiRoutes.has(normalized) ||
     normalized.startsWith("/portfolio/") ||

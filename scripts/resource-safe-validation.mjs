@@ -164,7 +164,7 @@ export async function main(args = process.argv.slice(2)) {
   const specs = (await readdir("tests/e2e"))
     .filter(
       (file) =>
-        /^(operations-|compute-visual-|power-battery-|activation-operations-|solution-navigation)/.test(
+        /^(operations-|compute-visual-|power-battery-|activation-operations-|solution-)/.test(
           file,
         ) &&
         file.endsWith(".spec.ts") &&
