@@ -43,6 +43,7 @@ export const overviewResultSchema = z
   .object({
     planningTime: planningTimeSchema.optional(),
     mode: z.literal("scenario"),
+    assessmentPlan: z.lazy(() => assessmentPlanSchema).optional(),
     scenario: operationsScenarioSchema,
     generatedAt: z.string().datetime(),
     intervals: z.array(interval).min(1),
@@ -224,14 +225,20 @@ export const assuranceResultSchema = z
         netDeliveredEnergyMwh: finite,
         performancePercent: finite,
         verified: z.boolean(),
+        dataEvaluable: z.boolean(),
+        performanceAchieved: z.boolean(),
+        recoveryAssessed: z.boolean(),
+        baselineValidated: z.boolean(),
         confidence: z.enum(["high", "medium", "low"]),
       })
       .nullable(),
-    compliance: z.object({
-      measuredPue: finite.nullable(),
-      evidenceReady: z.boolean(),
-      missing: z.array(z.string()),
-    }),
+    compliance: z
+      .object({
+        measuredPue: finite.nullable(),
+        evidenceReady: z.boolean(),
+        missing: z.array(z.string()),
+      })
+      .passthrough(),
     economics: z.object({
       available: z.boolean(),
       reason: z.string(),
@@ -262,4 +269,28 @@ export const operationsCapabilitiesSchema = z.object({
       evidence: z.array(z.string()),
     }),
   ),
+});
+
+export const assessmentPlanSchema = z.object({
+  schemaVersion: z.literal("gridpulse-assessment-plan-v1"),
+  baselineSource: z.literal("synthetic"),
+  workloads: workloadResultSchema,
+  alignedPower: powerResultSchema.shape.alignedEvidence,
+  evidenceCounts: z.object({
+    facility: finite.int().nonnegative(),
+    battery: finite.int().nonnegative(),
+    workloads: finite.int().nonnegative(),
+    telemetry: finite.int().nonnegative(),
+  }),
+  status: z.object({
+    powerTargetMet: z.boolean(),
+    recoveryComplete: z.boolean(),
+    reserveProtected: z.boolean(),
+    scenarioFeasible: z.boolean(),
+    scheduleValidated: z.literal(false),
+    backupAutonomyEstablished: z.literal(false),
+    physicalDispatchAuthorized: z.literal(false),
+  }),
+  canonical: z.object({ available: z.literal(false), blockers: z.array(z.string()).min(1) }),
+  warnings: z.array(z.string()),
 });

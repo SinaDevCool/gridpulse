@@ -15,6 +15,8 @@ export const batteryConfigurationFields = z.object({
   stateOfHealthPercent: z.number().finite().gt(0).max(100),
   available: z.boolean(),
   inverterAvailable: z.boolean(),
+  criticalLoadMw: z.number().finite().nonnegative().max(5_000).optional(),
+  backupAutonomyMinutes: z.number().finite().nonnegative().max(1_440).optional(),
 });
 
 export function checkBatterySocBounds(
@@ -41,3 +43,25 @@ export function checkBatterySocBounds(
 export const batteryConfigurationSchema =
   batteryConfigurationFields.superRefine(checkBatterySocBounds);
 export type BatteryConfiguration = z.infer<typeof batteryConfigurationSchema>;
+
+/** Energy basis is nominal MWh before SOH/SOC derating. Backup is a declared
+ * critical AC load requirement, not a certified UPS reliability guarantee. */
+export function batteryReserveEnergyMwh(
+  config: Pick<
+    BatteryConfiguration,
+    | "usableEnergyMwh"
+    | "stateOfHealthPercent"
+    | "minimumSocPercent"
+    | "dischargeEfficiency"
+    | "criticalLoadMw"
+    | "backupAutonomyMinutes"
+  >,
+) {
+  return Math.max(
+    (((config.usableEnergyMwh * config.stateOfHealthPercent) / 100) * config.minimumSocPercent) /
+      100,
+    ((config.criticalLoadMw ?? 0) * (config.backupAutonomyMinutes ?? 0)) /
+      60 /
+      config.dischargeEfficiency,
+  );
+}

@@ -1,8 +1,9 @@
-import type { OperationsInterval,OperationsOverviewModel } from "../scenario-engine";
+import type { OperationsInterval, OperationsOverviewModel } from "../scenario-engine";
+import { batteryReserveEnergyMwh } from "../battery-configuration";
 
-import { durationLabel,type EvidenceMode,type HistoricalPoint,number } from "./presentation";
+import { durationLabel, type EvidenceMode, type HistoricalPoint, number } from "./presentation";
 
-import { EvidencePill,Row } from "./primitives";
+import { EvidencePill, Row } from "./primitives";
 
 export function BatterySocPanel({
   model,
@@ -25,9 +26,11 @@ export function BatterySocPanel({
   const boundedSoc = Math.max(0, Math.min(100, soc ?? 0));
   const energyAboveReserve =
     mode === "scenario" && soc != null
-      ? (((battery.usableEnergyMwh * battery.stateOfHealthPercent) / 100) *
-          Math.max(0, soc - battery.minimumSocPercent)) /
-        100
+      ? Math.max(
+          0,
+          (((battery.usableEnergyMwh * battery.stateOfHealthPercent) / 100) * soc) / 100 -
+            batteryReserveEnergyMwh(battery),
+        )
       : null;
   return (
     <article className="battery-soc-card">
@@ -67,7 +70,11 @@ export function BatterySocPanel({
               style={{ left: `${battery.maximumSocPercent}%` }}
             />
           </div>
-          <p className="power-flow-note">Reserve and maximum markers use configured assumptions.</p>
+          <p className="power-flow-note">
+            {mode === "scenario" ? "End-of-interval SOC. " : "Observed SOC. "}Reserve and maximum
+            markers use configured assumptions; backup energy is additionally protected when
+            configured.
+          </p>
         </div>
         <dl>
           <Row label="Minimum reserve" value={`${number.format(battery.minimumSocPercent)}%`} />

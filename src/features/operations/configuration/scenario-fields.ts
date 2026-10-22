@@ -13,7 +13,7 @@ export const scenarioFieldGroups = [
     fields: [
       ["battery.maximumPowerMw", "Battery Power", "MW"],
       ["battery.maximumChargePowerMw", "Maximum Charge Power", "MW"],
-      ["battery.usableEnergyMwh", "Battery Energy", "MWh"],
+      ["battery.usableEnergyMwh", "Battery Energy (before health/SOC derating)", "MWh"],
       ["battery.initialSocPercent", "Initial SOC", "%"],
       ["battery.minimumSocPercent", "Minimum Reserve SOC", "%"],
     ],
@@ -27,6 +27,8 @@ export const scenarioFieldGroups = [
       ["battery.dischargeEfficiency", "Discharge Efficiency", "ratio"],
       ["battery.rampRateMwPerMinute", "Ramp Rate", "MW/min"],
       ["battery.minimumDwellMinutes", "Minimum Dwell", "min"],
+      ["battery.criticalLoadMw", "Critical Backup Load (assumption)", "MW"],
+      ["battery.backupAutonomyMinutes", "Required Backup Duration (assumption)", "min"],
     ],
   },
   {
@@ -43,7 +45,7 @@ export const scenarioFieldGroups = [
     title: "Facility assumptions",
     fields: [
       ["pue", "PUE", "ratio"],
-      ["nonGpuBaseLoadMw", "Other Base Load", "MW"],
+      ["nonGpuBaseLoadMw", "Other Facility Load (excludes GPU overhead)", "MW"],
     ],
   },
 ] as const;

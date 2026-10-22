@@ -1,5 +1,5 @@
-import type { BatteryObservation,FacilityPowerObservation } from "../battery-dispatch";
-import { buildHistoricalSeries,valueOf,type EvidenceMode } from "../power/presentation";
+import type { BatteryObservation, FacilityPowerObservation } from "../battery-dispatch";
+import { buildHistoricalSeries, valueOf, type EvidenceMode } from "../power/presentation";
 import { importThresholds } from "../presentation";
 import type { OperationsOverviewModel } from "../scenario-engine";
 export function selectPowerView(
@@ -16,10 +16,19 @@ export function selectPowerView(
   );
   const selectedScenario =
     displayModel.intervals.find((point) => point.timestamp === selectedTimestamp) ?? scenarioPeak;
-  const historical = buildHistoricalSeries(facilityObservations, batteryObservations);
+  const historical = buildHistoricalSeries(
+    facilityObservations,
+    batteryObservations,
+    model.assessmentPlan?.alignedPower,
+  );
   const selectedHistorical =
     historical.find((point) => point.timestamp === selectedTimestamp) ?? historical.at(-1) ?? null;
-  const targetMw = model.scenario.importLimitMw - model.scenario.safetyReserveMw;
+  // Uploaded limits are observed declarations, not reviewed contractual evidence.
+  const limitMw =
+    mode === "historical" && selectedHistorical?.operatingLimitMw != null
+      ? Math.min(model.scenario.importLimitMw, selectedHistorical.operatingLimitMw)
+      : model.scenario.importLimitMw;
+  const targetMw = Math.max(0, limitMw - model.scenario.safetyReserveMw);
   const selected = mode === "scenario" ? selectedScenario : selectedHistorical;
   const series =
     mode === "scenario"
@@ -47,7 +56,7 @@ export function selectPowerView(
   const feasible = shortfallMw != null && shortfallMw <= 0.01;
   const thresholds = importThresholds(
     selected ? valueOf(selected, "gridImportMw", "batteryDemandMw") : null,
-    model.scenario.importLimitMw,
+    limitMw,
     model.scenario.safetyReserveMw,
   );
   const responseRequired = requiredMw != null && requiredMw > 0.01;
@@ -65,6 +74,7 @@ export function selectPowerView(
     historical,
     selectedHistorical,
     targetMw,
+    limitMw,
     selected,
     series,
     requiredMw,

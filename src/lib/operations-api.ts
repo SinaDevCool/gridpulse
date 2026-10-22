@@ -16,6 +16,9 @@ import {
   workloadResultSchema,
 } from "../features/operations/transport-contracts";
 import { startFacilityPlan } from "./analytics-api";
+import { operationsFingerprint } from "./operations-request";
+import { operationsAssessmentRequestSchema } from "@/features/operations/assessment-request";
+import { OPERATIONS_CALCULATION_VERSION } from "@/features/operations/calculation-version";
 
 export type OperationsAssessmentEnvelope<T> = {
   schemaVersion: "gridpulse-operations-assessment-v1";
@@ -44,6 +47,7 @@ export async function requestOperationsAssessment(
   input: OperationsAssessmentRequest,
   signal?: AbortSignal,
 ) {
+  input = operationsAssessmentRequestSchema.parse(input);
   const response = await fetch("/api/operations/assess", {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -60,7 +64,19 @@ export async function requestOperationsAssessment(
         : "The Operations assessment failed.",
     );
   const validated = assessmentEnvelopeSchema.parse(body);
-  if (input.kind === "overview") overviewResultSchema.parse(validated.result);
+  if (validated.calculationVersion !== OPERATIONS_CALCULATION_VERSION)
+    throw new Error(
+      "Operations calculation version changed. Refresh before accepting this assessment.",
+    );
+  if (validated.inputFingerprint !== (await operationsFingerprint(input)))
+    throw new Error("Operations assessment input identity does not match the current request.");
+  if (input.kind === "overview") {
+    const result = overviewResultSchema.parse(validated.result);
+    if (input.evidence && !result.assessmentPlan)
+      throw new Error(
+        "The service does not support shared evidence assessments. Refresh after deployment.",
+      );
+  }
   if (input.kind === "compute") workloadResultSchema.parse(validated.result);
   if (input.kind === "power") powerResultSchema.parse(validated.result);
   if (input.kind === "assurance") assuranceResultSchema.parse(validated.result);

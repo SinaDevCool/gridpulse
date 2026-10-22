@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { assessGermanEvidence, type GermanReportingContext } from "./german-evidence";
+import { invalidEvidence } from "./evidence-validation";
 
 export const operationsQualityInputSchema = z.object({
   expectedIntervals: z.number().int().positive(),
@@ -22,12 +24,16 @@ export function assessOperationsQuality(raw: z.input<typeof operationsQualityInp
     ? Math.max(0, (Date.parse(input.assessedAt) - Date.parse(input.newestEvidenceAt)) / 60_000)
     : null;
   const blockers: string[] = [];
+  if (input.newestEvidenceAt && Date.parse(input.newestEvidenceAt) > Date.parse(input.assessedAt))
+    blockers.push("Evidence after the assessment cutoff is unavailable.");
   if (completenessPercent < 95) blockers.push("Interval completeness is below 95%.");
   if (freshnessMinutes == null || freshnessMinutes > input.freshnessThresholdMinutes)
     blockers.push("Evidence is missing or stale.");
   if (input.powerBalanceResidualPercent != null && input.powerBalanceResidualPercent > 5)
     blockers.push("Facility power-balance residual exceeds 5%.");
   if (input.suspectCount) blockers.push("Suspect measurements require review.");
+  if (input.duplicateCount) blockers.push("Duplicate measurements require reconciliation.");
+  if (input.staleCount) blockers.push("Stale measurements require review.");
   const status =
     blockers.length === 0 ? "ready" : completenessPercent >= 80 ? "limited" : "scenario_only";
   return {
@@ -51,13 +57,34 @@ export type VerificationInput = {
   batteryPowerMw?: number[];
   reboundImportMw?: number[];
   telemetryCompletenessPercent: number;
+  baselineEvidenceReviewed?: boolean;
 };
 
 export function verifyOperationsResponse(input: VerificationInput) {
   if (!input.actualImportMw.length || input.actualImportMw.length !== input.baselineImportMw.length)
-    throw new Error("Actual and baseline series must contain matching intervals.");
-  const delivered = input.actualImportMw.map((actual, index) =>
-    Math.max(0, input.baselineImportMw[index] - actual),
+    invalidEvidence("Actual and baseline series must contain matching intervals.");
+  if (
+    !(input.intervalMinutes > 0) ||
+    !Number.isFinite(input.intervalMinutes) ||
+    !Number.isFinite(input.requestedReductionMw) ||
+    input.requestedReductionMw < 0 ||
+    !Number.isFinite(input.expectedImportMw) ||
+    input.expectedImportMw < 0 ||
+    !Number.isFinite(input.telemetryCompletenessPercent) ||
+    input.telemetryCompletenessPercent < 0 ||
+    input.telemetryCompletenessPercent > 100 ||
+    [...input.actualImportMw, ...input.baselineImportMw].some(
+      (v) => !Number.isFinite(v) || v < 0,
+    ) ||
+    [input.batteryPowerMw, input.reboundImportMw].some(
+      (series) =>
+        series &&
+        (series.length !== input.actualImportMw.length || series.some((v) => !Number.isFinite(v))),
+    )
+  )
+    invalidEvidence("Verification needs finite, aligned interval evidence and valid units.");
+  const delivered = input.actualImportMw.map(
+    (actual, index) => input.baselineImportMw[index] - actual,
   );
   const deliveredReductionMw = delivered.reduce((sum, value) => sum + value, 0) / delivered.length;
   const deliveredEnergyMwh =
@@ -73,13 +100,22 @@ export function verifyOperationsResponse(input: VerificationInput) {
     ) *
       input.intervalMinutes) /
     60;
-  const netDeliveredEnergyMwh = Math.max(0, deliveredEnergyMwh - reboundEnergyMwh);
+  const netDeliveredEnergyMwh = deliveredEnergyMwh - reboundEnergyMwh;
   const confidence =
     input.telemetryCompletenessPercent >= 95
       ? "high"
       : input.telemetryCompletenessPercent >= 80
         ? "medium"
         : "low";
+  const dataEvaluable = confidence !== "low";
+  const performanceAchieved =
+    dataEvaluable &&
+    input.requestedReductionMw > 0 &&
+    delivered.every(
+      (value, index) =>
+        value >= input.requestedReductionMw - 0.001 &&
+        input.actualImportMw[index] <= input.expectedImportMw + 0.001,
+    );
   return {
     requestedReductionMw: input.requestedReductionMw,
     deliveredReductionMw: Number(deliveredReductionMw.toFixed(3)),
@@ -88,14 +124,21 @@ export function verifyOperationsResponse(input: VerificationInput) {
     reboundEnergyMwh: Number(reboundEnergyMwh.toFixed(3)),
     netDeliveredEnergyMwh: Number(netDeliveredEnergyMwh.toFixed(3)),
     performancePercent: Number(
-      Math.min(
-        100,
-        input.requestedReductionMw
-          ? (deliveredReductionMw / input.requestedReductionMw) * 100
-          : 100,
+      Math.max(
+        0,
+        Math.min(
+          100,
+          input.requestedReductionMw
+            ? (deliveredReductionMw / input.requestedReductionMw) * 100
+            : 100,
+        ),
       ).toFixed(1),
     ),
-    verified: confidence !== "low",
+    dataEvaluable,
+    performanceAchieved,
+    recoveryAssessed: input.reboundImportMw != null,
+    baselineValidated: input.baselineEvidenceReviewed === true,
+    verified: performanceAchieved && input.baselineEvidenceReviewed === true,
     confidence,
   } as const;
 }
@@ -107,6 +150,7 @@ export function assessOperationsCompliance(input: {
   wasteHeatMwh: number | null;
   heatTemperatureC: number | null;
   measurementCoveragePercent: number;
+  reportingContext?: GermanReportingContext;
 }) {
   const measuredPue =
     input.facilityEnergyMwh != null && input.itEnergyMwh != null && input.itEnergyMwh > 0
@@ -118,10 +162,14 @@ export function assessOperationsCompliance(input: {
   if (input.wasteHeatMwh == null) missing.push("Waste-heat quantity");
   if (input.heatTemperatureC == null) missing.push("Waste-heat temperature");
   if (input.measurementCoveragePercent < 95) missing.push("At least 95% measurement coverage");
+  if (measuredPue != null && measuredPue < 1)
+    missing.push("Facility energy cannot be below included IT energy");
   return {
     measuredPue: measuredPue == null ? null : Number(measuredPue.toFixed(3)),
     evidenceReady: missing.length === 0,
     missing,
+    regulatory: assessGermanEvidence(input.reportingContext),
+    legalComplianceConfirmed: false,
   };
 }
 

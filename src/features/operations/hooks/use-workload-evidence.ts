@@ -11,11 +11,14 @@ import {
 } from "../workload-intelligence";
 import { useOperationsEvidenceDataStore } from "./evidence-store";
 import { OPERATIONS_CALCULATION_VERSION } from "../calculation-version";
+import { useQueryClient } from "@tanstack/react-query";
+import { assessmentInput, assessmentQueryKey } from "../assessment-input";
 
 export function useWorkloadEvidence(
   model: OperationsOverviewModel,
   setSelectedId: (id: string | null) => void,
 ) {
+  const queryClient = useQueryClient();
   const importRevision = useRef(0);
   const importController = useRef<AbortController | null>(null);
 
@@ -29,7 +32,6 @@ export function useWorkloadEvidence(
   const modelSignature = stableOperationsJson({
     calculationVersion: OPERATIONS_CALCULATION_VERSION,
     scenario: model.scenario,
-    intervals: model.intervals,
   });
 
   const previousModelSignature = useRef(modelSignature);
@@ -43,12 +45,13 @@ export function useWorkloadEvidence(
   const [storedSignature, setStoredSignature] = store.workloadSignature;
 
   const localAssessment = useMemo(
-    () => assessWorkloads(workloads, telemetry, model),
+    () => model.assessmentPlan?.workloads ?? assessWorkloads(workloads, telemetry, model),
     [workloads, telemetry, model],
   );
 
   const assessment =
-    storedSignature === modelSignature ? (backendAssessment ?? localAssessment) : localAssessment;
+    model.assessmentPlan?.workloads ??
+    (storedSignature === modelSignature ? (backendAssessment ?? localAssessment) : localAssessment);
 
   useEffect(() => {
     // A server refresh with identical inputs must not cancel an in-flight import.
@@ -92,21 +95,20 @@ export function useWorkloadEvidence(
     const { revision, signal } = beginImport();
     try {
       const parsed = parseWorkloadCsv(await file.text());
-      const response = await requestOperationsAssessment(
-        {
-          kind: "compute",
-          scenario: model.scenario,
-          workloads: parsed,
-          telemetry,
-        },
-        signal,
-      );
+      const input = assessmentInput(model.scenario, {
+        workloads: parsed,
+        telemetry,
+        facility: store.facility[0],
+        battery: store.battery[0],
+      });
+      const response = await requestOperationsAssessment(input, signal);
       if (revision !== importRevision.current) return;
+      queryClient.setQueryData(assessmentQueryKey(input), response);
       store.dispatchEvidence({
         type: "accept-workloads",
         workloads: parsed,
         kind: "scheduler",
-        assessment: response.result,
+        assessment: response.result.assessmentPlan!.workloads,
         signature: modelSignature,
         message: `${parsed.length} scheduler records loaded from ${file.name}.`,
         report: buildImportReport(
@@ -131,21 +133,20 @@ export function useWorkloadEvidence(
     const { revision, signal } = beginImport();
     try {
       const parsed = parseGpuTelemetryCsv(await file.text());
-      const response = await requestOperationsAssessment(
-        {
-          kind: "compute",
-          scenario: model.scenario,
-          workloads,
-          telemetry: parsed,
-        },
-        signal,
-      );
+      const input = assessmentInput(model.scenario, {
+        workloads,
+        telemetry: parsed,
+        facility: store.facility[0],
+        battery: store.battery[0],
+      });
+      const response = await requestOperationsAssessment(input, signal);
       if (revision !== importRevision.current) return;
+      queryClient.setQueryData(assessmentQueryKey(input), response);
       store.dispatchEvidence({
         type: "accept-workloads",
         telemetry: parsed,
         kind: "gpu",
-        assessment: response.result,
+        assessment: response.result.assessmentPlan!.workloads,
         signature: modelSignature,
         message: `${parsed.length} GPU telemetry records loaded from ${file.name}.`,
         report: buildImportReport(

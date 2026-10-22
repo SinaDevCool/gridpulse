@@ -1,7 +1,11 @@
 import { z } from "zod";
 import { scenarioPlanningTime, type PlanningTime } from "./planning-time";
 import { simulateBatteryDispatch } from "./battery-dispatch";
-import { batteryConfigurationFields, checkBatterySocBounds } from "./battery-configuration";
+import {
+  batteryConfigurationFields,
+  batteryReserveEnergyMwh,
+  checkBatterySocBounds,
+} from "./battery-configuration";
 import type { EvidencedValue } from "./evidence";
 import {
   calculateOperatingEnvelope,
@@ -82,6 +86,7 @@ export type ScenarioSummary = {
 };
 
 export type OperationsOverviewModel = {
+  assessmentPlan?: import("./assessment-plan").AssessmentPlanDetails;
   planningTime?: PlanningTime;
   mode: "scenario";
   scenario: OperationsScenario;
@@ -117,11 +122,11 @@ const round = (value: number, digits = 1) => Number(value.toFixed(digits));
 function recoverShiftedDemand(
   demand: number[],
   target: number,
-  percent: number,
+  flexibleMw: number[],
   delayMinutes: number,
 ) {
-  const shifts = demand.map((value) =>
-    delayMinutes > 0 ? Math.min(Math.max(0, value - target), (value * percent) / 100) : 0,
+  const shifts = demand.map((value, index) =>
+    delayMinutes > 0 ? Math.min(Math.max(0, value - target), flexibleMw[index] ?? 0) : 0,
   );
   const recovered = demand.map(() => 0);
   let unresolvedWorkMwh = 0;
@@ -167,6 +172,8 @@ export const defaultOperationsScenario: OperationsScenario = {
     stateOfHealthPercent: 96,
     available: true,
     inverterAvailable: true,
+    criticalLoadMw: 0,
+    backupAutonomyMinutes: 0,
   },
 };
 
@@ -181,6 +188,8 @@ function workloadUtilization(index: number) {
 export function buildOperationsScenario(
   raw: OperationsScenario = defaultOperationsScenario,
   generatedAt = new Date().toISOString(),
+  /** Facility-equivalent eligible compute capacity. Never total facility load. */
+  eligibleComputeMw?: number[],
 ): OperationsOverviewModel {
   const scenario = operationsScenarioSchema.parse(raw);
   const evidenceAt = <T>(value: T, unit: string | undefined, sourceLabel: string) =>
@@ -204,8 +213,8 @@ export function buildOperationsScenario(
       utilizationPercent: round(utilizationPercent),
       activeGpuCount,
       requestedGpuCount,
-      gpuPowerMw: round(gpuPowerMw, 2),
-      baselineDemandMw: round(baselineDemandMw, 2),
+      gpuPowerMw,
+      baselineDemandMw,
     };
   });
   const dispatch = simulateBatteryDispatch(
@@ -228,19 +237,33 @@ export function buildOperationsScenario(
       stateOfHealthPercent: scenario.battery.stateOfHealthPercent,
       available: scenario.battery.available,
       inverterAvailable: scenario.battery.inverterAvailable,
+      criticalLoadMw: scenario.battery.criticalLoadMw,
+      backupAutonomyMinutes: scenario.battery.backupAutonomyMinutes,
     },
     15,
+  );
+  const flexibleMw = baselineIntervals.map((point, index) =>
+    Math.min(
+      // Only active-to-idle compute power is interruptible; idle draw remains.
+      (((point.activeGpuCount *
+        (scenario.gpuActivePowerWatts - scenario.gpuIdlePowerWatts) *
+        scenario.pue) /
+        1_000_000) *
+        scenario.maximumShiftablePercent) /
+        100,
+      eligibleComputeMw ? Math.max(0, eligibleComputeMw[index] ?? 0) : Infinity,
+    ),
   );
   const combinedRecovery = recoverShiftedDemand(
     dispatch.map((point) => point.gridImportMw),
     targetMw,
-    scenario.maximumShiftablePercent,
+    flexibleMw,
     scenario.maximumDelayMinutes,
   );
   const workloadRecovery = recoverShiftedDemand(
     baselineIntervals.map((point) => point.baselineDemandMw),
     targetMw,
-    scenario.maximumShiftablePercent,
+    flexibleMw,
     scenario.maximumDelayMinutes,
   );
   const intervals: OperationsInterval[] = baselineIntervals.map((point, index) => {
@@ -249,24 +272,22 @@ export function buildOperationsScenario(
     const workloadShiftMw = combinedRecovery.shifts[index];
     return {
       ...point,
-      batteryDemandMw: round(batteryDemandMw, 2),
-      combinedDemandMw: round(
-        Math.max(0, batteryDemandMw - workloadShiftMw + combinedRecovery.recovered[index]),
-        2,
+      batteryDemandMw,
+      combinedDemandMw: Math.max(
+        0,
+        batteryDemandMw - workloadShiftMw + combinedRecovery.recovered[index],
       ),
-      workloadRecoveryMw: round(combinedRecovery.recovered[index], 2),
-      workloadDemandMw: round(
+      workloadRecoveryMw: combinedRecovery.recovered[index],
+      workloadDemandMw:
         point.baselineDemandMw - workloadRecovery.shifts[index] + workloadRecovery.recovered[index],
-        2,
-      ),
       batteryPowerMw: battery.batteryPowerMw,
       batterySocPercent: battery.socPercent,
       availableDischargeMw: battery.availableDischargeMw,
       availableChargeMw: battery.availableChargeMw,
       batteryShortfallMw: battery.shortfallMw,
       batteryConstraintCode: battery.constraintCode,
-      workloadShiftMw: round(workloadShiftMw, 2),
-      workloadOnlyShiftMw: round(workloadRecovery.shifts[index], 2),
+      workloadShiftMw,
+      workloadOnlyShiftMw: workloadRecovery.shifts[index],
     };
   });
 
@@ -357,10 +378,7 @@ export function buildOperationsScenario(
       // Availability belongs to the start of this interval, before its dispatch.
       batteryAvailableEnergyMwh: Math.max(
         0,
-        dispatch[index].startingEnergyMwh -
-          (((scenario.battery.usableEnergyMwh * scenario.battery.stateOfHealthPercent) / 100) *
-            scenario.battery.minimumSocPercent) /
-            100,
+        dispatch[index].startingEnergyMwh - batteryReserveEnergyMwh(scenario.battery),
       ),
       batteryDischargeEfficiency: scenario.battery.dischargeEfficiency,
       workloadFlexibleMw: point.workloadShiftMw,
@@ -372,7 +390,10 @@ export function buildOperationsScenario(
     mode: "scenario",
     planningTime: scenarioPlanningTime(intervals, generatedAt),
     planningWarnings: [
-      "Aggregate scenario only: actual job completion and equipment limits require a canonical assessment.",
+      "Aggregate scenario heuristic, not an optimized job schedule. Actual job completion and equipment limits require a canonical assessment.",
+      "Other base load is a disjoint facility-side residual; PUE applies only to the modelled GPU load. This is not measured annual PUE.",
+      "Envelope uncertainty is an illustrative margin, not a calibrated confidence interval. Backup autonomy is not established.",
+      "Battery energy is nominal before health and SOC-window derating. Backup-load and duration inputs are assumptions, not certified UPS autonomy.",
       ...(combinedRecovery.unresolvedWorkMwh > 0.001
         ? [
             `${round(combinedRecovery.unresolvedWorkMwh, 3)} MWh of deferred work has no recovery slot inside its delay window.`,

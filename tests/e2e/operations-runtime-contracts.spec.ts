@@ -1,6 +1,35 @@
 import { expect, test } from "@playwright/test";
 import { buildOperationsScenario } from "../../src/features/operations/scenario-engine";
 import { OPERATIONS_CALCULATION_VERSION } from "../../src/features/operations/calculation-version";
+import { emptyAssessmentEvidence } from "../../src/features/operations/assessment-plan";
+
+test("compiled shared evidence rejects duplicates even below the historical sample minimum", async ({
+  request,
+}) => {
+  const point = { timestamp: "2026-09-26T08:00:00Z", facilityImportMw: 99, operatingLimitMw: 100 };
+  const scenario = buildOperationsScenario().scenario;
+  const invalid = await request.post("/api/operations/assess", {
+    data: {
+      kind: "overview",
+      scenario,
+      evidence: { ...emptyAssessmentEvidence, facility: [point, point] },
+    },
+  });
+  expect(invalid.status()).toBe(400);
+  const valid = await request.post("/api/operations/assess", {
+    data: {
+      kind: "overview",
+      scenario,
+      evidence: { ...emptyAssessmentEvidence, facility: [point] },
+    },
+  });
+  expect(valid.status()).toBe(200);
+  const result = (await valid.json()).result;
+  expect(result.assessmentPlan.evidenceCounts.facility).toBe(1);
+  expect(result.assessmentPlan.baselineSource).toBe("synthetic");
+  expect(result.assessmentPlan.status.scheduleValidated).toBe(false);
+  expect(result.assessmentPlan.canonical.available).toBe(false);
+});
 
 test("Workers runtime calculates and identifies an overview assessment", async ({ request }) => {
   const response = await request.post("/api/operations/assess", {
