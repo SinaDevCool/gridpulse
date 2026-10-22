@@ -135,6 +135,7 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
             <AdvancedAnalysis />
           </ConfigurationPanel>
           <div className="ops-dashboard-canvas">
+            <h1 className="sr-only">{view === "power" ? "Power & Battery" : "Power Operations"}</h1>
             <div className="ops-canvas-toolbar">
               <header className="ops-workspace-header">
                 <button
@@ -159,7 +160,6 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
                     </span>
                   ) : null}
                 </button>
-                <h1>{view === "power" ? "Power & Battery" : "Power Operations"}</h1>
               </header>
             </div>
             <div
