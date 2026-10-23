@@ -25,6 +25,12 @@ import { formatOperationsTime } from "../presentation";
 import { type BatteryTimelinePoint } from "./select-battery-workspace";
 import { BatteryConstraintStrip } from "./BatteryConstraintStrip";
 
+const numericAxisProps = {
+  tickLine: false,
+  axisLine: false,
+  tickFormatter: (value: number) => number.format(value),
+};
+
 export function PowerTimeline({
   data,
   limitMw,
@@ -112,6 +118,7 @@ export function PowerTimeline({
             <CartesianGrid stroke="var(--ops-chart-grid)" vertical={false} />
             <XAxis dataKey="timestamp" hide />
             <YAxis
+              {...numericAxisProps}
               domain={[
                 0,
                 Math.max(
@@ -123,8 +130,6 @@ export function PowerTimeline({
                 ),
               ]}
               unit=" MW"
-              tickLine={false}
-              axisLine={false}
             />
             <Tooltip content={<PowerTooltip panel="facility" targetMw={targetMw} />} />
             {mode === "scenario" ? (
@@ -222,6 +227,7 @@ export function PowerTimeline({
             <CartesianGrid stroke="var(--ops-chart-grid)" vertical={false} />
             <XAxis dataKey="timestamp" hide />
             <YAxis
+              {...numericAxisProps}
               yAxisId="dispatch"
               domain={[
                 -Math.max(1, ...data.map((point) => Math.abs(point.batteryPowerMw ?? 0))),
@@ -234,8 +240,6 @@ export function PowerTimeline({
                 ),
               ]}
               unit=" MW"
-              tickLine={false}
-              axisLine={false}
             />
             <Tooltip content={<PowerTooltip panel="battery" targetMw={targetMw} />} />
             <ReferenceLine yAxisId="dispatch" y={0} stroke="var(--ops-axis)" />
@@ -286,7 +290,7 @@ export function PowerTimeline({
               tickLine={false}
               axisLine={false}
             />
-            <YAxis yAxisId="soc" domain={[0, 100]} unit="%" tickLine={false} axisLine={false} />
+            <YAxis yAxisId="soc" domain={[0, 100]} unit="%" {...numericAxisProps} />
             <Tooltip content={<PowerTooltip panel="battery" targetMw={targetMw} />} />
             {Number.isFinite(protectedSocPercent) && visibility.visible("Protected reserve") ? (
               <>

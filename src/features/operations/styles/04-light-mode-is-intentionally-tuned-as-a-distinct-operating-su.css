@@ -2,15 +2,23 @@
    than a color-inverted version of the dark workspace. */
 
 :root[data-theme="light"] .operations-v2 {
-  --ops-demand: #087c98;
-  --ops-demand-fill: color-mix(in srgb, var(--ops-demand) 10%, transparent);
-  --ops-response: #7042c7;
+  color-scheme: light;
+  --foreground: #172b42;
+  --muted-foreground: #45576e;
+  --background: #f1f5f9;
+  --card: #ffffff;
+  --border: #c9d4e1;
+  --accent: #086b86;
+  --accent-foreground: #ffffff;
+  --ops-demand: #006b86;
+  --ops-demand-fill: rgb(0 107 134 / 8%);
+  --ops-response: #6334b3;
   --ops-compute: #765100;
   --ops-battery: #7042c7;
-  --ops-soc: #8a5300;
+  --ops-soc: #16704a;
   --ops-target: #9a5a00;
   --ops-selection: #163d55;
-  --ops-axis: #697a8d;
+  --ops-axis: #45576e;
   --ops-measured: #087c98;
   --ops-measured-fill: color-mix(in srgb, var(--ops-measured) 12%, transparent);
   --ops-public-trace: #425ed0;
@@ -19,11 +27,162 @@
   --ops-simulated: #7042c7;
   --ops-limit: #c43e4a;
   --ops-positive: #087a52;
-  --ops-chart-grid: #d3dde7;
+  --ops-chart-grid: #dce4ed;
   --ops-surface: #ffffff;
-  --ops-surface-raised: #f4f8fb;
-  --ops-border-strong: #b9c7d4;
-  color: #122235;
+  --ops-surface-raised: #f1f5f9;
+  --ops-border-strong: #8292a5;
+  background: var(--background);
+  color: var(--ops-text);
+}
+
+/* Keep surface, type and interaction rules in this existing theme owner. */
+:root[data-theme="light"] .ops-canvas-content {
+  background: var(--background);
+}
+:root[data-theme="light"] :is(.ops-input-panel, .ops-input-drawer) {
+  background: #f8fafc;
+  font-size: 0.875rem;
+}
+:root[data-theme="light"] :is(.ops-input-header, .ops-configuration-actions, .ops-canvas-toolbar) {
+  background: #ffffff;
+}
+:root[data-theme="light"]
+  .operations-v2
+  :is(.context-label, .ops-context-summary, .ops-assessment-notice) {
+  font-size: 0.8125rem;
+  letter-spacing: 0.025em;
+}
+:root[data-theme="light"] .operations-v2 :is(.operations-chart-purpose, .power-toolbar p) {
+  color: var(--ops-muted);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+:root[data-theme="light"] .operations-v2 .power-toolbar > button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+:root[data-theme="light"]
+  .operations-v2
+  :is(.operations-chart-legend strong, .ops-configuration-form label, .ops-evidence-inputs label) {
+  font-size: 0.875rem;
+}
+:root[data-theme="light"]
+  .operations-v2
+  :is(
+    .operations-chart-legend small,
+    .ops-input-note,
+    .ops-workspace-inputs p,
+    .ops-workspace-inputs small,
+    .ops-evidence-inputs p,
+    .ops-evidence-inputs small
+  ) {
+  font-size: 0.8125rem;
+  color: var(--ops-muted);
+  line-height: 1.5;
+}
+:root[data-theme="light"] .operations-v2 .operations-chart-legend li button {
+  min-height: 44px;
+}
+:root[data-theme="light"] .operations-v2 .operations-chart-legend li button[aria-pressed="false"] {
+  opacity: 1;
+  color: var(--ops-muted);
+  background: #f1f5f9;
+  border-color: var(--ops-border);
+}
+:root[data-theme="light"]
+  .operations-v2
+  :is(button, summary, a, input, select, textarea):focus-visible {
+  outline: 2px solid var(--ops-demand);
+  outline-offset: 3px;
+}
+:root[data-theme="light"]
+  .operations-v2
+  :is(input:not([type="checkbox"]):not([type="range"]), select, textarea) {
+  background-color: #ffffff;
+  color: var(--ops-text);
+  border-color: var(--ops-border-strong);
+}
+:root[data-theme="light"] .operations-v2 :is(input, textarea)::placeholder {
+  color: var(--ops-muted);
+  opacity: 1;
+}
+:root[data-theme="light"] .operations-v2 .primary-button {
+  background: #086b86;
+  color: #ffffff;
+  border-color: #086b86;
+}
+:root[data-theme="light"] .operations-v2 .primary-button:hover:not(:disabled) {
+  background: #07566c;
+}
+:root[data-theme="light"]
+  .operations-v2
+  :is(
+    .ops-operating-summary,
+    .compute-operating-summary,
+    .ops-task-review,
+    .battery-interval-inspector,
+    .ops-obligations,
+    .operations-assurance-panel
+  ) {
+  border-color: var(--ops-border);
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgb(23 43 66 / 5%);
+}
+:root[data-theme="light"]
+  .operations-v2
+  :is(
+    .ops-response-selector,
+    .compute-review-groups button,
+    .ops-review-state,
+    .ops-inspection-tools
+  ) {
+  background: #f1f5f9;
+}
+:root[data-theme="light"]
+  .operations-v2
+  :is(.ops-response-selector, .compute-view-controls)
+  button[aria-pressed="true"] {
+  color: #06485b;
+  border-color: #086b86;
+  background: #e2f0f5;
+  box-shadow: inset 0 -2px #086b86;
+}
+:root[data-theme="light"] .operations-v2 :is(.recharts-cartesian-axis-tick text, .recharts-label) {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+:root[data-theme="light"]
+  .operations-v2
+  :is(.power-timeline-panel, .ops-response-breakdown > dl > div, .ops-plan-checks > div) {
+  background: #f8fafc;
+  border-color: var(--ops-border);
+}
+:root[data-theme="light"]
+  .operations-v2
+  :is(
+    .ops-compact-comparison thead th,
+    .operations-v2-chart-data thead th,
+    .battery-data-details thead th
+  ) {
+  color: #253e57;
+  background: #eaf0f6;
+  font-weight: 650;
+}
+:root[data-theme="light"]
+  .operations-v2
+  :is(.ops-compact-comparison, .operations-v2-chart-data)
+  tbody
+  tr:nth-child(even) {
+  background: #f8fafc;
+}
+:root[data-theme="light"]
+  .operations-v2
+  :is(.ops-compact-comparison, .operations-v2-chart-data)
+  tbody
+  tr[aria-selected="true"] {
+  background: #e2f0f5;
+  outline: 1px solid #086b86;
+  outline-offset: -1px;
 }
 
 :root[data-theme="light"] .operations-v2-header h1,
@@ -104,7 +263,7 @@
 :root[data-theme="light"] .compute-connectors {
   border-color: #b9c7d4;
   background: #ffffff;
-  box-shadow: 0 12px 30px rgb(35 58 82 / 9%);
+  box-shadow: 0 1px 3px rgb(23 43 66 / 5%);
 }
 
 :root[data-theme="light"] .operations-v2-metric {
@@ -208,13 +367,14 @@
 }
 
 :root[data-theme="light"] .compute-table-wrap thead {
-  background: #163247;
-  color: #f4fbff;
+  background: #eaf0f6;
+  color: #253e57;
 }
 
 :root[data-theme="light"] .compute-table-wrap thead th {
-  border-color: #355166;
-  color: #f4fbff;
+  border-color: #c9d4e1;
+  background: #eaf0f6;
+  color: #253e57;
 }
 
 :root[data-theme="light"] .compute-table-wrap tbody th,
