@@ -2,6 +2,13 @@ import { describe, expect, it } from "vitest";
 import { buildSecurityHeaders, secureExternalOrigin } from "./security-headers";
 
 describe("security headers", () => {
+  it("adds only an explicitly configured HTTPS analytics origin", () => {
+    const policy = buildSecurityHeaders(undefined, "https://qualified-runtime.onrender.com/v1/jobs")["content-security-policy"];
+    expect(policy).toContain("https://qualified-runtime.onrender.com");
+    expect(policy).not.toContain("/v1/jobs");
+    expect(buildSecurityHeaders(undefined, "http://untrusted.invalid")["content-security-policy"]).not.toContain("untrusted.invalid");
+    expect(buildSecurityHeaders()["content-security-policy"]).not.toContain("onrender.com");
+  });
   it("permits the configured Cloudflare beacon without wildcard script or connection origins", () => {
     const policy = buildSecurityHeaders()["content-security-policy"];
     expect(policy).toContain(
