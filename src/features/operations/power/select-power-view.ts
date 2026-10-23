@@ -64,12 +64,12 @@ export function selectPowerView(
   const responseRequired = requiredMw != null && requiredMw > 0.01;
   const dispatchHeadline =
     !selected || requiredMw == null
-      ? "Load aligned meter and battery evidence"
+      ? "Aligned evidence required"
       : !responseRequired
-        ? "No battery response is required for the selected interval"
+        ? "No discharge needed this interval"
         : feasible
-          ? "Battery response can hold the selected interval below target"
-          : "Battery response cannot fully cover the selected interval";
+          ? "Target covered this interval"
+          : "Battery response constrained";
   return {
     scenarioPeak,
     selectedScenario,

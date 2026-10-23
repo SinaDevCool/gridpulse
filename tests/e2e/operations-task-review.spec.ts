@@ -77,7 +77,7 @@ test("power budget is interval-specific and directs residual response to workloa
   await page.getByRole("link", { name: "Power & Battery", exact: true }).click();
   await page.locator(".power-interval-control .operations-select-trigger").click();
   await page.getByRole("option", { name: "00:00 UTC", exact: true }).click();
-  await expect(budget).toContainText("No battery response is required");
+  await expect(budget).toContainText("No discharge needed this interval");
   await expect(budget.getByRole("link")).toHaveCount(0);
 });
 

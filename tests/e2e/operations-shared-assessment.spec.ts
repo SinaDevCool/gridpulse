@@ -51,7 +51,8 @@ test("recalculated backend values reach each tab's diagram summary and interval 
   expect(numeric(await computeCells.nth(5).innerText())).toBeCloseTo(point.gpuPowerMw, 1);
 
   await page.getByRole("link", { name: "Power & Battery", exact: true }).click();
-  await expect(page.locator(".power-toolbar")).toContainText("Battery-only comparison");
+  await page.getByText("Assessment context", { exact: true }).click();
+  await expect(page.locator(".power-context-details")).toContainText("Battery-only comparison");
   const power = page.locator(".battery-data-details");
   await power.locator(":scope > summary").click();
   const powerCells = power.locator("tbody tr").nth(32).locator("td");

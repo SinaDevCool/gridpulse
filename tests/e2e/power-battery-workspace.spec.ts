@@ -13,9 +13,11 @@ test("constrained battery story, events and interval records share one selection
   const inputs = await openScenarioInputs(page);
   await inputs.getByLabel("Facility Limit", { exact: false }).fill("50");
   await inputs.getByRole("button", { name: "Recalculate Scenario" }).click();
+  await page.getByText("Assessment context", { exact: true }).click();
   await expect(page.locator(".power-kpis")).toContainText("48 MW");
   await expect(page.locator(".power-response-budget")).toContainText("58.6 MW");
-  await expect(page.locator(".power-toolbar")).toContainText("target unmet · reserve protected");
+  await expect(page.locator(".power-horizon-status")).toContainText("Target unmet");
+  await expect(page.locator(".power-horizon-status")).toContainText("Reserve protected");
   const reserveEvent = page.getByRole("button", { name: /Protected reserve reached in interval/ });
   await expect(reserveEvent).toContainText("08:30 UTC");
   const stateBand = page.locator(".battery-state-band");
@@ -76,6 +78,16 @@ for (const width of [390, 1440])
     await page.setViewportSize({ width, height: 1000 });
     await page.goto("/operations?view=power&window=today&mode=scenario");
     await expect(page.locator(".battery-workspace-grid .recharts-wrapper").first()).toBeVisible();
+    const chartCard = page.locator(".power-timeline-card");
+    await expect(
+      chartCard.getByRole("region", { name: "Battery response capability" }),
+    ).toBeVisible();
+    await expect(page.locator(".battery-workspace > .power-response-review")).toHaveCount(0);
+    await expect(page.locator(".battery-workspace > .power-kpis")).toHaveCount(0);
+    await expect(page.locator(".power-context-details")).not.toHaveAttribute("open", "");
+    await expect(page.locator(".power-horizon-status")).toContainText(
+      "Full horizon · battery only",
+    );
     for (const theme of ["dark", "light"]) {
       await page.evaluate((value) => {
         document.documentElement.dataset.theme = value;
@@ -97,7 +109,16 @@ for (const width of [390, 1440])
         path: info.outputPath(`battery-${theme}-${width}.png`),
         fullPage: true,
       });
+      await page.locator(".ops-canvas-content").screenshot({
+        path: `.codex-tmp/power-integrated-${theme}-${width}.png`,
+      });
     }
+    await page.getByText("Assessment context", { exact: true }).click();
+    await expect(page.locator(".power-context-details")).toContainText(
+      "Display windows never reset battery state",
+    );
+    await expect(page.locator(".power-kpis")).toContainText("98 MW");
+    await page.getByText("Assessment context", { exact: true }).click();
     await page.getByText("View Full Interval Data", { exact: true }).click();
     await expect(page.locator(".battery-table-scroll tbody tr")).toHaveCount(96);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(

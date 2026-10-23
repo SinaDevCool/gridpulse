@@ -47,6 +47,7 @@ test("battery configuration recalculates across all three tabs and invalid assum
     await page.locator(`#ops-${id}`).fill(value);
   }
   await page.getByRole("button", { name: "Recalculate Scenario" }).click();
+  await page.getByText("Assessment context", { exact: true }).click();
   await expect(page.locator(".power-kpis")).toContainText("98");
   await page.getByText("Power path", { exact: true }).click();
   await expect(page.locator(".power-flow-card")).toContainText("8.6");

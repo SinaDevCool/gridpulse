@@ -2,19 +2,6 @@
 .operations-v2 .battery-workspace {
   gap: 0.75rem;
 }
-.battery-workspace .ops-task-review {
-  margin: 0;
-  padding: 1rem;
-}
-.battery-workspace .power-toolbar {
-  margin: 0;
-  align-items: center;
-}
-.battery-workspace > .power-kpis.ops-compact-facts {
-  margin: 0;
-  padding: 0.5rem 0;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
 .operations-v2 .battery-workspace .power-interval-control {
   margin: 0;
 }
@@ -24,6 +11,135 @@
 }
 .battery-workspace .power-timeline-card {
   overflow: visible;
+}
+.power-workspace-tools {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-block: 0.75rem;
+}
+.operations-v2 .power-workspace-tools .power-interval-control {
+  padding: 0;
+  gap: 0.5rem;
+}
+.power-workspace-tools .power-interval-control > div {
+  min-width: 0;
+}
+.power-workspace-tools :is(button, .operations-select-trigger) {
+  min-height: 44px;
+}
+.power-workspace-tools > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid var(--ops-border);
+  border-radius: 6px;
+  padding: 0.55rem 0.75rem;
+  background: var(--ops-card);
+  color: var(--ops-text);
+  font: inherit;
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+.power-workspace-tools > button svg {
+  width: 1rem;
+  height: 1rem;
+}
+.battery-workspace .operations-chart-legend {
+  gap: 0.25rem 0.5rem;
+  margin-top: 0.5rem;
+}
+.battery-workspace .operations-chart-legend li {
+  min-width: 0;
+}
+.battery-workspace .operations-chart-legend button {
+  min-height: 44px;
+}
+.power-horizon-status {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  padding-block: 0.75rem;
+  border-block: 1px solid var(--ops-border);
+  font-size: 0.8125rem;
+}
+.power-horizon-status > span {
+  color: var(--ops-muted);
+}
+.power-horizon-status > strong {
+  border-left: 3px solid var(--ops-reference);
+  padding-left: 0.5rem;
+}
+.power-horizon-status > strong[data-tone="positive"] {
+  border-color: var(--ops-soc);
+}
+.power-horizon-status > strong[data-tone="warning"] {
+  border-color: var(--ops-target);
+}
+.power-context-details {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin-left: auto;
+}
+.power-context-details[open] {
+  flex-basis: 100%;
+  margin-left: 0;
+}
+.power-context-details summary {
+  width: fit-content;
+  min-height: 44px;
+  align-content: center;
+  cursor: pointer;
+  color: var(--ops-text);
+}
+.power-context-details p {
+  max-width: 78ch;
+  color: var(--ops-muted);
+  line-height: 1.6;
+}
+.power-context-details .power-kpis {
+  margin: 0.5rem 0;
+}
+.power-interval-summary {
+  padding-block: 0.75rem;
+  border-bottom: 1px solid var(--ops-border);
+}
+.power-interval-summary h4 {
+  margin: 0.25rem 0 0.75rem;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+.power-interval-summary .power-response-budget {
+  grid-template-columns: minmax(0, 3fr) minmax(10rem, 1fr);
+  gap: 1.25rem;
+}
+.power-interval-summary .power-response-bars {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+.power-interval-summary .power-budget-row {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.5rem;
+}
+.power-interval-summary .power-budget-row > span {
+  color: var(--ops-muted);
+  font-size: 0.8125rem;
+}
+.power-interval-summary .power-budget-row strong {
+  grid-row: 2;
+  text-align: left;
+  font-size: 1.25rem;
+}
+.power-interval-summary .power-budget-track {
+  height: 5px;
+}
+.power-interval-summary .power-binding-note {
+  gap: 0.4rem;
+  font-size: 0.8125rem;
 }
 .battery-workspace-grid {
   display: grid;
@@ -272,8 +388,18 @@
   }
 }
 @media (max-width: 600px) {
-  .battery-workspace > .power-kpis.ops-compact-facts {
+  .battery-workspace .operations-chart-legend {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .power-workspace-tools .power-interval-control {
+    width: 100%;
+    align-items: start;
+  }
+  .power-interval-summary .power-response-budget {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .power-interval-summary .power-response-bars {
+    gap: 0.6rem;
   }
   .battery-workspace .power-kpis,
   .battery-interval-inspector .battery-soc-body {

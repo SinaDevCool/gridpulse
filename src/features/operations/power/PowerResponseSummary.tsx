@@ -1,7 +1,6 @@
 import { Link, useSearch } from "@tanstack/react-router";
 import { formatMw } from "../formatting";
 import { humanConstraint, type EvidenceMode } from "./presentation";
-import { EvidencePill } from "./primitives";
 
 export function PowerResponseSummary({
   requiredMw,
@@ -28,19 +27,18 @@ export function PowerResponseSummary({
   ];
   return (
     <section
-      className="ops-task-review power-response-review"
+      className="power-response-review power-interval-summary"
       aria-label="Battery response capability"
     >
       <header>
         <div>
-          <p className="context-label">Read-only dispatch assessment</p>
-          <h3>
+          <p className="context-label">Inspected interval · battery only</p>
+          <h4>
             {mode === "historical"
               ? "Observed power balance · not a dispatch recommendation"
               : headline}
-          </h3>
+          </h4>
         </div>
-        <EvidencePill mode={mode} />
       </header>
       <div className="power-response-budget">
         <div className="power-response-bars">
@@ -71,15 +69,9 @@ export function PowerResponseSummary({
             <Link to="/operations" search={{ ...search, view: "compute", mode: "scenario" }}>
               Review workload flexibility →
             </Link>
-          ) : (
-            <span>Review reserve and equipment limits below</span>
-          )}
+          ) : null}
         </div>
       </div>
-      <p>
-        Positive battery power means discharge; negative power means charge. No physical control
-        commands are issued.
-      </p>
     </section>
   );
 }
