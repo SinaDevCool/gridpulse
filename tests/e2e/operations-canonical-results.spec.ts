@@ -37,6 +37,9 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await legend.click();
   await expect(legend).toHaveAttribute("aria-pressed", "true");
   await result.getByText("View Full Interval Data", { exact: true }).click();
+  await result.getByLabel("Show intervals").selectOption("constraint");
+  await expect(result.getByText("No records match this filter.", { exact: true })).toBeVisible();
+  await result.getByLabel("Show intervals").selectOption("all");
   const row = result.locator("tbody tr").nth(2);
   const time = "2026-09-26T02:00:00.000Z";
   await row.locator("td").first().hover();
