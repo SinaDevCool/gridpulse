@@ -48,7 +48,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       - name: Verify production build identity
         run: |
-          node --input-type=module -e 'const r=await fetch("https://gridpulseinsights.com/operations"); const html=await r.text(); if(!r.ok || !html.includes(`name="gridpulse-build" content="${process.env.GITHUB_SHA}"`)) throw new Error("Live build does not match validated candidate");'
+          node --input-type=module -e 'let matched=false; for(let attempt=0;attempt<12;attempt++){const r=await fetch("https://gridpulseinsights.com/operations",{cache:"no-store"}); const html=await r.text(); if(r.ok && html.includes(`name="gridpulse-build" content="${process.env.GITHUB_SHA}"`)){matched=true;break;} await new Promise(resolve=>setTimeout(resolve,5000));} if(!matched) throw new Error("Live build does not match validated candidate after propagation window");'
       - name: Verify production application
         env:
           GRIDPULSE_HEALTH_BASE_URL: https://gridpulseinsights.com
@@ -63,7 +63,7 @@ jobs:
         if: vars.OPERATIONS_MILP_ENABLED == 'true' && vars.PUBLIC_MILP_ENABLED == 'true'
         run: node scripts/check-production-milp.mjs
       - uses: actions/upload-artifact@v4
-        if: ${{ failure() }}
+        if: ${{ always() }}
         with:
           name: production-smoke-failure-${{ github.run_attempt }}
           path: test-results/production-*.png

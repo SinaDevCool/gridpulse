@@ -24,6 +24,7 @@ import { number, type EvidenceMode } from "./presentation";
 import { formatOperationsTime } from "../presentation";
 import { type BatteryTimelinePoint } from "./select-battery-workspace";
 import { BatteryConstraintStrip } from "./BatteryConstraintStrip";
+import { timelineLegend } from "./timeline-legend";
 
 const numericAxisProps = {
   tickLine: false,
@@ -40,6 +41,9 @@ export function PowerTimeline({
   protectedSocPercent,
   mode,
   previewing = false,
+  variant = "battery",
+  showConstraints = true,
+  maximumSocPercent,
 }: {
   data: BatteryTimelinePoint[];
   limitMw: number;
@@ -49,6 +53,9 @@ export function PowerTimeline({
   protectedSocPercent: number;
   mode: EvidenceMode;
   previewing?: boolean;
+  variant?: "battery" | "overview" | "compute";
+  showConstraints?: boolean;
+  maximumSocPercent?: number;
 }) {
   const selectedLabel = selectedTimestamp;
   const cursorProps = {
@@ -74,35 +81,17 @@ export function PowerTimeline({
   }
   return (
     <div
-      className="power-timeline"
+      className={`power-timeline power-timeline--${variant}`}
       role="group"
-      aria-label="Three aligned charts show facility demand and grid import in megawatts, battery dispatch in megawatts, and state of charge in percent"
+      aria-label={variant === "battery" ? "Three aligned charts show facility demand and grid import in megawatts, battery dispatch in megawatts, and state of charge in percent" : variant === "compute" ? "Workload power and planned facility import in megawatts" : "Baseline and planned facility import comparison in megawatts"}
     >
       <OperationsChartLegend
         visibility={visibility}
-        items={[
-          { label: "Safety target", tone: "target", mark: "dash" },
-          { label: "Facility limit", tone: "limit", mark: "dash" },
-          { label: "Available discharge", tone: "neutral", mark: "dash" },
-          { label: "Protected reserve", tone: "target", mark: "area" },
-          { label: "Facility demand", detail: "MW · before battery", tone: "demand", mark: "area" },
-          { label: "Grid import", detail: "MW · after battery", tone: "response" },
-          {
-            label: "Battery dispatch",
-            detail: "+ discharge / − charge",
-            tone: "battery",
-            mark: "bar",
-          },
-          {
-            label: "State of charge",
-            detail: mode === "scenario" ? "% · interval end" : "% · observed",
-            tone: "soc",
-          },
-        ]}
+        items={timelineLegend(variant, mode)}
       />
       <section className="power-timeline-panel power-timeline-panel--facility">
         <header>
-          <strong>Facility Power</strong>
+          <strong>{variant === "compute" ? "Workload power & facility context" : "Facility Power"}</strong>
           <span>MW</span>
         </header>
         <ResponsiveContainer width="100%" height="100%">
@@ -116,7 +105,9 @@ export function PowerTimeline({
             accessibilityLayer
           >
             <CartesianGrid stroke="var(--ops-chart-grid)" vertical={false} />
-            <XAxis dataKey="timestamp" hide />
+            <XAxis dataKey="timestamp" hide={variant === "battery"}
+              tickFormatter={(value: string) => formatOperationsTime(value).replace(" UTC", "")}
+              minTickGap={40} tickLine={false} axisLine={false} />
             <YAxis
               {...numericAxisProps}
               domain={[
@@ -126,12 +117,20 @@ export function PowerTimeline({
                   ...data.flatMap((point) => [
                     point.facilityDemandMw ?? 0,
                     point.gridImportMw ?? 0,
+                    point.baselineDemandMw ?? 0,
+                    point.workloadPowerMw ?? 0,
                   ]),
                 ),
               ]}
               unit=" MW"
             />
             <Tooltip content={<PowerTooltip panel="facility" targetMw={targetMw} />} />
+            {variant === "overview" ? <Line dataKey="baselineDemandMw" name="Baseline import"
+              hide={!visibility.visible("Baseline import")} stroke="var(--ops-demand)" strokeDasharray="6 4"
+              dot={false} isAnimationActive={false} type="stepAfter" /> : null}
+            {variant === "compute" ? <Line dataKey="workloadPowerMw" name="Workload power"
+              hide={!visibility.visible("Workload power")} stroke="var(--ops-battery)" strokeWidth={3}
+              dot={false} isAnimationActive={false} type="stepAfter" /> : null}
             {mode === "scenario" ? (
               <ReferenceLine
                 y={limitMw}
@@ -188,6 +187,7 @@ export function PowerTimeline({
             ) : null}
             {selectedLabel ? <ReferenceLine {...cursorProps} /> : null}
             <Area
+              type={showConstraints ? "linear" : "stepAfter"}
               isAnimationActive={false}
               dataKey="facilityDemandMw"
               hide={!visibility.visible("Facility demand")}
@@ -198,6 +198,7 @@ export function PowerTimeline({
             />
             <Line
               isAnimationActive={false}
+              type={showConstraints ? "linear" : "stepAfter"}
               dataKey="gridImportMw"
               hide={!visibility.visible("Grid import")}
               name="Grid import"
@@ -209,7 +210,7 @@ export function PowerTimeline({
           </ComposedChart>
         </ResponsiveContainer>
       </section>
-      <section className="power-timeline-panel power-timeline-panel--battery">
+      {variant === "battery" ? <><section className="power-timeline-panel power-timeline-panel--battery">
         <header>
           <strong>Battery Dispatch</strong>
           <span>MW</span>
@@ -291,6 +292,8 @@ export function PowerTimeline({
               axisLine={false}
             />
             <YAxis yAxisId="soc" domain={[0, 100]} unit="%" {...numericAxisProps} />
+            {maximumSocPercent != null ? <ReferenceLine yAxisId="soc" y={maximumSocPercent}
+              stroke="var(--ops-muted)" strokeDasharray="3 4" label={{ value: `Maximum SOC ${number.format(maximumSocPercent)}%`, fill: "var(--ops-muted)", position: "insideTopRight" }} /> : null}
             <Tooltip content={<PowerTooltip panel="battery" targetMw={targetMw} />} />
             {Number.isFinite(protectedSocPercent) && visibility.visible("Protected reserve") ? (
               <>
@@ -328,12 +331,12 @@ export function PowerTimeline({
             />
           </ComposedChart>
         </ResponsiveContainer>
-      </section>
-      <BatteryConstraintStrip
+      </section></> : null}
+      {showConstraints ? <BatteryConstraintStrip
         data={data}
         onSelect={onSelect}
         selectedTimestamp={selectedTimestamp}
-      />
+      /> : null}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 name: MILP frontend focused qualification
 on:
   push:
-    branches: [codex/production-milp-runtime]
+    branches: [codex/production-milp-runtime, codex/milp-presentation-corrections]
     paths: [src/**, .github/workflows/milp-frontend-qualification.yml]
   workflow_dispatch:
 permissions:
@@ -12,7 +12,7 @@ concurrency:
 jobs:
   focused:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -21,7 +21,29 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Input identity, mapping and shared result projection first
-        run: npx vitest run src/lib/public-milp-session.test.ts src/features/operations/synthetic-milp-request.test.ts src/features/operations/canonical-job-result.test.ts src/features/operations/canonical-result-projection.test.ts src/features/operations/canonical-input-mapping.test.ts --maxWorkers=2
+        run: npx vitest run src/lib/public-milp-session.test.ts src/features/operations/synthetic-milp-request.test.ts src/features/operations/canonical-battery-presentation.test.ts src/features/operations/canonical-job-result.test.ts src/features/operations/canonical-result-projection.test.ts src/features/operations/canonical-input-mapping.test.ts --maxWorkers=2
       - run: npm run typecheck
       - run: npm run check:architecture
       - run: npm run lint:app
+      - name: Build isolated MILP display fixture
+        run: npm run build
+        env:
+          VITE_OPERATIONS_MILP_ENABLED: 'true'
+          VITE_PUBLIC_MILP_ENABLED: 'true'
+          VITE_SUPABASE_URL: https://browser-fixture.invalid
+          VITE_SUPABASE_PUBLISHABLE_KEY: browser-fixture-key
+          VITE_ANALYTICS_API_URL: https://milp-fixture.invalid
+      - run: npx playwright install --with-deps chromium
+      - name: Qualify numerical display, geometry and linked interactions
+        run: npx playwright test tests/e2e/operations-canonical-results.spec.ts --workers=1
+        env:
+          GRIDPULSE_TEST_COMPILED: '1'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: canonical-presentation-reports
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7
