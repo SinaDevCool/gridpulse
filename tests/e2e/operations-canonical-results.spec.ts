@@ -70,6 +70,7 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await page.setViewportSize({ width: 1600, height: 1000 });
   const batterySection = page.locator("#operations-inputs").getByText("Battery", { exact: true });
   await batterySection.click();
+  await page.getByText("Advanced battery settings", { exact: true }).click();
   await page.getByRole("checkbox", { name: "Battery available", exact: true }).uncheck();
   await run.click();
   await expect(result.getByLabel("Model checks")).toContainText("No battery in this plan");

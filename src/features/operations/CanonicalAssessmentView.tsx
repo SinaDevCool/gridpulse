@@ -111,7 +111,19 @@ function CanonicalExecutionLanes({ assessment, timestamp, onSelect, onPreview }:
                 background: point.checkpoint_or_restart ? "var(--ops-response)" : "var(--ops-demand)" }} /> : null;
         })}
       </div>
+      <ExecutionTiming assessment={assessment} job={job} />
       <small>Selected interval: {job.points[assessment.points.findIndex(point => point.timestamp === timestamp)]?.status ?? "Unavailable"} · {formatMw(job.points[assessment.points.findIndex(point => point.timestamp === timestamp)]?.power_mw ?? 0)} · Remaining work {job.points.at(-1)!.remaining_work_hours.toFixed(1)} h at horizon end</small>
     </div>)}
   </section>;
+}
+
+function ExecutionTiming({ assessment, job }: { assessment: CanonicalPresentation; job: CanonicalPresentation["jobs"][number] }) {
+  const activity = job.points.filter(point => point.power_mw > 0);
+  const first = activity[0];
+  const last = activity.at(-1);
+  const declared = assessment.request.workloads.find(workload => workload.workload_id === job.id);
+  const sla = declared?.sla as { deadline?: unknown } | undefined;
+  const deadline = typeof sla?.deadline === "string" ? sla.deadline : null;
+  return <p><small>{first && last ? `First activity ${formatOperationsTime(assessment.points[first.interval_index].timestamp)} · Last activity ends ${formatOperationsTime(assessment.points[last.interval_index].endTimestamp!)}` : "No scheduled activity"}
+    {deadline ? ` · Declared deadline ${formatOperationsTime(deadline)}` : " · Deadline not supplied"}</small></p>;
 }
