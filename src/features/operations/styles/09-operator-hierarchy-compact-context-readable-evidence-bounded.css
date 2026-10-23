@@ -235,6 +235,30 @@
 .compute-window-lane.selected .compute-lane-title {
   color: var(--ops-response);
 }
+.compute-window-lanes {
+  scroll-margin-top: 5rem;
+}
+.compute-window-lanes:focus-visible {
+  outline: 2px solid var(--ops-demand);
+  outline-offset: 4px;
+}
+.compute-window-lane[data-review-match="true"] {
+  box-shadow: inset 3px 0 var(--ops-response);
+  background: color-mix(in srgb, var(--ops-response) 9%, var(--ops-surface));
+}
+.compute-window-selection {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  padding-block: 0.5rem;
+  color: var(--ops-text);
+  font-size: 0.8rem;
+}
+.compute-lane-highlight-label {
+  color: var(--ops-text);
+  font-weight: 600;
+}
 .compute-lane-track {
   margin: 0.5rem 18px 0.5rem 60px;
   height: 42px;

@@ -1,12 +1,48 @@
 import { describe, expect, it } from "vitest";
 import { buildOperationsScenario } from "../scenario-engine";
 import { assessWorkloads, buildScenarioWorkloads } from "../workload-intelligence";
-import { matchesReviewGroup, selectReviewGroups } from "./select-review-groups";
+import {
+  matchesReviewGroup,
+  selectReviewGroups,
+  selectWorkloadWindows,
+} from "./select-review-groups";
 import { paginateWorkloadDecisions } from "./select-workload-queue";
 
 const model = buildOperationsScenario();
 const jobs = assessWorkloads(buildScenarioWorkloads(model), [], model).decisions;
 describe("workload review projections", () => {
+  it("reveals all jobs including protected and highlights exactly the selected group", () => {
+    expect(selectWorkloadWindows(jobs, "all", false, 0, null).count).toBe(1);
+    expect(selectWorkloadWindows(jobs, "all", true, 0, null).count).toBe(5);
+    for (const [group, count] of [
+      ["candidate", 1],
+      ["eligible", 3],
+      ["protected", 1],
+    ] as const) {
+      const result = selectWorkloadWindows(jobs, group, false, 0, null);
+      expect(result.count).toBe(5);
+      expect(result.highlighted).toBe(count);
+      expect(matchesReviewGroup(result.jobs[0], group)).toBe(true);
+    }
+  });
+  it("bounds large imports without losing the selected job or mutating decisions", () => {
+    const many = Array.from({ length: 126 }, (_, index) => ({
+      ...jobs[0],
+      workloadId: String(index),
+    }));
+    const ids = many.map((job) => job.workloadId);
+    const result = selectWorkloadWindows(many, "all", true, 0, "125");
+    expect(result.pages).toBe(3);
+    expect(result.jobs).toHaveLength(51);
+    expect(result.inspected?.workloadId).toBe("125");
+    expect(selectWorkloadWindows(many, "all", true, 99, null).jobs).toHaveLength(26);
+    expect(many.map((job) => job.workloadId)).toEqual(ids);
+    expect(selectWorkloadWindows([], "protected", true, 99, null)).toMatchObject({
+      jobs: [],
+      page: 0,
+      highlighted: 0,
+    });
+  });
   it("partitions all records into mutually exclusive decision groups", () => {
     expect(selectReviewGroups(jobs).map((item) => item.count)).toEqual([1, 3, 1]);
     for (const job of jobs)
