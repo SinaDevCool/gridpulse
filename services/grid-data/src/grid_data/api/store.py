@@ -119,7 +119,8 @@ class InMemoryJobStore:
     def has_pending(self, owner_id: UUID, job_type: str) -> bool:
         with self._lock:
             return any(
-                job.owner_id == owner_id and job.job_type == job_type
+                job.owner_id == owner_id
+                and job.job_type == job_type
                 and job.status in {JobStatus.QUEUED, JobStatus.RUNNING}
                 for job in self._jobs.values()
             )

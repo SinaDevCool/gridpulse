@@ -13,8 +13,8 @@ from datetime import datetime, timezone
 from uuid import UUID
 
 from grid_data.api.executor import JobExecutor, OperatorHealthExecutor
-from grid_data.api.jobs.registry import JOB_TYPES
 from grid_data.api.jobs.context import JobLeaseLost
+from grid_data.api.jobs.registry import JOB_TYPES
 from grid_data.api.models import JobStatus
 from grid_data.api.store import JobStore, SupabaseJobStore
 

@@ -3,8 +3,10 @@
 No keepalive, local durable files, alternate queue or anonymous solve endpoint.
 The server is disabled unless explicitly enabled AND an account is allowlisted.
 """
+
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 import re
@@ -32,10 +34,12 @@ def validate_free_request(request: FacilityPlanRequest) -> None:
     if len(request.intervals) > 96 or len(request.workloads) > 5 or len(request.batteries) > 1:
         raise HTTPException(422, "Free MILP supports at most 96 intervals, 5 jobs and 1 battery")
     if len(request.profiles) > 5 or any(
-        not isinstance(profile.get("points", []), list)
-        or len(profile.get("points", [])) > 6 for profile in request.profiles
+        not isinstance(profile.get("points", []), list) or len(profile.get("points", [])) > 6
+        for profile in request.profiles
     ):
-        raise HTTPException(422, "Free MILP supports at most 6 reviewed points per workload profile")
+        raise HTTPException(
+            422, "Free MILP supports at most 6 reviewed points per workload profile"
+        )
     limit = request.policy.get("solver_time_limit_seconds")
     if isinstance(limit, bool) or not isinstance(limit, (int, float)) or not 0 < limit <= 30:
         raise HTTPException(422, "Set an explicit solver time limit between 0 and 30 seconds")
@@ -76,20 +80,44 @@ class OnDemandWorker:
 class OperationsRoutesOnly:
     def __init__(self, app, wake):
         self.app, self.wake = app, wake
+        self.submission_lock = asyncio.Lock()
 
     async def __call__(self, scope, receive, send):
         path = scope.get("path", "")
-        if scope["type"] == "http" and scope.get("method") == "POST":
-            if path != "/v1/jobs/facility-plan" and not re.fullmatch(r"/v1/jobs/[a-fA-F0-9-]{36}/cancel", path):
-                await JSONResponse({"detail": "Job type unavailable on the free MILP service"}, 404)(scope, receive, send)
-                return
+        if (
+            scope["type"] == "http"
+            and scope.get("method") == "POST"
+            and path != "/v1/jobs/facility-plan"
+            and not re.fullmatch(r"/v1/jobs/[a-fA-F0-9-]{36}/cancel", path)
+        ):
+            await JSONResponse(
+                {"detail": "Job type unavailable on the free MILP service"}, 404
+            )(scope, receive, send)
+            return
 
         async def observe(message):
-            if message["type"] == "http.response.start" and 200 <= message["status"] < 300 and path.startswith("/v1/jobs"):
+            if (
+                message["type"] == "http.response.start"
+                and 200 <= message["status"] < 300
+                and path.startswith("/v1/jobs")
+            ):
                 self.wake()
             await send(message)
 
-        await self.app(scope, receive, observe)
+        if (
+            scope["type"] == "http"
+            and scope.get("method") == "POST"
+            and path == "/v1/jobs/facility-plan"
+        ):
+            if self.submission_lock.locked():
+                await JSONResponse(
+                    {"detail": "Another submission is being admitted; retry shortly"}, 429
+                )(scope, receive, send)
+                return
+            async with self.submission_lock:
+                await self.app(scope, receive, observe)
+        else:
+            await self.app(scope, receive, observe)
 
 
 def create_free_app(*, store=None, executor=None, auth=authenticated_user, enabled=None, emails=None):
@@ -103,7 +131,9 @@ def create_free_app(*, store=None, executor=None, auth=authenticated_user, enabl
     runner = executor or JobRunner(job_store, context)
     worker = OnDemandWorker(job_store, runner)
 
-    def gated_auth(user: UserIdentity = Depends(auth)):
+    auth_depends = Depends(auth)
+
+    def gated_auth(user: UserIdentity = auth_depends):
         if not active or not configured:
             raise HTTPException(503, "Production MILP is disabled or not configured")
         if not user.email or user.email.casefold() not in allowed:
@@ -114,7 +144,9 @@ def create_free_app(*, store=None, executor=None, auth=authenticated_user, enabl
         validate_free_request(request)
         # Reuse existing owner-scoped records; do not create another job store.
         if job_store.has_pending(user.id, "facility_plan"):
-            raise HTTPException(429, "A facility plan is already pending; resume or cancel it first")
+            raise HTTPException(
+                429, "A facility plan is already pending; resume or cancel it first"
+            )
 
     @asynccontextmanager
     async def lifespan(app):
@@ -128,16 +160,27 @@ def create_free_app(*, store=None, executor=None, auth=authenticated_user, enabl
                 worker.close()
 
     # No inline calculation fallback: all work is claimed through the scoped RPC.
-    app = create_app(job_store=job_store, executor=runner, auth_dependency=gated_auth,
-                     lifespan=lifespan, facility_admission=admission, dispatch_mode="worker")
+    app = create_app(
+        job_store=job_store,
+        executor=runner,
+        auth_dependency=gated_auth,
+        lifespan=lifespan,
+        facility_admission=admission,
+        dispatch_mode="worker",
+    )
     app.add_middleware(OperationsBodyLimit, maximum_bytes=1_000_000)
     app.add_middleware(OperationsRoutesOnly, wake=worker.wake.set)
 
     @app.get("/healthz")
     def health():
-        return {"service": "operations-milp", "enabled": bool(active and configured),
-                "worker_alive": worker.thread.is_alive(), "physical_dispatch_authorized": False,
-                "hosting": "free_on_demand", "maximum_concurrent_solves": 1}
+        return {
+            "service": "operations-milp",
+            "enabled": bool(active and configured),
+            "worker_alive": worker.thread.is_alive(),
+            "physical_dispatch_authorized": False,
+            "hosting": "free_on_demand",
+            "maximum_concurrent_solves": 1,
+        }
 
     return app
 
