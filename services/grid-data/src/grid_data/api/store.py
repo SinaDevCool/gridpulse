@@ -129,7 +129,8 @@ class InMemoryJobStore:
     def has_foreign_pending(self, owners: frozenset[UUID], job_type: str) -> bool:
         with self._lock:
             return any(
-                job.owner_id not in owners and job.job_type == job_type
+                job.owner_id not in owners
+                and job.job_type == job_type
                 and job.status in {JobStatus.QUEUED, JobStatus.RUNNING}
                 for job in self._jobs.values()
             )

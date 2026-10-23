@@ -141,13 +141,17 @@ def create_free_app(
     )
     url, key = os.environ.get("SUPABASE_URL", ""), os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
     owner_ids = frozenset(
-        UUID(str(owner).strip()) for owner in (
-            owners if owners is not None
+        UUID(str(owner).strip())
+        for owner in (
+            owners
+            if owners is not None
             else os.environ.get("GRIDPULSE_MILP_ALLOWED_OWNER_IDS", "").split(",")
-        ) if str(owner).strip()
+        )
+        if str(owner).strip()
     )
     configured = bool(
-        allowed and owner_ids
+        allowed
+        and owner_ids
         and ((url and key and os.environ.get("SUPABASE_PUBLISHABLE_KEY")) or store is not None)
     )
     job_store = store or SupabaseJobStore(url, key)
@@ -163,8 +167,10 @@ def create_free_app(
             raise ValueError(str(error.detail)) from None
 
     context = JobContext(
-        ServiceJobPublisher(url, key), shutdown_requested=stop.is_set,
-        wall_clock_limit_seconds=90, validate_job=execution_policy,
+        ServiceJobPublisher(url, key),
+        shutdown_requested=stop.is_set,
+        wall_clock_limit_seconds=90,
+        validate_job=execution_policy,
     )
     runner = executor or JobRunner(job_store, context)
     worker = OnDemandWorker(job_store, runner, owner_ids)

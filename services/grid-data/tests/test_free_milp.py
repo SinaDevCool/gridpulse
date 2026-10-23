@@ -103,6 +103,7 @@ def test_remote_pending_probe_never_downloads_payloads():
 )
 def test_account_gate_protects_job_reads(enabled, email, expected):
     owner = uuid4()
+
     def identity():
         return UserIdentity(id=owner, email=email)
 

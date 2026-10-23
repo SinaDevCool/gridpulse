@@ -31,6 +31,7 @@ jobs:
         if: always()
         run: python -m ruff check services/grid-data/src/grid_data/api
       - name: Inspect approved account and pending backlog (read only)
+        if: always()
         env:
           SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
