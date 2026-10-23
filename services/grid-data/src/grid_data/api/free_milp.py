@@ -1,7 +1,7 @@
 """On-demand, single-worker hosting profile; existing API/store/engine own jobs.
 
 No keepalive, local durable files or alternate queue. Public mode requires
-verified visitor sessions, durable admission and a configured submission guard.
+verified visitor sessions and durable, quota-limited admission. No CAPTCHA is required.
 """
 
 from __future__ import annotations
@@ -144,7 +144,6 @@ def create_free_app(
     emails=None,
     owners=None,
     public_access=None,
-    submission_guard=None,
 ):
     public_access = (
         public_access
@@ -222,9 +221,8 @@ def create_free_app(
     def admission(request: FacilityPlanRequest, user: UserIdentity, http_request=None):
         validate_free_request(request)
         if public_access:
-            if submission_guard is None:
-                raise HTTPException(503, "Public submissions await configured bot protection")
-            submission_guard(http_request, user)
+            # The public store performs atomic admission and quota checks.
+            # CAPTCHA is deliberately not a prerequisite for this bounded mock.
             return
         # Reuse existing owner-scoped records; do not create another job store.
         if job_store.has_pending(user.id, "facility_plan"):
@@ -277,9 +275,7 @@ def create_free_app(
             "hosting": "free_on_demand",
             "maximum_concurrent_solves": 1,
             "public_access": public_access,
-            "submissions_enabled": bool(
-                active and configured and (not public_access or submission_guard is not None)
-            ),
+            "submissions_enabled": bool(active and configured),
         }
 
     return app

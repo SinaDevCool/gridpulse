@@ -55,7 +55,7 @@ async function authenticatedRequest(path: string, init?: RequestInit): Promise<u
     data: { session },
   } = await (publicRequest ? publicMilpClient() : supabase).auth.getSession();
   if (!session) throw new Error(publicRequest
-    ? "No public visitor session. Public submissions remain disabled while bot protection is paused."
+    ? "No public visitor session. Start a MILP calculation to create a restricted session."
     : "Analytics jobs are unavailable in the public Finder");
 
   const response = await fetch(`${analyticsBaseUrl()}${path}`, {

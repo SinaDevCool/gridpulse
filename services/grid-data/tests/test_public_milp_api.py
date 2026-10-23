@@ -49,7 +49,7 @@ def test_named_session_remains_supported(monkeypatch):
     assert authenticated_user(token(owner)).id==owner
 
 
-def test_public_factory_has_no_email_requirement_but_blocks_listing_and_unguarded_submissions():
+def test_public_factory_needs_no_captcha_but_still_blocks_listing_and_other_jobs():
     owner=uuid4()
     store=SupabaseJobStore('https://unused.invalid','unused',access_scope='public')
     store._publisher=Mock()
@@ -60,8 +60,26 @@ def test_public_factory_has_no_email_requirement_but_blocks_listing_and_unguarde
         assert client.get('/v1/jobs').status_code==404
         health=client.get('/healthz').json()
         assert health['public_access']
-        assert not health['submissions_enabled']
+        assert health['submissions_enabled']
         assert client.post('/v1/jobs/rolling-facility-plan',json={}).status_code==404
+
+
+def test_removing_captcha_does_not_enable_disabled_runtime():
+    store=SupabaseJobStore('https://unused.invalid','unused',access_scope='public')
+    app=create_free_app(store=store,executor=Mock(),enabled=False,public_access=True)
+    with TestClient(app) as client:
+        health=client.get('/healthz').json()
+        assert not health['enabled']
+        assert not health['submissions_enabled']
+
+
+@pytest.mark.parametrize('anonymous,role',[(False,'authenticated'),(True,'authenticated')])
+def test_public_runtime_still_requires_restricted_identity(anonymous,role):
+    store=SupabaseJobStore('https://unused.invalid','unused',access_scope='public')
+    app=create_free_app(store=store,executor=Mock(),enabled=True,public_access=True,
+        auth=lambda:UserIdentity(id=uuid4(),is_anonymous=anonymous,token_role=role))
+    with TestClient(app) as client:
+        assert client.get('/v1/jobs/'+str(uuid4())).status_code==403
 
 
 def test_public_store_uses_atomic_admission_and_explicit_public_claim():

@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 type VisitorSession = { access_token: string; user: { is_anonymous?: boolean } };
 type VisitorAuth = {
   getSession: () => Promise<{ data: { session: VisitorSession | null }; error?: unknown }>;
-  signInAnonymously: (options: { options: { captchaToken: string } }) => Promise<{
+  signInAnonymously: () => Promise<{
     data: { session: VisitorSession | null }; error: { message: string } | null;
   }>;
 };
@@ -30,17 +30,16 @@ function restricted(session: VisitorSession | null): session is VisitorSession {
   } catch { return false; }
 }
 
-/** Invoke only after explicit Run and a signup challenge, never on page load. */
-export async function ensureVisitorSession(auth: VisitorAuth, captchaToken: string) {
+/** Invoke only after explicit Run, never on page load. No CAPTCHA is required. */
+export async function ensureVisitorSession(auth: VisitorAuth) {
   const existing = await auth.getSession();
   if (existing.error) throw new Error("Unable to load the public visitor session");
   if (existing.data.session) {
     if (!restricted(existing.data.session)) throw new Error("A restricted public visitor session is required");
     return existing.data.session;
   }
-  if (!captchaToken.trim()) throw new Error("Public session creation requires configured bot protection");
-  const result = await auth.signInAnonymously({ options: { captchaToken } });
+  const result = await auth.signInAnonymously();
   if (result.error || !restricted(result.data.session))
-    throw new Error("Public session could not be created safely. Please retry the challenge.");
+    throw new Error("A restricted public session could not be created. Please retry later.");
   return result.data.session;
 }
