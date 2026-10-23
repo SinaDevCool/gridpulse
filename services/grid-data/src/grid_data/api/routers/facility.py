@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from fastapi import APIRouter, BackgroundTasks, Depends, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Request, status
 
 from grid_data.api.dependencies import ApiDependencies
 from grid_data.api.models import (
@@ -59,10 +59,11 @@ def build_router(
     def start_facility_plan_job(
         request: FacilityPlanRequest,
         background_tasks: BackgroundTasks,
+        http_request: Request,
         user: UserIdentity = Depends(auth_dependency),
     ) -> JobAccepted:
         if dependencies.facility_admission is not None:
-            dependencies.facility_admission(request, user)
+            dependencies.facility_admission(request, user, http_request)
         job, created = canonical_job(
             owner_id=user.id,
             job_type="facility_plan",

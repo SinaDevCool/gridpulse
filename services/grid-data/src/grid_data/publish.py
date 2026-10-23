@@ -19,6 +19,12 @@ class PublishReport:
     records_published: int
 
 
+class PublicationRequestError(RuntimeError):
+    def __init__(self, status_code: int, detail: str):
+        self.status_code = status_code
+        super().__init__(f"Supabase publication failed ({status_code}): {detail}")
+
+
 class SupabasePublisher:
     def __init__(self, url: str, service_role_key: str) -> None:
         self.base_url = url.rstrip("/") + "/rest/v1"
@@ -52,7 +58,7 @@ class SupabasePublisher:
                 return json.loads(content) if content else None
         except urllib.error.HTTPError as error:
             detail = error.read().decode("utf-8", errors="replace")
-            raise RuntimeError(f"Supabase publication failed ({error.code}): {detail}") from error
+            raise PublicationRequestError(error.code, detail) from error
 
 
 def _chunks(records: Iterator[dict[str, Any]], size: int) -> Iterator[list[dict[str, Any]]]:

@@ -20,6 +20,7 @@ class AnalyticsJob(BaseModel):
     id: UUID = Field(default_factory=uuid4)
     owner_id: UUID
     job_type: str
+    access_scope: Literal["private", "public"] = "private"
     status: JobStatus = JobStatus.QUEUED
     input_payload: dict[str, Any] = Field(default_factory=dict)
     input_fingerprint: str | None = Field(default=None, pattern="^[a-f0-9]{64}$")
@@ -273,6 +274,8 @@ class GraphGuidedStudyRequest(BaseModel):
 class UserIdentity(BaseModel):
     id: UUID
     email: str | None = None
+    is_anonymous: bool = False
+    token_role: str = "authenticated"
 
 
 class HealthReport(BaseModel):

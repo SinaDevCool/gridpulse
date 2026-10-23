@@ -294,7 +294,10 @@ class InMemoryJobStore:
 
 
 class SupabaseJobStore:
-    def __init__(self, url: str, service_role_key: str) -> None:
+    def __init__(self, url: str, service_role_key: str, *, access_scope: str = "private") -> None:
+        if access_scope not in {"private", "public"}:
+            raise ValueError("Invalid analytics access scope")
+        self.access_scope = access_scope
         self._publisher = SupabasePublisher(url, service_role_key)
         self._execution = threading.local()
 
@@ -307,6 +310,9 @@ class SupabaseJobStore:
             self._execution.lease = None
 
     def create(self, job: AnalyticsJob) -> AnalyticsJob:
+        if self.access_scope == "public":
+            rows = self._publisher.request("POST", "/rpc/create_public_facility_job", {"p_job": _job_row(job)})
+            return AnalyticsJob.model_validate(rows[0])
         rows = self._publisher.request(
             "POST",
             "/rpc/create_analytics_job_once",
@@ -322,7 +328,8 @@ class SupabaseJobStore:
                 f"{urllib.parse.quote(str(job_id))}&owner_id=eq.{urllib.parse.quote(str(owner_id))}"
             ),
         )
-        return AnalyticsJob.model_validate(rows[0]) if rows else None
+        job = AnalyticsJob.model_validate(rows[0]) if rows else None
+        return job if job and job.access_scope == self.access_scope else None
 
     def get_internal(self, job_id: UUID) -> AnalyticsJob:
         rows = self._publisher.request(
@@ -340,7 +347,7 @@ class SupabaseJobStore:
             "/analytics_jobs?select=*&owner_id=eq."
             f"{urllib.parse.quote(str(owner_id))}&order=created_at.desc&limit={safe_limit}",
         )
-        return [AnalyticsJob.model_validate(row) for row in rows]
+        return [job for row in rows if (job := AnalyticsJob.model_validate(row)).access_scope == self.access_scope]
 
     def has_pending(self, owner_id: UUID, job_type: str) -> bool:
         rows = self._publisher.request(
@@ -374,7 +381,8 @@ class SupabaseJobStore:
             "&status=not.in.(failed,cancelled)"
             "&order=created_at.desc&limit=1",
         )
-        return AnalyticsJob.model_validate(rows[0]) if rows else None
+        job = AnalyticsJob.model_validate(rows[0]) if rows else None
+        return job if job and job.access_scope == self.access_scope else None
 
     def update(
         self,
@@ -426,6 +434,14 @@ class SupabaseJobStore:
         job_types: tuple[str, ...] | None = None,
     ) -> AnalyticsJob | None:
         scope = _validated_job_types(job_types)
+        if self.access_scope == "public":
+            if scope != ("facility_plan",):
+                raise ValueError("Public worker requires an explicit facility-plan scope")
+            rows = self._publisher.request("POST", "/rpc/claim_analytics_job", {
+                "p_worker_id": worker_id, "p_lease_seconds": lease_seconds,
+                "p_job_types": ["facility_plan"], "p_access_scope": "public",
+            })
+            return AnalyticsJob.model_validate(rows[0]) if rows else None
         if scope is not None:
             rows = self._publisher.request(
                 "POST",
@@ -476,6 +492,8 @@ class SupabaseJobStore:
         return AnalyticsJob.model_validate(rows[0])
 
     def request_cancel(self, job_id: UUID, owner_id: UUID) -> AnalyticsJob | None:
+        if self.access_scope == "public" and self.get(job_id, owner_id) is None:
+            return None
         rows = self._publisher.request(
             "POST",
             "/rpc/cancel_analytics_job",

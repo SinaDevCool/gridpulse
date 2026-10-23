@@ -1,7 +1,7 @@
 """On-demand, single-worker hosting profile; existing API/store/engine own jobs.
 
-No keepalive, local durable files, alternate queue or anonymous solve endpoint.
-The server is disabled unless explicitly enabled AND an account is allowlisted.
+No keepalive, local durable files or alternate queue. Public mode requires
+verified visitor sessions, durable admission and a configured submission guard.
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ from fastapi import Depends, HTTPException
 from starlette.responses import JSONResponse
 
 from grid_data.api.app import create_app
-from grid_data.api.auth import authenticated_user
+from grid_data.api.auth import anonymous_owner, authenticated_user, session_user
 from grid_data.api.jobs.context import JobContext
 from grid_data.api.jobs.publication import ServiceJobPublisher
 from grid_data.api.jobs.runner import JobRunner
@@ -26,6 +26,7 @@ from grid_data.api.models import AnalyticsJob, FacilityPlanRequest, UserIdentity
 from grid_data.api.request_limits import OperationsBodyLimit
 from grid_data.api.store import SupabaseJobStore
 from grid_data.api.worker import run_once
+from grid_data.publish import PublicationRequestError
 
 LOGGER = logging.getLogger(__name__)
 SCOPE = ("facility_plan",)
@@ -64,7 +65,7 @@ class OnDemandWorker:
             while not self.stop.is_set():
                 try:
                     # Do not claim or exhaust retries for another account's backlog.
-                    if self.store.has_foreign_pending(self.owners, "facility_plan"):
+                    if getattr(self.store, "access_scope", "private") != "public" and self.store.has_foreign_pending(self.owners, "facility_plan"):
                         LOGGER.error("Scoped worker paused: unrelated pending facility jobs")
                         break
                     if not run_once(self.store, self.executor, self.worker_id, job_types=SCOPE):
@@ -84,12 +85,16 @@ class OnDemandWorker:
 
 
 class OperationsRoutesOnly:
-    def __init__(self, app, wake):
+    def __init__(self, app, wake, public_access=False):
         self.app, self.wake = app, wake
+        self.public_access = public_access
         self.submission_lock = asyncio.Lock()
 
     async def __call__(self, scope, receive, send):
         path = scope.get("path", "")
+        if self.public_access and path.rstrip("/") == "/v1/jobs":
+            await JSONResponse({"detail": "Job listing is unavailable to public visitors"}, 404)(scope, receive, send)
+            return
         if (
             scope["type"] == "http"
             and scope.get("method") == "POST"
@@ -127,8 +132,10 @@ class OperationsRoutesOnly:
 
 
 def create_free_app(
-    *, store=None, executor=None, auth=authenticated_user, enabled=None, emails=None, owners=None
+    *, store=None, executor=None, auth=None, enabled=None, emails=None, owners=None,
+    public_access=None, submission_guard=None,
 ):
+    public_access = public_access if public_access is not None else os.environ.get("GRIDPULSE_PUBLIC_MILP_ENABLED") == "true"
     active = enabled if enabled is not None else os.environ.get("GRIDPULSE_MILP_ENABLED") == "true"
     allowed = frozenset(
         email.strip().casefold()
@@ -149,16 +156,17 @@ def create_free_app(
         )
         if str(owner).strip()
     )
-    configured = bool(
-        allowed
-        and owner_ids
-        and ((url and key and os.environ.get("SUPABASE_PUBLISHABLE_KEY")) or store is not None)
-    )
-    job_store = store or SupabaseJobStore(url, key)
+    configured = bool((public_access or (allowed and owner_ids))
+        and ((url and key and os.environ.get("SUPABASE_PUBLISHABLE_KEY")) or store is not None))
+    job_store = store or SupabaseJobStore(url, key, access_scope="public" if public_access else "private")
+    if public_access and getattr(job_store, "access_scope", None) != "public":
+        raise ValueError("Public mode requires a public-scoped durable store")
     stop = threading.Event()
 
     def execution_policy(job: AnalyticsJob):
-        if job.job_type != "facility_plan" or job.owner_id not in owner_ids:
+        if job.job_type != "facility_plan" or (public_access and
+            (job.access_scope != "public" or not anonymous_owner(job.owner_id))) or (
+                not public_access and job.owner_id not in owner_ids):
             raise ValueError("Facility job is outside the approved runtime account scope")
         request = FacilityPlanRequest.model_validate(job.input_payload)
         try:
@@ -175,17 +183,25 @@ def create_free_app(
     runner = executor or JobRunner(job_store, context)
     worker = OnDemandWorker(job_store, runner, owner_ids)
 
-    auth_depends = Depends(auth)
+    auth_depends = Depends(auth or (session_user if public_access else authenticated_user))
 
     def gated_auth(user: UserIdentity = auth_depends):
         if not active or not configured:
             raise HTTPException(503, "Production MILP is disabled or not configured")
-        if not user.email or user.email.casefold() not in allowed or user.id not in owner_ids:
+        if public_access:
+            if not user.is_anonymous or user.token_role != "gridpulse_public_visitor":
+                raise HTTPException(403, "A restricted anonymous visitor session is required")
+        elif not user.email or user.email.casefold() not in allowed or user.id not in owner_ids:
             raise HTTPException(403, "MILP is not enabled for this account")
         return user
 
-    def admission(request: FacilityPlanRequest, user: UserIdentity):
+    def admission(request: FacilityPlanRequest, user: UserIdentity, http_request=None):
         validate_free_request(request)
+        if public_access:
+            if submission_guard is None:
+                raise HTTPException(503, "Public submissions await configured bot protection")
+            submission_guard(http_request, user)
+            return
         # Reuse existing owner-scoped records; do not create another job store.
         if job_store.has_pending(user.id, "facility_plan"):
             raise HTTPException(
@@ -213,7 +229,14 @@ def create_free_app(
         dispatch_mode="worker",
     )
     app.add_middleware(OperationsBodyLimit, maximum_bytes=1_000_000)
-    app.add_middleware(OperationsRoutesOnly, wake=worker.wake.set)
+    app.add_middleware(OperationsRoutesOnly, wake=worker.wake.set, public_access=public_access)
+
+    @app.exception_handler(PublicationRequestError)
+    async def publication_failure(request, error):
+        if error.status_code == 429:
+            return JSONResponse({"detail": "MILP capacity or quota reached. Retry later."}, 429,
+                headers={"Retry-After": "60"})
+        return JSONResponse({"detail": "Job storage unavailable; resume by job ID before retrying."}, 503)
 
     @app.get("/healthz")
     def health():
@@ -224,6 +247,8 @@ def create_free_app(
             "physical_dispatch_authorized": False,
             "hosting": "free_on_demand",
             "maximum_concurrent_solves": 1,
+            "public_access": public_access,
+            "submissions_enabled": bool(active and configured and (not public_access or submission_guard is not None)),
         }
 
     return app
