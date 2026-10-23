@@ -218,10 +218,13 @@ test("Compute & Workloads imports real scheduler and DCGM-compatible evidence", 
 
 test("Power & Battery exposes dispatch physics and imports measured evidence", async ({ page }) => {
   await page.goto("/operations?view=power");
-  await expect(page.getByText("Read-only dispatch assessment")).toBeVisible();
-  await expect(
-    page.getByText("Positive battery power means discharge; negative power means charge."),
-  ).toBeVisible();
+  await expect(page.getByText("Inspected interval · battery only")).toBeVisible();
+  await page.getByText("Assessment context", { exact: true }).click();
+  await expect(page.locator(".power-context-details")).toContainText(
+    "Positive battery MW means discharge; negative means charge.",
+  );
+  await expect(page.locator(".power-context-details")).toContainText("no equipment commands");
+  await page.getByText("Assessment context", { exact: true }).click();
   await expect(page.getByText("Facility Power & Battery Response")).toBeVisible();
   await expect(page.getByText("Facility Power", { exact: true })).toBeVisible();
   await expect(page.getByText("Battery Dispatch", { exact: true }).first()).toBeVisible();
@@ -317,7 +320,7 @@ test("Operations charts expose explicit legends, units, targets, and full data a
 test("Power & Battery remains usable on a mobile viewport", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/operations?view=power");
-  await expect(page.getByText("Read-only dispatch assessment")).toBeVisible();
+  await expect(page.getByText("Inspected interval · battery only")).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)).toBe(
     false,
   );
