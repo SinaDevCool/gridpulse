@@ -31,6 +31,11 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
     expect((await panel.boundingBox())!.height).toBeGreaterThan(140);
     await expect(panel.locator("svg.recharts-surface")).toBeVisible();
   }
+  const legend = result.getByRole("button", { name: /State of charge/ });
+  await legend.click();
+  await expect(legend).toHaveAttribute("aria-pressed", "false");
+  await legend.click();
+  await expect(legend).toHaveAttribute("aria-pressed", "true");
   await result.getByText("View Full Interval Data", { exact: true }).click();
   const row = result.locator("tbody tr").nth(2);
   const time = "2026-09-26T02:00:00.000Z";
@@ -62,4 +67,11 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   for (const panel of await panels.all()) expect((await panel.boundingBox())!.height).toBeGreaterThan(140);
   expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
   await page.screenshot({ path: "test-results/canonical-mobile.png", fullPage: true });
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  const batterySection = page.locator("#operations-inputs").getByText("Battery", { exact: true });
+  await batterySection.click();
+  await page.getByRole("checkbox", { name: "Battery available", exact: true }).uncheck();
+  await run.click();
+  await expect(result.getByLabel("Model checks")).toContainText("No battery in this plan");
+  await expect(result.locator(".power-timeline-panel")).toHaveCount(1);
 });

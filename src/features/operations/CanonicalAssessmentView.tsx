@@ -48,7 +48,7 @@ export function CanonicalAssessmentView({ assessment, view, timestamp, onSelect,
       <p>Binding-constraint explanation unavailable. The checks above compare returned values with submitted limits; they do not identify which constraint determined the optimum.</p>
     </details>
     <PowerDataTable data={assessment.points} selectedTimestamp={inspected} pinnedTimestamp={timestamp}
-      onSelect={onSelect} onPreview={onPreview} mode="scenario" />
+      onSelect={onSelect} onPreview={onPreview} mode="scenario" context={view === "power" ? "battery" : view} />
     <details><summary>Technical details · identity & submitted model</summary>
       <p>{assessment.projected.identity.engineVersion} · {assessment.projected.identity.truthClass} · No physical dispatch</p>
       <p>Result: {assessment.projected.identity.resultFingerprint}</p>
@@ -84,6 +84,8 @@ function CanonicalExecutionLanes({ assessment, timestamp, onSelect, onPreview }:
   onPreview: (timestamp: string | null) => void;
 }) {
   const visibility = useChartVisibility();
+  const start = Date.parse(assessment.points[0].timestamp);
+  const span = Date.parse(assessment.points.at(-1)!.endTimestamp!) - start;
   return <section className="compute-window-lanes" aria-label="MILP planned execution">
     <h3>Planned workload execution</h3>
     <p>Solved intervals—not eligibility windows or delivered execution. Interval widths reflect duration.</p>
@@ -91,14 +93,12 @@ function CanonicalExecutionLanes({ assessment, timestamp, onSelect, onPreview }:
       { label: "Execution", tone: "demand", mark: "bar" },
       { label: "Checkpoint / restart", tone: "response", mark: "bar" },
     ]} />
-    <div className="ops-canonical-axis" aria-label="Execution time axis UTC">{[0, 6, 12, 18].filter(index => index < assessment.points.length).map(index => <span key={index}>{formatOperationsTime(assessment.points[index].timestamp)}</span>)}<span>{formatOperationsTime(assessment.points.at(-1)!.endTimestamp!)} · end</span></div>
+    <div className="ops-canonical-axis" aria-label="Execution time axis UTC">{[0, .25, .5, .75, 1].map(fraction => <span key={fraction}>{formatOperationsTime(new Date(start + span * fraction).toISOString())}{fraction === 1 ? " · end" : ""}</span>)}</div>
     {assessment.jobs.map(job => <div className="compute-window-lane" key={job.id} data-active={job.points[assessment.points.findIndex(point => point.timestamp === timestamp)]?.power_mw > 0}>
       <strong>{job.id}</strong>
       <div className="compute-lane-track">
         {job.points.map((point, index) => {
           const interval = assessment.points[index];
-          const start = Date.parse(assessment.points[0].timestamp);
-          const span = Date.parse(assessment.points.at(-1)!.endTimestamp!) - start;
           return point.power_mw > 0 && visibility.visible(point.checkpoint_or_restart ? "Checkpoint / restart" : "Execution") ?
             <button key={index} type="button" onClick={() => onSelect(interval.timestamp)}
               onMouseEnter={() => onPreview(interval.timestamp)} onMouseLeave={() => onPreview(null)}

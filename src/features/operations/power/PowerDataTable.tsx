@@ -12,6 +12,7 @@ export function PowerDataTable({
   mode,
   onPreview,
   pinnedTimestamp = selectedTimestamp,
+  context = "battery",
 }: {
   data: BatteryTimelinePoint[];
   selectedTimestamp: string | null;
@@ -19,6 +20,7 @@ export function PowerDataTable({
   mode: EvidenceMode;
   onPreview?: (timestamp: string | null) => void;
   pinnedTimestamp?: string | null;
+  context?: "battery" | "overview" | "compute";
 }) {
   const [filter, setFilter] = useState<Filter>("all");
   const rows = data.filter(
@@ -45,7 +47,7 @@ export function PowerDataTable({
       </label>
       <p aria-live="polite">
         {rows.length} of {data.length} records ·{" "}
-        {mode === "scenario" ? "SOC at interval end" : "Observed SOC; no constraint inferred"}
+        {context !== "battery" ? "Same accepted plan and inspected intervals" : mode === "scenario" ? "SOC at interval end" : "Observed SOC; no constraint inferred"}
       </p>
       <div
         className="battery-table-scroll"
@@ -60,11 +62,13 @@ export function PowerDataTable({
           <thead>
             <tr>
               <th scope="col">Time (UTC)</th>
+              {context === "overview" ? <th scope="col">Baseline import (MW)</th> : null}
+              {context === "compute" ? <th scope="col">Workload power (MW)</th> : null}
               <th scope="col">Facility demand (MW)</th>
-              <th scope="col">Battery dispatch (MW)</th>
+              {context === "battery" ? <th scope="col">Battery dispatch (MW)</th> : null}
               <th scope="col">Grid import (MW)</th>
-              <th scope="col">Start SOC (%)</th>
-              <th scope="col">{mode === "scenario" ? "End SOC (%)" : "Observed SOC (%)"}</th>
+              {context === "battery" ? <><th scope="col">Start SOC (%)</th>
+              <th scope="col">{mode === "scenario" ? "End SOC (%)" : "Observed SOC (%)"}</th></> : <th scope="col">Safety-target margin (MW)</th>}
               <th scope="col">Constraint / evidence</th>
             </tr>
           </thead>
@@ -87,23 +91,25 @@ export function PowerDataTable({
                     {intervalLabel(point)}
                   </button>
                 </th>
+                {context === "overview" ? <td>{point.baselineDemandMw == null ? "Unavailable" : formatMw(point.baselineDemandMw)}</td> : null}
+                {context === "compute" ? <td>{point.workloadPowerMw == null ? "Unavailable" : formatMw(point.workloadPowerMw)}</td> : null}
                 <td>
                   {point.facilityDemandMw == null
                     ? "Unavailable"
                     : formatMw(point.facilityDemandMw)}
                 </td>
-                <td>
+                {context === "battery" ? <td>
                   {point.batteryPowerMw == null ? "Unavailable" : formatMw(point.batteryPowerMw)}
-                </td>
+                </td> : null}
                 <td>{formatMw(point.gridImportMw)}</td>
-                <td>
+                {context === "battery" ? <><td>
                   {point.startingSocPercent == null
                     ? "Unavailable"
                     : formatPercent(point.startingSocPercent)}
                 </td>
                 <td>
                   {point.socPercent == null ? "Unavailable" : formatPercent(point.socPercent)}
-                </td>
+                </td></> : <td>{formatMw(point.targetMw - point.gridImportMw)}</td>}
                 <td>{point.constraintLabel}</td>
               </tr>
             ))}
