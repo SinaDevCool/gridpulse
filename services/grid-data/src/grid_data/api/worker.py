@@ -33,7 +33,9 @@ def run_once(
     job_types: tuple[str, ...] | None = None,
 ) -> bool:
     # Never fall back to an unscoped claim if a scoped RPC is unavailable.
-    job = store.claim(worker_id) if job_types is None else store.claim(worker_id, job_types=job_types)
+    job = (
+        store.claim(worker_id) if job_types is None else store.claim(worker_id, job_types=job_types)
+    )
     if job is None:
         return False
     stop = threading.Event()

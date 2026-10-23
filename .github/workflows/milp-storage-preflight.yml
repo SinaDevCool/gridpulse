@@ -35,7 +35,7 @@ jobs:
           POSTGRES_PASSWORD: ci-only-not-a-production-secret
         ports: ['5432:5432']
         options: >-
-          --health-cmd pg_isready --health-interval 5s
+          --health-cmd "pg_isready -U postgres" --health-interval 5s
           --health-timeout 5s --health-retries 10
     steps:
       - uses: actions/checkout@v4
@@ -52,6 +52,7 @@ jobs:
       - name: Check existing API style without rewriting files
         run: python -m ruff format --check services/grid-data/src/grid_data/api/store.py services/grid-data/src/grid_data/api/worker.py
       - name: Identify secure migration access (presence only)
+        if: always()
         env:
           MANAGEMENT_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}

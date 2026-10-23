@@ -29,6 +29,7 @@ try {
     "20261010130000_operations_worker_integrity.sql",
     "20261010140000_operations_review_integrity.sql",
     "20261010150000_operations_job_idempotency.sql",
+    "20261023180000_scoped_analytics_job_claim.sql",
   ])
     await db.exec(
       await readFile(new URL(`../supabase/migrations/${file}`, import.meta.url), "utf8"),

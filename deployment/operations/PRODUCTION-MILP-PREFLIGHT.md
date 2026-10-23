@@ -4,7 +4,9 @@
 
 - Production integration, not another staging environment.
 - Hosting must remain free. No paid plan or new paid resource is authorized.
-- Existing Supabase job storage may be reused. No schema migration is authorized.
+- Existing Supabase job storage may be reused. The user subsequently authorized
+  the narrowly scoped claim-function change described below. Other schema
+  migrations remain out of scope.
 - PR #37 remains parked and excluded.
 
 ## Read-only evidence
@@ -22,12 +24,18 @@ restart recovery or end-to-end production readiness.
 
 ## Remaining deployment gates
 
-1. The current `claim_analytics_job(p_worker_id, p_lease_seconds)` contract
-   claims globally from the analytics queue. The production MILP service must
-   not drain unrelated jobs simply to run Operations facility plans. A scoped
-   claim capability needs review and explicit authorization if implemented as
-   a database function change. Do not work around it by duplicating the queue
-   or running unfenced inline tasks.
+1. The legacy `claim_analytics_job(p_worker_id, p_lease_seconds)` contract
+   claims globally from the analytics queue. Migration
+   `20261023180000_scoped_analytics_job_claim.sql` adds a three-argument
+   overload with an explicit job-type array. The legacy signature delegates
+   to the same implementation with an unscoped filter. Selection AND expired
+   retry cleanup are scoped. Empty/malformed scopes are rejected, both
+   signatures remain service-role-only, and the existing locks, leases,
+   attempt counters and cancellation checks are preserved. No tables are
+   added. Operations workers use `--job-type facility_plan`; missing scoped
+   RPCs fail closed, never fall back to the global queue. The scoped API does
+   not provide per-facility or per-owner filtering; authentication and
+   owner-scoped submission/result access remain the existing API's job.
 2. A free Render web service is on-demand, not an always-on worker. Official
    constraints include idle spin-down, arbitrary restarts, shared free hours,
    512 MB RAM and 0.1 CPU. Use one bounded solve at a time, durable state in
@@ -46,5 +54,14 @@ Current platform source: https://render.com/docs/free
 
 ## Release status
 
-Only the preflight tooling is changed. No application runtime, production
-feature flag, database object, Render plan or production deployment is changed.
+The preflight tooling, existing store/worker's optional job-type scope, SQL
+migration and remote tests are changed. Production application activation and
+Render plan changes remain out of scope for this narrow approval. Applying the
+migration requires a secure database-management credential; the existing
+PostgREST service credential is not a database DDL credential. Do not apply
+the entire historical migration chain or repair unrelated migration history.
+
+Qualification uses an ephemeral PostgreSQL 17 database in GitHub Actions to
+exercise actual SKIP LOCKED concurrency and role grants; it does not run
+PostgreSQL or browsers on the user's workstation. The test runner refuses
+non-localhost databases and any database name other than its CI fixture.
