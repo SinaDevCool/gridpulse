@@ -1,6 +1,7 @@
 """Bounded child execution owned by the existing job runner, not a second queue."""
 
 import json
+import logging
 import multiprocessing
 import time
 
@@ -19,6 +20,7 @@ def _calculate(connection, payload: dict) -> None:
             raise ValueError("Canonical result exceeds the qualified transport budget")
         connection.send_bytes(encoded)
     except Exception as error:
+        logging.getLogger(__name__).exception("Canonical child calculation failed")
         message = f"{type(error).__name__}: {error}"[:2000]
         connection.send_bytes(json.dumps({"error": message}).encode())
     finally:
