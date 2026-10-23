@@ -35,6 +35,8 @@ export function mapCanonicalComponentInputs(
   request.facility.fixed_auxiliary_power_mw = Math.max(0, scenario.nonGpuBaseLoadMw - reservedAuxiliary);
   request.policy.operating_target_mw = scenario.importLimitMw - scenario.safetyReserveMw;
   request.fleet_gpu_capacity = scenario.gpuCount;
+  request.idle_gpu_power_watts = scenario.gpuIdlePowerWatts;
+  request.policy.maximum_workload_reduction_fraction = scenario.maximumShiftablePercent / 100;
   request.workloads = request.workloads.map((job) => ({
     ...job,
     maximum_start_delay_minutes: Math.min(

@@ -22,6 +22,8 @@ describe("reviewed component-mode input mapping", () => {
     expect(mapped.ready).toBe(true);
     expect(mapped.request?.facility.import_limit_mw).toBe(scenario.importLimitMw);
     expect(mapped.request?.policy.operating_target_mw).toBe(scenario.importLimitMw - scenario.safetyReserveMw);
+    expect(mapped.request?.policy.maximum_workload_reduction_fraction).toBe(scenario.maximumShiftablePercent / 100);
+    expect(mapped.request?.idle_gpu_power_watts).toBe(scenario.gpuIdlePowerWatts);
     expect(mapped.request?.facility.fixed_auxiliary_power_mw).toBe(scenario.nonGpuBaseLoadMw - 3);
     expect(mapped.request?.batteries?.[0].terminal_target_mwh).toBe(10);
     expect(mapped.request?.batteries?.[0].initial_soc_mwh).toBe(
