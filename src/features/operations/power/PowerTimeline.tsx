@@ -112,6 +112,7 @@ export function PowerTimeline({
             <CartesianGrid stroke="var(--ops-chart-grid)" vertical={false} />
             <XAxis dataKey="timestamp" hide />
             <YAxis
+              tickFormatter={(value: number) => number.format(value)}
               domain={[
                 0,
                 Math.max(
@@ -222,6 +223,7 @@ export function PowerTimeline({
             <CartesianGrid stroke="var(--ops-chart-grid)" vertical={false} />
             <XAxis dataKey="timestamp" hide />
             <YAxis
+              tickFormatter={(value: number) => number.format(value)}
               yAxisId="dispatch"
               domain={[
                 -Math.max(1, ...data.map((point) => Math.abs(point.batteryPowerMw ?? 0))),
@@ -286,7 +288,14 @@ export function PowerTimeline({
               tickLine={false}
               axisLine={false}
             />
-            <YAxis yAxisId="soc" domain={[0, 100]} unit="%" tickLine={false} axisLine={false} />
+            <YAxis
+              yAxisId="soc"
+              domain={[0, 100]}
+              unit="%"
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={(value: number) => number.format(value)}
+            />
             <Tooltip content={<PowerTooltip panel="battery" targetMw={targetMw} />} />
             {Number.isFinite(protectedSocPercent) && visibility.visible("Protected reserve") ? (
               <>
