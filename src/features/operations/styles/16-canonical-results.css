@@ -48,3 +48,8 @@
   .operations-v2 .power-timeline-panel--battery { height: 11rem; min-height: 11rem; }
   .ops-canonical-inspector { align-items: stretch; }
 }
+/* Duration-proportional, keyboard-inspectable breach tracks share the returned horizon. */
+.ops-canonical-breach-track { display: flex; min-height: 24px; gap: 1px; }
+.ops-canonical-breach-track button { min-width: 0; border: 0; background: var(--ops-chart-grid); cursor: pointer; }
+.ops-canonical-breach-track button[data-breach="true"] { background: var(--ops-limit, #d33f55); }
+.ops-canonical-breach-track button:focus-visible { outline: 2px solid var(--ops-selection); outline-offset: 2px; z-index: 1; }

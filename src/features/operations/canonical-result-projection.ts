@@ -100,6 +100,8 @@ export function projectCanonicalAssessment(
   });
   return {
     identity,
+    assessment: result.assessment,
+    portfolio: result.portfolio,
     intervals: result.intervals,
     overview: { identity, power: result.facility.points, baseline: result.baseline_facility.points },
     compute: { identity, power: result.facility.points, workloads: jobs },

@@ -5,6 +5,7 @@ import { formatOperationsTime } from "./presentation";
 import { PowerTimeline } from "./power/PowerTimeline";
 import { PowerDataTable } from "./power/PowerDataTable";
 import { OperationsChartLegend, useChartVisibility } from "./visualization";
+import { CanonicalOverviewDetails } from "./CanonicalOverviewDetails";
 
 export function CanonicalAssessmentView({ assessment, view, timestamp, onSelect, preview, onPreview }: {
   assessment: CanonicalPresentation; view: OperationsView; timestamp: string; onSelect: (value: string) => void;
@@ -43,6 +44,7 @@ export function CanonicalAssessmentView({ assessment, view, timestamp, onSelect,
       {assessment.batteryAudit ? <span>SOC {formatPercent(selected.socPercent!)} · reserve {formatPercent(assessment.protectedSocPercent)} · maximum {formatPercent(assessment.batteryAudit.maximumSocPercent)}</span> : <span>No battery in this plan</span>}
     </div>
     {view === "compute" ? <CanonicalExecutionLanes assessment={assessment} timestamp={inspected} onSelect={onSelect} onPreview={onPreview} /> : null}
+    {view === "overview" ? <CanonicalOverviewDetails assessment={assessment} index={index} onSelect={onSelect} /> : null}
     <details><summary>How to read this assessment</summary>
       <p>Baseline import is the submitted reference. Facility demand is planned demand before battery response; grid import is after battery response. Peaks may occur at different times.</p>
       <p>Positive battery MW means discharge; negative means charging. SOC uses fixed health-adjusted capacity, not energy above reserve. Hourly intervals do not imply minute-level control.</p>
