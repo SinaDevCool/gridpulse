@@ -1,6 +1,6 @@
 import unittest
 import json
-from unittest.mock import Mock
+from unittest.mock import MagicMock
 from unittest.mock import patch
 import apply_scoped_claim as migration
 
@@ -43,7 +43,7 @@ class GuardedMigrationTests(unittest.TestCase):
     @patch.dict("os.environ", {"SUPABASE_ACCESS_TOKEN": "fixture", "SUPABASE_URL": "https://fixture.supabase.co"}, clear=True)
     def test_explicit_read_write_mode_is_not_left_to_api_defaults(self):
         api = migration.Management()
-        api.opener = Mock()
+        api.opener = MagicMock()
         api.opener.open.return_value.__enter__.return_value.read.return_value = b"[]"
         api.query("select 1")
         read = api.opener.open.call_args.args[0]
