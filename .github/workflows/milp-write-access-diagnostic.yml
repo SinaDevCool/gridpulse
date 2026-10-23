@@ -14,7 +14,39 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Verify Render key against the existing GridPulse service (GET only)
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+        run: |
+          python - <<'PY'
+          import json, os, sys, urllib.error, urllib.request
+          sys.path.insert(0, 'scripts')
+          from check_milp_storage import NoRedirect
+          key = os.environ.get('RENDER_API_KEY', '')
+          if not key:
+              raise SystemExit('BLOCKED: RENDER_API_KEY is not available to this repository workflow')
+          request = urllib.request.Request(
+              'https://api.render.com/v1/services/srv-dbdmpd6i0phs73abcuu0', method='GET',
+              headers={'Authorization': 'Bearer ' + key, 'Accept': 'application/json'})
+          try:
+              with urllib.request.build_opener(NoRedirect()).open(request, timeout=25) as response:
+                  raw = response.read(1_000_001)
+              if len(raw) > 1_000_000:
+                  raise ValueError('Response too large')
+              service = json.loads(raw)
+              if service.get('id') != 'srv-dbdmpd6i0phs73abcuu0' or service.get('ownerId') != 'tea-d95bm23tqb8s73elgd9g':
+                  raise ValueError('Service or workspace identity mismatch')
+          except urllib.error.HTTPError as error:
+              raise SystemExit('BLOCKED: Render credential check returned HTTP ' + str(error.code)) from None
+          except (OSError, ValueError, TypeError):
+              raise SystemExit('BLOCKED: Render credential could not be verified') from None
+          print(json.dumps({'render_secret_available': True, 'render_key_valid': True,
+              'intended_workspace_access_verified': True,
+              'existing_service_plan': service.get('serviceDetails', {}).get('plan'),
+              'write_permission_tested': False, 'service_changes_made': False}))
+          PY
       - name: Read transaction settings without changing them
+        if: always()
         env:
           SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
