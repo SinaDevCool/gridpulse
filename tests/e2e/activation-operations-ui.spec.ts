@@ -109,9 +109,10 @@ test("Power & Battery explains when dispatch is unnecessary", async ({ page }) =
 
   await expect(
     page.getByRole("heading", {
-      name: "No battery response is required for the selected interval",
+      name: "No discharge needed this interval",
     }),
   ).toBeVisible();
+  await page.getByText("Assessment context", { exact: true }).click();
   await expect(
     page.locator(".power-kpis").filter({ hasText: "Discharge time · full horizon" }),
   ).toContainText("Not required");

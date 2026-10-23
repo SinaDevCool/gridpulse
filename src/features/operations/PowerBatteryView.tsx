@@ -1,13 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Upload } from "lucide-react";
 import { useOperationsEvidenceStore } from "./hooks/evidence-store";
 import { useOpenInputs } from "./configuration/input-panel-context";
 import { selectPowerView } from "./power/select-power-view";
 import type { OperationsOverviewModel } from "./scenario-engine";
 import { formatMw } from "./formatting";
-import { OperationsSelect } from "./OperationsSelect";
 import { formatOperationsTime } from "./presentation";
-import { number, type EvidenceMode } from "./power/presentation";
+import { type EvidenceMode } from "./power/presentation";
 import { intervalLabel } from "./power/select-battery-workspace";
 import { EmptyEvidence } from "./power/primitives";
 import { PowerBalanceFlow } from "./power/PowerBalanceFlow";
@@ -17,6 +15,7 @@ import { PowerDataTable } from "./power/PowerDataTable";
 import { OperatingEnvelope } from "./power/OperatingEnvelope";
 import { SelectedBalance } from "./power/SelectedBalance";
 import { PowerResponseSummary } from "./power/PowerResponseSummary";
+import { PowerWorkspaceHeader } from "./power/PowerWorkspaceHeader";
 
 export function PowerBatteryView({
   model,
@@ -66,7 +65,6 @@ export function PowerBatteryView({
     mode === "scenario"
       ? workspace.events.filter((event) => visibleTimes.has(event.timestamp))
       : [];
-  const selectedIndex = series.findIndex((point) => point.timestamp === selectedPoint?.timestamp);
 
   return (
     <section
@@ -76,92 +74,23 @@ export function PowerBatteryView({
       <h2 id="power-title" className="sr-only">
         Power & Battery
       </h2>
-      <PowerResponseSummary
-        requiredMw={view.requiredMw}
-        batteryMw={view.batteryMw}
-        shortfallMw={view.shortfallMw}
-        constraint={selectedScenario.batteryConstraintCode}
-        headline={view.dispatchHeadline}
-        mode={mode}
-      />
-      <div className="power-toolbar">
-        <p className="operations-chart-purpose">
-          {mode === "scenario"
-            ? `Battery-only comparison · workload shifting excluded. Full-horizon assessment: ${workspace.targetMet ? "target met" : "target unmet"} · ${workspace.reserveProtected ? "reserve protected" : "reserve requirement not satisfied"}. Display windows never reset battery state.`
-            : "Uploaded observations only · missing battery evidence stays unknown. No dispatch constraint or backup autonomy is inferred."}
-        </p>
-        <button
-          type="button"
-          className="secondary-button"
-          onClick={() => openInputs(true)}
-          disabled={!hydrated}
-        >
-          <Upload aria-hidden="true" />
-          Connect evidence
-        </button>
-      </div>
-      <dl className="power-kpis ops-compact-facts">
-        <div>
-          <dt>Facility limit · assumption</dt>
-          <dd>{formatMw(limitMw)}</dd>
-        </div>
-        <div>
-          <dt>Safety target · assumption</dt>
-          <dd>{formatMw(targetMw)}</dd>
-        </div>
-        <div>
-          <dt>Discharge time · full horizon</dt>
-          <dd>
-            {mode === "historical"
-              ? "Not derivable"
-              : workspace.dischargeMinutes > 0
-                ? `${number.format(workspace.dischargeMinutes / 60)} h`
-                : "Not required"}
-          </dd>
-        </div>
-      </dl>
-      <div className="power-interval-control">
-        <OperationsSelect
-          name="power-interval"
-          label="Selected interval (UTC)"
-          value={selectedPoint?.timestamp ?? ""}
-          options={series.map((point) => ({
-            value: point.timestamp,
-            label: formatOperationsTime(point.timestamp),
-          }))}
-          onChange={setTimestamp}
-          disabled={!series.length}
-        />
-        <div className="battery-interval-stepper" aria-label="Interval navigation">
-          <button
-            type="button"
-            disabled={selectedIndex <= 0}
-            onClick={() => setTimestamp(series[selectedIndex - 1].timestamp)}
-          >
-            Previous interval
-          </button>
-          <button
-            type="button"
-            disabled={selectedIndex < 0 || selectedIndex >= series.length - 1}
-            onClick={() => setTimestamp(series[selectedIndex + 1].timestamp)}
-          >
-            Next interval
-          </button>
-        </div>
-      </div>
       <div className="battery-workspace-grid">
         <article className="power-timeline-card">
-          <header>
-            <div>
-              <p className="context-label">Battery Response & Reserve</p>
-              <h3>Facility Power & Battery Response</h3>
-            </div>
-          </header>
-          <p className="operations-chart-purpose">
-            Select a time to inspect power, reserve and constraints together. Positive battery MW
-            means discharge; negative means charge. SOC is the end-of-interval state in scenario
-            mode.
-          </p>
+          <PowerWorkspaceHeader
+            view={view}
+            mode={mode}
+            onSelect={setTimestamp}
+            onEvidence={() => openInputs(true)}
+            ready={hydrated}
+          />
+          <PowerResponseSummary
+            requiredMw={view.requiredMw}
+            batteryMw={view.batteryMw}
+            shortfallMw={view.shortfallMw}
+            constraint={selectedScenario.batteryConstraintCode}
+            headline={view.dispatchHeadline}
+            mode={mode}
+          />
           {series.length ? (
             <PowerTimeline
               previewing={timestamp !== pinnedTimestamp && preview != null}
@@ -193,8 +122,8 @@ export function PowerBatteryView({
                 ))
               ) : (
                 <small>
-                  No first-occurrence events in this display window. Full-horizon status remains
-                  above.
+                  No first-occurrence events in this display window. Full-horizon status remains in
+                  Assessment context.
                 </small>
               )}
             </div>
