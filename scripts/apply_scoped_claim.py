@@ -95,6 +95,7 @@ class Management:
 
     def query(self, query, *, write=False):
         path = "/database/query" if write else "/database/query/read-only"
+        print("Management phase: " + ("approved migration transaction" if write else "read-only schema verification"), flush=True)
         request = urllib.request.Request(self.base + path, method="POST",
             headers={"Authorization": "Bearer " + self.token, "Content-Type": "application/json"},
             data=json.dumps({"query": query}).encode())
@@ -141,6 +142,15 @@ def main():
         return 0
     except urllib.error.HTTPError as error:
         print("BLOCKED: management request returned HTTP " + str(error.code) + "; no automatic retry")
+        try:
+            payload = json.loads(error.read(4096))
+            detail = str(payload.get("message", payload.get("error", "No structured detail")))
+            for value in [os.environ.get("SUPABASE_ACCESS_TOKEN", ""), os.environ.get("SUPABASE_URL", "")]:
+                if value:
+                    detail = detail.replace(value, "[redacted]")
+            print("Management diagnostic: " + detail[:500])
+        except (ValueError, TypeError, AttributeError):
+            print("Management diagnostic unavailable")
     except (OSError, ValueError, KeyError, TypeError, IndexError):
         print("BLOCKED: management verification failed; inspect metadata before any retry")
     return 1
