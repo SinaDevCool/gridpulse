@@ -3,6 +3,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { buildSyntheticMilpRequest } from "./synthetic-milp-request";
 import { defaultOperationsScenario } from "./scenario-engine";
 import { selectCanonicalPresentation } from "./canonical-presentation";
+import { canonicalAssessmentFacts, canonicalPowerBalance } from "./canonical-overview";
 
 describe("public synthetic MILP model", () => {
   it("produces one bounded explicit model without invoking the heuristic", () => {
@@ -45,6 +46,13 @@ describe("public synthetic MILP model", () => {
     expect(assessment.projected.overview.identity).toBe(assessment.projected.compute.identity);
     expect(assessment.projected.compute.identity).toBe(assessment.projected.power.identity);
     expect(assessment.batteryAudit).not.toBeNull();
+    expect(canonicalAssessmentFacts(assessment)).toEqual({ recoveryComplete: true,
+      terminalTargetsMet: true, slaViolations: 0, importViolations: 0 });
+    for (let index = 0; index < assessment.points.length; index++) {
+      const balance = canonicalPowerBalance(assessment, index);
+      expect(balance).not.toBeNull();
+      expect(balance!.reconstructed).toBeCloseTo(balance!.actual, 4);
+    }
     expect(assessment.points[0].startingSocPercent).toBeCloseTo(defaultOperationsScenario.battery.initialSocPercent);
     for (const point of assessment.points) {
       expect(point.socPercent).toBeGreaterThanOrEqual(assessment.protectedSocPercent - 1e-5);

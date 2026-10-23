@@ -45,4 +45,18 @@ describe("canonical overview presentation arithmetic", () => {
     delete (a.projected.overview.baseline[0] as Record<string, unknown>).losses_mw;
     expect(canonicalPowerBalance(a, 0)).toBeNull();
   });
+  it("shows discrepancies rather than silently attributing them to workload savings", () => {
+    const { request, job } = fixture();
+    job.result_payload.result.baseline_facility.points[0].grid_import_mw = 90;
+    const balance = canonicalPowerBalance(selectCanonicalPresentation(job, request), 0)!;
+    expect(balance.reconstructed - balance.actual).toBeCloseTo(10);
+  });
+  it("accounts explicitly for non-export import clipping", () => {
+    const { request, job } = fixture();
+    job.result_payload.result.facility.points[0].onsite_generation_mw = 60;
+    job.result_payload.result.facility.points[0].grid_import_mw = 0;
+    const balance = canonicalPowerBalance(selectCanonicalPresentation(job, request), 0)!;
+    expect(balance.reconstructed).toBeCloseTo(0);
+    expect(balance.steps.find(step => step.label === "Export clipping")?.value).toBe(9);
+  });
 });

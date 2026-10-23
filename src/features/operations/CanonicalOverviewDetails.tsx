@@ -34,6 +34,14 @@ export function CanonicalOverviewDetails({ assessment: a, index, onSelect }: {
   return <section aria-label="MILP response explorer">
     <h3>Response explorer</h3>
     <p>Full-horizon comparison · same submitted model · not physical delivery</p>
+    <div className="ops-canonical-obligation-table"><table>
+      <caption>Returned plan comparison</caption>
+      <thead><tr><th scope="col">Response</th><th scope="col">Peak import</th><th scope="col">Above facility limit</th><th scope="col">Evidence</th></tr></thead>
+      <tbody><tr><th scope="row">Baseline</th><td>{formatMw(a.baselinePeakMw)}</td><td>{canonicalBreachMinutes(a, true)} min</td><td>Submitted reference</td></tr>
+        <tr><th scope="row">Battery + workload</th><td>{formatMw(a.planPeakMw)}</td><td>{canonicalBreachMinutes(a, false)} min</td><td>Accepted joint MILP replay</td></tr>
+        <tr><th scope="row">Battery only / workload only</th><td colSpan={3}>Not solved in this assessment. Separate qualified solves are required; heuristic comparisons are not substituted.</td></tr>
+      </tbody>
+    </table></div>
     <dl className="ops-canonical-summary">
       <div><dt>Peak safety-target margin</dt><dd>{formatMw(a.targetMw - a.planPeakMw)}</dd></div>
       <div><dt>Peak facility-limit margin</dt><dd>{formatMw(a.limitMw - a.planPeakMw)}</dd></div>
@@ -55,6 +63,7 @@ export function CanonicalOverviewDetails({ assessment: a, index, onSelect }: {
       <dl className="ops-canonical-summary">
         <div><dt>Recovery & completion</dt><dd>{flag(facts.recoveryComplete)}</dd></div>
         <div><dt>Declared SLA violations</dt><dd>{facts.slaViolations ?? "Unavailable"}</dd></div>
+        <div><dt>Import-limit violations</dt><dd>{facts.importViolations ?? "Unavailable"}</dd></div>
         <div><dt>Battery terminal target</dt><dd>{a.batteryAudit ? flag(facts.terminalTargetsMet) : "Not applicable"}</dd></div>
         <div><dt>Minimum modelled SOC</dt><dd>{a.batteryAudit ? formatPercent(Math.min(a.batteryAudit.initialSocPercent, ...a.points.map(point => point.socPercent!))) : "No battery"}</dd></div>
       </dl>

@@ -60,6 +60,7 @@ export function SignedPowerBalance({ steps, reconstructed, actual }: {
       >
         <svg
           viewBox={`0 0 ${width} 200`}
+          style={{ minWidth: width }}
           role="img"
           aria-label={`Selected interval power balance: ${steps.map((step) => `${step.label} ${formatMw(step.value)}`).join(", ")}. Positive effects increase grid import; negative effects reduce it.`}
         >
@@ -112,8 +113,7 @@ export function SignedPowerBalance({ steps, reconstructed, actual }: {
         </svg>
       </div>
       <figcaption>
-        Same-interval power balance · negative effects reduce import; charging and recovery increase
-        it.
+        Same-interval power balance · negative effects reduce import; positive effects increase it.
       </figcaption>
       {Math.abs(reconstructed - actual) > 0.1 ? (
         <p role="status">
