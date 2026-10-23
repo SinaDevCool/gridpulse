@@ -8,7 +8,8 @@ import {
   withRequestContext,
 } from "./server/observability/request-context.server";
 
-const SECURITY_HEADERS = buildSecurityHeaders(import.meta.env.VITE_SUPABASE_URL);
+const SECURITY_HEADERS = buildSecurityHeaders(import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.DEV || import.meta.env.VITE_OPERATIONS_MILP_DEMO === "true");
 
 export function withSecurityHeaders(response: Response): Response {
   const headers = new Headers(response.headers);

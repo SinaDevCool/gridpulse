@@ -49,6 +49,18 @@ jobs:
         run: |
           echo 'Non-production version URL only. No production deployment, customer-input solver, database provisioning or migrations.' >> "$GITHUB_STEP_SUMMARY"
           cat preview-upload.log >> "$GITHUB_STEP_SUMMARY"
+      - name: Verify the uploaded preview serves the exact candidate
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs';
+          const urls = readFileSync('preview-upload.log', 'utf8').match(/https:\/\/[a-zA-Z0-9.-]+\.workers\.dev/g) ?? [];
+          const url = urls.find(value => new URL(value).hostname.startsWith('milp-synthetic-')) ?? urls[0];
+          if (!url) throw new Error('No accessible Worker version URL was reported');
+          const response = await fetch(`${url}/operations`);
+          const html = await response.text();
+          if (!response.ok || !html.includes(process.env.GITHUB_SHA)) throw new Error('Preview candidate identity not verified');
+          console.log(`Verified synthetic-only preview: ${url}/operations`);
+          NODE
       - uses: actions/upload-artifact@v4
         if: always()
         with:

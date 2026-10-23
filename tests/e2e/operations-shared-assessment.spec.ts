@@ -3,6 +3,22 @@ import { openEvidenceInputs, openScenarioInputs } from "./operations-inputs";
 import type { OperationsOverviewModel } from "../../src/features/operations/scenario-engine";
 import { snapshot } from "../fixtures/canonical-demo";
 
+test("rejected synthetic MILP never becomes heuristic output", async ({ page }) => {
+  await page.route("https://gridpulse-milp-synthetic-pilot.onrender.com/assessment", route => route.fulfill({ status: 503,
+    headers: { "access-control-allow-origin": "*" }, contentType: "application/json", body: "{}" }));
+  await page.goto("/operations?view=overview&window=today&mode=scenario");
+  if (await page.locator('meta[name="gridpulse-environment"]').getAttribute("content") === "production") {
+    await expect(page.getByRole("combobox", { name: "Calculation method" })).toHaveCount(0);
+    return;
+  }
+  await page.getByRole("combobox", { name: "Calculation method" }).selectOption("milp-demo");
+  await expect(page.getByRole("alert")).toContainText("No heuristic result has been substituted");
+  await expect(page.locator("[data-assessment-id]")).toHaveCount(0);
+  await expect(page.getByRole("meter", { name: "Peak import after response" })).toHaveCount(0);
+  await page.getByRole("combobox", { name: "Calculation method" }).selectOption("heuristic");
+  await expect(page.getByRole("meter", { name: "Peak import after response" })).toBeVisible();
+});
+
 test("synthetic MILP shares one accepted result and inspection across all tabs", async ({ page }) => {
   const value = snapshot();
   const start = "2026-01-01T00:15:00Z";

@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
 import { buildSecurityHeaders, secureExternalOrigin } from "./security-headers";
 
 describe("security headers", () => {
+  it("permits only the exact demo origin when the synthetic feature is enabled", () => {
+    expect(buildSecurityHeaders(undefined, true)["content-security-policy"]).toContain("https://gridpulse-milp-synthetic-pilot.onrender.com");
+    expect(buildSecurityHeaders()["content-security-policy"]).not.toContain("onrender.com");
+    expect(buildSecurityHeaders(undefined, true)["content-security-policy"]).not.toContain("*.onrender.com");
+  });
   it("permits the configured Cloudflare beacon without wildcard script or connection origins", () => {
     const policy = buildSecurityHeaders()["content-security-policy"];
     expect(policy).toContain(
