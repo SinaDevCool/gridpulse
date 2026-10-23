@@ -218,11 +218,13 @@ test("window scopes every scenario timeline without truncating recovery calculat
       .getByLabel("Power & Battery", { exact: true })
       .locator(".operations-v2-chart-data tbody tr"),
   ).toHaveCount(16);
+  await page.getByText("Assessment context", { exact: true }).click();
   await expect(page.getByText("Discharge time · full horizon", { exact: true })).toBeVisible();
   await expect(page.locator(".power-interval-control")).toBeVisible();
   const intervalBounds = await page.locator(".power-interval-control").boundingBox();
-  const flowBounds = await page.locator(".battery-workspace-grid").boundingBox();
-  expect(intervalBounds!.y).toBeLessThan(flowBounds!.y);
+  const plotBounds = await page.locator(".power-timeline-panel--facility").boundingBox();
+  await expect(page.locator(".power-timeline-card .power-interval-control")).toHaveCount(1);
+  expect(intervalBounds!.y).toBeLessThan(plotBounds!.y);
 });
 
 test("power compliance does not hide unrecovered work and advanced contracts are secondary", async ({
