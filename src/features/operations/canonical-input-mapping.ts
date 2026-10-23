@@ -1,13 +1,17 @@
 import { facilityPlanRequestSchema, type FacilityPlanRequest } from "../analytics/contracts";
 import { operationsScenarioSchema, type OperationsScenario } from "./scenario-engine";
 
+export type ReviewedGpuCalibration = {
+  gpuModel: string; activeWatts: number; idleWatts: number; shiftablePercent: number;
+};
+
 /** Component accounting only. The caller must separately pass canonical readiness checks.
  * Reviewed profiles and individual-job permissions are never invented from aggregate sliders.
  */
 export function mapCanonicalComponentInputs(
   rawScenario: OperationsScenario,
   reviewed: FacilityPlanRequest,
-  calibration: { gpuModel: string; activeWatts: number; idleWatts: number; shiftablePercent: number },
+  calibration: ReviewedGpuCalibration,
 ) {
   const scenario = operationsScenarioSchema.parse(rawScenario);
   const request = structuredClone(facilityPlanRequestSchema.parse(reviewed));
