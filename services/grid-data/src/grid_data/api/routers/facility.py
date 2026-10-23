@@ -62,7 +62,9 @@ def build_router(
         user: UserIdentity = Depends(auth_dependency),
     ) -> JobAccepted:
         job, created = canonical_job(
-            owner_id=user.id, job_type="facility_plan", payload=request.model_dump(mode="json", exclude_none=True)
+            owner_id=user.id,
+            job_type="facility_plan",
+            payload=request.model_dump(mode="json", exclude_none=True),
         )
         if created:
             dispatch(background_tasks, dependencies.execution_for("facility_plan"), job.id)
