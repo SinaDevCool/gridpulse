@@ -3,6 +3,7 @@ import { formatMw } from "../formatting";
 import { formatOperationsTime } from "../presentation";
 import { workloadWindow } from "./select-compute-summary";
 import { OperationsChartLegend, useChartVisibility } from "../visualization";
+import { matchesReviewGroup, type ReviewGroup } from "./select-review-groups";
 
 export function WorkloadWindowLanes({
   jobs,
@@ -12,6 +13,7 @@ export function WorkloadWindowLanes({
   onSelect,
   selectedId,
   interactive,
+  reviewGroup = "all",
 }: {
   jobs: WorkloadDecision[];
   from: number;
@@ -20,10 +22,16 @@ export function WorkloadWindowLanes({
   onSelect: (id: string) => void;
   selectedId: string | null;
   interactive: boolean;
+  reviewGroup?: ReviewGroup;
 }) {
   const visibility = useChartVisibility();
   return (
-    <section className="compute-window-lanes" aria-label="Declared and proposed workload windows">
+    <section
+      id="compute-workload-windows"
+      tabIndex={-1}
+      className="compute-window-lanes"
+      aria-label="Declared and proposed workload windows"
+    >
       <header>
         <h4>Candidate workload windows</h4>
       </header>
@@ -61,6 +69,8 @@ export function WorkloadWindowLanes({
           <div
             className={`compute-window-lane ${selectedId === job.workloadId ? "selected" : ""}`}
             key={job.workloadId}
+            data-review-match={reviewGroup !== "all" && matchesReviewGroup(job, reviewGroup)}
+            data-workload-id={job.workloadId}
           >
             <button
               type="button"
@@ -78,6 +88,9 @@ export function WorkloadWindowLanes({
                     ? "Eligible—not selected"
                     : "Protected workload"}
               </span>
+              {reviewGroup !== "all" && matchesReviewGroup(job, reviewGroup) ? (
+                <small className="compute-lane-highlight-label">Highlighted</small>
+              ) : null}
             </button>
             <div className="compute-lane-track" aria-hidden="true">
               <i

@@ -47,19 +47,24 @@ export function ComputeReview({ workspace }: { workspace: ComputeWorkspaceContra
             key={item.id}
             type="button"
             disabled={!workspace.interactive || !item.count}
-            aria-pressed={open && group === item.id}
-            aria-controls="compute-review-queue"
+            aria-pressed={group === item.id}
+            aria-controls="compute-review-queue compute-workload-windows"
             onClick={() => {
               setGroup(item.id);
               workspace.setStatus("all");
               workspace.setQueuePage(0);
               setOpen(true);
+              requestAnimationFrame(() => {
+                const windows = document.getElementById("compute-workload-windows");
+                windows?.scrollIntoView({ block: "start", behavior: "instant" });
+                windows?.focus({ preventScroll: true });
+              });
             }}
           >
             <span className={`ops-group-mark ${item.id}`} aria-hidden="true" />
             <strong>{integer.format(item.count)}</strong>
             <span>{item.label}</span>
-            <small>Inspect →</small>
+            <small>Highlight windows ↑</small>
           </button>
         ))}
       </div>

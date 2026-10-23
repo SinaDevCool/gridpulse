@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ComputeWorkspaceContract } from "../compute-workspace-contract";
 import { ComputeChartData } from "./ComputeChartData";
 import { OperationsChartLegend, useChartVisibility } from "../visualization";
@@ -10,11 +10,16 @@ import { WorkloadWindowLanes } from "./WorkloadWindowLanes";
 import { selectComputeTimeline, workloadTimeRelationship } from "./select-compute-timeline";
 import { ComputeTimelinePlot } from "./ComputeTimelinePlot";
 import { IntervalNavigation } from "../inspection";
+import { useOperationsPresentationStore } from "../hooks/evidence-store";
+import { selectWorkloadWindows, selectReviewGroups } from "./select-review-groups";
 
 export function ComputeTimeline({ workspace }: { workspace: ComputeWorkspaceContract }) {
   const { displayModel, model, assessment, selectedId, setSelectedId } = workspace;
   const visibility = useChartVisibility(["GPU power", "Aggregate scenario response"]);
-  const [showEligible, setShowEligible] = useState(false);
+  const [showAll, setShowAll] = useState(false);
+  const [lanePage, setLanePage] = useState(0);
+  const [group, setGroup] = useOperationsPresentationStore().workloadDecisionGroup;
+  useEffect(() => setLanePage(0), [group]);
   const [facilityContext, setFacilityContext] = useState(false);
   const points = displayModel.intervals;
   const target = model.scenario.importLimitMw - model.scenario.safetyReserveMw;
@@ -25,13 +30,13 @@ export function ComputeTimeline({ workspace }: { workspace: ComputeWorkspaceCont
     points.findIndex((point) => point.timestamp === inspection.timestamp),
   );
   const current = data[currentIndex];
-  const pool = assessment.decisions.filter(
-    (job) => job.recommended || (showEligible && job.eligible),
+  const { jobs, inspected, pages, page, count, highlighted } = selectWorkloadWindows(
+    assessment.decisions,
+    group,
+    showAll,
+    lanePage,
+    selectedId,
   );
-  const jobs = pool.slice(0, 5);
-  const inspected = assessment.decisions.find((job) => job.workloadId === selectedId);
-  if (inspected && !jobs.some((job) => job.workloadId === inspected.workloadId))
-    jobs.push(inspected);
   if (!current) return <p role="status">No intervals available for workload inspection.</p>;
   const from = data[0].time,
     to = data.at(-1)!.end;
@@ -52,14 +57,20 @@ export function ComputeTimeline({ workspace }: { workspace: ComputeWorkspaceCont
         <button
           type="button"
           aria-pressed={!facilityContext}
-          onClick={() => setFacilityContext(false)}
+          onClick={() => {
+            setFacilityContext(false);
+            setShowAll(true);
+          }}
         >
           Workload reduction
         </button>
         <button
           type="button"
           aria-pressed={facilityContext}
-          onClick={() => setFacilityContext(true)}
+          onClick={() => {
+            setFacilityContext(true);
+            setShowAll(true);
+          }}
         >
           Facility context
         </button>
@@ -149,11 +160,32 @@ export function ComputeTimeline({ workspace }: { workspace: ComputeWorkspaceCont
       <label className="compute-show-eligible">
         <input
           type="checkbox"
-          checked={showEligible}
-          onChange={(event) => setShowEligible(event.target.checked)}
+          disabled={!workspace.interactive}
+          checked={showAll || group !== "all"}
+          onChange={(event) => {
+            setShowAll(event.target.checked);
+            setLanePage(0);
+            if (!event.target.checked) setGroup("all");
+          }}
         />
-        Show eligible workload windows
+        Show all workload windows
       </label>
+      <div className="compute-window-selection" role="status">
+        {group === "all"
+          ? `${count} workload windows · no group highlighted`
+          : `${highlighted} highlighted · ${selectReviewGroups(assessment.decisions).find((item) => item.id === group)?.label}`}
+        {group !== "all" ? (
+          <button
+            type="button"
+            onClick={() => {
+              setShowAll(true);
+              setGroup("all");
+            }}
+          >
+            Clear highlighting
+          </button>
+        ) : null}
+      </div>
       <WorkloadWindowLanes
         jobs={jobs}
         from={from}
@@ -162,9 +194,20 @@ export function ComputeTimeline({ workspace }: { workspace: ComputeWorkspaceCont
         onSelect={setSelectedId}
         selectedId={selectedId}
         interactive={workspace.interactive}
+        reviewGroup={group}
       />
-      {pool.length > 5 ? (
-        <p>Showing 5 windows. Open the workload queue to inspect all {pool.length}.</p>
+      {pages > 1 ? (
+        <nav aria-label="Workload window pages">
+          <button type="button" disabled={page === 0} onClick={() => setLanePage(page - 1)}>
+            Previous windows
+          </button>
+          <span>
+            Page {page + 1} of {pages} · {count} workloads
+          </span>
+          <button type="button" disabled={page === pages - 1} onClick={() => setLanePage(page + 1)}>
+            Next windows
+          </button>
+        </nav>
       ) : null}
       <ComputeChartData
         pinnedTimestamp={inspection.pinnedTimestamp}

@@ -2,6 +2,63 @@ import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { openScenarioInputs, openComputeQueue } from "./operations-inputs";
 
+for (const width of [390, 1440])
+  test(`review groups highlight linked workload windows at ${width}px`, async ({ page }, info) => {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.goto("/operations?view=compute");
+    const slider = page.getByRole("slider", { name: /Inspect time/ });
+    await expect(slider).toBeEnabled();
+    await slider.fill("32");
+    for (const theme of ["dark", "light"]) {
+      const toggle = page.getByRole("button", {
+        name: new RegExp(`Theme: ${theme === "dark" ? "light" : "dark"}`),
+      });
+      if (await toggle.count()) await toggle.click();
+      for (const [label, count] of [
+        ["Other eligible workloads", 3],
+        ["Candidates for review", 1],
+        ["Protected workloads", 1],
+      ] as const) {
+        const group = page.getByRole("button", { name: new RegExp(`${count} ${label}`) });
+        await group.focus();
+        await group.press("Enter");
+        await expect(group).toHaveAttribute("aria-pressed", "true");
+        await expect(page.locator("#compute-workload-windows")).toBeFocused();
+        await expect(page.locator(".compute-window-lane")).toHaveCount(5);
+        await expect(page.locator('.compute-window-lane[data-review-match="true"]')).toHaveCount(
+          count,
+        );
+        await expect(
+          page.getByRole("combobox", { name: "Decision group", exact: true }),
+        ).toHaveValue(
+          label === "Other eligible workloads"
+            ? "eligible"
+            : label === "Protected workloads"
+              ? "protected"
+              : "candidate",
+        );
+        await expect(slider).toHaveValue("32");
+        await expect(page.locator(".compute-decision-headline")).toContainText("3.6 MW");
+      }
+      await expect(page.locator('.compute-window-lane[data-review-match="true"]')).toContainText(
+        "Production inference",
+      );
+      await page.screenshot({
+        path: info.outputPath(`linked-groups-${width}-${theme}.png`),
+        fullPage: true,
+      });
+      await page.getByRole("button", { name: "Clear highlighting" }).click();
+      await expect(page.locator('.compute-window-lane[data-review-match="true"]')).toHaveCount(0);
+      await expect(page.locator(".compute-window-lane")).toHaveCount(5);
+      await page.getByLabel("Show all workload windows").uncheck();
+      await expect(page.locator(".compute-window-lane")).toHaveCount(1);
+      await page.getByRole("button", { name: "Facility context", exact: true }).click();
+      await expect(page.locator(".compute-window-lane")).toHaveCount(5);
+      await page.getByRole("button", { name: "Workload reduction", exact: true }).click();
+      await expect(page.locator(".compute-window-lane")).toHaveCount(5);
+    }
+  });
+
 test("compute starts with visual summary and linked windows, not a queue or recommendation panel", async ({
   page,
 }) => {
@@ -35,8 +92,8 @@ test("shared time cursor, optional overlays and eligible windows work with keybo
   await expect(slider).toBeEnabled();
   await slider.press("End");
   await expect(slider).toHaveAttribute("aria-valuetext", "23:45 UTC");
-  await page.getByLabel("Show eligible workload windows").check();
-  await expect(page.locator(".compute-window-lane")).toHaveCount(4);
+  await page.getByLabel("Show all workload windows").check();
+  await expect(page.locator(".compute-window-lane")).toHaveCount(5);
   await page.getByRole("button", { name: "Facility context", exact: true }).click();
   await page.getByRole("button", { name: /^GPU power MW/ }).click();
   await page.getByRole("button", { name: /^Aggregate scenario response MW/ }).click();
@@ -84,7 +141,7 @@ test("time, workload, timing legends and interval facts stay coordinated without
   await expect(table.getByRole("columnheader", { name: "GPU Power (MW)" })).toBeVisible();
   await page.getByRole("button", { name: "Close workload details" }).click();
   await page.getByRole("button", { name: /1 Protected workloads/ }).click();
-  await page.locator(".compute-lane-title").click();
+  await page.locator(".compute-lane-title").filter({ hasText: "Embedding refresh" }).click();
   await expect(page.getByText("Selected workload is hidden by the queue filters.")).toBeVisible();
   await page.getByRole("button", { name: "Reveal selected workload" }).click();
   await expect(page.getByRole("combobox", { name: "Decision group", exact: true })).toHaveValue(
@@ -129,7 +186,7 @@ for (const width of [390, 768, 1280, 1920])
       });
       if (await toggle.count()) await toggle.click();
       await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
-      await page.getByLabel("Show eligible workload windows").check();
+      await page.getByLabel("Show all workload windows").check();
       const result = await new AxeBuilder({ page })
         .include(".operations-v2")
         .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
