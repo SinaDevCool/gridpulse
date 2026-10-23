@@ -75,11 +75,18 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   for (const theme of ["light", "dark"]) {
     await page.evaluate(value => document.documentElement.dataset.theme = value, theme);
     expect((await new AxeBuilder({ page }).include(".ops-canonical").analyze()).violations).toEqual([]);
+    await result.getByLabel("Operating summary", { exact: true }).scrollIntoViewIfNeeded();
+    await page.screenshot({ path: `test-results/canonical-summary-${theme}.png` });
+    await explorer.locator(".ops-waterfall").scrollIntoViewIfNeeded();
+    await page.screenshot({ path: `test-results/canonical-balance-${theme}.png` });
     await result.locator(".power-timeline-panel").first().scrollIntoViewIfNeeded();
     await page.screenshot({ path: `test-results/canonical-${theme}.png`, fullPage: true });
   }
-  await page.getByRole("link", { name: "Power & Battery", exact: true }).click();
   await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
+  await explorer.locator(".ops-waterfall").scrollIntoViewIfNeeded();
+  await page.screenshot({ path: "test-results/canonical-overview-mobile.png" });
+  await page.getByRole("link", { name: "Power & Battery", exact: true }).click();
   for (const panel of await panels.all()) expect((await panel.boundingBox())!.height).toBeGreaterThan(140);
   expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
   await panels.last().scrollIntoViewIfNeeded();
