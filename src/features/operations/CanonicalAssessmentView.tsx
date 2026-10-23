@@ -6,11 +6,17 @@ import { PowerTimeline } from "./power/PowerTimeline";
 import { PowerDataTable } from "./power/PowerDataTable";
 import { OperationsChartLegend, useChartVisibility } from "./visualization";
 import { CanonicalOperatingSummary, CanonicalOverviewDetails } from "./CanonicalOverviewDetails";
+import { useState } from "react";
+import { InspectionRange } from "./overview/InspectionRange";
 
 export function CanonicalAssessmentView({ assessment, view, timestamp, onSelect, preview, onPreview }: {
   assessment: CanonicalPresentation; view: OperationsView; timestamp: string; onSelect: (value: string) => void;
   preview: string | null; onPreview: (value: string | null) => void;
 }) {
+  const identity = assessment.projected.identity.resultFingerprint;
+  const [range, setRange] = useState<{ identity: string; startIndex: number; endIndex: number } | null>(null);
+  const activeRange = range?.identity === identity ? range : null;
+  const displayed = view === "overview" && activeRange ? assessment.points.slice(activeRange.startIndex, activeRange.endIndex + 1) : assessment.points;
   const inspected = preview ?? timestamp;
   const selected = assessment.points.find(point => point.timestamp === inspected) ?? assessment.points[0];
   const index = assessment.points.indexOf(selected);
@@ -35,7 +41,13 @@ export function CanonicalAssessmentView({ assessment, view, timestamp, onSelect,
     <button type="button" className="secondary-button" onClick={() => onSelect(assessment.points.reduce((peak, point) => point.gridImportMw > peak.gridImportMw ? point : peak).timestamp)}>Inspect plan peak</button>
     </div>
     <p role="status">{formatOperationsTime(selected.timestamp)} · grid import {formatMw(selected.gridImportMw)} · battery {formatMw(selected.batteryPowerMw ?? 0)}</p>
-    <PowerTimeline data={assessment.points} limitMw={assessment.limitMw} targetMw={assessment.targetMw}
+    {view === "overview" ? <div>
+      <InspectionRange model={{ intervals: assessment.points.map(point => ({ timestamp: point.timestamp, label: formatOperationsTime(point.timestamp) })) }}
+        range={activeRange} setInspectionRange={value => setRange({ identity, ...value })} inspection={{ select: onSelect }} />
+      {activeRange ? <button type="button" className="secondary-button" onClick={() => setRange(null)}>Reset inspection range</button> : null}
+      <p className="ops-canonical-status">Chart range only · peak summary, completion & battery checks retain the full horizon</p>
+    </div> : null}
+    <PowerTimeline data={displayed} limitMw={assessment.limitMw} targetMw={assessment.targetMw}
       protectedSocPercent={assessment.protectedSocPercent} selectedTimestamp={inspected}
       onSelect={onSelect} mode="scenario" previewing={preview !== null} variant={view === "power" && assessment.batteryAudit ? "battery" : view === "compute" ? "compute" : "overview"}
       showConstraints={false} maximumSocPercent={assessment.batteryAudit?.maximumSocPercent} />

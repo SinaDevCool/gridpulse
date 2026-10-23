@@ -1,15 +1,14 @@
-import type { OperationsInterval } from "../scenario-engine";
 export type DemandKey =
   "baselineDemandMw" | "batteryDemandMw" | "workloadDemandMw" | "combinedDemandMw";
 /** Explicit interval durations preserve gaps; this never recalculates dispatch. */
-export function selectBreachSpans(points: OperationsInterval[], key: DemandKey, limit: number) {
+export function selectBreachSpans<T extends { timestamp: string; durationMinutes?: number }>(points: T[], key: keyof T, limit: number) {
   const spans: { start: number; end: number; timestamp: string; minutes: number }[] = [];
   for (const point of points) {
     const start = Date.parse(point.timestamp);
     if (
       !Number.isFinite(start) ||
       !(point.durationMinutes && point.durationMinutes > 0) ||
-      point[key] <= limit
+      typeof point[key] !== "number" || !Number.isFinite(point[key]) || Number(point[key]) <= limit
     )
       continue;
     const end = start + point.durationMinutes * 60_000;

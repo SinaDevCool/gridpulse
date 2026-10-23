@@ -1,11 +1,10 @@
-import type { OperationsOverviewModel } from "../scenario-engine";
 export function InspectionRange({
   model,
   range,
   setInspectionRange,
   inspection,
 }: {
-  model: OperationsOverviewModel;
+  model: { intervals: { timestamp: string; label: string }[] };
   range: { startIndex: number; endIndex: number } | null;
   setInspectionRange: (range: { startIndex: number; endIndex: number }) => void;
   inspection: { select: (timestamp: string) => void };

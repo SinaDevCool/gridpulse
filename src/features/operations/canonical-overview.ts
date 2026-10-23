@@ -1,5 +1,6 @@
 import type { CanonicalPresentation } from "./canonical-presentation";
 import type { PowerBalanceStep } from "./overview/SignedResponseDiagram";
+import { selectBreachSpans } from "./overview/select-breach-spans";
 
 /** Presentation arithmetic only. No scheduling, optimisation or feasibility inference. */
 export function canonicalPowerBalance(a: CanonicalPresentation, index: number) {
@@ -36,8 +37,8 @@ export function canonicalPowerBalance(a: CanonicalPresentation, index: number) {
 }
 
 export function canonicalBreachMinutes(a: CanonicalPresentation, baseline: boolean) {
-  return a.points.reduce((minutes, point) => minutes +
-    ((baseline ? point.baselineDemandMw! : point.gridImportMw) > a.limitMw + 0.01 ? point.durationMinutes! : 0), 0);
+  return selectBreachSpans(a.points, baseline ? "baselineDemandMw" : "gridImportMw", a.limitMw + .01)
+    .reduce((sum, span) => sum + span.minutes, 0);
 }
 
 export function canonicalAssessmentFacts(a: CanonicalPresentation) {

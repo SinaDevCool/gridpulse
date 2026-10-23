@@ -67,8 +67,11 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await explorer.getByText(/Explain selected interval/).click();
   await expect(explorer.getByRole("img", { name: /Selected interval power balance/ })).toBeVisible();
   await expect(explorer.getByText(/Balance discrepancy/)).toHaveCount(0);
-  await explorer.getByRole("button", { name: "Baseline, 00:00 UTC, within limit", exact: true }).click();
-  await expect(result).toHaveAttribute("data-inspected-time", "2026-09-26T00:00:00.000Z");
+  await result.getByText("Set inspection range", { exact: true }).click();
+  await result.getByLabel("Range start", { exact: true }).selectOption("2");
+  await expect(result).toHaveAttribute("data-inspected-time", "2026-09-26T02:00:00.000Z");
+  await expect(result.getByRole("meter")).toHaveAttribute("aria-valuenow", "51");
+  await result.getByRole("button", { name: "Reset inspection range", exact: true }).click();
   for (const theme of ["light", "dark"]) {
     await page.evaluate(value => document.documentElement.dataset.theme = value, theme);
     expect((await new AxeBuilder({ page }).include(".ops-canonical").analyze()).violations).toEqual([]);
