@@ -5,6 +5,8 @@ import { formatOperationsTime } from "../presentation";
 import { humanConstraint, type HistoricalPoint } from "./presentation";
 
 export type BatteryTimelinePoint = {
+  baselineDemandMw?: number;
+  workloadPowerMw?: number;
   timestamp: string;
   label: string;
   endTimestamp: string | null;

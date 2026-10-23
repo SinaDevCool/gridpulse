@@ -44,5 +44,11 @@ describe("public synthetic MILP model", () => {
     expect(assessment.jobs).toHaveLength(5);
     expect(assessment.projected.overview.identity).toBe(assessment.projected.compute.identity);
     expect(assessment.projected.compute.identity).toBe(assessment.projected.power.identity);
+    expect(assessment.batteryAudit).not.toBeNull();
+    expect(assessment.points[0].startingSocPercent).toBeCloseTo(defaultOperationsScenario.battery.initialSocPercent);
+    for (const point of assessment.points) {
+      expect(point.socPercent).toBeGreaterThanOrEqual(assessment.protectedSocPercent - 1e-5);
+      expect(point.socPercent).toBeLessThanOrEqual(assessment.batteryAudit!.maximumSocPercent + 1e-5);
+    }
   });
 });
