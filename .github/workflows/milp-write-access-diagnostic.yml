@@ -1,0 +1,31 @@
+name: Diagnose MILP database write access (read only)
+on:
+  push:
+    branches: [codex/production-milp-runtime]
+    paths: [.github/workflows/milp-write-access-diagnostic.yml]
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Read transaction settings without changing them
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+        run: |
+          python - <<'PY'
+          import json, os, sys
+          sys.path.insert(0, 'scripts')
+          from apply_scoped_claim import Management
+          api = Management()
+          rows = api.query("select current_setting('transaction_read_only') as transaction_read_only, current_setting('default_transaction_read_only') as default_transaction_read_only, pg_catalog.pg_is_in_recovery() as in_recovery, current_user as database_role", write=True)
+          print(json.dumps({'settings': rows, 'sql_changes_made': False,
+              'render_api_key_configured': bool(os.environ.get('RENDER_API_KEY'))}))
+          PY
