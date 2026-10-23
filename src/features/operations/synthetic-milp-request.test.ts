@@ -6,7 +6,8 @@ import { defaultOperationsScenario } from "./scenario-engine";
 describe("public synthetic MILP model", () => {
   it("produces one bounded explicit model without invoking the heuristic", () => {
     const request = buildSyntheticMilpRequest(defaultOperationsScenario);
-    expect(request.intervals).toHaveLength(96);
+    expect(request.intervals).toHaveLength(24);
+    expect(request.intervals.every(interval => interval.duration_minutes === 60)).toBe(true);
     expect(request.workloads).toHaveLength(5);
     expect(request.requirement.truth_class).toBe("synthetic_demonstration");
     expect(request.requirement.operator_confirmed).toBe(false);
@@ -14,7 +15,7 @@ describe("public synthetic MILP model", () => {
     expect(request.requirement.required_reduction_mw).toBe(0);
     expect(request.requirement.firm_limit_mw).toBe(defaultOperationsScenario.importLimitMw);
     expect(request.policy.operating_target_mw).toBe(defaultOperationsScenario.importLimitMw - defaultOperationsScenario.safetyReserveMw);
-    expect((request.policy.event_intervals as boolean[]).filter(Boolean)).toHaveLength(12);
+    expect((request.policy.event_intervals as boolean[]).filter(Boolean)).toHaveLength(3);
     expect((request.policy.event_intervals as boolean[])[0]).toBe(false);
     expect(request.batteries?.[0].terminal_target_mwh).toBe(request.batteries?.[0].initial_soc_mwh);
     expect(request.workloads[4].minimum_power_cap_mw).toBe(request.workloads[4].nominal_power_mw);

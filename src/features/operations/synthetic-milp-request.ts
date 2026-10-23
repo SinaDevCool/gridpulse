@@ -2,7 +2,7 @@ import { mapCanonicalComponentInputs } from "./canonical-input-mapping";
 import { operationsScenarioSchema, type OperationsScenario } from "./scenario-engine";
 import type { FacilityPlanRequest } from "../analytics/contracts";
 
-export const SYNTHETIC_MODEL_VERSION = "operations-public-mock-v1";
+export const SYNTHETIC_MODEL_VERSION = "operations-public-mock-hourly-v1";
 const truth = "synthetic_demonstration";
 const origin = Date.parse("2026-09-26T00:00:00Z");
 const at = (minutes: number) => new Date(origin + minutes * 60_000).toISOString();
@@ -18,7 +18,7 @@ export function buildSyntheticMilpRequest(raw: OperationsScenario): FacilityPlan
     ["Foundation model training", "training", .28, 360, 480, 1380],
     ["Vision fine-tuning", "fine_tuning", .18, 420, 240, 1140],
     ["Embedding refresh", "data_processing", .12, 420, 120, 1080],
-    ["Model evaluation", "batch_inference", .09, 450, 90, 1050],
+    ["Model evaluation", "batch_inference", .09, 480, 120, 1080],
     ["Production inference", "critical_inference", .28, 0, 1440, 1440],
   ] as const;
   const workloads = specifications.map(([name, kind, fraction, start, duration, deadline]) => {
@@ -55,7 +55,7 @@ export function buildSyntheticMilpRequest(raw: OperationsScenario): FacilityPlan
       recovery_ramp_mw_per_minute: null, rebound_limit_mw: null, reactive_power_requirement: null,
       evidence_cutoff: at(-1440), truth_class: truth, operator_confirmed: false,
       capacity_is_lower_bound: false, feasible_within_conditional_envelope: true },
-    intervals: Array.from({ length: 96 }, (_, index) => ({ index, start: at(index * 15), duration_minutes: 15 })),
+    intervals: Array.from({ length: 24 }, (_, index) => ({ index, start: at(index * 60), duration_minutes: 60 })),
     facility: { facility_id: "public-mock", site_id: "public-mock-site", import_limit_mw: scenario.importLimitMw,
       cooling_baseline_mw: 0, cooling_load_factor: .2, networking_power_mw: 0, storage_power_mw: 0,
       fixed_auxiliary_power_mw: scenario.nonGpuBaseLoadMw, ups_loss_fraction: .025,
@@ -72,11 +72,11 @@ export function buildSyntheticMilpRequest(raw: OperationsScenario): FacilityPlan
       terminal_target_mwh: b.usableEnergyMwh * b.stateOfHealthPercent / 100 * b.initialSocPercent / 100 }] : [],
     // Illustrative morning event only. Recovery outside it still respects the
     // full-horizon operating target, workload deadlines and terminal battery SOC.
-    policy: { event_intervals: Array.from({ length: 96 }, (_, index) => index >= 28 && index < 40), battery_temperature_c: Array(96).fill(20),
+    policy: { event_intervals: Array.from({ length: 24 }, (_, index) => index >= 7 && index < 10), battery_temperature_c: Array(24).fill(20),
       solver_time_limit_seconds: 30, maximum_variables: 20000, allow_cooling_reduction: false },
-    economics: { import_price_eur_per_mwh: Array(96).fill(100), peak_import_eur_per_mw: 1000 },
+    economics: { import_price_eur_per_mwh: Array(24).fill(100), peak_import_eur_per_mw: 1000 },
     cooling: { baseline_power_mw: 0, maximum_reduction_mw: 0, thermal_capacity_mwh: 0 },
-    onsite_generation_mw: Array(96).fill(0),
+    onsite_generation_mw: Array(24).fill(0),
   };
   const mapped = mapCanonicalComponentInputs(scenario, request, {
     gpuModel: scenario.gpuModel, activeWatts: scenario.gpuActivePowerWatts,
