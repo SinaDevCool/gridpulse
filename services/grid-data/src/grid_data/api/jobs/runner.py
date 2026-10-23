@@ -40,6 +40,8 @@ class JobRunner:
         self._store.update(job_id, status=JobStatus.RUNNING, started_at=context.clock())
         LOGGER.info("analytics job started", extra={"job_id": str(job_id)})
         try:
+            context.validate_job(job)
+            checkpoint()
             result = calculation_for(job.job_type)(context, job)
             checkpoint()
             self._store.update(

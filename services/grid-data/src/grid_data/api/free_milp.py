@@ -12,6 +12,7 @@ import os
 import re
 import threading
 from contextlib import asynccontextmanager
+from uuid import UUID
 
 from fastapi import Depends, HTTPException
 from starlette.responses import JSONResponse
@@ -21,7 +22,7 @@ from grid_data.api.auth import authenticated_user
 from grid_data.api.jobs.context import JobContext
 from grid_data.api.jobs.publication import ServiceJobPublisher
 from grid_data.api.jobs.runner import JobRunner
-from grid_data.api.models import FacilityPlanRequest, UserIdentity
+from grid_data.api.models import AnalyticsJob, FacilityPlanRequest, UserIdentity
 from grid_data.api.request_limits import OperationsBodyLimit
 from grid_data.api.store import SupabaseJobStore
 from grid_data.api.worker import run_once
@@ -48,8 +49,9 @@ def validate_free_request(request: FacilityPlanRequest) -> None:
 
 
 class OnDemandWorker:
-    def __init__(self, store, executor):
+    def __init__(self, store, executor, owners=frozenset()):
         self.store, self.executor = store, executor
+        self.owners = owners
         self.stop = threading.Event()
         self.wake = threading.Event()
         self.thread = threading.Thread(target=self._run, name="operations-milp", daemon=True)
@@ -61,6 +63,10 @@ class OnDemandWorker:
             self.wake.clear()
             while not self.stop.is_set():
                 try:
+                    # Do not claim or exhaust retries for another account's backlog.
+                    if self.store.has_foreign_pending(self.owners, "facility_plan"):
+                        LOGGER.error("Scoped worker paused: unrelated pending facility jobs")
+                        break
                     if not run_once(self.store, self.executor, self.worker_id, job_types=SCOPE):
                         break
                 except Exception:
@@ -121,7 +127,7 @@ class OperationsRoutesOnly:
 
 
 def create_free_app(
-    *, store=None, executor=None, auth=authenticated_user, enabled=None, emails=None
+    *, store=None, executor=None, auth=authenticated_user, enabled=None, emails=None, owners=None
 ):
     active = enabled if enabled is not None else os.environ.get("GRIDPULSE_MILP_ENABLED") == "true"
     allowed = frozenset(
@@ -134,24 +140,41 @@ def create_free_app(
         if email.strip()
     )
     url, key = os.environ.get("SUPABASE_URL", ""), os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+    owner_ids = frozenset(
+        UUID(str(owner).strip()) for owner in (
+            owners if owners is not None
+            else os.environ.get("GRIDPULSE_MILP_ALLOWED_OWNER_IDS", "").split(",")
+        ) if str(owner).strip()
+    )
     configured = bool(
-        allowed
+        allowed and owner_ids
         and ((url and key and os.environ.get("SUPABASE_PUBLISHABLE_KEY")) or store is not None)
     )
     job_store = store or SupabaseJobStore(url, key)
     stop = threading.Event()
+
+    def execution_policy(job: AnalyticsJob):
+        if job.job_type != "facility_plan" or job.owner_id not in owner_ids:
+            raise ValueError("Facility job is outside the approved runtime account scope")
+        request = FacilityPlanRequest.model_validate(job.input_payload)
+        try:
+            validate_free_request(request)
+        except HTTPException as error:
+            raise ValueError(str(error.detail)) from None
+
     context = JobContext(
-        ServiceJobPublisher(url, key), shutdown_requested=stop.is_set, wall_clock_limit_seconds=90
+        ServiceJobPublisher(url, key), shutdown_requested=stop.is_set,
+        wall_clock_limit_seconds=90, validate_job=execution_policy,
     )
     runner = executor or JobRunner(job_store, context)
-    worker = OnDemandWorker(job_store, runner)
+    worker = OnDemandWorker(job_store, runner, owner_ids)
 
     auth_depends = Depends(auth)
 
     def gated_auth(user: UserIdentity = auth_depends):
         if not active or not configured:
             raise HTTPException(503, "Production MILP is disabled or not configured")
-        if not user.email or user.email.casefold() not in allowed:
+        if not user.email or user.email.casefold() not in allowed or user.id not in owner_ids:
             raise HTTPException(403, "MILP is not enabled for this account")
         return user
 

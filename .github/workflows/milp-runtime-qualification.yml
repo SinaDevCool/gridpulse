@@ -30,3 +30,21 @@ jobs:
       - name: Source lint
         if: always()
         run: python -m ruff check services/grid-data/src/grid_data/api
+      - name: Inspect approved account and pending backlog (read only)
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          python - <<'PY'
+          import json, sys
+          sys.path.insert(0, 'scripts')
+          from apply_scoped_claim import Management
+          api = Management()
+          rows = api.query("select count(*) as matched, count(*) filter (where email_confirmed_at is not null) as confirmed from auth.users where lower(email) = 'sina.khedmati@outlook.de'", write=False)
+          backlog = api.query("select count(*) as pending, count(*) filter (where owner_id not in (select id from auth.users where lower(email) = 'sina.khedmati@outlook.de')) as foreign_pending from public.analytics_jobs where job_type='facility_plan' and status in ('queued','running')", write=False)
+          print(json.dumps({'approved_account': rows, 'facility_backlog': backlog, 'changes_made': False}))
+          if len(rows) != 1 or rows[0]['matched'] != 1 or rows[0]['confirmed'] != 1:
+              raise SystemExit('Approved account must exist uniquely and have a confirmed email before activation')
+          if backlog[0]['foreign_pending']:
+              raise SystemExit('Activation blocked by unrelated pending facility jobs; no jobs were claimed')
+          PY

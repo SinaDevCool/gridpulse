@@ -49,6 +49,7 @@ class JobStore(JobSubmissionStore, JobExecutionStore, Protocol):
     def get(self, job_id: UUID, owner_id: UUID) -> AnalyticsJob | None: ...
     def list_for_owner(self, owner_id: UUID, limit: int = 100) -> list[AnalyticsJob]: ...
     def has_pending(self, owner_id: UUID, job_type: str) -> bool: ...
+    def has_foreign_pending(self, owners: frozenset[UUID], job_type: str) -> bool: ...
     def claim(
         self,
         worker_id: str,
@@ -121,6 +122,14 @@ class InMemoryJobStore:
             return any(
                 job.owner_id == owner_id
                 and job.job_type == job_type
+                and job.status in {JobStatus.QUEUED, JobStatus.RUNNING}
+                for job in self._jobs.values()
+            )
+
+    def has_foreign_pending(self, owners: frozenset[UUID], job_type: str) -> bool:
+        with self._lock:
+            return any(
+                job.owner_id not in owners and job.job_type == job_type
                 and job.status in {JobStatus.QUEUED, JobStatus.RUNNING}
                 for job in self._jobs.values()
             )
@@ -337,6 +346,18 @@ class SupabaseJobStore:
             "GET",
             "/analytics_jobs?select=id&owner_id=eq."
             f"{urllib.parse.quote(str(owner_id))}&job_type=eq.{urllib.parse.quote(job_type)}"
+            "&status=in.(queued,running)&limit=1",
+        )
+        return bool(rows)
+
+    def has_foreign_pending(self, owners: frozenset[UUID], job_type: str) -> bool:
+        if not owners:
+            return True
+        owner_filter = ",".join(sorted(str(owner) for owner in owners))
+        rows = self._publisher.request(
+            "GET",
+            "/analytics_jobs?select=id&owner_id=not.in.("
+            f"{owner_filter})&job_type=eq.{urllib.parse.quote(job_type)}"
             "&status=in.(queued,running)&limit=1",
         )
         return bool(rows)

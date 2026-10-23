@@ -102,8 +102,9 @@ def test_remote_pending_probe_never_downloads_payloads():
     ],
 )
 def test_account_gate_protects_job_reads(enabled, email, expected):
+    owner = uuid4()
     def identity():
-        return UserIdentity(id=uuid4(), email=email)
+        return UserIdentity(id=owner, email=email)
 
     app = create_free_app(
         store=InMemoryJobStore(),
@@ -111,6 +112,7 @@ def test_account_gate_protects_job_reads(enabled, email, expected):
         enabled=enabled,
         emails=["allowed@example.invalid"],
         auth=identity,
+        owners=[owner],
     )
     with TestClient(app) as client:
         assert client.get("/v1/jobs").status_code == expected
@@ -118,3 +120,46 @@ def test_account_gate_protects_job_reads(enabled, email, expected):
         health = client.get("/healthz").json()
         assert health["physical_dispatch_authorized"] is False
         assert health["maximum_concurrent_solves"] == 1
+
+
+def test_foreign_pending_jobs_pause_worker_without_claiming():
+    from grid_data.api.free_milp import OnDemandWorker
+
+    store = InMemoryJobStore()
+    other_job = store.create(AnalyticsJob(owner_id=uuid4(), job_type="facility_plan"))
+    executor = Mock()
+    worker = OnDemandWorker(store, executor, frozenset({uuid4()}))
+    worker.start()
+    worker.close()
+    assert store.get_internal(other_job.id).status == JobStatus.QUEUED
+    executor.execute.assert_not_called()
+
+
+def test_execution_policy_runs_for_recovered_job_before_calculation(monkeypatch):
+    from grid_data.api.jobs.context import JobContext
+    from grid_data.api.jobs.runner import JobRunner
+
+    owner = uuid4()
+    store = InMemoryJobStore()
+    job = store.create(AnalyticsJob(owner_id=owner, job_type="facility_plan"))
+    calculation = Mock()
+    monkeypatch.setattr("grid_data.api.jobs.runner.calculation_for", lambda kind: calculation)
+    policy = Mock(side_effect=ValueError("Request exceeds qualified execution budget"))
+    executor = JobRunner(store, JobContext(Mock(), validate_job=policy))
+    run_once(store, executor, "recovered-attempt", job_types=("facility_plan",))
+    assert store.get_internal(job.id).status == JobStatus.FAILED
+    assert "execution budget" in store.get_internal(job.id).error
+    policy.assert_called_once()
+    calculation.assert_not_called()
+
+
+def test_foreign_probe_is_bounded_and_read_only():
+    store = SupabaseJobStore("https://unused.invalid", "unused")
+    store._publisher = Mock()
+    store._publisher.request.return_value = []
+    assert store.has_foreign_pending(frozenset(), "facility_plan")
+    store._publisher.request.assert_not_called()
+    assert not store.has_foreign_pending(frozenset({uuid4()}), "facility_plan")
+    method, path = store._publisher.request.call_args.args
+    assert method == "GET"
+    assert "select=id" in path and "limit=1" in path and "owner_id=not.in." in path
