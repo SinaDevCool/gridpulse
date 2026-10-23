@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { buildSyntheticMilpRequest } from "./synthetic-milp-request";
 import { defaultOperationsScenario } from "./scenario-engine";
+import { selectCanonicalPresentation } from "./canonical-presentation";
 
 describe("public synthetic MILP model", () => {
   it("produces one bounded explicit model without invoking the heuristic", () => {
@@ -35,5 +36,13 @@ describe("public synthetic MILP model", () => {
     const request = buildSyntheticMilpRequest({ ...defaultOperationsScenario,
       battery: { ...defaultOperationsScenario.battery, available: false } });
     expect(request.batteries).toEqual([]);
+  });
+  it.skipIf(!process.env.GRIDPULSE_MILP_JOB_INPUT)("accepts the real hosted result into the shared three-tab projection", () => {
+    const job: unknown = JSON.parse(readFileSync(process.env.GRIDPULSE_MILP_JOB_INPUT!, "utf8"));
+    const assessment = selectCanonicalPresentation(job, buildSyntheticMilpRequest(defaultOperationsScenario));
+    expect(assessment.points).toHaveLength(24);
+    expect(assessment.jobs).toHaveLength(5);
+    expect(assessment.projected.overview.identity).toBe(assessment.projected.compute.identity);
+    expect(assessment.projected.compute.identity).toBe(assessment.projected.power.identity);
   });
 });
