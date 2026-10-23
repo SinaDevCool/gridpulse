@@ -28,6 +28,7 @@ import {
 } from "../features/analytics/job-contracts";
 import { supabase } from "../integrations/supabase/client";
 import { pollDelay } from "../features/analytics/poll-delay";
+import { publicMilpClient, publicMilpEnabled } from "./public-milp-session";
 
 export { type AnalyticsJob, type AnalyticsJobStatus } from "../features/analytics/job-contracts";
 
@@ -48,10 +49,14 @@ function analyticsBaseUrl(): string {
 }
 
 async function authenticatedRequest(path: string, init?: RequestInit): Promise<unknown> {
+  const publicRequest = publicMilpEnabled() &&
+    (path === "/v1/jobs/facility-plan" || /^\/v1\/jobs\/[a-f0-9-]{36}(\/cancel)?$/i.test(path));
   const {
     data: { session },
-  } = await supabase.auth.getSession();
-  if (!session) throw new Error("Analytics jobs are unavailable in the public Finder");
+  } = await (publicRequest ? publicMilpClient() : supabase).auth.getSession();
+  if (!session) throw new Error(publicRequest
+    ? "No public visitor session. Public submissions remain disabled while bot protection is paused."
+    : "Analytics jobs are unavailable in the public Finder");
 
   const response = await fetch(`${analyticsBaseUrl()}${path}`, {
     ...init,
