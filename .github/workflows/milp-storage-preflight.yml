@@ -1,0 +1,35 @@
+name: MILP production storage preflight (read only)
+
+on:
+  push:
+    branches: [codex/production-milp-preflight]
+    paths:
+      - scripts/check_milp_storage.py
+      - scripts/test_milp_storage.py
+      - .github/workflows/milp-storage-preflight.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: milp-production-storage-preflight
+  cancel-in-progress: false
+
+jobs:
+  inspect:
+    if: github.repository == 'SinaDevCool/gridpulse' && github.ref == 'refs/heads/codex/production-milp-preflight'
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test read-only safeguards (no dependencies or browser)
+        run: python -m unittest discover -s scripts -p test_milp_storage.py -v
+      - name: Inspect existing storage metadata without writes or customer rows
+        run: python scripts/check_milp_storage.py
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
