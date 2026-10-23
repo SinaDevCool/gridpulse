@@ -35,10 +35,12 @@ describe("staged canonical cross-tab projection", () => {
   });
   it("reconciles submitted resources and timestamps instead of accepting matching lengths", () => {
     const value = payload();
-    const request = {
+    const request: FacilityPlanRequest = {
+      schema_version: "gridpulse-facility-plan-request-v1", portfolio_id: "p",
+      requirement: {}, facility: {}, profiles: [{}], policy: {}, economics: {}, cooling: {},
       workloads: [{ workload_id: "job" }], batteries: [{ resource_id: "battery" }],
       intervals: value.result.intervals,
-    } as FacilityPlanRequest;
+    };
     expect(() => projectCanonicalAssessment(value, hash, request)).not.toThrow();
     expect(() => projectCanonicalAssessment(value, hash, { ...request, batteries: [] })).toThrow(/resources/);
     expect(() => projectCanonicalAssessment(value, hash, { ...request, workloads: [{ workload_id: "another" }] })).toThrow(/resources/);
