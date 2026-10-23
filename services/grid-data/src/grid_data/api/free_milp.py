@@ -65,7 +65,9 @@ class OnDemandWorker:
             while not self.stop.is_set():
                 try:
                     # Do not claim or exhaust retries for another account's backlog.
-                    if getattr(self.store, "access_scope", "private") != "public" and self.store.has_foreign_pending(self.owners, "facility_plan"):
+                    if getattr(
+                        self.store, "access_scope", "private"
+                    ) != "public" and self.store.has_foreign_pending(self.owners, "facility_plan"):
                         LOGGER.error("Scoped worker paused: unrelated pending facility jobs")
                         break
                     if not run_once(self.store, self.executor, self.worker_id, job_types=SCOPE):
@@ -93,7 +95,9 @@ class OperationsRoutesOnly:
     async def __call__(self, scope, receive, send):
         path = scope.get("path", "")
         if self.public_access and path.rstrip("/") == "/v1/jobs":
-            await JSONResponse({"detail": "Job listing is unavailable to public visitors"}, 404)(scope, receive, send)
+            await JSONResponse({"detail": "Job listing is unavailable to public visitors"}, 404)(
+                scope, receive, send
+            )
             return
         if (
             scope["type"] == "http"
@@ -132,10 +136,21 @@ class OperationsRoutesOnly:
 
 
 def create_free_app(
-    *, store=None, executor=None, auth=None, enabled=None, emails=None, owners=None,
-    public_access=None, submission_guard=None,
+    *,
+    store=None,
+    executor=None,
+    auth=None,
+    enabled=None,
+    emails=None,
+    owners=None,
+    public_access=None,
+    submission_guard=None,
 ):
-    public_access = public_access if public_access is not None else os.environ.get("GRIDPULSE_PUBLIC_MILP_ENABLED") == "true"
+    public_access = (
+        public_access
+        if public_access is not None
+        else os.environ.get("GRIDPULSE_PUBLIC_MILP_ENABLED") == "true"
+    )
     active = enabled if enabled is not None else os.environ.get("GRIDPULSE_MILP_ENABLED") == "true"
     allowed = frozenset(
         email.strip().casefold()
@@ -156,17 +171,26 @@ def create_free_app(
         )
         if str(owner).strip()
     )
-    configured = bool((public_access or (allowed and owner_ids))
-        and ((url and key and os.environ.get("SUPABASE_PUBLISHABLE_KEY")) or store is not None))
-    job_store = store or SupabaseJobStore(url, key, access_scope="public" if public_access else "private")
+    configured = bool(
+        (public_access or (allowed and owner_ids))
+        and ((url and key and os.environ.get("SUPABASE_PUBLISHABLE_KEY")) or store is not None)
+    )
+    job_store = store or SupabaseJobStore(
+        url, key, access_scope="public" if public_access else "private"
+    )
     if public_access and getattr(job_store, "access_scope", None) != "public":
         raise ValueError("Public mode requires a public-scoped durable store")
     stop = threading.Event()
 
     def execution_policy(job: AnalyticsJob):
-        if job.job_type != "facility_plan" or (public_access and
-            (job.access_scope != "public" or not anonymous_owner(job.owner_id))) or (
-                not public_access and job.owner_id not in owner_ids):
+        if (
+            job.job_type != "facility_plan"
+            or (
+                public_access
+                and (job.access_scope != "public" or not anonymous_owner(job.owner_id))
+            )
+            or (not public_access and job.owner_id not in owner_ids)
+        ):
             raise ValueError("Facility job is outside the approved runtime account scope")
         request = FacilityPlanRequest.model_validate(job.input_payload)
         try:
@@ -234,9 +258,14 @@ def create_free_app(
     @app.exception_handler(PublicationRequestError)
     async def publication_failure(request, error):
         if error.status_code == 429:
-            return JSONResponse({"detail": "MILP capacity or quota reached. Retry later."}, 429,
-                headers={"Retry-After": "60"})
-        return JSONResponse({"detail": "Job storage unavailable; resume by job ID before retrying."}, 503)
+            return JSONResponse(
+                {"detail": "MILP capacity or quota reached. Retry later."},
+                429,
+                headers={"Retry-After": "60"},
+            )
+        return JSONResponse(
+            {"detail": "Job storage unavailable; resume by job ID before retrying."}, 503
+        )
 
     @app.get("/healthz")
     def health():
@@ -248,7 +277,9 @@ def create_free_app(
             "hosting": "free_on_demand",
             "maximum_concurrent_solves": 1,
             "public_access": public_access,
-            "submissions_enabled": bool(active and configured and (not public_access or submission_guard is not None)),
+            "submissions_enabled": bool(
+                active and configured and (not public_access or submission_guard is not None)
+            ),
         }
 
     return app

@@ -63,11 +63,15 @@ def session_user(authorization: str | None = Header(default=None)) -> UserIdenti
             raise ValueError("Subject mismatch")
         token_role = claims["role"]
         if not isinstance(token_role, str):
-            raise ValueError("Role missing")
+            raise TypeError("Role missing")
     except (ValueError, KeyError, IndexError, TypeError) as error:
         raise HTTPException(401, "Invalid session claims") from error
-    return UserIdentity(id=payload["id"], email=payload.get("email"),
-        is_anonymous=payload.get("is_anonymous") is True, token_role=token_role)
+    return UserIdentity(
+        id=payload["id"],
+        email=payload.get("email"),
+        is_anonymous=payload.get("is_anonymous") is True,
+        token_role=token_role,
+    )
 
 
 def authenticated_user(authorization: str | None = Header(default=None)) -> UserIdentity:
@@ -83,8 +87,10 @@ def anonymous_owner(owner_id) -> bool:
     key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
     if not url or not key:
         raise RuntimeError("Owner verification is not configured")
-    request = urllib.request.Request(url + "/auth/v1/admin/users/" + str(owner_id),
-        headers={"apikey": key, "authorization": "Bearer " + key})
+    request = urllib.request.Request(
+        url + "/auth/v1/admin/users/" + str(owner_id),
+        headers={"apikey": key, "authorization": "Bearer " + key},
+    )
     with urllib.request.urlopen(request, timeout=10) as response:
         raw = response.read(128_001)
     if len(raw) > 128_000:

@@ -311,7 +311,9 @@ class SupabaseJobStore:
 
     def create(self, job: AnalyticsJob) -> AnalyticsJob:
         if self.access_scope == "public":
-            rows = self._publisher.request("POST", "/rpc/create_public_facility_job", {"p_job": _job_row(job)})
+            rows = self._publisher.request(
+                "POST", "/rpc/create_public_facility_job", {"p_job": _job_row(job)}
+            )
             return AnalyticsJob.model_validate(rows[0])
         rows = self._publisher.request(
             "POST",
@@ -347,7 +349,11 @@ class SupabaseJobStore:
             "/analytics_jobs?select=*&owner_id=eq."
             f"{urllib.parse.quote(str(owner_id))}&order=created_at.desc&limit={safe_limit}",
         )
-        return [job for row in rows if (job := AnalyticsJob.model_validate(row)).access_scope == self.access_scope]
+        return [
+            job
+            for row in rows
+            if (job := AnalyticsJob.model_validate(row)).access_scope == self.access_scope
+        ]
 
     def has_pending(self, owner_id: UUID, job_type: str) -> bool:
         rows = self._publisher.request(
@@ -437,10 +443,16 @@ class SupabaseJobStore:
         if self.access_scope == "public":
             if scope != ("facility_plan",):
                 raise ValueError("Public worker requires an explicit facility-plan scope")
-            rows = self._publisher.request("POST", "/rpc/claim_analytics_job", {
-                "p_worker_id": worker_id, "p_lease_seconds": lease_seconds,
-                "p_job_types": ["facility_plan"], "p_access_scope": "public",
-            })
+            rows = self._publisher.request(
+                "POST",
+                "/rpc/claim_analytics_job",
+                {
+                    "p_worker_id": worker_id,
+                    "p_lease_seconds": lease_seconds,
+                    "p_job_types": ["facility_plan"],
+                    "p_access_scope": "public",
+                },
+            )
             return AnalyticsJob.model_validate(rows[0]) if rows else None
         if scope is not None:
             rows = self._publisher.request(

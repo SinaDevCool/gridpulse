@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { acceptCanonicalJobResult } from "./canonical-job-result";
+import { selectCanonicalPresentation } from "./canonical-presentation";
 import type { FacilityPlanRequest } from "../analytics/contracts";
 
 const submitted: FacilityPlanRequest = {
@@ -29,6 +30,24 @@ function job() {
   };
 }
 describe("accepted canonical job boundary", () => {
+  it("presents the accepted no-battery trajectory without inventing SOC or a schedule", () => {
+    const value = job();
+    const request = { ...submitted, facility: { import_limit_mw: 2 } };
+    value.input_payload.facility = request.facility;
+    const power = { ...value.result_payload.result.facility.points[0], it_power_mw: 0.7,
+      cooling_power_mw: 0.1, auxiliary_power_mw: 0.1, losses_mw: 0.1, onsite_generation_mw: 0 };
+    value.result_payload.result.facility.points = [power];
+    const execution = { interval_index: 0, status: "running", gpu_count: 8, power_mw: 0.7,
+      remaining_work_hours: 0, checkpoint_or_restart: false };
+    value.result_payload.result.portfolio.workload_trajectories[0].points = [execution];
+    const presentation = selectCanonicalPresentation(value, request);
+    expect(presentation.points[0].socPercent).toBeNull();
+    expect(presentation.points[0].gridImportMw).toBe(1);
+    expect(presentation.jobs[0].points[0].power_mw).toBe(0.7);
+    expect(presentation.projected.overview.identity).toBe(presentation.projected.power.identity);
+    value.result_payload.result.assessment.feasible = false;
+    expect(() => selectCanonicalPresentation(value, request)).toThrow();
+  });
   it("normalizes transport defaults and reuses the common projection", () => {
     const accepted = acceptCanonicalJobResult(job(), submitted);
     expect(accepted.overview.identity).toBe(accepted.power.identity);
