@@ -1,12 +1,26 @@
 import { describe, expect, it } from "vitest";
 import {
   c3RequestSchema,
+  facilityPlanRequestSchema,
   facilityUncertaintyRequestSchema,
   jobAcceptedSchema,
   marketQualificationRequestSchema,
   rollingFacilityPlanRequestSchema,
 } from "./contracts";
 describe("analytics contracts", () => {
+  it("preserves battery, onsite and fleet constraints at the canonical boundary", () => {
+    const payload = {
+      schema_version: "gridpulse-facility-plan-request-v1", portfolio_id: "portfolio",
+      requirement: {}, intervals: [{}], facility: {}, workloads: [{}], profiles: [{}],
+      policy: {}, economics: {}, cooling: {},
+      batteries: [{ resource_id: "battery", maximum_charge_power_mw: 2 }],
+      onsite_generation_mw: [0], fleet_gpu_capacity: 125000,
+      fatigue_limits: null,
+    };
+    expect(facilityPlanRequestSchema.parse(payload)).toEqual(payload);
+    expect(facilityPlanRequestSchema.safeParse({ ...payload, ignored_input: 5 }).success).toBe(false);
+    expect(facilityPlanRequestSchema.safeParse({ ...payload, fleet_gpu_capacity: -1 }).success).toBe(false);
+  });
   it("accepts the API job acknowledgement", () =>
     expect(
       jobAcceptedSchema.parse({ job_id: "00000000-0000-4000-8000-000000000001", status: "queued" })

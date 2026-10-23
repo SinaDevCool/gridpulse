@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 
 from grid_data.api.jobs.publication import JobPublisher
+from grid_data.api.models import AnalyticsJob
 from grid_data.network_study import NetworkStudyProvider
 
 
@@ -30,3 +31,6 @@ class JobContext:
     checkpoint: Callable[[], None] = lambda: None
     clock: Callable[[], datetime] = utc_now
     network_provider: Callable[[], NetworkStudyProvider] = network_provider
+    shutdown_requested: Callable[[], bool] = lambda: False
+    wall_clock_limit_seconds: float = 630
+    validate_job: Callable[[AnalyticsJob], None] = lambda job: None

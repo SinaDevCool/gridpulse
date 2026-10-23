@@ -1,0 +1,47 @@
+name: Bounded MILP runtime qualification
+on:
+  push:
+    branches: [codex/production-milp-runtime]
+    paths:
+      - services/grid-data/**
+      - .github/workflows/milp-runtime-qualification.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: milp-runtime-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: python -m pip install -e './services/grid-data[api,dev]'
+      - name: Focused runtime and recovery checks first
+        run: python -m pytest services/grid-data/tests/test_public_milp_api.py services/grid-data/tests/test_free_milp.py services/grid-data/tests/test_durable_jobs.py services/grid-data/tests/test_isolated_facility.py -q
+      - name: Source style diagnostic
+        if: always()
+        run: python -m ruff format --diff services/grid-data/src/grid_data/api services/grid-data/tests/test_free_milp.py
+      - name: Source lint
+        if: always()
+        run: python -m ruff check services/grid-data/src/grid_data/api
+      - name: Verify deployed public database boundary (read only)
+        if: always()
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          python - <<'PY'
+          import json, sys
+          sys.path.insert(0, 'scripts')
+          from apply_scoped_claim import Management
+          api = Management()
+          from apply_public_milp import verify
+          verify(api)
+          print(json.dumps({'public_boundary_verified': True, 'email_allowlist_required': False, 'changes_made': False}))
+          PY

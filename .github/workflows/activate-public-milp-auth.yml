@@ -1,0 +1,25 @@
+name: Activate qualified restricted visitor access
+on:
+  push:
+    branches: [codex/production-milp-runtime]
+    paths: [scripts/activate_public_milp_auth.py, .github/workflows/activate-public-milp-auth.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: public-milp-auth-configuration
+  cancel-in-progress: false
+jobs:
+  activate-auth:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python scripts/activate_public_milp_auth.py
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}

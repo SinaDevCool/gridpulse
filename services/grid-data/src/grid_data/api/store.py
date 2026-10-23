@@ -11,6 +11,18 @@ from grid_data.api.models import AnalyticsJob, JobStatus
 from grid_data.publish import SupabasePublisher
 
 
+def _validated_job_types(job_types: tuple[str, ...] | None) -> tuple[str, ...] | None:
+    if job_types is None:
+        return None
+    if (
+        not isinstance(job_types, tuple)
+        or not 1 <= len(job_types) <= 20
+        or any(not isinstance(item, str) or not item.strip() for item in job_types)
+    ):
+        raise ValueError("Invalid analytics job-type scope")
+    return tuple(sorted(set(job_types)))
+
+
 class JobSubmissionStore(Protocol):
     def create(self, job: AnalyticsJob) -> AnalyticsJob: ...
     def find_by_fingerprint(
@@ -36,7 +48,15 @@ class JobStore(JobSubmissionStore, JobExecutionStore, Protocol):
     def execution_lease(self, worker_id: str, attempt: int): ...
     def get(self, job_id: UUID, owner_id: UUID) -> AnalyticsJob | None: ...
     def list_for_owner(self, owner_id: UUID, limit: int = 100) -> list[AnalyticsJob]: ...
-    def claim(self, worker_id: str, lease_seconds: int = 120) -> AnalyticsJob | None: ...
+    def has_pending(self, owner_id: UUID, job_type: str) -> bool: ...
+    def has_foreign_pending(self, owners: frozenset[UUID], job_type: str) -> bool: ...
+    def claim(
+        self,
+        worker_id: str,
+        lease_seconds: int = 120,
+        *,
+        job_types: tuple[str, ...] | None = None,
+    ) -> AnalyticsJob | None: ...
     def heartbeat(self, job_id: UUID, worker_id: str, lease_seconds: int = 120) -> AnalyticsJob: ...
     def checkpoint(self, job_id: UUID, worker_id: str, payload: dict) -> AnalyticsJob: ...
     def request_cancel(self, job_id: UUID, owner_id: UUID) -> AnalyticsJob | None: ...
@@ -97,6 +117,24 @@ class InMemoryJobStore:
             )
             return [job.model_copy(deep=True) for job in jobs[:limit]]
 
+    def has_pending(self, owner_id: UUID, job_type: str) -> bool:
+        with self._lock:
+            return any(
+                job.owner_id == owner_id
+                and job.job_type == job_type
+                and job.status in {JobStatus.QUEUED, JobStatus.RUNNING}
+                for job in self._jobs.values()
+            )
+
+    def has_foreign_pending(self, owners: frozenset[UUID], job_type: str) -> bool:
+        with self._lock:
+            return any(
+                job.owner_id not in owners
+                and job.job_type == job_type
+                and job.status in {JobStatus.QUEUED, JobStatus.RUNNING}
+                for job in self._jobs.values()
+            )
+
     def find_by_fingerprint(
         self, owner_id: UUID, job_type: str, input_fingerprint: str
     ) -> AnalyticsJob | None:
@@ -147,12 +185,20 @@ class InMemoryJobStore:
             self._jobs[job_id] = updated
             return updated.model_copy(deep=True)
 
-    def claim(self, worker_id: str, lease_seconds: int = 120) -> AnalyticsJob | None:
+    def claim(
+        self,
+        worker_id: str,
+        lease_seconds: int = 120,
+        *,
+        job_types: tuple[str, ...] | None = None,
+    ) -> AnalyticsJob | None:
+        scope = _validated_job_types(job_types)
         now = datetime.now(timezone.utc)
         with self._lock:
             for current in self._jobs.values():
                 if (
                     current.attempt_count >= 3
+                    and (scope is None or current.job_type in scope)
                     and current.status == JobStatus.RUNNING
                     and current.lease_expires_at
                     and current.lease_expires_at <= now
@@ -165,6 +211,7 @@ class InMemoryJobStore:
                     job
                     for job in self._jobs.values()
                     if not job.cancellation_requested
+                    and (scope is None or job.job_type in scope)
                     and job.attempt_count < 3
                     and (
                         job.status == JobStatus.QUEUED
@@ -247,7 +294,10 @@ class InMemoryJobStore:
 
 
 class SupabaseJobStore:
-    def __init__(self, url: str, service_role_key: str) -> None:
+    def __init__(self, url: str, service_role_key: str, *, access_scope: str = "private") -> None:
+        if access_scope not in {"private", "public"}:
+            raise ValueError("Invalid analytics access scope")
+        self.access_scope = access_scope
         self._publisher = SupabasePublisher(url, service_role_key)
         self._execution = threading.local()
 
@@ -260,6 +310,11 @@ class SupabaseJobStore:
             self._execution.lease = None
 
     def create(self, job: AnalyticsJob) -> AnalyticsJob:
+        if self.access_scope == "public":
+            rows = self._publisher.request(
+                "POST", "/rpc/create_public_facility_job", {"p_job": _job_row(job)}
+            )
+            return AnalyticsJob.model_validate(rows[0])
         rows = self._publisher.request(
             "POST",
             "/rpc/create_analytics_job_once",
@@ -275,7 +330,8 @@ class SupabaseJobStore:
                 f"{urllib.parse.quote(str(job_id))}&owner_id=eq.{urllib.parse.quote(str(owner_id))}"
             ),
         )
-        return AnalyticsJob.model_validate(rows[0]) if rows else None
+        job = AnalyticsJob.model_validate(rows[0]) if rows else None
+        return job if job and job.access_scope == self.access_scope else None
 
     def get_internal(self, job_id: UUID) -> AnalyticsJob:
         rows = self._publisher.request(
@@ -293,7 +349,32 @@ class SupabaseJobStore:
             "/analytics_jobs?select=*&owner_id=eq."
             f"{urllib.parse.quote(str(owner_id))}&order=created_at.desc&limit={safe_limit}",
         )
-        return [AnalyticsJob.model_validate(row) for row in rows]
+        return [
+            job
+            for row in rows
+            if (job := AnalyticsJob.model_validate(row)).access_scope == self.access_scope
+        ]
+
+    def has_pending(self, owner_id: UUID, job_type: str) -> bool:
+        rows = self._publisher.request(
+            "GET",
+            "/analytics_jobs?select=id&owner_id=eq."
+            f"{urllib.parse.quote(str(owner_id))}&job_type=eq.{urllib.parse.quote(job_type)}"
+            "&status=in.(queued,running)&limit=1",
+        )
+        return bool(rows)
+
+    def has_foreign_pending(self, owners: frozenset[UUID], job_type: str) -> bool:
+        if not owners:
+            return True
+        owner_filter = ",".join(sorted(str(owner) for owner in owners))
+        rows = self._publisher.request(
+            "GET",
+            "/analytics_jobs?select=id&owner_id=not.in.("
+            f"{owner_filter})&job_type=eq.{urllib.parse.quote(job_type)}"
+            "&status=in.(queued,running)&limit=1",
+        )
+        return bool(rows)
 
     def find_by_fingerprint(
         self, owner_id: UUID, job_type: str, input_fingerprint: str
@@ -306,7 +387,8 @@ class SupabaseJobStore:
             "&status=not.in.(failed,cancelled)"
             "&order=created_at.desc&limit=1",
         )
-        return AnalyticsJob.model_validate(rows[0]) if rows else None
+        job = AnalyticsJob.model_validate(rows[0]) if rows else None
+        return job if job and job.access_scope == self.access_scope else None
 
     def update(
         self,
@@ -350,7 +432,39 @@ class SupabaseJobStore:
             raise KeyError(f"analytics job {job_id} does not exist")
         return AnalyticsJob.model_validate(rows[0])
 
-    def claim(self, worker_id: str, lease_seconds: int = 120) -> AnalyticsJob | None:
+    def claim(
+        self,
+        worker_id: str,
+        lease_seconds: int = 120,
+        *,
+        job_types: tuple[str, ...] | None = None,
+    ) -> AnalyticsJob | None:
+        scope = _validated_job_types(job_types)
+        if self.access_scope == "public":
+            if scope != ("facility_plan",):
+                raise ValueError("Public worker requires an explicit facility-plan scope")
+            rows = self._publisher.request(
+                "POST",
+                "/rpc/claim_analytics_job",
+                {
+                    "p_worker_id": worker_id,
+                    "p_lease_seconds": lease_seconds,
+                    "p_job_types": ["facility_plan"],
+                    "p_access_scope": "public",
+                },
+            )
+            return AnalyticsJob.model_validate(rows[0]) if rows else None
+        if scope is not None:
+            rows = self._publisher.request(
+                "POST",
+                "/rpc/claim_analytics_job",
+                {
+                    "p_worker_id": worker_id,
+                    "p_lease_seconds": lease_seconds,
+                    "p_job_types": list(scope),
+                },
+            )
+            return AnalyticsJob.model_validate(rows[0]) if rows else None
         rows = self._publisher.request(
             "POST",
             "/rpc/claim_analytics_job",
@@ -390,6 +504,8 @@ class SupabaseJobStore:
         return AnalyticsJob.model_validate(rows[0])
 
     def request_cancel(self, job_id: UUID, owner_id: UUID) -> AnalyticsJob | None:
+        if self.access_scope == "public" and self.get(job_id, owner_id) is None:
+            return None
         rows = self._publisher.request(
             "POST",
             "/rpc/cancel_analytics_job",

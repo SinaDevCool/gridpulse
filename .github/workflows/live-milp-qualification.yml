@@ -1,0 +1,35 @@
+name: Real hosted MILP API and shared projection
+on:
+  push:
+    branches: [codex/production-milp-runtime]
+    paths: [scripts/check-live-milp-api.py, .github/workflows/live-milp-qualification.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  real-api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Generate exact normal-button request
+        run: npx vitest run src/features/operations/synthetic-milp-request.test.ts --maxWorkers=2
+        env:
+          GRIDPULSE_MILP_REQUEST_OUTPUT: browser-milp-request.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Submit and verify a real hosted solve
+        run: python scripts/check-live-milp-api.py
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      - name: Feed actual result into shared chart selectors
+        run: npx vitest run src/features/operations/synthetic-milp-request.test.ts --maxWorkers=2
+        env:
+          GRIDPULSE_MILP_JOB_INPUT: browser-milp-job.json

@@ -26,6 +26,10 @@ import { useScenarioDraft } from "./configuration/use-scenario-draft";
 import { usePanelLayout } from "./configuration/use-panel-layout";
 import { InputPanelContext } from "./configuration/input-panel-context";
 import { WorkloadEvidenceProvider } from "./WorkloadEvidenceProvider";
+import { stableOperationsJson } from "@/lib/operations-request";
+import { selectCanonicalPresentation } from "./canonical-presentation";
+import { CanonicalAssessmentView } from "./CanonicalAssessmentView";
+import { useMilpCalculation } from "./hooks/use-milp-calculation";
 export type { OperationsView } from "./view-contracts";
 
 type Props = { view: OperationsView; window: OperatingWindowPreset; mode: OperationsDataMode };
@@ -56,7 +60,34 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
     );
     return () => cancelAnimationFrame(frame);
   }, [view]);
-  const draft = useScenarioDraft(scenario, setScenario);
+  const milpEnabled = import.meta.env.VITE_OPERATIONS_MILP_ENABLED === "true";
+  const [calculation, setCalculation] = useState<"scenario" | "milp">(milpEnabled ? "milp" : "scenario");
+  // Preference only, never facility inputs or results. Explicit comparison choice
+  // survives reload without changing the public mock's default MILP mode.
+  useEffect(() => {
+    try { const preferred = localStorage.getItem("gridpulse-calculator");
+      if (preferred === "scenario" || preferred === "milp") setCalculation(preferred);
+    } catch { /* Storage may be unavailable; retain the configured default. */ }
+  }, []);
+  function chooseCalculation(value: "scenario" | "milp") {
+    setCalculation(value);
+    try { localStorage.setItem("gridpulse-calculator", value); } catch { /* Optional preference. */ }
+  }
+  const milp = useMilpCalculation();
+  const canonical = milp.result;
+  const setCanonical = milp.setResult;
+  const draft = useScenarioDraft(scenario, value => {
+    setScenario(value);
+    if (milpEnabled && calculation === "milp" && mode !== "historical") void milp.run(value);
+  });
+  const [canonicalTime, setCanonicalTime] = useState("");
+  const [canonicalPreview, setCanonicalPreview] = useState<string | null>(null);
+  const canonicalCurrent = canonical && !draft.dirty && canonical.scenarioIdentity === stableOperationsJson(scenario);
+  const showMilp = milpEnabled && calculation === "milp" && mode !== "historical";
+  const calculationBusy = showMilp ? milp.busy : lifecycle === "loading" || lifecycle === "stale";
+  useEffect(() => {
+    if (canonical) { setCanonicalTime(canonical.assessment.points[0].timestamp); setCanonicalPreview(null); }
+  }, [canonical]);
   const serviceLabel =
     backendState === "verified"
       ? "Calculation service available"
@@ -86,12 +117,14 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
             actions={
               <ConfigurationActions
                 dirty={draft.dirty}
-                busy={lifecycle === "loading" || lifecycle === "stale"}
+                busy={calculationBusy}
+                milp={showMilp}
                 onDiscard={draft.discard}
               />
             }
           >
             <WorkspaceInputs
+              milp={showMilp}
               model={fullModel}
               mode={mode}
               window={window}
@@ -106,7 +139,7 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
               onChange={draft.setDraft}
               dirty={draft.dirty}
               errors={draft.errors}
-              busy={lifecycle === "loading" || lifecycle === "stale"}
+              busy={calculationBusy}
               historical={mode === "historical"}
               onApply={draft.apply}
               onDiscard={draft.discard}
@@ -129,10 +162,20 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
               <AssessmentRecord fullModel={fullModel} assessmentIdentity={assessmentIdentity} />
             ) : null}
             <div className="ops-panel-service" role="status">
-              <strong>{serviceLabel}</strong>
+              <strong>{showMilp ? "MILP · synthetic model · no physical control" : serviceLabel}</strong>
               <small>Read-only assessment · no physical commands</small>
             </div>
-            <AdvancedAnalysis />
+            <AdvancedAnalysis operations={milpEnabled ? {
+              scenario,
+              onInvalidated: () => setCanonical(null),
+              onAccepted: (job, request, scenarioIdentity) => {
+                const assessment = selectCanonicalPresentation(job, request);
+                setCanonical({ assessment, scenarioIdentity });
+                setCanonicalTime(assessment.points[0].timestamp);
+                setCanonicalPreview(null);
+                setCalculation("milp");
+              },
+            } : undefined} />
           </ConfigurationPanel>
           <div className="ops-dashboard-canvas">
             <h1 className="sr-only">{view === "power" ? "Power & Battery" : "Power Operations"}</h1>
@@ -181,21 +224,42 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
                   · UTC
                 </p>
                 <span className={`ops-service-status ${backendState}`} role="status">
-                  {serviceLabel}
+                  {showMilp ? milp.busy ? "MILP calculation pending…" : "MILP · on-demand service" : serviceLabel}
                 </span>
               </div>
               <p className="ops-assessment-notice" role="status">
                 {draft.dirty ? "Unapplied changes. Results still use the applied scenario. " : ""}
                 {mode === "historical"
                   ? "Uploaded evidence, not live control."
-                  : "Scenario assessment—not live control."}
-                {lifecycle === "loading" || lifecycle === "stale"
+                  : showMilp ? "Synthetic joint MILP · 24 hourly intervals · illustrative profiles and component assumptions, not customer telemetry. PUE is reference-only." : "Scenario assessment—not live control."}
+                {!showMilp && (lifecycle === "loading" || lifecycle === "stale")
                   ? " Calculation pending; browser preview is not a backend-validated plan."
-                  : backendState === "unavailable"
+                  : !showMilp && backendState === "unavailable"
                     ? " Backend unavailable; browser demonstration only."
                     : ""}
               </p>
-              {view === "overview" ? (
+              {milpEnabled && mode !== "historical" ? <div className="section-toolbar" aria-label="Calculation method">
+                <button type="button" className="secondary-button" aria-pressed={calculation === "scenario"}
+                  onClick={() => chooseCalculation("scenario")}>Scenario calculator</button>
+                <button type="button" className="secondary-button" aria-pressed={calculation === "milp"}
+                  onClick={() => chooseCalculation("milp")}>Joint MILP · synthetic model</button>
+              </div> : null}
+              {showMilp ? <section className="data-panel" aria-label="MILP calculation status" aria-busy={milp.busy}>
+                <p role="status">{milp.busy ? `${milp.job?.status ?? "Connecting"} · the free service may need time to wake up.` : "Recalculate runs the joint workload and battery optimiser. The battery terminal target preserves initial energy."}</p>
+                {milp.jobId ? <p>Job {milp.jobId} · {milp.job?.status ?? "submitted"}</p> : null}
+                {milp.error ? <p role="alert">{milp.error}</p> : null}
+                {milp.busy ? <button type="button" className="secondary-button" onClick={() => void milp.cancel()}>Request cancellation</button> : null}
+                {!milp.busy && milp.jobId && milp.error ? <button type="button" className="secondary-button"
+                  onClick={() => void milp.run(scenario, milp.jobId!)}>Resume existing job · no new solve</button> : null}
+              </section> : null}
+              {showMilp ? canonical && canonicalCurrent ? <CanonicalAssessmentView assessment={canonical.assessment}
+                view={view} timestamp={canonicalTime} onSelect={value => { setCanonicalTime(value); setCanonicalPreview(null); }}
+                preview={canonicalPreview} onPreview={setCanonicalPreview} /> : <section className="data-panel" role="status">
+                  <h2>{canonical ? "MILP inputs changed" : "No accepted MILP plan"}</h2>
+                  <p>{canonical ? "This result is stale. Recalculate with the current inputs." : "Use Recalculate MILP in the input panel. No JSON or sign-in screen is required for the public mock."}</p>
+                  <p>No scenario result is substituted in this view. No equipment commands are issued.</p>
+                </section> : null}
+              {!showMilp && view === "overview" ? (
                 <OverviewView
                   model={model}
                   fullModel={fullModel}
@@ -203,10 +267,10 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
                   onSelect={setSelected}
                 />
               ) : null}
-              {view === "compute" ? (
+              {!showMilp && view === "compute" ? (
                 <ComputeWorkloadsView model={fullModel} displayModel={model} />
               ) : null}
-              {view === "power" ? (
+              {!showMilp && view === "power" ? (
                 <PowerBatteryView
                   model={fullModel}
                   displayModel={model}
@@ -216,7 +280,7 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
                   }
                 />
               ) : null}
-              {view === "overview" ? (
+              {!showMilp && view === "overview" ? (
                 <AssessmentRecord fullModel={fullModel} assessmentIdentity={assessmentIdentity} />
               ) : null}
             </div>

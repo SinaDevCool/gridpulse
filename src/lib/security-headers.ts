@@ -11,12 +11,15 @@ export function secureExternalOrigin(value?: string | null): string | null {
 
 export function buildSecurityHeaders(
   supabaseUrl?: string | null,
+  analyticsUrl?: string | null,
 ): Readonly<Record<string, string>> {
   const supabaseOrigin = secureExternalOrigin(supabaseUrl);
+  const analyticsOrigin = secureExternalOrigin(analyticsUrl);
   const connectSources = [
     "'self'",
     "https://tiles.openfreemap.org",
     ...(supabaseOrigin ? [supabaseOrigin] : []),
+    ...(analyticsOrigin ? [analyticsOrigin] : []),
     "https://cloudflareinsights.com",
   ];
 

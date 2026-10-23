@@ -1,0 +1,68 @@
+name: Public MILP database qualification (no activation)
+on:
+  push:
+    branches: [codex/production-milp-runtime]
+    paths:
+      - supabase/migrations/20261023210000_public_milp_access.sql
+      - scripts/test_public_milp_postgres.py
+      - scripts/apply_public_milp.py
+      - scripts/test_apply_public_milp.py
+      - .github/workflows/public-milp-qualification.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: public-milp-qualification
+  cancel-in-progress: true
+jobs:
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: gridpulse_scoped_claim_ci
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci-only-not-a-production-secret
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install 'psycopg[binary]>=3,<4'
+      - name: Qualified source and fail-closed migration guards
+        run: python -m unittest discover -s scripts -p test_apply_public_milp.py -v
+      - name: Role isolation, real locking, ownership, quotas and recovery
+        run: python -m unittest discover -s scripts -p test_public_milp_postgres.py -v
+        env:
+          TEST_DATABASE_URL: postgresql://postgres:ci-only-not-a-production-secret@localhost:5432/gridpulse_scoped_claim_ci
+  apply-approved-boundary:
+    needs: database
+    if: github.repository == 'SinaDevCool/gridpulse' && github.ref == 'refs/heads/codex/production-milp-runtime'
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    concurrency:
+      group: public-milp-production-migration
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Apply only approved public access boundary; auth stays disabled
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: python scripts/apply_public_milp.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: public-milp-function-metadata-${{ github.sha }}
+          path: public-milp-before.json
+          if-no-files-found: ignore
+          retention-days: 7

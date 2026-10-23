@@ -1,6 +1,8 @@
 import { facilityPlanRequestSchema, type FacilityPlanRequest } from "../analytics/contracts";
 import type { OperationsWorkspace } from "./workspace-contract";
 import { planningTimeSchema, type PlanningTime } from "./planning-time";
+import { mapCanonicalComponentInputs, type ReviewedGpuCalibration } from "./canonical-input-mapping";
+import type { OperationsScenario } from "./scenario-engine";
 
 export type CanonicalPlanPreparation =
   | { ready: true; request: FacilityPlanRequest; blockers: []; warnings: string[] }
@@ -12,6 +14,7 @@ export function prepareCanonicalFacilityPlan(
   workspace: OperationsWorkspace,
   approvedRequest?: FacilityPlanRequest,
   time?: PlanningTime,
+  configuration?: { scenario: OperationsScenario; calibration: ReviewedGpuCalibration },
 ): CanonicalPlanPreparation {
   const blockers: string[] = [];
   const warnings: string[] = [];
@@ -69,7 +72,14 @@ export function prepareCanonicalFacilityPlan(
     blockers.push(
       "Supply a reviewed canonical facility model, workload power profiles, policy, cooling model and tariff contract. Meter readings alone cannot define these inputs.",
     );
-  const parsed = approvedRequest ? facilityPlanRequestSchema.safeParse(approvedRequest) : null;
+  let candidate = approvedRequest;
+  if (candidate && configuration) {
+    const mapped = mapCanonicalComponentInputs(configuration.scenario, candidate, configuration.calibration);
+    blockers.push(...mapped.blockers);
+    warnings.push(...mapped.warnings);
+    candidate = mapped.request ?? undefined;
+  }
+  const parsed = candidate ? facilityPlanRequestSchema.safeParse(candidate) : null;
   if (parsed && !parsed.success)
     blockers.push("The reviewed canonical request has an invalid transport contract.");
   if (parsed?.success) {

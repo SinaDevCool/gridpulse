@@ -20,6 +20,7 @@ class AnalyticsJob(BaseModel):
     id: UUID = Field(default_factory=uuid4)
     owner_id: UUID
     job_type: str
+    access_scope: Literal["private", "public"] = "private"
     status: JobStatus = JobStatus.QUEUED
     input_payload: dict[str, Any] = Field(default_factory=dict)
     input_fingerprint: str | None = Field(default=None, pattern="^[a-f0-9]{64}$")
@@ -64,6 +65,11 @@ class FacilityPlanRequest(BaseModel):
     policy: dict[str, Any]
     economics: dict[str, Any]
     cooling: dict[str, Any]
+    batteries: list[dict[str, Any]] = Field(default_factory=list, max_length=100)
+    onsite_generation_mw: list[float] | None = Field(default=None, min_length=1, max_length=35_040)
+    fatigue_limits: dict[str, Any] | None = None
+    fleet_gpu_capacity: int | None = Field(default=None, gt=0, strict=True)
+    idle_gpu_power_watts: float = Field(default=0, ge=0, allow_inf_nan=False)
 
 
 class FcaIntervalRequest(BaseModel):
@@ -268,6 +274,8 @@ class GraphGuidedStudyRequest(BaseModel):
 class UserIdentity(BaseModel):
     id: UUID
     email: str | None = None
+    is_anonymous: bool = False
+    token_role: str = "authenticated"
 
 
 class HealthReport(BaseModel):

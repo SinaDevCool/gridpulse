@@ -22,6 +22,8 @@ class JobRunner:
         job = self._store.get_internal(job_id)
 
         def checkpoint() -> None:
+            if self._context.shutdown_requested():
+                raise JobLeaseLost("Worker is shutting down; leave the lease for recovery")
             current = self._store.get_internal(job_id)
             if current.cancellation_requested or current.status == JobStatus.CANCELLED:
                 raise JobCancelled("Cancellation requested")
@@ -38,6 +40,8 @@ class JobRunner:
         self._store.update(job_id, status=JobStatus.RUNNING, started_at=context.clock())
         LOGGER.info("analytics job started", extra={"job_id": str(job_id)})
         try:
+            context.validate_job(job)
+            checkpoint()
             result = calculation_for(job.job_type)(context, job)
             checkpoint()
             self._store.update(
