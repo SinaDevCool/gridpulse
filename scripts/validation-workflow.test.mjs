@@ -17,6 +17,7 @@ test("PR and release reuse validation; only validated main artifacts can publish
   assert.ok(!steps.some((step) => step.run === "npm run build"));
   assert.ok(steps.some((step) => step.run?.includes("candidate-artifact.mjs verify")));
   assert.ok(steps.some((step) => step.run?.includes("git ls-remote")));
+  assert.ok(steps.some((step) => step.run === "npx playwright install --with-deps chromium"));
   for (const step of steps)
     if (step.env?.CLOUDFLARE_API_TOKEN)
       assert.equal(step.run, "npx wrangler deploy --config dist/server/wrangler.json");
@@ -49,4 +50,18 @@ test("compiled test servers keep generated runtime state outside dist", () => {
     assert.match(source, /--persist-to/);
     assert.match(source, /\.wrangler\/test-state\//);
   }
+});
+
+test("production requires real public configuration; PR fixture origin cannot publish", () => {
+  const { jobs } = workflow("validate-candidate");
+  const preflight = jobs.build.steps.find(
+    (step) => step.name === "Require production public configuration",
+  );
+  assert.match(preflight.if, /inputs.production/);
+  assert.match(preflight.run, /test -n.*VITE_SUPABASE_URL/);
+  assert.match(preflight.run, /test -n.*VITE_SUPABASE_PUBLISHABLE_KEY/);
+  const build = jobs.build.steps.find((step) => step.run === "npm run build");
+  assert.ok(jobs.build.steps.indexOf(preflight) < jobs.build.steps.indexOf(build));
+  assert.match(build.env.VITE_SUPABASE_URL, /!inputs.production.*browser-fixture.invalid/);
+  assert.match(build.env.VITE_SUPABASE_PUBLISHABLE_KEY, /!inputs.production.*not-a-credential/);
 });

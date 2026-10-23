@@ -28,6 +28,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Prepare production smoke-test browser
+        run: npx playwright install --with-deps chromium
       - uses: actions/download-artifact@v4
         with:
           name: ${{ needs.validate.outputs.artifact }}
@@ -57,3 +59,10 @@ jobs:
         env:
           GRIDPULSE_HEALTH_BASE_URL: https://gridpulseinsights.com
         run: node scripts/check-production-map.mjs
+      - uses: actions/upload-artifact@v4
+        if: ${{ failure() }}
+        with:
+          name: production-smoke-failure-${{ github.run_attempt }}
+          path: test-results/production-map-failure.png
+          if-no-files-found: ignore
+          retention-days: 7

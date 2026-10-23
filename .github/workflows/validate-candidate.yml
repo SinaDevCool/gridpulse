@@ -51,11 +51,19 @@ jobs:
       - run: python -m grid_data.cli audit-release --input public/power-finder/brandenburg-osm.json --output output/brandenburg-osm-audit.json
         env:
           PYTHONPATH: services/grid-data/src
-      - name: Build candidate once
-        run: npm run build
+      - name: Require production public configuration
+        if: ${{ inputs.production }}
+        run: test -n "$VITE_SUPABASE_URL" && test -n "$VITE_SUPABASE_PUBLISHABLE_KEY"
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      - name: Build candidate once
+        run: npm run build
+        env:
+          # PRs use a non-resolving test origin, never deployment credentials.
+          # It permits client construction so browser routes can supply fixed RPC fixtures.
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || (!inputs.production && 'https://browser-fixture.invalid') || '' }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY || (!inputs.production && 'browser-fixture-not-a-credential') || '' }}
       - run: npm run check:performance-budgets
       - run: node scripts/candidate-artifact.mjs seal
       - name: Check compiled APIs and solution boundaries
