@@ -45,5 +45,6 @@ export function canonicalAssessmentFacts(a: CanonicalPresentation) {
   const flag = (key: string) => typeof result[key] === "boolean" ? result[key] as boolean : null;
   const count = (key: string) => typeof result[key] === "number" && Number.isFinite(result[key]) ? result[key] as number : null;
   return { recoveryComplete: flag("recovery_complete"), terminalTargetsMet: flag("battery_terminal_targets_met"),
-    slaViolations: count("sla_violations"), importViolations: count("import_limit_violations") };
+    slaViolations: Array.isArray(result.sla_violations) ? result.sla_violations.length : null,
+    importViolations: count("import_limit_violations") };
 }

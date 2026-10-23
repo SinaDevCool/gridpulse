@@ -3,6 +3,24 @@ import { canonicalAssessmentFacts, canonicalBreachMinutes, canonicalPowerBalance
 import { SignedPowerBalance } from "./overview/SignedResponseDiagram";
 import { formatMw, formatPercent } from "./formatting";
 import { formatOperationsTime } from "./presentation";
+import { PeakImportGauge } from "./overview/PeakImportGauge";
+
+export function CanonicalOperatingSummary({ assessment: a }: { assessment: CanonicalPresentation }) {
+  return <section className="ops-operating-summary" aria-label="Operating summary">
+    <PeakImportGauge peak={a.planPeakMw} target={a.targetMw} limit={a.limitMw}
+      maximum={Math.ceil(Math.max(a.limitMw * 1.15, a.baselinePeakMw, a.planPeakMw, 1) / 10) * 10}
+      caption="Full-horizon peak · joint MILP · modelled, not live" />
+    <div className="ops-headroom-summary"><p className="context-label">Peak safety margin</p>
+      <strong>{formatMw(a.targetMw - a.planPeakMw)}</strong><span>Safety target minus plan peak import</span>
+      <p>{formatMw(a.limitMw - a.planPeakMw)} margin to facility limit</p>
+    </div>
+    <div className="ops-plan-status clear"><p className="context-label">Model assessment</p>
+      <h3>{a.planPeakMw <= a.targetMw + .01 ? "Power target met" : "Power target not met"}</h3>
+      <p>Accepted physical replay · full planning horizon</p>
+      <small>Model feasibility, not measured delivery or additional connection capacity.</small>
+    </div>
+  </section>;
+}
 
 export function CanonicalOverviewDetails({ assessment: a, index, onSelect }: {
   assessment: CanonicalPresentation; index: number; onSelect: (time: string) => void;

@@ -16,8 +16,9 @@ export function canonicalMilpJob(request: FacilityPlanRequest) {
       input_fingerprint: hash, result_fingerprint: hash, truth_class: "synthetic_demonstration",
       capacity_claim: false, automatic_live_dispatch_authorized: false, result: {
         status: "optimal", solver: "scipy-highs-milp", solver_termination: "optimal", optimality_gap: 0,
-        model_fingerprint: hash, automatic_live_dispatch_authorized: false, assessment: { feasible: true }, diagnostics: [],
-        intervals: request.intervals, facility: { points }, baseline_facility: { points: points.map(point => ({ ...point, grid_import_mw: 80 })) },
+        model_fingerprint: hash, automatic_live_dispatch_authorized: false, assessment: { feasible: true,
+          recovery_complete: true, battery_terminal_targets_met: true, sla_violations: [], import_limit_violations: 0 }, diagnostics: [],
+        intervals: request.intervals, facility: { points }, baseline_facility: { points: points.map(point => ({ ...point, it_power_mw: 59, grid_import_mw: 80 })) },
         portfolio: { workload_trajectories: request.workloads.map(job => ({ workload_id: job.workload_id,
           points: points.map(point => ({ interval_index: point.interval_index, status: "running", gpu_count: 1,
             power_mw: 6, remaining_work_hours: 0, checkpoint_or_restart: false })) })) },

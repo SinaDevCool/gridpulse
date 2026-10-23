@@ -24,9 +24,14 @@ describe("canonical overview presentation arithmetic", () => {
   });
   it("does not replace missing diagnostics with a pass", () => {
     const { request, job } = fixture();
+    (job.result_payload.result as { assessment: object }).assessment = { feasible: true };
     expect(canonicalAssessmentFacts(selectCanonicalPresentation(job, request))).toEqual({
       recoveryComplete: null, terminalTargetsMet: null, slaViolations: null, importViolations: null,
     });
+  });
+  it("reads the engine SLA collection without confusing it with a numeric field", () => {
+    const { request, job } = fixture();
+    expect(canonicalAssessmentFacts(selectCanonicalPresentation(job, request)).slaViolations).toBe(0);
   });
   it("weights breaches by elapsed interval duration, not sample counts", () => {
     const { request, job } = fixture();

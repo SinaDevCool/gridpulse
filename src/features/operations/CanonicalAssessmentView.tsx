@@ -5,7 +5,7 @@ import { formatOperationsTime } from "./presentation";
 import { PowerTimeline } from "./power/PowerTimeline";
 import { PowerDataTable } from "./power/PowerDataTable";
 import { OperationsChartLegend, useChartVisibility } from "./visualization";
-import { CanonicalOverviewDetails } from "./CanonicalOverviewDetails";
+import { CanonicalOperatingSummary, CanonicalOverviewDetails } from "./CanonicalOverviewDetails";
 
 export function CanonicalAssessmentView({ assessment, view, timestamp, onSelect, preview, onPreview }: {
   assessment: CanonicalPresentation; view: OperationsView; timestamp: string; onSelect: (value: string) => void;
@@ -22,6 +22,7 @@ export function CanonicalAssessmentView({ assessment, view, timestamp, onSelect,
       <h2>{view === "compute" ? "Solved workload schedule" : view === "power" ? "Joint-plan battery response" : "Optimised facility plan"}</h2>
       </div><p className="ops-canonical-status">{assessment.projected.identity.status === "optimal" ? "Optimal within this model" : "Feasible incumbent—not proven optimal"} · Physical replay passed</p>
     </header>
+    {view === "overview" ? <CanonicalOperatingSummary assessment={assessment} /> : null}
     <CanonicalSummary assessment={assessment} view={view} breachHours={breachHours} />
     {view === "overview" ? <p className="ops-canonical-status">Baseline peak {formatMw(assessment.baselinePeakMw)} → plan peak {formatMw(assessment.planPeakMw)} · Peaks may occur at different times</p> : null}
     <p className="ops-canonical-status">{assessment.points.length} modelled intervals · Full planning horizon · Not measured delivery or equipment control</p>
