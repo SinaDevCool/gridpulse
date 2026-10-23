@@ -1,0 +1,21 @@
+name: Public MILP launch preflight (read only)
+on:
+  push:
+    branches: [codex/production-milp-runtime]
+    paths: [scripts/public_milp_launch_preflight.py, .github/workflows/public-milp-launch-preflight.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  read-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python scripts/public_milp_launch_preflight.py
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
