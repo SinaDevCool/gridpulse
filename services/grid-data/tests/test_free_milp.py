@@ -93,18 +93,24 @@ def test_remote_pending_probe_never_downloads_payloads():
     assert "status=in.(queued,running)" in path
 
 
-@pytest.mark.parametrize("enabled,email,expected", [
-    (False, "allowed@example.invalid", 503),
-    (True, "other@example.invalid", 403),
-    (True, "allowed@example.invalid", 200),
-])
+@pytest.mark.parametrize(
+    "enabled,email,expected",
+    [
+        (False, "allowed@example.invalid", 503),
+        (True, "other@example.invalid", 403),
+        (True, "allowed@example.invalid", 200),
+    ],
+)
 def test_account_gate_protects_job_reads(enabled, email, expected):
     def identity():
         return UserIdentity(id=uuid4(), email=email)
 
     app = create_free_app(
-        store=InMemoryJobStore(), executor=Mock(), enabled=enabled,
-        emails=["allowed@example.invalid"], auth=identity,
+        store=InMemoryJobStore(),
+        executor=Mock(),
+        enabled=enabled,
+        emails=["allowed@example.invalid"],
+        auth=identity,
     )
     with TestClient(app) as client:
         assert client.get("/v1/jobs").status_code == expected

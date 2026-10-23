@@ -90,9 +90,9 @@ class OperationsRoutesOnly:
             and path != "/v1/jobs/facility-plan"
             and not re.fullmatch(r"/v1/jobs/[a-fA-F0-9-]{36}/cancel", path)
         ):
-            await JSONResponse(
-                {"detail": "Job type unavailable on the free MILP service"}, 404
-            )(scope, receive, send)
+            await JSONResponse({"detail": "Job type unavailable on the free MILP service"}, 404)(
+                scope, receive, send
+            )
             return
 
         async def observe(message):
@@ -120,14 +120,29 @@ class OperationsRoutesOnly:
             await self.app(scope, receive, observe)
 
 
-def create_free_app(*, store=None, executor=None, auth=authenticated_user, enabled=None, emails=None):
+def create_free_app(
+    *, store=None, executor=None, auth=authenticated_user, enabled=None, emails=None
+):
     active = enabled if enabled is not None else os.environ.get("GRIDPULSE_MILP_ENABLED") == "true"
-    allowed = frozenset(email.strip().casefold() for email in (emails if emails is not None else os.environ.get("GRIDPULSE_MILP_ALLOWED_EMAILS", "").split(",")) if email.strip())
+    allowed = frozenset(
+        email.strip().casefold()
+        for email in (
+            emails
+            if emails is not None
+            else os.environ.get("GRIDPULSE_MILP_ALLOWED_EMAILS", "").split(",")
+        )
+        if email.strip()
+    )
     url, key = os.environ.get("SUPABASE_URL", ""), os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
-    configured = bool(allowed and ((url and key and os.environ.get("SUPABASE_PUBLISHABLE_KEY")) or store is not None))
+    configured = bool(
+        allowed
+        and ((url and key and os.environ.get("SUPABASE_PUBLISHABLE_KEY")) or store is not None)
+    )
     job_store = store or SupabaseJobStore(url, key)
     stop = threading.Event()
-    context = JobContext(ServiceJobPublisher(url, key), shutdown_requested=stop.is_set, wall_clock_limit_seconds=90)
+    context = JobContext(
+        ServiceJobPublisher(url, key), shutdown_requested=stop.is_set, wall_clock_limit_seconds=90
+    )
     runner = executor or JobRunner(job_store, context)
     worker = OnDemandWorker(job_store, runner)
 
