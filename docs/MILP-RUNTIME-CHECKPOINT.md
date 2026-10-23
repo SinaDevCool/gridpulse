@@ -2,6 +2,15 @@
 
 Updated 23 October 2026. This is an implementation checkpoint, not a release approval.
 
+## Latest continuation: activation blocked by missing approved account
+
+- Branch head eec66c2 passed 41 focused runtime tests, formatting and source lint in run 39993164856.
+- Its separate read-only activation check returned approved account matched=0, confirmed=0 for the approved email; pending facility jobs=0. The overall workflow is intentionally failed by that gate.
+- Added shared pre-execution validation for recovered jobs and a foreign-backlog pause before claiming. No additional SQL migrations.
+- Frontend cross-tab presentation and workbench connection are saved as an UNVALIDATED implementation candidate. They are feature-disabled by default, not production-ready, not deployed, and still require focused tests, type/lint/architecture checks and review.
+- Before continuing activation, the user must create and confirm the approved Supabase sign-in account or specify a different existing account. Do not create auth users, reset passwords or grant another account silently.
+- No production Render runtime has been created or activated in this continuation. Existing services remain unchanged.
+
 ## Verified
 
 - Scoped claim migration and live storage inspection passed in Actions run 39985304692, attempt 2.

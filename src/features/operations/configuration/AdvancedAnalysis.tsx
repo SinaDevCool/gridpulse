@@ -1,9 +1,9 @@
 import { useRef } from "react";
 import { ArrowUpRight, Code2, X } from "lucide-react";
-import { CanonicalPlanningWorkbench } from "../../analytics/CanonicalPlanningWorkbench";
+import { CanonicalPlanningWorkbench, type OperationsPlanningConnection } from "../../analytics/CanonicalPlanningWorkbench";
 
 /** One persistent workbench, outside the narrow everyday-input workflow. */
-export function AdvancedAnalysis() {
+export function AdvancedAnalysis({ operations }: { operations?: OperationsPlanningConnection }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const title = useRef<HTMLHeadingElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -66,7 +66,7 @@ export function AdvancedAnalysis() {
               No equipment commands. Your draft is kept in this workspace when you close the window.
             </small>
           </div>
-          <CanonicalPlanningWorkbench />
+          <CanonicalPlanningWorkbench operations={operations} />
         </div>
       </dialog>
     </section>
