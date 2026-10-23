@@ -59,10 +59,13 @@ jobs:
         env:
           GRIDPULSE_HEALTH_BASE_URL: https://gridpulseinsights.com
         run: node scripts/check-production-map.mjs
+      - name: Verify real public MILP and shared Operations result
+        if: vars.OPERATIONS_MILP_ENABLED == 'true' && vars.PUBLIC_MILP_ENABLED == 'true'
+        run: node scripts/check-production-milp.mjs
       - uses: actions/upload-artifact@v4
         if: ${{ failure() }}
         with:
           name: production-smoke-failure-${{ github.run_attempt }}
-          path: test-results/production-map-failure.png
+          path: test-results/production-*.png
           if-no-files-found: ignore
           retention-days: 7
