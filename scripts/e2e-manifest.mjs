@@ -2,6 +2,7 @@
 export const suites = {
   operations: [
     "activation-operations-ui",
+    "operations-canonical-results",
     "compute-visual-workspace",
     "power-battery-workspace",
     "operations-analysis-panel",

@@ -63,7 +63,7 @@ jobs:
         if: vars.OPERATIONS_MILP_ENABLED == 'true' && vars.PUBLIC_MILP_ENABLED == 'true'
         run: node scripts/check-production-milp.mjs
       - uses: actions/upload-artifact@v4
-        if: ${{ failure() }}
+        if: ${{ always() }}
         with:
           name: production-smoke-failure-${{ github.run_attempt }}
           path: test-results/production-*.png
