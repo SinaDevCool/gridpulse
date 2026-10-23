@@ -1,6 +1,40 @@
 import { expect, test } from "@playwright/test";
 import { openEvidenceInputs, openScenarioInputs } from "./operations-inputs";
 import type { OperationsOverviewModel } from "../../src/features/operations/scenario-engine";
+import { snapshot } from "../fixtures/canonical-demo";
+
+test("synthetic MILP shares one accepted result and inspection across all tabs", async ({ page }) => {
+  const value = snapshot();
+  const start = "2026-01-01T00:15:00Z";
+  value.request.intervals.push({ index: 1, start, duration_minutes: 15 });
+  value.result.result.facility.points.push({ ...value.result.result.facility.points[0], interval_index: 1, grid_import_mw: 0.9 });
+  value.result.result.baseline_facility.points.push({ ...value.result.result.baseline_facility.points[0], interval_index: 1 });
+  value.result.result.portfolio.workload_trajectories[0].points.push({ ...value.result.result.portfolio.workload_trajectories[0].points[0], interval_index: 1 });
+  value.result.result.battery_trajectories[0].points.push({ ...value.result.result.battery_trajectories[0].points[0], timestamp: start });
+  let loads = 0;
+  await page.route("https://gridpulse-milp-synthetic-pilot.onrender.com/assessment", async route => {
+    loads += 1;
+    await route.fulfill({ status: 200, contentType: "application/json", headers: { "access-control-allow-origin": "*" }, body: JSON.stringify(value) });
+  });
+  await page.goto("/operations?view=overview&window=today&mode=scenario");
+  await page.getByRole("combobox", { name: "Calculation method" }).selectOption("milp-demo");
+  const assessment = page.locator("[data-assessment-id]");
+  await expect(assessment).toHaveAttribute("data-assessment-id", "a".repeat(64));
+  await expect(page.getByRole("heading", { name: "Fixed synthetic inputs" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Recalculate Scenario", exact: true })).toHaveCount(0);
+  await page.getByRole("combobox", { name: "Inspect interval" }).selectOption(start);
+  await page.getByRole("link", { name: "Compute & Workloads", exact: true }).click();
+  await expect(page.getByRole("combobox", { name: "Inspect interval" })).toHaveValue(start);
+  await expect(page.getByRole("heading", { name: "Planned workload execution" })).toBeVisible();
+  await page.getByRole("link", { name: "Power & Battery", exact: true }).click();
+  await expect(assessment).toHaveAttribute("data-assessment-id", "a".repeat(64));
+  await expect(page.getByRole("combobox", { name: "Inspect interval" })).toHaveValue(start);
+  await page.getByText("View Full Interval Data", { exact: true }).click();
+  const row = page.locator(".battery-data-details tbody tr").first();
+  await row.hover();
+  await expect(row).toHaveAttribute("data-preview", "true");
+  expect(loads).toBe(1);
+});
 
 test("recalculated backend values reach each tab's diagram summary and interval table", async ({
   page,

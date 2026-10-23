@@ -60,6 +60,7 @@ jobs:
       - name: Build candidate once
         run: npm run build
         env:
+          VITE_OPERATIONS_MILP_DEMO: ${{ !inputs.production && 'true' || 'false' }}
           # PRs use a non-resolving test origin, never deployment credentials.
           # It permits client construction so browser routes can supply fixed RPC fixtures.
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || (!inputs.production && 'https://browser-fixture.invalid') || '' }}
