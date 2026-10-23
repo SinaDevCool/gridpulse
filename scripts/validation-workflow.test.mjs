@@ -39,3 +39,14 @@ test("fast gate precedes bounded, owned remote browser suites with reports", () 
   assert.equal(jobs.build.steps.filter((step) => step.run === "npm run build").length, 1);
   assert.equal(jobs.browsers.env.GRIDPULSE_TEST_COMPILED, "1");
 });
+test("compiled test servers keep generated runtime state outside dist", () => {
+  for (const config of [
+    "playwright.config.ts",
+    "playwright.finder.config.ts",
+    "playwright.runtime.config.ts",
+  ]) {
+    const source = readFileSync(config, "utf8");
+    assert.match(source, /--persist-to/);
+    assert.match(source, /\.wrangler\/test-state\//);
+  }
+});

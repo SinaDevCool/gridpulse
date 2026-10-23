@@ -1,6 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 import { ownedFiles } from "./scripts/e2e-manifest.mjs";
 import { reportSettings } from "./tests/playwright-settings";
+import { resolve } from "node:path";
 
 const externalBaseUrl = process.env.GRIDPULSE_E2E_BASE_URL;
 
@@ -20,7 +21,7 @@ export default defineConfig({
     ? undefined
     : {
         command: process.env.GRIDPULSE_TEST_COMPILED
-          ? "npx wrangler dev --config dist/server/wrangler.json --local --ip 127.0.0.1 --port 3002 --inspector-port 9232 --log-level warn"
+          ? `npx wrangler dev --config dist/server/wrangler.json --local --persist-to "${resolve(".wrangler/test-state/operations")}" --ip 127.0.0.1 --port 3002 --inspector-port 9232 --log-level warn`
           : "npm run dev -- --mode e2e --port 3002",
         // Shared entry exists in finder/full and both single-solution deployments.
         url: "http://127.0.0.1:3002/",

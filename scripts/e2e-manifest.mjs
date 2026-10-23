@@ -56,10 +56,12 @@ export const fast = [
 export const configFor = (suite) =>
   suite === "finder"
     ? "playwright.finder.config.ts"
-    : suite === "runtime"
+    : suite === "runtime" || suite === "isolation"
       ? "playwright.runtime.config.ts"
       : "playwright.config.ts";
 export function suiteFiles(suite) {
+  if (suite === "isolation")
+    return suites.runtime.filter((file) => file.endsWith("solution-runtime-boundary.spec.ts"));
   if (suite === "fast") return fast;
   if (suite === "operations") return suites.operations.filter((file) => !fast.includes(file));
   if (!suites[suite]) throw new Error(`Unknown browser suite: ${suite}`);

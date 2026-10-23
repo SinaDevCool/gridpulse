@@ -25,6 +25,8 @@ function identity(sha, run) {
 export async function sealCandidate(root, sha, run) {
   identity(sha, run);
   const files = await inventory(root);
+  if (Object.keys(files).some((path) => path.includes("/.wrangler/")))
+    throw new Error("Local runtime state must not be packaged in a candidate");
   if (
     !files["server/wrangler.json"] ||
     !files["server/index.js"] ||

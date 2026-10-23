@@ -160,7 +160,7 @@ jobs:
       - run: npm ci
       - name: Build non-deployable isolation fixture
         run: npm run build
-      - run: npx playwright test --config playwright.runtime.config.ts tests/e2e/solution-runtime-boundary.spec.ts --workers=1
+      - run: npm run test:browser -- isolation
       - uses: actions/upload-artifact@v4
         if: ${{ always() }}
         with:
