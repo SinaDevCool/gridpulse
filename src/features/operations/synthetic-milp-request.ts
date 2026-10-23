@@ -39,7 +39,6 @@ export function buildSyntheticMilpRequest(raw: OperationsScenario): FacilityPlan
       truth_class: truth, evidence_cutoff: at(-1440),
     };
   });
-  const target = scenario.importLimitMw - scenario.safetyReserveMw;
   const b = scenario.battery;
   const hasBattery = b.available && b.maximumPowerMw > 0 && b.usableEnergyMwh > 0;
   const request: FacilityPlanRequest = {
@@ -47,8 +46,10 @@ export function buildSyntheticMilpRequest(raw: OperationsScenario): FacilityPlan
     requirement: { requirement_id: SYNTHETIC_MODEL_VERSION, site_id: "public-mock-site", pcc_id: "mock-pcc",
       capacity_result_id: "synthetic-not-a-connection-offer", capacity_envelope_schema_version: "gridpulse-capacity-envelope-result-v1",
       capacity_provenance_fingerprint: "a".repeat(64), requested_import_mw: scenario.importLimitMw,
-      firm_limit_mw: target, conditional_limit_mw: scenario.importLimitMw,
-      required_reduction_mw: scenario.safetyReserveMw, conservative_required_reduction_mw: scenario.safetyReserveMw,
+      // This mock is import-target planning, not a contracted demand-response service.
+      // The reserve is mapped to policy.operating_target_mw by the shared mapper.
+      firm_limit_mw: scenario.importLimitMw, conditional_limit_mw: scenario.importLimitMw,
+      required_reduction_mw: 0, conservative_required_reduction_mw: 0,
       response_time_seconds: null, maximum_event_duration_minutes: null, maximum_events_per_day: null,
       maximum_events_per_year: null, maximum_annual_event_hours: null, minimum_notice_minutes: null,
       recovery_ramp_mw_per_minute: null, rebound_limit_mw: null, reactive_power_requirement: null,
@@ -69,7 +70,9 @@ export function buildSyntheticMilpRequest(raw: OperationsScenario): FacilityPlan
       ] })),
     batteries: hasBattery ? [{ resource_id: "public-mock-battery",
       terminal_target_mwh: b.usableEnergyMwh * b.stateOfHealthPercent / 100 * b.initialSocPercent / 100 }] : [],
-    policy: { event_intervals: Array(96).fill(true), battery_temperature_c: Array(96).fill(20),
+    // Illustrative morning event only. Recovery outside it still respects the
+    // full-horizon operating target, workload deadlines and terminal battery SOC.
+    policy: { event_intervals: Array.from({ length: 96 }, (_, index) => index >= 28 && index < 40), battery_temperature_c: Array(96).fill(20),
       solver_time_limit_seconds: 30, maximum_variables: 20000, allow_cooling_reduction: false },
     economics: { import_price_eur_per_mwh: Array(96).fill(100), peak_import_eur_per_mw: 1000 },
     cooling: { baseline_power_mw: 0, maximum_reduction_mw: 0, thermal_capacity_mwh: 0 },

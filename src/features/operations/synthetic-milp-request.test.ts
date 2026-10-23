@@ -11,6 +11,11 @@ describe("public synthetic MILP model", () => {
     expect(request.requirement.truth_class).toBe("synthetic_demonstration");
     expect(request.requirement.operator_confirmed).toBe(false);
     expect(request.policy.solver_time_limit_seconds).toBe(30);
+    expect(request.requirement.required_reduction_mw).toBe(0);
+    expect(request.requirement.firm_limit_mw).toBe(defaultOperationsScenario.importLimitMw);
+    expect(request.policy.operating_target_mw).toBe(defaultOperationsScenario.importLimitMw - defaultOperationsScenario.safetyReserveMw);
+    expect((request.policy.event_intervals as boolean[]).filter(Boolean)).toHaveLength(12);
+    expect((request.policy.event_intervals as boolean[])[0]).toBe(false);
     expect(request.batteries?.[0].terminal_target_mwh).toBe(request.batteries?.[0].initial_soc_mwh);
     expect(request.workloads[4].minimum_power_cap_mw).toBe(request.workloads[4].nominal_power_mw);
     // Remote cross-repository qualification consumes the exact browser-generated request.
