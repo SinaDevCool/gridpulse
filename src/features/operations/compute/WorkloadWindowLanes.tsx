@@ -4,6 +4,35 @@ import { formatOperationsTime } from "../presentation";
 import { workloadWindow } from "./select-compute-summary";
 import { OperationsChartLegend, useChartVisibility } from "../visualization";
 import { matchesReviewGroup, type ReviewGroup } from "./select-review-groups";
+import type { CanonicalDemo } from "../canonical-demo";
+
+/** Actual solver execution uses the same lane styling, not eligibility bars. */
+export function CanonicalExecutionLanes({ demo, timestamp, onSelect }: {
+  demo: CanonicalDemo; timestamp: string; onSelect: (timestamp: string) => void;
+}) {
+  const visibility = useChartVisibility();
+  return <section className="compute-window-lanes" aria-label="MILP planned execution">
+    <h3>Planned workload execution</h3>
+    <p>Solved synthetic intervals—not permitted windows or delivered execution.</p>
+    <OperationsChartLegend visibility={visibility} items={[
+      { label: "Execution", tone: "demand", mark: "bar" },
+      { label: "Checkpoint / restart", tone: "response", mark: "bar" },
+    ]} />
+    {demo.jobs.map(job => <div className="compute-window-lane" key={job.id}>
+      <strong>{job.id}</strong>
+      <div className="compute-lane-track">
+        {job.points.map((point, index) => point.power_mw > 0 && visibility.visible(point.checkpoint_or_restart ? "Checkpoint / restart" : "Execution") ?
+          <button key={index} type="button" onClick={() => onSelect(demo.points[index].timestamp)}
+            aria-pressed={timestamp === demo.points[index].timestamp}
+            aria-label={`${job.id}, ${formatOperationsTime(demo.points[index].timestamp)}, ${point.status}, ${formatMw(point.power_mw)}`}
+            style={{ position: "absolute", left: `${index / demo.points.length * 100}%`, width: `${100 / demo.points.length}%`,
+              top: 2, bottom: 2, padding: 0, border: timestamp === demo.points[index].timestamp ? "2px solid var(--ops-selection)" : "1px solid transparent",
+              background: point.checkpoint_or_restart ? "var(--ops-response)" : "var(--ops-demand)" }} /> : null)}
+      </div>
+      <small>Selected interval: {job.points[demo.points.findIndex(point => point.timestamp === timestamp)]?.status ?? "Unavailable"}</small>
+    </div>)}
+  </section>;
+}
 
 export function WorkloadWindowLanes({
   jobs,
