@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { openEvidenceInputs } from "./operations-inputs";
+import { openEvidenceInputs } from "../e2e/operations-inputs";
 
 test("solution switching warns about session-only imported evidence", async ({ page }) => {
   await page.goto("/operations?view=power");

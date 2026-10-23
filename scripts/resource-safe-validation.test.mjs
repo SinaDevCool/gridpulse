@@ -68,6 +68,13 @@ test("browser specs get separate bounded stages and compiled runtime is explicit
     ["run", "build"],
     ["run", "check:performance-budgets"],
   ]);
+  assert.deepEqual(validationPlan("browser", ["fast"]), [["run", "test:browser", "--", "fast"]]);
+  assert.throws(() => validationPlan("browser", ["unknown"]));
+  assert.ok(
+    validationPlan("finder-ui", ["tests/finder-e2e/example.spec.ts:99"])[0].includes(
+      "playwright.finder.config.ts",
+    ),
+  );
 });
 test("preflight refuses low RAM, unknown memory, and existing heavy processes", () => {
   assert.throws(() => assertResources({ availableMb: 2000, busy: [] }), /3072/);

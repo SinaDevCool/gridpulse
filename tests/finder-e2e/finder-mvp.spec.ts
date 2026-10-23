@@ -1,4 +1,10 @@
 import { expect, test } from "@playwright/test";
+import {
+  useBrandenburgViewport,
+  useBrandenburgMapTiles,
+  useSuccessfulEnrichment,
+  useOperatorContextViewport,
+} from "./finder-test-data";
 
 test("Finder exploration and local property portfolio are anonymous", async ({ page }) => {
   const requests: string[] = [];
@@ -9,7 +15,9 @@ test("Finder exploration and local property portfolio are anonymous", async ({ p
   const workspaceNavigation = page.getByRole("navigation", { name: "GridPulse workspace" });
   await expect(workspaceNavigation).toBeVisible();
   await expect(workspaceNavigation.getByRole("link")).toHaveCount(2);
-  await expect(page.getByRole("button", { name: "Solution: Site Selection", exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Solution: Site Selection", exact: true }),
+  ).toBeVisible();
   expect(
     await workspaceNavigation.evaluate((element) => element.scrollWidth > element.clientWidth),
   ).toBe(false);
@@ -255,13 +263,8 @@ test("the MVP decision package is concise and downloads a valid PDF", async ({
 
 test("the release workbook passes the browser import preview", async ({ page }, testInfo) => {
   test.setTimeout(120_000);
-  // Fixed accepted release: workbook workflow regression must not depend on live RPC availability.
-  await page.route("**/api/power-finder/viewport?**", (route) =>
-    route.fulfill({
-      contentType: "application/json",
-      path: "public/power-finder/brandenburg-osm.json",
-    }),
-  );
+  await useBrandenburgViewport(page);
+  await useSuccessfulEnrichment(page);
   await page.goto("/portfolio");
   await expect(page.getByRole("heading", { name: "No Sites in the Pipeline" })).toBeVisible({
     timeout: 20_000,
@@ -323,7 +326,7 @@ test("the release workbook passes the browser import preview", async ({ page }, 
   await expect(page.getByText("Shortlisted", { exact: true })).toHaveCount(1);
   await page.getByRole("button", { name: "Sources", exact: true }).click();
   await page.getByRole("button", { name: /Enrich site|Retry incomplete sources/i }).click();
-  await expect(page.getByText(/sources completed/i)).toBeVisible({ timeout: 25_000 });
+  await expect(page.getByText("6 sources completed", { exact: true })).toBeVisible();
   await page.getByText("Add Client or Operator Evidence", { exact: true }).click();
   await page.getByPlaceholder("Evidence title").fill("Client site declaration");
   await page
@@ -391,7 +394,8 @@ test("account-free MVP keeps a custom site inside the data-centre workflow", asy
   await expect(page.getByLabel("Latitude")).toHaveValue("52.31");
   await expect(page.getByLabel("Longitude")).toHaveValue("13.36");
   await expect(page.getByLabel("Total site load (MW)")).toHaveValue("50");
-  await expect(page.getByLabel("Export MW")).toHaveValue("50");
+  // A legacy storage URL must not expose storage controls in the data-centre MVP.
+  await expect(page.getByLabel("Export MW")).toHaveCount(0);
   await expect(page.getByText(/candidate site-to-node matches/i).first()).toBeVisible({
     timeout: 15_000,
   });
@@ -746,6 +750,8 @@ test("viewport fallback does not disable the independent registry source", async
 test("unclustered grid lines and industrial polygons render in the Brandenburg view", async ({
   page,
 }) => {
+  await useBrandenburgViewport(page);
+  await useBrandenburgMapTiles(page);
   // SSR controls must not accept clicks that hydration would subsequently overwrite.
   const initialPage = await page.request.get(
     "/power-finder?lat=52.232112&lng=13.305687&mw=20&distance=20&voltage=20&region=DE-BB",
@@ -932,6 +938,7 @@ test("candidate detail prioritises decisions, contains its layout and omits cand
 });
 
 test("candidate operator context identifies known DSO and TSO records", async ({ page }) => {
+  await useOperatorContextViewport(page);
   const cspErrors: string[] = [];
   page.on("console", (message) => {
     if (message.type() === "error" && /content security policy|connect-src/i.test(message.text())) {

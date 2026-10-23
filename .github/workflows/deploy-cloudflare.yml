@@ -1,19 +1,26 @@
 name: Deploy GridPulse
-
 on:
   push:
     branches: [main]
   workflow_dispatch:
-
+permissions:
+  contents: read
 jobs:
-  deploy:
+  validate:
+    uses: ./.github/workflows/validate-candidate.yml
+    with:
+      production: true
+    secrets:
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+  publish:
+    needs: validate
+    if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    env:
-      GRIDPULSE_BUILD_SHA: ${{ github.sha }}
-      GRIDPULSE_BUILD_ENV: production
-      GRIDPULSE_PRODUCT_MODE: finder
+    timeout-minutes: 10
+    concurrency:
+      group: gridpulse-production-publish
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -21,53 +28,27 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run test:validation-tools
-      - uses: actions/setup-python@v5
+      - name: Prepare production smoke-test browser
+        run: npx playwright install --with-deps chromium
+      - uses: actions/download-artifact@v4
         with:
-          python-version: "3.12"
-          cache: pip
-      - run: python -m pip install -e "./services/grid-data[api,study,ml,dev]"
-      - run: npm run check:encoding
-      - run: npm run typecheck
-      - run: npm run check:architecture
-      - run: npm run lint:app
-      - run: npm run test
-      - run: npm run test:operations:database
-      - run: node scripts/test-strategy-transactions.mjs
-      - run: python -m pytest services/grid-data/tests
-        env:
-          PYTHONPATH: services/grid-data/src
-      - run: python -m grid_data.cli audit-release --input public/power-finder/brandenburg-osm.json --output output/brandenburg-osm-audit.json
-        env:
-          PYTHONPATH: services/grid-data/src
-      - run: npm run build
-        env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
-      - run: npm run check:performance-budgets
-      - run: npx playwright install --with-deps chromium
-      - name: Validate Operations controls
-        run: npx playwright test tests/e2e/activation-operations-ui.spec.ts tests/e2e/operations-redesign-ui.spec.ts tests/e2e/operations-release-controls.spec.ts tests/e2e/operations-control-panel.spec.ts tests/e2e/compute-visual-workspace.spec.ts tests/e2e/operations-window-semantics.spec.ts tests/e2e/operations-obligations.spec.ts tests/e2e/operations-docked-workspace.spec.ts tests/e2e/operations-task-review.spec.ts tests/e2e/solution-navigation.spec.ts tests/e2e/operations-shared-assessment.spec.ts tests/e2e/power-battery-workspace.spec.ts tests/e2e/operations-linked-inspection.spec.ts tests/e2e/operations-analysis-panel.spec.ts tests/e2e/operations-results-design.spec.ts --workers=1
-        env:
-          GRIDPULSE_PRODUCT_MODE: full
-      - name: Validate compiled Operations calculation API without database access
-        run: npm run test:operations:runtime
-      - name: Validate Operations light theme
-        run: npx playwright test tests/e2e/operations-light-theme.spec.ts --workers=1
-        env:
-          GRIDPULSE_PRODUCT_MODE: full
-      - name: Validate independent solution journeys
-        run: npx playwright test tests/e2e/solution-independence.spec.ts --workers=1
-      - run: npm run test:e2e:finder
-        env:
-          GRIDPULSE_PRODUCT_MODE: finder
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
-      - run: npx wrangler deploy --dry-run
-      - run: npx wrangler deploy
+          name: ${{ needs.validate.outputs.artifact }}
+          path: dist
+      - name: Verify exact candidate identity and contents
+        run: node scripts/candidate-artifact.mjs verify
+      - name: Validate packaged Worker without rebuilding
+        run: npx wrangler deploy --config dist/server/wrangler.json --dry-run
+      - run: node scripts/candidate-artifact.mjs verify
+      - name: Reject an obsolete production candidate
+        run: test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$GITHUB_SHA"
+      - name: Publish the validated artifact
+        run: npx wrangler deploy --config dist/server/wrangler.json
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Verify production build identity
+        run: |
+          node --input-type=module -e 'const r=await fetch("https://gridpulseinsights.com/operations"); const html=await r.text(); if(!r.ok || !html.includes(`name="gridpulse-build" content="${process.env.GITHUB_SHA}"`)) throw new Error("Live build does not match validated candidate");'
       - name: Verify production application
         env:
           GRIDPULSE_HEALTH_BASE_URL: https://gridpulseinsights.com
@@ -78,3 +59,10 @@ jobs:
         env:
           GRIDPULSE_HEALTH_BASE_URL: https://gridpulseinsights.com
         run: node scripts/check-production-map.mjs
+      - uses: actions/upload-artifact@v4
+        if: ${{ failure() }}
+        with:
+          name: production-smoke-failure-${{ github.run_attempt }}
+          path: test-results/production-map-failure.png
+          if-no-files-found: ignore
+          retention-days: 7
