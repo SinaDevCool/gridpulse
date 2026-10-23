@@ -13,6 +13,8 @@ const payload = () => ({
     facility: { points: [{ interval_index: 0, grid_import_mw: 98, battery_charge_mw: 0, battery_discharge_mw: 5 }] },
     portfolio: { workload_trajectories: [{ workload_id: "job", points: [{ interval_index: 0 }] }] },
     battery_trajectories: [{ resource_id: "battery", points: [{ soc_mwh: 20 }] }],
+    intervals: [{ index: 0, start: "2026-01-01T00:00:00Z", duration_minutes: 15 }],
+    baseline_facility: { points: [{ interval_index: 0, grid_import_mw: 103, battery_charge_mw: 0, battery_discharge_mw: 0 }] },
   },
 });
 

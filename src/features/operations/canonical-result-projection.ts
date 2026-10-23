@@ -27,6 +27,11 @@ const replayedResult = z.object({
     resource_id: z.string().min(1),
     points: z.array(z.object({ soc_mwh: finite.nonnegative() }).passthrough()),
   }).passthrough()),
+  intervals: z.array(z.object({
+    index: z.number().int().nonnegative(), start: z.string().datetime({ offset: true }),
+    duration_minutes: z.union([z.literal(15), z.literal(30), z.literal(60)]),
+  }).passthrough()).min(1),
+  baseline_facility: trajectory,
 }).passthrough();
 
 /** Staged integration boundary, deliberately not selected by the live store.
@@ -39,9 +44,13 @@ export function projectCanonicalAssessment(raw: unknown, expectedInputFingerprin
     throw new Error("Canonical result belongs to a different assessment request");
   const result = replayedResult.parse(envelope.result);
   const size = result.facility.points.length;
+  if (result.intervals.length !== size || result.intervals.some((interval, index) =>
+    interval.index !== index || (index > 0 && Date.parse(interval.start) !==
+      Date.parse(result.intervals[index - 1].start) + result.intervals[index - 1].duration_minutes * 60_000)))
+    throw new Error("Canonical timestamps do not define a contiguous planning horizon");
   const aligned = (points: { interval_index: number }[]) =>
     points.length === size && points.every((point, index) => point.interval_index === index);
-  if (!aligned(result.facility.points) ||
+  if (!aligned(result.facility.points) || !aligned(result.baseline_facility.points) ||
       result.portfolio.workload_trajectories.some((job) => !aligned(job.points)) ||
       result.battery_trajectories.some((battery) => battery.points.length !== size))
     throw new Error("Canonical chart trajectories do not share one planning horizon");
@@ -60,7 +69,8 @@ export function projectCanonicalAssessment(raw: unknown, expectedInputFingerprin
   });
   return {
     identity,
-    overview: { identity, power: result.facility.points },
+    intervals: result.intervals,
+    overview: { identity, power: result.facility.points, baseline: result.baseline_facility.points },
     compute: { identity, power: result.facility.points, workloads: jobs },
     power: { identity, power: result.facility.points, batteries },
   };
