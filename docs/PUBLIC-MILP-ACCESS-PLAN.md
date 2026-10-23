@@ -2,6 +2,21 @@
 
 Status: implementation plan after code audit, 23 October 2026. Not deployed.
 
+## Live prerequisite audit — permission expansion requires separate approval
+
+Read-only Actions run 39995247611 completed successfully on 23 October 2026.
+
+- Anonymous sessions: disabled. CAPTCHA enforcement: disabled. Anonymous auth rate limit: 30/hour in current configuration.
+- Six relations deny the `anon` role SELECT but grant `authenticated` SELECT with an unrestricted authenticated SELECT policy: `canonical_grid_lines`, `canonical_grid_nodes`, `canonical_industrial_sites`, `grid_operators`, `grid_sources`, `public_capacity_observations`.
+- Enabling anonymous sessions unchanged would make those read permissions available to new anonymous identities. This is a permission expansion, not evidence of an existing anonymous data leak or proof that the rows contain customer secrets.
+- Thirty security-definer functions are executable by `authenticated` but not `anon`. Their own authorisation logic requires review; the grant alone does not establish a vulnerability.
+- Existing analytics-job SELECT remains owner-scoped.
+- No live auth settings, schemas, data, grants, functions, billing or deployments were changed by this audit.
+
+Additional proposed scope, not yet approved: review and add anonymous-user restrictions to non-public data access and privileged functions, preserving current named-user access and intentionally public Finder access. Permit only the owner-isolated public MILP path for anonymous identities. Present exact reviewed SQL before application, qualify it against disposable Postgres and repeat the live permission audit before enabling anonymous sessions. Do not blanket-revoke the authenticated role or expose the six relations as a workaround.
+
+The previous approval covers the public-job admission/claim migration and enabling anonymous sessions after a passing audit. Per the approval boundary below, this additional non-job permission hardening is held pending separate approval.
+
 ## Audited starting point
 
 - `analytics_jobs.owner_id` is non-null and references `auth.users`.
