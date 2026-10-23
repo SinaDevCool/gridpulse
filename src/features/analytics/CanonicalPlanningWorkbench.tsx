@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { LoaderCircle, Play, ShieldCheck } from "lucide-react";
+import { acceptCanonicalJobResult } from "../operations/canonical-job-result";
 import {
   facilityHistoricalReplayRequestSchema,
   facilityPlanRequestSchema,
@@ -38,11 +39,13 @@ export function CanonicalPlanningWorkbench() {
   const [job, setJob] = useState<AnalyticsJob | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [acceptance, setAcceptance] = useState<string | null>(null);
 
   async function run() {
     setBusy(true);
     setError(null);
     setJob(null);
+    setAcceptance(null);
     try {
       const raw: unknown = JSON.parse(source);
       let accepted;
@@ -58,7 +61,12 @@ export function CanonicalPlanningWorkbench() {
         accepted = await startFacilityHistoricalReplay(
           schemas.facility_historical_replay.parse(raw),
         );
-      setJob(await waitForAnalyticsJob(accepted.job_id));
+      const completed = await waitForAnalyticsJob(accepted.job_id);
+      setJob(completed);
+      if (analysis === "facility_plan" && completed.status === "succeeded") {
+        const projected = acceptCanonicalJobResult(completed, schemas.facility_plan.parse(raw));
+        setAcceptance(`Replay-valid MILP · ${projected.identity.status === "optimal" ? "optimal" : "feasible incumbent, not proven optimal"} · engine ${projected.identity.engineVersion}. Separate analysis; scenario charts are unchanged.`);
+      }
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "The canonical analysis could not run");
     } finally {
@@ -100,6 +108,7 @@ export function CanonicalPlanningWorkbench() {
             setAnalysis(event.target.value as Analysis);
             setJob(null);
             setError(null);
+            setAcceptance(null);
           }}
         >
           <option value="facility_plan">Facility plan</option>
@@ -121,6 +130,7 @@ export function CanonicalPlanningWorkbench() {
             setSource(event.target.value);
             setJob(null);
             setError(null);
+            setAcceptance(null);
           }}
           placeholder={`Paste a reviewed ${analysis.replaceAll("_", " ")} request…`}
           spellCheck={false}
@@ -136,6 +146,7 @@ export function CanonicalPlanningWorkbench() {
         {busy ? "Running analysis…" : "Validate and run"}
       </button>
       {error ? <p role="alert">{error}</p> : null}
+      {acceptance ? <p role="status">{acceptance}</p> : null}
       {job ? (
         <div className="compact-result" role="status">
           <strong>{job.status}</strong>

@@ -43,4 +43,20 @@ describe("reviewed component-mode input mapping", () => {
     request.batteries = [];
     expect(mapCanonicalComponentInputs(scenario, request, calibration).request).toBeNull();
   });
+  it("accepts an explicitly disabled battery only with an empty reviewed asset set", () => {
+    const request = reviewed();
+    request.batteries = [];
+    const disabled = { ...scenario, battery: { ...scenario.battery, available: false } };
+    const mapped = mapCanonicalComponentInputs(disabled, request, calibration);
+    expect(mapped.ready).toBe(true);
+    expect(mapped.request?.batteries).toEqual([]);
+    expect(mapCanonicalComponentInputs(scenario, request, calibration).ready).toBe(false);
+  });
+  it("rejects a terminal target invalidated by energy or state-of-health changes", () => {
+    const request = reviewed();
+    request.batteries![0].terminal_target_mwh = scenario.battery.usableEnergyMwh + 1;
+    const mapped = mapCanonicalComponentInputs(scenario, request, calibration);
+    expect(mapped.ready).toBe(false);
+    expect(mapped.blockers.join(" ")).toContain("terminal battery target");
+  });
 });
