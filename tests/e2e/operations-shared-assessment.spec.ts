@@ -17,6 +17,11 @@ test("synthetic MILP shares one accepted result and inspection across all tabs",
     await route.fulfill({ status: 200, contentType: "application/json", headers: { "access-control-allow-origin": "*" }, body: JSON.stringify(value) });
   });
   await page.goto("/operations?view=overview&window=today&mode=scenario");
+  if (await page.locator('meta[name="gridpulse-environment"]').getAttribute("content") === "production") {
+    await expect(page.getByRole("combobox", { name: "Calculation method" })).toHaveCount(0);
+    expect(loads).toBe(0);
+    return;
+  }
   await page.getByRole("combobox", { name: "Calculation method" }).selectOption("milp-demo");
   const assessment = page.locator("[data-assessment-id]");
   await expect(assessment).toHaveAttribute("data-assessment-id", "a".repeat(64));
