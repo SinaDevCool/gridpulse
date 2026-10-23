@@ -165,7 +165,7 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
               <strong>{showMilp ? "MILP · synthetic model · no physical control" : serviceLabel}</strong>
               <small>Read-only assessment · no physical commands</small>
             </div>
-            <AdvancedAnalysis operations={milpEnabled ? {
+            <AdvancedAnalysis operations={showMilp ? {
               scenario,
               onInvalidated: () => setCanonical(null),
               onAccepted: (job, request, scenarioIdentity) => {
