@@ -6,6 +6,8 @@ Credentials and test session tokens stay in process memory and are never logged.
 import base64
 import json
 import os
+import time
+import urllib.error
 import urllib.request
 
 from apply_public_milp import verify
@@ -49,8 +51,21 @@ def main():
         request(url, "PATCH", {"external_anonymous_users_enabled": True}, headers)
         origin = os.environ["SUPABASE_URL"].rstrip("/")
         key = os.environ["SUPABASE_PUBLISHABLE_KEY"]
-        session = request(origin + "/auth/v1/signup", "POST", {"data": {}},
-            {"apikey": key, "Content-Type": "application/json"})
+        # Management config can precede the Auth service's refresh. Retry only
+        # an explicit provider-disabled response (which did not create a user).
+        for attempt in range(5):
+            try:
+                session = request(origin + "/auth/v1/signup", "POST", {"data": {}},
+                    {"apikey": key, "Content-Type": "application/json"})
+                break
+            except urllib.error.HTTPError as error:
+                detail = json.loads(error.read(4096))
+                code = str(detail.get("error_code", detail.get("code", "unknown")))
+                if code == "anonymous_provider_disabled" and attempt < 4:
+                    time.sleep(5)
+                    continue
+                # Only provider error codes, not token-bearing response bodies.
+                raise ValueError(f"Anonymous signup HTTP {error.code}, code {code}") from None
         encoded = session["access_token"].split(".")[1]
         claims = json.loads(base64.urlsafe_b64decode(encoded + "=" * (-len(encoded) % 4)))
         if claims.get("role") != "gridpulse_public_visitor" or not session["user"].get("is_anonymous"):
