@@ -34,11 +34,14 @@ def execute_isolated_facility(context: JobContext, payload: dict) -> dict:
     solves are also bounded here. Memory sizing remains a runtime qualification gate.
     """
     context.checkpoint()
+    budget = getattr(context, "wall_clock_limit_seconds", 630)
+    if not isinstance(budget, (int, float)) or not 0 < budget <= 630:
+        raise ValueError("Invalid canonical wall-clock budget")
     process_context = multiprocessing.get_context("spawn")
     receiver, sender = process_context.Pipe(duplex=False)
     process = process_context.Process(target=_calculate, args=(sender, payload), daemon=True)
     started = False
-    deadline = time.monotonic() + 630
+    deadline = time.monotonic() + budget
     next_checkpoint = 0.0
     try:
         process.start()
@@ -51,7 +54,7 @@ def execute_isolated_facility(context: JobContext, payload: dict) -> dict:
                 next_checkpoint = now + 1
             if now >= deadline:
                 raise TimeoutError(
-                    "Canonical calculation exceeded the 630-second wall-clock budget"
+                    f"Canonical calculation exceeded the {budget}-second wall-clock budget"
                 )
             if receiver.poll(0.1):
                 try:

@@ -61,6 +61,8 @@ def build_router(
         background_tasks: BackgroundTasks,
         user: UserIdentity = Depends(auth_dependency),
     ) -> JobAccepted:
+        if dependencies.facility_admission is not None:
+            dependencies.facility_admission(request, user)
         job, created = canonical_job(
             owner_id=user.id,
             job_type="facility_plan",

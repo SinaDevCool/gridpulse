@@ -67,6 +67,9 @@ def create_app(
     job_store: JobStore | None = None,
     executor: JobExecutor | None = None,
     auth_dependency: Callable = authenticated_user,
+    lifespan: Callable | None = None,
+    facility_admission: Callable | None = None,
+    dispatch_mode: str | None = None,
 ) -> FastAPI:
     configure_logging()
     if job_store is None or executor is None:
@@ -79,6 +82,7 @@ def create_app(
         version=SERVICE_VERSION,
         docs_url="/docs" if os.environ.get("GRIDPULSE_API_DOCS") == "enabled" else None,
         redoc_url=None,
+        lifespan=lifespan,
     )
     app.add_middleware(OperationsBodyLimit)
     allowed_origins = [
@@ -99,7 +103,7 @@ def create_app(
     )
     app.state.job_store = job_store
     app.state.executor = executor
-    app.state.dispatch_mode = os.environ.get(
+    app.state.dispatch_mode = dispatch_mode or os.environ.get(
         "GRIDPULSE_JOB_DISPATCH_MODE",
         "worker" if isinstance(job_store, SupabaseJobStore) else "inline",
     )
@@ -142,7 +146,7 @@ def create_app(
             content={"detail": "Internal analytics service error"},
         )
 
-    dependencies = ApiDependencies(job_store, executor, app.state.dispatch_mode)
+    dependencies = ApiDependencies(job_store, executor, app.state.dispatch_mode, facility_admission)
     submission = JobSubmission(dependencies.job_store, dependencies.dispatch_mode)
     for group in (health, jobs, facility, network):
         app.include_router(group.build_router(dependencies, auth_dependency, submission))

@@ -30,3 +30,5 @@ class JobContext:
     checkpoint: Callable[[], None] = lambda: None
     clock: Callable[[], datetime] = utc_now
     network_provider: Callable[[], NetworkStudyProvider] = network_provider
+    shutdown_requested: Callable[[], bool] = lambda: False
+    wall_clock_limit_seconds: float = 630

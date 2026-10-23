@@ -16,6 +16,7 @@ class ApiDependencies:
     job_store: JobStore
     executor: JobExecutor
     dispatch_mode: str
+    facility_admission: Callable | None = None
 
     def execution_for(self, job_type: str) -> Callable[[UUID], None]:
         if job_type not in JOB_TYPES:

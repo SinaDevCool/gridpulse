@@ -48,6 +48,7 @@ class JobStore(JobSubmissionStore, JobExecutionStore, Protocol):
     def execution_lease(self, worker_id: str, attempt: int): ...
     def get(self, job_id: UUID, owner_id: UUID) -> AnalyticsJob | None: ...
     def list_for_owner(self, owner_id: UUID, limit: int = 100) -> list[AnalyticsJob]: ...
+    def has_pending(self, owner_id: UUID, job_type: str) -> bool: ...
     def claim(
         self,
         worker_id: str,
@@ -114,6 +115,14 @@ class InMemoryJobStore:
                 reverse=True,
             )
             return [job.model_copy(deep=True) for job in jobs[:limit]]
+
+    def has_pending(self, owner_id: UUID, job_type: str) -> bool:
+        with self._lock:
+            return any(
+                job.owner_id == owner_id and job.job_type == job_type
+                and job.status in {JobStatus.QUEUED, JobStatus.RUNNING}
+                for job in self._jobs.values()
+            )
 
     def find_by_fingerprint(
         self, owner_id: UUID, job_type: str, input_fingerprint: str
@@ -321,6 +330,15 @@ class SupabaseJobStore:
             f"{urllib.parse.quote(str(owner_id))}&order=created_at.desc&limit={safe_limit}",
         )
         return [AnalyticsJob.model_validate(row) for row in rows]
+
+    def has_pending(self, owner_id: UUID, job_type: str) -> bool:
+        rows = self._publisher.request(
+            "GET",
+            "/analytics_jobs?select=id&owner_id=eq."
+            f"{urllib.parse.quote(str(owner_id))}&job_type=eq.{urllib.parse.quote(job_type)}"
+            "&status=in.(queued,running)&limit=1",
+        )
+        return bool(rows)
 
     def find_by_fingerprint(
         self, owner_id: UUID, job_type: str, input_fingerprint: str

@@ -1,0 +1,32 @@
+name: Bounded MILP runtime qualification
+on:
+  push:
+    branches: [codex/production-milp-runtime]
+    paths:
+      - services/grid-data/**
+      - .github/workflows/milp-runtime-qualification.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: milp-runtime-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: python -m pip install -e './services/grid-data[api,dev]'
+      - name: Focused runtime and recovery checks first
+        run: python -m pytest services/grid-data/tests/test_free_milp.py services/grid-data/tests/test_durable_jobs.py services/grid-data/tests/test_isolated_facility.py -q
+      - name: Source style diagnostic
+        if: always()
+        run: python -m ruff format --diff services/grid-data/src/grid_data/api services/grid-data/tests/test_free_milp.py
+      - name: Source lint
+        if: always()
+        run: python -m ruff check services/grid-data/src/grid_data/api

@@ -14,6 +14,7 @@ from uuid import UUID
 
 from grid_data.api.executor import JobExecutor, OperatorHealthExecutor
 from grid_data.api.jobs.registry import JOB_TYPES
+from grid_data.api.jobs.context import JobLeaseLost
 from grid_data.api.models import JobStatus
 from grid_data.api.store import JobStore, SupabaseJobStore
 
@@ -57,6 +58,11 @@ def run_once(
             store.checkpoint(job.id, worker_id, {"phase": "claimed", "attempt": job.attempt_count})
             try:
                 executor_for(job.job_type, executor)(job.id)
+            except JobLeaseLost:
+                logging.getLogger(__name__).info(
+                    "Execution stopped without publication; lease remains recoverable",
+                    extra={"job_id": str(job.id)},
+                )
             except Exception:
                 logging.getLogger(__name__).exception(
                     "job execution failed", extra={"job_id": str(job.id)}

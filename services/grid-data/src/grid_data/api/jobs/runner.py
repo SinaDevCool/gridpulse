@@ -22,6 +22,8 @@ class JobRunner:
         job = self._store.get_internal(job_id)
 
         def checkpoint() -> None:
+            if self._context.shutdown_requested():
+                raise JobLeaseLost("Worker is shutting down; leave the lease for recovery")
             current = self._store.get_internal(job_id)
             if current.cancellation_requested or current.status == JobStatus.CANCELLED:
                 raise JobCancelled("Cancellation requested")
