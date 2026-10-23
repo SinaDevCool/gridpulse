@@ -29,7 +29,7 @@ export function PowerDataTable({
       (filter === "target" && (point.shortfallMw ?? 0) > 0.01) ||
       (filter === "limit" && point.limitExceedanceMw > 0.01) ||
       (filter === "constraint" &&
-        !["none", "observed", "missing_evidence"].includes(point.constraintCode)) ||
+        !["none", "observed", "missing_evidence", "modeled"].includes(point.constraintCode)) ||
       (filter === "missing" && point.constraintCode === "missing_evidence"),
   );
   return (
