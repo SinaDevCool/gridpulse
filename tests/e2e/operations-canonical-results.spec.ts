@@ -60,12 +60,14 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   for (const theme of ["light", "dark"]) {
     await page.evaluate(value => document.documentElement.dataset.theme = value, theme);
     expect((await new AxeBuilder({ page }).include(".ops-canonical").analyze()).violations).toEqual([]);
+    await result.locator(".power-timeline-panel").first().scrollIntoViewIfNeeded();
     await page.screenshot({ path: `test-results/canonical-${theme}.png`, fullPage: true });
   }
   await page.getByRole("link", { name: "Power & Battery", exact: true }).click();
   await page.setViewportSize({ width: 390, height: 844 });
   for (const panel of await panels.all()) expect((await panel.boundingBox())!.height).toBeGreaterThan(140);
   expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
+  await panels.last().scrollIntoViewIfNeeded();
   await page.screenshot({ path: "test-results/canonical-mobile.png", fullPage: true });
   await page.setViewportSize({ width: 1600, height: 1000 });
   const batterySection = page.locator("#operations-inputs").getByText("Battery", { exact: true });

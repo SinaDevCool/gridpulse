@@ -43,8 +43,10 @@ try {
       await expect(rows.nth(2)).toHaveAttribute("aria-selected", "true");
       for (const theme of ["light", "dark"]) {
         await page.evaluate(value => document.documentElement.dataset.theme = value, theme);
+        await panels.first().scrollIntoViewIfNeeded();
         await page.screenshot({ path: `test-results/production-milp-${theme}.png`, fullPage: true });
       }
+      await panels.last().scrollIntoViewIfNeeded();
       await page.setViewportSize({ width: 390, height: 844 });
       for (const panel of await panels.all()) {
         if ((await panel.boundingBox())?.height < 140) throw new Error("Mobile MILP chart panel collapsed");

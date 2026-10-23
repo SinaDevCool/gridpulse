@@ -238,15 +238,15 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
                     ? " Backend unavailable; browser demonstration only."
                     : ""}
               </p>
-              {milpEnabled && mode !== "historical" ? <div className="section-toolbar" aria-label="Calculation method">
+              {milpEnabled && mode !== "historical" ? <div className="ops-calculation-method" role="group" aria-label="Calculation method">
                 <button type="button" className="secondary-button" aria-pressed={calculation === "scenario"}
                   onClick={() => chooseCalculation("scenario")}>Scenario calculator</button>
                 <button type="button" className="secondary-button" aria-pressed={calculation === "milp"}
                   onClick={() => chooseCalculation("milp")}>Joint MILP · synthetic model</button>
               </div> : null}
-              {showMilp ? <section className="data-panel" aria-label="MILP calculation status" aria-busy={milp.busy}>
-                <p role="status">{milp.busy ? `${milp.job?.status ?? "Connecting"} · the free service may need time to wake up.` : "Recalculate runs the joint workload and battery optimiser. The battery terminal target preserves initial energy."}</p>
-                {milp.jobId ? <p>Job {milp.jobId} · {milp.job?.status ?? "submitted"}</p> : null}
+              {showMilp ? <section className="ops-milp-status" aria-label="MILP calculation status" aria-busy={milp.busy}>
+                <p role="status">{milp.busy ? `${milp.job?.status ?? "Connecting"} · the free service may need time to wake up.` : milp.error ? "Calculation needs attention" : canonical ? "Calculation complete · joint workload and battery plan" : "Ready to optimise · use Recalculate MILP"}</p>
+                {milp.jobId ? <details><summary>Calculation receipt</summary><p>Job {milp.jobId} · {milp.job?.status ?? "submitted"}</p></details> : null}
                 {milp.error ? <p role="alert">{milp.error}</p> : null}
                 {milp.busy ? <button type="button" className="secondary-button" onClick={() => void milp.cancel()}>Request cancellation</button> : null}
                 {!milp.busy && milp.jobId && milp.error ? <button type="button" className="secondary-button"
