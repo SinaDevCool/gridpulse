@@ -12,6 +12,8 @@ on:
       - services/grid-data/src/grid_data/api/store.py
       - services/grid-data/src/grid_data/api/worker.py
       - services/grid-data/tests/test_durable_jobs.py
+      - scripts/apply_scoped_claim.py
+      - scripts/test_apply_scoped_claim.py
   workflow_dispatch:
 
 permissions:
@@ -63,8 +65,32 @@ jobs:
           print(json.dumps({key + '_configured': bool(os.environ.get(key)) for key in
               ['MANAGEMENT_TOKEN', 'DATABASE_URL', 'DATABASE_PASSWORD']}))
           PY
-  inspect:
+  apply-approved-scope:
     needs: qualify-scope
+    if: github.repository == 'SinaDevCool/gridpulse' && github.ref == 'refs/heads/codex/production-milp-preflight'
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify guarded migration tooling
+        run: python -m unittest discover -s scripts -p test_apply_scoped_claim.py -v
+      - name: Apply only the user-approved scoped-claim migration
+        run: python scripts/apply_scoped_claim.py --apply
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: scoped-claim-before-${{ github.run_id }}-${{ github.run_attempt }}
+          path: scoped-claim-before.json
+          if-no-files-found: ignore
+          retention-days: 7
+  inspect:
+    needs: apply-approved-scope
     if: github.repository == 'SinaDevCool/gridpulse' && github.ref == 'refs/heads/codex/production-milp-preflight'
     runs-on: ubuntu-latest
     timeout-minutes: 4
