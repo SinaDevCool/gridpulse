@@ -16,6 +16,11 @@ import urllib.request
 from pathlib import Path
 
 
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        raise ValueError("Storage preflight does not follow redirects")
+
+
 def store_contract(source: str) -> tuple[list[str], dict[str, list[str]]]:
     tree = ast.parse(source)
     store = next(n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == "SupabaseJobStore")
@@ -78,7 +83,7 @@ def read_json(base: str, key: str, path: str, accept: str, limit: int = 8_000_00
     request = urllib.request.Request(base + path, method="GET", headers={
         "apikey": key, "Authorization": "Bearer " + key, "Accept": accept,
     })
-    with urllib.request.urlopen(request, timeout=25) as response:
+    with urllib.request.build_opener(NoRedirect()).open(request, timeout=25) as response:
         raw = response.read(limit + 1)
     if len(raw) > limit:
         raise ValueError("Metadata response exceeds the preflight size limit")
@@ -116,7 +121,7 @@ def main() -> int:
     print(json.dumps({"read_only": True, "job_rows_read": 0,
                       "required_columns": len(columns), "required_rpcs": len(functions),
                       "metadata_compatible": not issues, "issues": issues,
-                      "production_activation_authorized": False,
+                      "activation_performed": False,
                       "not_verified": ["RLS and cross-owner isolation", "RPC implementation and constraints",
                                        "worker liveness and restart recovery", "production runtime credentials"]}, indent=2))
     return int(bool(issues))

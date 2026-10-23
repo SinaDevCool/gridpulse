@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 
-from check_milp_storage import inspect_metadata, read_json, store_contract
+from check_milp_storage import NoRedirect, inspect_metadata, read_json, store_contract
 
 
 SOURCE = '''
@@ -47,24 +47,28 @@ class StoragePreflightTests(unittest.TestCase):
         doc["paths"]["/rpc/claim_analytics_job"]["post"]["parameters"][0]["schema"] = {"$ref": "#/definitions/claim_body"}
         self.assertEqual(inspect_metadata(doc, *store_contract(SOURCE)), [])
 
-    @patch("check_milp_storage.urllib.request.urlopen")
+    @patch("check_milp_storage.urllib.request.build_opener")
     def test_no_rpc_can_be_called(self, network):
         with self.assertRaises(ValueError):
             read_json("https://example.invalid/rest/v1", "secret", "/rpc/claim_analytics_job", "application/json")
         network.assert_not_called()
 
-    @patch("check_milp_storage.urllib.request.urlopen")
+    @patch("check_milp_storage.urllib.request.build_opener")
     def test_no_customer_rows_can_be_read(self, network):
         with self.assertRaises(ValueError):
             read_json("https://example.invalid/rest/v1", "secret", "/analytics_jobs?select=id&limit=1", "application/json")
         network.assert_not_called()
 
-    @patch("check_milp_storage.urllib.request.urlopen")
+    @patch("check_milp_storage.urllib.request.build_opener")
     def test_probe_uses_get_and_zero_rows(self, network):
-        network.return_value.__enter__.return_value.read.return_value = b"[]"
+        network.return_value.open.return_value.__enter__.return_value.read.return_value = b"[]"
         self.assertEqual(read_json("https://example.invalid/rest/v1", "secret", "/analytics_jobs?select=id&limit=0", "application/json"), [])
-        request = network.call_args.args[0]
+        request = network.return_value.open.call_args.args[0]
         self.assertEqual(request.get_method(), "GET")
+
+    def test_credentials_are_not_redirected(self):
+        with self.assertRaises(ValueError):
+            NoRedirect().redirect_request(None, None, 302, "redirect", {}, "https://other.invalid")
 
 
 if __name__ == "__main__":
