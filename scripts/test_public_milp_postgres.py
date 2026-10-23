@@ -142,6 +142,46 @@ class PublicMilpPostgresTests(unittest.TestCase):
         with self.assertRaises(psycopg.errors.InsufficientPrivilege):
             self.admit(named)
 
+    def test_cancel_keeps_capacity_until_stopped_and_cannot_publish_late(self):
+        first=self.admit()[0]["id"]
+        self.admit(self.other)
+        claimed=self.claim()[0]
+        cancelled=self.db.execute("select * from public.cancel_analytics_job(%s,%s)",(first,self.owner)).fetchone()
+        self.assertEqual(cancelled["status"],"running")
+        self.assertTrue(cancelled["cancellation_requested"])
+        self.assertEqual(self.claim("second"),[])
+        self.assertEqual(self.db.execute("select * from public.update_leased_analytics_job(%s,%s,%s,%s::jsonb)",
+            (first,"public",claimed["attempt_count"],json.dumps({"status":"succeeded","completed_at":"2026-10-23T00:00:00Z"}))).fetchall(),[])
+        stopped=self.db.execute("select * from public.update_leased_analytics_job(%s,%s,%s,%s::jsonb)",
+            (first,"public",claimed["attempt_count"],json.dumps({"status":"cancelled","completed_at":"2026-10-23T00:00:00Z"}))).fetchone()
+        self.assertEqual(stopped["status"],"cancelled")
+        self.assertEqual(len(self.claim("second")),1)
+
+    def test_global_hourly_cap_and_concurrent_claims(self):
+        for _ in range(20):
+            owner=uuid4()
+            self.db.execute("insert into auth.users(id,is_anonymous) values(%s,true)",(owner,))
+            job=self.admit(owner)[0]["id"]
+            self.db.execute("update public.analytics_jobs set status='failed',completed_at=now() where id=%s",(job,))
+        with self.assertRaises(psycopg.Error) as error:
+            self.admit()
+        self.assertEqual(error.exception.sqlstate,"PT429")
+        self.db.execute("delete from public.analytics_jobs")
+        self.admit()
+        self.admit(self.other)
+        def claim(index):
+            with psycopg.connect(scoped.DSN,autocommit=True,row_factory=dict_row) as conn:
+                return len(self.claim(str(index),conn))
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            self.assertEqual(sum(pool.map(claim,range(4))),1)
+
+    def test_existing_private_claim_regressions(self):
+        for name in unittest.defaultTestLoader.getTestCaseNames(scoped.ScopedClaimPostgresTests):
+            with self.subTest(name=name):
+                case=scoped.ScopedClaimPostgresTests(name)
+                case.setUp()
+                getattr(case,name)()
+
 
 if __name__=="__main__":
     unittest.main()

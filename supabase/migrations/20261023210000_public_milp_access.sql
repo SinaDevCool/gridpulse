@@ -56,6 +56,9 @@ begin
       raise exception using errcode='22023',message='Public worker only supports facility plans';
     end if;
     perform pg_advisory_xact_lock(hashtextextended('gridpulse-public-milp-capacity',0));
+    update public.analytics_jobs set status='cancelled',completed_at=now()
+      where access_scope='public' and status='running' and cancellation_requested
+      and lease_expires_at<now();
     if exists(select 1 from public.analytics_jobs where access_scope='public'
       and status='running' and lease_expires_at>now()) then return; end if;
   end if;
@@ -115,5 +118,29 @@ begin
 end $$;
 revoke all on function public.create_public_facility_job(jsonb) from public,anon,authenticated,gridpulse_public_visitor;
 grant execute on function public.create_public_facility_job(jsonb) to service_role;
+
+-- A running public cancellation keeps its lease until the worker acknowledges stopping.
+create or replace function public.cancel_analytics_job(p_job_id uuid,p_owner_id uuid)
+returns setof public.analytics_jobs language sql security definer set search_path=pg_catalog,public as $$
+  update public.analytics_jobs set cancellation_requested=true,
+    status=case when status in ('succeeded','failed','cancelled') or (access_scope='public' and status='running')
+      then status else 'cancelled' end,
+    completed_at=case when status in ('succeeded','failed','cancelled') or (access_scope='public' and status='running')
+      then completed_at else now() end,
+    lease_owner=case when access_scope='public' and status='running' then lease_owner else null end,
+    lease_expires_at=case when access_scope='public' and status='running' then lease_expires_at else null end
+  where id=p_job_id and owner_id=p_owner_id returning *;
+$$;
+create or replace function public.update_leased_analytics_job(p_job_id uuid,p_worker_id text,p_attempt integer,p_payload jsonb)
+returns setof public.analytics_jobs language plpgsql security definer set search_path=pg_catalog,public as $$
+begin
+  if p_payload->>'status' not in ('running','succeeded','failed','cancelled') then raise exception 'Invalid worker status'; end if;
+  return query update public.analytics_jobs set status=p_payload->>'status',result_payload=p_payload->'result_payload',
+    error=p_payload->>'error',started_at=coalesce((p_payload->>'started_at')::timestamptz,started_at),
+    completed_at=(p_payload->>'completed_at')::timestamptz
+  where id=p_job_id and status='running' and lease_owner=p_worker_id and attempt_count=p_attempt and lease_expires_at>now()
+    and ((not cancellation_requested and p_payload->>'status'<>'cancelled')
+      or (access_scope='public' and cancellation_requested and p_payload->>'status'='cancelled')) returning *;
+end $$;
 notify pgrst,'reload schema';
 commit;
