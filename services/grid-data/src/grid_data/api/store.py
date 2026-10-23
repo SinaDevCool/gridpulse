@@ -11,6 +11,18 @@ from grid_data.api.models import AnalyticsJob, JobStatus
 from grid_data.publish import SupabasePublisher
 
 
+def _validated_job_types(job_types: tuple[str, ...] | None) -> tuple[str, ...] | None:
+    if job_types is None:
+        return None
+    if (
+        not isinstance(job_types, tuple)
+        or not 1 <= len(job_types) <= 20
+        or any(not isinstance(item, str) or not item.strip() for item in job_types)
+    ):
+        raise ValueError("Invalid analytics job-type scope")
+    return tuple(sorted(set(job_types)))
+
+
 class JobSubmissionStore(Protocol):
     def create(self, job: AnalyticsJob) -> AnalyticsJob: ...
     def find_by_fingerprint(
@@ -36,7 +48,13 @@ class JobStore(JobSubmissionStore, JobExecutionStore, Protocol):
     def execution_lease(self, worker_id: str, attempt: int): ...
     def get(self, job_id: UUID, owner_id: UUID) -> AnalyticsJob | None: ...
     def list_for_owner(self, owner_id: UUID, limit: int = 100) -> list[AnalyticsJob]: ...
-    def claim(self, worker_id: str, lease_seconds: int = 120) -> AnalyticsJob | None: ...
+    def claim(
+        self,
+        worker_id: str,
+        lease_seconds: int = 120,
+        *,
+        job_types: tuple[str, ...] | None = None,
+    ) -> AnalyticsJob | None: ...
     def heartbeat(self, job_id: UUID, worker_id: str, lease_seconds: int = 120) -> AnalyticsJob: ...
     def checkpoint(self, job_id: UUID, worker_id: str, payload: dict) -> AnalyticsJob: ...
     def request_cancel(self, job_id: UUID, owner_id: UUID) -> AnalyticsJob | None: ...
@@ -147,12 +165,20 @@ class InMemoryJobStore:
             self._jobs[job_id] = updated
             return updated.model_copy(deep=True)
 
-    def claim(self, worker_id: str, lease_seconds: int = 120) -> AnalyticsJob | None:
+    def claim(
+        self,
+        worker_id: str,
+        lease_seconds: int = 120,
+        *,
+        job_types: tuple[str, ...] | None = None,
+    ) -> AnalyticsJob | None:
+        scope = _validated_job_types(job_types)
         now = datetime.now(timezone.utc)
         with self._lock:
             for current in self._jobs.values():
                 if (
                     current.attempt_count >= 3
+                    and (scope is None or current.job_type in scope)
                     and current.status == JobStatus.RUNNING
                     and current.lease_expires_at
                     and current.lease_expires_at <= now
@@ -165,6 +191,7 @@ class InMemoryJobStore:
                     job
                     for job in self._jobs.values()
                     if not job.cancellation_requested
+                    and (scope is None or job.job_type in scope)
                     and job.attempt_count < 3
                     and (
                         job.status == JobStatus.QUEUED
@@ -350,7 +377,25 @@ class SupabaseJobStore:
             raise KeyError(f"analytics job {job_id} does not exist")
         return AnalyticsJob.model_validate(rows[0])
 
-    def claim(self, worker_id: str, lease_seconds: int = 120) -> AnalyticsJob | None:
+    def claim(
+        self,
+        worker_id: str,
+        lease_seconds: int = 120,
+        *,
+        job_types: tuple[str, ...] | None = None,
+    ) -> AnalyticsJob | None:
+        scope = _validated_job_types(job_types)
+        if scope is not None:
+            rows = self._publisher.request(
+                "POST",
+                "/rpc/claim_analytics_job",
+                {
+                    "p_worker_id": worker_id,
+                    "p_lease_seconds": lease_seconds,
+                    "p_job_types": list(scope),
+                },
+            )
+            return AnalyticsJob.model_validate(rows[0]) if rows else None
         rows = self._publisher.request(
             "POST",
             "/rpc/claim_analytics_job",

@@ -25,8 +25,15 @@ def executor_for(job_type: str, executor: JobExecutor) -> Callable[[UUID], None]
     return execute if callable(execute) else getattr(executor, f"execute_{job_type}")
 
 
-def run_once(store: JobStore, executor: JobExecutor, worker_id: str) -> bool:
-    job = store.claim(worker_id)
+def run_once(
+    store: JobStore,
+    executor: JobExecutor,
+    worker_id: str,
+    *,
+    job_types: tuple[str, ...] | None = None,
+) -> bool:
+    # Never fall back to an unscoped claim if a scoped RPC is unavailable.
+    job = store.claim(worker_id) if job_types is None else store.claim(worker_id, job_types=job_types)
     if job is None:
         return False
     stop = threading.Event()
@@ -78,14 +85,18 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Run the durable GridPulse analytics worker")
     parser.add_argument("--once", action="store_true")
     parser.add_argument("--poll-seconds", type=float, default=2.0)
+    parser.add_argument("--job-type", action="append", choices=sorted(JOB_TYPES))
     args = parser.parse_args()
+    job_types = tuple(args.job_type) if args.job_type else None
+    if job_types is not None and len(job_types) > 20:
+        parser.error("At most 20 job types may be selected")
     url = os.environ["SUPABASE_URL"]
     key = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
     worker_id = os.environ.get("GRIDPULSE_WORKER_ID", f"{socket.gethostname()}-{os.getpid()}")
     store = SupabaseJobStore(url, key)
     executor = OperatorHealthExecutor(store, supabase_url=url, service_role_key=key)
     while True:
-        worked = run_once(store, executor, worker_id)
+        worked = run_once(store, executor, worker_id, job_types=job_types)
         if args.once:
             return
         if not worked:

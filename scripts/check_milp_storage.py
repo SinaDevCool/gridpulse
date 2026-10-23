@@ -40,7 +40,8 @@ def store_contract(source: str) -> tuple[list[str], dict[str, list[str]]]:
             continue
         if not isinstance(payload, ast.Dict):
             raise ValueError("RPC contract is not an explicit dictionary")
-        functions[path.value] = sorted(k.value for k in payload.keys if isinstance(k, ast.Constant))
+        arguments = {k.value for k in payload.keys if isinstance(k, ast.Constant)}
+        functions[path.value] = sorted(set(functions.get(path.value, [])) | arguments)
     if not columns or not functions:
         raise ValueError("Existing job-store contract could not be discovered")
     return columns, functions
