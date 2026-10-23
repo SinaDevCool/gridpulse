@@ -36,7 +36,7 @@ const replayedResult = z.object({
   baseline_facility: trajectory,
 }).passthrough();
 
-/** Staged integration boundary, deliberately not selected by the live store.
+/** Shared acceptance boundary for explicitly selected canonical MILP results.
  * Never mix canonical power, heuristic workload windows and unrelated BMS SOC.
  * expectedInputFingerprint is supplied by the authenticated request owner.
  */

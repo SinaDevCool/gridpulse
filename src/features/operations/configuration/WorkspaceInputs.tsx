@@ -17,6 +17,7 @@ export function WorkspaceInputs({
   view,
   onWindow,
   onMode,
+  milp = false,
 }: {
   model: OperationsOverviewModel;
   mode: OperationsDataMode;
@@ -24,6 +25,7 @@ export function WorkspaceInputs({
   view: OperationsView;
   onWindow: (value: OperatingWindowPreset) => void;
   onMode: (value: OperationsDataMode) => void;
+  milp?: boolean;
 }) {
   return (
     <section
@@ -35,9 +37,9 @@ export function WorkspaceInputs({
       </div>
       <OperationsSelect
         name="operating-window"
-        label={mode === "historical" ? "Display window (inactive)" : "Display window"}
-        disabled={mode === "historical"}
-        value={window}
+        label={milp ? "Display window (full MILP horizon)" : mode === "historical" ? "Display window (inactive)" : "Display window"}
+        disabled={milp || mode === "historical"}
+        value={milp ? "today" : window}
         options={Object.entries(operatingWindowLabels)
           .filter(([value]) => value !== "tomorrow")
           .map(([value, label]) => ({
@@ -70,10 +72,10 @@ export function WorkspaceInputs({
         onChange={onMode}
       />
       <span className="ops-context-status">
-        {mode === "historical" ? "Historical evidence" : "Scenario"} · Read-only
+        {milp ? "Synthetic MILP" : mode === "historical" ? "Historical evidence" : "Scenario"} · Read-only
       </span>
       {mode === "scenario" ? (
-        <p role="status">{describeDisplayWindow(model, window).split(". ")[0]}.</p>
+        <p role="status">{milp ? "24 hourly intervals · full modelled day" : `${describeDisplayWindow(model, window).split(". ")[0]}.`}</p>
       ) : null}
       <details className="ops-about-assessment">
         <summary>About this assessment</summary>

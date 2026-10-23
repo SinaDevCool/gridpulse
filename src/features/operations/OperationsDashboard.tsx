@@ -124,6 +124,7 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
             }
           >
             <WorkspaceInputs
+              milp={showMilp}
               model={fullModel}
               mode={mode}
               window={window}

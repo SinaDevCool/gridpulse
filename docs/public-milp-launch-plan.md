@@ -3,6 +3,19 @@
 Decision: 23 October 2026. Public submissions will not require Turnstile or CAPTCHA.
 This changes the candidate integration only; it does not activate production.
 
+## Minimal release evidence — 23 October 2026
+
+- CAPTCHA removal qualified; restricted anonymous signup and owner-scoped reads verified live.
+- Real free Render runtime: `gridpulse-operations-milp`, `srv-dbdqs1jrjlhs73833tng`.
+- Fullb release candidate `c319ff46342619c84e9a5c1ee0575479912bfcdc`, core runtime pinned to `2627576cb365a8b2b0820e9a75a4e96cb6b67d3f`.
+- The 96-interval browser mock failed the 0.1-CPU solver budget without OOM. The minimal public mock therefore uses 24 hourly intervals over the full day; five workloads and battery constraints remain.
+- The safety reserve is an import target, not a demand-response promise. A defined morning event permits recovery outside it.
+- Corrected hourly request passed actual-engine qualification and the 512-MiB/0.1-CPU resource gate (Fullb run 40007851908).
+- Live hosted request completed with `optimal` status, physical replay passed, and the real result passed the shared frontend projection (core run 40008917801).
+- Existing synthetic-only service remains untouched. No new schema or billing changes were applied in this continuation.
+- Frontend production rollout and three-tab browser smoke remain the final release gate; a healthy Render endpoint alone does not prove the app has switched.
+- Public mock is best-effort, quota-limited and not a production SLA or customer-calibrated control system. Existing imported customer evidence is not silently converted to this synthetic model.
+
 ## Boundaries
 
 - Reuse the existing Fullb SciPy/HiGHS optimiser, core API/store and shared result projection. No second solver or queue.
