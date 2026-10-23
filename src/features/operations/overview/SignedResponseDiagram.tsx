@@ -37,6 +37,16 @@ export function SignedResponseDiagram({
     },
     { label: "Grid import", start: 0, end: actual, value: actual, total: true },
   ];
+  return <SignedPowerBalance steps={steps} reconstructed={reconstructed} actual={actual} />;
+}
+
+export interface PowerBalanceStep { label: string; start: number; end: number; value: number; total: boolean }
+
+/** Shared renderer; callers supply reconciled same-interval contributions, never independent peaks. */
+export function SignedPowerBalance({ steps, reconstructed, actual }: {
+  steps: PowerBalanceStep[]; reconstructed: number; actual: number;
+}) {
+  const width = Math.max(680, steps.length * 134);
   const maximum = Math.max(1, ...steps.flatMap((step) => [step.start, step.end])) * 1.15;
   const minimum = Math.min(0, ...steps.flatMap((step) => [step.start, step.end]));
   const y = (value: number) => 150 - ((value - minimum) / (maximum - minimum)) * 120;
@@ -49,16 +59,17 @@ export function SignedResponseDiagram({
         tabIndex={0}
       >
         <svg
-          viewBox="0 0 680 200"
+          viewBox={`0 0 ${width} 200`}
+          style={{ minWidth: width }}
           role="img"
           aria-label={`Selected interval power balance: ${steps.map((step) => `${step.label} ${formatMw(step.value)}`).join(", ")}. Positive effects increase grid import; negative effects reduce it.`}
         >
-          <line x1="10" x2="670" y1={y(0)} y2={y(0)} stroke="var(--ops-chart-grid)" />
+          <line x1="10" x2={width - 10} y1={y(0)} y2={y(0)} stroke="var(--ops-chart-grid)" />
           {steps.map((step, index) => {
             const x = 14 + index * 134;
             return (
               <g key={step.label}>
-                {index > 0 && index < 4 ? (
+                {index > 0 && !step.total ? (
                   <line
                     x1={x - 32}
                     x2={x}
@@ -102,8 +113,7 @@ export function SignedResponseDiagram({
         </svg>
       </div>
       <figcaption>
-        Same-interval power balance · negative effects reduce import; charging and recovery increase
-        it.
+        Same-interval power balance · negative effects reduce import; positive effects increase it.
       </figcaption>
       {Math.abs(reconstructed - actual) > 0.1 ? (
         <p role="status">

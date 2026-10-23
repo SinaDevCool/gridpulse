@@ -48,3 +48,7 @@
   .operations-v2 .power-timeline-panel--battery { height: 11rem; min-height: 11rem; }
   .ops-canonical-inspector { align-items: stretch; }
 }
+.ops-canonical-obligation-table { overflow-x: auto; margin-block: 1rem; }
+.ops-canonical-obligation-table table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.ops-canonical-obligation-table th, .ops-canonical-obligation-table td { padding: .7rem; text-align: left; border-bottom: 1px solid var(--border); }
+.ops-canonical-obligation-table caption { text-align: left; padding-block: .6rem; }

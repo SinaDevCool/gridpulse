@@ -44,7 +44,10 @@ export function selectCanonicalPresentation(rawJob: unknown, request: FacilityPl
     protectedSocPercent: batteryAudit?.protectedSocPercent ?? 0,
     baselinePeakMw: Math.max(...projected.overview.baseline.map(point => point.grid_import_mw)),
     planPeakMw: Math.max(...points.map(point => point.gridImportMw)),
-    jobs: projected.compute.workloads.map(job => ({ id: job.workload_id, points: job.points.map(point => execution.parse(point)) })),
+    jobs: projected.compute.workloads.map(job => ({ id: job.workload_id,
+      completionTime: job.completion_time, deadlineMet: job.deadline_met,
+      endingRemainingWorkHours: job.ending_remaining_work_hours,
+      points: job.points.map(point => execution.parse(point)) })),
   };
 }
 

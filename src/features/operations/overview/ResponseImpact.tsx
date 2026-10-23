@@ -1,6 +1,7 @@
 import { formatDurationHours, formatMw } from "../formatting";
 import type { OperationsOverviewModel, OperationsScenarioKind } from "../scenario-engine";
 import { selectBreachSpans, type DemandKey } from "./select-breach-spans";
+import { BreachTrack } from "./BreachTrack";
 
 export function ResponseImpact({
   model,
@@ -53,21 +54,8 @@ export function ResponseImpact({
                   {formatMw(model.scenario.importLimitMw)}
                 </strong>
               </span>
-              <div className="ops-impact-track">
-                {selectBreachSpans(points, field, model.scenario.importLimitMw).map((span) => (
-                  <button
-                    key={span.timestamp}
-                    type="button"
-                    className="breach"
-                    style={{
-                      left: `${((span.start - first) / duration) * 100}%`,
-                      width: `${((span.end - span.start) / duration) * 100}%`,
-                    }}
-                    aria-label={`${String(label)} breach at ${new Date(span.timestamp).toISOString().slice(11, 16)} UTC · ${formatDurationHours(span.minutes / 60)}`}
-                    onClick={() => onSelect(span.timestamp)}
-                  />
-                ))}
-              </div>
+              <BreachTrack spans={selectBreachSpans(points, field, model.scenario.importLimitMw)}
+                first={first} duration={duration} label={label} onSelect={onSelect} />
             </div>
           );
         })}

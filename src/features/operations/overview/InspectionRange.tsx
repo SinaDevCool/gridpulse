@@ -1,11 +1,10 @@
-import type { OperationsOverviewModel } from "../scenario-engine";
 export function InspectionRange({
   model,
   range,
   setInspectionRange,
   inspection,
 }: {
-  model: OperationsOverviewModel;
+  model: { intervals: { timestamp: string; label: string }[] };
   range: { startIndex: number; endIndex: number } | null;
   setInspectionRange: (range: { startIndex: number; endIndex: number }) => void;
   inspection: { select: (timestamp: string) => void };
@@ -16,6 +15,7 @@ export function InspectionRange({
       <label>
         Range start
         <select
+          aria-label="Range start"
           value={range?.startIndex ?? 0}
           onChange={(event) => {
             const startIndex = Number(event.target.value);
@@ -36,6 +36,7 @@ export function InspectionRange({
       <label>
         Range end
         <select
+          aria-label="Range end"
           value={range?.endIndex ?? model.intervals.length - 1}
           onChange={(event) => {
             const endIndex = Number(event.target.value);

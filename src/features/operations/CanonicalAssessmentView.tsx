@@ -5,11 +5,18 @@ import { formatOperationsTime } from "./presentation";
 import { PowerTimeline } from "./power/PowerTimeline";
 import { PowerDataTable } from "./power/PowerDataTable";
 import { OperationsChartLegend, useChartVisibility } from "./visualization";
+import { CanonicalOperatingSummary, CanonicalOverviewDetails } from "./CanonicalOverviewDetails";
+import { useState } from "react";
+import { InspectionRange } from "./overview/InspectionRange";
 
 export function CanonicalAssessmentView({ assessment, view, timestamp, onSelect, preview, onPreview }: {
   assessment: CanonicalPresentation; view: OperationsView; timestamp: string; onSelect: (value: string) => void;
   preview: string | null; onPreview: (value: string | null) => void;
 }) {
+  const identity = assessment.projected.identity.resultFingerprint;
+  const [range, setRange] = useState<{ identity: string; startIndex: number; endIndex: number } | null>(null);
+  const activeRange = range?.identity === identity ? range : null;
+  const displayed = view === "overview" && activeRange ? assessment.points.slice(activeRange.startIndex, activeRange.endIndex + 1) : assessment.points;
   const inspected = preview ?? timestamp;
   const selected = assessment.points.find(point => point.timestamp === inspected) ?? assessment.points[0];
   const index = assessment.points.indexOf(selected);
@@ -21,6 +28,7 @@ export function CanonicalAssessmentView({ assessment, view, timestamp, onSelect,
       <h2>{view === "compute" ? "Solved workload schedule" : view === "power" ? "Joint-plan battery response" : "Optimised facility plan"}</h2>
       </div><p className="ops-canonical-status">{assessment.projected.identity.status === "optimal" ? "Optimal within this model" : "Feasible incumbent—not proven optimal"} · Physical replay passed</p>
     </header>
+    {view === "overview" ? <CanonicalOperatingSummary assessment={assessment} /> : null}
     <CanonicalSummary assessment={assessment} view={view} breachHours={breachHours} />
     {view === "overview" ? <p className="ops-canonical-status">Baseline peak {formatMw(assessment.baselinePeakMw)} → plan peak {formatMw(assessment.planPeakMw)} · Peaks may occur at different times</p> : null}
     <p className="ops-canonical-status">{assessment.points.length} modelled intervals · Full planning horizon · Not measured delivery or equipment control</p>
@@ -33,7 +41,13 @@ export function CanonicalAssessmentView({ assessment, view, timestamp, onSelect,
     <button type="button" className="secondary-button" onClick={() => onSelect(assessment.points.reduce((peak, point) => point.gridImportMw > peak.gridImportMw ? point : peak).timestamp)}>Inspect plan peak</button>
     </div>
     <p role="status">{formatOperationsTime(selected.timestamp)} · grid import {formatMw(selected.gridImportMw)} · battery {formatMw(selected.batteryPowerMw ?? 0)}</p>
-    <PowerTimeline data={assessment.points} limitMw={assessment.limitMw} targetMw={assessment.targetMw}
+    {view === "overview" ? <div>
+      <InspectionRange model={{ intervals: assessment.points.map(point => ({ timestamp: point.timestamp, label: formatOperationsTime(point.timestamp) })) }}
+        range={activeRange} setInspectionRange={value => setRange({ identity, ...value })} inspection={{ select: onSelect }} />
+      {activeRange ? <button type="button" className="secondary-button" onClick={() => setRange(null)}>Reset inspection range</button> : null}
+      <p className="ops-canonical-status">Chart range only · peak summary, completion & battery checks retain the full horizon</p>
+    </div> : null}
+    <PowerTimeline data={displayed} limitMw={assessment.limitMw} targetMw={assessment.targetMw}
       protectedSocPercent={assessment.protectedSocPercent} selectedTimestamp={inspected}
       onSelect={onSelect} mode="scenario" previewing={preview !== null} variant={view === "power" && assessment.batteryAudit ? "battery" : view === "compute" ? "compute" : "overview"}
       showConstraints={false} maximumSocPercent={assessment.batteryAudit?.maximumSocPercent} />
@@ -43,6 +57,7 @@ export function CanonicalAssessmentView({ assessment, view, timestamp, onSelect,
       {assessment.batteryAudit ? <span>SOC {formatPercent(selected.socPercent!)} · reserve {formatPercent(assessment.protectedSocPercent)} · maximum {formatPercent(assessment.batteryAudit.maximumSocPercent)}</span> : <span>No battery in this plan</span>}
     </div>
     {view === "compute" ? <CanonicalExecutionLanes assessment={assessment} timestamp={inspected} onSelect={onSelect} onPreview={onPreview} /> : null}
+    {view === "overview" ? <CanonicalOverviewDetails assessment={assessment} index={index} onSelect={onSelect} /> : null}
     <details><summary>How to read this assessment</summary>
       <p>Baseline import is the submitted reference. Facility demand is planned demand before battery response; grid import is after battery response. Peaks may occur at different times.</p>
       <p>Positive battery MW means discharge; negative means charging. SOC uses fixed health-adjusted capacity, not energy above reserve. Hourly intervals do not imply minute-level control.</p>

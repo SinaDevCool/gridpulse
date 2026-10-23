@@ -60,14 +60,33 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await page.getByRole("link", { name: "Overview", exact: true }).click();
   await expect(result.getByText("Peak reduction · baseline → plan", { exact: true })).toBeVisible();
   await expect(result.locator(".power-timeline-panel")).toHaveCount(1);
+  await expect(result.getByRole("meter", { name: "Peak import after response" })).toHaveAttribute("aria-valuenow", "51");
+  const explorer = result.getByRole("region", { name: "MILP response explorer" });
+  await expect(explorer).toContainText("Peak safety-target margin");
+  await expect(explorer).toContainText("Passed within model");
+  await explorer.getByText(/Explain selected interval/).click();
+  await expect(explorer.getByRole("img", { name: /Selected interval power balance/ })).toBeVisible();
+  await expect(explorer.getByText(/Balance discrepancy/)).toHaveCount(0);
+  await result.getByText("Set inspection range", { exact: true }).click();
+  await result.getByLabel("Range start", { exact: true }).selectOption("2");
+  await expect(result).toHaveAttribute("data-inspected-time", "2026-09-26T02:00:00.000Z");
+  await expect(result.getByRole("meter")).toHaveAttribute("aria-valuenow", "51");
+  await result.getByRole("button", { name: "Reset inspection range", exact: true }).click();
   for (const theme of ["light", "dark"]) {
     await page.evaluate(value => document.documentElement.dataset.theme = value, theme);
     expect((await new AxeBuilder({ page }).include(".ops-canonical").analyze()).violations).toEqual([]);
+    await result.getByLabel("Operating summary", { exact: true }).scrollIntoViewIfNeeded();
+    await page.screenshot({ path: `test-results/canonical-summary-${theme}.png` });
+    await explorer.locator(".ops-waterfall").scrollIntoViewIfNeeded();
+    await page.screenshot({ path: `test-results/canonical-balance-${theme}.png` });
     await result.locator(".power-timeline-panel").first().scrollIntoViewIfNeeded();
     await page.screenshot({ path: `test-results/canonical-${theme}.png`, fullPage: true });
   }
-  await page.getByRole("link", { name: "Power & Battery", exact: true }).click();
   await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
+  await explorer.locator(".ops-waterfall").scrollIntoViewIfNeeded();
+  await page.screenshot({ path: "test-results/canonical-overview-mobile.png" });
+  await page.getByRole("link", { name: "Power & Battery", exact: true }).click();
   for (const panel of await panels.all()) expect((await panel.boundingBox())!.height).toBeGreaterThan(140);
   expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
   await panels.last().scrollIntoViewIfNeeded();

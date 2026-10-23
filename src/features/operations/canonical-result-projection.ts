@@ -16,12 +16,17 @@ const replayedResult = z.object({
   optimality_gap: finite.nonnegative().nullable(),
   model_fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
   automatic_live_dispatch_authorized: z.literal(false),
-  assessment: z.object({ feasible: z.literal(true) }).passthrough(),
+  assessment: z.object({ feasible: z.literal(true), recovery_complete: z.boolean().optional(),
+    battery_terminal_targets_met: z.boolean().optional(), sla_violations: z.array(z.unknown()).optional(),
+    import_limit_violations: z.number().int().nonnegative().optional() }).passthrough(),
   diagnostics: z.array(z.unknown()).max(0),
   facility: trajectory,
   portfolio: z.object({
     workload_trajectories: z.array(z.object({
       workload_id: z.string().min(1),
+      completion_time: z.string().datetime({ offset: true }).nullable().optional(),
+      deadline_met: z.boolean().optional(),
+      ending_remaining_work_hours: finite.nonnegative().optional(),
       points: z.array(z.object({ interval_index: z.number().int().nonnegative() }).passthrough()),
     }).passthrough()),
   }).passthrough(),
@@ -100,6 +105,8 @@ export function projectCanonicalAssessment(
   });
   return {
     identity,
+    assessment: result.assessment,
+    portfolio: result.portfolio,
     intervals: result.intervals,
     overview: { identity, power: result.facility.points, baseline: result.baseline_facility.points },
     compute: { identity, power: result.facility.points, workloads: jobs },
