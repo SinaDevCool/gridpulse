@@ -111,7 +111,7 @@ test("single input panel retains drafts, validates fields and recalculates every
   await panel.getByRole("button", { name: "Recalculate Scenario" }).click();
   await expect(
     page.getByRole("heading", {
-      name: "No battery response is required for the selected interval",
+      name: "No discharge needed this interval",
     }),
   ).toBeVisible();
   await page.getByRole("link", { name: "Overview", exact: true }).click();
