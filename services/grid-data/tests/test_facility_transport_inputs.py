@@ -12,6 +12,7 @@ def payload():
         "profiles": [{}], "policy": {}, "economics": {}, "cooling": {},
         "batteries": [{"resource_id": "battery", "maximum_charge_power_mw": 2}],
         "onsite_generation_mw": [0.5], "fleet_gpu_capacity": 125000,
+        "idle_gpu_power_watts": 70,
         "fatigue_limits": {"maximum_consecutive_event_hours": 2},
     }
 
