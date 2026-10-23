@@ -22,6 +22,7 @@ export function CanonicalAssessmentView({ assessment, view, timestamp, onSelect,
       </div><p className="ops-canonical-status">{assessment.projected.identity.status === "optimal" ? "Optimal within this model" : "Feasible incumbent—not proven optimal"} · Physical replay passed</p>
     </header>
     <CanonicalSummary assessment={assessment} view={view} breachHours={breachHours} />
+    {view === "overview" ? <p className="ops-canonical-status">Baseline peak {formatMw(assessment.baselinePeakMw)} → plan peak {formatMw(assessment.planPeakMw)} · Peaks may occur at different times</p> : null}
     <p className="ops-canonical-status">{assessment.points.length} modelled intervals · Full planning horizon · Not measured delivery or equipment control</p>
     <div className="ops-canonical-inspector">
     <button type="button" className="secondary-button" disabled={index === 0} onClick={() => onSelect(previous)}>Previous interval</button>

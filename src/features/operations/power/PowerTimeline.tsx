@@ -83,7 +83,7 @@ export function PowerTimeline({
     <div
       className={`power-timeline power-timeline--${variant}`}
       role="group"
-      aria-label="Three aligned charts show facility demand and grid import in megawatts, battery dispatch in megawatts, and state of charge in percent"
+      aria-label={variant === "battery" ? "Three aligned charts show facility demand and grid import in megawatts, battery dispatch in megawatts, and state of charge in percent" : variant === "compute" ? "Workload power and planned facility import in megawatts" : "Baseline and planned facility import comparison in megawatts"}
     >
       <OperationsChartLegend
         visibility={visibility}
