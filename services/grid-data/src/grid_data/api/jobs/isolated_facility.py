@@ -50,7 +50,9 @@ def execute_isolated_facility(context: JobContext, payload: dict) -> dict:
                 context.checkpoint()
                 next_checkpoint = now + 1
             if now >= deadline:
-                raise TimeoutError("Canonical calculation exceeded the 630-second wall-clock budget")
+                raise TimeoutError(
+                    "Canonical calculation exceeded the 630-second wall-clock budget"
+                )
             if receiver.poll(0.1):
                 try:
                     message = json.loads(receiver.recv_bytes(MAXIMUM_RESULT_BYTES))
