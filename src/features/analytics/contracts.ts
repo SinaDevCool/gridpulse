@@ -45,6 +45,11 @@ export const facilityPlanRequestSchema = z
     policy: z.record(z.unknown()),
     economics: z.record(z.unknown()),
     cooling: z.record(z.unknown()),
+    batteries: z.array(z.record(z.unknown())).max(100).optional(),
+    onsite_generation_mw: z.array(z.number().finite().nonnegative()).min(1).max(35_040).optional(),
+    fatigue_limits: z.record(z.unknown()).nullable().optional(),
+    fleet_gpu_capacity: z.number().int().positive().optional(),
+    idle_gpu_power_watts: z.number().finite().nonnegative().optional(),
   })
   .strict();
 

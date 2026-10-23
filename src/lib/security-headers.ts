@@ -1,3 +1,5 @@
+import { SYNTHETIC_MILP_ORIGIN } from "./synthetic-milp-origin";
+
 export function secureExternalOrigin(value?: string | null): string | null {
   if (!value) return null;
   try {
@@ -11,6 +13,7 @@ export function secureExternalOrigin(value?: string | null): string | null {
 
 export function buildSecurityHeaders(
   supabaseUrl?: string | null,
+  syntheticMilpEnabled = false,
 ): Readonly<Record<string, string>> {
   const supabaseOrigin = secureExternalOrigin(supabaseUrl);
   const connectSources = [
@@ -18,6 +21,7 @@ export function buildSecurityHeaders(
     "https://tiles.openfreemap.org",
     ...(supabaseOrigin ? [supabaseOrigin] : []),
     "https://cloudflareinsights.com",
+    ...(syntheticMilpEnabled ? [SYNTHETIC_MILP_ORIGIN] : []),
   ];
 
   return {

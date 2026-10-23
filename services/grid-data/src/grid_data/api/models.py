@@ -64,6 +64,11 @@ class FacilityPlanRequest(BaseModel):
     policy: dict[str, Any]
     economics: dict[str, Any]
     cooling: dict[str, Any]
+    batteries: list[dict[str, Any]] = Field(default_factory=list, max_length=100)
+    onsite_generation_mw: list[float] | None = Field(default=None, min_length=1, max_length=35_040)
+    fatigue_limits: dict[str, Any] | None = None
+    fleet_gpu_capacity: int | None = Field(default=None, gt=0, strict=True)
+    idle_gpu_power_watts: float = Field(default=0, ge=0, allow_inf_nan=False)
 
 
 class FcaIntervalRequest(BaseModel):

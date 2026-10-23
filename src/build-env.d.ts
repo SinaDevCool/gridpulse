@@ -4,6 +4,7 @@ interface ImportMetaEnv {
   readonly VITE_SUPABASE_URL: string;
   readonly VITE_SUPABASE_PUBLISHABLE_KEY: string;
   readonly VITE_ANALYTICS_API_URL?: string;
+  readonly VITE_OPERATIONS_MILP_DEMO?: string;
   readonly VITE_PUBLIC_FINDER_EXPERIMENTAL_MODE?: string;
 }
 

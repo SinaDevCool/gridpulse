@@ -26,6 +26,8 @@ import { useScenarioDraft } from "./configuration/use-scenario-draft";
 import { usePanelLayout } from "./configuration/use-panel-layout";
 import { InputPanelContext } from "./configuration/input-panel-context";
 import { WorkloadEvidenceProvider } from "./WorkloadEvidenceProvider";
+import { useCanonicalDemo } from "./hooks/use-canonical-demo";
+import { CanonicalDemoView } from "./CanonicalDemoView";
 export type { OperationsView } from "./view-contracts";
 
 type Props = { view: OperationsView; window: OperatingWindowPreset; mode: OperationsDataMode };
@@ -42,6 +44,12 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
   const [scenario, setScenario] = useState(defaultOperationsScenario);
   const [selected, setSelected] = useState<OperationsScenarioKind>("battery_workload");
   const [evidenceOpen, setEvidenceOpen] = useState(false);
+  const [demoSelected, setDemoSelected] = useState(false);
+  const [demoTimestamp, setDemoTimestamp] = useState<string | null>(null);
+  const [demoPreview, setDemoPreview] = useState<string | null>(null);
+  const demoAvailable = import.meta.env.DEV || import.meta.env.VITE_OPERATIONS_MILP_DEMO === "true";
+  const demoActive = demoAvailable && demoSelected && mode !== "historical";
+  const canonicalDemo = useCanonicalDemo(demoActive);
   const { serverModel, fallbackModel, assessmentIdentity, backendState, lifecycle } =
     useOverviewAssessment(scenario);
   const fullModel = serverModel ?? fallbackModel;
@@ -84,13 +92,20 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
             mobile={layout.mobile}
             onClose={closeInputs}
             actions={
-              <ConfigurationActions
+              demoActive ? null : <ConfigurationActions
                 dirty={draft.dirty}
                 busy={lifecycle === "loading" || lifecycle === "stale"}
                 onDiscard={draft.discard}
               />
             }
           >
+            {demoActive ? <section className="ops-evidence-section">
+              <h2>Fixed synthetic inputs</h2>
+              <p>96 intervals · 5 workloads · one battery · onsite generation.</p>
+              <p>Inputs are locked. The Render pilot solves this fixed case at startup; this is not customer-input recalculation.</p>
+              <p>Display: full planning horizon · UTC. PUE reference-only; component accounting.</p>
+              <button type="button" className="secondary-button" onClick={() => setDemoSelected(false)}>Return to heuristic scenario</button>
+            </section> : <>
             <WorkspaceInputs
               model={fullModel}
               mode={mode}
@@ -133,6 +148,7 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
               <small>Read-only assessment · no physical commands</small>
             </div>
             <AdvancedAnalysis />
+            </>}
           </ConfigurationPanel>
           <div className="ops-dashboard-canvas">
             <h1 className="sr-only">{view === "power" ? "Power & Battery" : "Power Operations"}</h1>
@@ -161,6 +177,12 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
                   ) : null}
                 </button>
               </header>
+              {demoAvailable ? <label>Calculation method <select disabled={mode === "historical"}
+                value={demoActive ? "milp-demo" : "heuristic"}
+                onChange={event => { setDemoSelected(event.target.value === "milp-demo"); setDemoPreview(null); }}>
+                <option value="heuristic">Heuristic scenario</option>
+                <option value="milp-demo">Synthetic MILP demonstration</option>
+              </select></label> : null}
             </div>
             <div
               key={view}
@@ -171,6 +193,16 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
               aria-label="Operations results"
               tabIndex={0}
             >
+              {demoActive ? <>
+                <p role="status">Fixed synthetic MILP · full horizon · scenario controls do not recalculate this assessment.</p>
+                {canonicalDemo.isPending ? <p role="status">Loading MILP assessment. Free hosting may need time to wake.</p> : null}
+                {canonicalDemo.isError ? <div role="alert"><p>Synthetic MILP unavailable or rejected. No heuristic result has been substituted.</p>
+                  <button type="button" onClick={() => void canonicalDemo.refetch()}>Retry loading assessment</button></div> : null}
+                {canonicalDemo.data ? <CanonicalDemoView demo={canonicalDemo.data} view={view}
+                  timestamp={canonicalDemo.data.points.some(point => point.timestamp === demoTimestamp) ? demoTimestamp! : canonicalDemo.data.points[0].timestamp}
+                  onSelect={value => { setDemoTimestamp(value); setDemoPreview(null); }}
+                  preview={demoPreview} onPreview={setDemoPreview} /> : null}
+              </> : <>
               <div className="ops-context-summary">
                 <p>
                   {scenario.facilityName} ·{" "}
@@ -219,6 +251,7 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
               {view === "overview" ? (
                 <AssessmentRecord fullModel={fullModel} assessmentIdentity={assessmentIdentity} />
               ) : null}
+              </>}
             </div>
           </div>
         </main>
