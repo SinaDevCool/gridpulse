@@ -45,15 +45,22 @@ export function mapCanonicalComponentInputs(
     ),
   }));
   const b = scenario.battery;
-  if (request.batteries?.length !== 1)
+  const assets = request.batteries ?? [];
+  const explicitlyDisabled = !b.available || b.maximumPowerMw === 0 || b.usableEnergyMwh === 0;
+  if (assets.length === 0 && explicitlyDisabled) {
+    request.batteries = [];
+  } else if (assets.length !== 1)
     blockers.push("The single-battery input panel requires exactly one reviewed battery asset; multi-asset mapping must be explicit.");
   else {
-    const battery = request.batteries[0];
+    const battery = assets[0];
     const effective = b.usableEnergyMwh * b.stateOfHealthPercent / 100;
     if (effective <= 0 || b.maximumPowerMw <= 0)
       blockers.push("A disabled or zero-energy battery needs an explicit no-battery canonical model.");
     if (typeof battery.terminal_target_mwh !== "number")
       blockers.push("A reviewed terminal battery target is required.");
+    else if (!Number.isFinite(battery.terminal_target_mwh) || battery.terminal_target_mwh < 0 ||
+        battery.terminal_target_mwh > effective * b.maximumSocPercent / 100)
+      blockers.push("The reviewed terminal battery target is outside the mapped effective energy capacity.");
     request.batteries = [{ ...battery,
       rated_power_mw: b.maximumPowerMw, maximum_charge_power_mw: b.maximumChargePowerMw,
       rated_energy_mwh: b.usableEnergyMwh, degradation_fraction: 1 - b.stateOfHealthPercent / 100,
