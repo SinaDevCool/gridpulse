@@ -1,0 +1,23 @@
+name: Configure approved free MILP service (disabled)
+on:
+  push:
+    branches: [codex/production-milp-runtime]
+    paths: [scripts/configure_milp_render.py, .github/workflows/configure-milp-render.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  configure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python scripts/configure_milp_render.py
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

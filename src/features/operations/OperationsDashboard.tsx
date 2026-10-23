@@ -62,6 +62,17 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
   }, [view]);
   const milpEnabled = import.meta.env.VITE_OPERATIONS_MILP_ENABLED === "true";
   const [calculation, setCalculation] = useState<"scenario" | "milp">(milpEnabled ? "milp" : "scenario");
+  // Preference only, never facility inputs or results. Explicit comparison choice
+  // survives reload without changing the public mock's default MILP mode.
+  useEffect(() => {
+    try { const preferred = localStorage.getItem("gridpulse-calculator");
+      if (preferred === "scenario" || preferred === "milp") setCalculation(preferred);
+    } catch { /* Storage may be unavailable; retain the configured default. */ }
+  }, []);
+  function chooseCalculation(value: "scenario" | "milp") {
+    setCalculation(value);
+    try { localStorage.setItem("gridpulse-calculator", value); } catch { /* Optional preference. */ }
+  }
   const milp = useMilpCalculation();
   const canonical = milp.result;
   const setCanonical = milp.setResult;
@@ -228,9 +239,9 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
               </p>
               {milpEnabled && mode !== "historical" ? <div className="section-toolbar" aria-label="Calculation method">
                 <button type="button" className="secondary-button" aria-pressed={calculation === "scenario"}
-                  onClick={() => setCalculation("scenario")}>Scenario calculator</button>
+                  onClick={() => chooseCalculation("scenario")}>Scenario calculator</button>
                 <button type="button" className="secondary-button" aria-pressed={calculation === "milp"}
-                  onClick={() => setCalculation("milp")}>Joint MILP · synthetic model</button>
+                  onClick={() => chooseCalculation("milp")}>Joint MILP · synthetic model</button>
               </div> : null}
               {showMilp ? <section className="data-panel" aria-label="MILP calculation status" aria-busy={milp.busy}>
                 <p role="status">{milp.busy ? `${milp.job?.status ?? "Connecting"} · the free service may need time to wake up.` : "Recalculate runs the joint workload and battery optimiser. The battery terminal target preserves initial energy."}</p>

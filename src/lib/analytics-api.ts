@@ -58,11 +58,14 @@ async function authenticatedRequest(path: string, init?: RequestInit): Promise<u
     ? "No public visitor session. Start a MILP calculation to create a restricted session."
     : "Analytics jobs are unavailable in the public Finder");
 
+  // A user-initiated submission may need to wake the free service. Polls and
+  // other API calls retain their shorter timeout; no background keepalive.
+  const timeoutMs = publicRequest && path === "/v1/jobs/facility-plan" ? 120_000 : 30_000;
   const response = await fetch(`${analyticsBaseUrl()}${path}`, {
     ...init,
     signal: init?.signal
-      ? AbortSignal.any([init.signal, AbortSignal.timeout(30_000)])
-      : AbortSignal.timeout(30_000),
+      ? AbortSignal.any([init.signal, AbortSignal.timeout(timeoutMs)])
+      : AbortSignal.timeout(timeoutMs),
     headers: {
       authorization: `Bearer ${session.access_token}`,
       "content-type": "application/json",
