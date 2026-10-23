@@ -1,11 +1,12 @@
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
+from unittest.mock import Mock
 
 import pytest
 
 from grid_data.api.executor import OperatorHealthExecutor
 from grid_data.api.models import AnalyticsJob, JobStatus
-from grid_data.api.store import InMemoryJobStore
+from grid_data.api.store import InMemoryJobStore, SupabaseJobStore
 from grid_data.api.worker import executor_for, run_once
 from grid_data.contracts.pilot_data import ProvenanceRecord
 
@@ -128,3 +129,50 @@ def test_expired_lease_cannot_renew_or_publish_and_retry_is_bounded() -> None:
             store.update(job.id, status=JobStatus.SUCCEEDED)
     assert store.claim("worker-4") is None
     assert store.get_internal(job.id).status == JobStatus.FAILED
+
+
+def test_scoped_claim_skips_other_jobs_and_their_retry_cleanup() -> None:
+    store = InMemoryJobStore()
+    other = store.create(AnalyticsJob(owner_id=uuid4(), job_type="reference_topology"))
+    exhausted = store.create(AnalyticsJob(owner_id=uuid4(), job_type="graph_guided_study"))
+    store._jobs[exhausted.id].status = JobStatus.RUNNING
+    store._jobs[exhausted.id].attempt_count = 3
+    store._jobs[exhausted.id].lease_expires_at = datetime.now(timezone.utc) - timedelta(seconds=1)
+    target = store.create(AnalyticsJob(owner_id=uuid4(), job_type="facility_plan"))
+    claimed = store.claim("operations", job_types=("facility_plan",))
+    assert claimed is not None and claimed.id == target.id
+    assert store.get_internal(other.id).status == JobStatus.QUEUED
+    assert store.get_internal(exhausted.id).status == JobStatus.RUNNING
+    assert store.claim("operations", job_types=("facility_plan",)) is None
+    assert store.claim("legacy").id == other.id
+    assert store.get_internal(exhausted.id).status == JobStatus.FAILED
+
+
+@pytest.mark.parametrize("scope", [(), ("",), (" ",), (None,), "facility_plan", ("facility_plan",) * 21])
+def test_invalid_scope_never_becomes_global(scope) -> None:
+    for store in [InMemoryJobStore(), SupabaseJobStore("https://unused.invalid", "unused")]:
+        with pytest.raises(ValueError, match="scope"):
+            store.claim("operations", job_types=scope)
+
+
+def test_scoped_rpc_transport_and_no_fallback() -> None:
+    store = SupabaseJobStore("https://unused.invalid", "unused")
+    store._publisher = Mock()
+    store._publisher.request.return_value = []
+    assert store.claim("operations", job_types=("facility_plan",)) is None
+    store._publisher.request.assert_called_once_with("POST", "/rpc/claim_analytics_job", {
+        "p_worker_id": "operations", "p_lease_seconds": 120, "p_job_types": ["facility_plan"],
+    })
+    store._publisher.request.reset_mock()
+    store._publisher.request.side_effect = RuntimeError("Scoped RPC unavailable")
+    with pytest.raises(RuntimeError, match="Scoped RPC"):
+        store.claim("operations", job_types=("facility_plan",))
+    assert store._publisher.request.call_count == 1
+
+
+def test_worker_passes_scope_to_existing_store() -> None:
+    store = InMemoryJobStore()
+    other = store.create(AnalyticsJob(owner_id=uuid4(), job_type="reference_topology"))
+    executor = OperatorHealthExecutor(store, supabase_url="https://unused.invalid", service_role_key="unused")
+    assert not run_once(store, executor, "operations", job_types=("facility_plan",))
+    assert store.get_internal(other.id).status == JobStatus.QUEUED
