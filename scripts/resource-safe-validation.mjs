@@ -1,5 +1,6 @@
 import { spawn, spawnSync } from "node:child_process";
-import { open, readFile, unlink, readdir } from "node:fs/promises";
+import { open, readFile, unlink } from "node:fs/promises";
+import { ownedFiles, suiteFiles } from "./e2e-manifest.mjs";
 import { tmpdir, freemem, userInfo } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -22,8 +23,23 @@ export function validationPlan(mode, targets = [], operationsSpecs = []) {
   if (mode === "unit" && targets.length) return [npm("test", targets)];
   if (mode === "build") return [npm("build"), npm("check:performance-budgets")];
   if (mode === "runtime") return [npm("test:operations:runtime")];
+  if (mode === "browser" && targets.length === 1) {
+    suiteFiles(targets[0]);
+    return [npm("test:browser", targets)];
+  }
   if (mode === "ui" && targets.length)
     return targets.map((target) => ["exec", "playwright", "--", "test", target, "--workers=1"]);
+  if (mode === "finder-ui" && targets.length)
+    return targets.map((target) => [
+      "exec",
+      "playwright",
+      "--",
+      "test",
+      "--config",
+      "playwright.finder.config.ts",
+      target,
+      "--workers=1",
+    ]);
   if (mode === "finder") return [npm("test:e2e:finder")];
   if (mode === "full")
     return [
@@ -33,7 +49,7 @@ export function validationPlan(mode, targets = [], operationsSpecs = []) {
       npm("test:operations:runtime"),
     ];
   throw new Error(
-    "Use checks, operations, unit <test paths>, ui <spec paths>, build, runtime, finder, or full. Finder is intentionally opt-in.",
+    "Use checks, operations, unit <paths>, ui <paths>, finder-ui <paths>, browser <suite>, build, runtime, finder, or full. Finder is intentionally opt-in.",
   );
 }
 
@@ -163,17 +179,7 @@ async function runNpm(args) {
 }
 
 export async function main(args = process.argv.slice(2)) {
-  const specs = (await readdir("tests/e2e"))
-    .filter(
-      (file) =>
-        /^(operations-|compute-visual-|power-battery-|activation-operations-|solution-)/.test(
-          file,
-        ) &&
-        file.endsWith(".spec.ts") &&
-        file !== "operations-runtime-contracts.spec.ts" &&
-        file !== "solution-runtime-boundary.spec.ts",
-    )
-    .map((file) => `tests/e2e/${file}`);
+  const specs = ownedFiles(["operations", "shared"]);
   const plan = validationPlan(args[0] ?? "operations", args.slice(1), specs);
   const lock = join(
     tmpdir(),

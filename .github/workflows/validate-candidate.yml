@@ -1,0 +1,181 @@
+name: Validate exact GridPulse candidate
+on:
+  workflow_call:
+    inputs:
+      production:
+        type: boolean
+        default: false
+    secrets:
+      VITE_SUPABASE_URL:
+        required: false
+      VITE_SUPABASE_PUBLISHABLE_KEY:
+        required: false
+    outputs:
+      artifact:
+        value: ${{ jobs.build.outputs.artifact }}
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      artifact: candidate-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}
+    env:
+      GRIDPULSE_BUILD_SHA: ${{ github.sha }}
+      GRIDPULSE_BUILD_ENV: ${{ inputs.production && 'production' || 'validation' }}
+      GRIDPULSE_PRODUCT_MODE: finder
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run test:validation-tools
+      - run: npm run check:encoding
+      - run: npm run typecheck
+      - run: npm run check:architecture
+      - run: npm run lint:app
+      - run: npm test
+      - run: npm run test:operations:database
+      - run: node scripts/test-strategy-transactions.mjs
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install -e "./services/grid-data[api,study,ml,dev]"
+      - run: python -m pytest services/grid-data/tests
+        env:
+          PYTHONPATH: services/grid-data/src
+      - run: python -m grid_data.cli audit-release --input public/power-finder/brandenburg-osm.json --output output/brandenburg-osm-audit.json
+        env:
+          PYTHONPATH: services/grid-data/src
+      - name: Build candidate once
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      - run: npm run check:performance-budgets
+      - run: node scripts/candidate-artifact.mjs seal
+      - name: Check compiled APIs and solution boundaries
+        run: npm run test:browser -- runtime
+      - run: node scripts/candidate-artifact.mjs verify
+      - uses: actions/upload-artifact@v4
+        with:
+          name: candidate-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}
+          path: dist/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 3
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: runtime-reports-${{ github.run_attempt }}
+          path: test-results/runtime/
+          if-no-files-found: ignore
+          retention-days: 7
+  fast:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    env:
+      GRIDPULSE_TEST_COMPILED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build.outputs.artifact }}
+          path: dist
+      - run: node scripts/candidate-artifact.mjs verify
+      - run: npx playwright install --with-deps chromium
+      - name: History, battery and shared assessment first
+        run: npm run test:browser -- fast
+      - run: node scripts/candidate-artifact.mjs verify
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: fast-reports-${{ github.run_attempt }}
+          path: test-results/fast/
+          if-no-files-found: ignore
+          retention-days: 7
+  browsers:
+    needs: [build, fast]
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        suite: [operations, finder, shared]
+    env:
+      GRIDPULSE_TEST_COMPILED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build.outputs.artifact }}
+          path: dist
+      - run: node scripts/candidate-artifact.mjs verify
+      - run: npx playwright install --with-deps chromium
+      - name: Run owned browser suite
+        run: npm run test:browser -- ${{ matrix.suite }}
+      - run: node scripts/candidate-artifact.mjs verify
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: browser-${{ matrix.suite }}-reports-${{ github.run_attempt }}
+          path: test-results/${{ matrix.suite }}/
+          if-no-files-found: ignore
+          retention-days: 7
+  isolation:
+    needs: fast
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      max-parallel: 1
+      matrix:
+        solution: [planning, operations]
+    env:
+      GRIDPULSE_SOLUTIONS: ${{ matrix.solution }}
+      GRIDPULSE_PRODUCT_MODE: finder
+      GRIDPULSE_TEST_OUTPUT: test-results/isolation/attachments
+      GRIDPULSE_TEST_REPORT_DIR: test-results/isolation
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Build non-deployable isolation fixture
+        run: npm run build
+      - run: npx playwright test --config playwright.runtime.config.ts tests/e2e/solution-runtime-boundary.spec.ts --workers=1
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: isolation-${{ matrix.solution }}-reports-${{ github.run_attempt }}
+          path: test-results/isolation/
+          if-no-files-found: ignore
+          retention-days: 7
+  gate:
+    needs: [build, fast, browsers, isolation]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Require every validation result
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          node -e 'const jobs=JSON.parse(process.env.RESULTS); if(Object.values(jobs).some(job=>job.result!=="success")) process.exit(1); console.log("All required candidate checks passed")'
