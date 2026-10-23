@@ -98,7 +98,7 @@ class Management:
         print("Management phase: " + ("approved migration transaction" if write else "read-only schema verification"), flush=True)
         request = urllib.request.Request(self.base + path, method="POST",
             headers={"Authorization": "Bearer " + self.token, "Content-Type": "application/json"},
-            data=json.dumps({"query": query}).encode())
+            data=json.dumps({"query": query, "read_only": not write}).encode())
         with self.opener.open(request, timeout=45) as response:
             raw = response.read(4_000_001)
         if len(raw) > 4_000_000:
