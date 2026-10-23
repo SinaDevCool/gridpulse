@@ -2,6 +2,11 @@ name: Production application health
 
 on:
   workflow_dispatch:
+    inputs:
+      verify_milp:
+        description: Submit one real public MILP calculation and check all three tabs
+        type: boolean
+        default: false
   schedule:
     - cron: "17 * * * *"
 
@@ -11,7 +16,7 @@ permissions:
 jobs:
   application-health:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -29,3 +34,13 @@ jobs:
         env:
           GRIDPULSE_HEALTH_BASE_URL: https://gridpulseinsights.com
         run: node scripts/check-production-map.mjs
+      - name: Check real public MILP across Operations tabs
+        if: github.event_name == 'workflow_dispatch' && inputs.verify_milp
+        run: node scripts/check-production-milp.mjs
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: production-health-failure-${{ github.run_attempt }}
+          path: test-results/production-*.png
+          if-no-files-found: ignore
+          retention-days: 7
