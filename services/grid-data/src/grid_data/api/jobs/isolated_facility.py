@@ -37,13 +37,17 @@ def execute_isolated_facility(context: JobContext, payload: dict) -> dict:
     process = process_context.Process(target=_calculate, args=(sender, payload), daemon=True)
     started = False
     deadline = time.monotonic() + 630
+    next_checkpoint = 0.0
     try:
         process.start()
         started = True
         sender.close()
         while True:
-            context.checkpoint()
-            if time.monotonic() >= deadline:
+            now = time.monotonic()
+            if now >= next_checkpoint:
+                context.checkpoint()
+                next_checkpoint = now + 1
+            if now >= deadline:
                 raise TimeoutError("Canonical calculation exceeded the 630-second wall-clock budget")
             if receiver.poll(0.1):
                 try:
