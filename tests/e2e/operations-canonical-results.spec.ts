@@ -50,7 +50,10 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await expect(batteryInspector.getByRole("region", { name: "Battery state and reserve" })).toContainText("Protected reserve");
   await expect(batteryInspector.getByRole("region", { name: "Full-horizon terminal target" })).toContainText("Met within model");
   await expect(batteryInspector.getByRole("region", { name: "Selected interval operating margins" })).toContainText("Below threshold");
-  const terminalText = await batteryInspector.getByRole("region", { name: "Full-horizon terminal target" }).innerText();
+  // Compare the same DOM text representation before/after inspection; innerText
+  // introduces layout line breaks that Playwright's textContent assertion does not.
+  const terminalText = await batteryInspector.getByRole("region", { name: "Full-horizon terminal target" }).textContent() ?? "";
+  expect(terminalText).not.toBe("");
   await batteryInspector.getByText("Energy accounting", { exact: true }).click();
   await expect(batteryInspector.getByRole("heading", { name: "Stored energy · DC", exact: true })).toBeVisible();
   await expect(batteryInspector.getByRole("heading", { name: "This interval · AC", exact: true })).toBeVisible();
