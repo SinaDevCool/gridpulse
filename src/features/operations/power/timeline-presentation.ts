@@ -1,4 +1,12 @@
 import type { BatteryTimelinePoint } from "./select-battery-workspace";
+import { formatOperationsTime } from "../presentation";
+
+export const timelineTimeLabel = (value: string | number) =>
+  formatOperationsTime(typeof value === "number" ? new Date(value).toISOString() : value).replace(" UTC", "");
+export function batteryTimeAxis(points: BatteryTimelinePoint[], boundaries: boolean) {
+  return boundaries ? { type: "number" as const, scale: "time" as const,
+    domain: [Date.parse(points[0].timestamp), Date.parse(points.at(-1)!.endTimestamp!)] } : {};
+}
 
 /** Plot-only end boundary. It is never added to solver records or accepted as a new interval. */
 export function extendStepHorizon(points: BatteryTimelinePoint[]) {

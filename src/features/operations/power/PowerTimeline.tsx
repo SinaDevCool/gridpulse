@@ -25,7 +25,7 @@ import { formatOperationsTime } from "../presentation";
 import { type BatteryTimelinePoint } from "./select-battery-workspace";
 import { BatteryConstraintStrip } from "./BatteryConstraintStrip";
 import { timelineLegend } from "./timeline-legend";
-import { batteryBoundaryPlot, extendStepHorizon, timelineSelection, type TimelineSelection } from "./timeline-presentation";
+import { batteryBoundaryPlot, batteryTimeAxis, timelineTimeLabel as timeLabel, extendStepHorizon, timelineSelection, type TimelineSelection } from "./timeline-presentation";
 import { powerPeakMarkers } from "../overview/demand-peak-markers";
 
 const numericAxisProps = {
@@ -72,9 +72,7 @@ export function PowerTimeline({
   const overview = overviewPresentation && variant === "overview";
   const visibility = useChartVisibility(overview ? ["Facility demand"] : []);
   const chartData = batteryBoundaryStates ? batteryBoundaryPlot(data) : overview ? extendStepHorizon(data) : data;
-  const timeAxis = batteryBoundaryStates ? { type: "number" as const, scale: "time" as const,
-    domain: [Date.parse(data[0].timestamp), Date.parse(data.at(-1)!.endTimestamp!)] } : {};
-  const timeLabel = (value: string | number) => formatOperationsTime(typeof value === "number" ? new Date(value).toISOString() : value).replace(" UTC", "");
+  const timeAxis = batteryTimeAxis(data, batteryBoundaryStates);
   function selectChart(state: TimelineSelection) {
     const time = timelineSelection(state, data);
     if (time) onSelect(time);
