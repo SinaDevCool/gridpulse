@@ -8,6 +8,9 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   // Three linked workspaces, theme audits and focused desktop/mobile captures exceed
   // the former 30-second whole-test budget. Product waits and solver budgets are unchanged.
   test.setTimeout(60_000);
+  // A returning visitor's legacy calculator preference must not reopen the
+  // retired public selector or bypass the enabled optimiser.
+  await page.addInitScript(() => localStorage.setItem("gridpulse-calculator", "scenario"));
   const token = `e30.${Buffer.from(JSON.stringify({ role: "gridpulse_public_visitor", exp: 4102444800 })).toString("base64url")}.fixture`;
   await page.route("**/auth/v1/signup", route => route.fulfill({ json: { access_token: token,
     token_type: "bearer", refresh_token: "fixture", expires_in: 3600,
@@ -37,16 +40,37 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   });
   await page.goto("/operations?view=power&mode=scenario&window=today");
   await expect(page.getByRole("button", { name: /^(Show|Hide) panel/ })).toBeEnabled();
-  const run = page.getByRole("button", { name: "Recalculate MILP", exact: true });
+  const run = page.getByRole("button", { name: "Optimise plan", exact: true });
   if (process.env.GRIDPULSE_TEST_MILP_REQUIRED === "1") await expect(run).toBeVisible();
   else test.skip(!await run.isVisible(), "MILP flag disabled in this candidate; focused qualification requires it");
+  const assertSinglePlanningExperience = async () => {
+    await expect(page.getByRole("group", { name: "Calculation method", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /Scenario calculator|Joint MILP/ })).toHaveCount(0);
+    await expect(page.getByLabel("MILP calculation status").getByText("Optimised planning", { exact: true })).toBeVisible();
+    await expect(run).toBeVisible();
+  };
+  await assertSinglePlanningExperience();
+  await expect(page.getByRole("heading", { name: "No optimised plan yet", exact: true })).toBeVisible();
+  expect(submissions).toBe(0);
   await run.click();
   const result = page.locator("[data-assessment-id]");
   await expect(result).toBeVisible();
   expect(request!.intervals).toHaveLength(96);
   expect(request!.intervals.at(-1)!.start).toBe("2026-09-26T23:45:00.000Z");
-  await expect(result.getByLabel("Selected battery interval")).toContainText("SOC 78%");
-  await expect(result.getByLabel("Selected battery interval")).toContainText("reserve 20%");
+  const batteryInspector = result.getByLabel("Selected battery interval", { exact: true });
+  await expect(batteryInspector.getByRole("img", { name: "Battery state of charge 78 percent", exact: true })).toBeVisible();
+  await expect(batteryInspector.getByRole("region", { name: "Battery state and reserve" })).toContainText("Protected reserve");
+  await expect(batteryInspector.getByRole("region", { name: "Full-horizon terminal target" })).toContainText("Met within model");
+  await expect(batteryInspector.getByRole("region", { name: "Selected interval operating margins" })).toContainText("Below threshold");
+  // Compare the same DOM text representation before/after inspection; innerText
+  // introduces layout line breaks that Playwright's textContent assertion does not.
+  const terminalText = await batteryInspector.getByRole("region", { name: "Full-horizon terminal target" }).textContent() ?? "";
+  expect(terminalText).not.toBe("");
+  await batteryInspector.getByText("Energy accounting", { exact: true }).click();
+  await expect(batteryInspector.getByRole("heading", { name: "Stored energy · DC", exact: true })).toBeVisible();
+  await expect(batteryInspector.getByRole("heading", { name: "This interval · AC", exact: true })).toBeVisible();
+  await expect(batteryInspector.getByText(/not a backup-duration guarantee/)).toBeVisible();
+  await batteryInspector.getByText("Energy accounting", { exact: true }).click();
   const panels = result.locator(".power-timeline-panel");
   await expect(panels).toHaveCount(3);
   for (const panel of await panels.all()) {
@@ -56,6 +80,17 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await expect(result.getByLabel("Selected interval power facts")).toContainText("Battery · idle");
   await expect(result.getByLabel("Selected battery interval")).toContainText("78");
   await expect(result.getByLabel("Full-horizon battery assessment")).toContainText("Reserve protected");
+  await expect(result.getByText("Battery idle throughout this plan", { exact: true })).toBeVisible();
+  await expect(result.getByRole("list", { name: "Grid demand legend", exact: true })).toBeVisible();
+  await expect(result.getByRole("list", { name: "Battery power legend", exact: true })).toBeVisible();
+  await expect(result.getByRole("list", { name: "Stored energy legend", exact: true })).toBeVisible();
+  await expect(result.getByText("00:00 +1 day", { exact: true })).toBeVisible();
+  const beforeBattery = result.getByRole("button", { name: /^Before battery/ });
+  await beforeBattery.click();
+  await expect(beforeBattery).toHaveAttribute("aria-pressed", "false");
+  await result.getByRole("button", { name: "Reset charts", exact: true }).click();
+  await expect(beforeBattery).toHaveAttribute("aria-pressed", "true");
+  await expect(result.locator(".battery-inspection-band")).toHaveCount(3);
   await result.getByText("Power path", { exact: true }).click();
   await expect(result.getByRole("img", { name: /Proportional power flows/ })).toBeVisible();
   await result.getByText("Power path", { exact: true }).click();
@@ -73,6 +108,7 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   const time = "2026-09-26T00:30:00.000Z";
   await row.locator("td").first().hover();
   await expect(result).toHaveAttribute("data-inspected-time", time);
+  await expect(batteryInspector.getByRole("region", { name: "Full-horizon terminal target" })).toHaveText(terminalText);
   await row.locator("td").first().click();
   await result.getByRole("heading", { name: "Facility Power & Battery Response", exact: true }).hover();
   await expect(result).toHaveAttribute("data-inspected-time", time);
@@ -80,6 +116,7 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await page.keyboard.press("Enter");
   await expect(row).toHaveAttribute("aria-selected", "true");
   await page.getByRole("link", { name: "Compute & Workloads", exact: true }).click();
+  await assertSinglePlanningExperience();
   await expect(page.getByRole("heading", { name: "Solved workload schedule" })).toBeVisible();
   await expect(result.locator(".power-timeline-panel")).toHaveCount(1);
   const lane = result.getByRole("button", { name: /Foundation model training.*06:00/ });
@@ -88,6 +125,14 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await expect(result.getByLabel("Execution time axis UTC")).toBeVisible();
   await expect(result.getByRole("region", { name: "Scheduled workload demand" })).toBeVisible();
   await expect(result.getByLabel("Workload outcomes")).toContainText("Remaining work");
+  const outcomes = result.getByLabel("Workload outcomes");
+  await outcomes.getByRole("button", { name: /^Inspect Vision fine-tuning:/ }).click();
+  await expect(result.getByLabel("Workload details: Vision fine-tuning", { exact: true })).toBeVisible();
+  await page.keyboard.press("Escape");
+  const intervalSummary = result.getByRole("region", { name: "Inspected compute interval" });
+  await expect(intervalSummary).toContainText("06:15 UTC");
+  await expect(intervalSummary.getByRole("img")).toHaveAttribute("aria-label", /Protected.*MW.*Flexible.*MW/);
+  await expect(result.locator(".canonical-workload-chart .recharts-reference-area")).toHaveCount(1);
   const reviewFilters = result.getByLabel("Workload review filters");
   await reviewFilters.getByRole("button", { name: /^Protected workloads/ }).click();
   await expect(result.locator(".canonical-execution .compute-window-lane")).toHaveCount(1);
@@ -95,9 +140,12 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await expect(result.getByLabel(/Workload details:/)).toHaveCount(0);
   await reviewFilters.getByRole("button", { name: /^All workloads/ }).click();
   await expect(result.locator(".canonical-execution .compute-window-lane")).toHaveCount(5);
-  await result.getByRole("button", { name: "Facility context", exact: true }).click();
+  await result.getByText("Show facility context", { exact: true }).click();
   await expect(result.getByText("Facility Power", { exact: true })).toBeVisible();
-  await result.getByRole("button", { name: "Workload demand", exact: true }).click();
+  await result.getByText("Show facility context", { exact: true }).click();
+  await intervalSummary.getByRole("button", { name: /^Flexible compute/ }).click();
+  await expect(result.locator(".canonical-execution .compute-window-lane")).toHaveCount(4);
+  await reviewFilters.getByRole("button", { name: /^All workloads/ }).click();
   await result.getByRole("checkbox", { name: "Show earliest-start/deadline envelopes" }).check();
   await expect(result.locator(".canonical-permitted")).toHaveCount(5);
   await lane.click();
@@ -122,18 +170,23 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
     expect(new Set(colors).size).toBe(3);
     await result.locator(".canonical-workload-chart").scrollIntoViewIfNeeded();
     await result.locator(".canonical-workload-chart").screenshot({ path: `test-results/canonical-compute-chart-${theme}.png` });
+    await outcomes.screenshot({ path: `test-results/canonical-compute-outcomes-${theme}.png` });
+    await intervalSummary.screenshot({ path: `test-results/canonical-compute-interval-${theme}.png` });
     await result.locator(".canonical-execution .compute-window-lane").first().screenshot({ path: `test-results/canonical-compute-lane-${theme}.png` });
     await page.screenshot({ path: `test-results/canonical-compute-${theme}.png`, fullPage: true });
   }
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
   await page.setViewportSize({ width: 390, height: 1100 });
+  await outcomes.screenshot({ path: "test-results/canonical-compute-outcomes-mobile.png" });
+  await intervalSummary.screenshot({ path: "test-results/canonical-compute-interval-mobile.png" });
   await result.locator(".canonical-workload-chart").screenshot({ path: "test-results/canonical-compute-chart-mobile.png" });
   await result.locator(".canonical-execution .compute-window-lane").first().screenshot({ path: "test-results/canonical-compute-lane-mobile.png" });
   await page.screenshot({ path: "test-results/canonical-compute-mobile.png", fullPage: true });
   await page.setViewportSize({ width: 1600, height: 1000 });
   expect(submissions).toBe(1);
   await page.getByRole("link", { name: "Overview", exact: true }).click();
+  await assertSinglePlanningExperience();
   await expect(result.getByText("Peak reduced by", { exact: true })).toBeVisible();
   await expect(result.getByText("Plan peak import", { exact: true })).toHaveCount(0);
   await expect(result.locator(".power-timeline-panel")).toHaveCount(1);
@@ -141,11 +194,23 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   const explorer = result.getByRole("region", { name: "MILP response explorer" });
   await expect(explorer.locator(".ops-compact-comparison tbody tr")).toHaveCount(2);
   await expect(explorer.locator(".ops-peak-comparison")).toHaveCount(2);
-  await expect(explorer).toContainText("Passed within model");
+  const checks = result.getByRole("region", { name: "Full-horizon model checks" });
+  await expect(checks).toHaveCount(1);
+  await expect(checks).toContainText("Some checks unavailable");
+  await expect(checks).toContainText("5 deadline checks unavailable");
+  await expect(checks.locator(".ops-model-check-list li")).toHaveCount(4);
+  const checkHeight = (await checks.locator(".ops-model-check-list").boundingBox())!.height;
+  await checks.getByText("Review supporting details", { exact: true }).click();
+  await expect(checks.getByRole("table")).toBeVisible();
+  expect((await checks.locator(".ops-model-check-list").boundingBox())!.height).toBeCloseTo(checkHeight, 0);
+  expect((await checks.locator("details").boundingBox())!.width).toBeGreaterThan((await checks.boundingBox())!.width * .9);
+  for (const item of await checks.locator(".ops-model-check-list li").all()) expect((await item.boundingBox())!.height).toBeLessThan(100);
+  await checks.getByText("Review supporting details", { exact: true }).click();
   await explorer.getByRole("button", { name: "Operating margins", exact: true }).click();
-  await expect(explorer.getByRole("region", { name: "Operating margins", exact: true })).toContainText("Peak safety-target margin");
-  await expect(explorer).toContainText("Selected-interval safety-target margin");
-  await explorer.getByRole("button", { name: "Explain selected interval", exact: true }).click();
+  await expect(explorer.getByRole("region", { name: "Operating margins", exact: true })).toContainText("Whole-plan peak");
+  await expect(explorer).toContainText("Inspected interval");
+  await expect(explorer.locator(".ops-margin-table tbody tr")).toHaveCount(2);
+  await explorer.getByRole("button", { name: "Interval breakdown", exact: true }).click();
   await expect(explorer.getByRole("img", { name: /Selected interval power balance/ })).toBeVisible();
   await expect(explorer.getByText(/Balance discrepancy/)).toHaveCount(0);
   await result.getByText("Set inspection range", { exact: true }).click();
@@ -162,7 +227,17 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
     await result.getByLabel("Operating summary", { exact: true }).scrollIntoViewIfNeeded();
     await page.screenshot({ path: `test-results/canonical-summary-${theme}.png` });
     await explorer.locator(".ops-waterfall").scrollIntoViewIfNeeded();
+    await explorer.screenshot({ path: `test-results/canonical-explorer-breakdown-${theme}.png` });
     await page.screenshot({ path: `test-results/canonical-balance-${theme}.png` });
+    await explorer.getByRole("button", { name: "Operating margins", exact: true }).click();
+    await explorer.screenshot({ path: `test-results/canonical-explorer-margins-${theme}.png` });
+    await explorer.getByRole("button", { name: "Plan comparison", exact: true }).click();
+    await explorer.screenshot({ path: `test-results/canonical-explorer-comparison-${theme}.png` });
+    await checks.screenshot({ path: `test-results/canonical-checks-closed-${theme}.png` });
+    await checks.getByText("Review supporting details", { exact: true }).click();
+    await checks.screenshot({ path: `test-results/canonical-checks-open-${theme}.png` });
+    await checks.getByText("Review supporting details", { exact: true }).click();
+    await explorer.getByRole("button", { name: "Interval breakdown", exact: true }).click();
     await result.locator(".power-timeline-panel").first().scrollIntoViewIfNeeded();
     await page.screenshot({ path: `test-results/canonical-${theme}.png`, fullPage: true });
   }
@@ -170,21 +245,47 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
   await explorer.locator(".ops-waterfall").scrollIntoViewIfNeeded();
   await page.screenshot({ path: "test-results/canonical-overview-mobile.png" });
-  await explorer.getByRole("button", { name: "Compare plans", exact: true }).click();
+  await explorer.getByRole("button", { name: "Plan comparison", exact: true }).click();
   await expect(explorer.locator(".ops-compact-comparison tbody tr")).toHaveCount(2);
-  await explorer.getByText("Review completion & battery details", { exact: true }).click();
-  await expect(explorer.getByRole("table", { name: "Workload completion · full submitted horizon", exact: true })).toBeVisible();
+  await checks.getByText("Review supporting details", { exact: true }).click();
+  await expect(checks.getByRole("table", { name: "Workload completion · full submitted horizon", exact: true })).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 1300 });
+  const evidence = checks.getByRole("region", { name: "Workload completion evidence", exact: true });
+  await evidence.focus();
+  await expect(evidence).toBeFocused();
+  await page.keyboard.press("ArrowRight");
+  await expect.poll(() => evidence.evaluate(element => element.scrollLeft)).toBeGreaterThan(0);
+  await checks.screenshot({ path: "test-results/canonical-checks-mobile.png" });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
+  await explorer.getByRole("button", { name: "Operating margins", exact: true }).click();
+  await explorer.screenshot({ path: "test-results/canonical-margins-mobile.png" });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
+  expect((await new AxeBuilder({ page }).include(".ops-canonical").analyze()).violations).toEqual([]);
   await expect(result.locator(".ops-canonical-selected")).toBeVisible();
   expect(submissions).toBe(1);
   await page.getByRole("link", { name: "Power & Battery", exact: true }).click();
   for (const panel of await panels.all()) expect((await panel.boundingBox())!.height).toBeGreaterThan(140);
   expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
+  // Capture the complete sidebar at desktop width without the app's inner scroll
+  // viewport clipping its lower accounting disclosure.
+  await page.setViewportSize({ width: 1600, height: 1800 });
   for (const theme of ["dark", "light"]) {
     await page.evaluate(value => document.documentElement.dataset.theme = value, theme);
     expect((await new AxeBuilder({ page }).include(".ops-canonical").analyze()).violations).toEqual([]);
     await result.getByLabel("Selected battery interval").scrollIntoViewIfNeeded();
     await page.screenshot({ path: `test-results/canonical-battery-inspector-${theme}.png` });
+    await batteryInspector.screenshot({ path: `test-results/canonical-battery-sidebar-closed-${theme}.png` });
+    await batteryInspector.getByText("Energy accounting", { exact: true }).click();
+    expect((await new AxeBuilder({ page }).include(".ops-canonical").analyze()).violations).toEqual([]);
+    await batteryInspector.screenshot({ path: `test-results/canonical-battery-sidebar-open-${theme}.png` });
+    await batteryInspector.getByText("Energy accounting", { exact: true }).click();
   }
+  await page.setViewportSize({ width: 390, height: 1500 });
+  await batteryInspector.getByText("Energy accounting", { exact: true }).click();
+  await batteryInspector.screenshot({ path: "test-results/canonical-battery-sidebar-mobile.png" });
+  expect((await new AxeBuilder({ page }).include(".ops-canonical").analyze()).violations).toEqual([]);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
+  await batteryInspector.getByText("Energy accounting", { exact: true }).click();
   await panels.last().scrollIntoViewIfNeeded();
   await page.screenshot({ path: "test-results/canonical-mobile.png", fullPage: true });
   await page.setViewportSize({ width: 1600, height: 1000 });
@@ -194,6 +295,7 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await page.getByRole("checkbox", { name: "Battery available", exact: true }).uncheck();
   await run.click();
   await expect(result.getByLabel("Selected battery interval")).toContainText("No battery in this plan");
+  await expect(batteryInspector.getByText("Energy accounting", { exact: true })).toHaveCount(0);
   await expect(result.locator(".power-timeline-panel")).toHaveCount(1);
   exerciseFlows = true;
   await page.getByRole("checkbox", { name: "Battery available", exact: true }).check();
@@ -202,8 +304,50 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await result.getByRole("button", { name: /First charge/ }).click();
   await expect(result).toHaveAttribute("data-inspected-time", "2026-09-26T09:00:00.000Z");
   await expect(result.getByLabel("Selected interval power facts")).toContainText("Battery · charging");
+  await expect(batteryInspector.locator(".canonical-dispatch-state")).toContainText("Charging");
+  await expect(batteryInspector.getByLabel("Interval SOC transition")).toContainText("End");
   await expect(result.getByLabel("Selected interval power facts")).toContainText("-5.3 MW");
+  await batteryInspector.getByRole("region", { name: "Battery state and reserve" }).screenshot({ path: "test-results/canonical-battery-state-charging.png" });
   await result.getByRole("button", { name: /First discharge/ }).click();
   await expect(result.getByLabel("Selected interval power facts")).toContainText("Battery · discharging");
-  await expect(result.locator(".power-timeline-panel").nth(1).locator(".recharts-reference-area")).toHaveCount(2);
+  await expect(batteryInspector.locator(".canonical-dispatch-state")).toContainText("Discharging");
+  await batteryInspector.getByRole("region", { name: "Battery state and reserve" }).screenshot({ path: "test-results/canonical-battery-state-discharging.png" });
+  await expect(result.locator(".battery-dispatch-interval")).toHaveCount(2);
+  await expect(result.getByText("Battery idle throughout this plan", { exact: true })).toHaveCount(0);
+  await page.setViewportSize({ width: 1600, height: 1500 });
+  for (const theme of ["light", "dark"]) {
+    await page.evaluate(value => document.documentElement.dataset.theme = value, theme);
+    for (const panel of await panels.all()) {
+      const box = (await panel.boundingBox())!, svg = (await panel.locator("svg.recharts-surface").boundingBox())!;
+      expect(svg.y + svg.height).toBeLessThanOrEqual(box.y + box.height + 1);
+      for (const tick of await panel.locator(".recharts-cartesian-axis-tick-value").all()) {
+        const label = (await tick.boundingBox())!;
+        expect(label.y + label.height).toBeLessThanOrEqual(box.y + box.height);
+      }
+    }
+    const contrast = await result.locator(".power-timeline--modelled").evaluate(root => {
+      const panel = root.querySelector(".power-timeline-panel")!;
+      const canvas = document.createElement("canvas"), ctx = canvas.getContext("2d")!;
+      canvas.width = canvas.height = 1;
+      const ancestors: Element[] = [];
+      for (let node: Element | null = panel; node; node = node.parentElement) ancestors.unshift(node);
+      ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, 1, 1);
+      for (const node of ancestors) { ctx.fillStyle = getComputedStyle(node).backgroundColor; ctx.fillRect(0, 0, 1, 1); }
+      const luminance = (rgb: Uint8ClampedArray) => [0.2126, 0.7152, 0.0722].reduce((sum, weight, i) => {
+        const c = rgb[i] / 255; return sum + weight * (c <= .04045 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4);
+      }, 0);
+      const background = luminance(ctx.getImageData(0, 0, 1, 1).data);
+      return Object.fromEntries(["demand", "response", "battery", "soc", "target", "limit", "muted"].map(tone => {
+        ctx.fillStyle = getComputedStyle(root).getPropertyValue(`--ops-${tone}`).trim(); ctx.fillRect(0, 0, 1, 1);
+        const foreground = luminance(ctx.getImageData(0, 0, 1, 1).data);
+        return [tone, (Math.max(background, foreground) + .05) / (Math.min(background, foreground) + .05)];
+      }));
+    });
+    for (const [tone, ratio] of Object.entries(contrast)) expect(ratio, `${theme} ${tone} contrast`).toBeGreaterThanOrEqual(tone === "muted" ? 4.5 : 3);
+    await test.info().attach(`battery-chart-contrast-${theme}`, { body: JSON.stringify(contrast), contentType: "application/json" });
+    await result.locator(".power-timeline--modelled").screenshot({ path: `test-results/canonical-battery-charts-${theme}.png` });
+  }
+  await page.setViewportSize({ width: 390, height: 1500 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
+  await result.locator(".power-timeline--modelled").screenshot({ path: "test-results/canonical-battery-charts-mobile.png" });
 });

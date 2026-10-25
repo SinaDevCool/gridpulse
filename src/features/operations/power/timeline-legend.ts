@@ -18,3 +18,13 @@ export function timelineLegend(variant: "battery" | "overview", mode: EvidenceMo
     ] : []),
   ];
 }
+
+/** One visibility store, with controls located beside their corresponding panel. */
+export function batteryPanelLegend(panel: "facility" | "dispatch" | "soc", available: boolean): OperationsLegendItem[] {
+  const items = timelineLegend("battery", "scenario");
+  const labels = panel === "facility" ? ["Facility demand", "Grid import", "Safety target", "Facility limit"] :
+    panel === "dispatch" ? ["Battery dispatch", ...(available ? ["Available discharge"] : [])] : ["State of charge", "Protected reserve"];
+  return labels.map(label => items.find(item => item.label === label)!).map(item => item.label === "Facility demand"
+    ? { ...item, id: item.label, label: "Before battery", mark: "dash" as const, detail: "MW" }
+    : item.label === "State of charge" ? { ...item, detail: "% · boundary states" } : item);
+}

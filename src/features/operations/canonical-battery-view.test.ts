@@ -4,6 +4,9 @@ import { buildSyntheticMilpRequest } from "./synthetic-milp-request";
 import { defaultOperationsScenario } from "./scenario-engine";
 import { selectCanonicalPresentation } from "./canonical-presentation";
 import { selectCanonicalBatteryView } from "./canonical-battery-view";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { CanonicalBatteryInspector } from "./CanonicalBatteryInspector";
 
 function fixture() {
   const request = buildSyntheticMilpRequest(defaultOperationsScenario);
@@ -31,6 +34,10 @@ describe("canonical battery workspace projection", () => {
     expect(m.flow).toBeNull();
     expect(m.components.find(component => component.label === "Onsite generation")?.value).toBe(1);
     expect(m.facts.terminalTargetsMet).toBeNull();
+    expect(m.terminal?.state).toBe("unavailable");
+    const html = renderToStaticMarkup(createElement(CanonicalBatteryInspector, { model: m }));
+    expect(html).toContain("Check unavailable");
+    expect(html).not.toContain("Met within model");
   });
   it("separates signed dispatch, AC integration and DC state using variable durations", () => {
     const { request, job } = fixture();
@@ -52,5 +59,50 @@ describe("canonical battery workspace projection", () => {
     expect(m.reserveProtected).toBeNull();
     expect(m.minimumSoc).toBeNull();
     expect(m.energyAboveReserveMwh).toBeNull();
+    expect(m.accounting).toBeNull();
+    expect(m.terminal).toBeNull();
+    const html = renderToStaticMarkup(createElement(CanonicalBatteryInspector, { model: m }));
+    expect(html).toContain("No battery in this plan");
+    expect(html).not.toContain("Energy accounting");
+  });
+  it("projects accepted AC interval energy and DC states without substituting one for the other", () => {
+    const { request, job } = fixture();
+    const asset = request.batteries![0];
+    const dt = Number(request.intervals[0].duration_minutes) / 60;
+    const initial = Number(asset.initial_soc_mwh);
+    const gain = 4 * dt * Number(asset.charge_efficiency);
+    const discharge = gain * Number(asset.discharge_efficiency) / dt;
+    Object.assign(job.result_payload.result.facility.points[0], { battery_charge_mw: 4, grid_import_mw: 55 });
+    Object.assign(job.result_payload.result.facility.points[1], { battery_discharge_mw: discharge, grid_import_mw: 51 - discharge });
+    job.result_payload.result.battery_trajectories[0].points.forEach((point, i) => { point.soc_mwh = initial + (i === 0 ? gain : 0); });
+    const a = selectCanonicalPresentation(job, request);
+    const before = JSON.stringify(a);
+    const charging = selectCanonicalBatteryView(a, a.points[0].timestamp);
+    const discharging = selectCanonicalBatteryView(a, a.points[1].timestamp);
+    expect(charging.direction).toBe("Charging");
+    expect(charging.accounting?.acChargeMwh).toBe(4 * dt);
+    expect(charging.accounting?.storedEndMwh).toBeCloseTo(initial + gain);
+    expect(charging.accounting?.storedStartMwh).toBeCloseTo(initial);
+    expect(discharging.direction).toBe("Discharging");
+    expect(discharging.accounting?.acDischargeMwh).toBeCloseTo(discharge * dt);
+    expect(discharging.accounting?.storedStartMwh).toBeCloseTo(initial + gain);
+    expect(discharging.accounting?.storedEndMwh).toBeCloseTo(initial);
+    expect(charging.terminal).toEqual(discharging.terminal);
+    expect(JSON.stringify(a)).toBe(before);
+  });
+  it("keeps negative, zero and positive margins distinct from full-horizon checks", () => {
+    const { request, job } = fixture();
+    const a = selectCanonicalPresentation(job, request);
+    a.points[0].gridImportMw = a.limitMw + 2;
+    a.points[1].gridImportMw = a.targetMw;
+    const above = selectCanonicalBatteryView(a, a.points[0].timestamp);
+    const at = selectCanonicalBatteryView(a, a.points[1].timestamp);
+    expect(above.margins.facility).toBe(-2);
+    expect(at.margins.safety).toBe(0);
+    expect(at.margins.facility).toBeGreaterThan(0);
+    const html = renderToStaticMarkup(createElement(CanonicalBatteryInspector, { model: above }));
+    expect(html).toContain("Exceeds threshold");
+    (a.projected.assessment as Record<string, unknown>).battery_terminal_targets_met = false;
+    expect(selectCanonicalBatteryView(a, a.points[0].timestamp).terminal?.state).toBe("unresolved");
   });
 });

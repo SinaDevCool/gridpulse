@@ -54,7 +54,7 @@ jobs:
           python scripts/check-live-milp-api.py
           node scripts/capture-marketing-milp.mjs
           python -m pip install Pillow
-          python -c "from PIL import Image; from pathlib import Path; [Image.open(p).resize((min(Image.open(p).width,1600), round(Image.open(p).height*min(Image.open(p).width,1600)/Image.open(p).width))).save(p.with_suffix('.webp'),quality=85) for p in Path('marketing-captures').glob('*.png')]"
+          python scripts/finalize-marketing-previews.py
       - uses: actions/upload-artifact@v4
         if: github.event_name == 'workflow_dispatch' && inputs.capture_marketing
         with:

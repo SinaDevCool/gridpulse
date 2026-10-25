@@ -14,10 +14,9 @@ export default defineConfig({
   retries: 0,
   use: {
     baseURL: externalBaseUrl ?? "http://127.0.0.1:3002",
-    // Existing regression specs explicitly exercise the retained scenario product.
-    // MILP journey checks override this preference in a fresh browser context.
-    storageState: { cookies: [], origins: [{ origin: new URL(externalBaseUrl ?? "http://127.0.0.1:3002").origin,
-      localStorage: [{ name: "gridpulse-calculator", value: "scenario" }] }] },
+    // Scenario compatibility uses a flag-disabled fixture; production must ignore
+    // legacy preferences. The MILP regression explicitly tests that returning state.
+    storageState: { cookies: [], origins: [] },
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },

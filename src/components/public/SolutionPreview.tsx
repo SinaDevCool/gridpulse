@@ -22,7 +22,7 @@ export function SolutionPreview({
               srcSet={
                 planning
                   ? "/landing/power-finder-product-mobile.jpg"
-                  : "/landing/facility-operations-mobile.webp"
+                  : `/landing/facility-operations-mobile.webp?v=${__GRIDPULSE_BUILD_SHA__}`
               }
             />
           ) : null}
@@ -30,7 +30,7 @@ export function SolutionPreview({
             src={
               planning
                 ? "/landing/power-finder-product.jpg"
-                : `/landing/facility-operations-${view}.webp`
+                : `/landing/facility-operations-${view}.webp?v=${__GRIDPULSE_BUILD_SHA__}`
             }
             width={1600}
             height={planning ? 980 : 1400}

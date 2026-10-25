@@ -47,10 +47,12 @@ export function OperationsChartLegend({
   items,
   label = "Chart legend",
   visibility,
+  showReset = true,
 }: {
   items: OperationsLegendItem[];
   label?: string;
   visibility?: ChartVisibility;
+  showReset?: boolean;
 }) {
   return (
     <ul className="operations-chart-legend" aria-label={label}>
@@ -73,7 +75,7 @@ export function OperationsChartLegend({
           </button>
         </li>
       ))}
-      {visibility ? (
+      {visibility && showReset ? (
         <li>
           <button type="button" onClick={visibility.reset}>
             Reset chart

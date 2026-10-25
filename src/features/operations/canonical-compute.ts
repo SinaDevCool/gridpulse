@@ -1,8 +1,13 @@
 import type { CanonicalPresentation } from "./canonical-presentation";
+import { roundedPowerAxis } from "./power/timeline-scales";
 
 export type ComputeFilter = "all" | "attention" | "flexible" | "protected";
 const time = (value: unknown) => typeof value === "string" && Number.isFinite(Date.parse(value)) ? value : null;
 const numeric = (value: unknown) => typeof value === "number" && Number.isFinite(value) ? value : null;
+
+// The workload plot and execution lanes share the same plot insets.
+export const COMPUTE_PLOT = { axisWidth: 60, right: 18 };
+export const computePowerAxis = roundedPowerAxis;
 
 /** Presentation arithmetic over accepted results only. Never runs heuristic scheduling. */
 export function selectCanonicalComputeView(a: CanonicalPresentation, timestamp: string) {
@@ -44,7 +49,11 @@ export function selectCanonicalComputeView(a: CanonicalPresentation, timestamp: 
     return { ...point, plotTime: Date.parse(point.timestamp), flexibleMw: sum(false),
       protectedMw: sum(true), unknownMw: sum(null) };
   });
+  const current = points[index];
   return { jobs, points, index, start, end,
+    current,
+    running: jobs.filter(job => job.current.power_mw > 0 && !job.current.checkpoint_or_restart).length,
+    checkpoints: jobs.filter(job => job.current.checkpoint_or_restart).length,
     completed: jobs.filter(job => job.complete === true).length,
     deadlinesMet: jobs.filter(job => job.deadlineMet === true).length,
     deadlineUnavailable: jobs.filter(job => job.deadlineMet === undefined).length,
