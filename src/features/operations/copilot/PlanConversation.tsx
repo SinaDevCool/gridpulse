@@ -44,7 +44,7 @@ export function PlanConversation({ state, enabled, context, onNavigate, identity
         <div className="ops-chat-suggestions">{suggestions.map(text => <button className="secondary-button" type="button" key={text}
           disabled={!enabled || !!state.pending} onClick={() => { setQuestion(text); input.current?.focus(); }}>{text}</button>)}</div>
         <small>Choose a question to edit, then send.</small></> : null}
-      {state.turns.map((turn, index) => <article key={index} aria-label={`Answer ${index + 1}`}>
+      {state.turns.map((turn, index) => <article key={`${turn.answer.generatedAt}:${turn.question}:${turn.answer.receipt.providerResponseId ?? index}`} aria-label={`Answer ${index + 1}`}>
         <div className="ops-chat-question"><span className="sr-only">Your question: </span>{turn.question}</div>
         <small>{turn.answer.basis === "general_explanation" ? "General explanation" : turn.answer.kind === "answer" ? "Checked model evidence" : turn.answer.kind.replaceAll("_", " ")}</small>
         {answerBlocks(turn.answer.blocks, turn.answer.evidence).map((block, i) => <p key={i}>{block}</p>)}
@@ -65,11 +65,12 @@ export function PlanConversation({ state, enabled, context, onNavigate, identity
       {state.error ? <div className="ops-chat-error"><div className="ops-chat-question">{attempted.current}</div><p>{state.error}</p><button type="button" disabled={!enabled || !!state.pending} onClick={() => { setQuestion(attempted.current); void state.ask(attempted.current).then(ok => { if (ok) setQuestion(""); }); }}>Retry question</button></div> : null}
     </div>
     <p className="sr-only" role="status">{state.pending ? "Checking plan evidence" : state.error ? state.error : state.turns.length ? "Answer ready" : notice}</p>
+    {notice ? <small className="ops-copilot-notice">{notice}</small> : null}
     {unread ? <button type="button" onClick={latest}>New answer</button> : null}
     <form onSubmit={event => { event.preventDefault(); send(); }}>
       <label htmlFor="plan-question">Your question</label>
       <textarea ref={input} id="plan-question" name="plan-question" autoComplete="off" aria-describedby="plan-question-help" rows={2} maxLength={1000}
-        value={question} disabled={!enabled || !!state.pending} onChange={event => setQuestion(event.target.value)}
+        value={question} disabled={!enabled} readOnly={!!state.pending} onChange={event => setQuestion(event.target.value)}
         onKeyDown={event => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); send(); } }}
         placeholder="Ask about a workload, interval, battery or limit…" />
       <div className="ops-chat-composer-actions"><button className="secondary-button" type="submit" disabled={!enabled || !!state.pending || !question.trim()}>Ask</button>

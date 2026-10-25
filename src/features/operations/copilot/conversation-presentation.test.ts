@@ -23,6 +23,6 @@ describe("copilot presentation over accepted facts", () => {
     const fact = factSchema.parse({ ...base, unit: "status", availability: "available", value: "2026-09-26T08:00:00.000Z" });
     expect(formatBriefFact(fact)).toContain("08:00 UTC");
     expect(fact.value).toBe("2026-09-26T08:00:00.000Z");
-    expect(formatBriefFact({ ...fact, value: "No deadline supplied" })).toBe("No deadline supplied");
+    expect(formatBriefFact(factSchema.parse({ ...fact, value: "No deadline supplied" }))).toBe("No deadline supplied");
   });
 });
