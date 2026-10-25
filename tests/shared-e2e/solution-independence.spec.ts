@@ -28,7 +28,13 @@ test("Operations loads without Finder records or eager map dependencies", async 
     localStorage.setItem("gridpulse-finder-active-project", "finder-project-sentinel");
   });
   await page.goto("/operations?view=compute&window=next-4h&mode=scenario");
-  await expect(page.locator(".ops-service-status")).toContainText("Calculation service available");
+  // This suite also qualifies the production optimiser build; compatibility builds
+  // retain the scenario service label. Both must finish the availability check.
+  const serviceStatus = page.locator(".ops-service-status");
+  await expect(serviceStatus).toHaveText(
+    /^(Calculation service available|Optimiser · on-demand service)$/,
+  );
+  await expect(serviceStatus).toHaveClass(/\bverified\b/);
   for (const view of ["Power & Battery", "Overview", "Compute & Workloads"]) {
     await page.getByRole("banner").getByRole("link", { name: view, exact: true }).click();
     await expect(page).toHaveURL(/window=next-4h/);
