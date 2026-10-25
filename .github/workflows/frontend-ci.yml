@@ -1,4 +1,6 @@
 name: Frontend architecture and regression checks
+run-name: >-
+  Frontend checks · ${{ github.event.pull_request.number && format('PR #{0}', github.event.pull_request.number) || github.ref_name }} · ${{ github.event.pull_request.head.sha || github.sha }}
 on:
   pull_request:
     paths:
@@ -18,5 +20,9 @@ concurrency:
   group: frontend-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
+  milp:
+    name: MILP qualification first
+    uses: ./.github/workflows/milp-frontend-qualification.yml
   validate:
+    needs: milp
     uses: ./.github/workflows/validate-candidate.yml

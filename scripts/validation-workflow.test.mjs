@@ -5,6 +5,26 @@ import { createRequire } from "node:module";
 const { load } = createRequire(import.meta.url)("js-yaml");
 const workflow = (name) => load(readFileSync(`.github/workflows/${name}.yml`, "utf8"));
 
+test("one automatic PR run owns mandatory MILP qualification before full regression", () => {
+  const pr = workflow("frontend-ci"), focused = workflow("milp-frontend-qualification");
+  assert.ok(pr.on.pull_request);
+  assert.equal(focused.on.push, undefined);
+  assert.ok(Object.hasOwn(focused.on, "workflow_call"));
+  assert.ok(Object.hasOwn(focused.on, "workflow_dispatch"));
+  assert.equal(pr.jobs.milp.uses, "./.github/workflows/milp-frontend-qualification.yml");
+  assert.equal(pr.jobs.validate.needs, "milp");
+  assert.equal(focused.jobs.focused["continue-on-error"], undefined);
+  const browser = focused.jobs.focused.steps.find(step => step.run?.includes("playwright test"));
+  assert.equal(browser.env.GRIDPULSE_TEST_MILP_REQUIRED, "1");
+  assert.equal(browser["continue-on-error"], undefined);
+  assert.equal(focused.concurrency["cancel-in-progress"], true);
+  assert.notEqual(pr.concurrency.group, focused.concurrency.group);
+  assert.match(pr["run-name"], /head.sha/);
+  const summary = focused.jobs.focused.steps.find(step => step.name === "Summarize this exact qualification attempt");
+  assert.equal(summary.if, "always()");
+  assert.match(summary.run, /GITHUB_STEP_SUMMARY/);
+});
+
 test("PR and release reuse validation; only validated main artifacts can publish", () => {
   const pr = workflow("frontend-ci"),
     deploy = workflow("deploy-cloudflare");

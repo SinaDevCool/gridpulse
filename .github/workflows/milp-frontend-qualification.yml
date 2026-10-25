@@ -1,8 +1,7 @@
 name: MILP frontend focused qualification
 on:
-  push:
-    branches: [codex/production-milp-runtime, codex/milp-presentation-corrections, codex/milp-result-visualisations, codex/milp-overview-unification]
-    paths: [src/**, tests/e2e/operations-canonical-results.spec.ts, tests/fixtures/canonical-milp-job.ts, .github/workflows/milp-frontend-qualification.yml]
+  # PR CI owns automatic execution. Keep manual qualification available for branches without a PR.
+  workflow_call:
   workflow_dispatch:
 permissions:
   contents: read
@@ -48,3 +47,18 @@ jobs:
             playwright-report/
           if-no-files-found: ignore
           retention-days: 7
+      - name: Summarize this exact qualification attempt
+        if: always()
+        env:
+          QUALIFICATION_STATUS: ${{ job.status }}
+          CANDIDATE_SHA: ${{ github.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          {
+            echo '## MILP frontend qualification'
+            echo "Status: $QUALIFICATION_STATUS"
+            echo "PR head: $HEAD_SHA"
+            echo "Tested candidate: $CANDIDATE_SHA"
+            echo 'A failure belongs to this commit and attempt; consult the newest PR checks for current status.'
+            echo 'Browser coverage is mandatory. Reports and failure traces are attached to this run.'
+          } >> "$GITHUB_STEP_SUMMARY"
