@@ -1,5 +1,6 @@
 import type { BatteryTimelinePoint } from "./select-battery-workspace";
 import { formatOperationsTime } from "../presentation";
+import { batteryTimeTicks } from "./timeline-scales";
 
 export const timelineTimeLabel = (value: string | number) =>
   formatOperationsTime(typeof value === "number" ? new Date(value).toISOString() : value).replace(" UTC", "");
@@ -39,4 +40,23 @@ export function batteryBoundaryPlot(points: BatteryTimelinePoint[]) {
   return last?.endTimestamp ? [...rows, { ...last, timestamp: last.endTimestamp,
     plotTime: Date.parse(last.endTimestamp), boundarySocPercent: last.socPercent,
     label: "Planning horizon end", durationMinutes: 0, batteryPowerMw: null, availableDischargeMw: null }] : rows;
+}
+
+/** Shared plot model for all three panels; never mutates accepted result records. */
+export function batteryTimelinePlot(data: BatteryTimelinePoint[], boundaries: boolean,
+  selected: string | null, previewing: boolean, compact: boolean, overview: boolean) {
+  const start = Date.parse(data[0]?.timestamp ?? "");
+  const end = Date.parse(data.at(-1)?.endTimestamp ?? "");
+  const point = data.find(row => row.timestamp === selected);
+  return { data, boundaries,
+    chartData: boundaries ? batteryBoundaryPlot(data) : overview ? extendStepHorizon(data) : data,
+    timeAxis: { ...batteryTimeAxis(data, boundaries), ...(boundaries ? {
+      ticks: batteryTimeTicks(start, end, compact), interval: "preserveStartEnd" as const,
+    } : {}) },
+    cursorProps: { x: selected ? boundaries ? Date.parse(selected) : selected : undefined,
+      stroke: "var(--ops-selection)", strokeDasharray: previewing ? "4 4" : undefined },
+    selectionRange: boundaries && point?.endTimestamp ? [Date.parse(point.timestamp), Date.parse(point.endTimestamp)] : null,
+    timeLabel: (value: string | number) => `${timelineTimeLabel(value)}${boundaries && Number(value) === end &&
+      new Date(start).toISOString().slice(0, 10) !== new Date(end).toISOString().slice(0, 10) ? " +1 day" : ""}`,
+  };
 }

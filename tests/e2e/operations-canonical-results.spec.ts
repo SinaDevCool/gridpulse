@@ -80,6 +80,17 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await expect(result.getByLabel("Selected interval power facts")).toContainText("Battery · idle");
   await expect(result.getByLabel("Selected battery interval")).toContainText("78");
   await expect(result.getByLabel("Full-horizon battery assessment")).toContainText("Reserve protected");
+  await expect(result.getByText("Battery idle throughout this plan", { exact: true })).toBeVisible();
+  await expect(result.getByRole("list", { name: "Grid demand legend", exact: true })).toBeVisible();
+  await expect(result.getByRole("list", { name: "Battery power legend", exact: true })).toBeVisible();
+  await expect(result.getByRole("list", { name: "Stored energy legend", exact: true })).toBeVisible();
+  await expect(result.getByText("00:00 +1 day", { exact: true })).toBeVisible();
+  const beforeBattery = result.getByRole("button", { name: /^Before battery/ });
+  await beforeBattery.click();
+  await expect(beforeBattery).toHaveAttribute("aria-pressed", "false");
+  await result.getByRole("button", { name: "Reset charts", exact: true }).click();
+  await expect(beforeBattery).toHaveAttribute("aria-pressed", "true");
+  await expect(result.locator(".battery-inspection-band")).toHaveCount(3);
   await result.getByText("Power path", { exact: true }).click();
   await expect(result.getByRole("img", { name: /Proportional power flows/ })).toBeVisible();
   await result.getByText("Power path", { exact: true }).click();
@@ -301,5 +312,42 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await expect(result.getByLabel("Selected interval power facts")).toContainText("Battery · discharging");
   await expect(batteryInspector.locator(".canonical-dispatch-state")).toContainText("Discharging");
   await batteryInspector.getByRole("region", { name: "Battery state and reserve" }).screenshot({ path: "test-results/canonical-battery-state-discharging.png" });
-  await expect(result.locator(".power-timeline-panel").nth(1).locator(".recharts-reference-area")).toHaveCount(2);
+  await expect(result.locator(".battery-dispatch-interval")).toHaveCount(2);
+  await expect(result.getByText("Battery idle throughout this plan", { exact: true })).toHaveCount(0);
+  await page.setViewportSize({ width: 1600, height: 1500 });
+  for (const theme of ["light", "dark"]) {
+    await page.evaluate(value => document.documentElement.dataset.theme = value, theme);
+    for (const panel of await panels.all()) {
+      const box = (await panel.boundingBox())!, svg = (await panel.locator("svg.recharts-surface").boundingBox())!;
+      expect(svg.y + svg.height).toBeLessThanOrEqual(box.y + box.height + 1);
+      for (const tick of await panel.locator(".recharts-cartesian-axis-tick-value").all()) {
+        const label = (await tick.boundingBox())!;
+        expect(label.y + label.height).toBeLessThanOrEqual(box.y + box.height);
+      }
+    }
+    const contrast = await result.locator(".power-timeline--modelled").evaluate(root => {
+      const panel = root.querySelector(".power-timeline-panel")!;
+      const canvas = document.createElement("canvas"), ctx = canvas.getContext("2d")!;
+      canvas.width = canvas.height = 1;
+      const ancestors: Element[] = [];
+      for (let node: Element | null = panel; node; node = node.parentElement) ancestors.unshift(node);
+      ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, 1, 1);
+      for (const node of ancestors) { ctx.fillStyle = getComputedStyle(node).backgroundColor; ctx.fillRect(0, 0, 1, 1); }
+      const luminance = (rgb: Uint8ClampedArray) => [0.2126, 0.7152, 0.0722].reduce((sum, weight, i) => {
+        const c = rgb[i] / 255; return sum + weight * (c <= .04045 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4);
+      }, 0);
+      const background = luminance(ctx.getImageData(0, 0, 1, 1).data);
+      return Object.fromEntries(["demand", "response", "battery", "soc", "target", "limit", "muted"].map(tone => {
+        ctx.fillStyle = getComputedStyle(root).getPropertyValue(`--ops-${tone}`).trim(); ctx.fillRect(0, 0, 1, 1);
+        const foreground = luminance(ctx.getImageData(0, 0, 1, 1).data);
+        return [tone, (Math.max(background, foreground) + .05) / (Math.min(background, foreground) + .05)];
+      }));
+    });
+    for (const [tone, ratio] of Object.entries(contrast)) expect(ratio, `${theme} ${tone} contrast`).toBeGreaterThanOrEqual(tone === "muted" ? 4.5 : 3);
+    await test.info().attach(`battery-chart-contrast-${theme}`, { body: JSON.stringify(contrast), contentType: "application/json" });
+    await result.locator(".power-timeline--modelled").screenshot({ path: `test-results/canonical-battery-charts-${theme}.png` });
+  }
+  await page.setViewportSize({ width: 390, height: 1500 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
+  await result.locator(".power-timeline--modelled").screenshot({ path: "test-results/canonical-battery-charts-mobile.png" });
 });
