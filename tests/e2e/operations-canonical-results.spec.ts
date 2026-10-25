@@ -45,8 +45,17 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await expect(result).toBeVisible();
   expect(request!.intervals).toHaveLength(96);
   expect(request!.intervals.at(-1)!.start).toBe("2026-09-26T23:45:00.000Z");
-  await expect(result.getByLabel("Selected battery interval")).toContainText("SOC 78%");
-  await expect(result.getByLabel("Selected battery interval")).toContainText("reserve 20%");
+  const batteryInspector = result.getByLabel("Selected battery interval", { exact: true });
+  await expect(batteryInspector.getByRole("img", { name: "Battery state of charge 78 percent", exact: true })).toBeVisible();
+  await expect(batteryInspector.getByRole("region", { name: "Battery state and reserve" })).toContainText("Protected reserve");
+  await expect(batteryInspector.getByRole("region", { name: "Full-horizon terminal target" })).toContainText("Met within model");
+  await expect(batteryInspector.getByRole("region", { name: "Selected interval operating margins" })).toContainText("Below threshold");
+  const terminalText = await batteryInspector.getByRole("region", { name: "Full-horizon terminal target" }).innerText();
+  await batteryInspector.getByText("Energy accounting", { exact: true }).click();
+  await expect(batteryInspector.getByRole("heading", { name: "Stored energy · DC", exact: true })).toBeVisible();
+  await expect(batteryInspector.getByRole("heading", { name: "This interval · AC", exact: true })).toBeVisible();
+  await expect(batteryInspector.getByText(/not a backup-duration guarantee/)).toBeVisible();
+  await batteryInspector.getByText("Energy accounting", { exact: true }).click();
   const panels = result.locator(".power-timeline-panel");
   await expect(panels).toHaveCount(3);
   for (const panel of await panels.all()) {
@@ -73,6 +82,7 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   const time = "2026-09-26T00:30:00.000Z";
   await row.locator("td").first().hover();
   await expect(result).toHaveAttribute("data-inspected-time", time);
+  await expect(batteryInspector.getByRole("region", { name: "Full-horizon terminal target" })).toHaveText(terminalText);
   await row.locator("td").first().click();
   await result.getByRole("heading", { name: "Facility Power & Battery Response", exact: true }).hover();
   await expect(result).toHaveAttribute("data-inspected-time", time);
@@ -184,7 +194,18 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
     expect((await new AxeBuilder({ page }).include(".ops-canonical").analyze()).violations).toEqual([]);
     await result.getByLabel("Selected battery interval").scrollIntoViewIfNeeded();
     await page.screenshot({ path: `test-results/canonical-battery-inspector-${theme}.png` });
+    await batteryInspector.screenshot({ path: `test-results/canonical-battery-sidebar-closed-${theme}.png` });
+    await batteryInspector.getByText("Energy accounting", { exact: true }).click();
+    expect((await new AxeBuilder({ page }).include(".ops-canonical").analyze()).violations).toEqual([]);
+    await batteryInspector.screenshot({ path: `test-results/canonical-battery-sidebar-open-${theme}.png` });
+    await batteryInspector.getByText("Energy accounting", { exact: true }).click();
   }
+  await page.setViewportSize({ width: 390, height: 1500 });
+  await batteryInspector.getByText("Energy accounting", { exact: true }).click();
+  await batteryInspector.screenshot({ path: "test-results/canonical-battery-sidebar-mobile.png" });
+  expect((await new AxeBuilder({ page }).include(".ops-canonical").analyze()).violations).toEqual([]);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
+  await batteryInspector.getByText("Energy accounting", { exact: true }).click();
   await panels.last().scrollIntoViewIfNeeded();
   await page.screenshot({ path: "test-results/canonical-mobile.png", fullPage: true });
   await page.setViewportSize({ width: 1600, height: 1000 });
@@ -194,6 +215,7 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await page.getByRole("checkbox", { name: "Battery available", exact: true }).uncheck();
   await run.click();
   await expect(result.getByLabel("Selected battery interval")).toContainText("No battery in this plan");
+  await expect(batteryInspector.getByText("Energy accounting", { exact: true })).toHaveCount(0);
   await expect(result.locator(".power-timeline-panel")).toHaveCount(1);
   exerciseFlows = true;
   await page.getByRole("checkbox", { name: "Battery available", exact: true }).check();
@@ -202,8 +224,11 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await result.getByRole("button", { name: /First charge/ }).click();
   await expect(result).toHaveAttribute("data-inspected-time", "2026-09-26T09:00:00.000Z");
   await expect(result.getByLabel("Selected interval power facts")).toContainText("Battery · charging");
+  await expect(batteryInspector.locator(".canonical-dispatch-state")).toContainText("Charging");
+  await expect(batteryInspector.getByLabel("Interval SOC transition")).toContainText("End");
   await expect(result.getByLabel("Selected interval power facts")).toContainText("-5.3 MW");
   await result.getByRole("button", { name: /First discharge/ }).click();
   await expect(result.getByLabel("Selected interval power facts")).toContainText("Battery · discharging");
+  await expect(batteryInspector.locator(".canonical-dispatch-state")).toContainText("Discharging");
   await expect(result.locator(".power-timeline-panel").nth(1).locator(".recharts-reference-area")).toHaveCount(2);
 });

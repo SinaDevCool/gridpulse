@@ -3,6 +3,8 @@ import { canonicalAssessmentFacts } from "./canonical-overview";
 import { buildPowerBalancePresentation } from "./power-balance";
 import { batteryConstraintSegments } from "./power/select-battery-workspace";
 
+const dispatchDirection = (power: number) => power > .005 ? "Discharging" : power < -.005 ? "Charging" : "Idle";
+
 /** A projection of accepted replay values. Never dispatches or simulates a second plan. */
 export function selectCanonicalBatteryView(a: CanonicalPresentation, timestamp: string) {
   const index = Math.max(0, a.points.findIndex(point => point.timestamp === timestamp));
@@ -13,7 +15,7 @@ export function selectCanonicalBatteryView(a: CanonicalPresentation, timestamp: 
     sum + Math.max(0, sign * (point.batteryPowerMw ?? 0)) * point.durationMinutes! / 60, 0);
   const states = a.points.map(point => {
     const dispatch = point.batteryPowerMw ?? 0;
-    const direction = dispatch > .005 ? "Discharging" : dispatch < -.005 ? "Charging" : "Idle";
+    const direction = dispatchDirection(dispatch);
     const exceedance = point.gridImportMw > a.limitMw + .01 ? "Above facility limit" :
       point.gridImportMw > a.targetMw + .01 ? "Above safety target" : "Within safety target";
     return { ...point, constraintCode: `${direction}-${exceedance}`, constraintLabel: `${direction} · ${exceedance}` };
@@ -36,6 +38,15 @@ export function selectCanonicalBatteryView(a: CanonicalPresentation, timestamp: 
     gridMw: selected.gridImportMw, batteryMw: selected.batteryPowerMw, gpuMw: null });
   const flowSupported = generation === 0 && balance.inputDifferenceMw != null && Math.abs(balance.inputDifferenceMw) <= .05;
   return { selected, index, audit, facts, segments: batteryConstraintSegments(states), events, components,
+    direction: dispatchDirection(selected.batteryPowerMw ?? 0),
+    margins: { safety: a.targetMw - selected.gridImportMw, facility: a.limitMw - selected.gridImportMw,
+      target: a.targetMw, limit: a.limitMw },
+    terminal: audit ? { endMwh: audit.points.at(-1)!.soc_mwh, targetMwh: audit.terminalTargetMwh,
+      state: facts.terminalTargetsMet === null ? "unavailable" as const : facts.terminalTargetsMet ? "met" as const : "unresolved" as const } : null,
+    accounting: audit ? { storedStartMwh: (index ? audit.points[index - 1].soc_mwh : audit.initialSocPercent / 100 * audit.capacity),
+      storedEndMwh: audit.points[index].soc_mwh, protectedMwh: audit.reserve, capacityMwh: audit.capacity,
+      acChargeMwh: raw.battery_charge_mw * selected.durationMinutes! / 60,
+      acDischargeMwh: raw.battery_discharge_mw * selected.durationMinutes! / 60 } : null,
     flow: flowSupported ? balance : null,
     chargeMwh: energy(-1), dischargeMwh: energy(1),
     endSoc: audit ? a.points.at(-1)!.socPercent : null,

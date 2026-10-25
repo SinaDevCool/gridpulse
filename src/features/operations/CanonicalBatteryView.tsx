@@ -14,7 +14,6 @@ export function CanonicalBatteryView({ assessment: a, timestamp, preview, onSele
   const inspected = preview ?? timestamp;
   const m = selectCanonicalBatteryView(a, inspected);
   const p = m.selected;
-  const direction = (p.batteryPowerMw ?? 0) > .005 ? "Discharging" : (p.batteryPowerMw ?? 0) < -.005 ? "Charging" : "Idle";
   return <section className="operations-v2-view power-battery battery-workspace ops-canonical ops-canonical--battery"
     data-assessment-id={a.projected.identity.resultFingerprint} data-inspected-time={p.timestamp}>
     <h2 className="sr-only">Joint-plan battery response</h2>
@@ -31,9 +30,9 @@ export function CanonicalBatteryView({ assessment: a, timestamp, preview, onSele
         <p className="context-label">{formatOperationsTime(p.timestamp)} · selected interval</p>
         <dl className="ops-compact-facts">
           <div><dt>Planned demand · before battery</dt><dd>{formatMw(p.facilityDemandMw!)}</dd></div>
-          <div><dt>Battery · {direction.toLowerCase()}</dt><dd>{a.batteryAudit ? formatMw(p.batteryPowerMw!) : "Not applicable"}</dd></div>
+          <div><dt>Battery · {m.direction.toLowerCase()}</dt><dd>{a.batteryAudit ? formatMw(p.batteryPowerMw!) : "Not applicable"}</dd></div>
           <div><dt>Grid import</dt><dd>{formatMw(p.gridImportMw)}</dd></div>
-          <div><dt>Safety-target margin</dt><dd>{formatMw(a.targetMw - p.gridImportMw)}</dd></div>
+          <div><dt>Safety-target margin</dt><dd>{formatMw(m.margins.safety)}</dd></div>
         </dl>
       </section>
       <PowerTimeline data={a.points} limitMw={a.limitMw} targetMw={a.targetMw} protectedSocPercent={a.protectedSocPercent}
@@ -53,7 +52,7 @@ export function CanonicalBatteryView({ assessment: a, timestamp, preview, onSele
         {m.events.map(event => <button type="button" key={event.label} aria-pressed={event.point!.timestamp === p.timestamp}
           onClick={() => onSelect(event.point!.timestamp)}>{event.label}<strong>{formatOperationsTime(event.point!.timestamp)}</strong></button>)}
       </div>
-    </article><CanonicalBatteryInspector model={m} target={a.targetMw} limit={a.limitMw} /></div>
+    </article><CanonicalBatteryInspector model={m} /></div>
     <div className="battery-inspection-actions">
       <PowerDataTable data={a.points} selectedTimestamp={inspected} pinnedTimestamp={timestamp} onSelect={onSelect} onPreview={onPreview} mode="scenario" context="battery" />
       <CanonicalBatteryDetails assessment={a} model={m} />
