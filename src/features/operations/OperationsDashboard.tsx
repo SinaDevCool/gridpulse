@@ -30,7 +30,8 @@ import { WorkloadEvidenceProvider } from "./WorkloadEvidenceProvider";
 import { stableOperationsJson } from "@/lib/operations-request";
 import { selectCanonicalPresentation } from "./canonical-presentation";
 import { CanonicalAssessmentView } from "./CanonicalAssessmentView";
-import { PlanCopilot, usePlanCopilot } from "./copilot/PlanCopilot";
+import { PlanCopilot } from "./copilot/PlanCopilot";
+import { usePlanCopilot } from "./copilot/use-plan-copilot";
 import { useMilpCalculation } from "./hooks/use-milp-calculation";
 export type { OperationsView } from "./view-contracts";
 
