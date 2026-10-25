@@ -101,7 +101,7 @@ export function PowerTimeline({
           >
             <CartesianGrid stroke="var(--ops-chart-grid)" vertical={false} />
             <XAxis dataKey="timestamp" hide={variant === "battery"}
-              tickFormatter={(value: string) => formatOperationsTime(value).replace(" UTC", "")}
+              tickFormatter={(value: string) => `${formatOperationsTime(value).replace(" UTC", "")}${overview && value === data.at(-1)?.endTimestamp ? " · end" : ""}`}
               minTickGap={40} tickLine={false} axisLine={false} />
             <YAxis
               {...numericAxisProps}
@@ -365,7 +365,7 @@ function PowerTooltip({
         : `Status: ${formatMw(importValue - (payload[0]?.payload?.targetMw ?? targetMw))} above the safety target`
       : undefined;
   return (
-    <OperationsTooltipShell label={label ? formatOperationsTime(label) : ""} status={status}>
+    <OperationsTooltipShell label={payload[0]?.payload?.label === "Planning horizon end" ? "Horizon end · last interval value" : label ? formatOperationsTime(label) : ""} status={status}>
       {payload.map((item) => (
         <TooltipRow
           key={item.name}

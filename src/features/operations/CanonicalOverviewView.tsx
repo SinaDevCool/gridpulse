@@ -33,7 +33,7 @@ export function CanonicalOverviewView({ assessment: a, timestamp, preview, onSel
         selectedTimestamp={inspected} onSelect={onSelect} mode="scenario" variant="overview" showConstraints={false}
         previewing={preview !== null} overviewPresentation />
       <OverviewImpact impact={canonicalImpact(a)} onSelect={onSelect} />
-      <div className="ops-inspection-caption"><span>Chart inspection range · {formatOperationsTime(displayed[0].timestamp)}–{formatOperationsTime(displayed.at(-1)!.endTimestamp!)}</span>
+      <div className="ops-inspection-caption"><span>Chart inspection range · {formatOperationsTime(displayed[0].timestamp, true)}–{formatOperationsTime(displayed.at(-1)!.endTimestamp!, true)}</span>
         <span>Summary, impact & checks: full horizon</span></div>
       <div className="ops-canonical-inspection-toolbar">
         <InspectionRange model={{ intervals: a.points.map(point => ({ timestamp: point.timestamp, label: formatOperationsTime(point.timestamp) })) }}

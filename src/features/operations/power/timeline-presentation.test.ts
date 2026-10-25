@@ -14,7 +14,7 @@ describe("plot-only step horizon", () => {
     expect(JSON.stringify(points)).toBe(before);
   });
   it("maps the plot-only boundary back to a real interval", () => {
-    expect(timelineSelection({ activeIndex: 1, activeLabel: points[0].endTimestamp }, points)).toBe(points[0].timestamp);
+    expect(timelineSelection({ activeIndex: 1, activeLabel: points[0].endTimestamp! }, points)).toBe(points[0].timestamp);
     expect(timelineSelection({ activeIndex: 100 }, points)).toBeUndefined();
     expect(timelineSelection({}, points)).toBeUndefined();
   });
