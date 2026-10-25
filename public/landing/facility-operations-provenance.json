@@ -1,7 +1,37 @@
 {
   "source": "Hosted synthetic MILP; unmodified accepted job rendered in branch UI",
-  "commit": "fe61b6640a6e96bc2f71ec783cb9d9429a864c0b",
+  "commit": "784d42562d6bdf563f209a4a88b6fd0490406372",
+  "request_sha256": "4c901bd3f726436df00048662fd204807e1178c4a8a80ce0cfd81b280be3f885",
+  "result_fingerprint": "3ee9e3e71269cdc89b2e253a365d425713176ec8a1411a6aa96cbf50f6fba12f",
+  "intervals": 96,
+  "resolution_minutes": 15,
   "solver": "scipy-highs-milp",
-  "status": "optimal",
-  "physical_dispatch": false
+  "status": "feasible_not_proven_optimal",
+  "physical_dispatch": false,
+  "assets": {
+    "facility-operations-overview.webp": {
+      "width": 1600,
+      "height": 1400,
+      "bytes": 91282,
+      "sha256": "b64b80443d3154ec2f94bf8c205a50e87a744ce5a7773397b0a88a48af484de5"
+    },
+    "facility-operations-workloads.webp": {
+      "width": 1600,
+      "height": 1400,
+      "bytes": 76908,
+      "sha256": "0d31dc01768e7240a3523b8f2b1b67faf60b46b33efe2173684e6d6d64f4bb67"
+    },
+    "facility-operations-battery.webp": {
+      "width": 1600,
+      "height": 1400,
+      "bytes": 107150,
+      "sha256": "1b0820c4f2f562e7e14e77ece9a6c4a662aa469ffceb28a26c500a57e560da76"
+    },
+    "facility-operations-mobile.webp": {
+      "width": 390,
+      "height": 1100,
+      "bytes": 40482,
+      "sha256": "13214f843b24da9dae23bef78167cc9378b2eb1e51dd453c98c7ad137c5c21ef"
+    }
+  }
 }
