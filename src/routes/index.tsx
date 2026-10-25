@@ -66,7 +66,7 @@ function DataCentreLandingPage() {
           </div>
         </section>
         <section id="product" className="home-product">
-          <div className="public-container">
+          <div id="how-it-works" className="public-container">
             <header className="home-section-heading">
               <p className="public-eyebrow">Two decisions. Clear evidence.</p>
               <h2>See what each service helps you decide.</h2>
