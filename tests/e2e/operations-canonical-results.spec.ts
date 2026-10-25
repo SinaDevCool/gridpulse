@@ -192,6 +192,9 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await page.getByRole("link", { name: "Power & Battery", exact: true }).click();
   for (const panel of await panels.all()) expect((await panel.boundingBox())!.height).toBeGreaterThan(140);
   expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
+  // Capture the complete sidebar at desktop width without the app's inner scroll
+  // viewport clipping its lower accounting disclosure.
+  await page.setViewportSize({ width: 1600, height: 1800 });
   for (const theme of ["dark", "light"]) {
     await page.evaluate(value => document.documentElement.dataset.theme = value, theme);
     expect((await new AxeBuilder({ page }).include(".ops-canonical").analyze()).violations).toEqual([]);
@@ -230,8 +233,10 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await expect(batteryInspector.locator(".canonical-dispatch-state")).toContainText("Charging");
   await expect(batteryInspector.getByLabel("Interval SOC transition")).toContainText("End");
   await expect(result.getByLabel("Selected interval power facts")).toContainText("-5.3 MW");
+  await batteryInspector.getByRole("region", { name: "Battery state and reserve" }).screenshot({ path: "test-results/canonical-battery-state-charging.png" });
   await result.getByRole("button", { name: /First discharge/ }).click();
   await expect(result.getByLabel("Selected interval power facts")).toContainText("Battery · discharging");
   await expect(batteryInspector.locator(".canonical-dispatch-state")).toContainText("Discharging");
+  await batteryInspector.getByRole("region", { name: "Battery state and reserve" }).screenshot({ path: "test-results/canonical-battery-state-discharging.png" });
   await expect(result.locator(".power-timeline-panel").nth(1).locator(".recharts-reference-area")).toHaveCount(2);
 });
