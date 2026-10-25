@@ -57,7 +57,7 @@ export function PowerTimeline({
   protectedSocPercent: number;
   mode: EvidenceMode;
   previewing?: boolean;
-  variant?: "battery" | "overview" | "compute";
+  variant?: "battery" | "overview";
   showConstraints?: boolean;
   maximumSocPercent?: number;
   overviewPresentation?: boolean;
@@ -81,7 +81,7 @@ export function PowerTimeline({
     <div
       className={`power-timeline power-timeline--${variant}`}
       role="group"
-      aria-label={variant === "battery" ? "Three aligned charts show facility demand and grid import in megawatts, battery dispatch in megawatts, and state of charge in percent" : variant === "compute" ? "Workload power and planned facility import in megawatts" : "Baseline and planned facility import comparison in megawatts"}
+      aria-label={variant === "battery" ? "Three aligned charts show facility demand and grid import in megawatts, battery dispatch in megawatts, and state of charge in percent" : "Baseline and planned facility import comparison in megawatts"}
     >
       <OperationsChartLegend
         visibility={visibility}
@@ -89,7 +89,7 @@ export function PowerTimeline({
       />
       <section className="power-timeline-panel power-timeline-panel--facility">
         <header>
-          <strong>{variant === "compute" ? "Workload power & facility context" : "Facility Power"}</strong>
+          <strong>Facility Power</strong>
           <span>MW</span>
         </header>
         <ResponsiveContainer width="100%" height="100%">
@@ -125,9 +125,6 @@ export function PowerTimeline({
             <Tooltip content={<PowerTooltip panel="facility" targetMw={targetMw} />} />
             {variant === "overview" ? <Line dataKey="baselineDemandMw" name="Baseline import"
               hide={!visibility.visible("Baseline import")} stroke="var(--ops-demand)" strokeDasharray="6 4"
-              dot={false} isAnimationActive={false} type="stepAfter" /> : null}
-            {variant === "compute" ? <Line dataKey="workloadPowerMw" name="Workload power"
-              hide={!visibility.visible("Workload power")} stroke="var(--ops-battery)" strokeWidth={3}
               dot={false} isAnimationActive={false} type="stepAfter" /> : null}
             {mode === "scenario" ? (
               <ReferenceLine

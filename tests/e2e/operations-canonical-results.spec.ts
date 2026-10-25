@@ -5,6 +5,9 @@ import type { FacilityPlanRequest } from "../../src/features/analytics/contracts
 
 test.use({ storageState: { cookies: [], origins: [] } });
 test("MILP charts retain physical SOC, geometry and shared keyboard/pointer inspection", async ({ page }) => {
+  // Three linked workspaces, theme audits and focused desktop/mobile captures exceed
+  // the former 30-second whole-test budget. Product waits and solver budgets are unchanged.
+  test.setTimeout(60_000);
   const token = `e30.${Buffer.from(JSON.stringify({ role: "gridpulse_public_visitor", exp: 4102444800 })).toString("base64url")}.fixture`;
   await page.route("**/auth/v1/signup", route => route.fulfill({ json: { access_token: token,
     token_type: "bearer", refresh_token: "fixture", expires_in: 3600,
@@ -21,9 +24,14 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
     const job = canonicalMilpJob(request);
     if (exerciseFlows && request.batteries?.length) {
       const result = job.result_payload.result;
-      Object.assign(result.facility.points[8], { battery_discharge_mw: 4.8, grid_import_mw: 46.2 });
-      Object.assign(result.facility.points[9], { battery_charge_mw: 5 / .95, grid_import_mw: 51 + 5 / .95 });
-      result.battery_trajectories[0].points[8].soc_mwh = Number(request.batteries[0].initial_soc_mwh) - 5;
+      const discharge = request.intervals.findIndex(interval => String(interval.start).includes("T08:00:"));
+      const charge = request.intervals.findIndex(interval => String(interval.start).includes("T09:00:"));
+      Object.assign(result.facility.points[discharge], { battery_discharge_mw: 4.8, grid_import_mw: 46.2 });
+      Object.assign(result.facility.points[charge], { battery_charge_mw: 5 / .95, grid_import_mw: 51 + 5 / .95 });
+      const used = 5 * Number(request.intervals[discharge].duration_minutes) / 60;
+      for (let index = discharge; index < charge; index++) {
+        result.battery_trajectories[0].points[index].soc_mwh = Number(request.batteries[0].initial_soc_mwh) - used;
+      }
     }
     return route.fulfill({ json: job });
   });
@@ -35,6 +43,8 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await run.click();
   const result = page.locator("[data-assessment-id]");
   await expect(result).toBeVisible();
+  expect(request!.intervals).toHaveLength(96);
+  expect(request!.intervals.at(-1)!.start).toBe("2026-09-26T23:45:00.000Z");
   await expect(result.getByLabel("Selected battery interval")).toContainText("SOC 78%");
   await expect(result.getByLabel("Selected battery interval")).toContainText("reserve 20%");
   const panels = result.locator(".power-timeline-panel");
@@ -60,7 +70,7 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await expect(result.getByText("No records match this filter.", { exact: true })).toBeVisible();
   await result.getByLabel("Show intervals").selectOption("all");
   const row = result.locator("tbody tr").nth(2);
-  const time = "2026-09-26T02:00:00.000Z";
+  const time = "2026-09-26T00:30:00.000Z";
   await row.locator("td").first().hover();
   await expect(result).toHaveAttribute("data-inspected-time", time);
   await row.locator("td").first().click();
@@ -76,6 +86,53 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await lane.click();
   await expect(result).toHaveAttribute("data-inspected-time", "2026-09-26T06:00:00.000Z");
   await expect(result.getByLabel("Execution time axis UTC")).toBeVisible();
+  await expect(result.getByRole("region", { name: "Scheduled workload demand" })).toBeVisible();
+  await expect(result.getByLabel("Workload outcomes")).toContainText("Remaining work");
+  const reviewFilters = result.getByLabel("Workload review filters");
+  await reviewFilters.getByRole("button", { name: /^Protected workloads/ }).click();
+  await expect(result.locator(".canonical-execution .compute-window-lane")).toHaveCount(1);
+  await expect(result.locator(".canonical-compute-review tbody tr")).toHaveCount(1);
+  await expect(result.getByLabel(/Workload details:/)).toHaveCount(0);
+  await reviewFilters.getByRole("button", { name: /^All workloads/ }).click();
+  await expect(result.locator(".canonical-execution .compute-window-lane")).toHaveCount(5);
+  await result.getByRole("button", { name: "Facility context", exact: true }).click();
+  await expect(result.getByText("Facility Power", { exact: true })).toBeVisible();
+  await result.getByRole("button", { name: "Workload demand", exact: true }).click();
+  await result.getByRole("checkbox", { name: "Show earliest-start/deadline envelopes" }).check();
+  await expect(result.locator(".canonical-permitted")).toHaveCount(5);
+  await lane.click();
+  const inspector = result.getByLabel("Workload details: Foundation model training", { exact: true });
+  await expect(inspector).toContainText("Submitted constraints");
+  await expect(inspector).toContainText("GPU allocation");
+  await expect(result.getByRole("button", { name: /Selected workload.*Included in total/ })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(inspector).toHaveCount(0);
+  await lane.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(result).toHaveAttribute("data-inspected-time", "2026-09-26T06:15:00.000Z");
+  await page.keyboard.press("ArrowRight");
+  await expect(result).toHaveAttribute("data-inspected-time", "2026-09-26T06:30:00.000Z");
+  for (const theme of ["light", "dark"]) {
+    await page.evaluate(value => document.documentElement.dataset.theme = value, theme);
+    expect((await new AxeBuilder({ page }).include(".canonical-compute").analyze()).violations).toEqual([]);
+    const colors = await result.evaluate(element => {
+      const style = getComputedStyle(element);
+      return [style.getPropertyValue("--ops-flexible"), style.getPropertyValue("--ops-protected"), style.getPropertyValue("--ops-selected")];
+    });
+    expect(new Set(colors).size).toBe(3);
+    await result.locator(".canonical-workload-chart").scrollIntoViewIfNeeded();
+    await result.locator(".canonical-workload-chart").screenshot({ path: `test-results/canonical-compute-chart-${theme}.png` });
+    await result.locator(".canonical-execution .compute-window-lane").first().screenshot({ path: `test-results/canonical-compute-lane-${theme}.png` });
+    await page.screenshot({ path: `test-results/canonical-compute-${theme}.png`, fullPage: true });
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
+  await page.setViewportSize({ width: 390, height: 1100 });
+  await result.locator(".canonical-workload-chart").screenshot({ path: "test-results/canonical-compute-chart-mobile.png" });
+  await result.locator(".canonical-execution .compute-window-lane").first().screenshot({ path: "test-results/canonical-compute-lane-mobile.png" });
+  await page.screenshot({ path: "test-results/canonical-compute-mobile.png", fullPage: true });
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  expect(submissions).toBe(1);
   await page.getByRole("link", { name: "Overview", exact: true }).click();
   await expect(result.getByText("Peak reduced by", { exact: true })).toBeVisible();
   await expect(result.getByText("Plan peak import", { exact: true })).toHaveCount(0);
@@ -93,7 +150,7 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await expect(explorer.getByText(/Balance discrepancy/)).toHaveCount(0);
   await result.getByText("Set inspection range", { exact: true }).click();
   await result.getByLabel("Range start", { exact: true }).selectOption("2");
-  await expect(result).toHaveAttribute("data-inspected-time", "2026-09-26T02:00:00.000Z");
+  await expect(result).toHaveAttribute("data-inspected-time", "2026-09-26T00:30:00.000Z");
   await expect(result.getByRole("meter")).toHaveAttribute("aria-valuenow", "51");
   await result.getByRole("button", { name: "Reset inspection range", exact: true }).click();
   await result.getByRole("button", { name: "Inspect plan peak", exact: true }).click();

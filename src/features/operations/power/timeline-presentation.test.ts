@@ -5,6 +5,20 @@ import type { BatteryTimelinePoint } from "./select-battery-workspace";
 const points = [{ timestamp: "2026-09-26T23:00:00Z", endTimestamp: "2026-09-27T00:00:00Z",
   durationMinutes: 60, gridImportMw: 50 }] as BatteryTimelinePoint[];
 describe("plot-only step horizon", () => {
+  it("renders a quarter-hour day with 97 SOC boundaries and 96 dispatch records", () => {
+    const origin = Date.parse("2026-09-26T00:00:00Z");
+    const input = Array.from({ length: 96 }, (_, index) => ({
+      ...points[0], timestamp: new Date(origin + index * 900000).toISOString(),
+      endTimestamp: new Date(origin + (index + 1) * 900000).toISOString(),
+      durationMinutes: 15, startingSocPercent: 78, socPercent: 78, batteryPowerMw: 0,
+    }));
+    const plot = batteryBoundaryPlot(input);
+    expect(plot).toHaveLength(97);
+    expect(plot.filter(point => point.batteryPowerMw !== null)).toHaveLength(96);
+    expect(plot.at(-1)!.plotTime).toBe(origin + 86400000);
+    expect(timelineSelection({ activeLabel: origin + 23.75 * 3600000 }, input)).toBe(input[95].timestamp);
+    expect(input).toHaveLength(96);
+  });
   it("places initial and ending SOC at actual boundaries without creating extra dispatch", () => {
     const input = [{ ...points[0], startingSocPercent: 78, socPercent: 70, batteryPowerMw: 5 }];
     const before = JSON.stringify(input);

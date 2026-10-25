@@ -2,7 +2,11 @@ import { mapCanonicalComponentInputs } from "./canonical-input-mapping";
 import { operationsScenarioSchema, type OperationsScenario } from "./scenario-engine";
 import type { FacilityPlanRequest } from "../analytics/contracts";
 
-export const SYNTHETIC_MODEL_VERSION = "operations-public-mock-hourly-v1";
+export const SYNTHETIC_MODEL_VERSION = "operations-public-mock-quarter-hour-v1";
+export const SYNTHETIC_INTERVAL_MINUTES = 15;
+export const SYNTHETIC_HORIZON_MINUTES = 1440;
+export const SYNTHETIC_INTERVAL_COUNT = SYNTHETIC_HORIZON_MINUTES / SYNTHETIC_INTERVAL_MINUTES;
+export const SYNTHETIC_RESOLUTION_LABEL = `${SYNTHETIC_INTERVAL_COUNT} × ${SYNTHETIC_INTERVAL_MINUTES}-minute intervals`;
 const truth = "synthetic_demonstration";
 const origin = Date.parse("2026-09-26T00:00:00Z");
 const at = (minutes: number) => new Date(origin + minutes * 60_000).toISOString();
@@ -55,7 +59,9 @@ export function buildSyntheticMilpRequest(raw: OperationsScenario): FacilityPlan
       recovery_ramp_mw_per_minute: null, rebound_limit_mw: null, reactive_power_requirement: null,
       evidence_cutoff: at(-1440), truth_class: truth, operator_confirmed: false,
       capacity_is_lower_bound: false, feasible_within_conditional_envelope: true },
-    intervals: Array.from({ length: 24 }, (_, index) => ({ index, start: at(index * 60), duration_minutes: 60 })),
+    intervals: Array.from({ length: SYNTHETIC_INTERVAL_COUNT }, (_, index) => ({
+      index, start: at(index * SYNTHETIC_INTERVAL_MINUTES), duration_minutes: SYNTHETIC_INTERVAL_MINUTES,
+    })),
     facility: { facility_id: "public-mock", site_id: "public-mock-site", import_limit_mw: scenario.importLimitMw,
       cooling_baseline_mw: 0, cooling_load_factor: .2, networking_power_mw: 0, storage_power_mw: 0,
       fixed_auxiliary_power_mw: scenario.nonGpuBaseLoadMw, ups_loss_fraction: .025,
@@ -72,11 +78,14 @@ export function buildSyntheticMilpRequest(raw: OperationsScenario): FacilityPlan
       terminal_target_mwh: b.usableEnergyMwh * b.stateOfHealthPercent / 100 * b.initialSocPercent / 100 }] : [],
     // Illustrative morning event only. Recovery outside it still respects the
     // full-horizon operating target, workload deadlines and terminal battery SOC.
-    policy: { event_intervals: Array.from({ length: 24 }, (_, index) => index >= 7 && index < 10), battery_temperature_c: Array(24).fill(20),
+    policy: { event_intervals: Array.from({ length: SYNTHETIC_INTERVAL_COUNT }, (_, index) => {
+      const minute = index * SYNTHETIC_INTERVAL_MINUTES;
+      return minute >= 7 * 60 && minute < 10 * 60;
+    }), battery_temperature_c: Array(SYNTHETIC_INTERVAL_COUNT).fill(20),
       solver_time_limit_seconds: 30, maximum_variables: 20000, allow_cooling_reduction: false },
-    economics: { import_price_eur_per_mwh: Array(24).fill(100), peak_import_eur_per_mw: 1000 },
+    economics: { import_price_eur_per_mwh: Array(SYNTHETIC_INTERVAL_COUNT).fill(100), peak_import_eur_per_mw: 1000 },
     cooling: { baseline_power_mw: 0, maximum_reduction_mw: 0, thermal_capacity_mwh: 0 },
-    onsite_generation_mw: Array(24).fill(0),
+    onsite_generation_mw: Array(SYNTHETIC_INTERVAL_COUNT).fill(0),
   };
   const mapped = mapCanonicalComponentInputs(scenario, request, {
     gpuModel: scenario.gpuModel, activeWatts: scenario.gpuActivePowerWatts,

@@ -86,6 +86,56 @@
 .ops-canonical--battery .ops-plan-conditions .battery-state-band { margin-block: .75rem; }
 .ops-canonical--battery .operations-assurance-panel { padding: 1rem; }
 .ops-canonical--battery .operations-assurance-panel dl { margin-block: 1rem; }
+.canonical-compute { font-variant-numeric: tabular-nums; }
+.canonical-compute-heading { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
+.canonical-compute-heading h2 { font-size: 1.35rem; margin: .3rem 0; }
+.canonical-compute-heading p, .canonical-compute-heading > span { color: var(--ops-muted); font-size: .875rem; }
+.canonical-compute-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; align-items: start; }
+.canonical-compute-grid:has(.compute-drawer) { grid-template-columns: minmax(0, 1fr) 20rem; }
+.canonical-compute-grid > * { min-width: 0; }
+.canonical-compute .power-timeline-card > h3 { font-size: 1.125rem; margin-bottom: .8rem; }
+.canonical-workload-chart .power-timeline-panel { height: 20rem; display: flex; flex-direction: column; }
+.canonical-workload-chart .power-timeline-panel > header { position: static; inset: auto; flex-shrink: 0; gap: .6rem; padding: .7rem .8rem; }
+.canonical-workload-chart .power-timeline-panel { padding-top: 0; }
+.canonical-workload-chart .recharts-responsive-container { flex: 1; min-height: 0; }
+.canonical-compute-filters { display: flex; flex-wrap: wrap; gap: .5rem; padding-block: 1rem; border-top: 1px solid var(--ops-border); }
+.canonical-compute-filters button { display: flex; align-items: center; gap: .5rem; padding: .6rem .8rem; border: 1px solid var(--ops-border); border-radius: 6px; background: var(--ops-card); color: var(--ops-text); min-height: 44px; }
+.canonical-compute-filters button[aria-pressed="true"] { border-color: var(--ops-selected); box-shadow: inset 0 -2px var(--ops-selected); }
+.canonical-window-control { display: flex; gap: .5rem; align-items: center; font-size: .875rem; padding-block: .5rem; }
+.canonical-execution .ops-canonical-axis { margin-left: 60px; margin-right: 18px; }
+.canonical-execution .compute-lane-track { margin-left: 60px; margin-right: 18px; height: 32px; position: relative; overflow: visible; }
+.canonical-execution .compute-lane-track button { position: absolute; top: 4px; bottom: 4px; padding: 0; border: 1px solid transparent; border-radius: 0; }
+.canonical-execution .compute-lane-track button[data-kind="flexible"] { background: var(--ops-flexible); }
+.canonical-execution .compute-lane-track button[data-kind="protected"] { background: var(--ops-protected); }
+.canonical-execution .compute-lane-track button[data-kind="unknown"] { background: var(--ops-reference); }
+.canonical-execution .compute-lane-track button[data-kind="checkpoint"] { background: repeating-linear-gradient(135deg, var(--ops-response) 0 3px, var(--ops-card) 3px 5px); }
+.canonical-execution .compute-lane-track button[aria-pressed="true"] { border: 2px solid var(--ops-selection); z-index: 2; }
+.canonical-execution [data-selected="true"] { border-left: 3px solid var(--ops-selected); padding-left: .6rem; }
+.canonical-execution .canonical-permitted { position: absolute; inset-block: 0; background: var(--ops-reference); opacity: .18; }
+.canonical-execution .canonical-deadline { position: absolute; inset-block: -3px; width: 2px; background: var(--ops-text); pointer-events: none; }
+.canonical-execution .canonical-deadline::before { content: "◆"; position: absolute; top: -9px; left: -5px; font-size: 12px; }
+.canonical-execution .compute-lane-cursor { pointer-events: none; }
+.canonical-execution .compute-lane-title { width: 100%; display: flex; justify-content: space-between; gap: 1rem; text-align: left; padding: .5rem 0; }
+.canonical-execution small { display: block; font-size: .8125rem; line-height: 1.5; margin-block: .5rem; color: var(--ops-muted); }
+.canonical-compute button:focus-visible { outline: 2px solid var(--ops-selection); outline-offset: 3px; }
+.canonical-workload-inspector { position: static; width: auto; }
+.canonical-workload-inspector h4 { margin-top: 1rem; font-size: .9375rem; }
+.canonical-workload-inspector dl > div { display: flex; justify-content: space-between; gap: .7rem; padding-block: .5rem; border-bottom: 1px solid var(--ops-border); font-size: .8125rem; }
+.canonical-workload-inspector dt { color: var(--ops-muted); }
+.canonical-workload-inspector dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
+.canonical-compute-review { margin-block: 1rem; }
+.canonical-compute-table { overflow-x: auto; }
+.canonical-compute-table table { width: 100%; min-width: 680px; text-align: left; border-collapse: collapse; font-size: .875rem; }
+.canonical-compute-table :is(th, td) { padding: .8rem .6rem; border-bottom: 1px solid var(--ops-border); }
+.canonical-compute-table thead { color: var(--ops-muted); font-size: .8125rem; }
+.canonical-compute-table [data-selected="true"] { outline: 2px solid var(--ops-selected); outline-offset: -2px; }
+@media (max-width: 1100px) {
+  .canonical-compute-grid:has(.compute-drawer) { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 620px) {
+  .canonical-execution .compute-lane-title { flex-direction: column; gap: .3rem; }
+  .canonical-execution .ops-canonical-axis { font-size: .65rem; }
+}
 @media (max-width: 620px) {
   .ops-canonical-inspection-toolbar { align-items: stretch; }
   .ops-margin-pair { grid-template-columns: 1fr; }

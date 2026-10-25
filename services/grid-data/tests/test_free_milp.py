@@ -51,6 +51,14 @@ def test_free_runtime_accepts_bounded_request():
     validate_free_request(request())
 
 
+def test_free_runtime_accepts_full_quarter_hour_day_without_raising_solver_budget():
+    validate_free_request(request(
+        intervals=[{"duration_minutes": 15} for _ in range(96)],
+        workloads=[{}] * 5,
+        batteries=[{}],
+    ))
+
+
 def test_dispatch_mode_is_explicit_without_global_environment_mutation(monkeypatch):
     monkeypatch.setenv("GRIDPULSE_JOB_DISPATCH_MODE", "inline")
     app = create_free_app(store=InMemoryJobStore(), executor=Mock(), enabled=False)

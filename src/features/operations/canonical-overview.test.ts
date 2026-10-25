@@ -8,8 +8,10 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { CanonicalModelChecks } from "./CanonicalModelChecks";
 
-function fixture() {
+function fixture(duration: 15 | 60 = 15) {
   const request = buildSyntheticMilpRequest(defaultOperationsScenario);
+  if (duration === 60) request.intervals = request.intervals.filter((_, i) => i % 4 === 0)
+    .map((interval, index) => ({ ...interval, index, duration_minutes: 60 }));
   const job = canonicalMilpJob(request);
   // Keep the reference components physically consistent with its reported import.
   job.result_payload.result.baseline_facility.points = job.result_payload.result.baseline_facility.points.map(point =>
@@ -51,10 +53,10 @@ describe("canonical overview presentation arithmetic", () => {
     const { request, job } = fixture();
     expect(canonicalAssessmentFacts(selectCanonicalPresentation(job, request)).slaViolations).toBe(0);
   });
-  it("weights breaches by elapsed interval duration, not sample counts", () => {
-    const { request, job } = fixture();
+  it.each([15, 60] as const)("weights breaches by elapsed %i-minute duration, preserving older results", duration => {
+    const { request, job } = fixture(duration);
     job.result_payload.result.baseline_facility.points[0].grid_import_mw = 110;
-    expect(canonicalBreachMinutes(selectCanonicalPresentation(job, request), true)).toBe(60);
+    expect(canonicalBreachMinutes(selectCanonicalPresentation(job, request), true)).toBe(duration);
     expect(canonicalBreachMinutes(selectCanonicalPresentation(job, request), false)).toBe(0);
   });
   it("does not invent missing component contributions", () => {

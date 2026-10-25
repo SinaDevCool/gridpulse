@@ -1,7 +1,7 @@
 import type { OperationsLegendItem } from "../visualization";
 import type { EvidenceMode } from "./presentation";
 
-export function timelineLegend(variant: "battery" | "overview" | "compute", mode: EvidenceMode): OperationsLegendItem[] {
+export function timelineLegend(variant: "battery" | "overview", mode: EvidenceMode): OperationsLegendItem[] {
   return [
     { label: "Safety target", tone: "target", mark: "dash" },
     { label: "Facility limit", tone: "limit", mark: "dash" },
@@ -10,7 +10,6 @@ export function timelineLegend(variant: "battery" | "overview" | "compute", mode
       { label: "Protected reserve", tone: "target" as const, mark: "area" as const },
     ] : []),
     ...(variant === "overview" ? [{ label: "Baseline import", tone: "demand" as const, mark: "dash" as const }] : []),
-    ...(variant === "compute" ? [{ label: "Workload power", tone: "battery" as const }] : []),
     { label: "Facility demand", detail: "MW · before battery", tone: "demand", mark: "area" },
     { label: "Grid import", detail: "MW · after battery", tone: "response" },
     ...(variant === "battery" ? [

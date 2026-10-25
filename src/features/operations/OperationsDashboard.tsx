@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { SYNTHETIC_RESOLUTION_LABEL } from "./synthetic-milp-request";
 import { useNavigate } from "@tanstack/react-router";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { OperationsEvidenceProvider } from "./OperationsEvidenceProvider";
@@ -231,7 +232,7 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
                 {draft.dirty ? "Unapplied changes. Results still use the applied scenario. " : ""}
                 {mode === "historical"
                   ? "Uploaded evidence, not live control."
-                  : showMilp ? "Synthetic joint MILP · 24 hourly intervals · illustrative profiles and component assumptions, not customer telemetry. PUE is reference-only." : "Scenario assessment—not live control."}
+                  : showMilp ? `Synthetic joint MILP · ${SYNTHETIC_RESOLUTION_LABEL} · illustrative profiles and component assumptions, not customer telemetry. PUE is reference-only.` : "Scenario assessment—not live control."}
                 {!showMilp && (lifecycle === "loading" || lifecycle === "stale")
                   ? " Calculation pending; browser preview is not a backend-validated plan."
                   : !showMilp && backendState === "unavailable"
