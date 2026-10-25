@@ -2,12 +2,18 @@ import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { canonicalMilpJob } from "../fixtures/canonical-milp-job";
 import type { FacilityPlanRequest } from "../../src/features/analytics/contracts";
+import { buildBriefEvidence, renderPlanBrief } from "../../src/features/operations/copilot/brief";
+import { selectCanonicalPresentation } from "../../src/features/operations/canonical-presentation";
+import { readFile } from "node:fs/promises";
+import { answerConversation } from "../../src/features/operations/copilot/conversation-query";
+import { conversationRequestSchema, type ConversationQuery } from "../../src/features/operations/copilot/conversation-contracts";
 
 test.use({ storageState: { cookies: [], origins: [] } });
 test("MILP charts retain physical SOC, geometry and shared keyboard/pointer inspection", async ({ page }) => {
   // Three linked workspaces, theme audits and focused desktop/mobile captures exceed
   // the former 30-second whole-test budget. Product waits and solver budgets are unchanged.
-  test.setTimeout(60_000);
+  // Includes three tabs, both themes, mobile geometry, accessibility and the copilot lifecycle.
+  test.setTimeout(120_000);
   // A returning visitor's legacy calculator preference must not reopen the
   // retired public selector or bypass the enabled optimiser.
   await page.addInitScript(() => localStorage.setItem("gridpulse-calculator", "scenario"));
@@ -18,6 +24,26 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   let request: FacilityPlanRequest;
   let submissions = 0;
   let exerciseFlows = false;
+  let explanations = 0;
+  let conversations = 0;
+  let holdConversation = false;
+  await page.route("**/api/operations/conversation", async route => {
+    conversations++;
+    if (holdConversation) { await new Promise(resolve => setTimeout(resolve, 800)); }
+    const input = conversationRequestSchema.parse(route.request().postDataJSON());
+    const job = canonicalMilpJob(request);
+    const query: ConversationQuery = { intent: input.question.includes("training") ? "workload" : input.question.includes("alternative") ? "what_if" :
+      input.question.includes("Which") ? "interval" : "summary", start: null, end: null, workloadId: null, focus: "selected", definition: "none" };
+    if (query.intent === "workload") query.workloadId = String(request.workloads[0].workload_id);
+    await route.fulfill({ json: answerConversation(selectCanonicalPresentation(job, request), input, query,
+      { model: "browser-test-fixture", responseId: null, usage: null }) }).catch(() => {});
+  });
+  await page.route("**/api/operations/brief", route => {
+    explanations++;
+    const job = canonicalMilpJob(request);
+    const evidence = buildBriefEvidence(selectCanonicalPresentation(job, request), job.id);
+    return route.fulfill({ json: renderPlanBrief({ findings: ["peak", "limit"], actions: ["review_inputs"] }, evidence, "browser-test-fixture") });
+  });
   await page.route("**/v1/jobs/**", route => {
     if (route.request().method() === "POST") {
       submissions++;
@@ -55,8 +81,101 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await run.click();
   const result = page.locator("[data-assessment-id]");
   await expect(result).toBeVisible();
+  const launcher = page.getByRole("button", { name: "Plan copilot", exact: true });
+  await launcher.click();
+  const copilot = page.getByRole("dialog", { name: "Plan copilot", exact: true });
+  const chat = copilot.getByRole("region", { name: "Ask about this plan", exact: true });
+  const questionInput = chat.getByRole("textbox", { name: "Your question", exact: true });
+  await expect(copilot).toBeVisible();
+  await expect(copilot.getByRole("button", { name: "Conversation", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await copilot.getByRole("button", { name: "Close copilot", exact: true }).click();
+  await expect(launcher).toBeFocused();
+  await launcher.click();
+  await chat.getByRole("button", { name: "When is battery reserve lowest?", exact: true }).click();
+  await expect(questionInput).toHaveValue("When is battery reserve lowest?");
+  await questionInput.press("Shift+Enter");
+  await expect(questionInput).toHaveValue("When is battery reserve lowest?\n");
+  expect(conversations).toBe(0);
+  await questionInput.fill("What did this plan achieve?");
+  await questionInput.press("Enter");
+  await expect(chat.getByRole("article").first()).toContainText("Modelled peak import");
+  await questionInput.fill("Which workloads run then?");
+  await chat.getByRole("button", { name: "Ask", exact: true }).click();
+  await expect(chat.getByRole("article").nth(1)).toContainText("Grid import");
+  await chat.getByRole("article").nth(1).getByText(/^Sources/).click();
+  await chat.getByRole("article").nth(1).getByText("Technical sources", { exact: true }).click();
+  await expect(chat.getByRole("article").nth(1)).toContainText("CanonicalPresentation.points[0].gridImportMw");
+  await chat.screenshot({ path: "test-results/copilot-conversation-desktop.png" });
+  holdConversation = true;
+  await questionInput.fill("Test an alternative");
+  await chat.getByRole("button", { name: "Ask", exact: true }).click();
+  await expect(chat.getByRole("button", { name: "Ask", exact: true })).toBeDisabled();
+  await chat.getByRole("button", { name: "Stop", exact: true }).click();
+  await expect(questionInput).toHaveValue("Test an alternative");
+  await page.waitForTimeout(850);
+  expect(await chat.getByRole("article").count()).toBe(2);
+  holdConversation = false;
+  await chat.getByRole("button", { name: "Retry question", exact: true }).click();
+  await expect(chat.getByRole("article").nth(2)).toContainText("requires a new MILP calculation");
+  expect(conversations).toBe(4);
+  await questionInput.fill("Show Foundation model training");
+  await chat.getByRole("button", { name: "Ask", exact: true }).click();
+  await chat.getByRole("article").nth(3).getByRole("button", { name: "Inspect workload", exact: true }).click();
+  await expect(result.locator(".canonical-workload-inspector")).toBeVisible();
+  await result.getByRole("button", { name: "Close workload details", exact: true }).click();
+  await launcher.click();
+  await expect(chat.getByRole("article")).toHaveCount(4);
+  await chat.getByRole("article").nth(1).getByRole("button", { name: "Inspect interval workloads", exact: true }).click();
+  await expect(result).toHaveAttribute("data-inspected-time", "2026-09-26T00:00:00.000Z");
+  await page.getByRole("link", { name: "Power & Battery", exact: true }).click();
+  await launcher.click();
+  await expect(chat.getByRole("article")).toHaveCount(4);
+  await chat.getByRole("button", { name: "Clear conversation", exact: true }).click();
+  await expect(chat.getByRole("article")).toHaveCount(4);
+  await chat.getByRole("button", { name: "Keep conversation", exact: true }).click();
+  expect(explanations).toBe(0);
+  await copilot.getByRole("button", { name: "Plan brief", exact: true }).click();
+  await copilot.getByRole("button", { name: "Explain this plan", exact: true }).click();
+  await expect(page.locator(".ops-plan-copilot")).toContainText("The solver reported optimal within the submitted model");
+  await copilot.getByText("Power", { exact: true }).click();
+  const peakEvidence = copilot.locator(".ops-plan-copilot .ops-copilot-sources").filter({ hasText: "Baseline peak import" }).first();
+  await peakEvidence.locator("summary").first().click();
+  await peakEvidence.getByText("Technical sources", { exact: true }).click();
+  await expect(peakEvidence.getByText("power.plan_peak", { exact: true })).toBeVisible();
+  await expect(peakEvidence).toContainText("Raw value: 51 MW");
+  await copilot.screenshot({ path: "test-results/copilot-desktop-evidence.png" });
+  for (const theme of ["dark", "light"]) {
+    await page.evaluate(value => document.documentElement.dataset.theme = value, theme);
+    expect((await new AxeBuilder({ page }).include(".ops-copilot-panel").analyze()).violations).toEqual([]);
+    await copilot.screenshot({ path: `test-results/copilot-evidence-${theme}.png` });
+  }
+  await page.setViewportSize({ width: 1920, height: 1000 });
+  await expect.poll(() => copilot.evaluate(node => node.matches(":modal"))).toBe(false);
+  const evidenceBounds = (await result.boundingBox())!;
+  const assistantBounds = (await copilot.boundingBox())!;
+  expect(evidenceBounds.width).toBeGreaterThan(600);
+  expect(evidenceBounds.x + evidenceBounds.width).toBeLessThanOrEqual(assistantBounds.x);
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await expect.poll(() => copilot.evaluate(node => node.matches(":modal"))).toBe(true);
+  await expect(copilot.getByRole("button", { name: "Download brief", exact: true })).toBeDisabled();
+  await copilot.getByRole("checkbox").check();
+  await expect(copilot.getByRole("button", { name: "Download brief", exact: true })).toBeEnabled();
+  const download = page.waitForEvent("download");
+  await copilot.getByRole("button", { name: "Download brief", exact: true }).click();
+  const downloaded = await download;
+  expect(downloaded.suggestedFilename()).toBe("gridpulse-plan-brief.txt");
+  await downloaded.saveAs("test-results/copilot-reviewed-export.txt");
+  const exported = await readFile((await downloaded.path())!, "utf8");
+  expect(exported).toContain('"jobId": "00000000-0000-4000-8000-000000000001"');
+  expect(exported).toContain("Human review: 20");
+  expect(exported).toContain("Review acknowledgement is not operational approval.");
+  await copilot.getByText("Receipt and limitations", { exact: true }).click();
+  await copilot.screenshot({ path: "test-results/copilot-reviewed-receipt.png" });
+  await copilot.getByText("Receipt and limitations", { exact: true }).click();
+  expect(explanations).toBe(1);
   expect(request!.intervals).toHaveLength(96);
   expect(request!.intervals.at(-1)!.start).toBe("2026-09-26T23:45:00.000Z");
+  if (await copilot.isVisible()) await copilot.getByRole("button", { name: "Close copilot", exact: true }).click();
   const batteryInspector = result.getByLabel("Selected battery interval", { exact: true });
   await expect(batteryInspector.getByRole("img", { name: "Battery state of charge 78 percent", exact: true })).toBeVisible();
   await expect(batteryInspector.getByRole("region", { name: "Battery state and reserve" })).toContainText("Protected reserve");
@@ -116,6 +235,8 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await page.keyboard.press("Enter");
   await expect(row).toHaveAttribute("aria-selected", "true");
   await page.getByRole("link", { name: "Compute & Workloads", exact: true }).click();
+  await expect(page.locator(".ops-plan-copilot")).toContainText("The solver reported optimal within the submitted model");
+  expect(explanations).toBe(1);
   await assertSinglePlanningExperience();
   await expect(page.getByRole("heading", { name: "Solved workload schedule" })).toBeVisible();
   await expect(result.locator(".power-timeline-panel")).toHaveCount(1);
@@ -281,6 +402,11 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
     await batteryInspector.getByText("Energy accounting", { exact: true }).click();
   }
   await page.setViewportSize({ width: 390, height: 1500 });
+  await launcher.click();
+  await copilot.getByRole("button", { name: "Conversation", exact: true }).click();
+  await copilot.screenshot({ path: "test-results/copilot-mobile.png" });
+  expect((await new AxeBuilder({ page }).include(".ops-copilot-panel").analyze()).violations).toEqual([]);
+  await copilot.getByRole("button", { name: "Close copilot", exact: true }).click();
   await batteryInspector.getByText("Energy accounting", { exact: true }).click();
   await batteryInspector.screenshot({ path: "test-results/canonical-battery-sidebar-mobile.png" });
   expect((await new AxeBuilder({ page }).include(".ops-canonical").analyze()).violations).toEqual([]);
@@ -293,10 +419,21 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await batterySection.click();
   await page.getByText("Advanced battery settings", { exact: true }).click();
   await page.getByRole("checkbox", { name: "Battery available", exact: true }).uncheck();
+  await launcher.click();
+  await expect(copilot).toContainText("Inputs changed");
+  await expect(questionInput).toBeDisabled();
+  await expect(chat.getByRole("article")).toHaveCount(0);
+  await expect(copilot.getByRole("button", { name: "Download brief", exact: true })).toHaveCount(0);
+  await copilot.getByRole("button", { name: "Close copilot", exact: true }).click();
   await run.click();
   await expect(result.getByLabel("Selected battery interval")).toContainText("No battery in this plan");
+  await launcher.click();
+  await copilot.getByRole("button", { name: "Plan brief", exact: true }).click();
+  await expect(copilot.getByRole("button", { name: "Explain this plan", exact: true })).toBeEnabled();
+  await expect(copilot.getByRole("checkbox")).toHaveCount(0);
   await expect(batteryInspector.getByText("Energy accounting", { exact: true })).toHaveCount(0);
   await expect(result.locator(".power-timeline-panel")).toHaveCount(1);
+  await copilot.getByRole("button", { name: "Close copilot", exact: true }).click();
   exerciseFlows = true;
   await page.getByRole("checkbox", { name: "Battery available", exact: true }).check();
   await run.click();

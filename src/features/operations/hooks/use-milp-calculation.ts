@@ -7,7 +7,7 @@ import { selectCanonicalPresentation, type CanonicalPresentation } from "../cano
 import type { OperationsScenario } from "../scenario-engine";
 
 export function useMilpCalculation() {
-  const [result, setResult] = useState<{ assessment: CanonicalPresentation; scenarioIdentity: string } | null>(null);
+  const [result, setResult] = useState<{ assessment: CanonicalPresentation; scenarioIdentity: string; jobId?: string } | null>(null);
   const [job, setJob] = useState<AnalyticsJob | null>(null);
   const [jobId, setJobId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +36,7 @@ export function useMilpCalculation() {
       const completed = await waitForAnalyticsJob(acceptedId, setJob, 2500, abort.signal);
       setJob(completed);
       if (completed.status !== "succeeded") throw new Error(completed.error ?? `MILP job ${completed.status}; no result accepted.`);
-      setResult({ assessment: selectCanonicalPresentation(completed, snapshot.current), scenarioIdentity: identity.current });
+      setResult({ assessment: selectCanonicalPresentation(completed, snapshot.current), scenarioIdentity: identity.current, jobId: acceptedId });
     } catch (reason) {
       if (!abort.signal.aborted) setError(reason instanceof Error ? reason.message : "MILP calculation unavailable");
     } finally { active.current = false; if (!abort.signal.aborted) setBusy(false); }

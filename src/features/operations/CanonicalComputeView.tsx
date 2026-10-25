@@ -1,4 +1,4 @@
-import { useCallback, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import type { CanonicalInspectionProps } from "./canonical-view-props";
 import { COMPUTE_PLOT, computeFilters, matchesCanonicalCompute, selectCanonicalComputeView, type ComputeFilter } from "./canonical-compute";
 import { CanonicalResultDetails } from "./CanonicalResultDetails";
@@ -12,15 +12,21 @@ import { CanonicalComputeSummary, CanonicalComputeInterval } from "./compute/Can
 import { PowerTimeline } from "./power/PowerTimeline";
 import { PowerDataTable } from "./power/PowerDataTable";
 
-export function CanonicalComputeView({ assessment: a, timestamp, preview, onSelect, onPreview }: CanonicalInspectionProps) {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+export function CanonicalComputeView({ assessment: a, timestamp, preview, onSelect, onPreview,
+  selectedWorkloadId, onWorkloadSelect }: CanonicalInspectionProps) {
+  const [localSelectedId, setLocalSelectedId] = useState<string | null>(null);
+  const selectedId = selectedWorkloadId === undefined ? localSelectedId : selectedWorkloadId;
+  const setSelectedId = onWorkloadSelect ?? setLocalSelectedId;
   const [filter, setFilter] = useState<ComputeFilter>("all");
   const [facility, setFacility] = useState(false);
   const [windows, setWindows] = useState(false);
-  const close = useCallback(() => setSelectedId(null), []);
+  const close = useCallback(() => setSelectedId(null), [setSelectedId]);
   const inspected = preview ?? timestamp;
   const m = selectCanonicalComputeView(a, inspected);
   const selected = m.jobs.find(job => job.id === selectedId);
+  useEffect(() => {
+    if (selected && !matchesCanonicalCompute(selected, filter)) setFilter("all");
+  }, [selected, filter]);
   const jobs = m.jobs.filter(job => matchesCanonicalCompute(job, filter));
   const selectJob = (id: string) => {
     const job = m.jobs.find(item => item.id === id);

@@ -29,6 +29,12 @@ export function formatMinutes(minutes: number) {
     : `${rounded} min`;
 }
 
+export function formatOperationsInterval(start: string, end: string) {
+  const a = new Date(start), b = new Date(end);
+  if (!Number.isFinite(a.getTime()) || !Number.isFinite(b.getTime())) return "Unavailable";
+  return `${formatOperationsTime(start, true)} – ${formatOperationsTime(end, a.toISOString().slice(0, 10) !== b.toISOString().slice(0, 10))}`;
+}
+
 export function importThresholds(gridMw: number | null, limitMw: number, reserveMw: number) {
   return {
     limitExceedanceMw: gridMw == null ? null : Math.max(0, gridMw - limitMw),
