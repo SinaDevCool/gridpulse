@@ -22,10 +22,14 @@ export function selectCanonicalComputeView(a: CanonicalPresentation, timestamp: 
     const last = activity.at(-1)?.interval_index;
     return { ...job, name: typeof declared?.name === "string" ? declared.name : job.id,
       protectedWork, earliest, deadline, nominalPower: numeric(declared?.nominal_power_mw),
+      minimumPower: numeric(declared?.minimum_power_cap_mw),
+      expectedMinutes: numeric(declared?.expected_duration_minutes),
+      minimumThroughput: numeric(sla?.minimum_throughput_fraction),
       minGpu: numeric(declared?.minimum_gpu_count), maxGpu: numeric(declared?.maximum_gpu_count),
       maxDelay: numeric(declared?.maximum_start_delay_minutes), remaining,
       complete: remaining === null ? null : remaining <= 1e-6,
-      attention: remaining === null || remaining > 1e-6 || job.deadlineMet !== true || protectedWork === null,
+      attention: remaining === null || remaining > 1e-6 || job.deadlineMet !== true ||
+        protectedWork === null || deadline === null || earliest === null,
       current: job.points[index],
       first: first === undefined ? null : a.points[first].timestamp,
       last: last === undefined ? null : a.points[last].endTimestamp,

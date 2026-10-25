@@ -21,6 +21,9 @@ export function CanonicalWorkloadInspector({ job, onClose }: { job: CanonicalCom
       ["Earliest start", date(job.earliest)], ["Deadline", date(job.deadline)],
       ["Protection", job.protectedWork === null ? "Unavailable" : job.protectedWork ? "Protected inference" : "Flexible"],
       ["Nominal power", job.nominalPower === null ? "Unavailable" : formatMw(job.nominalPower)],
+      ["Minimum power cap", job.minimumPower === null ? "Unavailable" : formatMw(job.minimumPower)],
+      ["Declared work duration", job.expectedMinutes === null ? "Unavailable" : `${job.expectedMinutes} min`],
+      ["Minimum throughput", job.minimumThroughput === null ? "Unavailable" : `${(job.minimumThroughput * 100).toFixed(0)}%`],
       ["GPU bounds", job.minGpu === null || job.maxGpu === null ? "Unavailable" : `${job.minGpu.toLocaleString()}–${job.maxGpu.toLocaleString()}`],
       ["Maximum start delay", job.maxDelay === null ? "Unavailable" : `${job.maxDelay} min`],
     ].map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>

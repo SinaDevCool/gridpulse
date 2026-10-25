@@ -60,4 +60,13 @@ describe("canonical compute presentation", () => {
     expect(m.jobs.filter(job => matchesCanonicalCompute(job, "protected"))).toHaveLength(1);
     expect(m.remaining).toBe(2);
   });
+  it("flags missing submitted timing even when a returned deadline flag is true", () => {
+    const a = fixture();
+    a.jobs[0].deadlineMet = true;
+    delete (a.request.workloads[0].sla as Record<string, unknown>).deadline;
+    const job = selectCanonicalComputeView(a, a.points[0].timestamp).jobs[0];
+    expect(job.deadline).toBeNull();
+    expect(job.attention).toBe(true);
+    expect(job.minimumPower).toBe(a.request.workloads[0].minimum_power_cap_mw);
+  });
 });
