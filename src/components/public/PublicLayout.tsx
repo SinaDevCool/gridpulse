@@ -4,7 +4,7 @@ import { useState, type ReactNode } from "react";
 import { trackEvent } from "@/lib/analytics";
 import { isFinderMvp } from "@/config/product-mode";
 import { ProductShell } from "@/components/product/ProductShell";
-import { solutionRouteAvailable } from "@/config/solutions";
+import { enabledSolutions, solutions, solutionRouteAvailable } from "@/config/solutions";
 import "@/public.css";
 
 const publicNavigation = [
@@ -14,11 +14,12 @@ const publicNavigation = [
   { label: "Methodology & Sources", to: "/data-sources" },
 ] as const;
 
-const finderNavigation = [
-  { label: "Product", to: "/", hash: "product" },
-  { label: "How It Works", to: "/", hash: "how-it-works" },
-  { label: "Evidence", to: "/", hash: "evidence" },
-] as const;
+const solutionNavigation = [
+  ...solutions
+    .filter((solution) => enabledSolutions.includes(solution.id))
+    .map((solution) => ({ label: solution.label, to: solution.introduction })),
+  { label: "Evidence & Methodology", to: "/data-sources" },
+];
 
 export function PublicBrand() {
   return (
@@ -31,17 +32,18 @@ export function PublicBrand() {
 export function PublicLayout({
   children,
   forcePublicChrome = false,
-  finderMarketingChrome = false,
+  solutionMarketingChrome = false,
 }: {
   children: ReactNode;
   forcePublicChrome?: boolean;
-  finderMarketingChrome?: boolean;
+  solutionMarketingChrome?: boolean;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
   if (isFinderMvp() && !forcePublicChrome) return <ProductShell>{children}</ProductShell>;
   const onPilotPage = location.pathname === "/pilot";
-  const navigation = finderMarketingChrome ? finderNavigation : publicNavigation;
+  const navigation: readonly { label: string; to: string; hash?: string }[] =
+    solutionMarketingChrome ? solutionNavigation : publicNavigation;
   return (
     <div className="public-shell">
       <header className="public-header">
@@ -49,9 +51,9 @@ export function PublicLayout({
         <nav className={menuOpen ? "is-open" : undefined} aria-label="Public navigation">
           {navigation.map((item) => (
             <Link
-              key={`${item.to}-${"hash" in item ? item.hash : ""}`}
+              key={`${item.to}-${item.hash ?? ""}`}
               to={item.to}
-              hash={"hash" in item ? item.hash : undefined}
+              hash={item.hash}
               activeOptions={{ exact: item.to === "/" }}
               activeProps={{ className: "is-active", "aria-current": "page" }}
               onClick={() => setMenuOpen(false)}
@@ -59,26 +61,19 @@ export function PublicLayout({
               {item.label}
             </Link>
           ))}
-          <Link
-            to={finderMarketingChrome ? "/power-finder" : "/pilot"}
-            hash={!finderMarketingChrome && onPilotPage ? "pilot-form" : undefined}
-            className="public-header-cta"
-            onClick={() => {
-              setMenuOpen(false);
-              trackEvent(
-                finderMarketingChrome
-                  ? "public_open_power_finder_clicked"
-                  : "public_start_pilot_clicked",
-                { placement: "header" },
-              );
-            }}
-          >
-            {finderMarketingChrome
-              ? "Open Power Finder"
-              : onPilotPage
-                ? "Continue Application"
-                : "Start a Pilot"}
-          </Link>
+          {solutionMarketingChrome ? null : (
+            <Link
+              to="/pilot"
+              hash={onPilotPage ? "pilot-form" : undefined}
+              className="public-header-cta"
+              onClick={() => {
+                setMenuOpen(false);
+                trackEvent("public_start_pilot_clicked", { placement: "header" });
+              }}
+            >
+              {onPilotPage ? "Continue Application" : "Start a Pilot"}
+            </Link>
+          )}
         </nav>
         <button
           type="button"
@@ -91,37 +86,39 @@ export function PublicLayout({
         </button>
       </header>
       {children}
-      <PublicFooter finderMarketingChrome={finderMarketingChrome} />
+      <PublicFooter solutionMarketingChrome={solutionMarketingChrome} />
     </div>
   );
 }
 
 export function PublicFooter({
-  finderMarketingChrome = false,
+  solutionMarketingChrome = false,
 }: {
-  finderMarketingChrome?: boolean;
+  solutionMarketingChrome?: boolean;
 }) {
   return (
     <footer className="public-footer">
       <div className="public-container public-footer-grid">
         <div>
           <PublicBrand />
-          <p>Evidence-led grid-connection decision support for German infrastructure projects.</p>
+          <p>Evidence-led site selection and modelled facility operations for data centres.</p>
         </div>
         <nav aria-label="Public footer navigation">
-          {finderMarketingChrome ? null : <Link to="/service">Assessment</Link>}
-          {finderMarketingChrome ? null : <Link to="/demo">Product Tour</Link>}
-          {finderMarketingChrome ? null : <Link to="/data-sources">Methodology &amp; Sources</Link>}
-          {finderMarketingChrome && solutionRouteAvailable("/power-finder") ? (
+          {solutionMarketingChrome ? null : <Link to="/service">Assessment</Link>}
+          {solutionMarketingChrome ? null : <Link to="/demo">Product Tour</Link>}
+          {solutionMarketingChrome ? null : (
+            <Link to="/data-sources">Methodology &amp; Sources</Link>
+          )}
+          {solutionMarketingChrome && solutionRouteAvailable("/power-finder") ? (
             <Link to="/power-finder">Power Finder</Link>
           ) : null}
-          {finderMarketingChrome && solutionRouteAvailable("/portfolio") ? (
+          {solutionMarketingChrome && solutionRouteAvailable("/portfolio") ? (
             <Link to="/portfolio">Sites</Link>
           ) : null}
-          {finderMarketingChrome && solutionRouteAvailable("/operations") ? (
+          {solutionMarketingChrome && solutionRouteAvailable("/operations") ? (
             <Link to="/solutions/facility-operations">Facility Operations</Link>
           ) : null}
-          {finderMarketingChrome ? (
+          {solutionMarketingChrome ? (
             <Link to="/data-sources">Evidence &amp; Methodology</Link>
           ) : (
             <Link to="/pilot">Start a Pilot</Link>

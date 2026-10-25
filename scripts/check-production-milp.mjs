@@ -15,7 +15,7 @@ try {
   await result.waitFor({ state: "visible", timeout: 180000 });
   const fingerprint = await result.getAttribute("data-assessment-id");
   if (!/^[a-f0-9]{64}$/.test(fingerprint ?? "")) throw new Error("Accepted result identity missing");
-  for (const [label, heading] of [["Compute & Workloads", "Solved workload schedule"], ["Power & Battery", "Joint-plan battery response"], ["Overview", "Optimised facility plan"]]) {
+  for (const [label, heading] of [["Compute & Workloads", "Solved workload schedule"], ["Power & Battery", "Facility Power & Battery Response"], ["Overview", "Optimised facility plan"]]) {
     await page.getByRole("link", { name: label, exact: true }).click();
     await page.getByRole("heading", { name: heading, exact: true }).waitFor({ state: "visible", timeout: 15000 });
     if (await page.locator("[data-assessment-id]").getAttribute("data-assessment-id") !== fingerprint)
@@ -39,7 +39,7 @@ try {
       await rows.nth(2).locator("td").first().hover();
       await expect(rows.nth(2)).toHaveAttribute("data-preview", "true");
       await rows.nth(2).locator("td").first().click();
-      await result.getByRole("heading").first().hover();
+      await result.getByRole("heading", { name: "Facility Power & Battery Response", exact: true }).hover();
       await expect(rows.nth(2)).toHaveAttribute("aria-selected", "true");
       for (const theme of ["light", "dark"]) {
         await page.evaluate(value => document.documentElement.dataset.theme = value, theme);

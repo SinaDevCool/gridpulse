@@ -1,8 +1,9 @@
 .solution-introduction {
+  background: #05080f;
   max-width: 1100px;
   margin: 0 auto;
   padding: clamp(24px, 5vw, 72px) 24px;
-  color: var(--text-primary, #dceaf2);
+  color: #dceaf2;
 }
 .solution-introduction h1 {
   font-size: clamp(2rem, 4vw, 3.5rem);
@@ -13,8 +14,10 @@
   color: #9ec3d5;
   font-size: 0.8rem;
 }
-:root[data-theme="light"] .solution-introduction .context-label {
-  color: #365b70;
+
+.solution-introduction summary {
+  cursor: pointer;
+  padding: 12px 0;
 }
 .solution-introduction p {
   line-height: 1.65;
@@ -61,12 +64,7 @@
   outline: 3px solid #b890ff;
   outline-offset: 4px;
 }
-:root[data-theme="light"] .solution-introduction {
-  color: #173447;
-}
-:root[data-theme="light"] .solution-introduction li > span {
-  color: #086b83;
-}
+
 @media (max-width: 700px) {
   .solution-introduction ol {
     grid-template-columns: 1fr;
