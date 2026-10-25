@@ -2,6 +2,8 @@ import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { canonicalMilpJob } from "../fixtures/canonical-milp-job";
 import type { FacilityPlanRequest } from "../../src/features/analytics/contracts";
+import { buildBriefEvidence, renderPlanBrief } from "../../src/features/operations/copilot/brief";
+import { selectCanonicalPresentation } from "../../src/features/operations/canonical-presentation";
 
 test.use({ storageState: { cookies: [], origins: [] } });
 test("MILP charts retain physical SOC, geometry and shared keyboard/pointer inspection", async ({ page }) => {
@@ -18,6 +20,12 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   let request: FacilityPlanRequest;
   let submissions = 0;
   let exerciseFlows = false;
+  let explanations = 0;
+  await page.route("**/api/operations/brief", route => {
+    explanations++;
+    const evidence = buildBriefEvidence(selectCanonicalPresentation(canonicalMilpJob(request), request));
+    return route.fulfill({ json: renderPlanBrief({ findings: ["peak", "limit"], actions: ["review_inputs"] }, evidence, "browser-test-fixture") });
+  });
   await page.route("**/v1/jobs/**", route => {
     if (route.request().method() === "POST") {
       submissions++;
@@ -55,6 +63,17 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await run.click();
   const result = page.locator("[data-assessment-id]");
   await expect(result).toBeVisible();
+  const copilot = page.getByRole("region", { name: "Plan copilot", exact: true });
+  expect(explanations).toBe(0);
+  await copilot.getByRole("button", { name: "Explain this plan", exact: true }).click();
+  await expect(copilot).toContainText("The solver reported optimal within the submitted model");
+  await expect(copilot.getByRole("button", { name: "Download brief", exact: true })).toBeDisabled();
+  await copilot.getByRole("checkbox").check();
+  await expect(copilot.getByRole("button", { name: "Download brief", exact: true })).toBeEnabled();
+  const download = page.waitForEvent("download");
+  await copilot.getByRole("button", { name: "Download brief", exact: true }).click();
+  expect((await download).suggestedFilename()).toBe("gridpulse-plan-brief.txt");
+  expect(explanations).toBe(1);
   expect(request!.intervals).toHaveLength(96);
   expect(request!.intervals.at(-1)!.start).toBe("2026-09-26T23:45:00.000Z");
   const batteryInspector = result.getByLabel("Selected battery interval", { exact: true });
@@ -116,6 +135,8 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await page.keyboard.press("Enter");
   await expect(row).toHaveAttribute("aria-selected", "true");
   await page.getByRole("link", { name: "Compute & Workloads", exact: true }).click();
+  await expect(copilot).toContainText("The solver reported optimal within the submitted model");
+  expect(explanations).toBe(1);
   await assertSinglePlanningExperience();
   await expect(page.getByRole("heading", { name: "Solved workload schedule" })).toBeVisible();
   await expect(result.locator(".power-timeline-panel")).toHaveCount(1);
@@ -293,6 +314,8 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await batterySection.click();
   await page.getByText("Advanced battery settings", { exact: true }).click();
   await page.getByRole("checkbox", { name: "Battery available", exact: true }).uncheck();
+  await expect(copilot).toContainText("Inputs changed");
+  await expect(copilot.getByRole("button", { name: "Download brief", exact: true })).toHaveCount(0);
   await run.click();
   await expect(result.getByLabel("Selected battery interval")).toContainText("No battery in this plan");
   await expect(batteryInspector.getByText("Energy accounting", { exact: true })).toHaveCount(0);

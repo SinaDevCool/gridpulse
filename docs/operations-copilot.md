@@ -36,7 +36,10 @@ backend work remain unchanged.
 ## Qualification status
 
 Focused unit/regression tests, typechecking, architecture, encoding and changed-file
-lint pass locally. The first live OpenAI request was rejected with
-`credit_balance_exhausted` / `insufficient_quota`; no AI brief was accepted.
-Browser interaction and real hosted MILP-to-OpenAI qualification remain outstanding.
-Do not describe this as production-ready or activate the feature based on unit tests.
+lint pass locally. After API credits were added, a real hosted 96-interval synthetic
+MILP job was read through its owned job API and generated eight validated findings
+through OpenAI (`gpt-4o-mini`). The feasible incumbent status was preserved.
+The receipt and brief are local ignored files under `.codex-tmp/`.
+Browser interaction qualification is included in the existing canonical results
+spec: explicit generation, review-gated export, tab persistence and stale-input
+invalidation. Public activation still requires its separate release decision.
