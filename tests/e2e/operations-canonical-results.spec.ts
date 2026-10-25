@@ -20,8 +20,10 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
     return route.fulfill({ json: canonicalMilpJob(request) });
   });
   await page.goto("/operations?view=power&mode=scenario&window=today");
+  await expect(page.getByRole("button", { name: /^(Show|Hide) panel/ })).toBeEnabled();
   const run = page.getByRole("button", { name: "Recalculate MILP", exact: true });
-  test.skip(!await run.isVisible(), "MILP flag disabled in this candidate; production candidate exercises this spec");
+  if (process.env.GRIDPULSE_TEST_MILP_REQUIRED === "1") await expect(run).toBeVisible();
+  else test.skip(!await run.isVisible(), "MILP flag disabled in this candidate; focused qualification requires it");
   await run.click();
   const result = page.locator("[data-assessment-id]");
   await expect(result).toBeVisible();
