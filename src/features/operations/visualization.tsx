@@ -22,6 +22,9 @@ export function useChartVisibility(initialHidden: string[] = []): ChartVisibilit
 }
 
 export type OperationsSeriesTone =
+  | "flexible"
+  | "protected"
+  | "selected"
   | "demand"
   | "response"
   | "compute"

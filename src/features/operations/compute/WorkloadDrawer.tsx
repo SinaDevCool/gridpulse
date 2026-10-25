@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
+import { useInspectorFocus } from "./use-inspector-focus";
 
 import { AlertTriangle, CheckCircle2, X } from "lucide-react";
 
@@ -29,18 +30,7 @@ export function WorkloadDrawer({
   const inspection = useInspection(points);
   const jump = candidateInterval(workload, points);
   const closeRef = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    const previous = document.activeElement as HTMLElement | null;
-    closeRef.current?.focus();
-    const dismiss = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", dismiss);
-    return () => {
-      document.removeEventListener("keydown", dismiss);
-      if (previous?.isConnected) previous.focus();
-    };
-  }, [onClose]);
+  useInspectorFocus(closeRef, onClose);
   return (
     <aside className="compute-drawer" aria-label={`Workload details: ${workload.name}`}>
       <header>

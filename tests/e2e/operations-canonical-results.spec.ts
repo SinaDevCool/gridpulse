@@ -83,6 +83,48 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await lane.click();
   await expect(result).toHaveAttribute("data-inspected-time", "2026-09-26T06:00:00.000Z");
   await expect(result.getByLabel("Execution time axis UTC")).toBeVisible();
+  await expect(result.getByRole("region", { name: "Scheduled workload demand" })).toBeVisible();
+  await expect(result.getByLabel("Workload outcomes")).toContainText("Remaining work");
+  const reviewFilters = result.getByLabel("Workload review filters");
+  await reviewFilters.getByRole("button", { name: /^Protected workloads/ }).click();
+  await expect(result.locator(".canonical-execution .compute-window-lane")).toHaveCount(1);
+  await expect(result.locator(".canonical-compute-review tbody tr")).toHaveCount(1);
+  await expect(result.getByLabel(/Workload details:/)).toHaveCount(0);
+  await reviewFilters.getByRole("button", { name: /^All workloads/ }).click();
+  await expect(result.locator(".canonical-execution .compute-window-lane")).toHaveCount(5);
+  await result.getByRole("button", { name: "Facility context", exact: true }).click();
+  await expect(result.getByText("Facility Power", { exact: true })).toBeVisible();
+  await result.getByRole("button", { name: "Workload demand", exact: true }).click();
+  await result.getByRole("checkbox", { name: "Show earliest-start/deadline envelopes" }).check();
+  await expect(result.locator(".canonical-permitted")).toHaveCount(5);
+  await lane.click();
+  const inspector = result.getByLabel("Workload details: Foundation model training", { exact: true });
+  await expect(inspector).toContainText("Submitted constraints");
+  await expect(inspector).toContainText("GPU allocation");
+  await expect(result.getByRole("button", { name: /Selected workload.*Included in total/ })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(inspector).toHaveCount(0);
+  await lane.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(result).toHaveAttribute("data-inspected-time", "2026-09-26T06:15:00.000Z");
+  await page.keyboard.press("ArrowRight");
+  await expect(result).toHaveAttribute("data-inspected-time", "2026-09-26T06:30:00.000Z");
+  for (const theme of ["light", "dark"]) {
+    await page.evaluate(value => document.documentElement.dataset.theme = value, theme);
+    expect((await new AxeBuilder({ page }).include(".canonical-compute").analyze()).violations).toEqual([]);
+    const colors = await result.evaluate(element => {
+      const style = getComputedStyle(element);
+      return [style.getPropertyValue("--ops-flexible"), style.getPropertyValue("--ops-protected"), style.getPropertyValue("--ops-selected")];
+    });
+    expect(new Set(colors).size).toBe(3);
+    await result.locator(".canonical-workload-chart").scrollIntoViewIfNeeded();
+    await page.screenshot({ path: `test-results/canonical-compute-${theme}.png`, fullPage: true });
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
+  await page.screenshot({ path: "test-results/canonical-compute-mobile.png", fullPage: true });
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  expect(submissions).toBe(1);
   await page.getByRole("link", { name: "Overview", exact: true }).click();
   await expect(result.getByText("Peak reduced by", { exact: true })).toBeVisible();
   await expect(result.getByText("Plan peak import", { exact: true })).toHaveCount(0);

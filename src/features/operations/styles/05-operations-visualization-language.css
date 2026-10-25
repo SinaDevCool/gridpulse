@@ -150,6 +150,9 @@
 .operations-chart-mark.demand {
   --mark-color: var(--ops-demand);
 }
+.operations-chart-mark.flexible { --mark-color: var(--ops-flexible); }
+.operations-chart-mark.protected { --mark-color: var(--ops-protected); }
+.operations-chart-mark.selected { --mark-color: var(--ops-selected); }
 
 .operations-chart-mark.response {
   --mark-color: var(--ops-response);

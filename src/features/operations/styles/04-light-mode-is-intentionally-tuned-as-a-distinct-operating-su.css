@@ -11,6 +11,9 @@
   --accent: #086b86;
   --accent-foreground: #ffffff;
   --ops-demand: #006b86;
+  --ops-flexible: #006b86;
+  --ops-protected: #536981;
+  --ops-selected: #a01466;
   --ops-demand-fill: rgb(0 107 134 / 8%);
   --ops-response: #6334b3;
   --ops-compute: #765100;

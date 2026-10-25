@@ -7,6 +7,9 @@
   --ops-accent: var(--accent);
   --ops-accent-contrast: var(--accent-foreground);
   --ops-demand: #39c7e8;
+  --ops-flexible: #39c7e8;
+  --ops-protected: #a8b7c9;
+  --ops-selected: #ff9bd4;
   --ops-demand-fill: color-mix(in srgb, var(--ops-demand) 13%, transparent);
   --ops-response: #9b72ff;
   --ops-compute: #d8a42a;
