@@ -14,7 +14,7 @@ describe("public synthetic MILP model", () => {
     expect(request.intervals.at(-1)!.start).toBe("2026-09-26T23:45:00.000Z");
     request.intervals.forEach((interval, index) => {
       expect(interval.index).toBe(index);
-      expect(Date.parse(interval.start) - Date.parse(request.intervals[0].start)).toBe(index * 900000);
+      expect(Date.parse(String(interval.start)) - Date.parse(String(request.intervals[0].start))).toBe(index * 900000);
     });
     expect(request.policy.battery_temperature_c).toHaveLength(96);
     expect(request.economics.import_price_eur_per_mwh).toHaveLength(96);

@@ -21,11 +21,11 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
     const job = canonicalMilpJob(request);
     if (exerciseFlows && request.batteries?.length) {
       const result = job.result_payload.result;
-      const discharge = request.intervals.findIndex(interval => interval.start.includes("T08:00:"));
-      const charge = request.intervals.findIndex(interval => interval.start.includes("T09:00:"));
+      const discharge = request.intervals.findIndex(interval => String(interval.start).includes("T08:00:"));
+      const charge = request.intervals.findIndex(interval => String(interval.start).includes("T09:00:"));
       Object.assign(result.facility.points[discharge], { battery_discharge_mw: 4.8, grid_import_mw: 46.2 });
       Object.assign(result.facility.points[charge], { battery_charge_mw: 5 / .95, grid_import_mw: 51 + 5 / .95 });
-      const used = 5 * request.intervals[discharge].duration_minutes / 60;
+      const used = 5 * Number(request.intervals[discharge].duration_minutes) / 60;
       for (let index = discharge; index < charge; index++) {
         result.battery_trajectories[0].points[index].soc_mwh = Number(request.batteries[0].initial_soc_mwh) - used;
       }
