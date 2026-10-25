@@ -13,6 +13,7 @@ import {
 
 import { useState } from "react";
 import { BatteryTimelinePanels } from "./BatteryTimelinePanels";
+import { TimelinePlotFrame } from "./TimelinePlotFrame";
 import { PowerTooltip } from "./PowerTimelineTooltip";
 import { batteryChartScales } from "./timeline-scales";
 import {
@@ -93,7 +94,7 @@ export function PowerTimeline({
         </header>
         {batteryBoundaryStates ? <OperationsChartLegend visibility={visibility} showReset={false}
           label="Grid demand legend" items={batteryPanelLegend("facility", false)} /> : null}
-        <ResponsiveContainer width="100%" height="100%" onResize={width => setCompact(width < 620)}>
+        <TimelinePlotFrame modelled={batteryBoundaryStates}><ResponsiveContainer width="100%" height="100%" onResize={width => setCompact(width < 620)}>
           <ComposedChart
             data={chartData}
             syncId="battery-response-timeline"
@@ -213,7 +214,7 @@ export function PowerTimeline({
               connectNulls={false}
             />
           </ComposedChart>
-        </ResponsiveContainer>
+        </ResponsiveContainer></TimelinePlotFrame>
       </section>
       {variant === "battery" ? <BatteryTimelinePanels plot={plot} visibility={visibility} mode={mode}
         protectedSocPercent={protectedSocPercent} maximumSocPercent={maximumSocPercent} targetMw={targetMw} selectChart={selectChart}

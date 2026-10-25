@@ -6,6 +6,7 @@ import { batteryPanelLegend } from "./timeline-legend";
 import { batteryTimelinePlot, timelineTimeLabel as timeLabel, type TimelineSelection } from "./timeline-presentation";
 import { batteryChartScales } from "./timeline-scales";
 import { PowerTooltip } from "./PowerTimelineTooltip";
+import { TimelinePlotFrame } from "./TimelinePlotFrame";
 
 const numericAxisProps = { tickLine: false, axisLine: false, tickFormatter: (value: number) => number.format(value) };
 export function BatteryTimelinePanels({ plot, visibility, mode, protectedSocPercent, maximumSocPercent, targetMw, selectChart, previewChart, clearPreview }: {
@@ -26,7 +27,7 @@ export function BatteryTimelinePanels({ plot, visibility, mode, protectedSocPerc
         </header>
         {batteryBoundaryStates ? <OperationsChartLegend visibility={visibility} showReset={false}
           label={"Battery power legend"} items={batteryPanelLegend("dispatch", available)} /> : null}
-        <ResponsiveContainer width="100%" height="100%">
+        <TimelinePlotFrame modelled={batteryBoundaryStates}><ResponsiveContainer width="100%" height="100%">
           <ComposedChart
             data={chartData}
             syncId="battery-response-timeline"
@@ -84,17 +85,17 @@ export function BatteryTimelinePanels({ plot, visibility, mode, protectedSocPerc
               isAnimationActive={false}
             />
           </ComposedChart>
-        </ResponsiveContainer>
+        </ResponsiveContainer></TimelinePlotFrame>
         {batteryBoundaryStates && idle ? <p className="battery-idle-note" role="status">Battery idle throughout this plan</p> : null}
       </section>
       <section className="power-timeline-panel power-timeline-panel--battery">
         <header>
           <strong>{batteryBoundaryStates ? "Stored energy" : "Battery State of Charge"}</strong>
-          <span>SOC %</span>
+          <span>SOC %{batteryBoundaryStates && maximumSocPercent != null ? ` · Maximum ${number.format(maximumSocPercent)}%` : ""}</span>
         </header>
         {batteryBoundaryStates ? <OperationsChartLegend visibility={visibility} showReset={false}
           label={"Stored energy legend"} items={batteryPanelLegend("soc", available)} /> : null}
-        <ResponsiveContainer width="100%" height="100%">
+        <TimelinePlotFrame modelled={batteryBoundaryStates}><ResponsiveContainer width="100%" height="100%">
           <ComposedChart
             data={chartData}
             syncId="battery-response-timeline"
@@ -117,7 +118,7 @@ export function BatteryTimelinePanels({ plot, visibility, mode, protectedSocPerc
             />
             <YAxis yAxisId="soc" domain={[0, 100]} ticks={batteryBoundaryStates ? [0, 25, 50, 75, 100] : undefined} unit="%" {...numericAxisProps} tick={batteryBoundaryStates ? { fill: "var(--ops-muted)", fontSize: 12 } : undefined} />
             {maximumSocPercent != null ? <ReferenceLine yAxisId="soc" y={maximumSocPercent}
-              stroke="var(--ops-muted)" strokeDasharray="3 4" label={{ value: `Maximum SOC ${number.format(maximumSocPercent)}%`, fill: "var(--ops-muted)", position: "insideTopRight" }} /> : null}
+              stroke="var(--ops-muted)" strokeDasharray="3 4" label={batteryBoundaryStates ? undefined : { value: `Maximum SOC ${number.format(maximumSocPercent)}%`, fill: "var(--ops-muted)", position: "insideTopRight" }} /> : null}
             <Tooltip content={<PowerTooltip panel="soc" targetMw={targetMw} boundaryStates={batteryBoundaryStates} />} />
             {Number.isFinite(protectedSocPercent) && visibility.visible("Protected reserve") ? (
               <>
@@ -148,7 +149,7 @@ export function BatteryTimelinePanels({ plot, visibility, mode, protectedSocPerc
                 x={Date.parse(point.timestamp)} y={index ? point.socPercent : point.startingSocPercent}
                 r={3} fill="var(--ops-soc)" stroke="var(--ops-card)"
                 label={{ value: `${index ? "End" : "Start"} ${number.format(index ? point.socPercent : point.startingSocPercent)}%`,
-                  position: index ? "insideBottomRight" : "insideTopLeft", fill: "var(--ops-soc)", fontSize: 12 }} /> : null) : null}
+                  position: index ? "insideTopRight" : "insideTopLeft", fill: "var(--ops-soc)", fontSize: 12 }} /> : null) : null}
             <Line
               isAnimationActive={false}
               yAxisId="soc"
@@ -161,7 +162,7 @@ export function BatteryTimelinePanels({ plot, visibility, mode, protectedSocPerc
               connectNulls={false}
             />
           </ComposedChart>
-        </ResponsiveContainer>
+        </ResponsiveContainer></TimelinePlotFrame>
       </section>
 </>;
 }

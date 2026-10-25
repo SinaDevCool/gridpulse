@@ -22,6 +22,8 @@
 .power-timeline--modelled .operations-chart-legend button strong { font-size: .8125rem; }
 .power-timeline--modelled .operations-chart-legend button small { font-size: .75rem; }
 .power-timeline--modelled .recharts-responsive-container { flex: 1; min-height: 0; }
+.battery-chart-plot { position: relative; flex: 1; min-height: 0; min-width: 0; }
+.battery-chart-plot > .recharts-responsive-container { position: absolute; inset: 0; }
 .power-timeline--modelled .recharts-cartesian-axis-tick-value { font-size: 12px; fill: var(--ops-muted); }
 .battery-idle-note { padding: .2rem .85rem .6rem; font-size: .8125rem; color: var(--ops-muted); }
 @media (max-width: 620px) {
