@@ -78,6 +78,48 @@
 .ops-margin-pair dt { color: var(--ops-muted); font-size: .875rem; }
 .ops-margin-pair dd { margin: .35rem 0 0; font-size: 1.5rem; font-weight: 650; }
 .ops-result-details p { margin-block: .6rem; overflow-wrap: anywhere; }
+/* Canonical checks are a compact ledger, not the scenario recovery cockpit grid. */
+.ops-canonical--overview .ops-model-checks { grid-template-columns: minmax(0, 1fr); gap: .85rem; align-items: start; margin-top: 1.25rem; }
+.ops-canonical--overview .ops-model-checks > * { min-width: 0; }
+.ops-canonical--overview .ops-model-check-list { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; margin: .25rem 0; align-items: start; }
+.ops-canonical--overview .ops-model-check-list li { display: flex; flex-direction: row; align-items: start; align-self: start; border: 0; padding: 0; gap: .55rem; }
+.ops-canonical--overview .ops-model-check-list svg { width: 20px; height: 20px; flex-shrink: 0; color: var(--ops-positive); }
+.ops-canonical--overview .ops-model-check-list [data-state="failed"] svg { color: var(--ops-limit); }
+.ops-canonical--overview .ops-model-check-list [data-state="unavailable"] svg { color: var(--ops-target); }
+.ops-canonical--overview .ops-model-check-list [data-state="not_applicable"] svg { color: var(--ops-muted); }
+.ops-canonical--overview .ops-model-check-list li span { display: block; color: var(--ops-muted); font-size: .875rem; margin-bottom: .3rem; }
+.ops-canonical--overview .ops-model-check-list strong { font-size: .9375rem; }
+.ops-canonical--overview .ops-model-measurement { font-size: .875rem; color: var(--ops-muted); padding-top: .75rem; border-top: 1px solid var(--ops-border); }
+.ops-model-measurement strong { color: var(--ops-text); margin-inline-start: .4rem; }
+.ops-model-checks .ops-review-state[data-state="failed"] { border-color: var(--ops-limit); }
+.ops-model-checks .ops-review-state[data-state="unavailable"] { border-color: var(--ops-target); }
+.ops-canonical--overview .ops-model-checks details { grid-column: 1 / -1; border-top: 1px solid var(--ops-border); }
+.ops-model-checks .ops-canonical-obligation-table table { min-width: 520px; font-size: .875rem; }
+.ops-model-checks details > p { color: var(--ops-muted); font-size: .875rem; }
+.ops-canonical--overview .ops-compact-comparison [data-tone="baseline"] .ops-boundary-track > i { background: var(--ops-demand); opacity: .7; }
+.ops-canonical--overview .ops-compact-comparison [data-tone="plan"] .ops-boundary-track > i { background: var(--ops-response); }
+.ops-canonical--overview .ops-compact-comparison td:nth-child(3) { text-align: right; font-variant-numeric: tabular-nums; }
+.ops-canonical--overview .ops-compact-comparison :is(td, th):last-child { color: var(--ops-muted); font-size: .8125rem; }
+.ops-canonical--overview .ops-response-breakdown .ops-interval-balance-total { color: var(--ops-text); font-size: 1.125rem; font-weight: 600; margin-top: .4rem; }
+.ops-canonical--overview .ops-waterfall[data-presentation="canonical"] { margin: .5rem 0; }
+.ops-canonical--overview .ops-waterfall[data-presentation="canonical"] svg { max-height: 220px; }
+.ops-canonical--overview .ops-waterfall[data-presentation="canonical"] figcaption { color: var(--ops-muted); font-size: .8125rem; }
+.ops-margin-table-wrap { overflow-x: auto; }
+.ops-margin-table { width: 100%; min-width: 490px; border-collapse: collapse; font-variant-numeric: tabular-nums; text-align: left; }
+.ops-margin-table caption { text-align: left; padding-block: .8rem; font-size: .875rem; color: var(--ops-muted); }
+.ops-margin-table :is(th, td) { padding: .85rem; border-bottom: 1px solid var(--ops-border); }
+.ops-margin-table thead { color: var(--ops-muted); font-size: .875rem; }
+.ops-margin-table td { text-align: right; }
+.ops-margin-table td strong { font-size: 1.25rem; }
+.ops-margin-table small { display: block; margin-top: .3rem; font-weight: 400; }
+.ops-margin-table td[data-state="exceeded"] { border-inline-start: 3px solid var(--ops-limit); }
+.ops-margin-table td[data-state="at"] { border-inline-start: 3px solid var(--ops-target); }
+@media (max-width: 900px) {
+  .ops-canonical--overview .ops-model-check-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 480px) {
+  .ops-canonical--overview .ops-model-check-list { grid-template-columns: minmax(0, 1fr); }
+}
 .ops-canonical--battery .power-timeline-card { min-width: 0; }
 .ops-canonical--battery .ops-battery-interval { padding-block: .8rem; border-bottom: 1px solid var(--ops-border); }
 .ops-canonical--battery .ops-battery-interval dl { margin: .5rem 0; }

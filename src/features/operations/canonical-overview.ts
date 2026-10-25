@@ -80,3 +80,21 @@ export function canonicalChecks(a: CanonicalPresentation): CanonicalCheck[] {
       { id: "soc", label: "Minimum modelled SOC", value: "No battery", state: "not_applicable" },
   ];
 }
+
+/** Check outcomes stay separate from the SOC measurement; neither is a confidence score. */
+export function canonicalCheckSummary(a: CanonicalPresentation) {
+  const all = canonicalChecks(a);
+  const checks = all.filter(check => check.id !== "soc");
+  const failed = checks.filter(check => check.state === "failed");
+  const unavailable = checks.filter(check => check.state === "unavailable");
+  return { checks, measurement: all.find(check => check.id === "soc")!, failed, unavailable,
+    label: failed.length ? "Review required" : unavailable.length ? "Some checks unavailable" : "No unresolved checks",
+    state: failed.length ? "failed" : unavailable.length ? "unavailable" : "passed" };
+}
+
+export function canonicalMargins(a: CanonicalPresentation, index: number) {
+  return [
+    { id: "peak", label: "Whole-plan peak", safety: a.targetMw - a.planPeakMw, facility: a.limitMw - a.planPeakMw },
+    { id: "interval", label: "Inspected interval", safety: a.targetMw - a.points[index].gridImportMw, facility: a.limitMw - a.points[index].gridImportMw },
+  ];
+}

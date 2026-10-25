@@ -1,5 +1,5 @@
 import type { CanonicalPresentation } from "./canonical-presentation";
-import { canonicalBreachMinutes, canonicalChecks, canonicalPowerBalance } from "./canonical-overview";
+import { canonicalBreachMinutes, canonicalChecks, canonicalPowerBalance, canonicalMargins } from "./canonical-overview";
 import { SignedPowerBalance } from "./overview/SignedResponseDiagram";
 import { formatMw } from "./formatting";
 import { formatOperationsTime } from "./presentation";
@@ -34,31 +34,30 @@ export function CanonicalOperatingSummary({ assessment: a }: { assessment: Canon
 export function CanonicalOverviewDetails({ assessment: a, index }: { assessment: CanonicalPresentation; index: number }) {
   const balance = canonicalPowerBalance(a, index);
   const selected = a.points[index];
-  return <ResponseExplorerFrame label="MILP response explorer" scope="All comparisons & checks: full horizon"
-    marginsLabel="Operating margins"
+  return <><ResponseExplorerFrame label="MILP response explorer" scope="Modelled assessment · not physical execution"
+    compareLabel="Plan comparison" intervalLabel="Interval breakdown" marginsLabel="Operating margins"
     compare={<><PlanComparison target={a.targetMw} limit={a.limitMw}
       peakLabel="Peak import · full horizon" outcomeLabel="Assessment"
       rows={[
-        { id: "baseline", label: "Baseline", peakMw: a.baselinePeakMw, breachMinutes: canonicalBreachMinutes(a, true), outcome: "Submitted reference" },
-        { id: "joint", label: "Battery + workload", peakMw: a.planPeakMw, breachMinutes: canonicalBreachMinutes(a, false),
+        { id: "baseline", label: "Baseline", tone: "baseline", peakMw: a.baselinePeakMw, breachMinutes: canonicalBreachMinutes(a, true), outcome: "Submitted reference" },
+        { id: "joint", label: "Joint plan", tone: "plan", peakMw: a.planPeakMw, breachMinutes: canonicalBreachMinutes(a, false),
           selected: true, outcome: "Accepted joint MILP replay" },
       ]} />
       <details className="ops-result-help"><summary>About these comparisons</summary>
         <p>Baseline and joint plan share the same submitted model. Battery-only and workload-only alternatives were not solved; heuristic comparisons are not substituted. Peaks may occur at different times.</p>
       </details></>}
     interval={<section className="ops-response-breakdown" aria-label="MILP interval explanation">
-      <header><h4>Inspecting interval · {formatOperationsTime(selected.timestamp)}</h4><span>Same-interval contributions</span></header>
-      {balance ? <SignedPowerBalance {...balance} /> : <p>Component balance unavailable in this engine result. No contributions have been estimated.</p>}
+      <header><div><h4>{formatOperationsTime(selected.timestamp)}–{formatOperationsTime(selected.endTimestamp!)}{new Date(selected.endTimestamp!).getUTCDate() !== new Date(selected.timestamp).getUTCDate() ? " · next day" : ""}</h4>
+        <p className="ops-interval-balance-total">{formatMw(a.projected.overview.baseline[index].grid_import_mw)} baseline <span aria-hidden="true">→</span><span className="sr-only"> to </span> {formatMw(selected.gridImportMw)} grid import</p></div><span>Same-interval accounting</span></header>
+      {balance ? <SignedPowerBalance {...balance} presentation="canonical" /> : <p>Component balance unavailable in this engine result. No contributions have been estimated.</p>}
     </section>}
     margins={<section className="ops-operating-margins" aria-label="Operating margins">
-      <h4>Whole-plan peak margins</h4><dl className="ops-margin-pair">
-        <div><dt>Peak safety-target margin</dt><dd>{formatMw(a.targetMw - a.planPeakMw)}</dd></div>
-        <div><dt>Peak facility-limit margin</dt><dd>{formatMw(a.limitMw - a.planPeakMw)}</dd></div></dl>
-      <h4>Selected interval · {formatOperationsTime(selected.timestamp)}</h4><dl className="ops-margin-pair">
-        <div><dt>Selected-interval safety-target margin</dt><dd>{formatMw(a.targetMw - selected.gridImportMw)}</dd></div>
-        <div><dt>Selected-interval facility-limit margin</dt><dd>{formatMw(a.limitMw - selected.gridImportMw)}</dd></div></dl>
-      <p className="ops-result-help">Negative margins mean exceedance. These are operating margins, not additional connection capacity; capacity expansion and causal binding-constraint analysis are not assessed.</p>
-    </section>}>
-    <CanonicalModelChecks assessment={a} />
-  </ResponseExplorerFrame>;
+      <div className="ops-margin-table-wrap"><table className="ops-margin-table"><caption>Operating margins · positive is below threshold; negative is exceedance</caption>
+        <thead><tr><th scope="col">Scope</th><th scope="col">Safety target {formatMw(a.targetMw)}</th><th scope="col">Facility limit {formatMw(a.limitMw)}</th></tr></thead>
+        <tbody>{canonicalMargins(a, index).map(row => <tr key={row.id}><th scope="row">{row.label}{row.id === "interval" ? <small>{formatOperationsTime(selected.timestamp)}–{formatOperationsTime(selected.endTimestamp!)}</small> : <small>Full horizon</small>}</th>
+          {[row.safety, row.facility].map((value, column) => <td key={column} data-state={value < -.01 ? "exceeded" : value > .01 ? "below" : "at"}>
+            <strong>{formatMw(value)}</strong><small>{value < -.01 ? "Exceeds threshold" : value > .01 ? "Below threshold" : "At threshold"}</small></td>)}</tr>)}</tbody>
+      </table></div><p className="ops-result-help">Operating margins—not additional connection capacity.</p>
+    </section>} />
+    <CanonicalModelChecks assessment={a} /></>;
 }

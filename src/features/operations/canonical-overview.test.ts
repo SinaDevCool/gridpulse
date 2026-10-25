@@ -3,7 +3,7 @@ import { canonicalMilpJob } from "../../../tests/fixtures/canonical-milp-job";
 import { buildSyntheticMilpRequest } from "./synthetic-milp-request";
 import { defaultOperationsScenario } from "./scenario-engine";
 import { selectCanonicalPresentation } from "./canonical-presentation";
-import { canonicalAssessmentFacts, canonicalBreachMinutes, canonicalPowerBalance, canonicalChecks, canonicalImpact } from "./canonical-overview";
+import { canonicalAssessmentFacts, canonicalBreachMinutes, canonicalPowerBalance, canonicalChecks, canonicalImpact, canonicalCheckSummary, canonicalMargins } from "./canonical-overview";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { CanonicalModelChecks } from "./CanonicalModelChecks";
@@ -36,7 +36,7 @@ describe("canonical overview presentation arithmetic", () => {
     });
     expect(canonicalChecks(a).find(check => check.id === "completion")?.state).toBe("unavailable");
     const html = renderToStaticMarkup(createElement(CanonicalModelChecks, { assessment: a }));
-    expect(html).toContain("Review required");
+    expect(html).toContain("Some checks unavailable");
     expect(html).toContain('data-state="unavailable"');
   });
   it("keeps full-horizon impact and warnings separate from interval inspection", () => {
@@ -78,5 +78,52 @@ describe("canonical overview presentation arithmetic", () => {
     const balance = canonicalPowerBalance(selectCanonicalPresentation(job, request), 0)!;
     expect(balance.reconstructed).toBeCloseTo(0);
     expect(balance.steps.find(step => step.label === "Export clipping")?.value).toBe(9);
+  });
+  it("keeps SOC out of the check count and prioritises unresolved evidence", () => {
+    const { request, job } = fixture();
+    const a = selectCanonicalPresentation(job, request);
+    expect(canonicalCheckSummary(a).checks).toHaveLength(4);
+    expect(canonicalCheckSummary(a).checks.some(check => check.id === "soc")).toBe(false);
+    expect(canonicalCheckSummary(a).label).toBe("No unresolved checks");
+    (a.projected.assessment as Record<string, unknown>).recovery_complete = false;
+    delete (a.projected.assessment as Record<string, unknown>).import_limit_violations;
+    expect(canonicalCheckSummary(a).label).toBe("Review required");
+    expect(canonicalCheckSummary(a).unavailable).toHaveLength(1);
+    const html = renderToStaticMarkup(createElement(CanonicalModelChecks, { assessment: a }));
+    expect(html).toContain('data-state="failed"');
+    expect(html).toContain("Minimum modelled SOC");
+    expect(html).toContain("protected reserve");
+    expect(html).toContain("Foundation model training");
+  });
+  it("keeps no-battery checks not applicable rather than passed", () => {
+    const { request, job } = fixture();
+    const a = selectCanonicalPresentation(job, request);
+    a.batteryAudit = null;
+    const summary = canonicalCheckSummary(a);
+    expect(summary.checks.find(check => check.id === "terminal")?.state).toBe("not_applicable");
+    expect(summary.measurement.value).toBe("No battery");
+  });
+  it("keeps missing workload details unavailable and resolves names with an ID fallback", () => {
+    const { request, job } = fixture();
+    const a = selectCanonicalPresentation(job, request);
+    a.jobs[0].points = [];
+    a.jobs[0].endingRemainingWorkHours = undefined;
+    a.jobs[0].deadlineMet = undefined;
+    delete a.request.workloads[0].name;
+    const html = renderToStaticMarkup(createElement(CanonicalModelChecks, { assessment: a }));
+    expect(html).toContain(a.jobs[0].id);
+    expect(html).toContain("<td>Unavailable</td><td>Unavailable</td>");
+  });
+  it("preserves whole-plan margins while interval margins move through positive, zero and negative", () => {
+    const { request, job } = fixture();
+    const a = selectCanonicalPresentation(job, request);
+    a.points[0].gridImportMw = a.targetMw;
+    a.points[1].gridImportMw = a.limitMw + 2;
+    const first = canonicalMargins(a, 0);
+    const next = canonicalMargins(a, 1);
+    expect(first[0]).toEqual(next[0]);
+    expect(first[0].safety).toBeGreaterThan(0);
+    expect(first[1].safety).toBe(0);
+    expect(next[1].facility).toBe(-2);
   });
 });

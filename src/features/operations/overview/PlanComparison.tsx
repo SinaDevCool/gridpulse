@@ -4,7 +4,7 @@ import { comparisonMaximum } from "./overview-presentation";
 
 export type PlanComparisonRow = {
   id: string; label: string; peakMw: number; breachMinutes: number;
-  outcome: ReactNode; selected?: boolean; onSelect?: () => void;
+  outcome: ReactNode; selected?: boolean; onSelect?: () => void; tone?: "baseline" | "plan";
 };
 export function PlanComparison({ rows, target, limit, peakLabel, outcomeLabel, footnote }: {
   rows: PlanComparisonRow[]; target: number; limit: number; peakLabel: string; outcomeLabel: string; footnote?: ReactNode;
@@ -15,7 +15,7 @@ export function PlanComparison({ rows, target, limit, peakLabel, outcomeLabel, f
       <span><i className="limit" aria-hidden="true" />Limit {formatMw(limit)}</span><span>Shared MW scale</span></p>
     <div className="operations-scenario-table-wrap"><table className="operations-scenario-table ops-compact-comparison">
       <thead><tr><th scope="col">Response</th><th scope="col">{peakLabel}</th><th scope="col">Above facility limit</th><th scope="col">{outcomeLabel}</th></tr></thead>
-      <tbody>{rows.map(row => <tr key={row.id} className={row.selected ? "selected" : undefined}
+      <tbody>{rows.map(row => <tr key={row.id} data-tone={row.tone} className={row.selected ? "selected" : undefined}
         onClick={row.onSelect ? event => {
           if (event.target instanceof Element && !event.target.closest("button,a,input,select")) row.onSelect?.();
         } : undefined}>
