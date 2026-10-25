@@ -39,7 +39,7 @@ jobs:
           VITE_ANALYTICS_API_URL: https://milp-fixture.invalid
       - run: npx playwright install --with-deps chromium
       - name: Qualify numerical display, geometry and linked interactions
-        run: npx playwright test tests/e2e/operations-canonical-results.spec.ts --workers=1
+        run: npm run test:browser -- milp
         env:
           GRIDPULSE_TEST_COMPILED: '1'
           GRIDPULSE_TEST_MILP_REQUIRED: '1'
