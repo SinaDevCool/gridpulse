@@ -30,6 +30,7 @@ import { WorkloadEvidenceProvider } from "./WorkloadEvidenceProvider";
 import { stableOperationsJson } from "@/lib/operations-request";
 import { selectCanonicalPresentation } from "./canonical-presentation";
 import { CanonicalAssessmentView } from "./CanonicalAssessmentView";
+import { PlanCopilot } from "./copilot/PlanCopilot";
 import { useMilpCalculation } from "./hooks/use-milp-calculation";
 export type { OperationsView } from "./view-contracts";
 
@@ -161,7 +162,7 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
               onInvalidated: () => setCanonical(null),
               onAccepted: (job, request, scenarioIdentity) => {
                 const assessment = selectCanonicalPresentation(job, request);
-                setCanonical({ assessment, scenarioIdentity });
+                setCanonical({ assessment, scenarioIdentity, jobId: job.id });
                 setCanonicalTime(assessment.points[0].timestamp);
                 setCanonicalPreview(null);
               },
@@ -236,6 +237,8 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
                 {!milp.busy && milp.jobId && milp.error ? <button type="button" className="secondary-button"
                   onClick={() => void milp.run(scenario, milp.jobId!)}>Resume existing job · no new solve</button> : null}
               </section> : null}
+              {showMilp && canonical ? <PlanCopilot key={`${canonical.jobId}:${canonical.assessment.projected.identity.resultFingerprint}`} jobId={canonical.jobId}
+                fingerprint={canonical.assessment.projected.identity.resultFingerprint} current={!!canonicalCurrent} /> : null}
               {showMilp ? canonical && canonicalCurrent ? <CanonicalAssessmentView assessment={canonical.assessment}
                 view={view} timestamp={canonicalTime} onSelect={value => { setCanonicalTime(value); setCanonicalPreview(null); }}
                 preview={canonicalPreview} onPreview={setCanonicalPreview} /> : <section className="data-panel" role="status">

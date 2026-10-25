@@ -42,6 +42,7 @@ import { Route as SolutionsFacilityOperationsRouteImport } from './routes/soluti
 import { Route as SolutionsSiteSelectionRouteImport } from './routes/solutions.site-selection'
 import { Route as SubmissionPackageIdRouteImport } from './routes/submission-package.$id'
 import { Route as ApiOperationsAssessRouteImport } from './routes/api.operations.assess'
+import { Route as ApiOperationsBriefRouteImport } from './routes/api.operations.brief'
 import { Route as ApiOperationsCapabilitiesRouteImport } from './routes/api.operations.capabilities'
 import { Route as ApiOperationsIngestRouteImport } from './routes/api.operations.ingest'
 import { Route as ApiOperationsRunsRouteImport } from './routes/api.operations.runs'
@@ -219,6 +220,11 @@ const ApiOperationsAssessRoute = ApiOperationsAssessRouteImport.update({
   path: '/api/operations/assess',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiOperationsBriefRoute = ApiOperationsBriefRouteImport.update({
+  id: '/api/operations/brief',
+  path: '/api/operations/brief',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiOperationsCapabilitiesRoute =
   ApiOperationsCapabilitiesRouteImport.update({
     id: '/api/operations/capabilities',
@@ -306,6 +312,7 @@ export interface FileRoutesByFullPath {
   '/solutions/site-selection': typeof SolutionsSiteSelectionRoute
   '/submission-package/$id': typeof SubmissionPackageIdRoute
   '/api/operations/assess': typeof ApiOperationsAssessRoute
+  '/api/operations/brief': typeof ApiOperationsBriefRoute
   '/api/operations/capabilities': typeof ApiOperationsCapabilitiesRoute
   '/api/operations/ingest': typeof ApiOperationsIngestRoute
   '/api/operations/runs': typeof ApiOperationsRunsRoute
@@ -351,6 +358,7 @@ export interface FileRoutesByTo {
   '/solutions/site-selection': typeof SolutionsSiteSelectionRoute
   '/submission-package/$id': typeof SubmissionPackageIdRoute
   '/api/operations/assess': typeof ApiOperationsAssessRoute
+  '/api/operations/brief': typeof ApiOperationsBriefRoute
   '/api/operations/capabilities': typeof ApiOperationsCapabilitiesRoute
   '/api/operations/ingest': typeof ApiOperationsIngestRoute
   '/api/operations/runs': typeof ApiOperationsRunsRoute
@@ -397,6 +405,7 @@ export interface FileRoutesById {
   '/solutions/site-selection': typeof SolutionsSiteSelectionRoute
   '/submission-package/$id': typeof SubmissionPackageIdRoute
   '/api/operations/assess': typeof ApiOperationsAssessRoute
+  '/api/operations/brief': typeof ApiOperationsBriefRoute
   '/api/operations/capabilities': typeof ApiOperationsCapabilitiesRoute
   '/api/operations/ingest': typeof ApiOperationsIngestRoute
   '/api/operations/runs': typeof ApiOperationsRunsRoute
@@ -444,6 +453,7 @@ export interface FileRouteTypes {
     | '/solutions/site-selection'
     | '/submission-package/$id'
     | '/api/operations/assess'
+    | '/api/operations/brief'
     | '/api/operations/capabilities'
     | '/api/operations/ingest'
     | '/api/operations/runs'
@@ -489,6 +499,7 @@ export interface FileRouteTypes {
     | '/solutions/site-selection'
     | '/submission-package/$id'
     | '/api/operations/assess'
+    | '/api/operations/brief'
     | '/api/operations/capabilities'
     | '/api/operations/ingest'
     | '/api/operations/runs'
@@ -534,6 +545,7 @@ export interface FileRouteTypes {
     | '/solutions/site-selection'
     | '/submission-package/$id'
     | '/api/operations/assess'
+    | '/api/operations/brief'
     | '/api/operations/capabilities'
     | '/api/operations/ingest'
     | '/api/operations/runs'
@@ -577,6 +589,7 @@ export interface RootRouteChildren {
   SolutionsSiteSelectionRoute: typeof SolutionsSiteSelectionRoute
   SubmissionPackageIdRoute: typeof SubmissionPackageIdRoute
   ApiOperationsAssessRoute: typeof ApiOperationsAssessRoute
+  ApiOperationsBriefRoute: typeof ApiOperationsBriefRoute
   ApiOperationsCapabilitiesRoute: typeof ApiOperationsCapabilitiesRoute
   ApiOperationsIngestRoute: typeof ApiOperationsIngestRoute
   ApiOperationsRunsRoute: typeof ApiOperationsRunsRoute
@@ -822,6 +835,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiOperationsAssessRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/operations/brief': {
+      id: '/api/operations/brief'
+      path: '/api/operations/brief'
+      fullPath: '/api/operations/brief'
+      preLoaderRoute: typeof ApiOperationsBriefRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/operations/capabilities': {
       id: '/api/operations/capabilities'
       path: '/api/operations/capabilities'
@@ -962,6 +982,7 @@ const rootRouteChildren: RootRouteChildren = {
   SolutionsSiteSelectionRoute: SolutionsSiteSelectionRoute,
   SubmissionPackageIdRoute: SubmissionPackageIdRoute,
   ApiOperationsAssessRoute: ApiOperationsAssessRoute,
+  ApiOperationsBriefRoute: ApiOperationsBriefRoute,
   ApiOperationsCapabilitiesRoute: ApiOperationsCapabilitiesRoute,
   ApiOperationsIngestRoute: ApiOperationsIngestRoute,
   ApiOperationsRunsRoute: ApiOperationsRunsRoute,
