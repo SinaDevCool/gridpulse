@@ -3,9 +3,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { publicMilpClient, publicMilpEnabled } from "@/lib/public-milp-session";
 import { briefSchema, briefText, type PlanBrief } from "./brief";
 
-export function PlanCopilot({ jobId, fingerprint, current }: {
+export type PlanCopilotState = {
+  brief: PlanBrief | null; busy: boolean; error: string | null; reviewed: boolean; copied: boolean;
+  explain: () => Promise<void>; setReviewed: (value: boolean) => void;
+  setCopied: (value: boolean) => void; setError: (value: string | null) => void;
+};
+
+export function usePlanCopilot({ jobId, fingerprint, current }: {
   jobId?: string; fingerprint: string; current: boolean;
-}) {
+}): PlanCopilotState {
   const [brief, setBrief] = useState<PlanBrief | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +43,14 @@ export function PlanCopilot({ jobId, fingerprint, current }: {
       if (!abort.signal.aborted) setError(reason instanceof Error ? reason.message : "Explanation unavailable.");
     } finally { if (!abort.signal.aborted) setBusy(false); }
   }
-  return <section className="data-panel" aria-label="Plan copilot" aria-busy={busy}>
+  return { brief, busy, error, reviewed, copied, explain, setReviewed, setCopied, setError };
+}
+
+export function PlanCopilot({ state, current, jobId }: {
+  state: PlanCopilotState; current: boolean; jobId?: string;
+}) {
+  const { brief, busy, error, reviewed, copied, explain, setReviewed, setCopied, setError } = state;
+  return <section className="data-panel ops-plan-copilot" aria-label="Plan copilot" aria-busy={busy}>
     <h2>Plan copilot</h2>
     <p>AI-selected findings from this calculation. Numbers and statements are checked against the accepted model.</p>
     {!brief ? <button type="button" className="secondary-button" disabled={!current || !jobId || busy}

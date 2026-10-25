@@ -30,7 +30,7 @@ import { WorkloadEvidenceProvider } from "./WorkloadEvidenceProvider";
 import { stableOperationsJson } from "@/lib/operations-request";
 import { selectCanonicalPresentation } from "./canonical-presentation";
 import { CanonicalAssessmentView } from "./CanonicalAssessmentView";
-import { PlanCopilot } from "./copilot/PlanCopilot";
+import { PlanCopilot, usePlanCopilot } from "./copilot/PlanCopilot";
 import { useMilpCalculation } from "./hooks/use-milp-calculation";
 export type { OperationsView } from "./view-contracts";
 
@@ -75,6 +75,8 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
   const [canonicalTime, setCanonicalTime] = useState("");
   const [canonicalPreview, setCanonicalPreview] = useState<string | null>(null);
   const canonicalCurrent = canonical && !draft.dirty && canonical.scenarioIdentity === stableOperationsJson(scenario);
+  const copilot = usePlanCopilot({ jobId: canonical?.jobId,
+    fingerprint: canonical?.assessment.projected.identity.resultFingerprint ?? "", current: !!canonicalCurrent });
   const showMilp = milpEnabled && mode !== "historical";
   const calculationBusy = showMilp ? milp.busy : lifecycle === "loading" || lifecycle === "stale";
   useEffect(() => {
@@ -237,8 +239,7 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
                 {!milp.busy && milp.jobId && milp.error ? <button type="button" className="secondary-button"
                   onClick={() => void milp.run(scenario, milp.jobId!)}>Resume existing job · no new solve</button> : null}
               </section> : null}
-              {showMilp && canonical ? <PlanCopilot key={`${canonical.jobId}:${canonical.assessment.projected.identity.resultFingerprint}`} jobId={canonical.jobId}
-                fingerprint={canonical.assessment.projected.identity.resultFingerprint} current={!!canonicalCurrent} /> : null}
+              {showMilp && canonical ? <PlanCopilot state={copilot} jobId={canonical.jobId} current={!!canonicalCurrent} /> : null}
               {showMilp ? canonical && canonicalCurrent ? <CanonicalAssessmentView assessment={canonical.assessment}
                 view={view} timestamp={canonicalTime} onSelect={value => { setCanonicalTime(value); setCanonicalPreview(null); }}
                 preview={canonicalPreview} onPreview={setCanonicalPreview} /> : <section className="data-panel" role="status">
