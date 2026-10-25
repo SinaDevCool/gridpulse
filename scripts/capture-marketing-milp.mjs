@@ -70,7 +70,7 @@ try {
     await result.waitFor({ state: "visible" });
     await expect(result).toHaveAttribute("data-assessment-id", fingerprint);
     await expect(page.getByRole("button", { name: /Scenario calculator|Joint MILP/ })).toHaveCount(0);
-    await expect(page.getByRole("status").filter({ hasText: "96 × 15-minute intervals · full modelled day" })).toBeVisible();
+    await expect(page.locator(".ops-assessment-notice")).toContainText("96 × 15-minute intervals");
     await page.evaluate(() => document.fonts.ready);
     await page.waitForTimeout(700);
     await page.screenshot({ path: `marketing-captures/facility-operations-${name}.png` });
