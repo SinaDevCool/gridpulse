@@ -71,8 +71,8 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await expect(copilot).toContainText("The solver reported optimal within the submitted model");
   for (const label of ["Plan summary findings", "Power findings", "Workloads findings", "Battery findings"])
     await expect(copilot.getByRole("region", { name: label, exact: true })).toBeVisible();
-  const evidence = copilot.getByText("Evidence · peak", { exact: true });
-  await evidence.focus(); await page.keyboard.press("Enter");
+  const peakEvidence = copilot.getByText("Evidence · peak", { exact: true });
+  await peakEvidence.focus(); await page.keyboard.press("Enter");
   await expect(copilot.getByText("[power.plan_peak]", { exact: true })).toBeVisible();
   await expect(copilot.getByText(/Raw value: 51 MW/)).toBeVisible();
   await copilot.screenshot({ path: "test-results/copilot-desktop-evidence.png" });
