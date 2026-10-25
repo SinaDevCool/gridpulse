@@ -3,19 +3,11 @@ import { ArrowRight } from "lucide-react";
 import { PublicLayout } from "@/components/public/PublicLayout";
 import { SolutionPreview } from "@/components/public/SolutionPreview";
 import { enabledSolutions, solutions } from "@/config/solutions";
-import { solutionContent } from "@/config/solution-content";
+import { landingContentFor, solutionContent } from "@/config/solution-content";
 import { trackEvent } from "@/lib/analytics";
 import "../landing.css";
 
-const available = solutions.filter((solution) => enabledSolutions.includes(solution.id));
-const title =
-  available.length === 2
-    ? "GridPulse | Site Selection & Facility Operations"
-    : `${available[0].label} | GridPulse`;
-const description =
-  available.length === 2
-    ? "Screen grid-connection options and optimise battery and workload plans within modelled power limits."
-    : solutionContent[available[0].id].summary;
+const { solutions: available, title, description, headline } = landingContentFor(enabledSolutions);
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
@@ -47,11 +39,7 @@ function DataCentreLandingPage() {
         <section className="home-hero">
           <div className="public-container home-hero-content">
             <p className="public-eyebrow">Data-centre power intelligence</p>
-            <h1>
-              {available.length === 2
-                ? "Choose the site. Plan the operation."
-                : solutionContent[available[0].id].headline}
-            </h1>
+            <h1>{headline}</h1>
             <p className="home-hero-lead">{description}</p>
             <div className="home-service-grid">
               {available.map((solution) => (

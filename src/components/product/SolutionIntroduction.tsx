@@ -16,6 +16,9 @@ export function SolutionIntroduction({ id }: { id: SolutionId }) {
         <h1>{journey.question}</h1>
         <p className="solution-introduction-lead">{journey.summary}</p>
         <p>For {solution.audience.toLowerCase()}.</p>
+        <Link to={solution.to} className="primary-button">
+          {journey.entry}
+        </Link>
         <ol aria-label={`${solution.label} workflow`}>
           {journey.steps.map(([title, description], index) => (
             <li key={title}>
@@ -34,9 +37,6 @@ export function SolutionIntroduction({ id }: { id: SolutionId }) {
           </details>
         ) : null}
         <p className="solution-introduction-boundary">{journey.boundary}</p>
-        <Link to={solution.to} className="primary-button">
-          {journey.entry}
-        </Link>
       </main>
     </PublicLayout>
   );

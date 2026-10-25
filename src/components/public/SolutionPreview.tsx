@@ -16,6 +16,8 @@ export function SolutionPreview({
         <picture>
           <source
             media="(max-width: 600px)"
+            width={planning ? 800 : 390}
+            height={planning ? 980 : 1400}
             srcSet={
               planning
                 ? "/landing/power-finder-product-mobile.jpg"

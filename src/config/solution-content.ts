@@ -1,3 +1,5 @@
+import { solutions, type SolutionId } from "./solutions";
+
 export const solutionContent = {
   planning: {
     headline: "Investigate the grid before advancing a site.",
@@ -39,3 +41,22 @@ export const solutionContent = {
       "The workspace starts with a synthetic scenario, not live facility control. No site-search project is required. Uploaded evidence is session-only; no equipment commands are sent.",
   },
 } as const;
+
+/** Marketing uses the same service availability as application routing. */
+export function landingContentFor(ids: readonly SolutionId[]) {
+  const available = solutions.filter((solution) => ids.includes(solution.id));
+  if (!available.length) throw new Error("At least one solution must be enabled");
+  const both = available.length === 2;
+  return {
+    solutions: available,
+    title: both
+      ? "GridPulse | Site Selection & Facility Operations"
+      : `${available[0].label} | GridPulse`,
+    description: both
+      ? "Screen grid-connection options and optimise battery and workload plans within modelled power limits."
+      : solutionContent[available[0].id].summary,
+    headline: both
+      ? "Choose the site. Plan the operation."
+      : solutionContent[available[0].id].headline,
+  };
+}
