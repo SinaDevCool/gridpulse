@@ -25,7 +25,7 @@ import { formatOperationsTime } from "../presentation";
 import { type BatteryTimelinePoint } from "./select-battery-workspace";
 import { BatteryConstraintStrip } from "./BatteryConstraintStrip";
 import { timelineLegend } from "./timeline-legend";
-import { extendStepHorizon, timelineSelection, type TimelineSelection } from "./timeline-presentation";
+import { batteryBoundaryPlot, extendStepHorizon, timelineSelection, type TimelineSelection } from "./timeline-presentation";
 import { powerPeakMarkers } from "../overview/demand-peak-markers";
 
 const numericAxisProps = {
@@ -47,6 +47,7 @@ export function PowerTimeline({
   showConstraints = true,
   maximumSocPercent,
   overviewPresentation = false,
+  batteryBoundaryStates = false,
 }: {
   data: BatteryTimelinePoint[];
   limitMw: number;
@@ -60,16 +61,20 @@ export function PowerTimeline({
   showConstraints?: boolean;
   maximumSocPercent?: number;
   overviewPresentation?: boolean;
+  batteryBoundaryStates?: boolean;
 }) {
   const selectedLabel = selectedTimestamp;
   const cursorProps = {
-    x: selectedLabel ?? undefined,
+    x: selectedLabel ? batteryBoundaryStates ? Date.parse(selectedLabel) : selectedLabel : undefined,
     stroke: "var(--ops-selection)",
     strokeDasharray: previewing ? "4 4" : undefined,
   };
   const overview = overviewPresentation && variant === "overview";
   const visibility = useChartVisibility(overview ? ["Facility demand"] : []);
-  const chartData = overview ? extendStepHorizon(data) : data;
+  const chartData = batteryBoundaryStates ? batteryBoundaryPlot(data) : overview ? extendStepHorizon(data) : data;
+  const timeAxis = batteryBoundaryStates ? { type: "number" as const, scale: "time" as const,
+    domain: [Date.parse(data[0].timestamp), Date.parse(data.at(-1)!.endTimestamp!)] } : {};
+  const timeLabel = (value: string | number) => formatOperationsTime(typeof value === "number" ? new Date(value).toISOString() : value).replace(" UTC", "");
   function selectChart(state: TimelineSelection) {
     const time = timelineSelection(state, data);
     if (time) onSelect(time);
@@ -82,7 +87,7 @@ export function PowerTimeline({
     >
       <OperationsChartLegend
         visibility={visibility}
-        items={timelineLegend(variant, mode)}
+        items={timelineLegend(variant, mode).map(item => batteryBoundaryStates && item.label === "State of charge" ? { ...item, detail: "% · interval boundaries" } : item)}
       />
       <section className="power-timeline-panel power-timeline-panel--facility">
         <header>
@@ -100,8 +105,8 @@ export function PowerTimeline({
             accessibilityLayer
           >
             <CartesianGrid stroke="var(--ops-chart-grid)" vertical={false} />
-            <XAxis dataKey="timestamp" hide={variant === "battery"}
-              tickFormatter={(value: string) => `${formatOperationsTime(value).replace(" UTC", "")}${overview && value === data.at(-1)?.endTimestamp ? " · end" : ""}`}
+            <XAxis dataKey={batteryBoundaryStates ? "plotTime" : "timestamp"} {...timeAxis} hide={variant === "battery"}
+              tickFormatter={(value: string | number) => `${timeLabel(value)}${(overview || batteryBoundaryStates) && (value === data.at(-1)?.endTimestamp || value === Date.parse(data.at(-1)?.endTimestamp ?? "")) ? " · end" : ""}`}
               minTickGap={40} tickLine={false} axisLine={false} />
             <YAxis
               {...numericAxisProps}
@@ -214,7 +219,7 @@ export function PowerTimeline({
         </header>
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
-            data={data}
+            data={chartData}
             syncId="battery-response-timeline"
             syncMethod="value"
             throttledEvents={[]}
@@ -223,7 +228,7 @@ export function PowerTimeline({
             accessibilityLayer
           >
             <CartesianGrid stroke="var(--ops-chart-grid)" vertical={false} />
-            <XAxis dataKey="timestamp" hide />
+            <XAxis dataKey={batteryBoundaryStates ? "plotTime" : "timestamp"} {...timeAxis} hide />
             <YAxis
               {...numericAxisProps}
               yAxisId="dispatch"
@@ -239,7 +244,7 @@ export function PowerTimeline({
               ]}
               unit=" MW"
             />
-            <Tooltip content={<PowerTooltip panel="battery" targetMw={targetMw} />} />
+            <Tooltip content={<PowerTooltip panel="battery" targetMw={targetMw} boundaryStates={batteryBoundaryStates} />} />
             <ReferenceLine yAxisId="dispatch" y={0} stroke="var(--ops-axis)" />
             {selectedLabel ? <ReferenceLine yAxisId="dispatch" {...cursorProps} /> : null}
             <Bar
@@ -272,7 +277,7 @@ export function PowerTimeline({
         </header>
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
-            data={data}
+            data={chartData}
             syncId="battery-response-timeline"
             syncMethod="value"
             throttledEvents={[]}
@@ -282,8 +287,8 @@ export function PowerTimeline({
           >
             <CartesianGrid stroke="var(--ops-chart-grid)" vertical={false} />
             <XAxis
-              dataKey="timestamp"
-              tickFormatter={(value: string) => formatOperationsTime(value).replace(" UTC", "")}
+              dataKey={batteryBoundaryStates ? "plotTime" : "timestamp"} {...timeAxis}
+              tickFormatter={timeLabel}
               minTickGap={28}
               tickLine={false}
               axisLine={false}
@@ -291,7 +296,7 @@ export function PowerTimeline({
             <YAxis yAxisId="soc" domain={[0, 100]} unit="%" {...numericAxisProps} />
             {maximumSocPercent != null ? <ReferenceLine yAxisId="soc" y={maximumSocPercent}
               stroke="var(--ops-muted)" strokeDasharray="3 4" label={{ value: `Maximum SOC ${number.format(maximumSocPercent)}%`, fill: "var(--ops-muted)", position: "insideTopRight" }} /> : null}
-            <Tooltip content={<PowerTooltip panel="battery" targetMw={targetMw} />} />
+            <Tooltip content={<PowerTooltip panel="battery" targetMw={targetMw} boundaryStates={batteryBoundaryStates} />} />
             {Number.isFinite(protectedSocPercent) && visibility.visible("Protected reserve") ? (
               <>
                 <ReferenceArea
@@ -318,7 +323,7 @@ export function PowerTimeline({
             <Line
               isAnimationActive={false}
               yAxisId="soc"
-              dataKey="socPercent"
+              dataKey={batteryBoundaryStates ? "boundarySocPercent" : "socPercent"}
               hide={!visibility.visible("State of charge")}
               name="State of charge"
               stroke="var(--ops-soc)"
@@ -330,7 +335,7 @@ export function PowerTimeline({
         </ResponsiveContainer>
       </section></> : null}
       {showConstraints ? <BatteryConstraintStrip
-        data={data}
+        data={chartData}
         onSelect={onSelect}
         selectedTimestamp={selectedTimestamp}
       /> : null}
@@ -344,6 +349,7 @@ function PowerTooltip({
   label,
   panel,
   targetMw,
+  boundaryStates = false,
 }: {
   active?: boolean;
   payload?: Array<{
@@ -352,9 +358,10 @@ function PowerTooltip({
     color?: string;
     payload?: BatteryTimelinePoint;
   }>;
-  label?: string;
+  label?: string | number;
   panel: "facility" | "battery";
   targetMw: number;
+  boundaryStates?: boolean;
 }) {
   if (!active || !payload?.length) return null;
   const importValue = payload.find((item) => item.name === "Grid import")?.value;
@@ -365,7 +372,7 @@ function PowerTooltip({
         : `Status: ${formatMw(importValue - (payload[0]?.payload?.targetMw ?? targetMw))} above the safety target`
       : undefined;
   return (
-    <OperationsTooltipShell label={payload[0]?.payload?.label === "Planning horizon end" ? "Horizon end · last interval value" : label ? formatOperationsTime(label) : ""} status={status}>
+    <OperationsTooltipShell label={payload[0]?.payload?.label === "Planning horizon end" ? "Horizon end · last interval value" : label != null ? formatOperationsTime(typeof label === "number" ? new Date(label).toISOString() : label) : ""} status={status}>
       {payload.map((item) => (
         <TooltipRow
           key={item.name}
@@ -384,7 +391,7 @@ function PowerTooltip({
                   ? "soc"
                   : "battery"
           }
-          detail={panel === "facility" ? "Facility" : "Battery"}
+          detail={item.name === "State of charge" && boundaryStates ? "SOC at this boundary" : panel === "facility" ? "Facility" : "Battery"}
         />
       ))}
     </OperationsTooltipShell>

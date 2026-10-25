@@ -1,11 +1,12 @@
 import type { CanonicalPresentation } from "./canonical-presentation";
 import type { OperationsView } from "./view-contracts";
-import { formatMw, formatMwh, formatPercent } from "./formatting";
+import { formatMw, formatPercent } from "./formatting";
 import { formatOperationsTime } from "./presentation";
 import { PowerTimeline } from "./power/PowerTimeline";
 import { PowerDataTable } from "./power/PowerDataTable";
 import { OperationsChartLegend, useChartVisibility } from "./visualization";
 import { CanonicalOverviewView } from "./CanonicalOverviewView";
+import { CanonicalBatteryView } from "./CanonicalBatteryView";
 import { CanonicalResultDetails } from "./CanonicalResultDetails";
 
 export function CanonicalAssessmentView({ assessment, view, timestamp, onSelect, preview, onPreview }: {
@@ -14,6 +15,8 @@ export function CanonicalAssessmentView({ assessment, view, timestamp, onSelect,
 }) {
   if (view === "overview") return <CanonicalOverviewView assessment={assessment} timestamp={timestamp}
     onSelect={onSelect} preview={preview} onPreview={onPreview} />;
+  if (view === "power") return <CanonicalBatteryView assessment={assessment} timestamp={timestamp}
+    onSelect={onSelect} preview={preview} onPreview={onPreview} />;
   const inspected = preview ?? timestamp;
   const selected = assessment.points.find(point => point.timestamp === inspected) ?? assessment.points[0];
   const index = assessment.points.indexOf(selected);
@@ -21,10 +24,10 @@ export function CanonicalAssessmentView({ assessment, view, timestamp, onSelect,
   const next = assessment.points[Math.min(assessment.points.length - 1, index + 1)].timestamp;
   return <article className="power-timeline-card ops-canonical" data-assessment-id={assessment.projected.identity.resultFingerprint} data-inspected-time={inspected}>
     <header><div><p className="context-label">MILP · synthetic model · read-only</p>
-      <h2>{view === "compute" ? "Solved workload schedule" : "Joint-plan battery response"}</h2>
+      <h2>Solved workload schedule</h2>
       </div><p className="ops-canonical-status">{assessment.projected.identity.status === "optimal" ? "Optimal within this model" : "Feasible incumbent—not proven optimal"} · Physical replay passed</p>
     </header>
-    <CanonicalSummary assessment={assessment} view={view} />
+    <CanonicalSummary assessment={assessment} />
     <p className="ops-canonical-status">{assessment.points.length} modelled intervals · Full planning horizon · Not measured delivery or equipment control</p>
     <div className="ops-canonical-inspector">
     <button type="button" className="secondary-button" disabled={index === 0} onClick={() => onSelect(previous)}>Previous interval</button>
@@ -37,7 +40,7 @@ export function CanonicalAssessmentView({ assessment, view, timestamp, onSelect,
     <p role="status">{formatOperationsTime(selected.timestamp)} · grid import {formatMw(selected.gridImportMw)} · battery {formatMw(selected.batteryPowerMw ?? 0)}</p>
     <PowerTimeline data={assessment.points} limitMw={assessment.limitMw} targetMw={assessment.targetMw}
       protectedSocPercent={assessment.protectedSocPercent} selectedTimestamp={inspected}
-      onSelect={onSelect} mode="scenario" previewing={preview !== null} variant={view === "power" && assessment.batteryAudit ? "battery" : view === "compute" ? "compute" : "overview"}
+      onSelect={onSelect} mode="scenario" previewing={preview !== null} variant="compute"
       showConstraints={false} maximumSocPercent={assessment.batteryAudit?.maximumSocPercent} />
     <div className="ops-canonical-checks" aria-label="Model checks">
       <span>Facility-limit margin: {formatMw(assessment.limitMw - selected.gridImportMw)}</span>
@@ -51,20 +54,14 @@ export function CanonicalAssessmentView({ assessment, view, timestamp, onSelect,
       <p>Binding-constraint explanation unavailable. The checks above compare returned values with submitted limits; they do not identify which constraint determined the optimum.</p>
     </details>
     <PowerDataTable data={assessment.points} selectedTimestamp={inspected} pinnedTimestamp={timestamp}
-      onSelect={onSelect} onPreview={onPreview} mode="scenario" context={view === "power" ? "battery" : view} />
+      onSelect={onSelect} onPreview={onPreview} mode="scenario" context="compute" />
     <CanonicalResultDetails assessment={assessment} />
   </article>;
 }
 
-function CanonicalSummary({ assessment: a, view }: { assessment: CanonicalPresentation; view: "compute" | "power" }) {
-  const battery = a.batteryAudit;
+function CanonicalSummary({ assessment: a }: { assessment: CanonicalPresentation }) {
   const completed = a.jobs.filter(job => job.points.at(-1)!.remaining_work_hours <= 1e-6).length;
-  const discharge = a.points.reduce((sum, point) => sum + Math.max(0, point.batteryPowerMw ?? 0) * point.durationMinutes! / 60, 0);
-  const items = view === "power" ? [
-    ["Battery energy delivered · AC", formatMwh(discharge)],
-    ["End SOC", battery ? formatPercent(a.points.at(-1)!.socPercent!) : "No battery"],
-    ["Terminal energy · target", battery ? `${formatMwh(battery.points.at(-1)!.soc_mwh)} / ${formatMwh(battery.terminalTargetMwh)}` : "Not applicable"],
-  ] : [
+  const items = [
     ["Workloads complete · horizon end", `${completed} / ${a.jobs.length}`],
     ["Peak workload power", formatMw(Math.max(...a.points.map(point => point.workloadPowerMw ?? 0)))],
     ["Execution resolution", `${a.points[0].durationMinutes} min`],

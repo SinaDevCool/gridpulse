@@ -78,6 +78,14 @@
 .ops-margin-pair dt { color: var(--ops-muted); font-size: .875rem; }
 .ops-margin-pair dd { margin: .35rem 0 0; font-size: 1.5rem; font-weight: 650; }
 .ops-result-details p { margin-block: .6rem; overflow-wrap: anywhere; }
+.ops-canonical--battery .power-timeline-card { min-width: 0; }
+.ops-canonical--battery .ops-battery-interval { padding-block: .8rem; border-bottom: 1px solid var(--ops-border); }
+.ops-canonical--battery .ops-battery-interval dl { margin: .5rem 0; }
+.ops-canonical--battery .ops-battery-interval dd { font-size: 1.1rem; font-weight: 650; font-variant-numeric: tabular-nums; }
+.ops-canonical--battery .ops-plan-conditions { margin-top: .75rem; }
+.ops-canonical--battery .ops-plan-conditions .battery-state-band { margin-block: .75rem; }
+.ops-canonical--battery .operations-assurance-panel { padding: 1rem; }
+.ops-canonical--battery .operations-assurance-panel dl { margin-block: 1rem; }
 @media (max-width: 620px) {
   .ops-canonical-inspection-toolbar { align-items: stretch; }
   .ops-margin-pair { grid-template-columns: 1fr; }
