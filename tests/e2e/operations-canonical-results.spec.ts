@@ -88,6 +88,14 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await expect(result.getByLabel("Execution time axis UTC")).toBeVisible();
   await expect(result.getByRole("region", { name: "Scheduled workload demand" })).toBeVisible();
   await expect(result.getByLabel("Workload outcomes")).toContainText("Remaining work");
+  const outcomes = result.getByLabel("Workload outcomes");
+  await outcomes.getByRole("button", { name: /^Inspect Vision fine-tuning:/ }).click();
+  await expect(result.getByLabel("Workload details: Vision fine-tuning", { exact: true })).toBeVisible();
+  await page.keyboard.press("Escape");
+  const intervalSummary = result.getByRole("region", { name: "Inspected compute interval" });
+  await expect(intervalSummary).toContainText("06:15 UTC");
+  await expect(intervalSummary.getByRole("img")).toHaveAttribute("aria-label", /Protected.*MW.*Flexible.*MW/);
+  await expect(result.locator(".canonical-workload-chart .recharts-reference-area")).toHaveCount(1);
   const reviewFilters = result.getByLabel("Workload review filters");
   await reviewFilters.getByRole("button", { name: /^Protected workloads/ }).click();
   await expect(result.locator(".canonical-execution .compute-window-lane")).toHaveCount(1);
@@ -95,9 +103,12 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await expect(result.getByLabel(/Workload details:/)).toHaveCount(0);
   await reviewFilters.getByRole("button", { name: /^All workloads/ }).click();
   await expect(result.locator(".canonical-execution .compute-window-lane")).toHaveCount(5);
-  await result.getByRole("button", { name: "Facility context", exact: true }).click();
+  await result.getByText("Show facility context", { exact: true }).click();
   await expect(result.getByText("Facility Power", { exact: true })).toBeVisible();
-  await result.getByRole("button", { name: "Workload demand", exact: true }).click();
+  await result.getByText("Show facility context", { exact: true }).click();
+  await intervalSummary.getByRole("button", { name: /^Flexible compute/ }).click();
+  await expect(result.locator(".canonical-execution .compute-window-lane")).toHaveCount(4);
+  await reviewFilters.getByRole("button", { name: /^All workloads/ }).click();
   await result.getByRole("checkbox", { name: "Show earliest-start/deadline envelopes" }).check();
   await expect(result.locator(".canonical-permitted")).toHaveCount(5);
   await lane.click();
@@ -122,12 +133,16 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
     expect(new Set(colors).size).toBe(3);
     await result.locator(".canonical-workload-chart").scrollIntoViewIfNeeded();
     await result.locator(".canonical-workload-chart").screenshot({ path: `test-results/canonical-compute-chart-${theme}.png` });
+    await outcomes.screenshot({ path: `test-results/canonical-compute-outcomes-${theme}.png` });
+    await intervalSummary.screenshot({ path: `test-results/canonical-compute-interval-${theme}.png` });
     await result.locator(".canonical-execution .compute-window-lane").first().screenshot({ path: `test-results/canonical-compute-lane-${theme}.png` });
     await page.screenshot({ path: `test-results/canonical-compute-${theme}.png`, fullPage: true });
   }
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
   await page.setViewportSize({ width: 390, height: 1100 });
+  await outcomes.screenshot({ path: "test-results/canonical-compute-outcomes-mobile.png" });
+  await intervalSummary.screenshot({ path: "test-results/canonical-compute-interval-mobile.png" });
   await result.locator(".canonical-workload-chart").screenshot({ path: "test-results/canonical-compute-chart-mobile.png" });
   await result.locator(".canonical-execution .compute-window-lane").first().screenshot({ path: "test-results/canonical-compute-lane-mobile.png" });
   await page.screenshot({ path: "test-results/canonical-compute-mobile.png", fullPage: true });

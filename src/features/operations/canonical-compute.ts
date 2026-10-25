@@ -4,6 +4,16 @@ export type ComputeFilter = "all" | "attention" | "flexible" | "protected";
 const time = (value: unknown) => typeof value === "string" && Number.isFinite(Date.parse(value)) ? value : null;
 const numeric = (value: unknown) => typeof value === "number" && Number.isFinite(value) ? value : null;
 
+// The workload plot and execution lanes share the same plot insets.
+export const COMPUTE_PLOT = { axisWidth: 60, right: 18 };
+export function computePowerAxis(maximum: number) {
+  const rawStep = Math.max(1, maximum) / 4;
+  const scale = 10 ** Math.floor(Math.log10(rawStep));
+  const step = ([1, 2, 5, 10].find(value => value * scale >= rawStep) ?? 10) * scale;
+  const count = Math.max(1, Math.ceil(maximum / step));
+  return { maximum: count * step, ticks: Array.from({ length: count + 1 }, (_, i) => i * step) };
+}
+
 /** Presentation arithmetic over accepted results only. Never runs heuristic scheduling. */
 export function selectCanonicalComputeView(a: CanonicalPresentation, timestamp: string) {
   const index = Math.max(0, a.points.findIndex(point => point.timestamp === timestamp));
@@ -44,7 +54,11 @@ export function selectCanonicalComputeView(a: CanonicalPresentation, timestamp: 
     return { ...point, plotTime: Date.parse(point.timestamp), flexibleMw: sum(false),
       protectedMw: sum(true), unknownMw: sum(null) };
   });
+  const current = points[index];
   return { jobs, points, index, start, end,
+    current,
+    running: jobs.filter(job => job.current.power_mw > 0 && !job.current.checkpoint_or_restart).length,
+    checkpoints: jobs.filter(job => job.current.checkpoint_or_restart).length,
     completed: jobs.filter(job => job.complete === true).length,
     deadlinesMet: jobs.filter(job => job.deadlineMet === true).length,
     deadlineUnavailable: jobs.filter(job => job.deadlineMet === undefined).length,

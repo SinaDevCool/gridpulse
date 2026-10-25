@@ -3,7 +3,7 @@ import { canonicalMilpJob } from "../../../tests/fixtures/canonical-milp-job";
 import { buildSyntheticMilpRequest } from "./synthetic-milp-request";
 import { defaultOperationsScenario } from "./scenario-engine";
 import { selectCanonicalPresentation } from "./canonical-presentation";
-import { matchesCanonicalCompute, selectCanonicalComputeView } from "./canonical-compute";
+import { computePowerAxis, matchesCanonicalCompute, selectCanonicalComputeView } from "./canonical-compute";
 
 function fixture(minutes: 15 | 60 = 15) {
   const request = buildSyntheticMilpRequest(defaultOperationsScenario);
@@ -68,5 +68,37 @@ describe("canonical compute presentation", () => {
     expect(job.deadline).toBeNull();
     expect(job.attention).toBe(true);
     expect(job.minimumPower).toBe(a.request.workloads[0].minimum_power_cap_mw);
+  });
+  it("distinguishes compute demand, running jobs and zero-power checkpoints", () => {
+    const a = fixture();
+    const last = a.points.length - 1;
+    a.jobs.forEach(job => { job.points[last].power_mw = 0; });
+    a.jobs[0].points[last].checkpoint_or_restart = true;
+    const m = selectCanonicalComputeView(a, a.points[last].timestamp);
+    expect(m.running).toBe(0);
+    expect(m.checkpoints).toBe(1);
+    expect(m.current.flexibleMw + m.current.protectedMw + m.current.unknownMw).toBe(0);
+    expect(m.current.timestamp).toBe("2026-09-26T23:45:00.000Z");
+    expect(m.current.endTimestamp).toBe("2026-09-27T00:00:00.000Z");
+    a.jobs[1].points[last].power_mw = 3;
+    expect(selectCanonicalComputeView(a, a.points[last].timestamp).running).toBe(1);
+  });
+  it("supports a workload-free assessment without invented outcomes", () => {
+    const a = fixture();
+    a.jobs = [];
+    const m = selectCanonicalComputeView(a, a.points[0].timestamp);
+    expect(m.completed).toBe(0);
+    expect(m.jobs).toHaveLength(0);
+    expect(m.running).toBe(0);
+    expect(m.current.flexibleMw + m.current.protectedMw + m.current.unknownMw).toBe(0);
+  });
+  it.each([0, .03, 1, 70.4, 77.385, 250, 1500])("uses a bounded zero-based power axis for %s MW", maximum => {
+    const axis = computePowerAxis(maximum);
+    expect(axis.ticks[0]).toBe(0);
+    expect(axis.maximum).toBeGreaterThanOrEqual(maximum);
+    expect(axis.maximum).toBeGreaterThan(0);
+    expect(axis.ticks.length).toBeLessThanOrEqual(5);
+    expect(axis.ticks.at(-1)).toBe(axis.maximum);
+    if (maximum === 77.385) expect(axis.ticks).toEqual([0, 20, 40, 60, 80]);
   });
 });
