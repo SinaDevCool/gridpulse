@@ -242,7 +242,7 @@ test("the MVP decision package is concise and downloads a valid PDF", async ({
   });
   await page.getByRole("button", { name: "Create pipeline site", exact: true }).click();
   await page.getByRole("link", { name: "Open Site Workspace" }).first().click();
-  await expect(page).toHaveURL(/tab=overview/);
+  await expect(page).toHaveURL(/\/portfolio\/[^/?]+\?tab=overview/);
   await expect(page.getByRole("button", { name: "Overview", exact: true })).toHaveAttribute(
     "aria-current",
     "page",
