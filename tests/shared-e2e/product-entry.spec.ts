@@ -29,6 +29,11 @@ test("landing gives both independent services clear destinations and honest prod
     page.getByRole("link", { name: "Explore Operations demo", exact: true }).first(),
   ).toHaveAttribute("href", "/operations");
   await expect(page.getByText("Synthetic MILP demo · read-only", { exact: true })).toBeVisible();
+  const build = await page.locator('meta[name="gridpulse-build"]').getAttribute("content");
+  for (const preview of await page.locator('img[src*="facility-operations-"]').all()) {
+    const source = await preview.getAttribute("src");
+    expect(new URL(source!, page.url()).searchParams.get("v")).toBe(build);
+  }
   await page.screenshot({ path: testInfo.outputPath("landing-desktop.png") });
   for (const image of await page.locator("main img").all()) {
     await image.scrollIntoViewIfNeeded();
