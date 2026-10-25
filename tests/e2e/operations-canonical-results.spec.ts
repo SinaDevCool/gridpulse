@@ -46,7 +46,7 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   const assertSinglePlanningExperience = async () => {
     await expect(page.getByRole("group", { name: "Calculation method", exact: true })).toHaveCount(0);
     await expect(page.getByRole("button", { name: /Scenario calculator|Joint MILP/ })).toHaveCount(0);
-    await expect(page.getByText("Optimised planning", { exact: true })).toBeVisible();
+    await expect(page.getByLabel("MILP calculation status").getByText("Optimised planning", { exact: true })).toBeVisible();
     await expect(run).toBeVisible();
   };
   await assertSinglePlanningExperience();
