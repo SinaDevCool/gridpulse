@@ -20,5 +20,8 @@ test("fast checks run first without duplicate Operations coverage", () => {
     [...suites.operations].sort(),
   );
   assert.throws(() => suiteFiles("missing"));
-  assert.deepEqual(suiteFiles("milp"), suites.operations.filter(file => file.endsWith("operations-canonical-results.spec.ts")));
+  assert.deepEqual(suiteFiles("milp"), [
+    ...suites.operations.filter(file => file.endsWith("operations-canonical-results.spec.ts")),
+    ...suites.shared.filter(file => file.endsWith("solution-independence.spec.ts")),
+  ]);
 });
