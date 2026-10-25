@@ -5,10 +5,9 @@ import { formatPercent } from "./formatting";
 
 export function CanonicalModelChecks({ assessment: a }: { assessment: CanonicalPresentation }) {
   const summary = canonicalCheckSummary(a);
-  const attention = [...summary.failed, ...summary.unavailable];
   return <section className="ops-obligations ops-model-checks" aria-label="Full-horizon model checks">
     <header><div><p className="context-label">Full planning horizon</p><h3>Model checks</h3></div>
-      <span className="ops-review-state" data-state={summary.state}>{summary.label}</span></header>
+      <span className="ops-review-state" role="status" data-state={summary.state}>{summary.label}</span></header>
     <ul className="ops-model-check-list">{summary.checks.map(check => {
       const Icon = check.state === "passed" ? CheckCircle2 : check.state === "failed" ? CircleAlert : check.state === "unavailable" ? CircleHelp : MinusCircle;
       return <li key={check.id} data-state={check.state}><Icon aria-hidden="true" />
@@ -16,7 +15,6 @@ export function CanonicalModelChecks({ assessment: a }: { assessment: CanonicalP
     })}</ul>
     <p className="ops-model-measurement">Minimum modelled SOC <strong>{summary.measurement.value}</strong>
       {a.batteryAudit ? <span> · protected reserve {formatPercent(a.batteryAudit.protectedSocPercent)} · maximum {formatPercent(a.batteryAudit.maximumSocPercent)}</span> : null}</p>
-    {attention.length ? <p role="status" className="ops-check-attention">{attention.map(check => `${check.label}: ${check.value}`).join(" · ")}</p> : null}
     <details id="operations-recovery"><summary>Review supporting details</summary>
       <div className="ops-canonical-obligation-table"><table><caption>Workload completion · full submitted horizon</caption>
         <thead><tr><th scope="col">Workload</th><th scope="col">Remaining work</th><th scope="col">Deadline check</th></tr></thead>
