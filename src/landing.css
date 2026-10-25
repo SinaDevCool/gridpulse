@@ -15,6 +15,106 @@
   overflow-x: clip;
 }
 
+.home-service-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: 24px;
+  margin-top: 32px;
+}
+.home-service-card {
+  border: 1px solid var(--landing-line);
+  border-radius: 16px;
+  background: var(--landing-surface);
+  padding: clamp(22px, 3vw, 36px);
+}
+.home-service-card h2,
+.home-service-card h3 {
+  font-size: 26px;
+  margin-block: 12px;
+}
+.home-service-card p {
+  color: #becbd2;
+  line-height: 1.65;
+  margin-block: 12px;
+}
+.home-service-card .home-audience {
+  font-size: 14px;
+  color: var(--landing-muted);
+}
+.home-service-card .public-button {
+  margin-top: 12px;
+}
+.home-service-card .home-inline-link {
+  display: flex;
+  width: fit-content;
+}
+.home-service-proof {
+  margin-top: 56px;
+}
+.home-proof-heading {
+  max-width: 800px;
+  margin-bottom: 24px;
+}
+.home-proof-heading h3 {
+  font-size: 28px;
+  margin-bottom: 12px;
+}
+.home-proof-heading p {
+  color: var(--landing-muted);
+  line-height: 1.65;
+}
+.home-service-workflow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 24px;
+  list-style: none;
+  padding: 0;
+  margin-top: 24px;
+}
+.home-service-workflow span {
+  color: var(--landing-cyan);
+  font-size: 13px;
+}
+.home-service-workflow h4 {
+  font-size: 17px;
+  margin-block: 12px;
+}
+.home-service-workflow p {
+  color: var(--landing-muted);
+  line-height: 1.65;
+  font-size: 14px;
+}
+.solution-preview {
+  margin: 24px 0;
+}
+.solution-preview picture {
+  display: block;
+  border: 1px solid #334856;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #0b1722;
+}
+.solution-preview img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.solution-preview figcaption {
+  color: #9aabb6;
+  font-size: 13px;
+  line-height: 1.6;
+  padding-top: 12px;
+}
+.home-landing a:focus-visible,
+.solution-preview a:focus-visible {
+  outline: 3px solid #42dff2;
+  outline-offset: 5px;
+}
+.home-final h2,
+.home-evidence > div > h2 {
+  font-size: clamp(30px, 4vw, 48px);
+}
+
 /* Current public homepage. Scoped to avoid the legacy public and sector page systems below. */
 .home-landing {
   background: #05080f;
@@ -42,9 +142,9 @@
 .home-hero {
   align-items: center;
   display: flex;
-  min-height: min(820px, calc(100svh - 72px));
+  min-height: 0;
   overflow: hidden;
-  padding-block: clamp(108px, 14vh, 168px);
+  padding-block: clamp(56px, 7vw, 96px);
   position: relative;
 }
 
@@ -73,11 +173,11 @@
 }
 
 .home-hero-content > * {
-  max-width: 790px;
+  max-width: none;
 }
 
 .home-hero h1 {
-  font-size: clamp(54px, 5.8vw, 90px);
+  font-size: clamp(44px, 5.2vw, 76px);
   letter-spacing: -0.055em;
   line-height: 0.98;
   max-width: 900px;
@@ -127,7 +227,7 @@
 .home-evidence,
 .home-final {
   border-top: 1px solid var(--landing-line);
-  padding-block: clamp(88px, 10vw, 144px);
+  padding-block: clamp(48px, 6vw, 88px);
 }
 
 .home-product,
@@ -475,8 +575,8 @@
 @media (max-width: 700px) {
   .home-hero {
     align-items: end;
-    min-height: 680px;
-    padding-block: 116px 64px;
+    min-height: 0;
+    padding-block: 48px;
   }
 
   .home-hero-image {

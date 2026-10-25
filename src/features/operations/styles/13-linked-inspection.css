@@ -15,7 +15,6 @@
   background: var(--ops-demand-fill);
 }
 .operations-chart-legend li button[aria-pressed="false"] {
-  opacity: 0.6;
   text-decoration: line-through;
 }
 .operations-chart-legend li button:focus-visible,

@@ -10,22 +10,25 @@ export function demandPeakMarkers(
   baselineVisible: boolean,
   responseVisible: boolean,
 ) {
-  if (!model.intervals.length) return null;
-  const baseline = model.intervals.reduce((best, point) =>
-    point.baselineDemandMw > best.baselineDemandMw ? point : best,
-  );
-  const response = model.intervals.reduce((best, point) => (point[key] > best[key] ? point : best));
+  return powerPeakMarkers(model.intervals, point => point.baselineDemandMw, point => point[key], baselineVisible, responseVisible);
+}
+
+export function powerPeakMarkers<T extends { timestamp: string }>(points: T[], baselineValue: (point: T) => number,
+  responseValue: (point: T) => number, baselineVisible: boolean, responseVisible: boolean, responseLabel = "Response peak") {
+  if (!points.length) return null;
+  const baseline = points.reduce((best, point) => baselineValue(point) > baselineValue(best) ? point : best);
+  const response = points.reduce((best, point) => responseValue(point) > responseValue(best) ? point : best);
   return [
     baselineVisible ? (
       <ReferenceDot
         key="baseline-peak"
         x={baseline.timestamp}
-        y={baseline.baselineDemandMw}
+        y={baselineValue(baseline)}
         r={4}
         fill="var(--ops-demand)"
         stroke="var(--background)"
         label={{
-          value: `Baseline peak ${formatMw(baseline.baselineDemandMw)}`,
+          value: `Baseline peak ${formatMw(baselineValue(baseline))}`,
           position: "top",
           fill: "var(--ops-demand)",
           fontSize: 12,
@@ -36,12 +39,12 @@ export function demandPeakMarkers(
       <ReferenceDot
         key="response-peak"
         x={response.timestamp}
-        y={response[key]}
+        y={responseValue(response)}
         r={4}
         fill="var(--ops-response)"
         stroke="var(--background)"
         label={{
-          value: `Response peak ${formatMw(response[key])}`,
+          value: `${responseLabel} ${formatMw(responseValue(response))}`,
           position: "bottom",
           fill: "var(--ops-response)",
           fontSize: 12,

@@ -40,11 +40,15 @@ test("Finder landing, sector pages and methodology form the public product site"
 }) => {
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: /Screen the Grid Before Advancing the Site/i }),
+    page.getByRole("heading", { name: /Choose the site. Plan the operation./i }),
   ).toBeVisible();
   await expect(page.getByRole("link", { name: /Open Power Finder/i }).first()).toBeVisible();
-  await expect(page.getByRole("link", { name: "Product" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "How It Works" })).toBeVisible();
+  await expect(
+    page.locator(".public-header").getByRole("link", { name: "Site Selection", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.locator(".public-header").getByRole("link", { name: "Facility Operations", exact: true }),
+  ).toBeVisible();
   await expect(page.getByRole("link", { name: "Product Tour" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Review the data" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Discuss a site" })).toHaveCount(0);

@@ -1,9 +1,13 @@
 name: MILP frontend focused qualification
 on:
-  push:
-    branches: [codex/production-milp-runtime, codex/milp-presentation-corrections, codex/milp-result-visualisations]
-    paths: [src/**, .github/workflows/milp-frontend-qualification.yml]
+  # PR CI owns automatic execution. Keep manual qualification available for branches without a PR.
+  workflow_call:
   workflow_dispatch:
+    inputs:
+      capture_marketing:
+        description: Capture a genuine synthetic solve for static marketing previews
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -21,7 +25,7 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Input identity, mapping and shared result projection first
-        run: npx vitest run src/features/operations/canonical-overview.test.ts src/lib/public-milp-session.test.ts src/features/operations/synthetic-milp-request.test.ts src/features/operations/canonical-battery-presentation.test.ts src/features/operations/canonical-job-result.test.ts src/features/operations/canonical-result-projection.test.ts src/features/operations/canonical-input-mapping.test.ts --maxWorkers=2
+        run: npx vitest run src/features/operations/overview/overview-presentation.test.ts src/features/operations/overview/select-breach-spans.test.ts src/features/operations/power/timeline-presentation.test.ts src/features/operations/canonical-battery-view.test.ts src/features/operations/canonical-overview.test.ts src/lib/public-milp-session.test.ts src/features/operations/synthetic-milp-request.test.ts src/features/operations/canonical-battery-presentation.test.ts src/features/operations/canonical-job-result.test.ts src/features/operations/canonical-result-projection.test.ts src/features/operations/canonical-input-mapping.test.ts --maxWorkers=2
       - run: npm run typecheck
       - run: npm run check:architecture
       - run: npm run lint:app
@@ -38,6 +42,26 @@ jobs:
         run: npx playwright test tests/e2e/operations-canonical-results.spec.ts --workers=1
         env:
           GRIDPULSE_TEST_COMPILED: '1'
+          GRIDPULSE_TEST_MILP_REQUIRED: '1'
+      - name: Generate one genuine synthetic assessment for marketing
+        if: github.event_name == 'workflow_dispatch' && inputs.capture_marketing
+        env:
+          GRIDPULSE_MILP_REQUEST_OUTPUT: browser-milp-request.json
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          npx vitest run src/features/operations/synthetic-milp-request.test.ts --maxWorkers=2
+          python scripts/check-live-milp-api.py
+          node scripts/capture-marketing-milp.mjs
+          python -m pip install Pillow
+          python -c "from PIL import Image; from pathlib import Path; [Image.open(p).resize((min(Image.open(p).width,1600), round(Image.open(p).height*min(Image.open(p).width,1600)/Image.open(p).width))).save(p.with_suffix('.webp'),quality=85) for p in Path('marketing-captures').glob('*.png')]"
+      - uses: actions/upload-artifact@v4
+        if: github.event_name == 'workflow_dispatch' && inputs.capture_marketing
+        with:
+          name: marketing-previews
+          path: |
+            marketing-captures/*.webp
+            marketing-captures/provenance.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -47,3 +71,18 @@ jobs:
             playwright-report/
           if-no-files-found: ignore
           retention-days: 7
+      - name: Summarize this exact qualification attempt
+        if: always()
+        env:
+          QUALIFICATION_STATUS: ${{ job.status }}
+          CANDIDATE_SHA: ${{ github.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          {
+            echo '## MILP frontend qualification'
+            echo "Status: $QUALIFICATION_STATUS"
+            echo "PR head: $HEAD_SHA"
+            echo "Tested candidate: $CANDIDATE_SHA"
+            echo 'A failure belongs to this commit and attempt; consult the newest PR checks for current status.'
+            echo 'Browser coverage is mandatory. Reports and failure traces are attached to this run.'
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -4,6 +4,7 @@ import { selectedReserveEnergy } from "./select-battery-workspace";
 
 import { durationLabel, type EvidenceMode, type HistoricalPoint, number } from "./presentation";
 
+import { BatteryReserveGauge } from "./BatteryReserveGauge";
 import { EvidencePill, Row } from "./primitives";
 
 export function BatterySocPanel({
@@ -22,7 +23,6 @@ export function BatterySocPanel({
   const battery = model.scenario.battery;
   const observation = selectedHistorical?.battery;
   const soc = mode === "scenario" ? selected.batterySocPercent : (observation?.socPercent ?? null);
-  const boundedSoc = Math.max(0, Math.min(100, soc ?? 0));
   const energyAboveReserve =
     mode === "scenario" && soc != null ? selectedReserveEnergy(model, selected) : null;
   const protectedSoc = protectedSocPercent;
@@ -36,40 +36,9 @@ export function BatterySocPanel({
         <EvidencePill mode={mode} />
       </header>
       <div className="battery-soc-body">
-        <div
-          className="battery-reserve-gauge"
-          role="img"
-          aria-label={
-            soc == null
-              ? "Battery state of charge unavailable"
-              : `Battery state of charge ${number.format(soc)} percent`
-          }
-        >
-          <span className="battery-reserve-reading">
-            <strong>{soc == null ? "—" : number.format(soc)}</strong>
-            <small>{soc == null ? "Unavailable" : "% SOC"}</small>
-          </span>
-          <div className="battery-reserve-track" aria-hidden="true">
-            <i className="battery-reserve-fill" style={{ width: `${boundedSoc}%` }} />
-            <i
-              className="battery-reserve-protected"
-              style={{ width: `${Math.min(100, protectedSoc)}%` }}
-            />
-            <i
-              className="battery-reserve-marker"
-              style={{ left: `${Math.min(100, protectedSoc)}%` }}
-            />
-            <i
-              className="battery-reserve-marker maximum"
-              style={{ left: `${battery.maximumSocPercent}%` }}
-            />
-          </div>
-          <p className="power-flow-note">
-            {mode === "scenario" ? "End-of-interval SOC. " : "Observed SOC. "}Reserve and maximum
-            markers use configured assumptions; backup energy is additionally protected when
-            configured.
-          </p>
-        </div>
+        <BatteryReserveGauge soc={soc} protectedSoc={protectedSoc} maximumSoc={battery.maximumSocPercent}>
+          {mode === "scenario" ? "End-of-interval SOC. " : "Observed SOC. "}Reserve and maximum markers use configured assumptions; backup energy is additionally protected when configured.
+        </BatteryReserveGauge>
         <dl>
           <Row label="Minimum SOC floor" value={`${number.format(battery.minimumSocPercent)}%`} />
           <Row

@@ -7,7 +7,7 @@ test("each solution introduces its own customer and standalone workflow", async 
     [
       "/solutions/facility-operations",
       "How should this facility operate within its power constraints?",
-      "Open Operations scenario",
+      "Explore Operations demo",
       "/operations",
     ],
   ]) {

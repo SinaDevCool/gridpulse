@@ -9,6 +9,11 @@ const budgets = [
 ];
 
 const publicAssetBudgets = [
+  ...["overview", "workloads", "battery", "mobile"].map(view => ({
+    path: `public/landing/facility-operations-${view}.webp`,
+    maxBytes: view === "mobile" ? 100_000 : 250_000,
+    label: `Operations ${view} product preview`,
+  })),
   {
     path: "public/landing/german-grid-hero.webp",
     maxBytes: 150_000,

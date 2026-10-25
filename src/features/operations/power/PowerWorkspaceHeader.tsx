@@ -1,3 +1,4 @@
+import { BatteryWorkspaceHeading } from "./BatteryWorkspaceHeading";
 import { Upload } from "lucide-react";
 import { OperationsSelect } from "../OperationsSelect";
 import { formatOperationsTime } from "../presentation";
@@ -23,13 +24,7 @@ export function PowerWorkspaceHeader({
   const index = series.findIndex((point) => point.timestamp === selectedPoint?.timestamp);
   return (
     <>
-      <header className="power-workspace-heading">
-        <div>
-          <p className="context-label">Battery Response & Reserve</p>
-          <h3>Facility Power & Battery Response</h3>
-        </div>
-        <EvidencePill mode={mode} />
-      </header>
+      <BatteryWorkspaceHeading badge={<EvidencePill mode={mode} />} />
       <div className="power-workspace-tools">
         <div className="power-interval-control">
           <OperationsSelect

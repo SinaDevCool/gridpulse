@@ -1,0 +1,7 @@
+{
+  "source": "Hosted synthetic MILP; unmodified accepted job rendered in branch UI",
+  "commit": "fe61b6640a6e96bc2f71ec783cb9d9429a864c0b",
+  "solver": "scipy-highs-milp",
+  "status": "optimal",
+  "physical_dispatch": false
+}
