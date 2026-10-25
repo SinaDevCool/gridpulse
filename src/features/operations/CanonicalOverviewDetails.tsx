@@ -1,5 +1,5 @@
 import type { CanonicalPresentation } from "./canonical-presentation";
-import { canonicalBreachMinutes, canonicalChecks, canonicalPowerBalance, canonicalMargins } from "./canonical-overview";
+import { canonicalBreachMinutes, canonicalCheckSummary, canonicalPowerBalance, canonicalMargins } from "./canonical-overview";
 import { SignedPowerBalance } from "./overview/SignedResponseDiagram";
 import { formatMw } from "./formatting";
 import { formatOperationsTime } from "./presentation";
@@ -9,7 +9,7 @@ import { PlanComparison } from "./overview/PlanComparison";
 import { CanonicalModelChecks } from "./CanonicalModelChecks";
 
 export function CanonicalOperatingSummary({ assessment: a }: { assessment: CanonicalPresentation }) {
-  const attention = canonicalChecks(a).some(check => check.state === "failed" || check.state === "unavailable");
+  const attention = canonicalCheckSummary(a).state !== "passed";
   const met = a.planPeakMw <= a.targetMw + .01;
   const margin = a.targetMw - a.planPeakMw;
   return <section className="ops-operating-summary" aria-label="Operating summary">
