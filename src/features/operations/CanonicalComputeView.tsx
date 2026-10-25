@@ -42,7 +42,7 @@ export function CanonicalComputeView({ assessment: a, timestamp, preview, onSele
       </div>
       {facility ? <PowerTimeline data={a.points} limitMw={a.limitMw} targetMw={a.targetMw} protectedSocPercent={a.protectedSocPercent}
         selectedTimestamp={inspected} onSelect={onSelect} mode="scenario" variant="overview" showConstraints={false} overviewPresentation /> :
-        <CanonicalWorkloadChart model={m} selected={selected} timestamp={inspected} onSelect={onSelect} />}
+        <CanonicalWorkloadChart model={m} selected={selected} timestamp={inspected} onSelect={onSelect} onPreview={onPreview} />}
       <div className="canonical-compute-filters" aria-label="Workload review filters">{computeFilters.map(item =>
         <button type="button" key={item.id} aria-pressed={filter === item.id} onClick={() => {
           setFilter(item.id); if (selected && !matchesCanonicalCompute(selected, item.id)) close();

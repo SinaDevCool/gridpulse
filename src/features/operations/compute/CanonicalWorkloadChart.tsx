@@ -5,8 +5,9 @@ import { formatMw } from "../formatting";
 import { formatOperationsTime } from "../presentation";
 import { timelineSelection, timelineTimeLabel } from "../power/timeline-presentation";
 
-export function CanonicalWorkloadChart({ model: m, selected, timestamp, onSelect }: {
+export function CanonicalWorkloadChart({ model: m, selected, timestamp, onSelect, onPreview }: {
   model: CanonicalComputeModel; selected?: CanonicalComputeJob; timestamp: string; onSelect: (time: string) => void;
+  onPreview: (time: string | null) => void;
 }) {
   const visibility = useChartVisibility();
   const rows = m.points.map((point, i) => ({ ...point, selectedMw: selected?.points[i].power_mw ?? null }));
@@ -24,6 +25,8 @@ export function CanonicalWorkloadChart({ model: m, selected, timestamp, onSelect
       <header><strong>Scheduled workload power</strong><span>MW · flexible + protected = total{unknown ? " (including unclassified)" : ""}</span></header>
       <ResponsiveContainer width="100%" height="100%"><ComposedChart data={data}
         margin={{ top: 15, right: 18, bottom: 0, left: 0 }} accessibilityLayer
+        onMouseMove={state => onPreview(timelineSelection(state, m.points) ?? null)}
+        onMouseLeave={() => onPreview(null)}
         onClick={state => { const value = timelineSelection(state, m.points); if (value) onSelect(value); }}>
         <CartesianGrid vertical={false} stroke="var(--ops-chart-grid)" />
         <XAxis dataKey="plotTime" type="number" scale="time" domain={[m.start, m.end]}
