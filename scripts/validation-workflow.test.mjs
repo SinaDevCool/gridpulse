@@ -57,8 +57,27 @@ test("fast gate precedes bounded, owned remote browser suites with reports", () 
       ),
     );
   }
-  assert.equal(jobs.build.steps.filter((step) => step.run === "npm run build").length, 1);
+  assert.equal(jobs.build.steps.filter((step) => step.run === "npm run build" && !step.if).length, 1);
   assert.equal(jobs.browsers.env.GRIDPULSE_TEST_COMPILED, "1");
+});
+
+test("production MILP is tested before switching to a separately sealed compatibility artifact", () => {
+  const { jobs } = workflow("validate-candidate");
+  const compatibility = jobs.build.steps.find(step => step.name === "Build non-deployable scenario compatibility fixture");
+  assert.equal(compatibility.if, "${{ inputs.production }}");
+  assert.equal(compatibility.env.VITE_OPERATIONS_MILP_ENABLED, "false");
+  assert.equal(compatibility.env.GRIDPULSE_BUILD_ENV, "compatibility");
+  const upload = jobs.build.steps.find(step => step.uses === "actions/upload-artifact@v4" && step.with.name.startsWith("candidate-"));
+  assert.ok(jobs.build.steps.indexOf(upload) < jobs.build.steps.indexOf(compatibility));
+  const exact = jobs.fast.steps.find(step => step.name === "Qualify the exact production MILP artifact");
+  assert.match(exact.run, /test:browser -- milp/);
+  assert.equal(exact.env.GRIDPULSE_TEST_MILP_REQUIRED, "1");
+  const move = jobs.fast.steps.find(step => step.run === "mv dist validated-production-dist");
+  assert.ok(jobs.fast.steps.indexOf(exact) < jobs.fast.steps.indexOf(move));
+  assert.match(jobs.browsers.steps.find(step => step.uses === "actions/download-artifact@v4").with.name,
+    /matrix.suite == 'operations'.*compatibility.*artifact/);
+  const publish = workflow("deploy-cloudflare").jobs.publish.steps.find(step => step.uses === "actions/download-artifact@v4");
+  assert.equal(publish.with.name, "${{ needs.validate.outputs.artifact }}");
 });
 test("compiled test servers keep generated runtime state outside dist", () => {
   for (const config of [

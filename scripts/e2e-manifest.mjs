@@ -61,6 +61,7 @@ export const configFor = (suite) =>
       ? "playwright.runtime.config.ts"
       : "playwright.config.ts";
 export function suiteFiles(suite) {
+  if (suite === "milp") return suites.operations.filter(file => file.endsWith("operations-canonical-results.spec.ts"));
   if (suite === "isolation")
     return suites.runtime.filter((file) => file.endsWith("solution-runtime-boundary.spec.ts"));
   if (suite === "fast") return fast;

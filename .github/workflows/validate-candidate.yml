@@ -21,6 +21,7 @@ jobs:
     timeout-minutes: 15
     outputs:
       artifact: candidate-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}
+      compatibility: ${{ inputs.production && format('scenario-compatibility-{0}-{1}-{2}', github.run_id, github.run_attempt, github.sha) || format('candidate-{0}-{1}-{2}', github.run_id, github.run_attempt, github.sha) }}
     env:
       GRIDPULSE_BUILD_SHA: ${{ github.sha }}
       GRIDPULSE_BUILD_ENV: ${{ inputs.production && 'production' || 'validation' }}
@@ -86,6 +87,27 @@ jobs:
           path: test-results/runtime/
           if-no-files-found: ignore
           retention-days: 7
+      - name: Build non-deployable scenario compatibility fixture
+        if: ${{ inputs.production }}
+        run: npm run build
+        env:
+          GRIDPULSE_BUILD_ENV: compatibility
+          VITE_OPERATIONS_MILP_ENABLED: 'false'
+          VITE_PUBLIC_MILP_ENABLED: 'false'
+          VITE_SUPABASE_URL: https://browser-fixture.invalid
+          VITE_SUPABASE_PUBLISHABLE_KEY: browser-fixture-not-a-credential
+          VITE_ANALYTICS_API_URL: https://browser-fixture.invalid
+      - name: Seal compatibility fixture separately from the deployable candidate
+        if: ${{ inputs.production }}
+        run: node scripts/candidate-artifact.mjs seal
+      - uses: actions/upload-artifact@v4
+        if: ${{ inputs.production }}
+        with:
+          name: ${{ format('scenario-compatibility-{0}-{1}-{2}', github.run_id, github.run_attempt, github.sha) }}
+          path: dist/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 3
   fast:
     needs: build
     runs-on: ubuntu-latest
@@ -105,6 +127,22 @@ jobs:
           path: dist
       - run: node scripts/candidate-artifact.mjs verify
       - run: npx playwright install --with-deps chromium
+      - name: Qualify the exact production MILP artifact
+        if: ${{ inputs.production && vars.OPERATIONS_MILP_ENABLED == 'true' && vars.PUBLIC_MILP_ENABLED == 'true' }}
+        run: |
+          npm run test:browser -- milp
+          node scripts/candidate-artifact.mjs verify
+        env:
+          GRIDPULSE_TEST_MILP_REQUIRED: '1'
+      - name: Keep the production artifact separate from scenario compatibility
+        if: ${{ inputs.production }}
+        run: mv dist validated-production-dist
+      - uses: actions/download-artifact@v4
+        if: ${{ inputs.production }}
+        with:
+          name: ${{ needs.build.outputs.compatibility }}
+          path: dist
+      - run: node scripts/candidate-artifact.mjs verify
       - name: History, battery and shared assessment first
         run: npm run test:browser -- fast
       - run: node scripts/candidate-artifact.mjs verify
@@ -112,7 +150,9 @@ jobs:
         if: ${{ always() }}
         with:
           name: fast-reports-${{ github.run_attempt }}
-          path: test-results/fast/
+          path: |
+            test-results/fast/
+            test-results/milp/
           if-no-files-found: ignore
           retention-days: 7
   browsers:
@@ -135,7 +175,7 @@ jobs:
       - run: npm ci
       - uses: actions/download-artifact@v4
         with:
-          name: ${{ needs.build.outputs.artifact }}
+          name: ${{ matrix.suite == 'operations' && needs.build.outputs.compatibility || needs.build.outputs.artifact }}
           path: dist
       - run: node scripts/candidate-artifact.mjs verify
       - run: npx playwright install --with-deps chromium
