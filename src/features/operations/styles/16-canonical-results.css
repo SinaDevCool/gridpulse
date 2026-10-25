@@ -318,3 +318,8 @@
 .ops-plan-conversation textarea { display: block; width: 100%; box-sizing: border-box; margin-block: .5rem; padding: .7rem; font: inherit; color: inherit; background: var(--ops-card); border: 1px solid var(--border); border-radius: .4rem; }
 .ops-plan-conversation form button { margin-right: .4rem; }
 .ops-plan-conversation > small { display: block; margin-top: .5rem; }
+.ops-plan-conversation button { min-height: 2.5rem; padding: .45rem .7rem; border: 1px solid var(--ops-border); border-radius: .4rem; background: var(--ops-card); color: var(--ops-text); font: inherit; }
+.ops-plan-conversation button:disabled { opacity: .55; cursor: not-allowed; }
+.ops-plan-conversation button:focus-visible, .ops-plan-conversation textarea:focus-visible, .ops-chat-transcript:focus-visible, .ops-chat-transcript pre:focus-visible { outline: 2px solid var(--ops-demand); outline-offset: 2px; }
+.ops-plan-conversation form { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.ops-plan-conversation form label, .ops-plan-conversation form textarea { flex-basis: 100%; }
