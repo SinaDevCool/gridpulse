@@ -64,7 +64,7 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await row.locator("td").first().hover();
   await expect(result).toHaveAttribute("data-inspected-time", time);
   await row.locator("td").first().click();
-  await result.getByRole("heading").first().hover();
+  await result.getByRole("heading", { name: "Facility Power & Battery Response", exact: true }).hover();
   await expect(result).toHaveAttribute("data-inspected-time", time);
   await row.getByRole("button").focus();
   await page.keyboard.press("Enter");
