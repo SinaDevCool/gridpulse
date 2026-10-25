@@ -41,6 +41,13 @@ jobs:
       - run: node scripts/candidate-artifact.mjs verify
       - name: Reject an obsolete production candidate
         run: test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$GITHUB_SHA"
+      - name: Configure production copilot server secrets
+        run: node scripts/configure-copilot-secret.mjs
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          COPILOT_ANALYTICS_URL: ${{ vars.OPERATIONS_MILP_API_URL }}
       - name: Publish the validated artifact
         run: npx wrangler deploy --config dist/server/wrangler.json
         env:
@@ -61,6 +68,8 @@ jobs:
         run: node scripts/check-production-map.mjs
       - name: Verify real public MILP and shared Operations result
         if: vars.OPERATIONS_MILP_ENABLED == 'true' && vars.PUBLIC_MILP_ENABLED == 'true'
+        env:
+          GRIDPULSE_CHECK_COPILOT: 'true'
         run: node scripts/check-production-milp.mjs
       - uses: actions/upload-artifact@v4
         if: ${{ always() }}

@@ -51,6 +51,15 @@ timestamp. It is not operational approval. No user notes or PDF subsystem is int
 
 ## Configuration: local only until separately approved
 
+Production activation uses the existing deployment workflow after release approval.
+`configure-copilot-secret.mjs` sends the encrypted GitHub Actions `OPENAI_API_KEY`
+to the Worker through Wrangler stdin, together with server-only enable/model settings.
+The trusted analytics origin comes from the existing `OPERATIONS_MILP_API_URL`
+repository variable. No credential is passed to the frontend build or written to
+the candidate artifact. Production smoke verification uses one real synthetic MILP
+job and two real provider requests to check conversation, brief evidence and the
+review gate. Hosting remains unchanged; OpenAI requests consume API credits.
+
 Use the ignored `.dev.vars` beside `wrangler.jsonc` for server-only `OPENAI_API_KEY`,
 `COPILOT_ENABLED=true`, `COPILOT_MODEL=gpt-4o-mini`, and `COPILOT_ANALYTICS_URL` matching
 the trusted analytics service. Never prefix secrets with `VITE_`, commit env files, or

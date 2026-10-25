@@ -41,7 +41,12 @@ test("PR and release reuse validation; only validated main artifacts can publish
   assert.ok(steps.some((step) => step.run === "npx playwright install --with-deps chromium"));
   for (const step of steps)
     if (step.env?.CLOUDFLARE_API_TOKEN)
-      assert.equal(step.run, "npx wrangler deploy --config dist/server/wrangler.json");
+      assert.ok(["npx wrangler deploy --config dist/server/wrangler.json", "node scripts/configure-copilot-secret.mjs"].includes(step.run));
+  const configure = steps.findIndex(step => step.run === "node scripts/configure-copilot-secret.mjs");
+  const publish = steps.findIndex(step => step.run === "npx wrangler deploy --config dist/server/wrangler.json");
+  assert.ok(configure >= 0 && configure < publish);
+  assert.equal(steps[configure].env.OPENAI_API_KEY, "${{ secrets.OPENAI_API_KEY }}");
+  assert.ok(!workflow("validate-candidate").jobs.build.env.OPENAI_API_KEY);
 });
 test("fast gate precedes bounded, owned remote browser suites with reports", () => {
   const { jobs } = workflow("validate-candidate");

@@ -62,6 +62,38 @@ try {
       await page.setViewportSize({ width: 1600, height: 1000 });
     }
   }
+  if (process.env.GRIDPULSE_CHECK_COPILOT === "true") {
+    await page.getByRole("button", { name: "Plan copilot", exact: true }).click();
+    const copilot = page.getByRole("dialog", { name: "Plan copilot", exact: true });
+    const question = copilot.getByRole("textbox", { name: "Your question", exact: true });
+    await question.fill("What did this plan achieve?");
+    const conversationResponse = page.waitForResponse(response => new URL(response.url()).pathname === "/api/operations/conversation" && response.request().method() === "POST", { timeout: 85_000 });
+    await copilot.getByRole("button", { name: "Ask", exact: true }).click();
+    const response = await conversationResponse;
+    if (!response.ok()) throw new Error(`Production conversation HTTP ${response.status()}`);
+    const answer = await response.json();
+    if (answer.version !== "operations-conversation-v1" || answer.kind !== "answer" || answer.basis !== "model_evidence" ||
+      answer.receipt?.resultFingerprint !== fingerprint || !answer.receipt?.jobId || !answer.receipt?.providerResponseId || !answer.evidence?.length)
+      throw new Error("Production conversation is not grounded in this accepted plan/provider response");
+    await expect(copilot.getByRole("article").first()).toContainText("Checked model evidence");
+    await copilot.screenshot({ path: "test-results/production-copilot-conversation.png" });
+    await copilot.getByRole("button", { name: "Plan brief", exact: true }).click();
+    const briefResponse = page.waitForResponse(response => new URL(response.url()).pathname === "/api/operations/brief" && response.request().method() === "POST", { timeout: 85_000 });
+    await copilot.getByRole("button", { name: "Explain this plan", exact: true }).click();
+    const briefHttp = await briefResponse;
+    if (!briefHttp.ok()) throw new Error(`Production brief HTTP ${briefHttp.status()}`);
+    const brief = await briefHttp.json();
+    if (brief.version !== "operations-brief-v2" || brief.resultFingerprint !== fingerprint ||
+      brief.receipt?.jobId !== answer.receipt.jobId || !brief.receipt?.providerResponseId || !brief.findings?.length ||
+      !brief.findings.every(finding => finding.factIds.every(id => brief.evidence.some(fact => fact.id === id))))
+      throw new Error("Production brief contains invalid assessment/evidence references");
+    await expect(copilot.getByRole("checkbox")).toBeVisible();
+    await expect(copilot.getByRole("button", { name: "Download brief", exact: true })).toBeDisabled();
+    await copilot.screenshot({ path: "test-results/production-copilot-brief.png" });
+    await copilot.getByRole("button", { name: "Close copilot", exact: true }).click();
+    console.log(JSON.stringify({ production_copilot_verified: true, real_openai_responses: 2,
+      same_milp_result: true, evidence_references_checked: true, review_gate_preserved: true }));
+  }
   const limit = page.getByRole("spinbutton", { name: "Facility Limit MW", exact: true });
   await limit.fill(String(Number(await limit.inputValue()) + 1));
   await page.getByRole("heading", { name: "Plan inputs changed", exact: true }).waitFor({ state: "visible" });
