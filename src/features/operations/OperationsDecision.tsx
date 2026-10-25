@@ -1,4 +1,5 @@
-import { formatDurationHours, formatMw, formatMwh } from "./formatting";
+import { PlanComparison } from "./overview/PlanComparison";
+import { formatMw, formatMwh } from "./formatting";
 import { formatOperationsTime } from "./presentation";
 import type { OperationsOverviewModel, OperationsScenarioKind } from "./scenario-engine";
 import { selectPlanObligations } from "./overview/select-plan-obligations";
@@ -67,112 +68,28 @@ export function OperatingEnvelopeMap({
   );
 }
 
-/** One comparison surface, sharing the chart's response selection and calculation outputs. */
-export function ScenarioDecisionTable({
-  model,
-  fullModel = model,
-  selected,
-  onSelect,
-}: {
-  model: OperationsOverviewModel;
-  fullModel?: OperationsOverviewModel;
-  selected: OperationsScenarioKind;
+/** Scenario adapter: recovery quantities retain their own semantics. */
+export function ScenarioDecisionTable({ model, fullModel = model, selected, onSelect }: {
+  model: OperationsOverviewModel; fullModel?: OperationsOverviewModel; selected: OperationsScenarioKind;
   onSelect: (kind: OperationsScenarioKind) => void;
 }) {
-  const limit = model.scenario.importLimitMw;
-  const target = limit - model.scenario.safetyReserveMw;
-  const maximum = Math.max(1, limit, ...model.summaries.map((s) => s.peakDemandMw)) * 1.08;
-  return (
-    <div className="ops-response-comparison">
-      <p className="ops-comparison-key">
-        <span>
-          <i className="target" aria-hidden="true" />
-          Target {formatMw(target)}
-        </span>
-        <span>
-          <i className="limit" aria-hidden="true" />
-          Limit {formatMw(limit)}
-        </span>
-        <span>Shared MW scale</span>
-      </p>
-      <div className="operations-scenario-table-wrap">
-        <table className="operations-scenario-table ops-compact-comparison">
-          <thead>
-            <tr>
-              <th scope="col">Response</th>
-              <th scope="col">Peak import · selected window</th>
-              <th scope="col">Above facility limit</th>
-              <th scope="col">Unrecovered · full horizon</th>
-            </tr>
-          </thead>
-          <tbody>
-            {model.summaries.map((summary) => {
-              const recovery = selectPlanObligations(fullModel, summary.kind);
-              return (
-                <tr
-                  onClick={(event) => {
-                    if (
-                      !(event.target instanceof Element) ||
-                      event.target.closest("button,a,input,select")
-                    )
-                      return;
-                    onSelect(summary.kind);
-                  }}
-                  key={summary.kind}
-                  className={selected === summary.kind ? "selected" : undefined}
-                >
-                  <th scope="row">
-                    <button
-                      type="button"
-                      aria-label={`Select ${summary.label} comparison`}
-                      aria-pressed={selected === summary.kind}
-                      onClick={() => onSelect(summary.kind)}
-                    >
-                      {summary.label}
-                    </button>
-                  </th>
-                  <td>
-                    <div className="ops-peak-comparison">
-                      <span className="ops-boundary-track" aria-hidden="true">
-                        <i style={{ width: `${(100 * summary.peakDemandMw) / maximum}%` }} />
-                        <b className="target" style={{ left: `${(100 * target) / maximum}%` }} />
-                        <b className="limit" style={{ left: `${(100 * limit) / maximum}%` }} />
-                      </span>
-                      <strong>{formatMw(summary.peakDemandMw)}</strong>
-                    </div>
-                  </td>
-                  <td>{formatDurationHours(summary.violationHours)}</td>
-                  <td>
-                    {recovery.recoveryRequired &&
-                    recovery.deferred != null &&
-                    recovery.recovered != null &&
-                    recovery.unresolved != null ? (
-                      <span
-                        className="ops-mini-recovery"
-                        role="img"
-                        aria-label={`${formatMwh(recovery.recovered)} returned; ${formatMwh(recovery.unresolved)} unrecovered`}
-                      >
-                        <i
-                          style={{
-                            width: `${(100 * recovery.recovered) / Math.max(recovery.recovered + recovery.unresolved, 0.001)}%`,
-                          }}
-                        />
-                      </span>
-                    ) : null}
-                    {recovery.unresolved == null
-                      ? "Unavailable"
-                      : recovery.recoveryRequired
-                        ? formatMwh(recovery.unresolved)
-                        : "No deferral"}
-                    {recovery.reserveFailed ? <small> · Reserve constraint failed</small> : null}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-      <small>Power compliance alone does not validate reserve protection or job completion.</small>
-    </div>
-  );
+  const rows = model.summaries.map(summary => {
+    const recovery = selectPlanObligations(fullModel, summary.kind);
+    return { id: summary.kind, label: summary.label, peakMw: summary.peakDemandMw,
+      breachMinutes: summary.violationHours * 60, selected: selected === summary.kind,
+      onSelect: () => onSelect(summary.kind),
+      outcome: <>
+        {recovery.recoveryRequired && recovery.deferred != null && recovery.recovered != null && recovery.unresolved != null ?
+          <span className="ops-mini-recovery" role="img"
+            aria-label={`${formatMwh(recovery.recovered)} returned; ${formatMwh(recovery.unresolved)} unrecovered`}>
+            <i style={{ width: `${100 * recovery.recovered / Math.max(recovery.recovered + recovery.unresolved, .001)}%` }} />
+          </span> : null}
+        {recovery.unresolved == null ? "Unavailable" : recovery.recoveryRequired ? formatMwh(recovery.unresolved) : "No deferral"}
+        {recovery.reserveFailed ? <small> · Reserve constraint failed</small> : null}
+      </>,
+    };
+  });
+  return <PlanComparison rows={rows} target={model.scenario.importLimitMw - model.scenario.safetyReserveMw}
+    limit={model.scenario.importLimitMw} peakLabel="Peak import · selected window" outcomeLabel="Unrecovered · full horizon"
+    footnote="Power compliance alone does not validate reserve protection or job completion." />;
 }

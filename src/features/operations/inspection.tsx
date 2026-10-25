@@ -7,11 +7,13 @@ export function IntervalNavigation({
   timestamp,
   onSelect,
   peak,
+  peakLabel = "Return to peak",
 }: {
   points: { timestamp: string }[];
   timestamp?: string;
   onSelect: (value: string) => void;
   peak?: string;
+  peakLabel?: string;
 }) {
   const index = points.findIndex((point) => point.timestamp === timestamp);
   const [query, setQuery] = useState("");
@@ -104,7 +106,7 @@ export function IntervalNavigation({
       </button>
       {peak ? (
         <button type="button" onClick={() => onSelect(peak)}>
-          <CornerUpLeft aria-hidden="true" /> Return to peak
+          <CornerUpLeft aria-hidden="true" /> {peakLabel}
         </button>
       ) : null}
     </div>

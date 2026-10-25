@@ -10,8 +10,10 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
     token_type: "bearer", refresh_token: "fixture", expires_in: 3600,
     user: { id: "00000000-0000-4000-8000-000000000002", is_anonymous: true, aud: "authenticated" } } }));
   let request: FacilityPlanRequest;
+  let submissions = 0;
   await page.route("**/v1/jobs/**", route => {
     if (route.request().method() === "POST") {
+      submissions++;
       request = route.request().postDataJSON() as FacilityPlanRequest;
       return route.fulfill({ json: { job_id: "00000000-0000-4000-8000-000000000001", status: "queued" } });
     }
@@ -58,13 +60,18 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await expect(result).toHaveAttribute("data-inspected-time", "2026-09-26T06:00:00.000Z");
   await expect(result.getByLabel("Execution time axis UTC")).toBeVisible();
   await page.getByRole("link", { name: "Overview", exact: true }).click();
-  await expect(result.getByText("Peak reduction · baseline → plan", { exact: true })).toBeVisible();
+  await expect(result.getByText("Peak reduced by", { exact: true })).toBeVisible();
+  await expect(result.getByText("Plan peak import", { exact: true })).toHaveCount(0);
   await expect(result.locator(".power-timeline-panel")).toHaveCount(1);
   await expect(result.getByRole("meter", { name: "Peak import after response" })).toHaveAttribute("aria-valuenow", "51");
   const explorer = result.getByRole("region", { name: "MILP response explorer" });
-  await expect(explorer).toContainText("Peak safety-target margin");
+  await expect(explorer.locator(".ops-compact-comparison tbody tr")).toHaveCount(2);
+  await expect(explorer.locator(".ops-peak-comparison")).toHaveCount(2);
   await expect(explorer).toContainText("Passed within model");
-  await explorer.getByText(/Explain selected interval/).click();
+  await explorer.getByRole("button", { name: "Operating margins", exact: true }).click();
+  await expect(explorer.getByRole("region", { name: "Operating margins", exact: true })).toContainText("Peak safety-target margin");
+  await expect(explorer).toContainText("Selected-interval safety-target margin");
+  await explorer.getByRole("button", { name: "Explain selected interval", exact: true }).click();
   await expect(explorer.getByRole("img", { name: /Selected interval power balance/ })).toBeVisible();
   await expect(explorer.getByText(/Balance discrepancy/)).toHaveCount(0);
   await result.getByText("Set inspection range", { exact: true }).click();
@@ -72,6 +79,9 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await expect(result).toHaveAttribute("data-inspected-time", "2026-09-26T02:00:00.000Z");
   await expect(result.getByRole("meter")).toHaveAttribute("aria-valuenow", "51");
   await result.getByRole("button", { name: "Reset inspection range", exact: true }).click();
+  await result.getByRole("button", { name: "Inspect plan peak", exact: true }).click();
+  expect(submissions).toBe(1);
+  await expect(result).toHaveAttribute("data-assessment-id", "a".repeat(64));
   for (const theme of ["light", "dark"]) {
     await page.evaluate(value => document.documentElement.dataset.theme = value, theme);
     expect((await new AxeBuilder({ page }).include(".ops-canonical").analyze()).violations).toEqual([]);
@@ -86,6 +96,12 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
   await explorer.locator(".ops-waterfall").scrollIntoViewIfNeeded();
   await page.screenshot({ path: "test-results/canonical-overview-mobile.png" });
+  await explorer.getByRole("button", { name: "Compare plans", exact: true }).click();
+  await expect(explorer.locator(".ops-compact-comparison tbody tr")).toHaveCount(2);
+  await explorer.getByText("Review completion & battery details", { exact: true }).click();
+  await expect(explorer.getByRole("table", { name: "Workload completion · full submitted horizon", exact: true })).toBeVisible();
+  await expect(result.locator(".ops-canonical-selected")).toBeVisible();
+  expect(submissions).toBe(1);
   await page.getByRole("link", { name: "Power & Battery", exact: true }).click();
   for (const panel of await panels.all()) expect((await panel.boundingBox())!.height).toBeGreaterThan(140);
   expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);

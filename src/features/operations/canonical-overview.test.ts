@@ -3,7 +3,7 @@ import { canonicalMilpJob } from "../../../tests/fixtures/canonical-milp-job";
 import { buildSyntheticMilpRequest } from "./synthetic-milp-request";
 import { defaultOperationsScenario } from "./scenario-engine";
 import { selectCanonicalPresentation } from "./canonical-presentation";
-import { canonicalAssessmentFacts, canonicalBreachMinutes, canonicalPowerBalance } from "./canonical-overview";
+import { canonicalAssessmentFacts, canonicalBreachMinutes, canonicalPowerBalance, canonicalChecks, canonicalImpact } from "./canonical-overview";
 
 function fixture() {
   const request = buildSyntheticMilpRequest(defaultOperationsScenario);
@@ -25,9 +25,21 @@ describe("canonical overview presentation arithmetic", () => {
   it("does not replace missing diagnostics with a pass", () => {
     const { request, job } = fixture();
     (job.result_payload.result as { assessment: object }).assessment = { feasible: true };
-    expect(canonicalAssessmentFacts(selectCanonicalPresentation(job, request))).toEqual({
+    const a = selectCanonicalPresentation(job, request);
+    expect(canonicalAssessmentFacts(a)).toEqual({
       recoveryComplete: null, terminalTargetsMet: null, slaViolations: null, importViolations: null,
     });
+    expect(canonicalChecks(a).find(check => check.id === "completion")?.state).toBe("unavailable");
+  });
+  it("keeps full-horizon impact and warnings separate from interval inspection", () => {
+    const { request, job } = fixture();
+    job.result_payload.result.assessment.recovery_complete = false;
+    const a = selectCanonicalPresentation(job, request);
+    expect(canonicalChecks(a).find(check => check.id === "completion")?.state).toBe("failed");
+    const impact = canonicalImpact(a);
+    expect(impact.scope).toBe("full_horizon");
+    expect(impact.durationMs).toBe(24 * 60 * 60_000);
+    expect(impact.planPeakMw).toBe(51);
   });
   it("reads the engine SLA collection without confusing it with a numeric field", () => {
     const { request, job } = fixture();

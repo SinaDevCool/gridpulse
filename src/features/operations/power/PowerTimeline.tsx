@@ -25,6 +25,8 @@ import { formatOperationsTime } from "../presentation";
 import { type BatteryTimelinePoint } from "./select-battery-workspace";
 import { BatteryConstraintStrip } from "./BatteryConstraintStrip";
 import { timelineLegend } from "./timeline-legend";
+import { extendStepHorizon, timelineSelection, type TimelineSelection } from "./timeline-presentation";
+import { powerPeakMarkers } from "../overview/demand-peak-markers";
 
 const numericAxisProps = {
   tickLine: false,
@@ -44,6 +46,7 @@ export function PowerTimeline({
   variant = "battery",
   showConstraints = true,
   maximumSocPercent,
+  overviewPresentation = false,
 }: {
   data: BatteryTimelinePoint[];
   limitMw: number;
@@ -56,6 +59,7 @@ export function PowerTimeline({
   variant?: "battery" | "overview" | "compute";
   showConstraints?: boolean;
   maximumSocPercent?: number;
+  overviewPresentation?: boolean;
 }) {
   const selectedLabel = selectedTimestamp;
   const cursorProps = {
@@ -63,21 +67,12 @@ export function PowerTimeline({
     stroke: "var(--ops-selection)",
     strokeDasharray: previewing ? "4 4" : undefined,
   };
-  const visibility = useChartVisibility();
-  function selectChart(state: {
-    activeIndex?: string | number | null;
-    activeLabel?: string | number;
-  }) {
-    if (
-      typeof state.activeLabel === "string" &&
-      data.some((point) => point.timestamp === state.activeLabel)
-    ) {
-      onSelect(state.activeLabel);
-      return;
-    }
-    const index = Number(state.activeIndex);
-    if (state.activeIndex != null && Number.isInteger(index) && data[index])
-      onSelect(data[index].timestamp);
+  const overview = overviewPresentation && variant === "overview";
+  const visibility = useChartVisibility(overview ? ["Facility demand"] : []);
+  const chartData = overview ? extendStepHorizon(data) : data;
+  function selectChart(state: TimelineSelection) {
+    const time = timelineSelection(state, data);
+    if (time) onSelect(time);
   }
   return (
     <div
@@ -96,7 +91,7 @@ export function PowerTimeline({
         </header>
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
-            data={data}
+            data={chartData}
             syncId="battery-response-timeline"
             syncMethod="value"
             throttledEvents={[]}
@@ -185,6 +180,8 @@ export function PowerTimeline({
                 />
               </>
             ) : null}
+            {overview ? powerPeakMarkers(data, point => point.baselineDemandMw ?? 0, point => point.gridImportMw,
+              visibility.visible("Baseline import"), visibility.visible("Grid import"), "Plan peak") : null}
             {selectedLabel ? <ReferenceLine {...cursorProps} /> : null}
             <Area
               type={showConstraints ? "linear" : "stepAfter"}

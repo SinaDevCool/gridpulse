@@ -1,6 +1,8 @@
 import type { CanonicalPresentation } from "./canonical-presentation";
 import type { PowerBalanceStep } from "./overview/SignedResponseDiagram";
 import { selectBreachSpans } from "./overview/select-breach-spans";
+import type { OverviewImpact } from "./overview/overview-presentation";
+import { formatPercent } from "./formatting";
 
 /** Presentation arithmetic only. No scheduling, optimisation or feasibility inference. */
 export function canonicalPowerBalance(a: CanonicalPresentation, index: number) {
@@ -48,4 +50,33 @@ export function canonicalAssessmentFacts(a: CanonicalPresentation) {
   return { recoveryComplete: flag("recovery_complete"), terminalTargetsMet: flag("battery_terminal_targets_met"),
     slaViolations: Array.isArray(result.sla_violations) ? result.sla_violations.length : null,
     importViolations: count("import_limit_violations") };
+}
+
+export function canonicalImpact(a: CanonicalPresentation): OverviewImpact {
+  const start = Date.parse(a.points[0].timestamp);
+  return { baselinePeakMw: a.baselinePeakMw, planPeakMw: a.planPeakMw, limitMw: a.limitMw,
+    scope: "full_horizon", start, durationMs: Date.parse(a.points.at(-1)!.endTimestamp!) - start,
+    lanes: [true, false].map(baseline => ({ label: baseline ? "Before response" : "Joint plan",
+      minutes: canonicalBreachMinutes(a, baseline),
+      spans: selectBreachSpans(a.points, baseline ? "baselineDemandMw" : "gridImportMw", a.limitMw + .01) })),
+  };
+}
+
+export type CanonicalCheck = { id: string; label: string; value: string;
+  state: "passed" | "failed" | "unavailable" | "not_applicable" };
+export function canonicalChecks(a: CanonicalPresentation): CanonicalCheck[] {
+  const facts = canonicalAssessmentFacts(a);
+  const flag = (id: string, label: string, value: boolean | null): CanonicalCheck => ({ id, label,
+    value: value === null ? "Unavailable" : value ? "Passed within model" : "Unresolved",
+    state: value === null ? "unavailable" : value ? "passed" : "failed" });
+  const count = (id: string, label: string, value: number | null): CanonicalCheck => ({ id, label,
+    value: value === null ? "Unavailable" : String(value), state: value === null ? "unavailable" : value === 0 ? "passed" : "failed" });
+  return [flag("completion", "Recovery & completion", facts.recoveryComplete),
+    count("sla", "SLA violations", facts.slaViolations), count("import", "Import-limit violations", facts.importViolations),
+    a.batteryAudit ? flag("terminal", "Battery terminal target", facts.terminalTargetsMet) :
+      { id: "terminal", label: "Battery terminal target", value: "Not applicable", state: "not_applicable" },
+    a.batteryAudit ? { id: "soc", label: "Minimum modelled SOC", state: "passed",
+      value: formatPercent(Math.min(a.batteryAudit.initialSocPercent, ...a.points.map(point => point.socPercent!))) } :
+      { id: "soc", label: "Minimum modelled SOC", value: "No battery", state: "not_applicable" },
+  ];
 }
