@@ -11,7 +11,7 @@ permissions:
 jobs:
   application-health:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -29,3 +29,8 @@ jobs:
         env:
           GRIDPULSE_HEALTH_BASE_URL: https://gridpulseinsights.com
         run: node scripts/check-production-map.mjs
+      - name: Check real public MILP calculation across Operations
+        if: vars.OPERATIONS_MILP_ENABLED == 'true' && vars.PUBLIC_MILP_ENABLED == 'true'
+        env:
+          GRIDPULSE_HEALTH_BASE_URL: https://gridpulseinsights.com
+        run: node scripts/check-production-milp.mjs

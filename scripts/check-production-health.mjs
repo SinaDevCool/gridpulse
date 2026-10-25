@@ -58,7 +58,7 @@ const checks = [
         throw new Error("Operations heading is missing");
       }
       if (
-        !(html.includes("Scenario assessment—not live control") || html.includes("Synthetic joint MILP")) ||
+        !(html.includes("Scenario assessment—not live control") || html.includes("Synthetic model ·")) ||
         !html.includes("Read-only assessment · no physical commands") ||
         !html.includes("Live control unavailable")
       ) {
