@@ -14,7 +14,8 @@ test("one automatic PR run owns mandatory MILP qualification before full regress
   assert.equal(pr.jobs.milp.uses, "./.github/workflows/milp-frontend-qualification.yml");
   assert.equal(pr.jobs.validate.needs, "milp");
   assert.equal(focused.jobs.focused["continue-on-error"], undefined);
-  const browser = focused.jobs.focused.steps.find(step => step.run?.includes("playwright test"));
+  const browser = focused.jobs.focused.steps.find(step => step.run === "npm run test:browser -- milp");
+  assert.ok(browser, "focused qualification must use the central MILP suite");
   assert.equal(browser.env.GRIDPULSE_TEST_MILP_REQUIRED, "1");
   assert.equal(browser["continue-on-error"], undefined);
   assert.equal(focused.concurrency["cancel-in-progress"], true);
