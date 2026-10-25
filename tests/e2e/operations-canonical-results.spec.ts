@@ -5,6 +5,8 @@ import type { FacilityPlanRequest } from "../../src/features/analytics/contracts
 import { buildBriefEvidence, renderPlanBrief } from "../../src/features/operations/copilot/brief";
 import { selectCanonicalPresentation } from "../../src/features/operations/canonical-presentation";
 import { readFile } from "node:fs/promises";
+import { answerConversation } from "../../src/features/operations/copilot/conversation-query";
+import { conversationRequestSchema, type ConversationQuery } from "../../src/features/operations/copilot/conversation-contracts";
 
 test.use({ storageState: { cookies: [], origins: [] } });
 test("MILP charts retain physical SOC, geometry and shared keyboard/pointer inspection", async ({ page }) => {
@@ -22,6 +24,18 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   let submissions = 0;
   let exerciseFlows = false;
   let explanations = 0;
+  let conversations = 0;
+  let holdConversation = false;
+  await page.route("**/api/operations/conversation", async route => {
+    conversations++;
+    if (holdConversation) { await new Promise(resolve => setTimeout(resolve, 800)); }
+    const input = conversationRequestSchema.parse(route.request().postDataJSON());
+    const job = canonicalMilpJob(request);
+    const query: ConversationQuery = { intent: input.question.includes("alternative") ? "what_if" :
+      input.question.includes("Which") ? "interval" : "summary", start: null, end: null, workloadId: null, focus: "selected", definition: "none" };
+    await route.fulfill({ json: answerConversation(selectCanonicalPresentation(job, request), input, query,
+      { model: "browser-test-fixture", responseId: null, usage: null }) }).catch(() => {});
+  });
   await page.route("**/api/operations/brief", route => {
     explanations++;
     const job = canonicalMilpJob(request);
@@ -66,6 +80,29 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   const result = page.locator("[data-assessment-id]");
   await expect(result).toBeVisible();
   const copilot = page.getByRole("region", { name: "Plan copilot", exact: true });
+  const chat = copilot.getByRole("region", { name: "Ask about this plan", exact: true });
+  const questionInput = chat.getByRole("textbox", { name: "Your question", exact: true });
+  await questionInput.fill("What did this plan achieve?");
+  await chat.getByRole("button", { name: "Ask", exact: true }).click();
+  await expect(chat.getByRole("article").first()).toContainText("Modelled peak import");
+  await questionInput.fill("Which workloads run then?");
+  await chat.getByRole("button", { name: "Ask", exact: true }).click();
+  await expect(chat.getByRole("article").nth(1)).toContainText("Grid import");
+  await chat.getByRole("article").nth(1).getByText("Answer evidence and receipt", { exact: true }).click();
+  await expect(chat.getByRole("article").nth(1)).toContainText("CanonicalPresentation.points[0].gridImportMw");
+  await chat.screenshot({ path: "test-results/copilot-conversation-desktop.png" });
+  holdConversation = true;
+  await questionInput.fill("Test an alternative");
+  await chat.getByRole("button", { name: "Ask", exact: true }).click();
+  await expect(chat.getByRole("button", { name: "Ask", exact: true })).toBeDisabled();
+  await chat.getByRole("button", { name: "Stop", exact: true }).click();
+  await expect(questionInput).toHaveValue("Test an alternative");
+  await page.waitForTimeout(850);
+  expect(await chat.getByRole("article").count()).toBe(2);
+  holdConversation = false;
+  await chat.getByRole("button", { name: "Ask", exact: true }).click();
+  await expect(chat.getByRole("article").nth(2)).toContainText("requires a new MILP calculation");
+  expect(conversations).toBe(4);
   expect(explanations).toBe(0);
   await copilot.getByRole("button", { name: "Explain this plan", exact: true }).click();
   await expect(copilot).toContainText("The solver reported optimal within the submitted model");
@@ -337,6 +374,8 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await page.getByText("Advanced battery settings", { exact: true }).click();
   await page.getByRole("checkbox", { name: "Battery available", exact: true }).uncheck();
   await expect(copilot).toContainText("Inputs changed");
+  await expect(questionInput).toBeDisabled();
+  await expect(chat.getByRole("article")).toHaveCount(0);
   await expect(copilot.getByRole("button", { name: "Download brief", exact: true })).toHaveCount(0);
   await run.click();
   await expect(result.getByLabel("Selected battery interval")).toContainText("No battery in this plan");

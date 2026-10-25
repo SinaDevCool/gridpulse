@@ -32,6 +32,9 @@ import { selectCanonicalPresentation } from "./canonical-presentation";
 import { CanonicalAssessmentView } from "./CanonicalAssessmentView";
 import { PlanCopilot } from "./copilot/PlanCopilot";
 import { usePlanCopilot } from "./copilot/use-plan-copilot";
+import { usePlanConversation } from "./copilot/use-plan-conversation";
+import { PlanConversation } from "./copilot/PlanConversation";
+import type { CopilotNavigation } from "./copilot/conversation-contracts";
 import { useMilpCalculation } from "./hooks/use-milp-calculation";
 export type { OperationsView } from "./view-contracts";
 
@@ -75,13 +78,25 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
   });
   const [canonicalTime, setCanonicalTime] = useState("");
   const [canonicalPreview, setCanonicalPreview] = useState<string | null>(null);
+  const [canonicalWorkload, setCanonicalWorkload] = useState<string | null>(null);
   const canonicalCurrent = canonical && !draft.dirty && canonical.scenarioIdentity === stableOperationsJson(scenario);
   const copilot = usePlanCopilot({ jobId: canonical?.jobId,
     fingerprint: canonical?.assessment.projected.identity.resultFingerprint ?? "", current: !!canonicalCurrent });
+  const chatContext: CopilotNavigation = { view, timestamp: canonicalTime || null, workloadId: canonicalWorkload };
+  const conversation = usePlanConversation(canonical?.jobId,
+    canonical?.assessment.projected.identity.resultFingerprint ?? "", !!canonicalCurrent, chatContext);
+  function inspectCopilot(target: CopilotNavigation) {
+    if (!canonicalCurrent || !canonical) return;
+    if (target.timestamp && !canonical.assessment.points.some(point => point.timestamp === target.timestamp)) return;
+    if (target.workloadId && !canonical.assessment.jobs.some(job => job.id === target.workloadId)) return;
+    if (target.timestamp) setCanonicalTime(target.timestamp);
+    setCanonicalWorkload(target.workloadId); setCanonicalPreview(null);
+    void navigate({ search: { view: target.view, window, mode } });
+  }
   const showMilp = milpEnabled && mode !== "historical";
   const calculationBusy = showMilp ? milp.busy : lifecycle === "loading" || lifecycle === "stale";
   useEffect(() => {
-    if (canonical) { setCanonicalTime(canonical.assessment.points[0].timestamp); setCanonicalPreview(null); }
+    if (canonical) { setCanonicalTime(canonical.assessment.points[0].timestamp); setCanonicalPreview(null); setCanonicalWorkload(null); }
   }, [canonical]);
   const serviceLabel =
     backendState === "verified"
@@ -241,9 +256,12 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
                   onClick={() => void milp.run(scenario, milp.jobId!)}>Resume existing job · no new solve</button> : null}
               </section> : null}
               {showMilp && canonical ? <PlanCopilot state={copilot} jobId={canonical.jobId} current={!!canonicalCurrent}
-                onNavigate={nextView => void navigate({ search: { view: nextView, window, mode } })} /> : null}
+                onNavigate={nextView => void navigate({ search: { view: nextView, window, mode } })}>
+                <PlanConversation state={conversation} enabled={!!canonicalCurrent} context={chatContext} onNavigate={inspectCopilot} />
+              </PlanCopilot> : null}
               {showMilp ? canonical && canonicalCurrent ? <CanonicalAssessmentView assessment={canonical.assessment}
-                view={view} timestamp={canonicalTime} onSelect={value => { setCanonicalTime(value); setCanonicalPreview(null); }}
+                view={view} timestamp={canonicalTime} selectedWorkloadId={canonicalWorkload} onWorkloadSelect={setCanonicalWorkload}
+                onSelect={value => { setCanonicalTime(value); setCanonicalPreview(null); }}
                 preview={canonicalPreview} onPreview={setCanonicalPreview} /> : <section className="data-panel" role="status">
                   <h2>{canonical ? "Plan inputs changed" : "No optimised plan yet"}</h2>
                   <p>{canonical ? "This result is stale. Use Optimise plan with the current inputs." : "Use Optimise plan in the input panel to calculate a workload and battery schedule."}</p>

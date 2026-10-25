@@ -1,14 +1,16 @@
 import { briefText, formatBriefFact, sectionLabels } from "./brief";
 import type { PlanCopilotState } from "./use-plan-copilot";
+import type { ReactNode } from "react";
 
-export function PlanCopilot({ state, current, jobId, onNavigate }: {
+export function PlanCopilot({ state, current, jobId, onNavigate, children }: {
   state: PlanCopilotState; current: boolean; jobId?: string;
   onNavigate: (view: "overview" | "compute" | "power") => void;
+  children?: ReactNode;
 }) {
   const { brief, busy, error, reviewed, reviewedAt, copied, explain, setReviewed, setCopied, setError } = state;
   return <section className="data-panel ops-plan-copilot" aria-label="Plan copilot" aria-busy={busy}>
     <h2>Plan copilot</h2>
-    <p>AI-selected findings · checked against this model · human review required</p>
+    <p>Explain and inspect this modelled plan · review evidence before a decision</p>
     {!brief ? <button type="button" className="secondary-button" disabled={!current || !jobId || busy}
       onClick={() => void explain()}>{busy ? "Checking explanation…" : "Explain this plan"}</button> : null}
     {!current ? <p>Inputs changed. Calculate a new plan before requesting an explanation.</p> : null}
@@ -51,5 +53,6 @@ export function PlanCopilot({ state, current, jobId, onNavigate }: {
         link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
       }}>Download brief</button>
     </> : null}
+    {children}
   </section>;
 }

@@ -44,6 +44,7 @@ import { Route as SubmissionPackageIdRouteImport } from './routes/submission-pac
 import { Route as ApiOperationsAssessRouteImport } from './routes/api.operations.assess'
 import { Route as ApiOperationsBriefRouteImport } from './routes/api.operations.brief'
 import { Route as ApiOperationsCapabilitiesRouteImport } from './routes/api.operations.capabilities'
+import { Route as ApiOperationsConversationRouteImport } from './routes/api.operations.conversation'
 import { Route as ApiOperationsIngestRouteImport } from './routes/api.operations.ingest'
 import { Route as ApiOperationsRunsRouteImport } from './routes/api.operations.runs'
 import { Route as ApiOperationsWorkspaceRouteImport } from './routes/api.operations.workspace'
@@ -231,6 +232,12 @@ const ApiOperationsCapabilitiesRoute =
     path: '/api/operations/capabilities',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiOperationsConversationRoute =
+  ApiOperationsConversationRouteImport.update({
+    id: '/api/operations/conversation',
+    path: '/api/operations/conversation',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiOperationsIngestRoute = ApiOperationsIngestRouteImport.update({
   id: '/api/operations/ingest',
   path: '/api/operations/ingest',
@@ -314,6 +321,7 @@ export interface FileRoutesByFullPath {
   '/api/operations/assess': typeof ApiOperationsAssessRoute
   '/api/operations/brief': typeof ApiOperationsBriefRoute
   '/api/operations/capabilities': typeof ApiOperationsCapabilitiesRoute
+  '/api/operations/conversation': typeof ApiOperationsConversationRoute
   '/api/operations/ingest': typeof ApiOperationsIngestRoute
   '/api/operations/runs': typeof ApiOperationsRunsRoute
   '/api/operations/workspace': typeof ApiOperationsWorkspaceRoute
@@ -360,6 +368,7 @@ export interface FileRoutesByTo {
   '/api/operations/assess': typeof ApiOperationsAssessRoute
   '/api/operations/brief': typeof ApiOperationsBriefRoute
   '/api/operations/capabilities': typeof ApiOperationsCapabilitiesRoute
+  '/api/operations/conversation': typeof ApiOperationsConversationRoute
   '/api/operations/ingest': typeof ApiOperationsIngestRoute
   '/api/operations/runs': typeof ApiOperationsRunsRoute
   '/api/operations/workspace': typeof ApiOperationsWorkspaceRoute
@@ -407,6 +416,7 @@ export interface FileRoutesById {
   '/api/operations/assess': typeof ApiOperationsAssessRoute
   '/api/operations/brief': typeof ApiOperationsBriefRoute
   '/api/operations/capabilities': typeof ApiOperationsCapabilitiesRoute
+  '/api/operations/conversation': typeof ApiOperationsConversationRoute
   '/api/operations/ingest': typeof ApiOperationsIngestRoute
   '/api/operations/runs': typeof ApiOperationsRunsRoute
   '/api/operations/workspace': typeof ApiOperationsWorkspaceRoute
@@ -455,6 +465,7 @@ export interface FileRouteTypes {
     | '/api/operations/assess'
     | '/api/operations/brief'
     | '/api/operations/capabilities'
+    | '/api/operations/conversation'
     | '/api/operations/ingest'
     | '/api/operations/runs'
     | '/api/operations/workspace'
@@ -501,6 +512,7 @@ export interface FileRouteTypes {
     | '/api/operations/assess'
     | '/api/operations/brief'
     | '/api/operations/capabilities'
+    | '/api/operations/conversation'
     | '/api/operations/ingest'
     | '/api/operations/runs'
     | '/api/operations/workspace'
@@ -547,6 +559,7 @@ export interface FileRouteTypes {
     | '/api/operations/assess'
     | '/api/operations/brief'
     | '/api/operations/capabilities'
+    | '/api/operations/conversation'
     | '/api/operations/ingest'
     | '/api/operations/runs'
     | '/api/operations/workspace'
@@ -591,6 +604,7 @@ export interface RootRouteChildren {
   ApiOperationsAssessRoute: typeof ApiOperationsAssessRoute
   ApiOperationsBriefRoute: typeof ApiOperationsBriefRoute
   ApiOperationsCapabilitiesRoute: typeof ApiOperationsCapabilitiesRoute
+  ApiOperationsConversationRoute: typeof ApiOperationsConversationRoute
   ApiOperationsIngestRoute: typeof ApiOperationsIngestRoute
   ApiOperationsRunsRoute: typeof ApiOperationsRunsRoute
   ApiOperationsWorkspaceRoute: typeof ApiOperationsWorkspaceRoute
@@ -849,6 +863,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiOperationsCapabilitiesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/operations/conversation': {
+      id: '/api/operations/conversation'
+      path: '/api/operations/conversation'
+      fullPath: '/api/operations/conversation'
+      preLoaderRoute: typeof ApiOperationsConversationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/operations/ingest': {
       id: '/api/operations/ingest'
       path: '/api/operations/ingest'
@@ -984,6 +1005,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiOperationsAssessRoute: ApiOperationsAssessRoute,
   ApiOperationsBriefRoute: ApiOperationsBriefRoute,
   ApiOperationsCapabilitiesRoute: ApiOperationsCapabilitiesRoute,
+  ApiOperationsConversationRoute: ApiOperationsConversationRoute,
   ApiOperationsIngestRoute: ApiOperationsIngestRoute,
   ApiOperationsRunsRoute: ApiOperationsRunsRoute,
   ApiOperationsWorkspaceRoute: ApiOperationsWorkspaceRoute,

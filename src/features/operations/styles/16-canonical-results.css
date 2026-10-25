@@ -308,3 +308,13 @@
   .ops-margin-pair { grid-template-columns: 1fr; }
   .ops-model-check-list { flex-direction: column; }
 }
+.ops-plan-conversation { margin-block: 1rem; padding: 1rem; border: 1px solid var(--border); border-radius: .65rem; }
+.ops-chat-suggestions { display: flex; gap: .5rem; flex-wrap: wrap; }
+.ops-chat-transcript { max-height: 32rem; overflow-y: auto; overflow-wrap: anywhere; margin-block: .75rem; }
+.ops-chat-transcript article { padding: .75rem; border-bottom: 1px solid var(--border); }
+.ops-chat-transcript h4 { margin-block: .25rem; }
+.ops-chat-transcript small { display: block; }
+.ops-chat-transcript pre { white-space: pre-wrap; overflow-wrap: anywhere; max-width: 100%; }
+.ops-plan-conversation textarea { display: block; width: 100%; box-sizing: border-box; margin-block: .5rem; padding: .7rem; font: inherit; color: inherit; background: var(--ops-card); border: 1px solid var(--border); border-radius: .4rem; }
+.ops-plan-conversation form button { margin-right: .4rem; }
+.ops-plan-conversation > small { display: block; margin-top: .5rem; }

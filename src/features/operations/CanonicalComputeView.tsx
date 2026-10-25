@@ -12,12 +12,15 @@ import { CanonicalComputeSummary, CanonicalComputeInterval } from "./compute/Can
 import { PowerTimeline } from "./power/PowerTimeline";
 import { PowerDataTable } from "./power/PowerDataTable";
 
-export function CanonicalComputeView({ assessment: a, timestamp, preview, onSelect, onPreview }: CanonicalInspectionProps) {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+export function CanonicalComputeView({ assessment: a, timestamp, preview, onSelect, onPreview,
+  selectedWorkloadId, onWorkloadSelect }: CanonicalInspectionProps) {
+  const [localSelectedId, setLocalSelectedId] = useState<string | null>(null);
+  const selectedId = selectedWorkloadId === undefined ? localSelectedId : selectedWorkloadId;
+  const setSelectedId = onWorkloadSelect ?? setLocalSelectedId;
   const [filter, setFilter] = useState<ComputeFilter>("all");
   const [facility, setFacility] = useState(false);
   const [windows, setWindows] = useState(false);
-  const close = useCallback(() => setSelectedId(null), []);
+  const close = useCallback(() => setSelectedId(null), [setSelectedId]);
   const inspected = preview ?? timestamp;
   const m = selectCanonicalComputeView(a, inspected);
   const selected = m.jobs.find(job => job.id === selectedId);

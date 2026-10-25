@@ -4,4 +4,5 @@ import type { CanonicalPresentation } from "./canonical-presentation";
 export type CanonicalInspectionProps = {
   assessment: CanonicalPresentation; timestamp: string; onSelect: (time: string) => void;
   preview: string | null; onPreview: (time: string | null) => void;
+  selectedWorkloadId?: string | null; onWorkloadSelect?: (id: string | null) => void;
 };

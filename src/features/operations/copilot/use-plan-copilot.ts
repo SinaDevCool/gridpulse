@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { publicMilpClient, publicMilpEnabled } from "@/lib/public-milp-session";
+import { requestCopilot } from "./copilot-client";
 import { BRIEF_VERSION, briefSchema, type PlanBrief } from "./brief";
 import { createBriefRequestLifecycle } from "./request-lifecycle";
 
@@ -35,15 +34,8 @@ export function usePlanCopilot({ jobId, fingerprint, current }: {
     setBusy(true); setError(null);
     const accepts = () => gate.current.accepts(ticket, latestIdentity.current);
     try {
-      const { data: { session } } = await (publicMilpEnabled() ? publicMilpClient() : supabase).auth.getSession();
-      if (!accepts()) return;
-      if (!session) throw new Error("Run a calculation to establish a session first.");
-      const response = await fetch("/api/operations/brief", { method: "POST",
-        signal: AbortSignal.any([ticket.abort.signal, AbortSignal.timeout(80_000)]),
-        headers: { "content-type": "application/json", authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ version: BRIEF_VERSION, jobId, resultFingerprint: fingerprint }) });
-      const raw = await response.json();
-      if (!response.ok) throw new Error(raw.error ?? "Explanation unavailable.");
+      const raw = await requestCopilot("brief", { version: BRIEF_VERSION, jobId, resultFingerprint: fingerprint },
+        AbortSignal.any([ticket.abort.signal, AbortSignal.timeout(80_000)]));
       const accepted = briefSchema.parse(raw);
       if (accepted.resultFingerprint !== fingerprint || accepted.receipt.jobId !== jobId)
         throw new Error("Explanation refers to a different plan.");

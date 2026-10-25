@@ -77,3 +77,50 @@ handler integration, not deployment in the Cloudflare runtime. Worker build and 
 browser qualification remain separate evidence. Latest test receipts and generated
 briefs are under ignored `.codex-tmp/copilot-task9/`. See `task9-copilot-demonstration.md`
 for the demonstration sequence and evidence labels.
+
+## Conversational inspection
+
+`POST /api/operations/conversation` accepts `operations-conversation-v1`, an owned job
+ID/fingerprint, a question (up to 1,000 characters), up to six prior user questions and
+selected tab/interval/workload context. Body limit is 16 KiB. Assistant text and browser
+facts are never trusted evidence. `ownedAssessment` is the same acceptance/ownership
+path used by briefs; provider calls share `requestCopilotSelection` and the same limiter
+key. Two requests per IP per minute applies across both interfaces, not separately.
+
+The interpreter returns a strict typed query only. Workload IDs are constrained to the
+accepted job inventory. `conversation-query.ts` executes read-only queries through existing
+canonical selectors and renders numerical answers through the shared fact formatter.
+No generated SQL, Python, arbitrary code, solver changes, queue or database is introduced.
+Definitions are curated general explanations and are labelled separately from model
+evidence. Every answer exposes the resolved query, typed evidence and versioned receipt.
+
+Supported queries cover summaries, limits, checks, intervals/ranges, workload schedules,
+declared constraints, reserve/dispatch events and definitions. Ranges of more than four
+intervals return labelled representative boundary/peak/minimum-SOC intervals, with chart
+navigation for the full range. First/last workload activity does not imply continuous
+execution. Unknown workloads, off-grid times and unresolved language request clarification.
+Unsupported causal preference questions disclose absent diagnostics. What-if requests
+return `requires_calculation` and direct users to review inputs and explicitly run the
+existing optimiser; they do not edit or submit alternatives. Equipment control, unmodelled
+cost/carbon savings and live guarantees are unsupported.
+
+One dashboard-owned conversation persists across tabs, with at most 20 visible turns and
+six user questions sent as context. It resets when inputs become stale or an accepted plan
+is replaced. The lifecycle gate blocks synchronous duplicates and rejects late answers;
+Stop retains the typed question for retry. Requests time out after 80 seconds in the browser.
+Chart links validate the result's interval/job IDs and reuse dashboard selection state.
+Brief review/export is separate: conversation answers are not implicitly human-reviewed.
+
+Run the deterministic tests in `copilot/conversation-query.test.ts` and the handler tests
+in `server/operations/copilot-conversation.test.ts`. The existing canonical browser spec
+owns conversation accessibility, follow-up display, cancellation, persistence and staleness.
+The focused qualification workflow includes these tests and remains non-deploying.
+
+`node --import tsx scripts/qualify-copilot-conversation.ts` is an opt-in paid-provider
+qualification, requiring existing local OPENAI_API_KEY and VITE_SUPABASE_URL /
+VITE_SUPABASE_PUBLISHABLE_KEY environment settings. It creates one synthetic hosted MILP
+job and runs a bounded question dataset through the production handler with a limiter
+test adapter. It writes no secrets and reports under ignored
+`.codex-tmp/conversation-qualification/results.json`. It measures routing, response kind,
+follow-up focus, elapsed time and provider usage. This is not a Cloudflare-runtime
+deployment test, production activation, human review or proof of arbitrary-question accuracy.
