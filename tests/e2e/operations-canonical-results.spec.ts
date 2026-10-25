@@ -11,13 +11,21 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
     user: { id: "00000000-0000-4000-8000-000000000002", is_anonymous: true, aud: "authenticated" } } }));
   let request: FacilityPlanRequest;
   let submissions = 0;
+  let exerciseFlows = false;
   await page.route("**/v1/jobs/**", route => {
     if (route.request().method() === "POST") {
       submissions++;
       request = route.request().postDataJSON() as FacilityPlanRequest;
       return route.fulfill({ json: { job_id: "00000000-0000-4000-8000-000000000001", status: "queued" } });
     }
-    return route.fulfill({ json: canonicalMilpJob(request) });
+    const job = canonicalMilpJob(request);
+    if (exerciseFlows && request.batteries?.length) {
+      const result = job.result_payload.result;
+      Object.assign(result.facility.points[8], { battery_discharge_mw: 4.8, grid_import_mw: 46.2 });
+      Object.assign(result.facility.points[9], { battery_charge_mw: 5 / .95, grid_import_mw: 51 + 5 / .95 });
+      result.battery_trajectories[0].points[8].soc_mwh = Number(request.batteries[0].initial_soc_mwh) - 5;
+    }
+    return route.fulfill({ json: job });
   });
   await page.goto("/operations?view=power&mode=scenario&window=today");
   await expect(page.getByRole("button", { name: /^(Show|Hide) panel/ })).toBeEnabled();
@@ -130,4 +138,15 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await run.click();
   await expect(result.getByLabel("Selected battery interval")).toContainText("No battery in this plan");
   await expect(result.locator(".power-timeline-panel")).toHaveCount(1);
+  exerciseFlows = true;
+  await page.getByRole("checkbox", { name: "Battery available", exact: true }).check();
+  await run.click();
+  await expect(result.locator(".power-timeline-panel")).toHaveCount(3);
+  await result.getByRole("button", { name: /First charge/ }).click();
+  await expect(result).toHaveAttribute("data-inspected-time", "2026-09-26T09:00:00.000Z");
+  await expect(result.getByLabel("Selected interval power facts")).toContainText("Battery · charging");
+  await expect(result.getByLabel("Selected interval power facts")).toContainText("-5.3 MW");
+  await result.getByRole("button", { name: /First discharge/ }).click();
+  await expect(result.getByLabel("Selected interval power facts")).toContainText("Battery · discharging");
+  await expect(result.locator(".power-timeline-panel").nth(1).locator(".recharts-reference-area")).toHaveCount(2);
 });
