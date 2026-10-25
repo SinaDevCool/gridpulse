@@ -13,7 +13,7 @@ export function CanonicalBatteryDetails({ assessment: a, model: m }: { assessmen
         <div><dt>Charge energy · AC</dt><dd>{formatMwh(m.chargeMwh)}</dd></div>
         <div><dt>Initial → end SOC</dt><dd>{m.audit ? `${formatPercent(m.audit.initialSocPercent)} → ${formatPercent(m.endSoc!)}` : "Not applicable"}</dd></div>
         <div><dt>Minimum SOC · includes initial</dt><dd>{m.minimumSoc == null ? "Not applicable" : formatPercent(m.minimumSoc)}</dd></div>
-        <div><dt>Terminal energy / target · DC</dt><dd>{m.audit ? `${formatMwh(m.audit.points.at(-1)!.soc_mwh)} / ${formatMwh(m.audit.terminalTargetMwh)}` : "Not applicable"}</dd></div>
+        <div><dt>Terminal energy / target · DC</dt><dd>{m.terminal ? `${formatMwh(m.terminal.endMwh)} / ${formatMwh(m.terminal.targetMwh)}` : "Not applicable"}</dd></div>
       </dl><p>Full planning horizon. Charging losses mean AC charge and discharge totals need not match.</p>
     </details>
     <details className="operations-assurance-panel"><summary>Power path</summary>

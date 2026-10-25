@@ -138,6 +138,53 @@
 .ops-canonical--battery .ops-plan-conditions .battery-state-band { margin-block: .75rem; }
 .ops-canonical--battery .operations-assurance-panel { padding: 1rem; }
 .ops-canonical--battery .operations-assurance-panel dl { margin-block: 1rem; }
+.ops-canonical--battery .canonical-battery-inspector { display: grid; gap: .9rem; font-variant-numeric: tabular-nums; }
+.canonical-battery-inspector > header { padding-bottom: .8rem; }
+.canonical-battery-inspector .canonical-dispatch-state { display: flex; align-items: center; gap: .4rem; color: var(--ops-text); }
+.canonical-dispatch-state svg { width: 16px; height: 16px; color: var(--ops-response); }
+.canonical-battery-inspector h3 { margin: 0 0 .6rem; font-size: 1rem; }
+.canonical-battery-inspector dl { margin: 0; }
+.canonical-battery-inspector dd { margin: .2rem 0 0; font-weight: 600; }
+.canonical-battery-inspector dt { font-size: .8125rem; color: var(--ops-muted); }
+.canonical-battery-inspector .power-flow-note { margin-block: .5rem; font-size: .8125rem; }
+.canonical-battery-inspector .canonical-soc-bounds { display: flex; justify-content: space-between; gap: .75rem; }
+.canonical-battery-inspector .canonical-soc-bounds > div:last-child { text-align: right; }
+.canonical-soc-bounds dd { font-size: .875rem; }
+.canonical-soc-transition { display: flex; align-items: center; justify-content: space-between; gap: .6rem; margin-block: .85rem; font-size: .8125rem; color: var(--ops-muted); }
+.canonical-soc-transition strong { display: block; font-size: 1rem; color: var(--ops-text); margin-top: .25rem; }
+.canonical-soc-transition svg { width: 18px; height: 18px; }
+.canonical-battery-inspector .canonical-reserve-energy { border-inline-start: 3px solid var(--ops-positive); padding-inline-start: .75rem; }
+.canonical-reserve-energy dd { font-size: 1.5rem; line-height: 1.3; }
+.canonical-battery-margins { padding-top: .9rem; border-top: 1px solid var(--ops-border); }
+.canonical-battery-margins h3 { display: flex; justify-content: space-between; gap: .5rem; font-size: .875rem; font-weight: 400; }
+.canonical-battery-margins h3 strong { font-size: 1rem; }
+.canonical-battery-margins > dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; }
+.canonical-battery-margins > dl > div { padding: .6rem; border: 1px solid var(--ops-border); border-radius: 6px; min-width: 0; }
+.canonical-battery-margins > dl > div[data-state="exceeded"] { border-color: var(--ops-limit); }
+.canonical-battery-margins > dl > div[data-state="at"] { border-color: var(--ops-target); }
+.canonical-battery-margins dd { font-size: 1.125rem; overflow-wrap: anywhere; }
+.canonical-battery-margins .canonical-margin-meaning { font-size: .75rem; font-weight: 400; color: var(--ops-muted); }
+.canonical-terminal-check { border-top: 1px solid var(--ops-border); padding-top: .9rem; }
+.canonical-terminal-check h3 { font-size: .875rem; color: var(--ops-muted); font-weight: 500; }
+.canonical-terminal-check p { display: flex; align-items: center; gap: .5rem; font-size: .9375rem; margin-bottom: .65rem; }
+.canonical-terminal-check svg { width: 18px; height: 18px; flex-shrink: 0; color: var(--ops-target); }
+.canonical-terminal-check[data-state="met"] svg { color: var(--ops-positive); }
+.canonical-terminal-check[data-state="unresolved"] svg { color: var(--ops-limit); }
+.canonical-terminal-check dd { font-size: .9375rem; }
+.canonical-terminal-check small { display: block; margin-top: .5rem; }
+.canonical-energy-accounting { padding-top: .25rem; border-top: 1px solid var(--ops-border); }
+.canonical-energy-accounting > summary { display: list-item; min-height: 44px; font-size: .875rem; }
+.canonical-energy-accounting > summary:focus-visible { outline: 2px solid var(--ops-selection); outline-offset: 2px; }
+.canonical-energy-accounting h4 { font-size: .875rem; margin: .65rem 0; }
+.canonical-energy-accounting dl > div { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .25rem .65rem; padding-block: .35rem; }
+.canonical-energy-accounting dd { font-size: .875rem; }
+.canonical-battery-inspector .canonical-energy-accounting p { color: var(--ops-muted); font-size: .8125rem; margin-block: .6rem; }
+.canonical-battery-inspector .canonical-battery-provenance { color: var(--ops-muted); font-size: .8125rem; }
+@media (min-width: 650px) and (max-width: 1100px) {
+  .ops-canonical--battery .canonical-battery-inspector { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 1.5rem; }
+  .canonical-battery-inspector > header, .canonical-battery-inspector > details, .canonical-battery-inspector > .canonical-battery-provenance { grid-column: 1 / -1; }
+  .canonical-battery-inspector > .canonical-battery-state { grid-row: span 2; }
+}
 .canonical-compute { font-variant-numeric: tabular-nums; }
 .canonical-compute-outcome { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1rem 2rem; padding: 1.25rem; border: 1px solid var(--ops-border); border-radius: 10px; background: var(--ops-card); }
 .canonical-outcome-main { display: flex; align-items: center; gap: .85rem; }
