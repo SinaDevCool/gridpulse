@@ -309,10 +309,10 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
               ) : null}
             </div>
             {showMilp && canonical ? <PlanCopilot state={copilot} jobId={canonical.jobId} current={!!canonicalCurrent}
-              open={copilotOpen} onClose={closeCopilot} context={<>{contextLabel(chatContext)}{canonicalWorkload ? <strong>{String(canonical.assessment.request.workloads.find(job => job.workload_id === canonicalWorkload)?.name ?? canonicalWorkload)}</strong> : null}</>}
+              open={copilotOpen} onClose={closeCopilot} context={<>{contextLabel(chatContext, canonical.assessment.points.find(point => point.timestamp === canonicalTime)?.endTimestamp)}{canonicalWorkload ? <strong>{String(canonical.assessment.request.workloads.find(job => job.workload_id === canonicalWorkload)?.name ?? canonicalWorkload)}</strong> : null}</>}
               onNavigate={nextView => inspectCopilot({ view: nextView, timestamp: null, workloadId: null })}>
               <PlanConversation active={copilotOpen} state={conversation} enabled={!!canonicalCurrent} context={chatContext}
-                identity={canonical.assessment.projected.identity.resultFingerprint} onNavigate={inspectCopilot} />
+                identity={`${canonical.jobId}:${canonical.assessment.projected.identity.resultFingerprint}`} onNavigate={inspectCopilot} />
             </PlanCopilot> : null}
           </div>
         </main>

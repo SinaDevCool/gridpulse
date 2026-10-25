@@ -1,13 +1,13 @@
 import type { CopilotNavigation } from "./conversation-contracts";
 import type { BriefFact } from "./contracts";
 import { formatBriefFact } from "./brief";
+import { formatOperationsInterval, formatOperationsTime } from "../presentation";
 
-export function contextLabel(context: CopilotNavigation) {
+export function contextLabel(context: CopilotNavigation, endTimestamp?: string | null) {
   const view = context.view === "power" ? "Power & Battery" : context.view === "compute" ? "Compute & Workloads" : "Overview";
   const date = context.timestamp ? new Date(context.timestamp) : null;
-  return `${view} · ${date && Number.isFinite(date.getTime()) ? new Intl.DateTimeFormat("en-GB", {
-    day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "UTC", hourCycle: "h23",
-  }).format(date) + " UTC selected" : "Whole plan"}`;
+  return `${view} · ${date && Number.isFinite(date.getTime()) ?
+    (endTimestamp ? formatOperationsInterval(context.timestamp!, endTimestamp) : formatOperationsTime(context.timestamp!, true)) + " selected" : "Whole plan"}`;
 }
 
 /** No prose parsing, inferred arithmetic, or absent values converted into zero. */

@@ -12,7 +12,8 @@ test.use({ storageState: { cookies: [], origins: [] } });
 test("MILP charts retain physical SOC, geometry and shared keyboard/pointer inspection", async ({ page }) => {
   // Three linked workspaces, theme audits and focused desktop/mobile captures exceed
   // the former 30-second whole-test budget. Product waits and solver budgets are unchanged.
-  test.setTimeout(60_000);
+  // Includes three tabs, both themes, mobile geometry, accessibility and the copilot lifecycle.
+  test.setTimeout(120_000);
   // A returning visitor's legacy calculator preference must not reopen the
   // retired public selector or bypass the enabled optimiser.
   await page.addInitScript(() => localStorage.setItem("gridpulse-calculator", "scenario"));
@@ -90,8 +91,9 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await copilot.getByRole("button", { name: "Close copilot", exact: true }).click();
   await expect(launcher).toBeFocused();
   await launcher.click();
-  await chat.getByRole("button", { name: "What did this plan achieve?", exact: true }).click();
-  await expect(questionInput).toHaveValue("What did this plan achieve?");
+  await chat.getByRole("button", { name: "When is battery reserve lowest?", exact: true }).click();
+  await expect(questionInput).toHaveValue("When is battery reserve lowest?");
+  await questionInput.fill("What did this plan achieve?");
   await questionInput.press("Enter");
   await expect(chat.getByRole("article").first()).toContainText("Modelled peak import");
   await questionInput.fill("Which workloads run then?");
@@ -133,7 +135,7 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await copilot.getByRole("button", { name: "Explain this plan", exact: true }).click();
   await expect(page.locator(".ops-plan-copilot")).toContainText("The solver reported optimal within the submitted model");
   await copilot.getByText("Power", { exact: true }).click();
-  const peakEvidence = copilot.locator(".ops-copilot-sources").filter({ hasText: "Baseline peak import" }).first();
+  const peakEvidence = copilot.locator(".ops-plan-copilot .ops-copilot-sources").filter({ hasText: "Baseline peak import" }).first();
   await peakEvidence.locator("summary").first().click();
   await peakEvidence.getByText("Technical sources", { exact: true }).click();
   await expect(peakEvidence.getByText("power.plan_peak", { exact: true })).toBeVisible();

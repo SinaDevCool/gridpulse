@@ -1,4 +1,5 @@
 import { formatMw, formatMwh, formatPercent } from "../formatting";
+import { formatOperationsInterval, formatOperationsTime } from "../presentation";
 import { BRIEF_VERSION, briefSchema, selectionSchema, sectionLabels, type BriefFact, type PlanBrief } from "./contracts";
 import type { BriefEvidence } from "./evidence";
 export { buildBriefEvidence, type BriefEvidence } from "./evidence";
@@ -8,8 +9,11 @@ export function formatBriefFact(fact: BriefFact): string {
   if (fact.availability !== "available") return fact.availability === "not_applicable" ? "Not applicable" : "Unavailable";
   if (typeof fact.value === "boolean") return fact.value ? "Yes" : "No";
   if (typeof fact.value !== "number") {
+    const range = fact.value.split(" – ");
+    if (range.length === 2 && range.every(value => /^\d{4}-\d{2}-\d{2}T/.test(value) && Number.isFinite(Date.parse(value))))
+      return formatOperationsInterval(range[0], range[1]);
     if (/^\d{4}-\d{2}-\d{2}T/.test(fact.value) && Number.isFinite(Date.parse(fact.value)))
-      return new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "UTC", hourCycle: "h23" }).format(new Date(fact.value)) + " UTC";
+      return formatOperationsTime(fact.value, true);
     return fact.value;
   }
   switch (fact.unit) {

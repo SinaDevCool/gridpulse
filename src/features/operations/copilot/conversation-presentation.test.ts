@@ -16,7 +16,7 @@ describe("copilot presentation over accepted facts", () => {
       .toEqual(["Plan peak: Unavailable.", "Important qualification."]);
   });
   it("uses UTC context across date boundaries and handles missing context", () => {
-    expect(contextLabel({ view: "compute", timestamp: "2026-09-26T23:15:00-02:00", workloadId: null })).toContain("27 Sept, 01:15 UTC selected");
+    expect(contextLabel({ view: "compute", timestamp: "2026-09-26T23:15:00-02:00", workloadId: null })).toContain("27 Sept 2026, 01:15 UTC selected");
     expect(contextLabel({ view: "power", timestamp: null, workloadId: null })).toBe("Power & Battery · Whole plan");
   });
   it("formats timestamp facts without changing arbitrary strings or numeric precision", () => {
@@ -24,5 +24,9 @@ describe("copilot presentation over accepted facts", () => {
     expect(formatBriefFact(fact)).toContain("08:00 UTC");
     expect(fact.value).toBe("2026-09-26T08:00:00.000Z");
     expect(formatBriefFact(factSchema.parse({ ...fact, value: "No deadline supplied" }))).toBe("No deadline supplied");
+    expect(formatBriefFact(factSchema.parse({ ...fact, value: "2026-09-26T08:00:00.000Z – 2026-09-26T08:15:00.000Z" })))
+      .toBe("26 Sept 2026, 08:00 UTC – 08:15 UTC");
+    expect(contextLabel({ view: "power", timestamp: "2026-09-26T23:45:00Z", workloadId: null }, "2026-09-27T00:00:00Z"))
+      .toContain("27 Sept 2026, 00:00 UTC");
   });
 });
