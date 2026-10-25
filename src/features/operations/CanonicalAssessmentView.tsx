@@ -50,7 +50,7 @@ export function CanonicalAssessmentView({ assessment, view, timestamp, onSelect,
     {view === "compute" ? <CanonicalExecutionLanes assessment={assessment} timestamp={inspected} onSelect={onSelect} onPreview={onPreview} /> : null}
     <details><summary>How to read this assessment</summary>
       <p>Baseline import is the submitted reference. Facility demand is planned demand before battery response; grid import is after battery response. Peaks may occur at different times.</p>
-      <p>Positive battery MW means discharge; negative means charging. SOC uses fixed health-adjusted capacity, not energy above reserve. Hourly intervals do not imply minute-level control.</p>
+      <p>Positive battery MW means discharge; negative means charging. SOC uses fixed health-adjusted capacity, not energy above reserve. Model intervals do not imply real-time equipment control.</p>
       <p>Binding-constraint explanation unavailable. The checks above compare returned values with submitted limits; they do not identify which constraint determined the optimum.</p>
     </details>
     <PowerDataTable data={assessment.points} selectedTimestamp={inspected} pinnedTimestamp={timestamp}

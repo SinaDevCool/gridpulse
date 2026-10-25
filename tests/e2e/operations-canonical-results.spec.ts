@@ -21,9 +21,14 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
     const job = canonicalMilpJob(request);
     if (exerciseFlows && request.batteries?.length) {
       const result = job.result_payload.result;
-      Object.assign(result.facility.points[8], { battery_discharge_mw: 4.8, grid_import_mw: 46.2 });
-      Object.assign(result.facility.points[9], { battery_charge_mw: 5 / .95, grid_import_mw: 51 + 5 / .95 });
-      result.battery_trajectories[0].points[8].soc_mwh = Number(request.batteries[0].initial_soc_mwh) - 5;
+      const discharge = request.intervals.findIndex(interval => interval.start.includes("T08:00:"));
+      const charge = request.intervals.findIndex(interval => interval.start.includes("T09:00:"));
+      Object.assign(result.facility.points[discharge], { battery_discharge_mw: 4.8, grid_import_mw: 46.2 });
+      Object.assign(result.facility.points[charge], { battery_charge_mw: 5 / .95, grid_import_mw: 51 + 5 / .95 });
+      const used = 5 * request.intervals[discharge].duration_minutes / 60;
+      for (let index = discharge; index < charge; index++) {
+        result.battery_trajectories[0].points[index].soc_mwh = Number(request.batteries[0].initial_soc_mwh) - used;
+      }
     }
     return route.fulfill({ json: job });
   });
@@ -35,6 +40,8 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await run.click();
   const result = page.locator("[data-assessment-id]");
   await expect(result).toBeVisible();
+  expect(request!.intervals).toHaveLength(96);
+  expect(request!.intervals.at(-1)!.start).toBe("2026-09-26T23:45:00.000Z");
   await expect(result.getByLabel("Selected battery interval")).toContainText("SOC 78%");
   await expect(result.getByLabel("Selected battery interval")).toContainText("reserve 20%");
   const panels = result.locator(".power-timeline-panel");
@@ -60,7 +67,7 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await expect(result.getByText("No records match this filter.", { exact: true })).toBeVisible();
   await result.getByLabel("Show intervals").selectOption("all");
   const row = result.locator("tbody tr").nth(2);
-  const time = "2026-09-26T02:00:00.000Z";
+  const time = "2026-09-26T00:30:00.000Z";
   await row.locator("td").first().hover();
   await expect(result).toHaveAttribute("data-inspected-time", time);
   await row.locator("td").first().click();
@@ -93,7 +100,7 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await expect(explorer.getByText(/Balance discrepancy/)).toHaveCount(0);
   await result.getByText("Set inspection range", { exact: true }).click();
   await result.getByLabel("Range start", { exact: true }).selectOption("2");
-  await expect(result).toHaveAttribute("data-inspected-time", "2026-09-26T02:00:00.000Z");
+  await expect(result).toHaveAttribute("data-inspected-time", "2026-09-26T00:30:00.000Z");
   await expect(result.getByRole("meter")).toHaveAttribute("aria-valuenow", "51");
   await result.getByRole("button", { name: "Reset inspection range", exact: true }).click();
   await result.getByRole("button", { name: "Inspect plan peak", exact: true }).click();

@@ -1,4 +1,5 @@
 import { OperationsSelect } from "../OperationsSelect";
+import { SYNTHETIC_RESOLUTION_LABEL } from "../synthetic-milp-request";
 import {
   operatingWindowLabels,
   describeDisplayWindow,
@@ -75,7 +76,7 @@ export function WorkspaceInputs({
         {milp ? "Synthetic MILP" : mode === "historical" ? "Historical evidence" : "Scenario"} · Read-only
       </span>
       {mode === "scenario" ? (
-        <p role="status">{milp ? "24 hourly intervals · full modelled day" : `${describeDisplayWindow(model, window).split(". ")[0]}.`}</p>
+        <p role="status">{milp ? `${SYNTHETIC_RESOLUTION_LABEL} · full modelled day` : `${describeDisplayWindow(model, window).split(". ")[0]}.`}</p>
       ) : null}
       <details className="ops-about-assessment">
         <summary>About this assessment</summary>
