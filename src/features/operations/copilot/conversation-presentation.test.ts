@@ -12,7 +12,7 @@ describe("copilot presentation over accepted facts", () => {
     const zero = factSchema.parse({ ...base, id: "power.breach", availability: "available", value: 0 });
     expect(answerFacts([absent, zero])).toEqual([zero]);
     expect(formatBriefFact(absent)).toBe("Unavailable");
-    expect(answerBlocks(["Plan peak: Unavailable.", "Plan peak: 0 MW.", "Important qualification."], [absent, zero]))
+    expect(answerBlocks(["Plan peak: Unavailable.", `Plan peak: ${formatBriefFact(zero)}.`, "Important qualification."], [absent, zero]))
       .toEqual(["Plan peak: Unavailable.", "Important qualification."]);
   });
   it("uses UTC context across date boundaries and handles missing context", () => {
