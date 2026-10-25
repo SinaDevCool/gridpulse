@@ -8,6 +8,9 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   // Three linked workspaces, theme audits and focused desktop/mobile captures exceed
   // the former 30-second whole-test budget. Product waits and solver budgets are unchanged.
   test.setTimeout(60_000);
+  // A returning visitor's legacy calculator preference must not reopen the
+  // retired public selector or bypass the enabled optimiser.
+  await page.addInitScript(() => localStorage.setItem("gridpulse-calculator", "scenario"));
   const token = `e30.${Buffer.from(JSON.stringify({ role: "gridpulse_public_visitor", exp: 4102444800 })).toString("base64url")}.fixture`;
   await page.route("**/auth/v1/signup", route => route.fulfill({ json: { access_token: token,
     token_type: "bearer", refresh_token: "fixture", expires_in: 3600,
@@ -37,9 +40,18 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   });
   await page.goto("/operations?view=power&mode=scenario&window=today");
   await expect(page.getByRole("button", { name: /^(Show|Hide) panel/ })).toBeEnabled();
-  const run = page.getByRole("button", { name: "Recalculate MILP", exact: true });
+  const run = page.getByRole("button", { name: "Optimise plan", exact: true });
   if (process.env.GRIDPULSE_TEST_MILP_REQUIRED === "1") await expect(run).toBeVisible();
   else test.skip(!await run.isVisible(), "MILP flag disabled in this candidate; focused qualification requires it");
+  const assertSinglePlanningExperience = async () => {
+    await expect(page.getByRole("group", { name: "Calculation method", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /Scenario calculator|Joint MILP/ })).toHaveCount(0);
+    await expect(page.getByText("Optimised planning", { exact: true })).toBeVisible();
+    await expect(run).toBeVisible();
+  };
+  await assertSinglePlanningExperience();
+  await expect(page.getByRole("heading", { name: "No optimised plan yet", exact: true })).toBeVisible();
+  expect(submissions).toBe(0);
   await run.click();
   const result = page.locator("[data-assessment-id]");
   await expect(result).toBeVisible();
@@ -80,6 +92,7 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await page.keyboard.press("Enter");
   await expect(row).toHaveAttribute("aria-selected", "true");
   await page.getByRole("link", { name: "Compute & Workloads", exact: true }).click();
+  await assertSinglePlanningExperience();
   await expect(page.getByRole("heading", { name: "Solved workload schedule" })).toBeVisible();
   await expect(result.locator(".power-timeline-panel")).toHaveCount(1);
   const lane = result.getByRole("button", { name: /Foundation model training.*06:00/ });
@@ -134,6 +147,7 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await page.setViewportSize({ width: 1600, height: 1000 });
   expect(submissions).toBe(1);
   await page.getByRole("link", { name: "Overview", exact: true }).click();
+  await assertSinglePlanningExperience();
   await expect(result.getByText("Peak reduced by", { exact: true })).toBeVisible();
   await expect(result.getByText("Plan peak import", { exact: true })).toHaveCount(0);
   await expect(result.locator(".power-timeline-panel")).toHaveCount(1);

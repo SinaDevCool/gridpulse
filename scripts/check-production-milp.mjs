@@ -8,7 +8,7 @@ const page = await browser.newPage({ viewport: { width: 1600, height: 1000 } });
 await fs.mkdir("test-results", { recursive: true });
 try {
   await page.goto(`${base}/operations?view=overview&mode=scenario&window=today`);
-  const run = page.getByRole("button", { name: "Recalculate MILP", exact: true });
+  const run = page.getByRole("button", { name: "Optimise plan", exact: true });
   await run.waitFor({ state: "visible", timeout: 30000 });
   await expect(page.getByRole("status").filter({ hasText: "96 × 15-minute intervals · full modelled day" })).toBeVisible();
   await run.click();
@@ -64,7 +64,7 @@ try {
   }
   const limit = page.getByRole("spinbutton", { name: "Facility Limit MW", exact: true });
   await limit.fill(String(Number(await limit.inputValue()) + 1));
-  await page.getByRole("heading", { name: "MILP inputs changed", exact: true }).waitFor({ state: "visible" });
+  await page.getByRole("heading", { name: "Plan inputs changed", exact: true }).waitFor({ state: "visible" });
   await page.screenshot({ path: "test-results/production-milp.png", fullPage: true });
   console.log(JSON.stringify({ real_public_milp_completed: true, result_fingerprint: fingerprint,
     all_three_tabs_same_result: true, input_changes_mark_stale: true, physical_dispatch: false,

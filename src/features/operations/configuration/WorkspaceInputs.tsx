@@ -38,7 +38,7 @@ export function WorkspaceInputs({
       </div>
       <OperationsSelect
         name="operating-window"
-        label={milp ? "Display window (full MILP horizon)" : mode === "historical" ? "Display window (inactive)" : "Display window"}
+        label={milp ? "Display window (full plan)" : mode === "historical" ? "Display window (inactive)" : "Display window"}
         disabled={milp || mode === "historical"}
         value={milp ? "today" : window}
         options={Object.entries(operatingWindowLabels)
@@ -73,7 +73,7 @@ export function WorkspaceInputs({
         onChange={onMode}
       />
       <span className="ops-context-status">
-        {milp ? "Synthetic MILP" : mode === "historical" ? "Historical evidence" : "Scenario"} · Read-only
+        {milp ? "Synthetic model" : mode === "historical" ? "Historical evidence" : "Scenario"} · Read-only
       </span>
       {mode === "scenario" ? (
         <p role="status">{milp ? `${SYNTHETIC_RESOLUTION_LABEL} · full modelled day` : `${describeDisplayWindow(model, window).split(". ")[0]}.`}</p>

@@ -46,7 +46,7 @@ try {
     }),
   );
   await page.goto("http://127.0.0.1:4173/operations?view=overview&mode=scenario&window=today");
-  await page.getByRole("button", { name: "Recalculate MILP", exact: true }).click();
+  await page.getByRole("button", { name: "Optimise plan", exact: true }).click();
   const result = page.locator("[data-assessment-id]");
   await result.waitFor({ state: "visible", timeout: 30000 });
   await page.getByRole("button", { name: "Hide panel", exact: true }).click();
