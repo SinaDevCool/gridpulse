@@ -95,6 +95,8 @@
 .canonical-compute-grid > * { min-width: 0; }
 .canonical-compute .power-timeline-card > h3 { font-size: 1.125rem; margin-bottom: .8rem; }
 .canonical-workload-chart .power-timeline-panel { height: 20rem; display: flex; flex-direction: column; }
+.canonical-workload-chart .power-timeline-panel > header { position: static; inset: auto; flex-shrink: 0; gap: .6rem; padding: .7rem .8rem; }
+.canonical-workload-chart .power-timeline-panel { padding-top: 0; }
 .canonical-workload-chart .recharts-responsive-container { flex: 1; min-height: 0; }
 .canonical-compute-filters { display: flex; flex-wrap: wrap; gap: .5rem; padding-block: 1rem; border-top: 1px solid var(--ops-border); }
 .canonical-compute-filters button { display: flex; align-items: center; gap: .5rem; padding: .6rem .8rem; border: 1px solid var(--ops-border); border-radius: 6px; background: var(--ops-card); color: var(--ops-text); min-height: 44px; }

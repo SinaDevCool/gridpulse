@@ -5,6 +5,9 @@ import type { FacilityPlanRequest } from "../../src/features/analytics/contracts
 
 test.use({ storageState: { cookies: [], origins: [] } });
 test("MILP charts retain physical SOC, geometry and shared keyboard/pointer inspection", async ({ page }) => {
+  // Three linked workspaces, theme audits and focused desktop/mobile captures exceed
+  // the former 30-second whole-test budget. Product waits and solver budgets are unchanged.
+  test.setTimeout(60_000);
   const token = `e30.${Buffer.from(JSON.stringify({ role: "gridpulse_public_visitor", exp: 4102444800 })).toString("base64url")}.fixture`;
   await page.route("**/auth/v1/signup", route => route.fulfill({ json: { access_token: token,
     token_type: "bearer", refresh_token: "fixture", expires_in: 3600,
