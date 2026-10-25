@@ -1,4 +1,5 @@
 import type { CanonicalPresentation } from "./canonical-presentation";
+import { roundedPowerAxis } from "./power/timeline-scales";
 
 export type ComputeFilter = "all" | "attention" | "flexible" | "protected";
 const time = (value: unknown) => typeof value === "string" && Number.isFinite(Date.parse(value)) ? value : null;
@@ -6,13 +7,7 @@ const numeric = (value: unknown) => typeof value === "number" && Number.isFinite
 
 // The workload plot and execution lanes share the same plot insets.
 export const COMPUTE_PLOT = { axisWidth: 60, right: 18 };
-export function computePowerAxis(maximum: number) {
-  const rawStep = Math.max(1, maximum) / 4;
-  const scale = 10 ** Math.floor(Math.log10(rawStep));
-  const step = ([1, 2, 5, 10].find(value => value * scale >= rawStep) ?? 10) * scale;
-  const count = Math.max(1, Math.ceil(maximum / step));
-  return { maximum: count * step, ticks: Array.from({ length: count + 1 }, (_, i) => i * step) };
-}
+export const computePowerAxis = roundedPowerAxis;
 
 /** Presentation arithmetic over accepted results only. Never runs heuristic scheduling. */
 export function selectCanonicalComputeView(a: CanonicalPresentation, timestamp: string) {
