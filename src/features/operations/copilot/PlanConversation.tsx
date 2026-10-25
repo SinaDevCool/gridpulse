@@ -15,7 +15,7 @@ export function PlanConversation({ state, enabled, context, onNavigate }: { stat
     <p>Inspect modelled results and assumptions. Alternatives need a new calculation.</p>
     <div className="ops-chat-suggestions">{suggestions.map(text => <button className="secondary-button" type="button" key={text}
       disabled={!enabled || !!state.pending} onClick={() => setQuestion(text)}>{text}</button>)}</div>
-    <div className="ops-chat-transcript" role="log" aria-label="Plan conversation" aria-live="polite" aria-relevant="additions">
+    <div className="ops-chat-transcript" role="log" tabIndex={0} aria-label="Plan conversation" aria-live="polite" aria-relevant="additions">
       {state.turns.map((turn, index) => <article key={index} aria-label={`Answer ${index + 1}`}>
         <h4>{turn.question}</h4>
         <small>{turn.answer.basis === "general_explanation" ? "General explanation" : turn.answer.kind === "answer" ? "Checked model evidence" : turn.answer.kind.replaceAll("_", " ")}</small>
@@ -27,8 +27,8 @@ export function PlanConversation({ state, enabled, context, onNavigate }: { stat
           <dl>{turn.answer.evidence.map(fact => <div key={fact.id}><dt>{fact.label}</dt><dd>{formatBriefFact(fact)}
             <small>{fact.source.selector}.{fact.source.field} · {fact.availability} · raw {JSON.stringify(fact.value)} {fact.unit}</small></dd></div>)}</dl>
           <ul>{turn.answer.limitations.map(text => <li key={text}>{text}</li>)}</ul>
-          <p>Question interpretation</p><pre>{JSON.stringify(turn.answer.resolvedQuery, null, 2)}</pre>
-          <pre>{JSON.stringify(turn.answer.receipt, null, 2)}</pre>
+          <p>Question interpretation</p><pre tabIndex={0} aria-label="Resolved question">{JSON.stringify(turn.answer.resolvedQuery, null, 2)}</pre>
+          <pre tabIndex={0} aria-label="Answer receipt">{JSON.stringify(turn.answer.receipt, null, 2)}</pre>
         </details>
       </article>)}
     </div>

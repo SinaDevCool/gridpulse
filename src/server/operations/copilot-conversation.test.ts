@@ -56,4 +56,11 @@ describe("conversation boundary", () => {
     expect(answer.kind).toBe("clarification"); expect(answer.receipt.providerResponseId).toBeNull();
     expect(fetcher).toHaveBeenCalledTimes(1);
   });
+  it("never treats an explicit hypothetical as a current result", async () => {
+    const fetcher = vi.fn().mockResolvedValueOnce(Response.json(job));
+    const result = await handlePlanConversation(request({ ...body, question: "Suppose we increased the protected reserve to 30 percent." }), options(), fetcher);
+    const answer = conversationResponseSchema.parse(await result.json());
+    expect(answer.kind).toBe("requires_calculation"); expect(answer.evidence).toEqual([]);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
 });

@@ -1,4 +1,4 @@
-import { useCallback, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import type { CanonicalInspectionProps } from "./canonical-view-props";
 import { COMPUTE_PLOT, computeFilters, matchesCanonicalCompute, selectCanonicalComputeView, type ComputeFilter } from "./canonical-compute";
 import { CanonicalResultDetails } from "./CanonicalResultDetails";
@@ -24,6 +24,9 @@ export function CanonicalComputeView({ assessment: a, timestamp, preview, onSele
   const inspected = preview ?? timestamp;
   const m = selectCanonicalComputeView(a, inspected);
   const selected = m.jobs.find(job => job.id === selectedId);
+  useEffect(() => {
+    if (selected && !matchesCanonicalCompute(selected, filter)) setFilter("all");
+  }, [selected, filter]);
   const jobs = m.jobs.filter(job => matchesCanonicalCompute(job, filter));
   const selectJob = (id: string) => {
     const job = m.jobs.find(item => item.id === id);

@@ -31,8 +31,9 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
     if (holdConversation) { await new Promise(resolve => setTimeout(resolve, 800)); }
     const input = conversationRequestSchema.parse(route.request().postDataJSON());
     const job = canonicalMilpJob(request);
-    const query: ConversationQuery = { intent: input.question.includes("alternative") ? "what_if" :
+    const query: ConversationQuery = { intent: input.question.includes("training") ? "workload" : input.question.includes("alternative") ? "what_if" :
       input.question.includes("Which") ? "interval" : "summary", start: null, end: null, workloadId: null, focus: "selected", definition: "none" };
+    if (query.intent === "workload") query.workloadId = String(request.workloads[0].workload_id);
     await route.fulfill({ json: answerConversation(selectCanonicalPresentation(job, request), input, query,
       { model: "browser-test-fixture", responseId: null, usage: null }) }).catch(() => {});
   });
@@ -103,6 +104,16 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await chat.getByRole("button", { name: "Ask", exact: true }).click();
   await expect(chat.getByRole("article").nth(2)).toContainText("requires a new MILP calculation");
   expect(conversations).toBe(4);
+  await questionInput.fill("Show Foundation model training");
+  await chat.getByRole("button", { name: "Ask", exact: true }).click();
+  await chat.getByRole("article").nth(3).getByRole("button", { name: "Show workload", exact: true }).click();
+  await expect(result.locator(".canonical-workload-inspector")).toBeVisible();
+  await result.getByRole("button", { name: "Close workload details", exact: true }).click();
+  await expect(chat.getByRole("article")).toHaveCount(4);
+  await chat.getByRole("article").nth(1).getByRole("button", { name: "Show interval workloads", exact: true }).click();
+  await expect(result).toHaveAttribute("data-inspected-time", "2026-09-26T00:00:00.000Z");
+  await page.getByRole("link", { name: "Power & Battery", exact: true }).click();
+  await expect(chat.getByRole("article")).toHaveCount(4);
   expect(explanations).toBe(0);
   await copilot.getByRole("button", { name: "Explain this plan", exact: true }).click();
   await expect(copilot).toContainText("The solver reported optimal within the submitted model");

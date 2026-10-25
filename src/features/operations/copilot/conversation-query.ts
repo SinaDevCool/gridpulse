@@ -120,7 +120,7 @@ export function answerConversation(a: CanonicalPresentation, request: Conversati
       add("job.power", `Scheduled power at ${timestamp}`, current.power_mw, "MW", "compute", "selectCanonicalComputeView", `${job.id}.points[${index}].power_mw`);
       blocks.push("First and last activity do not imply continuous execution. Inspect the execution lane for gaps and checkpoints.");
     }
-    navigation.push({ view: "compute", timestamp: query.start ?? job.first ?? timestamp, workloadId: job.id });
+    navigation.push({ view: "compute", timestamp: query.start ? timestamp : job.first ?? timestamp, workloadId: job.id });
   } else {
     if (query.intent === "battery") include(["battery_reserve", "battery_energy", "no_battery"]);
     const last = query.end ? a.points.findIndex(p => Date.parse(p.endTimestamp!) === Date.parse(query.end!)) : index;

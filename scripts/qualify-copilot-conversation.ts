@@ -1,5 +1,6 @@
 /** Opt-in live qualification. Uses a synthetic hosted job and paid provider requests; never deploys. */
 import { mkdirSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { buildSyntheticMilpRequest } from "../src/features/operations/synthetic-milp-request";
 import { defaultOperationsScenario } from "../src/features/operations/scenario-engine";
 import { handlePlanConversation } from "../src/server/operations/copilot-handler";
@@ -90,7 +91,8 @@ async function main() {
   } finally {
     writeFileSync(`${out}/results.json`, JSON.stringify({ actualHostedMilp: true, actualOpenAI: true, productionHandler: true,
       cloudflareRuntime: false, rateLimiter: "qualification adapter; real limiter covered separately", productionDeployed: false,
-      model, jobId: job.id, records }, null, 2));
+      model, sourceCommit: execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(),
+      sourceDirty: !!execFileSync("git", ["status", "--porcelain"], { encoding: "utf8" }).trim(), jobId: job.id, records }, null, 2));
   }
   if (records.some(record => !(record as { passed: boolean }).passed)) throw new Error("Conversation qualification has failed cases; inspect the local report.");
 }

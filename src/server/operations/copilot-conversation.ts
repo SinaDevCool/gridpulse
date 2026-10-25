@@ -5,6 +5,10 @@ import { requestCopilotSelection } from "./copilot";
 
 export async function interpretQuestion(a: CanonicalPresentation, request: ConversationRequest,
   key: string, model: string, fetcher: typeof fetch = fetch) {
+  if (/\b(?:what\s+if|suppose|imagine)\b/i.test(request.question)) {
+    return { query: querySchema.parse({ intent: "what_if", workloadId: null, start: null, end: null, focus: "selected", definition: "none" }),
+      provider: { model: "deterministic-alternative-boundary", responseId: null, usage: null } };
+  }
   // A model must not resolve an unspecified morning/evening choice by guessing.
   const bareHour = /\b(?:at|around|before|after|until|by)\s+(?:\d{1,2}(?![\d:])\b|one\b|two\b|three\b|four\b|five\b|six\b|seven\b|eight\b|nine\b|ten\b|eleven\b|twelve\b)/i;
   if (bareHour.test(request.question) && !/\b(?:UTC|GMT|am|pm)\b/i.test(request.question)) {
