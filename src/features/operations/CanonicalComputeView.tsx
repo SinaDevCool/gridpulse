@@ -28,7 +28,7 @@ export function CanonicalComputeView({ assessment: a, timestamp, preview, onSele
       <span>{a.projected.identity.status === "optimal" ? "Optimal within model tolerance" : "Feasible incumbent—not proven optimal"} · Physical replay passed</span></header>
     <dl className="ops-canonical-summary" aria-label="Workload outcomes">
       <div><dt>Planned completion · horizon end</dt><dd>{m.completed} / {m.jobs.length}</dd></div>
-      <div><dt>Deadline checks met</dt><dd>{m.deadlinesMet} / {m.jobs.length}</dd>{m.deadlineUnavailable ? <small>{m.deadlineUnavailable} unavailable</small> : null}</div>
+      <div><dt>Deadline checks met</dt><dd>{m.deadlinesMet} / {m.jobs.length}{m.deadlineUnavailable ? <small> · {m.deadlineUnavailable} unavailable</small> : null}</dd></div>
       <div><dt>Remaining work · horizon end</dt><dd>{m.remaining === null ? "Unavailable" : `${m.remaining.toFixed(2)} work h`}</dd></div>
     </dl>
     <p className="ops-canonical-status">{m.points.length} × {m.points[0].durationMinutes}-minute model intervals · Full planning horizon · Not measured execution</p>
@@ -47,6 +47,7 @@ export function CanonicalComputeView({ assessment: a, timestamp, preview, onSele
         <button type="button" key={item.id} aria-pressed={filter === item.id} onClick={() => {
           setFilter(item.id); if (selected && !matchesCanonicalCompute(selected, item.id)) close();
         }}>{item.label} <strong>{m.jobs.filter(job => matchesCanonicalCompute(job, item.id)).length}</strong></button>)}</div>
+      <small>Chart totals cover all workloads; filters apply to the schedule and review table.</small>
       <label className="canonical-window-control"><input type="checkbox" checked={windows} onChange={event => setWindows(event.target.checked)} /> Show earliest-start/deadline envelopes</label>
       <CanonicalExecutionLanes model={m} jobs={jobs} selectedId={selectedId} timestamp={inspected} windows={windows}
         onJob={selectJob} onSelect={onSelect} onPreview={onPreview} />
@@ -64,7 +65,7 @@ export function CanonicalComputeView({ assessment: a, timestamp, preview, onSele
       {!jobs.length ? <p>No workloads match this filter.</p> : null}
     </section>
     <details><summary>How to read this schedule</summary><p>Demand groups add to total workload power. A selected workload is already included in that total. Execution gaps remain visible; checkpoint and restart periods may consume no power.</p>
-      <p>Completion and deadline checks use the full returned horizon. Work-hours describe modelled progress, not electricity in MWh. No per-job baseline shift or causal savings attribution is supplied.</p></details>
+      <p>Completion and deadline checks use the full returned horizon. Flexible denotes non-protected workload classes; submitted bounds still apply. Work-hours describe modelled progress, not electricity in MWh. No per-job baseline shift or causal savings attribution is supplied.</p></details>
     <details><summary>Facility interval context</summary><PowerDataTable data={a.points} selectedTimestamp={inspected} pinnedTimestamp={timestamp}
       onSelect={onSelect} onPreview={onPreview} mode="scenario" context="compute" /></details>
     <CanonicalResultDetails assessment={a} />

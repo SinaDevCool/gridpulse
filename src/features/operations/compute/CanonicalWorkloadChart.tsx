@@ -26,8 +26,9 @@ export function CanonicalWorkloadChart({ model: m, selected, timestamp, onSelect
         margin={{ top: 15, right: 18, bottom: 0, left: 0 }} accessibilityLayer
         onClick={state => { const value = timelineSelection(state, m.points); if (value) onSelect(value); }}>
         <CartesianGrid vertical={false} stroke="var(--ops-chart-grid)" />
-        <XAxis dataKey="plotTime" type="number" scale="time" domain={[m.start, m.end]} tickFormatter={timelineTimeLabel} minTickGap={65} />
-        <YAxis domain={[0, Math.max(1, ...m.points.map(point => point.workloadPowerMw ?? 0)) * 1.1]} tickLine={false} axisLine={false} />
+        <XAxis dataKey="plotTime" type="number" scale="time" domain={[m.start, m.end]}
+          tickFormatter={value => `${timelineTimeLabel(value)}${Number(value) === m.end ? " · end" : ""}`} minTickGap={65} tick={{ fill: "var(--ops-muted)", fontSize: 12 }} />
+        <YAxis domain={[0, Math.max(1, ...m.points.map(point => point.workloadPowerMw ?? 0)) * 1.1]} tickLine={false} axisLine={false} tick={{ fill: "var(--ops-muted)", fontSize: 12 }} />
         <Tooltip content={({ label }) => {
           const point = m.points.find(row => Number(label) >= row.plotTime && Number(label) < Date.parse(row.endTimestamp!)) ?? m.points.at(-1)!;
           const i = m.points.indexOf(point);
