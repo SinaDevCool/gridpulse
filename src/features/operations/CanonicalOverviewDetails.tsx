@@ -55,7 +55,7 @@ export function CanonicalOverviewDetails({ assessment: a, index }: { assessment:
       <div className="ops-margin-table-wrap"><table className="ops-margin-table"><caption>Operating margins · positive is below threshold; negative is exceedance</caption>
         <thead><tr><th scope="col">Scope</th><th scope="col">Safety target {formatMw(a.targetMw)}</th><th scope="col">Facility limit {formatMw(a.limitMw)}</th></tr></thead>
         <tbody>{canonicalMargins(a, index).map(row => <tr key={row.id}><th scope="row">{row.label}{row.id === "interval" ? <small>{formatOperationsTime(selected.timestamp)}–{formatOperationsTime(selected.endTimestamp!)}</small> : <small>Full horizon</small>}</th>
-          {[row.safety, row.facility].map((value, column) => <td key={column} data-state={value < -.01 ? "exceeded" : value > .01 ? "below" : "at"}>
+          {[row.safety, row.facility].map((value, column) => <td key={column} data-label={column === 0 ? `Safety target ${formatMw(a.targetMw)}` : `Facility limit ${formatMw(a.limitMw)}`} data-state={value < -.01 ? "exceeded" : value > .01 ? "below" : "at"}>
             <strong>{formatMw(value)}</strong><small>{value < -.01 ? "Exceeds threshold" : value > .01 ? "Below threshold" : "At threshold"}</small></td>)}</tr>)}</tbody>
       </table></div><p className="ops-result-help">Operating margins—not additional connection capacity.</p>
     </section>} />

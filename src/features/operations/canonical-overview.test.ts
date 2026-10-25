@@ -82,6 +82,7 @@ describe("canonical overview presentation arithmetic", () => {
   it("keeps SOC out of the check count and prioritises unresolved evidence", () => {
     const { request, job } = fixture();
     const a = selectCanonicalPresentation(job, request);
+    a.jobs.forEach(workload => { workload.deadlineMet = true; });
     expect(canonicalCheckSummary(a).checks).toHaveLength(4);
     expect(canonicalCheckSummary(a).checks.some(check => check.id === "soc")).toBe(false);
     expect(canonicalCheckSummary(a).label).toBe("No unresolved checks");
@@ -113,6 +114,18 @@ describe("canonical overview presentation arithmetic", () => {
     const html = renderToStaticMarkup(createElement(CanonicalModelChecks, { assessment: a }));
     expect(html).toContain(a.jobs[0].id);
     expect(html).toContain("<td>Unavailable</td><td>Unavailable</td>");
+    expect(canonicalCheckSummary(a).state).toBe("unavailable");
+  });
+  it("does not turn zero declared SLA violations into missing deadline passes", () => {
+    const { request, job } = fixture();
+    const a = selectCanonicalPresentation(job, request);
+    expect(canonicalCheckSummary(a).label).toBe("Some checks unavailable");
+    expect(canonicalCheckSummary(a).checks.find(check => check.id === "sla")?.value).toContain("5 deadline checks unavailable");
+    a.jobs[0].deadlineMet = false;
+    expect(canonicalCheckSummary(a).state).toBe("failed");
+    a.jobs.forEach(workload => { workload.deadlineMet = true; });
+    a.jobs[0].endingRemainingWorkHours = 2;
+    expect(canonicalCheckSummary(a).checks.find(check => check.id === "completion")?.state).toBe("failed");
   });
   it("preserves whole-plan margins while interval margins move through positive, zero and negative", () => {
     const { request, job } = fixture();

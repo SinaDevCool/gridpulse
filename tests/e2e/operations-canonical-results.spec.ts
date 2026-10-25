@@ -143,7 +143,8 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await expect(explorer.locator(".ops-peak-comparison")).toHaveCount(2);
   const checks = result.getByRole("region", { name: "Full-horizon model checks" });
   await expect(checks).toHaveCount(1);
-  await expect(checks).toContainText("No unresolved checks");
+  await expect(checks).toContainText("Some checks unavailable");
+  await expect(checks).toContainText("5 deadline checks unavailable");
   await expect(checks.locator(".ops-model-check-list li")).toHaveCount(4);
   const checkHeight = (await checks.locator(".ops-model-check-list").boundingBox())!.height;
   await checks.getByText("Review supporting details", { exact: true }).click();
@@ -195,11 +196,13 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await expect(explorer.locator(".ops-compact-comparison tbody tr")).toHaveCount(2);
   await checks.getByText("Review supporting details", { exact: true }).click();
   await expect(checks.getByRole("table", { name: "Workload completion · full submitted horizon", exact: true })).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 1300 });
   await checks.screenshot({ path: "test-results/canonical-checks-mobile.png" });
   expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
   await explorer.getByRole("button", { name: "Operating margins", exact: true }).click();
   await explorer.screenshot({ path: "test-results/canonical-margins-mobile.png" });
   expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
+  expect((await new AxeBuilder({ page }).include(".ops-canonical").analyze()).violations).toEqual([]);
   await expect(result.locator(".ops-canonical-selected")).toBeVisible();
   expect(submissions).toBe(1);
   await page.getByRole("link", { name: "Power & Battery", exact: true }).click();

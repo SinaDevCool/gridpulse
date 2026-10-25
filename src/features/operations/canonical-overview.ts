@@ -84,7 +84,23 @@ export function canonicalChecks(a: CanonicalPresentation): CanonicalCheck[] {
 /** Check outcomes stay separate from the SOC measurement; neither is a confidence score. */
 export function canonicalCheckSummary(a: CanonicalPresentation) {
   const all = canonicalChecks(a);
-  const checks = all.filter(check => check.id !== "soc");
+  const checks = all.filter(check => check.id !== "soc").map(check => {
+    if (check.id === "sla") {
+      const missing = a.jobs.filter(job => job.deadlineMet === undefined).length;
+      const missed = a.jobs.filter(job => job.deadlineMet === false).length;
+      if (missing || missed) return { ...check,
+        state: check.state === "failed" || missed ? "failed" as const : "unavailable" as const,
+        value: [check.value === "Unavailable" ? "Declared SLA check unavailable" : `${check.value} declared SLA violations`,
+          ...(missed ? [`${missed} deadlines not met`] : []), ...(missing ? [`${missing} deadline checks unavailable`] : [])].join(" · ") };
+    }
+    if (check.id === "completion") {
+      const remaining = a.jobs.map(job => job.endingRemainingWorkHours ?? job.points.at(-1)?.remaining_work_hours);
+      if (remaining.some(value => value === undefined)) return { ...check,
+        state: check.state === "failed" ? "failed" as const : "unavailable" as const, value: "Workload completion evidence unavailable" };
+      if (remaining.some(value => value! > 1e-6)) return { ...check, state: "failed" as const, value: "Work remains at horizon end" };
+    }
+    return check;
+  });
   const failed = checks.filter(check => check.state === "failed");
   const unavailable = checks.filter(check => check.state === "unavailable");
   return { checks, measurement: all.find(check => check.id === "soc")!, failed, unavailable,
