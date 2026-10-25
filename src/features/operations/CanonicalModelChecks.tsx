@@ -16,7 +16,7 @@ export function CanonicalModelChecks({ assessment: a }: { assessment: CanonicalP
     <p className="ops-model-measurement">Minimum modelled SOC <strong>{summary.measurement.value}</strong>
       {a.batteryAudit ? <span> · protected reserve {formatPercent(a.batteryAudit.protectedSocPercent)} · maximum {formatPercent(a.batteryAudit.maximumSocPercent)}</span> : null}</p>
     <details id="operations-recovery"><summary>Review supporting details</summary>
-      <div className="ops-canonical-obligation-table"><table><caption>Workload completion · full submitted horizon</caption>
+      <div className="ops-canonical-obligation-table" role="region" aria-label="Workload completion evidence" tabIndex={0}><table><caption>Workload completion · full submitted horizon</caption>
         <thead><tr><th scope="col">Workload</th><th scope="col">Remaining work</th><th scope="col">Deadline check</th></tr></thead>
         <tbody>{a.jobs.map(job => <tr key={job.id}><th scope="row">{String(a.request.workloads.find(workload => workload.workload_id === job.id)?.name ?? job.id)}</th>
           <td>{job.endingRemainingWorkHours == null && !job.points.length ? "Unavailable" : `${(job.endingRemainingWorkHours ?? job.points.at(-1)!.remaining_work_hours).toFixed(2)} work h`}</td>

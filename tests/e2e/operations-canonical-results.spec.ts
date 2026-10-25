@@ -197,6 +197,11 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await checks.getByText("Review supporting details", { exact: true }).click();
   await expect(checks.getByRole("table", { name: "Workload completion · full submitted horizon", exact: true })).toBeVisible();
   await page.setViewportSize({ width: 390, height: 1300 });
+  const evidence = checks.getByRole("region", { name: "Workload completion evidence", exact: true });
+  await evidence.focus();
+  await expect(evidence).toBeFocused();
+  await page.keyboard.press("ArrowRight");
+  await expect.poll(() => evidence.evaluate(element => element.scrollLeft)).toBeGreaterThan(0);
   await checks.screenshot({ path: "test-results/canonical-checks-mobile.png" });
   expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
   await explorer.getByRole("button", { name: "Operating margins", exact: true }).click();

@@ -95,6 +95,7 @@
 .ops-model-checks .ops-review-state[data-state="unavailable"] { border-color: var(--ops-target); }
 .ops-canonical--overview .ops-model-checks details { grid-column: 1 / -1; border-top: 1px solid var(--ops-border); }
 .ops-model-checks .ops-canonical-obligation-table table { min-width: 520px; font-size: .875rem; }
+.ops-model-checks .ops-canonical-obligation-table:focus-visible { outline: 2px solid var(--ops-selection); outline-offset: 2px; }
 .ops-model-checks details > p { color: var(--ops-muted); font-size: .875rem; }
 .ops-canonical--overview .ops-compact-comparison [data-tone="baseline"] .ops-boundary-track > i { background: var(--ops-demand); opacity: .7; }
 .ops-canonical--overview .ops-compact-comparison [data-tone="plan"] .ops-boundary-track > i { background: var(--ops-response); }
