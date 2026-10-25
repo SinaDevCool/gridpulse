@@ -3,6 +3,11 @@ on:
   # PR CI owns automatic execution. Keep manual qualification available for branches without a PR.
   workflow_call:
   workflow_dispatch:
+    inputs:
+      capture_marketing:
+        description: Capture a genuine synthetic solve for static marketing previews
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -38,6 +43,25 @@ jobs:
         env:
           GRIDPULSE_TEST_COMPILED: '1'
           GRIDPULSE_TEST_MILP_REQUIRED: '1'
+      - name: Generate one genuine synthetic assessment for marketing
+        if: github.event_name == 'workflow_dispatch' && inputs.capture_marketing
+        env:
+          GRIDPULSE_MILP_REQUEST_OUTPUT: browser-milp-request.json
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          npx vitest run src/features/operations/synthetic-milp-request.test.ts --maxWorkers=2
+          python scripts/check-live-milp-api.py
+          node scripts/capture-marketing-milp.mjs
+          python -m pip install Pillow
+          python -c "from PIL import Image; from pathlib import Path; [Image.open(p).resize((min(Image.open(p).width,1600), round(Image.open(p).height*min(Image.open(p).width,1600)/Image.open(p).width))).save(p.with_suffix('.webp'),quality=85) for p in Path('marketing-captures').glob('*.png')]"
+      - uses: actions/upload-artifact@v4
+        if: github.event_name == 'workflow_dispatch' && inputs.capture_marketing
+        with:
+          name: marketing-previews
+          path: |
+            marketing-captures/*.webp
+            marketing-captures/provenance.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
