@@ -93,6 +93,9 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await launcher.click();
   await chat.getByRole("button", { name: "When is battery reserve lowest?", exact: true }).click();
   await expect(questionInput).toHaveValue("When is battery reserve lowest?");
+  await questionInput.press("Shift+Enter");
+  await expect(questionInput).toHaveValue("When is battery reserve lowest?\n");
+  expect(conversations).toBe(0);
   await questionInput.fill("What did this plan achieve?");
   await questionInput.press("Enter");
   await expect(chat.getByRole("article").first()).toContainText("Modelled peak import");
@@ -141,7 +144,19 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await expect(peakEvidence.getByText("power.plan_peak", { exact: true })).toBeVisible();
   await expect(peakEvidence).toContainText("Raw value: 51 MW");
   await copilot.screenshot({ path: "test-results/copilot-desktop-evidence.png" });
-  expect((await new AxeBuilder({ page }).include(".ops-copilot-panel").analyze()).violations).toEqual([]);
+  for (const theme of ["dark", "light"]) {
+    await page.evaluate(value => document.documentElement.dataset.theme = value, theme);
+    expect((await new AxeBuilder({ page }).include(".ops-copilot-panel").analyze()).violations).toEqual([]);
+    await copilot.screenshot({ path: `test-results/copilot-evidence-${theme}.png` });
+  }
+  await page.setViewportSize({ width: 1920, height: 1000 });
+  await expect.poll(() => copilot.evaluate(node => node.matches(":modal"))).toBe(false);
+  const evidenceBounds = (await result.boundingBox())!;
+  const assistantBounds = (await copilot.boundingBox())!;
+  expect(evidenceBounds.width).toBeGreaterThan(600);
+  expect(evidenceBounds.x + evidenceBounds.width).toBeLessThanOrEqual(assistantBounds.x);
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await expect.poll(() => copilot.evaluate(node => node.matches(":modal"))).toBe(true);
   await expect(copilot.getByRole("button", { name: "Download brief", exact: true })).toBeDisabled();
   await copilot.getByRole("checkbox").check();
   await expect(copilot.getByRole("button", { name: "Download brief", exact: true })).toBeEnabled();
