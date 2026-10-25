@@ -103,7 +103,7 @@ export function PowerTimeline({
             onClick={selectChart}
             onMouseMove={previewChart}
             onMouseLeave={onPreview ? () => onPreview(null) : undefined}
-            margin={{ top: 18, right: 18, left: 0, bottom: 0 }}
+            margin={{ top: 18, right: 18, left: 0, bottom: batteryBoundaryStates ? 14 : 0 }}
             accessibilityLayer
           >
             <CartesianGrid stroke="var(--ops-chart-grid)" vertical={false} />
@@ -126,7 +126,7 @@ export function PowerTimeline({
               ]}
               ticks={batteryBoundaryStates ? scales.facility.ticks : undefined}
               tick={batteryBoundaryStates ? { fill: "var(--ops-muted)", fontSize: 12 } : undefined}
-              unit=" MW"
+              unit={batteryBoundaryStates ? undefined : " MW"}
             />
             <Tooltip content={<PowerTooltip panel="facility" targetMw={targetMw} boundaryStates={batteryBoundaryStates} />} />
             {variant === "overview" ? <Line dataKey="baselineDemandMw" name="Baseline import"

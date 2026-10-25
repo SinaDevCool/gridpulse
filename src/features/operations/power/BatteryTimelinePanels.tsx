@@ -36,7 +36,7 @@ export function BatteryTimelinePanels({ plot, visibility, mode, protectedSocPerc
             onClick={selectChart}
             onMouseMove={previewChart}
             onMouseLeave={clearPreview}
-            margin={{ top: 10, right: 18, left: 0, bottom: 4 }}
+            margin={{ top: 10, right: 18, left: 0, bottom: batteryBoundaryStates ? 14 : 4 }}
             accessibilityLayer
           >
             {batteryBoundaryStates ? <defs><pattern id={chargePattern} width="6" height="6" patternUnits="userSpaceOnUse">
@@ -54,7 +54,7 @@ export function BatteryTimelinePanels({ plot, visibility, mode, protectedSocPerc
               ]}
               ticks={batteryBoundaryStates ? scales.dispatch.ticks : undefined}
               tick={batteryBoundaryStates ? { fill: "var(--ops-muted)", fontSize: 12 } : undefined}
-              unit=" MW"
+              unit={batteryBoundaryStates ? undefined : " MW"}
             />
             <Tooltip content={<PowerTooltip panel="battery" targetMw={targetMw} boundaryStates={batteryBoundaryStates} />} />
             <ReferenceLine yAxisId="dispatch" y={0} stroke="var(--ops-axis)" strokeWidth={batteryBoundaryStates ? 1.5 : 1} />

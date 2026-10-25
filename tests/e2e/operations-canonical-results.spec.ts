@@ -224,6 +224,10 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
     for (const panel of await panels.all()) {
       const box = (await panel.boundingBox())!, svg = (await panel.locator("svg.recharts-surface").boundingBox())!;
       expect(svg.y + svg.height).toBeLessThanOrEqual(box.y + box.height + 1);
+      for (const tick of await panel.locator(".recharts-cartesian-axis-tick-value").all()) {
+        const label = (await tick.boundingBox())!;
+        expect(label.y + label.height).toBeLessThanOrEqual(box.y + box.height);
+      }
     }
     const contrast = await result.locator(".power-timeline--modelled").evaluate(root => {
       const panel = root.querySelector(".power-timeline-panel")!;
