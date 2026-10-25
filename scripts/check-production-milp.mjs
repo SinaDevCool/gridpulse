@@ -10,6 +10,7 @@ try {
   await page.goto(`${base}/operations?view=overview&mode=scenario&window=today`);
   const run = page.getByRole("button", { name: "Recalculate MILP", exact: true });
   await run.waitFor({ state: "visible", timeout: 30000 });
+  await expect(page.getByRole("status").filter({ hasText: "96 × 15-minute intervals · full modelled day" })).toBeVisible();
   await run.click();
   const result = page.locator("[data-assessment-id]");
   await result.waitFor({ state: "visible", timeout: 180000 });
@@ -26,8 +27,14 @@ try {
       if ((await panel.boundingBox())?.height < 140) throw new Error("MILP chart panel collapsed");
       await expect(panel.locator("svg.recharts-surface")).toBeVisible();
     }
+    if (label === "Compute & Workloads") {
+      await expect(result.getByRole("region", { name: "Scheduled workload demand" })).toBeVisible();
+      await expect(result.getByLabel("Workload outcomes")).toContainText("5 / 5");
+      await expect(result.getByText("96 × 15-minute model intervals", { exact: false })).toBeVisible();
+    }
     if (label === "Power & Battery") {
       await result.getByText("View Full Interval Data", { exact: true }).click();
+      await expect(result.getByText(/96 of 96 records/)).toBeVisible();
       const rows = result.locator("tbody tr");
       for (const row of await rows.all()) {
         for (const column of [3, 4]) {
@@ -61,7 +68,8 @@ try {
   await page.screenshot({ path: "test-results/production-milp.png", fullPage: true });
   console.log(JSON.stringify({ real_public_milp_completed: true, result_fingerprint: fingerprint,
     all_three_tabs_same_result: true, input_changes_mark_stale: true, physical_dispatch: false,
-    soc_bounds_verified: true, three_battery_panels_visible: true, linked_rows_verified: true }));
+    soc_bounds_verified: true, three_battery_panels_visible: true, linked_rows_verified: true,
+    quarter_hour_intervals_verified: true, workload_workspace_verified: true }));
 } catch (error) {
   await page.screenshot({ path: "test-results/production-milp-failure.png", fullPage: true }).catch(() => {});
   throw error;
