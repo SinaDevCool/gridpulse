@@ -56,6 +56,17 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await expect(result.getByLabel("Selected interval power facts")).toContainText("Battery · idle");
   await expect(result.getByLabel("Selected battery interval")).toContainText("78");
   await expect(result.getByLabel("Full-horizon battery assessment")).toContainText("Reserve protected");
+  await expect(result.getByText("Battery idle throughout this plan", { exact: true })).toBeVisible();
+  await expect(result.getByRole("list", { name: "Grid demand legend", exact: true })).toBeVisible();
+  await expect(result.getByRole("list", { name: "Battery power legend", exact: true })).toBeVisible();
+  await expect(result.getByRole("list", { name: "Stored energy legend", exact: true })).toBeVisible();
+  await expect(result.getByText("00:00 +1 day", { exact: true })).toBeVisible();
+  const beforeBattery = result.getByRole("button", { name: /^Before battery/ });
+  await beforeBattery.click();
+  await expect(beforeBattery).toHaveAttribute("aria-pressed", "false");
+  await result.getByRole("button", { name: "Reset charts", exact: true }).click();
+  await expect(beforeBattery).toHaveAttribute("aria-pressed", "true");
+  await expect(result.locator(".battery-inspection-band")).toHaveCount(3);
   await result.getByText("Power path", { exact: true }).click();
   await expect(result.getByRole("img", { name: /Proportional power flows/ })).toBeVisible();
   await result.getByText("Power path", { exact: true }).click();
@@ -205,5 +216,14 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await expect(result.getByLabel("Selected interval power facts")).toContainText("-5.3 MW");
   await result.getByRole("button", { name: /First discharge/ }).click();
   await expect(result.getByLabel("Selected interval power facts")).toContainText("Battery · discharging");
-  await expect(result.locator(".power-timeline-panel").nth(1).locator(".recharts-reference-area")).toHaveCount(2);
+  await expect(result.locator(".battery-dispatch-interval")).toHaveCount(2);
+  await expect(result.getByText("Battery idle throughout this plan", { exact: true })).toHaveCount(0);
+  await page.setViewportSize({ width: 1600, height: 1500 });
+  for (const theme of ["light", "dark"]) {
+    await page.evaluate(value => document.documentElement.dataset.theme = value, theme);
+    await result.locator(".power-timeline--modelled").screenshot({ path: `test-results/canonical-battery-charts-${theme}.png` });
+  }
+  await page.setViewportSize({ width: 390, height: 1500 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
+  await result.locator(".power-timeline--modelled").screenshot({ path: "test-results/canonical-battery-charts-mobile.png" });
 });

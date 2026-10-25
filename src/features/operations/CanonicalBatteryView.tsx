@@ -39,7 +39,7 @@ export function CanonicalBatteryView({ assessment: a, timestamp, preview, onSele
       <PowerTimeline data={a.points} limitMw={a.limitMw} targetMw={a.targetMw} protectedSocPercent={a.protectedSocPercent}
         maximumSocPercent={a.batteryAudit?.maximumSocPercent} selectedTimestamp={inspected} onSelect={onSelect}
         mode="scenario" previewing={preview !== null} variant={a.batteryAudit ? "battery" : "overview"}
-        showConstraints={false} batteryBoundaryStates={!!a.batteryAudit} />
+        showConstraints={false} batteryBoundaryStates={!!a.batteryAudit} onPreview={onPreview} />
       <details className="ops-plan-conditions"><summary>Inspect plan conditions</summary>
         <p>Returned dispatch and target checks—not causal binding constraints.</p>
         <div className="battery-state-band" role="img" aria-label={m.segments.map(segment => `${segment.label}: ${segment.minutes} min`).join("; ")}>
