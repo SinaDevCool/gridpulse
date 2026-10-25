@@ -144,10 +144,10 @@ export function ConfigurationActions(props: Pick<Props, "busy" | "dirty" | "onDi
           <Check aria-hidden="true" />
         )}
         {props.busy
-          ? props.milp ? "Running MILP…" : "Calculating scenario…"
+          ? props.milp ? "Optimising plan…" : "Calculating scenario…"
           : props.dirty
             ? "Changes ready to apply"
-            : props.milp ? "MILP inputs ready" : "Scenario inputs applied"}
+            : props.milp ? "Plan inputs ready" : "Scenario inputs applied"}
       </p>
       <small>
         {props.dirty
@@ -162,7 +162,7 @@ export function ConfigurationActions(props: Pick<Props, "busy" | "dirty" | "onDi
         aria-busy={props.busy}
       >
         {props.busy ? <LoaderCircle aria-hidden="true" /> : <RotateCcw aria-hidden="true" />}
-        <span>{props.busy ? "Calculating…" : props.milp ? "Recalculate MILP" : "Recalculate Scenario"}</span>
+        <span>{props.busy ? "Calculating…" : props.milp ? "Optimise plan" : "Recalculate Scenario"}</span>
       </button>
       <button
         className="secondary-button"

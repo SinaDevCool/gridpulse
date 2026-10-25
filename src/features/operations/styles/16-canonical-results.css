@@ -24,10 +24,6 @@
 .ops-canonical-inspector button { padding: 0.5rem 0.75rem; color: var(--foreground); background: var(--background); border: 1px solid var(--border); border-radius: 0.4rem; cursor: pointer; }
 .ops-canonical-inspector button:hover:not(:disabled) { background: var(--ops-demand-fill); border-color: var(--ops-demand); }
 .ops-canonical-inspector button:disabled { opacity: 0.5; cursor: default; }
-.ops-calculation-method { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-block: 0.75rem; }
-.ops-calculation-method button { padding: 0.6rem 0.9rem; min-height: 44px; color: var(--foreground); background: var(--background); border: 1px solid var(--border); border-radius: 0.45rem; cursor: pointer; }
-.ops-calculation-method button[aria-pressed="true"] { background: var(--ops-demand-fill); border-color: var(--ops-demand); font-weight: 650; }
-.ops-calculation-method button:focus-visible { outline: 2px solid var(--ops-selection); outline-offset: 2px; }
 .ops-milp-status { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.7rem 0.85rem; margin-block: 0.75rem; border: 1px solid var(--border); border-radius: 0.5rem; font-size: 0.875rem; }
 .ops-milp-status p { margin: 0; overflow-wrap: anywhere; }
 .ops-milp-status summary { cursor: pointer; color: var(--muted-foreground); }
