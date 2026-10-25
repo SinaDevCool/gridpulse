@@ -15,7 +15,7 @@ test("public product navigation focuses on property and grid qualification", asy
 
 test("landing gives both independent services clear destinations and honest product proof", async ({
   page,
-}) => {
+}, testInfo) => {
   const requests: string[] = [];
   page.on("request", (request) => requests.push(request.url()));
   await page.goto("/");
@@ -29,6 +29,7 @@ test("landing gives both independent services clear destinations and honest prod
     page.getByRole("link", { name: "Explore Operations demo", exact: true }).first(),
   ).toHaveAttribute("href", "/operations");
   await expect(page.getByText("Synthetic MILP demo · read-only", { exact: true })).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath("landing-desktop.png") });
   for (const image of await page.locator("main img").all()) {
     await image.scrollIntoViewIfNeeded();
     await expect(image).toHaveAttribute("loading", "lazy");
@@ -48,9 +49,12 @@ test("landing gives both independent services clear destinations and honest prod
   await expect(page).toHaveURL(/\/operations/);
 });
 
-test("landing remains readable and both services reachable on mobile", async ({ page }) => {
+test("landing remains readable and both services reachable on mobile", async ({
+  page,
+}, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
+  await page.screenshot({ path: testInfo.outputPath("landing-mobile.png") });
   await page.getByRole("button", { name: "Open navigation" }).click();
   const nav = page.getByRole("navigation", { name: "Public navigation" });
   await expect(nav.getByRole("link", { name: "Site Selection", exact: true })).toBeVisible();

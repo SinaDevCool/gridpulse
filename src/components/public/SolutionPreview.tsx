@@ -14,16 +14,18 @@ export function SolutionPreview({
     <figure className="solution-preview">
       <Link to={solution.to} aria-label={`Explore ${solution.label} workspace`}>
         <picture>
-          <source
-            media="(max-width: 600px)"
-            width={planning ? 800 : 390}
-            height={planning ? 980 : 1400}
-            srcSet={
-              planning
-                ? "/landing/power-finder-product-mobile.jpg"
-                : "/landing/facility-operations-mobile.webp"
-            }
-          />
+          {planning || view === "overview" ? (
+            <source
+              media="(max-width: 600px)"
+              width={planning ? 960 : 390}
+              height={planning ? 463 : 1100}
+              srcSet={
+                planning
+                  ? "/landing/power-finder-product-mobile.jpg"
+                  : "/landing/facility-operations-mobile.webp"
+              }
+            />
+          ) : null}
           <img
             src={
               planning
@@ -31,7 +33,7 @@ export function SolutionPreview({
                 : `/landing/facility-operations-${view}.webp`
             }
             width={1600}
-            height={planning ? 980 : 1100}
+            height={planning ? 980 : 1400}
             loading="lazy"
             decoding="async"
             alt={
