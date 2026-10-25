@@ -254,8 +254,11 @@ export function PowerTimeline({
               hide={!visibility.visible("Battery dispatch")}
               name="Battery dispatch"
               fill="var(--ops-battery)"
-              opacity={0.86}
+              opacity={batteryBoundaryStates ? 0 : 0.86}
             />
+            {batteryBoundaryStates && visibility.visible("Battery dispatch") ? data.filter(point => (point.batteryPowerMw ?? 0) !== 0).map(point =>
+              <ReferenceArea key={point.timestamp} yAxisId="dispatch" x1={Date.parse(point.timestamp)} x2={Date.parse(point.endTimestamp!)}
+                y1={0} y2={point.batteryPowerMw!} fill="var(--ops-battery)" fillOpacity={.86} stroke="none" />) : null}
             <Line
               yAxisId="dispatch"
               dataKey="availableDischargeMw"
