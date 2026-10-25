@@ -118,10 +118,15 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
     });
     expect(new Set(colors).size).toBe(3);
     await result.locator(".canonical-workload-chart").scrollIntoViewIfNeeded();
+    await result.locator(".canonical-workload-chart").screenshot({ path: `test-results/canonical-compute-chart-${theme}.png` });
+    await result.locator(".canonical-execution .compute-window-lane").first().screenshot({ path: `test-results/canonical-compute-lane-${theme}.png` });
     await page.screenshot({ path: `test-results/canonical-compute-${theme}.png`, fullPage: true });
   }
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
+  await page.setViewportSize({ width: 390, height: 1100 });
+  await result.locator(".canonical-workload-chart").screenshot({ path: "test-results/canonical-compute-chart-mobile.png" });
+  await result.locator(".canonical-execution .compute-window-lane").first().screenshot({ path: "test-results/canonical-compute-lane-mobile.png" });
   await page.screenshot({ path: "test-results/canonical-compute-mobile.png", fullPage: true });
   await page.setViewportSize({ width: 1600, height: 1000 });
   expect(submissions).toBe(1);
