@@ -15,7 +15,7 @@ import { fallbackCoverage } from "@/features/power-finder/coverage";
 import { pointCoordinates } from "@/features/power-finder/fixture-data";
 import { savePowerFinderCandidate } from "@/features/power-finder/shortlist";
 import { useTheme } from "@/features/theme/use-theme";
-import { useNavigate, useSearch } from "@tanstack/react-router";
+import { useNavigate, useRouter, useSearch } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { type CandidateSort } from "./page-formatting";
 import { useFinderCandidates } from "./use-finder-candidates";
@@ -38,6 +38,7 @@ import { useFinderStudyEffects } from "./useFinderStudyEffects";
 export function useFinderController(): import("./controller-contract").FinderControllerContract {
   const { resolved: basemapMode } = useTheme();
   const navigate = useNavigate({ from: "/power-finder" });
+  const router = useRouter();
   const search = useSearch({ from: "/power-finder" });
   const {
     project,
@@ -173,12 +174,16 @@ export function useFinderController(): import("./controller-contract").FinderCon
   const candidateSort: CandidateSort = search.sort ?? "context";
   const requiredImportMw = project.importMw;
   const maxDistanceKm = project.maxDistanceKm;
-  const updateSearch = (patch: Partial<typeof search>) =>
-    navigate({
+  const updateSearch = (patch: Partial<typeof search>) => {
+    // Late catalog effects may finish while the destination route is loading.
+    // Never let a Finder filter update undo the user's workspace navigation.
+    if (router.latestLocation.pathname !== "/power-finder") return Promise.resolve();
+    return navigate({
       to: "/power-finder",
       search: (current) => ({ ...current, ...patch }),
       replace: true,
     });
+  };
   const { persistScreening } = useFinderPersistence({
     propertySaveRequest,
     setPropertySaveStatus,
