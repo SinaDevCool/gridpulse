@@ -43,15 +43,15 @@ export function SignedResponseDiagram({
 export interface PowerBalanceStep { label: string; start: number; end: number; value: number; total: boolean }
 
 /** Shared renderer; callers supply reconciled same-interval contributions, never independent peaks. */
-export function SignedPowerBalance({ steps, reconstructed, actual }: {
-  steps: PowerBalanceStep[]; reconstructed: number; actual: number;
+export function SignedPowerBalance({ steps, reconstructed, actual, presentation = "default" }: {
+  steps: PowerBalanceStep[]; reconstructed: number; actual: number; presentation?: "default" | "canonical";
 }) {
   const width = Math.max(680, steps.length * 134);
   const maximum = Math.max(1, ...steps.flatMap((step) => [step.start, step.end])) * 1.15;
   const minimum = Math.min(0, ...steps.flatMap((step) => [step.start, step.end]));
   const y = (value: number) => 150 - ((value - minimum) / (maximum - minimum)) * 120;
   return (
-    <figure className="ops-waterfall">
+    <figure className="ops-waterfall" data-presentation={presentation}>
       <div
         className="ops-waterfall-scroll"
         role="region"
@@ -87,7 +87,7 @@ export function SignedPowerBalance({ steps, reconstructed, actual }: {
                   rx="3"
                   fill={
                     step.total
-                      ? "var(--ops-demand)"
+                      ? presentation === "canonical" && index === steps.length - 1 ? "var(--ops-response)" : "var(--ops-demand)"
                       : step.value > 0
                         ? "var(--ops-target)"
                         : "var(--ops-response)"
@@ -113,7 +113,7 @@ export function SignedPowerBalance({ steps, reconstructed, actual }: {
         </svg>
       </div>
       <figcaption>
-        Same-interval power balance · negative effects reduce import; positive effects increase it.
+        {presentation === "canonical" ? "Same-interval accounting · − reduces import; + increases it. Not causal savings." : "Same-interval power balance · negative effects reduce import; positive effects increase it."}
       </figcaption>
       {Math.abs(reconstructed - actual) > 0.1 ? (
         <p role="status">
