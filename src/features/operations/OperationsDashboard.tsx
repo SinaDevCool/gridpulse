@@ -34,6 +34,7 @@ import { PlanCopilot } from "./copilot/PlanCopilot";
 import { usePlanCopilot } from "./copilot/use-plan-copilot";
 import { usePlanConversation } from "./copilot/use-plan-conversation";
 import { PlanConversation } from "./copilot/PlanConversation";
+import { contextLabel } from "./copilot/conversation-presentation";
 import type { CopilotNavigation } from "./copilot/conversation-contracts";
 import { useMilpCalculation } from "./hooks/use-milp-calculation";
 export type { OperationsView } from "./view-contracts";
@@ -85,12 +86,27 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
   const chatContext: CopilotNavigation = { view, timestamp: canonicalTime || null, workloadId: canonicalWorkload };
   const conversation = usePlanConversation(canonical?.jobId,
     canonical?.assessment.projected.identity.resultFingerprint ?? "", !!canonicalCurrent, chatContext);
+  const [copilotOpen, setCopilotOpen] = useState(false);
+  const copilotTrigger = useRef<HTMLButtonElement>(null);
+  const [inspection, setInspection] = useState<CopilotNavigation | null>(null);
+  const assessmentRegion = useRef<HTMLDivElement>(null);
+  function closeCopilot() { setCopilotOpen(false); copilotTrigger.current?.focus(); }
+  useEffect(() => {
+    if (!inspection || inspection.view !== view) return;
+    const frame = requestAnimationFrame(() => {
+      const region = assessmentRegion.current;
+      region?.scrollIntoView({ block: "start", behavior: "instant" }); region?.focus();
+      setInspection(null);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [inspection, view]);
   function inspectCopilot(target: CopilotNavigation) {
     if (!canonicalCurrent || !canonical) return;
     if (target.timestamp && !canonical.assessment.points.some(point => point.timestamp === target.timestamp)) return;
     if (target.workloadId && !canonical.assessment.jobs.some(job => job.id === target.workloadId)) return;
     if (target.timestamp) setCanonicalTime(target.timestamp);
     setCanonicalWorkload(target.workloadId); setCanonicalPreview(null);
+    setCopilotOpen(false); setInspection(target);
     void navigate({ search: { view: target.view, window, mode } });
   }
   const showMilp = milpEnabled && mode !== "historical";
@@ -212,6 +228,8 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
                     </span>
                   ) : null}
                 </button>
+                {showMilp && canonical ? <button ref={copilotTrigger} className="secondary-button ops-copilot-trigger" type="button"
+                  aria-controls="plan-copilot" aria-expanded={copilotOpen} onClick={() => setCopilotOpen(value => !value)}>Plan copilot</button> : null}
               </header>
             </div>
             <div
@@ -255,10 +273,7 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
                 {!milp.busy && milp.jobId && milp.error ? <button type="button" className="secondary-button"
                   onClick={() => void milp.run(scenario, milp.jobId!)}>Resume existing job · no new solve</button> : null}
               </section> : null}
-              {showMilp && canonical ? <PlanCopilot state={copilot} jobId={canonical.jobId} current={!!canonicalCurrent}
-                onNavigate={nextView => void navigate({ search: { view: nextView, window, mode } })}>
-                <PlanConversation state={conversation} enabled={!!canonicalCurrent} context={chatContext} onNavigate={inspectCopilot} />
-              </PlanCopilot> : null}
+              <div ref={assessmentRegion} className="ops-copilot-inspection-target" tabIndex={-1} role="region" aria-label="Selected assessment evidence">
               {showMilp ? canonical && canonicalCurrent ? <CanonicalAssessmentView assessment={canonical.assessment}
                 view={view} timestamp={canonicalTime} selectedWorkloadId={canonicalWorkload} onWorkloadSelect={setCanonicalWorkload}
                 onSelect={value => { setCanonicalTime(value); setCanonicalPreview(null); }}
@@ -267,6 +282,7 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
                   <p>{canonical ? "This result is stale. Use Optimise plan with the current inputs." : "Use Optimise plan in the input panel to calculate a workload and battery schedule."}</p>
                   <p>No scenario result is substituted in this view. No equipment commands are issued.</p>
                 </section> : null}
+              </div>
               {!showMilp && view === "overview" ? (
                 <OverviewView
                   model={model}
@@ -292,6 +308,12 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
                 <AssessmentRecord fullModel={fullModel} assessmentIdentity={assessmentIdentity} />
               ) : null}
             </div>
+            {showMilp && canonical ? <PlanCopilot state={copilot} jobId={canonical.jobId} current={!!canonicalCurrent}
+              open={copilotOpen} onClose={closeCopilot} context={<>{contextLabel(chatContext)}{canonicalWorkload ? <strong>{String(canonical.assessment.request.workloads.find(job => job.workload_id === canonicalWorkload)?.name ?? canonicalWorkload)}</strong> : null}</>}
+              onNavigate={nextView => inspectCopilot({ view: nextView, timestamp: null, workloadId: null })}>
+              <PlanConversation active={copilotOpen} state={conversation} enabled={!!canonicalCurrent} context={chatContext}
+                identity={canonical.assessment.projected.identity.resultFingerprint} onNavigate={inspectCopilot} />
+            </PlanCopilot> : null}
           </div>
         </main>
       </InputPanelContext.Provider>

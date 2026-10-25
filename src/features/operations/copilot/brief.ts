@@ -7,7 +7,11 @@ export { BRIEF_VERSION, briefRequestSchema, briefSchema, selectionSchema, sectio
 export function formatBriefFact(fact: BriefFact): string {
   if (fact.availability !== "available") return fact.availability === "not_applicable" ? "Not applicable" : "Unavailable";
   if (typeof fact.value === "boolean") return fact.value ? "Yes" : "No";
-  if (typeof fact.value !== "number") return fact.value;
+  if (typeof fact.value !== "number") {
+    if (/^\d{4}-\d{2}-\d{2}T/.test(fact.value) && Number.isFinite(Date.parse(fact.value)))
+      return new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "UTC", hourCycle: "h23" }).format(new Date(fact.value)) + " UTC";
+    return fact.value;
+  }
   switch (fact.unit) {
     case "MW": return formatMw(fact.value);
     case "MWh AC": return `${formatMwh(fact.value)} AC`;
