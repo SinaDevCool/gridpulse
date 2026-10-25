@@ -5,6 +5,12 @@ This changes the candidate integration only; it does not activate production.
 
 ## Minimal release evidence — 23 October 2026
 
+Historical launch evidence below describes the hourly release. The 25 October
+quarter-hour candidate reuses the same engine and contracts with 96 intervals;
+it is not deployed. Its free-sized qualification passed with replay-verified,
+time-limited feasible incumbents (default gap 1.157%), not a guarantee of optimality.
+See the [qualification record](https://github.com/SinaDevCool/GridPulse-Fullb/blob/codex/milp-quarter-hour/docs/quarter-hour-qualification.md).
+
 - CAPTCHA removal qualified; restricted anonymous signup and owner-scoped reads verified live.
 - Real free Render runtime: `gridpulse-operations-milp`, `srv-dbdqs1jrjlhs73833tng`.
 - Fullb release candidate `c319ff46342619c84e9a5c1ee0575479912bfcdc`, core runtime pinned to `2627576cb365a8b2b0820e9a75a4e96cb6b67d3f`.
