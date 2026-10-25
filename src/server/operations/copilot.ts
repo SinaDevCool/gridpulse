@@ -25,7 +25,7 @@ export async function ownedAssessment(base: string, bearer: string, jobId: strin
     throw new BriefError(503, "Analytics service configuration is invalid.");
   // Existing API enforces authenticated ownership. Never use a service-role bypass.
   const response = await fetcher(`${base.replace(/\/$/, "")}/v1/jobs/${jobId}`, {
-    headers: { authorization: bearer }, redirect: "error", signal: AbortSignal.timeout(30_000) });
+    headers: { authorization: bearer }, redirect: "manual", signal: AbortSignal.timeout(30_000) });
   if (!response.ok) {
     const status = response.status === 401 || response.status === 403 ? 401 : response.status === 404 ? 404 : 502;
     throw new BriefError(status, "Accepted calculation unavailable for this session.");
@@ -55,7 +55,7 @@ export async function requestCopilotSelection(input: unknown, instructions: stri
   if (new TextEncoder().encode(serialized).length > 32_000) throw new BriefError(413, "Question context exceeds the evidence budget.");
   const response = await fetcher("https://api.openai.com/v1/responses", {
     method: "POST", headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
-    redirect: "error", signal: AbortSignal.timeout(45_000),
+    redirect: "manual", signal: AbortSignal.timeout(45_000),
     body: JSON.stringify({ model, store: false, max_output_tokens: 800, instructions, input: serialized,
       text: { format: { type: "json_schema", name: "copilot_selection", strict: true, schema } } }),
   });

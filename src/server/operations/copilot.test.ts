@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { ownedBriefEvidence, generatePlanBrief } from "./copilot";
+import { ownedBriefEvidence, generatePlanBrief, requestCopilotSelection } from "./copilot";
 import { buildBriefEvidence } from "../../features/operations/copilot/brief";
 import { canonicalMilpJob } from "../../../tests/fixtures/canonical-milp-job";
 import { buildSyntheticMilpRequest } from "../../features/operations/synthetic-milp-request";
@@ -25,6 +25,19 @@ describe("plan copilot server boundary", () => {
     const evidence = await ownedBriefEvidence("https://analytics.invalid", "Bearer visitor", job.id, job.result_payload.result_fingerprint, fetcher);
     expect(fetcher.mock.calls[0][1].headers.authorization).toBe("Bearer visitor");
     expect(JSON.stringify(evidence)).not.toContain("visitor");
+    expect(fetcher.mock.calls[0][1].redirect).toBe("manual");
+  });
+  it("rejects upstream redirects without forwarding calculation or provider credentials", async () => {
+    const redirect = () => new Response(null, { status: 302, headers: { location: "https://untrusted.invalid" } });
+    const analytics = vi.fn().mockResolvedValue(redirect());
+    await expect(ownedBriefEvidence("https://analytics.invalid", "Bearer visitor", job.id, "a".repeat(64), analytics))
+      .rejects.toMatchObject({ status: 502 });
+    expect(analytics).toHaveBeenCalledTimes(1);
+    expect(analytics.mock.calls[0][1].redirect).toBe("manual");
+    const provider = vi.fn().mockResolvedValue(redirect());
+    await expect(requestCopilotSelection({}, "Select", {}, "test-key", "test", provider)).rejects.toThrow();
+    expect(provider).toHaveBeenCalledTimes(1);
+    expect(provider.mock.calls[0][1].redirect).toBe("manual");
   });
   it("rejects incomplete/refused responses and accepts only allowed fact IDs", async () => {
     const evidence = buildBriefEvidence(selectCanonicalPresentation(job, request));
