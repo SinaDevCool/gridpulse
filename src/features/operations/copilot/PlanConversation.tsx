@@ -1,12 +1,12 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { formatBriefFact } from "./brief";
 import { CopilotEvidence } from "./CopilotEvidence";
 import { answerBlocks, answerFacts } from "./conversation-presentation";
 import type { PlanConversationState } from "./use-plan-conversation";
 import type { CopilotNavigation } from "./conversation-contracts";
 
-export function PlanConversation({ state, enabled, context, onNavigate, identity, active }: { state: PlanConversationState;
-  enabled: boolean; context: CopilotNavigation; identity: string; active: boolean; onNavigate: (target: CopilotNavigation) => void }) {
+export function PlanConversation({ state, enabled, context, onNavigate, identity, active, alternative }: { state: PlanConversationState;
+  alternative?: ReactNode; enabled: boolean; context: CopilotNavigation; identity: string; active: boolean; onNavigate: (target: CopilotNavigation) => void }) {
   const [question, setQuestion] = useState("");
   const [confirmClear, setConfirmClear] = useState(false);
   const [unread, setUnread] = useState(false);
@@ -50,16 +50,24 @@ export function PlanConversation({ state, enabled, context, onNavigate, identity
         {answerBlocks(turn.answer.blocks, turn.answer.evidence).map((block, i) => <p key={i}>{block}</p>)}
         {answerFacts(turn.answer.evidence).length ? <dl className="ops-chat-facts">{answerFacts(turn.answer.evidence).map(fact =>
           <div key={fact.id}><dt>{fact.label}</dt><dd>{formatBriefFact(fact)}</dd></div>)}</dl> : null}
+        {turn.answer.coverage && turn.answer.coverage.some(part => part.status !== "answer") ? <small role="status">
+          {turn.answer.coverage.map(part => `${part.intent.replaceAll("_", " ")}: ${part.status.replaceAll("_", " ")}`).join(" | ")}
+        </small> : null}
         {turn.answer.limitations.length ? <ul className="ops-chat-limitations" aria-label="Answer limitations">{turn.answer.limitations.map(text => <li key={text}>{text}</li>)}</ul> : null}
         {turn.answer.navigation.map((target, i) => <button type="button" className="secondary-button" key={i} onClick={() => onNavigate(target)}>
           Inspect {target.workloadId ? "workload" : target.view === "power" ? "battery interval" : target.view === "compute" ? "interval workloads" : "power outcome"}
         </button>)}
         <CopilotEvidence facts={turn.answer.evidence} />
+        {turn.answer.guidance?.length ? <details><summary>Operational guidance | general knowledge</summary>
+          {turn.answer.guidance.map(item => <section key={item.id}><strong>{item.title}</strong><p>{item.text}</p>
+            <a href={item.source} target="_blank" rel="noreferrer">Reference</a><small> | editorial guidance {item.version}{item.section ? ` | ${item.section}` : ""}</small>{item.applicability ? <small>{item.applicability}</small> : null}</section>)}
+        </details> : null}
         <details><summary>Technical receipt</summary>
-          <p>Question interpretation</p><pre tabIndex={0} aria-label="Resolved question">{JSON.stringify(turn.answer.resolvedQuery, null, 2)}</pre>
+          <p>Question interpretation</p><pre tabIndex={0} aria-label="Resolved question">{JSON.stringify(turn.answer.resolvedQueries ?? [turn.answer.resolvedQuery], null, 2)}</pre>
           <pre tabIndex={0} aria-label="Answer receipt">{JSON.stringify(turn.answer.receipt, null, 2)}</pre>
         </details>
       </article>)}
+      {alternative}
       {state.turns.length >= 20 ? <small>Showing the latest 20 answers. Up to 6 recent questions are used for follow-ups.</small> : null}
       {state.pending ? <div className="ops-chat-pending"><div className="ops-chat-question">{state.pending}</div><p>Checking plan evidence…</p></div> : null}
       {state.error ? <div className="ops-chat-error"><div className="ops-chat-question">{attempted.current}</div><p>{state.error}</p><button type="button" disabled={!enabled || !!state.pending} onClick={() => { setQuestion(attempted.current); void state.ask(attempted.current).then(ok => { if (ok) setQuestion(""); }); }}>Retry question</button></div> : null}

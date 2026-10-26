@@ -13,6 +13,7 @@ export const definitionText = {
   milp: "Mixed-integer linear programming jointly chooses discrete scheduling decisions and continuous power decisions subject to the submitted restrictions. A feasible solution is not necessarily proven optimal.",
   reserve: "Protected reserve is battery energy excluded from ordinary planned use. Respecting this reserve within a model does not establish backup autonomy.",
   power_energy: "MW measures power at an interval; MWh measures energy over time. Battery AC charge/discharge energy differs from DC stored energy because of conversion losses.",
+  pue: "PUE is total facility energy divided by IT energy over the same period and measurement boundary. In this component model PUE is a reference; cooling and electrical losses are calculated separately, so multiplying again would double-count overhead.",
   optimality: "A feasible plan satisfies the accepted model checks. Proven optimality additionally requires the solver's optimal termination within its reported tolerances; a time-limited incumbent may remain unproven.",
 };
 
@@ -25,9 +26,9 @@ export function answerConversation(a: CanonicalPresentation, request: Conversati
   const navigation: { view: "overview" | "compute" | "power"; timestamp: string | null; workloadId: string | null }[] = [];
   let kind: "answer" | "clarification" | "requires_calculation" | "unsupported" = "answer";
   const respond = () => conversationResponseSchema.parse({ version: CHAT_VERSION, kind,
-    basis: query.intent === "definition" ? "general_explanation" : kind === "answer" ? "model_evidence" : "no_calculation",
+    basis: ["definition", "knowledge", "accounting"].includes(query.intent) ? "general_explanation" : kind === "answer" ? "model_evidence" : "no_calculation",
     question: request.question, resolvedQuery: query, blocks,
-    evidence: facts, navigation, receipt: { ...envelope.receipt, promptVersion: "conversation-query-v1", providerResponseId: provider.responseId, usage: provider.usage },
+    evidence: facts, navigation, receipt: { ...envelope.receipt, promptVersion: "conversation-analysis-v2", providerResponseId: provider.responseId, usage: provider.usage },
     generatedAt: new Date().toISOString(), model: provider.model, limitations: envelope.limitations });
   const stop = (state: typeof kind, text: string) => { kind = state; blocks.push(text); return respond(); };
   const compute = selectCanonicalComputeView(a, a.points[0].timestamp);
@@ -43,9 +44,25 @@ export function answerConversation(a: CanonicalPresentation, request: Conversati
     "I can inspect this modelled plan, workloads, battery, limits and checks. I cannot establish unmodelled cost/carbon savings, live equipment status, backup guarantees or execute control commands.");
   if (query.intent === "clarify") return stop("clarification",
     "Which workload, interval (date and UTC time), or plan metric do you mean? You can select an interval in the charts and ask about that interval.");
+  if (query.intent === "knowledge") return stop("answer", "Operational guidance is shown with its source below. It does not establish this site's equipment condition or authorise operation.");
+  if (query.intent === "accounting") return stop("answer", "Fixed-schedule tariff accounting does not require another MILP solve. Use the reviewed accounting tool with a complete EUR/MWh tariff. Billing-period demand charges, taxes, export credits and network fees require their own supplied rules; no saving is inferred from this plan alone.");
+  if (query.intent === "experiment") return stop("clarification", "Select a completed stress experiment attached to this accepted plan.");
   if (query.intent === "definition") { blocks.push(definitionText[query.definition]); return respond(); }
   const job = query.workloadId ? compute.jobs.find(j => j.id === query.workloadId) : null;
   if (query.workloadId && !job) return stop("clarification", "That workload is not in this plan. Ask using its displayed name or select it in Compute & Workloads.");
+  if (query.intent === "workloads") {
+    blocks.push("Scheduled workload execution (UTC, modelled):");
+    for (const scheduled of compute.jobs) {
+      const label = `${scheduled.name}: ${scheduled.first ?? "no returned activity"} to ${scheduled.last ?? "no returned end"}.`;
+      blocks.push(label);
+      facts.push(factSchema.parse({ id: `schedule.${facts.length}`, label: scheduled.name, unit: "status", scope: "workload_horizon",
+        availability: "available", value: `${scheduled.first ?? "Unavailable"} to ${scheduled.last ?? "Unavailable"}`,
+        source: { view: "compute", selector: "selectCanonicalComputeView", field: `${scheduled.id}.segments` } }));
+      if (navigation.length < 8) navigation.push({ view: "compute", timestamp: scheduled.first, workloadId: scheduled.id });
+    }
+    blocks.push("The returned assessment does not contain per-workload baseline execution trajectories. These schedules alone cannot establish which jobs moved relative to the baseline. Earliest permitted start is not a baseline schedule.");
+    return respond();
+  }
   let timestamp = query.start ?? request.context.timestamp ?? a.points[0].timestamp;
   const battery = selectCanonicalBatteryView(a, timestamp);
   if (query.focus === "peak") timestamp = battery.peak;
@@ -69,7 +86,7 @@ export function answerConversation(a: CanonicalPresentation, request: Conversati
     return stop("clarification", "Use a date and UTC time on this plan's interval boundaries, within its planning horizon.");
   const add = (id: string, label: string, value: number | boolean | string | null, unit: BriefFact["unit"],
     view: "overview" | "compute" | "power", selector: string, field: string) => {
-    const fact = factSchema.parse({ id, label, value, unit, scope: id.startsWith("interval.") || id === "job.power" ? "interval" :
+    const fact = factSchema.parse({ id, label, value, unit, scope: id.startsWith("range.") ? "selected_range" : id.startsWith("interval.") || id === "job.power" ? "interval" :
       id.startsWith("job.") && query.intent === "workload" ? "workload_horizon" : "submitted_model", availability: value === null ? "unavailable" : "available",
       source: { view, selector, field } }); facts.push(fact); blocks.push(`${label}: ${formatBriefFact(fact)}.`);
   };
@@ -127,6 +144,15 @@ export function answerConversation(a: CanonicalPresentation, request: Conversati
     const stopIndex = query.end ? (last >= 0 ? last : endIndex - 1) : index;
     if (query.intent === "battery" && !a.batteryAudit) return respond();
     let inspectedIndices = Array.from({ length: stopIndex - index + 1 }, (_, i) => index + i);
+    if (query.end) {
+      const range = inspectedIndices.map(i => a.points[i]);
+      const energy = (field: "gridImportMw" | "batteryPowerMw", direction: "import" | "discharge" | "charge") =>
+        range.some(point => point.durationMinutes === null || point[field] === null) ? null : range.reduce((total, point) => total + (direction === "import" ? point[field] ?? 0 :
+          direction === "discharge" ? Math.max(0, point[field] ?? 0) : Math.max(0, -(point[field] ?? 0))) * (point.durationMinutes ?? 0) / 60, 0);
+      add("range.import", "Range grid-import energy", energy("gridImportMw", "import"), "MWh AC", "power", "CanonicalPresentation", "range.integratedGridImport");
+      if (a.batteryAudit) add("range.discharge", "Range battery discharge energy", energy("batteryPowerMw", "discharge"), "MWh AC", "power", "CanonicalPresentation", "range.integratedDischarge");
+      if (a.batteryAudit) add("range.charge", "Range battery charge energy", energy("batteryPowerMw", "charge"), "MWh AC", "power", "CanonicalPresentation", "range.integratedCharge");
+    }
     if (inspectedIndices.length > 4) {
       const range = inspectedIndices;
       const peakIndex = range.reduce((best, i) => a.points[i].gridImportMw > a.points[best].gridImportMw ? i : best);

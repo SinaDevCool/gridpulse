@@ -72,7 +72,7 @@ try {
     const response = await conversationResponse;
     if (!response.ok()) throw new Error(`Production conversation HTTP ${response.status()}`);
     const answer = await response.json();
-    if (answer.version !== "operations-conversation-v1" || answer.kind !== "answer" || answer.basis !== "model_evidence" ||
+    if (answer.version !== "operations-conversation-v2" || answer.kind !== "answer" || answer.basis !== "model_evidence" ||
       answer.receipt?.resultFingerprint !== fingerprint || !answer.receipt?.jobId || !answer.receipt?.providerResponseId || !answer.evidence?.length)
       throw new Error("Production conversation is not grounded in this accepted plan/provider response");
     await expect(copilot.getByRole("article").first()).toContainText("Checked model evidence");

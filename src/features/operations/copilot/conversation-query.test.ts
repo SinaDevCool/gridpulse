@@ -40,6 +40,11 @@ describe("conversation evidence queries", () => {
     expect(result.blocks.join(" ")).toContain("Range summary");
     expect(result.evidence.filter(f => f.id.endsWith(".time")).length).toBeLessThanOrEqual(4);
   });
+  it("integrates every interval in a range even when only representative samples are shown", () => {
+    const result = answer({ end: a.points[8].timestamp });
+    const expected = a.points.slice(0, 8).reduce((total, point) => total + point.gridImportMw * (point.durationMinutes ?? 0) / 60, 0);
+    expect(result.evidence.find(fact => fact.id === "range.import")?.value).toBeCloseTo(expected);
+  });
   it("preserves exclusive ends and includes all four detailed intervals", () => {
     const result = answer({ end: a.points[4].timestamp });
     expect(result.kind).toBe("answer");
@@ -58,7 +63,7 @@ describe("conversation evidence queries", () => {
     expect(global.evidence.find(f => f.id === "power.limit")?.value).toBe(a.limitMw);
     const definition = answer({ intent: "definition", definition: "terminal" });
     expect(definition.basis).toBe("general_explanation"); expect(definition.evidence).toEqual([]);
-    expect(definition.receipt.promptVersion).toBe("conversation-query-v1");
+    expect(definition.receipt.promptVersion).toBe("conversation-analysis-v2");
   });
   it("rejects foreign selected context and accepts equivalent UTC offsets", () => {
     expect(answerConversation(a, { ...request, context: { ...request.context, workloadId: "other-job" } }, query, provider).kind).toBe("clarification");

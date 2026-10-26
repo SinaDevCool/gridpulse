@@ -114,6 +114,20 @@ class RollingFacilityPlanRequest(BaseModel):
     confidence: float = Field(default=0.9, gt=0, lt=1)
 
 
+class ChronologicalShadowWindow(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    cutoff: str
+    available_at: str
+    changes: list[dict[str, Any]] = Field(default_factory=list, max_length=4)
+
+
+class ChronologicalShadowRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    schema_version: Literal["gridpulse-chronological-shadow-request-v1"]
+    facility_plan: FacilityPlanRequest
+    windows: list[ChronologicalShadowWindow] = Field(min_length=1, max_length=4)
+
+
 class FacilityHistoricalReplayRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -286,3 +300,26 @@ class HealthReport(BaseModel):
     grid_core_version: str
     capacity_engine_version: str | None = None
     canonical_job_schemas: list[str] = Field(default_factory=list)
+
+
+class FacilityExperimentCase(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    case_id: str = Field(min_length=1, max_length=100)
+    mode: Literal["alternative", "frozen_plan"]
+    changes: list[dict[str, Any]] = Field(min_length=1, max_length=4)
+
+
+class FacilityExperimentRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    schema_version: Literal["gridpulse-facility-experiment-request-v1"]
+    baseline_job_id: UUID
+    baseline_result_fingerprint: str = Field(pattern="^[a-f0-9]{64}$")
+    cases: list[FacilityExperimentCase] = Field(min_length=1, max_length=4)
+
+
+class FacilityAccountingRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
+    schema_version: Literal["gridpulse-facility-accounting-request-v1"]
+    baseline_job_id: UUID
+    baseline_result_fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
+    prices_eur_per_mwh: list[float] = Field(min_length=1, max_length=96)

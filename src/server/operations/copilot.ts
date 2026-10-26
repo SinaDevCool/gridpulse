@@ -16,8 +16,8 @@ export async function boundedResponse(response: Response, bytes: number) {
   catch { throw new BriefError(502, "Upstream response is invalid or exceeds the explanation budget."); }
 }
 
-export async function ownedAssessment(base: string, bearer: string, jobId: string,
-  fingerprint: string, fetcher: typeof fetch = fetch) {
+export async function ownedAnalyticsJob(base: string, bearer: string, jobId: string,
+  fetcher: typeof fetch = fetch) {
   if (!/^Bearer [^\s]+$/i.test(bearer)) throw new BriefError(401, "A calculation session is required.");
   const url = new URL(base);
   if (url.username || url.password || url.search || url.hash ||
@@ -32,6 +32,12 @@ export async function ownedAssessment(base: string, bearer: string, jobId: strin
   }
   const job = analyticsJobSchema.parse(await boundedResponse(response, 4_000_000));
   if (job.id !== jobId) throw new BriefError(409, "Calculation identity mismatch.");
+  return job;
+}
+
+export async function ownedAssessment(base: string, bearer: string, jobId: string,
+  fingerprint: string, fetcher: typeof fetch = fetch) {
+  const job = await ownedAnalyticsJob(base, bearer, jobId, fetcher);
   const assessment = selectCanonicalPresentation(job, facilityPlanRequestSchema.parse(job.input_payload));
   if (assessment.projected.identity.resultFingerprint !== fingerprint)
     throw new BriefError(409, "The selected calculation has changed.");
@@ -48,7 +54,51 @@ const providerSchema = z.object({ id: z.string().max(200).optional(), status: z.
   usage: z.object({ input_tokens: z.number().int().nonnegative(), output_tokens: z.number().int().nonnegative() }).optional(),
   output: z.array(z.object({ content: z.array(z.object({ type: z.string(), text: z.string().optional() })).optional() })).optional(),
 });
-/** Shared provider transport: strict structured selection, bounded bodies, no retries or storage. */
+export type ProviderSettings = { provider: "openai" | "meta"; key: string; model: string; fallback?: ProviderSettings };
+export type ProviderConfig = { OPENAI_API_KEY?: string; META_API_KEY?: string; COPILOT_PROVIDER?: string;
+  COPILOT_MODEL?: string; COPILOT_FALLBACK_PROVIDER?: string; COPILOT_FALLBACK_MODEL?: string };
+export function providerSettings(config: ProviderConfig): ProviderSettings {
+  const resolve = (name: string, model?: string): ProviderSettings => {
+    if (name !== "openai" && name !== "meta") throw new BriefError(503, "Unsupported copilot provider.");
+    const key = name === "meta" ? config.META_API_KEY : config.OPENAI_API_KEY;
+    if (!key || (name === "meta" && !model)) throw new BriefError(503, "Copilot provider credentials or model are missing.");
+    return { provider: name, key, model: model ?? "gpt-4o-mini" };
+  };
+  const primary = resolve(config.COPILOT_PROVIDER ?? "openai", config.COPILOT_MODEL);
+  if (config.COPILOT_FALLBACK_PROVIDER && config.COPILOT_FALLBACK_PROVIDER !== primary.provider)
+    primary.fallback = resolve(config.COPILOT_FALLBACK_PROVIDER, config.COPILOT_FALLBACK_MODEL);
+  return primary;
+}
+/** Request-scoped provider selection. Analytics authentication never passes through this adapter. */
+export function providerTransport(settings: ProviderSettings, fetcher: typeof fetch = fetch, attempts: string[] = []): typeof fetch {
+  const deadline = AbortSignal.timeout(45_000);
+  return async (input, init) => {
+    if (String(input) !== "https://api.openai.com/v1/responses") return fetcher(input, init);
+    const send = (target: ProviderSettings) => {
+      attempts.push(target.provider);
+      const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      body.model = target.model;
+      if (target.provider === "meta") { body.max_output_tokens = 4096; body.reasoning = { effort: "low" }; }
+      return fetcher(target.provider === "meta" ? "https://api.meta.ai/v1/responses" : "https://api.openai.com/v1/responses",
+        { ...init, headers: { authorization: `Bearer ${target.key}`, "content-type": "application/json" },
+          body: JSON.stringify(body), redirect: "manual", signal: AbortSignal.any([deadline, ...(init?.signal ? [init.signal] : [])]) });
+    };
+    let response: Response;
+    try { response = await send(settings); }
+    catch (error) {
+      if (settings.fallback && error instanceof TypeError && !deadline.aborted && !init?.signal?.aborted)
+        return send(settings.fallback);
+      throw error;
+    }
+    // One explicitly configured fallback, within the original deadline. Never retry refusals or invalid output.
+    if (settings.fallback && [402, 429, 500, 502, 503, 504].includes(response.status)) {
+      await response.body?.cancel();
+      return send(settings.fallback);
+    }
+    return response;
+  };
+}
+/** Shared structured selection used by both providers; all returned selections are validated by callers. */
 export async function requestCopilotSelection(input: unknown, instructions: string, schema: Record<string, unknown>,
   key: string, model: string, fetcher: typeof fetch = fetch) {
   const serialized = JSON.stringify(input);
@@ -62,8 +112,8 @@ export async function requestCopilotSelection(input: unknown, instructions: stri
   const raw = await boundedResponse(response, 32_000);
   if (!response.ok) {
     const failure = z.object({ error: z.object({ code: z.string().nullish(), type: z.string().optional() }) }).safeParse(raw);
-    if (failure.success && (failure.data.error.type === "insufficient_quota" || ["insufficient_quota", "credit_balance_exhausted"].includes(failure.data.error.code ?? "")))
-      throw new BriefError(503, "OpenAI API credits or spending quota are unavailable. Check API billing and limits. No answer accepted.");
+    if (failure.success && (failure.data.error.type === "billing_error" || failure.data.error.type === "insufficient_quota" || ["insufficient_quota", "credit_balance_exhausted"].includes(failure.data.error.code ?? "")))
+      throw new BriefError(503, "AI API credits or spending quota are unavailable. Check API billing and limits. No answer accepted.");
     throw new BriefError(502, `AI provider unavailable (HTTP ${response.status}). No answer accepted.`);
   }
   const payload = providerSchema.parse(raw);

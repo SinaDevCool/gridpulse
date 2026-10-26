@@ -14,7 +14,20 @@ def _calculate(connection, payload: dict) -> None:
     try:
         from capacity_backtest.application import run_facility_plan
 
-        result = run_facility_plan(payload)
+        if payload.get("schema_version") == "gridpulse-facility-experiment-request-v1":
+            from capacity_backtest.application import run_facility_experiment
+
+            result = run_facility_experiment(payload)
+        elif payload.get("schema_version") == "gridpulse-facility-accounting-request-v1":
+            from capacity_backtest.application import run_facility_accounting
+
+            result = run_facility_accounting(payload)
+        elif payload.get("schema_version") == "gridpulse-chronological-shadow-request-v1":
+            from capacity_backtest.application.rolling import run_chronological_shadow
+
+            result = run_chronological_shadow(payload)
+        else:
+            result = run_facility_plan(payload)
         encoded = json.dumps({"result": result}, allow_nan=False).encode()
         if len(encoded) > MAXIMUM_RESULT_BYTES:
             raise ValueError("Canonical result exceeds the qualified transport budget")

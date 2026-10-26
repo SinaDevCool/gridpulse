@@ -118,6 +118,17 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await chat.getByRole("button", { name: "Retry question", exact: true }).click();
   await expect(chat.getByRole("article").nth(2)).toContainText("requires a new MILP calculation");
   expect(conversations).toBe(4);
+  const alternative = chat.getByRole("region", { name: "Alternative plan review" });
+  await expect(alternative).toBeVisible();
+  const alternativeSubmit = alternative.getByRole("button", { name: "Calculate alternative", exact: true });
+  await expect(alternativeSubmit).toBeDisabled();
+  await alternative.getByRole("spinbutton").fill("40");
+  await expect(alternativeSubmit).toBeDisabled();
+  await alternative.getByRole("checkbox", { name: "Confirm this separate calculation" }).check();
+  await expect(alternativeSubmit).toBeEnabled();
+  // Do not submit here: this shared fixture keeps the original job for the remaining cross-tab checks.
+  expect(submissions).toBe(1);
+
   await questionInput.fill("Show Foundation model training");
   await chat.getByRole("button", { name: "Ask", exact: true }).click();
   await chat.getByRole("article").nth(3).getByRole("button", { name: "Inspect workload", exact: true }).click();
@@ -487,4 +498,21 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await page.setViewportSize({ width: 390, height: 1500 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
   await result.locator(".power-timeline--modelled").screenshot({ path: "test-results/canonical-battery-charts-mobile.png" });
+  await launcher.click();
+  await copilot.getByRole("button", { name: "Conversation", exact: true }).click();
+  await questionInput.fill("Test an alternative");
+  await chat.getByRole("button", { name: "Ask", exact: true }).click();
+  const finalAlternative = chat.getByRole("region", { name: "Alternative plan review" });
+  await expect(finalAlternative).toBeVisible();
+  await finalAlternative.getByRole("spinbutton").fill("40");
+  await finalAlternative.getByRole("checkbox", { name: "Confirm this separate calculation" }).check();
+  const baselineIdentity = await result.getAttribute("data-assessment-id");
+  const beforeAlternative = submissions;
+  await finalAlternative.getByRole("button", { name: "Calculate alternative", exact: true }).click();
+  await expect(finalAlternative.getByRole("heading", { name: "Accepted model comparison" })).toBeVisible();
+  expect(submissions).toBe(beforeAlternative + 1);
+  await expect(finalAlternative.getByRole("button", { name: "Calculate alternative", exact: true })).toHaveCount(0);
+  await expect(result).toHaveAttribute("data-assessment-id", baselineIdentity!);
+  await finalAlternative.screenshot({ path: "test-results/copilot-confirmed-alternative.png" });
+
 });
