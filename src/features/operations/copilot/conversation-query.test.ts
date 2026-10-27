@@ -4,6 +4,7 @@ import { buildSyntheticMilpRequest } from "../synthetic-milp-request";
 import { defaultOperationsScenario } from "../scenario-engine";
 import { selectCanonicalPresentation } from "../canonical-presentation";
 import { answerConversation } from "./conversation-query";
+import { answerAnalysisPlan } from "./analysis-plan";
 import { CHAT_VERSION, conversationRequestSchema, querySchema, type ConversationQuery } from "./conversation-contracts";
 
 const input = buildSyntheticMilpRequest(defaultOperationsScenario);
@@ -16,6 +17,14 @@ const provider = { model: "test", responseId: "test", usage: null };
 const answer = (change: Partial<ConversationQuery> = {}) => answerConversation(a, request, { ...query, ...change }, provider);
 
 describe("conversation evidence queries", () => {
+  it("separates untested investigation hypotheses from checked numerical evidence", () => {
+    const result = answerAnalysisPlan(a, request, [{ ...query, intent: "diagnosis" }], provider);
+    expect(result.investigation?.status).toBe("requires_independent_validation");
+    expect(result.investigation?.hypotheses.every(item => item.status === "untested")).toBe(true);
+    expect(result.investigation?.requiredEvidence).toHaveLength(4);
+    expect(result.evidence.every(item => item.source.field && item.source.selector)).toBe(true);
+    expect(result.blocks.join(" ")).not.toContain("Possible drivers to check");
+  });
   it("uses exact selected interval and accepted workload/power values with navigation", () => {
     const result = answer();
     expect(result.kind).toBe("answer");

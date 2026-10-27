@@ -58,9 +58,15 @@ export function PlanConversation({ state, enabled, context, onNavigate, identity
           Inspect {target.workloadId ? "workload" : target.view === "power" ? "battery interval" : target.view === "compute" ? "interval workloads" : "power outcome"}
         </button>)}
         <CopilotEvidence facts={turn.answer.evidence} />
+        {turn.answer.investigation ? <details><summary>Investigation | evidence still needed</summary>
+          {turn.answer.investigation.hypotheses.map(item => <section key={item.label}><strong>{item.label}</strong><small>Untested hypothesis</small><p>{item.test}</p></section>)}
+          <strong>Verify against site evidence</strong><ul>{turn.answer.investigation.requiredEvidence.map(item => <li key={item}>{item}</li>)}</ul>
+          <p>{turn.answer.investigation.nextAction}</p>
+        </details> : null}
         {turn.answer.guidance?.length ? <details><summary>Operational guidance | general knowledge</summary>
           {turn.answer.guidance.map(item => <section key={item.id}><strong>{item.title}</strong><p>{item.text}</p>
-            <a href={item.source} target="_blank" rel="noreferrer">Reference</a><small> | editorial guidance {item.version}{item.section ? ` | ${item.section}` : ""}</small>{item.applicability ? <small>{item.applicability}</small> : null}</section>)}
+            <a href={item.source} target="_blank" rel="noreferrer">Reference</a><small> | editorial guidance {item.version}{item.section ? ` | ${item.section}` : ""}{item.pdfPages ? ` | PDF pages ${item.pdfPages.join(", ")}` : ""}</small>{item.applicability ? <small>{item.applicability}</small> : null}
+            {item.excludedUses?.length ? <small>Not evidence for: {item.excludedUses.join(", ").replaceAll("_", " ")}</small> : null}</section>)}
         </details> : null}
         <details><summary>Technical receipt</summary>
           <p>Question interpretation</p><pre tabIndex={0} aria-label="Resolved question">{JSON.stringify(turn.answer.resolvedQueries ?? [turn.answer.resolvedQuery], null, 2)}</pre>

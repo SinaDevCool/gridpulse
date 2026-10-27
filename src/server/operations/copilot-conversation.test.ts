@@ -18,6 +18,15 @@ const request = (input: unknown = body, auth = "Bearer visitor-token") => new Re
   method: "POST", headers: { authorization: auth, "content-type": "application/json" }, body: JSON.stringify(input) });
 
 describe("conversation boundary", () => {
+  it("offers labelled battery guidance while requiring a separate counterfactual calculation", async () => {
+    const fetcher = vi.fn().mockResolvedValueOnce(Response.json(job)).mockResolvedValueOnce(response({ queries: [{ ...query, intent: "what_if" }] }));
+    const result = await handlePlanConversation(request({ ...body, question: "What if battery capacity is halved?" }), options(), fetcher);
+    const answer = conversationResponseSchema.parse(await result.json());
+    expect(answer.kind).toBe("requires_calculation");
+    expect(answer.guidance?.some(item => item.id === "battery-energy")).toBe(true);
+    expect(answer.investigation?.status).toBe("requires_independent_validation");
+    expect(fetcher).toHaveBeenCalledTimes(1); // owned retrieval; deterministic what-if routing, no hidden solve
+  });
   it("loads the owned result, interprets follow-ups and renders verified evidence in one bounded provider call", async () => {
     const fetcher = vi.fn().mockResolvedValueOnce(Response.json(job)).mockResolvedValueOnce(response());
     const result = await handlePlanConversation(request(), options(), fetcher);
@@ -139,7 +148,8 @@ describe("bounded expert analysis", () => {
     const result = await handlePlanConversation(request({ ...body, question: "Can the operator approve this for actual use?" }), options(), fetcher);
     const answer = conversationResponseSchema.parse(await result.json());
     expect(answer.blocks.join(" ")).toContain("do not authorise live operation");
-    expect(answer.blocks.join(" ")).toContain("verify the PCC");
+    expect(answer.investigation?.requiredEvidence.join(" ")).toContain("PCC and IT meter boundaries");
+    expect(answer.investigation?.status).toBe("requires_independent_validation");
     expect(answer.evidence.some(fact => fact.id === "power.plan_peak")).toBe(true);
   });
   it("preserves unsupported/control parts alongside supported facts", async () => {

@@ -12,4 +12,11 @@ describe("reviewed operational retrieval", () => {
   it("keeps measurement and approval gaps discoverable", () => {
     expect(retrieveOperationalKnowledge("missing telemetry measurements approval").some(item => item.id === "metering-readiness")).toBe(true);
   });
+  it("preserves report scope and page provenance without treating protocols as site qualification", () => {
+    const result = retrieveOperationalKnowledge("OpenADR protocol EEBUS Matter");
+    const report = result.find(item => item.id === "edna-protocol-scope");
+    expect(report).toMatchObject({ sourceId: "B02", pdfPages: [6, 9], evidenceClass: "report_guidance" });
+    expect(report?.text).toContain("residential");
+    expect(report).toHaveProperty("excludedUses", expect.arrayContaining(["dispatch_authorisation"]));
+  });
 });

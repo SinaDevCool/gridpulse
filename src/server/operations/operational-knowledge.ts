@@ -209,10 +209,77 @@ export const operationalKnowledge = [
     "license": "Linked reference; independently authored summary. No redistribution of source document."
   }
 ] as const;
+
+/** Report provenance is guidance, never a calibration parameter or dispatch permission. */
+const reportKnowledge = [
+  {
+    id: "edna-liquid-cooling", title: "Cooling topology and total energy",
+    terms: ["liquid", "cooling", "immersion", "retrofit", "topology", "direct"],
+    text: "Compare server and facility energy together when assessing liquid cooling; PUE can obscure improvements that move energy across those boundaries. Identify the cooling topology and retrofit constraints before estimating savings. Report-wide savings are not a site-specific prediction.",
+    source: "https://www.iea-4e.org/edna/publications/liquid-cooling-in-data-centres/",
+    section: "Technology and efficiency scope", sourceId: "B04",
+    evidenceClass: "report_guidance", excludedUses: ["ai_workload_savings_calibration", "rack_temperature_safety", "automatic_retrofit_savings"],
+    applicability: "Qualitative topology review. The report's non-AI quantitative model is not a calibrated AI facility model; Table 4 totals require reconciliation.",
+    version: "2026-10-27", reviewStatus: "editorial_guidance", license: "Independently authored summary; source copyright retained."
+  },
+  {
+    id: "edna-server-performance", title: "Match efficiency to the actual workload",
+    terms: ["benchmark", "server", "throughput", "sert", "gpu", "calibration"],
+    text: "Server efficiency depends on hardware, workload, performance metric and system boundary. Keep useful work, elapsed time and measured power together. Hardware ratings or broad benchmark trends cannot replace held-out measurements of the model, batch size and configuration used at the site.",
+    source: "https://www.iea-4e.org/wp-content/uploads/2025/05/EDNA-EE-of-servers-FINAL.pdf",
+    section: "Executive summary and benchmark scope", sourceId: "A03",
+    evidenceClass: "report_guidance", excludedUses: ["site_calibration", "gpu_rating_as_measured_draw"],
+    applicability: "Workload-specific benchmarking design; do not compare unlike performance units.",
+    version: "2026-10-27", reviewStatus: "editorial_guidance", license: "Independently authored summary; source copyright retained."
+  },
+  {
+    id: "edna-estimate-boundaries", title: "Separate sector estimates from site evidence",
+    terms: ["forecast", "projection", "sector", "estimate", "uncertainty", "dataset"],
+    text: "Data-centre energy estimates depend on model scope, boundaries and assumptions. Report the source and horizon of an estimate, and keep it separate from a facility measurement or an optimiser result. Use site measurements to qualify local decisions rather than transferring a sector projection directly.",
+    source: "https://www.iea-4e.org/wp-content/uploads/2025/05/Data-Centre-Energy-Use-Critical-Review-of-Models-and-Results.pdf",
+    section: "Objectives and scope", sourceId: "A02",
+    evidenceClass: "report_guidance", excludedUses: ["site_calibration", "operational_forecast"],
+    applicability: "Research methodology; not an operational demand profile.",
+    version: "2026-10-27", reviewStatus: "editorial_guidance", license: "Independently authored summary; source copyright retained."
+  },
+  {
+    id: "edna-tem-scope", title: "Long-term scenarios are not dispatch models",
+    terms: ["tem", "policy", "long", "projection", "consolidation"],
+    text: "TEM models computational capacity, efficiency and market segments for long-term policy scenarios. Its sensitivity approach helps organise assumptions, but its trajectories do not establish a site's quarter-hour dispatch, workload duration or available battery energy.",
+    source: "https://www.iea-4e.org/publications/edna/total-energy-model-4-0-data-centres/",
+    section: "Model purpose and methodology", sourceId: "A04",
+    evidenceClass: "report_guidance", excludedUses: ["dispatch_calibration", "workload_runtime_prediction"],
+    applicability: "Long-term scenario framing only.",
+    version: "2026-10-27", reviewStatus: "editorial_guidance", license: "Independently authored summary; source copyright retained."
+  },
+  {
+    id: "edna-usable-flexibility", title: "Usable flexibility needs operational permission",
+    terms: ["flexibility", "commercial", "permission", "revenue", "participation", "market"],
+    text: "Technical flexibility is not automatically available to a market or grid service. Check workload permissions, service obligations, reserve requirements, event timing and commercial terms together. A modelled schedule does not establish an offer or delivered response.",
+    source: "https://www.iea-4e.org/edna/publications/data-centres-and-flexibility/",
+    section: "Abstract and scope", sourceId: "B05", pdfPages: [3],
+    evidenceClass: "report_guidance", excludedUses: ["site_calibration", "dispatch_authorisation", "failure_probability"],
+    applicability: "Qualitative data-centre flexibility assessment; site and service-specific qualification remains necessary.",
+    version: "2026-10-27", reviewStatus: "editorial_guidance",
+    license: "Independently authored summary; source copyright retained."
+  },
+  {
+    id: "edna-protocol-scope", title: "Protocol connectivity is not dispatch readiness",
+    terms: ["protocol", "openadr", "eebus", "matter", "connector", "integration"],
+    text: "The protocol review concerns residential demand flexibility. Its interoperability lessons help structure integrations, but it does not qualify a data-centre BMS, PCS or scheduler. Verify device semantics, authorisation, acknowledgements and delivered-response evidence separately.",
+    source: "https://www.iea-4e.org/wp-content/uploads/2026/06/2026-EDNA-DEMAND-FLEXIBILITY-PROTOCOLS-WEB.pdf",
+    section: "Executive summary", sourceId: "B02", pdfPages: [6, 9],
+    evidenceClass: "report_guidance", excludedUses: ["data_centre_protocol_certification", "dispatch_authorisation"],
+    applicability: "Residential protocol research; architecture guidance only for data-centre integrations.",
+    version: "2026-10-27", reviewStatus: "editorial_guidance",
+    license: "Independently authored summary; source copyright retained."
+  }
+] as const;
+export const reviewedKnowledge = [...operationalKnowledge, ...reportKnowledge];
 const tokens = (text: string) => [...new Set(text.toLowerCase().normalize("NFKC").match(/[\p{L}\p{N}]+/gu) ?? [])];
 export function retrieveOperationalKnowledge(question: string) {
   const words = tokens(question);
-  return operationalKnowledge.map(item => ({ item, score: words.reduce((sum, word) =>
+  return reviewedKnowledge.map(item => ({ item, score: words.reduce((sum, word) =>
     sum + (item.terms.some(term => word === term || (term.length >= 5 && word.startsWith(term))) ? 1 : 0), 0) }))
     .filter(entry => entry.score > 0).sort((a, b) => b.score - a.score || a.item.id.localeCompare(b.item.id))
     .slice(0, 4).map(({ item: { terms: _terms, ...reference } }) => reference);

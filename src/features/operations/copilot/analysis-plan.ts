@@ -13,10 +13,8 @@ export function answerAnalysisPlan(a: CanonicalPresentation, request: Conversati
       { ...query, intent, workloadId: null, ...(query.intent === "diagnosis" ? {} : { start: null, end: null, focus: "selected" as const }), definition: "none" }, provider));
     return { ...sections[0], resolvedQuery: query,
       blocks: [query.intent === "diagnosis" ? "Investigation: inspect the returned battery state and power balance first; a zero dispatch does not by itself identify the binding constraint." : "Decision boundary: model checks alone do not authorise live operation.",
-        ...(query.intent === "diagnosis" ? ["Possible drivers to check: discharge rating or outage availability, SOC/reserve and terminal target, efficiency, ramp/dwell restrictions, and the optimisation objective. These are hypotheses, not proven explanations. Compare submitted restrictions and telemetry; use a controlled alternative solve to test a hypothesis."] : []),
         ...sections.flatMap(section => section.blocks),
-        "Before operational approval: verify the PCC meter boundary, battery capacity/SOC and efficiencies, workload deadlines and interruption rules, and site cooling/electrical limits against measurements and operator procedures. Their independent verification is not established by this result.",
-        "Next step: validate missing measurements and use a separately reviewed stress calculation for changed conditions. Assumed cases do not establish a failure probability."],
+        "Independent site verification is not established by model checks. Assumed stress cases do not establish failure probabilities."],
       evidence: [...new Map(sections.flatMap(section => section.evidence).map(fact => [fact.id, fact])).values()],
       navigation: sections.flatMap(section => section.navigation) };
   });
@@ -32,6 +30,18 @@ export function answerAnalysisPlan(a: CanonicalPresentation, request: Conversati
       blocks: ["This question exceeds the evidence budget. Please split it into individual workload or time-range questions."],
       resolvedQueries: selected, coverage: selected.map(query => ({ intent: query.intent, status: "clarification" })) });
   return conversationResponseSchema.parse({ ...first, kind,
+    ...(selected.some(query => ["readiness", "diagnosis", "what_if"].includes(query.intent)) ? {
+      investigation: {
+        status: "requires_independent_validation",
+        hypotheses: selected.some(query => query.intent === "diagnosis") ? [
+          { label: "Battery capability or availability limits response", status: "untested", test: "Inspect the submitted rating and outage intervals; compare a separately reviewed power or availability experiment." },
+          { label: "Reserve or terminal energy restricts dispatch", status: "untested", test: "Inspect the full SOC trajectory and terminal target; test a reviewed energy-capacity alternative without removing protected reserve." },
+          { label: "Workload permissions or cooling recovery restrict shifting", status: "untested", test: "Review deadlines, interruption permissions and thermal-debt recovery before testing an alternative schedule." }
+        ] : [],
+        requiredEvidence: ["PCC and IT meter boundaries, timestamps, units and completeness", "Battery measured usable capacity, SOC, efficiencies and reserve policy", "Scheduler runtime, deadlines and interruption permissions", "Cooling topology, load/temperature operating range and electrical limits"],
+        nextAction: "Review evidence gaps first. Confirm any alternative calculation separately; retain the accepted baseline and compare returned checks. No dispatch is authorised."
+      }
+    } : {}),
     basis: hasAnswer ? (answers.filter(answer => answer.kind === "answer").every(answer => answer.basis === "general_explanation") ? "general_explanation" : "model_evidence") : "no_calculation",
     blocks, evidence: [...new Map(facts.map(fact => [fact.id, fact])).values()],
     navigation: [...new Map(answers.flatMap(answer => answer.navigation).map(target => [JSON.stringify(target), target])).values()].slice(0, 8),

@@ -69,7 +69,9 @@ async function handleCopilot(request: Request, config: CopilotConfig, fetcher: t
       }
       if (!interpreted) throw new BriefError(422, "Question interpretation unavailable.");
       const answer = answerAnalysisPlan(assessment, question, queries, interpreted.provider);
-      return Response.json({ ...answer, receipt: { ...answer.receipt, generation: receipt() }, guidance: answer.kind === "answer" || answer.evidence.length ? retrieveOperationalKnowledge(question.question) : [] }, { headers });
+      const guidanceAllowed = answer.kind === "answer" || answer.evidence.length > 0 ||
+        queries.some(query => ["what_if", "readiness", "diagnosis", "knowledge", "accounting"].includes(query.intent));
+      return Response.json({ ...answer, receipt: { ...answer.receipt, generation: receipt() }, guidance: guidanceAllowed ? retrieveOperationalKnowledge(question.question) : [] }, { headers });
     }
     const evidence = await ownedBriefEvidence(config.COPILOT_ANALYTICS_URL, bearer, input.data.jobId, input.data.resultFingerprint, fetcher);
     const provider = providerSettings(config);
