@@ -8,6 +8,7 @@ def calculate(context: JobContext, job: AnalyticsJob) -> dict:
     if job.input_payload.get("schema_version") in {
         "gridpulse-facility-experiment-request-v1",
         "gridpulse-facility-accounting-request-v1",
+        "gridpulse-facility-accounting-request-v2",
     }:
         from grid_data.api.jobs.isolated_facility import execute_isolated_facility
 

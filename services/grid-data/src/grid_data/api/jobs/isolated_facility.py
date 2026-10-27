@@ -18,7 +18,10 @@ def _calculate(connection, payload: dict) -> None:
             from capacity_backtest.application import run_facility_experiment
 
             result = run_facility_experiment(payload)
-        elif payload.get("schema_version") == "gridpulse-facility-accounting-request-v1":
+        elif payload.get("schema_version") in {
+            "gridpulse-facility-accounting-request-v1",
+            "gridpulse-facility-accounting-request-v2",
+        }:
             from capacity_backtest.application import run_facility_accounting
 
             result = run_facility_accounting(payload)

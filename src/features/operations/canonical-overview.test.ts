@@ -140,3 +140,14 @@ describe("canonical overview presentation arithmetic", () => {
     expect(next[1].facility).toBe(-2);
   });
 });
+
+
+it("uses interval envelopes rather than the reference ceiling for breaches and margins", () => {
+  const { request, job } = fixture();
+  request.facility.import_limit_profile_mw = request.intervals.map((_, i) => i === 0 ? 50 : 100);
+  request.policy.operating_target_profile_mw = request.intervals.map((_, i) => i === 0 ? 48 : 98);
+  const a = selectCanonicalPresentation(job, request);
+  expect(canonicalBreachMinutes(a, false)).toBe(15);
+  expect(canonicalMargins(a, 0)[0].facility).toBe(-1);
+  expect(canonicalMargins(a, 0)[0].safety).toBe(-3);
+});

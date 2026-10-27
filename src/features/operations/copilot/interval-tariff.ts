@@ -1,6 +1,6 @@
 /** Parse prices only; all energy and monetary arithmetic remains in Fullb. */
 export function intervalTariff(text: string, intervalCount: number): number[] {
-  if (intervalCount < 1 || intervalCount > 96 || !Number.isInteger(intervalCount)) throw new Error("Invalid planning horizon.");
+  if (intervalCount < 1 || intervalCount > 100 || !Number.isInteger(intervalCount)) throw new Error("Invalid planning horizon.");
   const trimmed = text.trim();
   if (/^[,;]|[,;]$|[,;]\s*[,;]/u.test(trimmed)) throw new Error("A price is missing between separators.");
   const values = trimmed.split(/[\s,;]+/u);

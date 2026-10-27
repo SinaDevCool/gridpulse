@@ -39,7 +39,7 @@ export function canonicalPowerBalance(a: CanonicalPresentation, index: number) {
 }
 
 export function canonicalBreachMinutes(a: CanonicalPresentation, baseline: boolean) {
-  return selectBreachSpans(a.points, baseline ? "baselineDemandMw" : "gridImportMw", a.limitMw + .01)
+  return selectBreachSpans(a.points, baseline ? "baselineDemandMw" : "gridImportMw", point => point.limitMw + .01)
     .reduce((sum, span) => sum + span.minutes, 0);
 }
 
@@ -58,7 +58,7 @@ export function canonicalImpact(a: CanonicalPresentation): OverviewImpact {
     scope: "full_horizon", start, durationMs: Date.parse(a.points.at(-1)!.endTimestamp!) - start,
     lanes: [true, false].map(baseline => ({ label: baseline ? "Before response" : "Joint plan",
       minutes: canonicalBreachMinutes(a, baseline),
-      spans: selectBreachSpans(a.points, baseline ? "baselineDemandMw" : "gridImportMw", a.limitMw + .01) })),
+      spans: selectBreachSpans(a.points, baseline ? "baselineDemandMw" : "gridImportMw", point => point.limitMw + .01) })),
   };
 }
 
@@ -110,7 +110,7 @@ export function canonicalCheckSummary(a: CanonicalPresentation) {
 
 export function canonicalMargins(a: CanonicalPresentation, index: number) {
   return [
-    { id: "peak", label: "Whole-plan peak", safety: a.targetMw - a.planPeakMw, facility: a.limitMw - a.planPeakMw },
-    { id: "interval", label: "Inspected interval", safety: a.targetMw - a.points[index].gridImportMw, facility: a.limitMw - a.points[index].gridImportMw },
+    { id: "peak", label: a.request.facility.import_limit_profile_mw ? "Tightest whole-plan margin" : "Whole-plan peak", safety: a.request.policy.operating_target_profile_mw ? Math.min(...a.points.map(p => p.targetMw - p.gridImportMw)) : a.targetMw - a.planPeakMw, facility: a.request.facility.import_limit_profile_mw ? Math.min(...a.points.map(p => p.limitMw - p.gridImportMw)) : a.limitMw - a.planPeakMw },
+    { id: "interval", label: "Inspected interval", safety: a.points[index].targetMw - a.points[index].gridImportMw, facility: a.points[index].limitMw - a.points[index].gridImportMw },
   ];
 }

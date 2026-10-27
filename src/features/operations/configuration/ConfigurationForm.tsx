@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { OperationsScenario } from "../scenario-engine";
 import { Check, CircleDot, LoaderCircle, RotateCcw, Undo2 } from "lucide-react";
 import {
@@ -7,6 +8,7 @@ import {
   updateScenarioField,
 } from "./scenario-fields";
 type Props = {
+  children?: ReactNode;
   draft: OperationsScenario;
   onChange: (value: OperationsScenario) => void;
   errors: Record<string, string>;
@@ -33,6 +35,7 @@ export function ConfigurationForm(props: Props) {
           ? "Scenario assumptions do not overwrite uploaded measurements. The configured limit is the analysis reference, not a verified contract."
           : "Editable scenario assumptions, not measured facility data."}
       </p>
+      {props.children}
       {scenarioFieldGroups
         .filter((group) => group.title !== "Battery advanced")
         .map((group) => (

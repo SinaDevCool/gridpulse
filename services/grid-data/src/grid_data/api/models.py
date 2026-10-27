@@ -5,7 +5,7 @@ from enum import Enum
 from typing import Any, Literal
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_serializer, model_validator
 
 
 class JobStatus(str, Enum):
@@ -70,6 +70,14 @@ class FacilityPlanRequest(BaseModel):
     fatigue_limits: dict[str, Any] | None = None
     fleet_gpu_capacity: int | None = Field(default=None, gt=0, strict=True)
     idle_gpu_power_watts: float = Field(default=0, ge=0, allow_inf_nan=False)
+    planning_context: dict[str, Any] | None = None
+
+    @model_serializer(mode="wrap")
+    def preserve_legacy_request_identity(self, handler):
+        result = handler(self)
+        if self.planning_context is None:
+            result.pop("planning_context", None)
+        return result
 
 
 class FcaIntervalRequest(BaseModel):
@@ -317,9 +325,34 @@ class FacilityExperimentRequest(BaseModel):
     cases: list[FacilityExperimentCase] = Field(min_length=1, max_length=4)
 
 
+class ReviewedTariff(BaseModel):
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
+    supplier_markup_eur_per_mwh: float = Field(ge=0)
+    network_energy_eur_per_mwh: float = Field(ge=0)
+    capacity_eur_per_kw_year: float = Field(ge=0)
+    prior_billing_peak_mw: float = Field(ge=0)
+    source: str = Field(min_length=1, max_length=500)
+    reviewed_at: datetime
+
+    @model_validator(mode="after")
+    def reviewed(self):
+        if not self.source.strip() or self.reviewed_at.tzinfo is None:
+            raise ValueError("A source and timezone-aware review are required")
+        return self
+
+
 class FacilityAccountingRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
-    schema_version: Literal["gridpulse-facility-accounting-request-v1"]
+    schema_version: Literal[
+        "gridpulse-facility-accounting-request-v1", "gridpulse-facility-accounting-request-v2"
+    ]
     baseline_job_id: UUID
     baseline_result_fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
-    prices_eur_per_mwh: list[float] = Field(min_length=1, max_length=96)
+    prices_eur_per_mwh: list[float] = Field(min_length=1, max_length=100)
+    tariff: ReviewedTariff | None = None
+
+    @model_validator(mode="after")
+    def tariff_version(self):
+        if (self.tariff is not None) != self.schema_version.endswith("-v2"):
+            raise ValueError("Reviewed tariff is required only for accounting v2")
+        return self

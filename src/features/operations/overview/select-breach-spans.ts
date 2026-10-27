@@ -1,14 +1,14 @@
 export type DemandKey =
   "baselineDemandMw" | "batteryDemandMw" | "workloadDemandMw" | "combinedDemandMw";
 /** Explicit interval durations preserve gaps; this never recalculates dispatch. */
-export function selectBreachSpans<T extends { timestamp: string; durationMinutes?: number | null }>(points: T[], key: keyof T, limit: number) {
+export function selectBreachSpans<T extends { timestamp: string; durationMinutes?: number | null }>(points: T[], key: keyof T, limit: number | ((point: T) => number)) {
   const spans: { start: number; end: number; timestamp: string; minutes: number }[] = [];
   for (const point of points) {
     const start = Date.parse(point.timestamp);
     if (
       !Number.isFinite(start) ||
       !(point.durationMinutes && point.durationMinutes > 0) ||
-      typeof point[key] !== "number" || !Number.isFinite(point[key]) || Number(point[key]) <= limit
+      typeof point[key] !== "number" || !Number.isFinite(point[key]) || Number(point[key]) <= (typeof limit === "function" ? limit(point) : limit)
     )
       continue;
     const end = start + point.durationMinutes * 60_000;

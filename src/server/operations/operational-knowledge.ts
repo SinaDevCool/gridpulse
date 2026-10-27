@@ -1,5 +1,8 @@
 /** Server-owned, curated public summaries. No customer documents or runtime web fetching. */
 export const operationalKnowledge = [
+{"id": "de-tariff", "title": "German electricity tariff boundaries", "terms": ["netzentgelt", "strompreis", "smard", "tariff", "leistungspreis", "arbeitspreis", "germany", "german", "deutschland"], "text": "SMARD wholesale prices are not an electricity bill. Keep EUR/MWh energy prices, supplier markup, network energy charges and annual EUR/kW capacity charges separate. Evaluate incremental annual capacity liability against the existing billing peak; do not prorate it as a daily saving. Negative wholesale prices do not imply a negative total bill.", "source": "https://www.gesetze-im-internet.de/stromnev/__17.html", "section": "German market evidence boundaries", "applicability": "Germany; contract and legal applicability require site-specific review.", "version": "2026-10-27", "reviewStatus": "editorial_guidance", "license": "Linked reference; independently authored summary."},
+{"id": "de-flexible-connection", "title": "German flexible connection agreements", "terms": ["fca", "anschluss", "connection", "netzanschluss", "anschlussvertrag", "envelope", "import limit"], "text": "An interval connection envelope must come from a reviewed operator agreement. Enforce it in both scheduling and physical replay. A modelled operating margin is not additional connection capacity. Protocol connectivity and solver feasibility do not confer balancing-market prequalification or permission to dispatch a UPS.", "source": "https://www.bundesnetzagentur.de/DE/Fachthemen/ElektrizitaetundGas/Netzanschluss/FAQ_FCA/FCA_table.html", "section": "German market evidence boundaries", "applicability": "Germany; contract and legal applicability require site-specific review.", "version": "2026-10-27", "reviewStatus": "editorial_guidance", "license": "Linked reference; independently authored summary."},
+{"id": "de-reporting", "title": "German reporting evidence", "terms": ["enefg", "bericht", "meldepflicht", "reporting", "abwärme", "heat", "compliance", "gesetz"], "text": "EnEfG applicability depends on commissioning date, capacity, measurement boundaries and reporting period. A synthetic daily plan cannot establish annual PUE, renewable-electricity coverage, heat-reuse compliance or reporting completion. Obtain reviewed annual measurements and applicable exceptions.", "source": "https://www.gesetze-im-internet.de/enefg/", "section": "German market evidence boundaries", "applicability": "Germany; contract and legal applicability require site-specific review.", "version": "2026-10-27", "reviewStatus": "editorial_guidance", "license": "Linked reference; independently authored summary."},
   {
     "id": "battery-energy",
     "title": "Battery power, energy and reserve",
@@ -283,7 +286,7 @@ export function retrieveOperationalKnowledge(question: string, context: { intent
   if (context.purpose && context.purpose !== "general_guidance") return [];
   const words = tokens(question);
   return reviewedKnowledge.map(item => ({ item, score: words.reduce((sum, word) =>
-    sum + (item.terms.some(term => word === term || (term.length >= 5 && word.startsWith(term))) ? 1 : 0), 0) }))
+    sum + (item.terms.some(term => tokens(term).length === 1 && (word === term || (term.length >= 5 && word.startsWith(term)))) ? 1 : 0), 0) }))
     .filter(entry => entry.score > 0).sort((a, b) => b.score - a.score || a.item.id.localeCompare(b.item.id))
     .slice(0, 4).map(({ item: { terms: _terms, ...reference } }) => reference);
 }

@@ -1,3 +1,4 @@
+import { assessGermanEvidence, germanReportingContextSchema } from "../german-evidence";
 import type { CanonicalPresentation } from "../canonical-presentation";
 import { canonicalBreachMinutes, canonicalCheckSummary, canonicalImpact, canonicalMargins } from "../canonical-overview";
 import { selectCanonicalComputeView } from "../canonical-compute";
@@ -22,8 +23,21 @@ export function buildBriefEvidence(a: CanonicalPresentation, jobId: string | nul
   add("power.plan_peak", "Plan peak import", impact.planPeakMw, "MW", "canonicalImpact", "planPeakMw", "overview");
   add("power.safety_margin", "Whole-plan safety-target margin", margins.safety, "MW", "canonicalMargins", "peak.safety", "overview");
   add("power.facility_margin", "Whole-plan facility-limit margin", margins.facility, "MW", "canonicalMargins", "peak.facility", "overview");
-  add("power.limit", "Facility import limit", a.limitMw, "MW", "CanonicalPresentation", "limitMw", "overview");
-  add("power.target", "Safety target", a.targetMw, "MW", "CanonicalPresentation", "targetMw", "overview");
+  add("power.limit", "Facility import ceiling (interval envelope may be lower)", a.limitMw, "MW", "CanonicalPresentation", "limitMw", "overview");
+  add("power.target", "Reference safety target (interval targets may differ)", a.targetMw, "MW", "CanonicalPresentation", "targetMw", "overview");
+  if (a.request.facility.import_limit_profile_mw) add("power.interval_envelope", "Interval connection envelope supplied", true, "status", "CanonicalPresentation", "request.facility.import_limit_profile_mw", "overview", "submitted_model");
+  const market = a.request.planning_context;
+  if (market?.timezone === "Europe/Berlin" && typeof market.local_date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(market.local_date)) {
+    add("planning.local_day", "Submitted German planning day", market.local_date, "status", "CanonicalPresentation", "request.planning_context.local_date", "overview", "submitted_model");
+    add("planning.timezone", "Planning timezone (engine timestamps remain UTC)", "Europe/Berlin", "status", "CanonicalPresentation", "request.planning_context.timezone", "overview", "submitted_model");
+  }
+  add("planning.battery_permission", "Battery flexibility permitted in submitted policy", a.request.policy.allow_battery !== false, "status", "CanonicalPresentation", "request.policy.allow_battery", "power", "submitted_model");
+  const reporting = germanReportingContextSchema.safeParse(market?.reporting_evidence);
+  if (reporting.success) {
+    const review = assessGermanEvidence(reporting.data);
+    add("planning.reporting_gaps", "Reporting evidence gaps at current review", review.missing.length, "count", "assessGermanEvidence", "missing.length", "overview", "submitted_model");
+    add("planning.reporting_compliance", "Legal compliance certified by this assessment", false, "status", "assessGermanEvidence", "legalComplianceConfirmed", "overview", "submitted_model");
+  }
   add("power.target_met", "Safety target met within model", battery.targetMet, "status", "selectCanonicalBatteryView", "targetMet", "overview");
   add("power.breach_minutes", "Time above facility limit", canonicalBreachMinutes(a, false), "min", "canonicalBreachMinutes", "minutes", "overview");
   add("workloads.completed", "Workloads completed", compute.completed, "count", "selectCanonicalComputeView", "completed", "compute");

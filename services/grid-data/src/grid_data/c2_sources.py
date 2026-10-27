@@ -11,6 +11,7 @@ import csv
 import hashlib
 import io
 import json
+import math
 import urllib.request
 import zipfile
 from collections.abc import Iterable
@@ -66,7 +67,8 @@ def _sha256(content: bytes) -> str:
     return hashlib.sha256(content).hexdigest()
 
 
-def fetch_smard_hourly(
+def _fetch_smard(
+    resolution: str = "hour",
     *,
     filter_id: int = 410,
     region: str = "DE",
@@ -80,7 +82,7 @@ def fetch_smard_hourly(
     SMARD does not publish feeder or substation loading through this endpoint.
     The series is used only to scale representative system operating cases.
     """
-    index_url = f"{SMARD_BASE_URL}/{filter_id}/{region}/index_hour.json"
+    index_url = f"{SMARD_BASE_URL}/{filter_id}/{region}/index_{resolution}.json"
     with urllib.request.urlopen(index_url, timeout=60) as response:
         index_bytes = response.read()
     timestamps = json.loads(index_bytes)["timestamps"]
@@ -92,13 +94,18 @@ def fetch_smard_hourly(
             continue
         if end_year is not None and year > end_year:
             continue
-        url = f"{SMARD_BASE_URL}/{filter_id}/{region}/{filter_id}_{region}_hour_{timestamp}.json"
+        url = f"{SMARD_BASE_URL}/{filter_id}/{region}/{filter_id}_{region}_{resolution}_{timestamp}.json"
         with urllib.request.urlopen(url, timeout=60) as response:
             content = response.read()
         block_hashes.append(_sha256(content))
         for epoch_ms, value in json.loads(content).get("series", []):
             if value is not None:
-                rows[int(epoch_ms)] = float(value)
+                number = float(value)
+                if not math.isfinite(number):
+                    raise ValueError("SMARD contains non-finite observations.")
+                if int(epoch_ms) in rows and rows[int(epoch_ms)] != number:
+                    raise ValueError("SMARD blocks contain conflicting observations.")
+                rows[int(epoch_ms)] = number
     values = tuple(
         (datetime.fromtimestamp(epoch / 1000, timezone.utc), value)
         for epoch, value in sorted(rows.items())
@@ -125,10 +132,41 @@ def fetch_smard_hourly(
             "licence": "CC-BY-4.0",
             "filter_id": filter_id,
             "region": region,
+            "resolution_minutes": 15 if resolution == "quarterhour" else 60,
             "artifact_sha256": _sha256("".join(block_hashes).encode()),
             "evidence_boundary": "German system context; not node or feeder loading.",
         },
     )
+
+
+def fetch_smard_hourly(**kwargs: Any) -> HourlySeries:
+    """Backward-compatible hourly system-context adapter."""
+    return _fetch_smard(resolution="hour", **kwargs)
+
+
+def fetch_smard_quarter_hour_prices(
+    *, start_year: int, end_year: int, region: str = "DE-LU"
+) -> HourlySeries:
+    """Historical wholesale context; no interpolation or retail-tariff inference.
+
+    The legacy series container carries explicit resolution in provenance.
+    Missing intervals fail closed; callers must not use an incomplete price day.
+    """
+    result = _fetch_smard(
+        resolution="quarterhour",
+        filter_id=4169,
+        region=region,
+        start_year=start_year,
+        end_year=end_year,
+        metric="day_ahead_price",
+        unit="EUR_per_MWh",
+    )
+    if any(
+        (right[0] - left[0]).total_seconds() != 900
+        for left, right in zip(result.values, result.values[1:])
+    ):
+        raise ValueError("SMARD quarter-hour prices contain gaps; no interpolation is allowed.")
+    return result
 
 
 def parse_dwd_temperature_zip(content: bytes, *, source_url: str) -> HourlySeries:

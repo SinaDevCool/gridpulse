@@ -89,6 +89,8 @@ def build_router(
             "baseline": baseline.result_payload,
             "prices_eur_per_mwh": request.prices_eur_per_mwh,
         }
+        if request.schema_version.endswith("-v2"):
+            payload["tariff"] = request.tariff.model_dump(mode="json")
         job, created = canonical_job(
             owner_id=user.id, job_type="facility_historical_replay", payload=payload
         )

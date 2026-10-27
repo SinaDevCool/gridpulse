@@ -1,3 +1,5 @@
+import { GermanPlanningInputs } from "./configuration/GermanPlanningInputs";
+import { defaultGermanPlanning } from "./german-planning";
 import { AccountingReview } from "./copilot/AccountingReview";
 import { AlternativePlanReview } from "./copilot/AlternativePlanReview";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -72,17 +74,22 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
   const milpEnabled = import.meta.env.VITE_OPERATIONS_MILP_ENABLED === "true";
   // The enabled optimiser is the single public planning experience. Legacy
   // calculator preferences must not silently select a different calculation path.
+  const [planning, setPlanning] = useState(defaultGermanPlanning);
+  const [planningError, setPlanningError] = useState("");
+  const [appliedPlanning, setAppliedPlanning] = useState(defaultGermanPlanning);
+  const planningDirty = stableOperationsJson(planning) !== stableOperationsJson(appliedPlanning);
   const milp = useMilpCalculation();
   const canonical = milp.result;
   const setCanonical = milp.setResult;
   const draft = useScenarioDraft(scenario, value => {
     setScenario(value);
-    if (milpEnabled && mode !== "historical") void milp.run(value);
+    setAppliedPlanning(planning);
+    if (milpEnabled && mode !== "historical") void milp.run(value, undefined, undefined, planning);
   });
   const [canonicalTime, setCanonicalTime] = useState("");
   const [canonicalPreview, setCanonicalPreview] = useState<string | null>(null);
   const [canonicalWorkload, setCanonicalWorkload] = useState<string | null>(null);
-  const canonicalCurrent = canonical && !draft.dirty && canonical.scenarioIdentity === stableOperationsJson(scenario);
+  const canonicalCurrent = canonical && !draft.dirty && !planningDirty && canonical.scenarioIdentity === stableOperationsJson(appliedPlanning.enabled ? { scenario, planning: appliedPlanning } : scenario);
   const copilot = usePlanCopilot({ jobId: canonical?.jobId,
     fingerprint: canonical?.assessment.projected.identity.resultFingerprint ?? "", current: !!canonicalCurrent });
   const chatContext: CopilotNavigation = { view, timestamp: canonicalTime || null, workloadId: canonicalWorkload };
@@ -133,7 +140,7 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
   return (
     <WorkloadEvidenceProvider model={fullModel}>
       <InputPanelContext.Provider value={openInputs}>
-        <OperationsExitGuard dirty={draft.dirty} />
+        <OperationsExitGuard dirty={draft.dirty || planningDirty} />
         <main
           id="main-content"
           className={`operations-v2 operations-v2--${view} ops-control-layout ${layout.open && !layout.mobile ? "inputs-open" : ""}`}
@@ -144,10 +151,10 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
             onClose={closeInputs}
             actions={
               <ConfigurationActions
-                dirty={draft.dirty}
-                busy={calculationBusy}
+                dirty={draft.dirty || planningDirty}
+                busy={calculationBusy || !!planningError}
                 milp={showMilp}
-                onDiscard={draft.discard}
+                onDiscard={() => { draft.discard(); setPlanning(appliedPlanning); }}
               />
             }
           >
@@ -165,13 +172,16 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
             <ConfigurationForm
               draft={draft.draft}
               onChange={draft.setDraft}
-              dirty={draft.dirty}
+              dirty={draft.dirty || planningDirty}
               errors={draft.errors}
-              busy={calculationBusy}
+              busy={calculationBusy || !!planningError}
               historical={mode === "historical"}
-              onApply={draft.apply}
-              onDiscard={draft.discard}
-            />
+              onApply={() => { if (!planningError) draft.apply(); }}
+              onDiscard={() => { draft.discard(); setPlanning(appliedPlanning); }}
+            >
+              {import.meta.env.VITE_GERMAN_PLANNING_ENABLED === "true" && showMilp && import.meta.env.VITE_PUBLIC_MILP_ENABLED !== "true" ?
+                <GermanPlanningInputs ceiling={draft.draft.importLimitMw} value={planning} onChange={setPlanning} onValidation={setPlanningError} /> : null}
+            </ConfigurationForm>
             <details
               className="ops-evidence-section"
               open={evidenceOpen}
@@ -224,7 +234,7 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
                     <PanelLeftOpen aria-hidden="true" />
                   )}
                   {layout.open ? "Hide panel" : "Show panel"}
-                  {draft.dirty ? (
+                  {draft.dirty || planningDirty ? (
                     <span className="ops-draft-dot" aria-label="Unapplied changes">
                       •
                     </span>
@@ -257,7 +267,7 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
                 </span>
               </div>
               <p className="ops-assessment-notice" role="status">
-                {draft.dirty ? "Unapplied changes. Results still use the applied scenario. " : ""}
+                {draft.dirty || planningDirty ? "Unapplied changes. Results still use the applied scenario. " : ""}
                 {mode === "historical"
                   ? "Uploaded evidence, not live control."
                   : showMilp ? `Synthetic model · ${SYNTHETIC_RESOLUTION_LABEL} · illustrative profiles and component assumptions, not customer telemetry. PUE is reference-only.` : "Scenario assessment—not live control."}
