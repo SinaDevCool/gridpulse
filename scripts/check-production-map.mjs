@@ -6,7 +6,7 @@ const baseUrl = (process.env.GRIDPULSE_HEALTH_BASE_URL ?? "https://gridpulseinsi
 );
 const screenshotPath =
   process.env.GRIDPULSE_MAP_FAILURE_SCREENSHOT ?? "test-results/production-map-failure.png";
-const browser = await chromium.launch({ headless: true });
+const browser = await chromium.launch({ headless: true, channel: process.env.GRIDPULSE_SMOKE_BROWSER_CHANNEL || undefined });
 const page = await browser.newPage({ viewport: { width: 1600, height: 900 } });
 const failures = [];
 const mapResponses = { grid: false, registry: false, basemap: false };

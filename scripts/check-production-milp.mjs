@@ -3,7 +3,7 @@ import { chromium, expect } from "@playwright/test";
 import fs from "node:fs/promises";
 
 const base = process.env.GRIDPULSE_HEALTH_BASE_URL ?? "https://gridpulseinsights.com";
-const browser = await chromium.launch({ headless: true });
+const browser = await chromium.launch({ headless: true, channel: process.env.GRIDPULSE_SMOKE_BROWSER_CHANNEL || undefined });
 const page = await browser.newPage({ viewport: { width: 1600, height: 1000 } });
 await fs.mkdir("test-results", { recursive: true });
 try {
