@@ -1,6 +1,7 @@
 // One real public calculation; no fixture result or heuristic substitution.
 import { chromium, expect } from "@playwright/test";
 import fs from "node:fs/promises";
+import { setTimeout as pause } from "node:timers/promises";
 
 const base = process.env.GRIDPULSE_HEALTH_BASE_URL ?? "https://gridpulseinsights.com";
 const browser = await chromium.launch({ headless: true, channel: process.env.GRIDPULSE_SMOKE_BROWSER_CHANNEL || undefined });
@@ -85,6 +86,8 @@ try {
     await expect(copilot.getByRole("article").first()).toContainText(answerLabel);
     // Verify a real follow-up through the same UI and accepted assessment.
     for (const prompt of ["What happens at 08:00 UTC?", "Which workloads run then?"]) {
+      // Brief and conversation share the production limit of two requests per minute.
+      await pause(35_000);
       await question.fill(prompt);
       const pending = page.waitForResponse(response => new URL(response.url()).pathname === "/api/operations/conversation" && response.request().method() === "POST", { timeout: 85_000 });
       await copilot.getByRole("button", { name: "Ask", exact: true }).click();
@@ -99,6 +102,7 @@ try {
     }
     await copilot.screenshot({ path: "test-results/production-copilot-conversation.png" });
     await copilot.getByRole("button", { name: "Plan brief", exact: true }).click();
+    await pause(35_000);
     const briefResponse = page.waitForResponse(response => new URL(response.url()).pathname === "/api/operations/brief" && response.request().method() === "POST", { timeout: 85_000 });
     await copilot.getByRole("button", { name: "Explain this plan", exact: true }).click();
     const briefHttp = await briefResponse;
