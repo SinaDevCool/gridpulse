@@ -75,7 +75,9 @@ try {
     if (answer.version !== "operations-conversation-v2" || answer.kind !== "answer" || answer.basis !== "model_evidence" ||
       answer.receipt?.resultFingerprint !== fingerprint || !answer.receipt?.jobId || !answer.receipt?.providerResponseId || !answer.evidence?.length)
       throw new Error("Production conversation is not grounded in this accepted plan/provider response");
-    await expect(copilot.getByRole("article").first()).toContainText("Checked model evidence");
+    const answerLabel = answer.presentation === "grounded_conversation" ? "AI explanation · linked evidence"
+      : answer.presentation === "checked_fallback" ? "Checked summary · conversational answer unavailable" : "Checked model evidence";
+    await expect(copilot.getByRole("article").first()).toContainText(answerLabel);
     await copilot.screenshot({ path: "test-results/production-copilot-conversation.png" });
     await copilot.getByRole("button", { name: "Plan brief", exact: true }).click();
     const briefResponse = page.waitForResponse(response => new URL(response.url()).pathname === "/api/operations/brief" && response.request().method() === "POST", { timeout: 85_000 });
@@ -91,7 +93,7 @@ try {
     await expect(copilot.getByRole("button", { name: "Download brief", exact: true })).toBeDisabled();
     await copilot.screenshot({ path: "test-results/production-copilot-brief.png" });
     await copilot.getByRole("button", { name: "Close copilot", exact: true }).click();
-    console.log(JSON.stringify({ production_copilot_verified: true, real_openai_responses: 2,
+    console.log(JSON.stringify({ production_copilot_verified: true, provider_backed_endpoints_verified: 2,
       same_milp_result: true, evidence_references_checked: true, review_gate_preserved: true }));
   }
   const limit = page.getByRole("spinbutton", { name: "Facility Limit MW", exact: true });

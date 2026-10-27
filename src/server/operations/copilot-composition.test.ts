@@ -54,6 +54,8 @@ describe("grounded conversational writing", () => {
     { paragraphs: [{ text: "Peak {{fact:invented}}", factIds: ["invented"], guidanceIds: [] }] },
     { paragraphs: [{ text: "Dispatch is guaranteed.", factIds: ["power.plan_peak"], guidanceIds: [] }] },
     { paragraphs: [{ text: "Everything is fine.", factIds: [], guidanceIds: [] }] },
+    { paragraphs: [{ text: "Peak {{fact:power.plan_peak}} MW.", factIds: ["power.plan_peak"], guidanceIds: [] }] },
+    { paragraphs: [{ text: "Minimum SOC {{fact:battery.minimum_soc}}%.", factIds: ["battery.minimum_soc"], guidanceIds: [] }] },
   ])("rejects unverified prose and returns the existing checked answer", async invalid => {
     const fetcher = vi.fn().mockResolvedValueOnce(Response.json(job))
       .mockResolvedValueOnce(response({ queries: [query], proposal: null })).mockResolvedValueOnce(response(invalid));
