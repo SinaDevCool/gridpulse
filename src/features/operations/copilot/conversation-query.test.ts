@@ -3,6 +3,7 @@ import { canonicalMilpJob } from "../../../../tests/fixtures/canonical-milp-job"
 import { buildSyntheticMilpRequest } from "../synthetic-milp-request";
 import { defaultOperationsScenario } from "../scenario-engine";
 import { selectCanonicalPresentation } from "../canonical-presentation";
+import { selectCanonicalComputeView } from "../canonical-compute";
 import { answerConversation } from "./conversation-query";
 import { answerAnalysisPlan } from "./analysis-plan";
 import { CHAT_VERSION, conversationRequestSchema, querySchema, type ConversationQuery } from "./conversation-contracts";
@@ -29,7 +30,8 @@ describe("conversation evidence queries", () => {
     const result = answer();
     expect(result.kind).toBe("answer");
     expect(result.evidence.find(f => f.id === "interval.0.import")?.value).toBe(a.points[0].gridImportMw);
-    expect(result.evidence.filter(f => f.source.selector === "selectCanonicalComputeView")).toHaveLength(a.jobs.length);
+    expect(result.evidence.filter(f => f.source.selector === "selectCanonicalComputeView" && f.unit === "MW")).toHaveLength(a.jobs.length);
+    expect(result.evidence.filter(f => f.source.selector === "selectCanonicalComputeView" && f.source.field.endsWith(".name")).map(f => f.value)).toEqual(selectCanonicalComputeView(a, a.points[0].timestamp).jobs.map(j => j.name));
     expect(result.navigation[0]).toMatchObject({ view: "compute", timestamp: a.points[0].timestamp });
     expect(result.receipt.resultFingerprint).toBe(request.resultFingerprint);
   });

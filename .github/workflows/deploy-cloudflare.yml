@@ -80,6 +80,7 @@ jobs:
         if: vars.OPERATIONS_MILP_ENABLED == 'true' && vars.PUBLIC_MILP_ENABLED == 'true'
         env:
           GRIDPULSE_CHECK_COPILOT: 'true'
+          GRIDPULSE_EXPECT_COPILOT_PROVIDER: ${{ vars.COPILOT_PROVIDER || 'openai' }}
         run: node scripts/check-production-milp.mjs
       - uses: actions/upload-artifact@v4
         if: ${{ always() }}

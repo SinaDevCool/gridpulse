@@ -117,7 +117,8 @@ export function answerConversation(a: CanonicalPresentation, request: Conversati
       return respond();
     }
     if (!job) return stop("clarification", `Which workload? Available names: ${compute.jobs.map(j => j.name).join(", ")}.`);
-    blocks.push(`Workload: ${job.name}. Times below are UTC; execution is modelled, not delivered.`);
+    add("job.name", "Workload", job.name, "status", "compute", "selectCanonicalComputeView", `${job.id}.name`);
+    blocks.push("Times below are UTC; execution is modelled, not delivered.");
     if (query.intent === "constraints") {
       add("job.earliest", "Declared earliest start", job.earliest, "status", "compute", "selectCanonicalComputeView", `${job.id}.earliest`);
       add("job.deadline", "Declared deadline", job.deadline, "status", "compute", "selectCanonicalComputeView", `${job.id}.deadline`);
@@ -173,8 +174,11 @@ export function answerConversation(a: CanonicalPresentation, request: Conversati
       }
       if (query.intent === "interval") {
         const running = selectCanonicalComputeView(a, p.timestamp).jobs.filter(j => j.current.power_mw > 0 || j.current.checkpoint_or_restart);
-        for (const j of running) add(`interval.${i}.${j.id}`, `${j.name}${j.current.checkpoint_or_restart ? " (checkpoint/restart)" : ""}`, j.current.power_mw,
+        for (const j of running) {
+          add(`interval.${i}.${j.id}.name`, "Workload name", j.name, "status", "compute", "selectCanonicalComputeView", `${j.id}.name`);
+          add(`interval.${i}.${j.id}`, `${j.name}${j.current.checkpoint_or_restart ? " (checkpoint/restart)" : ""}`, j.current.power_mw,
           "MW", "compute", "selectCanonicalComputeView", `${j.id}.points[${i}].power_mw`);
+        }
         if (!running.length) blocks.push("No workload activity is returned in this interval.");
       }
     }

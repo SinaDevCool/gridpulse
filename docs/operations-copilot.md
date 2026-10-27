@@ -175,3 +175,11 @@ confuse deterministic mocked tests with a successful live Meta qualification. Re
 directness, source relevance, follow-up resolution, model/general-guidance separation,
 uncertainty and refusal quality before enabling a release. The harness creates a synthetic
 hosted job and uses provider credits; it is opt-in and never part of ordinary unit tests.
+
+### Conversational qualification and provider identity
+
+Workload answers retain checked workload names alongside power facts. A named workload completion or deadline question is scoped to that job; overall checks remain plan-wide. Built-in reviewed definitions do not require a second writing call when they contain no assessment facts. Natural prose must not turn model feasibility into operational safety or reliability claims.
+
+The existing conversation qualification script accepts COPILOT_QUALIFY_FILTER for focused cases and COPILOT_QUALIFY_LIVE_URL for the deployed conversation endpoint. Live mode checks the provider reported by the returned receipt against COPILOT_PROVIDER. Reports remain ignored local artifacts and still require human semantic review.
+
+For Meta activation, configure the server secret META_API_KEY and deployment variables COPILOT_PROVIDER=meta and COPILOT_MODEL=muse-spark-1.3. A local Meta test does not prove production activation. The production smoke check requires grounded conversational writing and checks GRIDPULSE_EXPECT_COPILOT_PROVIDER against the actual answer receipt. No implicit provider fallback is enabled.
