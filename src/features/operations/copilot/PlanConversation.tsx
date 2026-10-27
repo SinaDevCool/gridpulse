@@ -48,6 +48,7 @@ export function PlanConversation({ state, enabled, context, onNavigate, identity
         <div className="ops-chat-question"><span className="sr-only">Your question: </span>{turn.question}</div>
         <small>{turn.answer.basis === "general_explanation" ? "General explanation" : turn.answer.kind === "answer" ? "Checked model evidence" : turn.answer.kind.replaceAll("_", " ")}</small>
         {answerBlocks(turn.answer.blocks, turn.answer.evidence).map((block, i) => <p key={i}>{block}</p>)}
+        {turn.answer.proposalClarification ? <p role="status">{turn.answer.proposalClarification}</p> : null}
         {answerFacts(turn.answer.evidence).length ? <dl className="ops-chat-facts">{answerFacts(turn.answer.evidence).map(fact =>
           <div key={fact.id}><dt>{fact.label}</dt><dd>{formatBriefFact(fact)}</dd></div>)}</dl> : null}
         {turn.answer.coverage && turn.answer.coverage.some(part => part.status !== "answer") ? <small role="status">

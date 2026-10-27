@@ -40,7 +40,13 @@ export function selectCanonicalPresentation(rawJob: unknown, request: FacilityPl
       constraintCode: "modeled", constraintLabel: "Binding-constraint explanation unavailable",
     };
   });
-  return { projected, request, points, batteryAudit, limitMw: facility.import_limit_mw, targetMw: target,
+  const diagnosticEvidence = z.object({ result_payload: z.object({ diagnostic_evidence: z.object({
+    basis: z.literal("canonical_physical_replay"), available: z.boolean(), causal_binding_constraints_assessed: z.literal(false),
+    findings: z.array(z.object({ code: z.enum(["peak_import_margin", "peak_target_margin", "minimum_battery_reserve_margin"]),
+      asset_id: z.string(), interval_index: z.number().int().nonnegative(), value: finite, unit: z.enum(["MW", "MWh"]), source_field: z.string() })).max(16),
+  }).optional() }) }).safeParse(rawJob);
+  return { diagnosticEvidence: diagnosticEvidence.success ? diagnosticEvidence.data.result_payload.diagnostic_evidence : undefined,
+    projected, request, points, batteryAudit, limitMw: facility.import_limit_mw, targetMw: target,
     protectedSocPercent: batteryAudit?.protectedSocPercent ?? 0,
     baselinePeakMw: Math.max(...projected.overview.baseline.map(point => point.grid_import_mw)),
     planPeakMw: Math.max(...points.map(point => point.gridImportMw)),

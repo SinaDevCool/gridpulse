@@ -277,7 +277,10 @@ const reportKnowledge = [
 ] as const;
 export const reviewedKnowledge = [...operationalKnowledge, ...reportKnowledge];
 const tokens = (text: string) => [...new Set(text.toLowerCase().normalize("NFKC").match(/[\p{L}\p{N}]+/gu) ?? [])];
-export function retrieveOperationalKnowledge(question: string) {
+export function retrieveOperationalKnowledge(question: string, context: { intents?: readonly string[]; purpose?: "general_guidance" | "site_calibration" | "dispatch_authorisation" } = {}) {
+  // Guidance cannot substitute for a numerical counterfactual or causal proof.
+  if (context.intents?.length && context.intents.every(intent => ["unsupported", "why", "clarify"].includes(intent))) return [];
+  if (context.purpose && context.purpose !== "general_guidance") return [];
   const words = tokens(question);
   return reviewedKnowledge.map(item => ({ item, score: words.reduce((sum, word) =>
     sum + (item.terms.some(term => word === term || (term.length >= 5 && word.startsWith(term))) ? 1 : 0), 0) }))

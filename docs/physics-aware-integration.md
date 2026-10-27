@@ -74,3 +74,43 @@ not satisfy them. No learned model is trained or promoted automatically.
   this artifact is not sealed or approved for publishing. Existing chunk-size/
   transient chart warnings do not establish numerical or physical validation.
 - No deployment, production storage change, model training or artifact promotion.
+
+
+## Reviewed copilot proposals and engine evidence (2026-10-27)
+
+Provider selection does not change the planning model. Both interpreters use the same
+strict proposal selection schema; the compiler resolves units, relative changes and
+asset identity only against the owned accepted request. It rejects ambiguous assets,
+duplicate fields, unsupported quantities and invalid bounds. A proposal binds baseline
+job/result identity and a reproducible digest. It is a review suggestion, not a solve:
+the existing confirmation and experiment job API remain the only submission path.
+
+The server capability inventory now distinguishes enabled exact experiments, private
+accounting, attached experiment results and unavailable causal explanations. Private
+capabilities require `COPILOT_EXPERIMENTS_ENABLED=true` or
+`COPILOT_ACCOUNTING_ENABLED=true` in the server configuration. Defaults are disabled;
+these flags do not grant backend authorisation or enable public experiment endpoints.
+An ordinary public synthetic calculation is explicitly labelled as a different
+calculation, never an exact accepted-baseline comparison. No production flags are changed.
+
+The existing experiment schema adds optional replay metrics and baseline metrics for
+backward compatibility. The review displays these together; experiment follow-ups use
+checked source paths and units without asking a provider to invent quantities. Optional
+engine diagnostic margins are included in diagnosis evidence; older results continue
+without them. General report guidance stays separate and is not retrievable as site
+calibration or dispatch-authorisation evidence.
+
+Research implementations of common-command scenario planning and offline measurement
+calibration live in Fullb. There is no second solver, vector database or training in this
+repository. These capabilities require a qualified engine artifact before hosted use;
+this change does not silently activate them through the public mock service. Customer
+measurements and expert sign-off remain necessary for real-site model qualification.
+
+
+Validation for this increment: focused Operations 292 passed / 1 skipped; server Operations
+46 passed followed by the expanded conversation boundary suite (20 passed); proposal compiler
+and capability unit coverage passed; typecheck, architecture, encoding and lint passed
+with the existing visualization fast-refresh warning. An isolated fixture build passed
+bundle budgets, and the compiled MILP browser journey passed with one worker. The initial
+flag-disabled browser run was skipped and is not counted as qualification. No paid model
+requests or production changes were used.

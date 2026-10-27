@@ -8,9 +8,11 @@ import { BriefError, generatePlanBrief, ownedBriefEvidence, ownedAssessment, own
 import { conversationRequestSchema } from "../../features/operations/copilot/conversation-contracts";
 import { answerConversation } from "../../features/operations/copilot/conversation-query";
 import { interpretQuestion } from "./copilot-conversation";
+import { copilotCapabilities } from "./copilot-capabilities";
+import { compileExperimentProposal } from "../../features/operations/copilot/experiment-proposal";
 
 export type CopilotConfig = ProviderConfig & { OPENAI_API_KEY?: string; COPILOT_ENABLED?: string;
-  COPILOT_MODEL?: string; COPILOT_ANALYTICS_URL?: string;
+  COPILOT_MODEL?: string; COPILOT_ANALYTICS_URL?: string; COPILOT_EXPERIMENTS_ENABLED?: string; COPILOT_ACCOUNTING_ENABLED?: string;
   COPILOT_RATE_LIMITER?: { limit(input: { key: string }): Promise<{ success: boolean }> } };
 
 /** One handler shared by the Worker route and direct boundary tests. No second job API. */
@@ -37,9 +39,11 @@ async function handleCopilot(request: Request, config: CopilotConfig, fetcher: t
     if (conversation) {
       const question = conversationRequestSchema.parse(raw);
       const assessment = await ownedAssessment(config.COPILOT_ANALYTICS_URL, bearer, question.jobId, question.resultFingerprint, fetcher);
+      const access = { experiments: config.COPILOT_EXPERIMENTS_ENABLED === "true", accounting: config.COPILOT_ACCOUNTING_ENABLED === "true" };
+      const capabilities = copilotCapabilities(!!question.experimentJobId, access);
       const fastExperiment = !!question.experimentJobId && /\b(stress|test(?:ed)?|experiment|comparison)\b/i.test(question.question)
           && !/\b(what if|suppose|imagine|control|dispatch|euros?|carbon)\b/i.test(question.question);
-      const interpreted = fastExperiment ? null : await interpretQuestion(assessment, question, "", config.COPILOT_MODEL ?? "gpt-4o-mini", transport);
+      const interpreted = fastExperiment ? null : await interpretQuestion(assessment, question, "", config.COPILOT_MODEL ?? "gpt-4o-mini", transport, access);
       const queries = interpreted ? interpreted.queries ?? [interpreted.query] : [];
       if (question.experimentJobId && (fastExperiment || queries.length === 1 && queries[0].intent === "experiment")) {
         const job = await ownedAnalyticsJob(config.COPILOT_ANALYTICS_URL, bearer, question.experimentJobId, fetcher);
@@ -55,23 +59,38 @@ async function handleCopilot(request: Request, config: CopilotConfig, fetcher: t
           { key: "peak_import_mw", label: "Tested peak import", value: item.peak_import_mw, unit: "MW" },
           { key: "above_import_limit_minutes", label: "Tested time above limit", value: item.above_import_limit_minutes, unit: "min" },
           { key: "remaining_work_hours", label: "Tested remaining work", value: item.remaining_work_hours, unit: "work h" },
+          ...(item.metrics ? [
+            { key: "grid_import_mwh", label: `${item.case_id}: grid energy`, value: item.metrics.grid_import_mwh, unit: "MWh AC" },
+            { key: "minimum_soc_fraction", label: `${item.case_id}: minimum SOC fraction`, value: item.metrics.minimum_soc_fraction == null ? null : item.metrics.minimum_soc_fraction * 100, unit: "%" },
+            { key: "above_target_minutes", label: `${item.case_id}: above safety target`, value: item.metrics.above_target_minutes, unit: "min" },
+            { key: "deadline_checks_met", label: `${item.case_id}: deadlines met`, value: item.metrics.deadline_checks_met, unit: "count" },
+          ] : []),
         ].map(f => factSchema.parse({ id: `experiment.${index}.${f.key}`, label: f.label, unit: f.unit, scope: "full_horizon",
           availability: f.value == null ? "unavailable" : "available", value: f.value ?? null,
-          source: { view: "overview", selector: `Experiment:${job.id}:${experiment.result_fingerprint}`, field: `cases[${index}].${f.key}` } })));
+          source: { view: "overview", selector: `Experiment:${job.id}:${experiment.result_fingerprint}`, field: `cases[${index}].${item.metrics && f.key in item.metrics ? "metrics." : ""}${f.key}` } })));
         return Response.json({ ...answer, blocks: experiment.cases.flatMap(item => [
           `Experiment ${item.case_id}: ${item.mode === "frozen_plan" ? "accepted commands held fixed" : "separate re-optimisation"}. ${item.status === "unsupported_or_invalid" ? "This case could not be assessed." : item.accepted ? "The supplied checks passed." : "The supplied checks did not pass."}`,
           ...(item.first_violation_index != null ? [`First returned violation: ${assessment.points[item.first_violation_index]?.timestamp ?? "unknown interval"}.`] : []),
           ...(item.violations?.length ? [`Returned violations: ${[...new Set(item.violations.map(v => v.code))].join(", ")}.`] : []),
-        ]), evidence: facts, navigation: [], guidance: retrieveOperationalKnowledge(question.question),
+        ]), evidence: facts, navigation: [], capabilities, guidance: retrieveOperationalKnowledge(question.question),
           limitations: ["Assumed stress scenarios are not a calibrated reliability probability.",
             "This tests the submitted model, not measured delivery, rack temperatures or subinterval ramps."],
           receipt: { ...answer.receipt, generation: receipt() } }, { headers });
       }
       if (!interpreted) throw new BriefError(422, "Question interpretation unavailable.");
       const answer = answerAnalysisPlan(assessment, question, queries, interpreted.provider);
+      let proposal;
+      let proposalClarification;
+      if (queries.some(query => query.intent === "what_if")) {
+        if (!access.experiments) proposalClarification = "Exact-baseline experiments are unavailable in this service. A new synthetic calculation is not an exact comparison.";
+        else if (interpreted.proposal) {
+          try { proposal = await compileExperimentProposal(assessment, question.jobId, interpreted.proposal); }
+          catch (error) { proposalClarification = error instanceof Error ? error.message : "Clarify the proposed change."; }
+        } else proposalClarification = "Specify the asset, exact change and unit. Battery energy (MWh) and power (MW) are different changes.";
+      }
       const guidanceAllowed = answer.kind === "answer" || answer.evidence.length > 0 ||
         queries.some(query => ["what_if", "readiness", "diagnosis", "knowledge", "accounting"].includes(query.intent));
-      return Response.json({ ...answer, receipt: { ...answer.receipt, generation: receipt() }, guidance: guidanceAllowed ? retrieveOperationalKnowledge(question.question) : [] }, { headers });
+      return Response.json({ ...answer, capabilities, proposal, proposalClarification, receipt: { ...answer.receipt, generation: receipt() }, guidance: guidanceAllowed ? retrieveOperationalKnowledge(question.question, { intents: queries.map(query => query.intent) }) : [] }, { headers });
     }
     const evidence = await ownedBriefEvidence(config.COPILOT_ANALYTICS_URL, bearer, input.data.jobId, input.data.resultFingerprint, fetcher);
     const provider = providerSettings(config);

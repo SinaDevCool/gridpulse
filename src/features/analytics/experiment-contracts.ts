@@ -14,16 +14,26 @@ export const experimentRequestSchema = z.object({
 export type ExperimentRequest = z.infer<typeof experimentRequestSchema>;
 const violationSchema = z.object({ code: z.string(), interval_index: z.number().int().nonnegative().nullable(),
   asset_id: z.string().optional(), magnitude: z.number().finite().optional(), unit: z.string().optional() });
+export const comparisonMetricsSchema = z.object({
+  grid_import_mwh: z.number().finite().nonnegative(), above_target_minutes: z.number().finite().nonnegative().nullable(),
+  minimum_soc_fraction: z.number().finite().nonnegative().nullable(), battery_delivered_mwh: z.number().finite().nonnegative(),
+  battery_equivalent_full_cycles: z.number().finite().nonnegative(), terminal_target_met: z.boolean().nullable(),
+  deadline_checks_met: z.number().int().nonnegative(), workload_count: z.number().int().nonnegative(),
+  rebound_peak_mw: z.number().finite().nonnegative().nullable(), basis: z.literal("canonical_physical_replay"),
+  causal_binding_constraints_assessed: z.literal(false),
+}).strict();
 export const experimentResultSchema = z.object({
   schema_version: z.literal("gridpulse-facility-experiment-result-v1"), engine_version: z.string(),
   input_fingerprint: z.string().regex(/^[a-f0-9]{64}$/), result_fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
   baseline_result_fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
+  baseline_metrics: comparisonMetricsSchema.optional(),
   scenario_basis: z.literal("assumed_not_calibrated_probability"),
   capacity_claim: z.literal(false), automatic_live_dispatch_authorized: z.literal(false),
   cases: z.array(z.object({ case_id: z.string(), mode: z.enum(["alternative", "frozen_plan"]),
     status: z.enum(["completed", "unsupported_or_invalid"]), accepted: z.boolean(), reason: z.string().optional(),
     peak_import_mw: z.number().finite().nonnegative().optional(), above_import_limit_minutes: z.number().finite().nonnegative().optional(),
     remaining_work_hours: z.number().finite().nonnegative().optional(), first_violation_index: z.number().int().nonnegative().nullable().optional(),
+    metrics: comparisonMetricsSchema.optional(),
     violations: z.array(violationSchema).optional(), unsupported_checks: z.array(z.string()).optional(),
   }).passthrough()).min(1).max(4),
 });

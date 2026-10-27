@@ -21,6 +21,14 @@ export function answerAnalysisPlan(a: CanonicalPresentation, request: Conversati
   const first = answers[0];
   const facts = answers.flatMap((answer, i) => answer.evidence.map(fact => ({ ...fact,
     id: selected.length > 1 && fact.id.startsWith("job.") ? `query.${i}.${fact.id}` : fact.id })));
+  if (selected.some(query => query.intent === "diagnosis") && a.diagnosticEvidence?.available) {
+    for (const [index, finding] of a.diagnosticEvidence.findings.entries()) {
+      if (finding.interval_index >= a.points.length) continue;
+      facts.push({ id: `diagnostic.${index}`, label: finding.code.replaceAll("_", " "),
+        unit: finding.unit === "MWh" ? "MWh DC" : "MW", scope: "full_horizon", availability: "available", value: finding.value,
+        source: { view: finding.unit === "MWh" ? "power" : "overview", selector: `EngineDiagnostic:${finding.code}:${finding.asset_id}`, field: `diagnostic_evidence.findings[${index}].value` } });
+    }
+  }
   const hasAnswer = answers.some(answer => answer.kind === "answer");
   const kind = answers.some(answer => answer.kind === "requires_calculation") ? "requires_calculation" : hasAnswer ? "answer" : first.kind;
   const blocks = [...new Set(answers.flatMap(answer => answer.blocks))];

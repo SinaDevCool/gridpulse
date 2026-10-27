@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { retrieveOperationalKnowledge, operationalKnowledge } from "./operational-knowledge";
 describe("reviewed operational retrieval", () => {
+  it("does not supply report guidance as calibration or dispatch evidence", () => {
+    expect(retrieveOperationalKnowledge("battery capacity", { purpose: "site_calibration" })).toEqual([]);
+    expect(retrieveOperationalKnowledge("battery capacity", { purpose: "dispatch_authorisation" })).toEqual([]);
+    expect(retrieveOperationalKnowledge("battery capacity", { intents: ["why"] })).toEqual([]);
+  });
   it("ranks bounded guidance with explicit source and applicability", () => {
     const result = retrieveOperationalKnowledge("PUE facility overhead efficiency");
     expect(result[0].id).toBe("pue-boundary");

@@ -18,6 +18,34 @@ const request = (input: unknown = body, auth = "Bearer visitor-token") => new Re
   method: "POST", headers: { authorization: auth, "content-type": "application/json" }, body: JSON.stringify(input) });
 
 describe("conversation boundary", () => {
+  it("prepares an exact proposal only when enabled, without submitting a job", async () => {
+    const fetcher = vi.fn().mockResolvedValueOnce(Response.json(job));
+    const result = await handlePlanConversation(request({ ...body, question: "What if battery energy is halved?" }),
+      { ...options(), COPILOT_EXPERIMENTS_ENABLED: "true" }, fetcher);
+    const answer = conversationResponseSchema.parse(await result.json());
+    expect(answer.proposal?.request.baseline_job_id).toBe(job.id);
+    expect(answer.proposal?.request.cases[0].changes[0].value).toBe(Number(job.input_payload.batteries![0].rated_energy_mwh) / 2);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+  it("compiles provider-neutral workload-duration proposals through the existing field contract", async () => {
+    const workloadId = String(job.input_payload.workloads[0].workload_id);
+    const fetcher = vi.fn().mockResolvedValueOnce(Response.json(job)).mockResolvedValueOnce(response({
+      queries: [{ ...query, intent: "what_if", workloadId }], proposal: { mode: "alternative", changes: [
+        { field: "workload_duration_multiplier", asset_id: workloadId, operation: "set", value: 1.5, unit: "x" }] } }));
+    const result = await handlePlanConversation(request({ ...body, question: "What if this workload takes 50 percent longer?" }),
+      { ...options(), COPILOT_EXPERIMENTS_ENABLED: "true" }, fetcher);
+    const answer = conversationResponseSchema.parse(await result.json());
+    expect(answer.proposal?.request.cases[0].changes[0]).toMatchObject({ field: "workload_duration_multiplier", value: 1.5, asset_id: workloadId });
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  });
+  it("clarifies unavailable exact experiments instead of promising an equivalent synthetic run", async () => {
+    const fetcher = vi.fn().mockResolvedValueOnce(Response.json(job));
+    const result = await handlePlanConversation(request({ ...body, question: "What if battery energy is halved?" }), options(), fetcher);
+    const answer = conversationResponseSchema.parse(await result.json());
+    expect(answer.proposal).toBeUndefined();
+    expect(answer.proposalClarification).toContain("not an exact comparison");
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
   it("offers labelled battery guidance while requiring a separate counterfactual calculation", async () => {
     const fetcher = vi.fn().mockResolvedValueOnce(Response.json(job)).mockResolvedValueOnce(response({ queries: [{ ...query, intent: "what_if" }] }));
     const result = await handlePlanConversation(request({ ...body, question: "What if battery capacity is halved?" }), options(), fetcher);
@@ -103,6 +131,20 @@ describe("checked experiment follow-up", () => {
     expect(answer.blocks.join(" ")).toContain("did not pass");
     expect(answer.evidence.some(f => f.source.selector.includes(experimentId))).toBe(true);
     expect(fetcher).toHaveBeenCalledTimes(2);
+  });
+  it("renders engine comparison metrics with valid evidence units and source paths", async () => {
+    const enriched = structuredClone(experiment);
+    Object.assign(enriched.result_payload.cases[0], { metrics: {
+      grid_import_mwh: 100, above_target_minutes: 30, minimum_soc_fraction: .4,
+      battery_delivered_mwh: 2, battery_equivalent_full_cycles: .1, terminal_target_met: true,
+      deadline_checks_met: 5, workload_count: 5, rebound_peak_mw: null,
+      basis: "canonical_physical_replay", causal_binding_constraints_assessed: false,
+    } });
+    const fetcher = vi.fn().mockResolvedValueOnce(Response.json(job)).mockResolvedValueOnce(Response.json(enriched));
+    const result = await handlePlanConversation(request({ ...body, question: "Explain the stress test", experimentJobId: experimentId }), options(), fetcher);
+    expect(result.status).toBe(200);
+    const answer = conversationResponseSchema.parse(await result.json());
+    expect(answer.evidence.find(f => f.id === "experiment.0.minimum_soc_fraction")).toMatchObject({ value: 40, unit: "%", source: { field: "cases[0].metrics.minimum_soc_fraction" } });
   });
   it("rejects foreign experiments and results from another baseline", async () => {
     const foreign = vi.fn().mockResolvedValueOnce(Response.json(job)).mockResolvedValueOnce(new Response(null, { status: 404 }));

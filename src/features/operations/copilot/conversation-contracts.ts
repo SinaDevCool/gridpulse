@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { factSchema, receiptSchema } from "./contracts";
+import { proposalSelectionSchema, reviewedProposalSchema } from "./experiment-proposal";
 
 export const CHAT_VERSION = "operations-conversation-v2" as const;
 export const navigationSchema = z.object({ view: z.enum(["overview", "compute", "power"]),
@@ -13,7 +14,7 @@ export const querySchema = z.object({ intent: z.enum(intents), workloadId: z.str
   focus: z.enum(["selected", "peak", "minimum_soc", "first_charge", "first_discharge"]),
   definition: z.enum(definitions),
 }).strict();
-export const analysisPlanSchema = z.object({ queries: z.array(querySchema).min(1).max(4) }).strict();
+export const analysisPlanSchema = z.object({ queries: z.array(querySchema).min(1).max(4), proposal: proposalSelectionSchema.nullable().optional() }).strict();
 export type AnalysisPlan = z.infer<typeof analysisPlanSchema>;
 export type ConversationQuery = z.infer<typeof querySchema>;
 export const conversationRequestSchema = z.object({ version: z.literal(CHAT_VERSION), jobId: z.string().uuid(),
@@ -45,6 +46,10 @@ export const conversationResponseSchema = z.object({ version: z.literal(CHAT_VER
     evidenceClass: z.literal("report_guidance").optional(), excludedUses: z.array(z.string()).max(8).optional() }).strict()).max(4).optional(),
   receipt: receiptSchema, generatedAt: z.string().datetime({ offset: true }), model: z.string().max(100),
   limitations: z.array(z.string().max(500)).max(8),
+  proposal: reviewedProposalSchema.optional(),
+  proposalClarification: z.string().max(500).optional(),
+  capabilities: z.array(z.object({ intent: z.enum(intents), execution: z.string(), available: z.boolean(),
+    limitations: z.string(), unavailableReason: z.string().nullable() }).strict()).max(24).optional(),
 }).strict().refine(value => new Set(value.evidence.map(fact => fact.id)).size === value.evidence.length,
   "Duplicate evidence");
 export type ConversationAnswer = z.infer<typeof conversationResponseSchema>;
