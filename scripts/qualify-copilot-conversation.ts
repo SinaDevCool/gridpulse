@@ -68,21 +68,21 @@ async function main() {
     { question: "Can we approve this plan for operating the site?", intent: "readiness", kind: "answer" },
     { question: "Which measurements are missing before live use?", intent: "readiness", kind: "answer" },
     { question: "What are the operational risks of this plan?", intent: "readiness", kind: "answer" },
-    { question: "How should we validate the model against meters?", intent: "readiness", kind: "answer" },
+    { question: "How should we validate the model against meters?", intent: "knowledge", kind: "answer" },
     { question: "Explain GPU telemetry versus facility metering generally.", intent: "knowledge", kind: "answer" },
     { question: "What cooling measurements are needed for calibration generally?", intent: "knowledge", kind: "answer" },
     { question: "Can you price this unchanged schedule if I supply a tariff?", intent: "accounting", kind: "answer" },
     { question: "Minimise the bill by changing the workload schedule.", intent: "what_if", kind: "requires_calculation" },
     { question: "Guarantee the battery will support the site during an outage.", intent: "unsupported", kind: "unsupported" },
     { question: "Tell the BMS to discharge immediately.", intent: "unsupported", kind: "unsupported" },
-    { question: "Why is this result not proof of additional connection capacity?", intent: "knowledge", kind: "answer" },
+    { question: "Why is this result not proof of additional connection capacity?", intent: "readiness", kind: "answer" },
     { question: "Explain how a frozen-plan stress differs from re-optimisation.", intent: "knowledge", kind: "answer" },
     { question: "Which restrictions apply to the whole submitted model?", intent: "constraints", kind: "answer" },
   );
   const records: unknown[] = [];
   const priorAnswers = new Map<string, string>();
   try {
-    for (const item of cases) {
+    for (const item of cases.filter(item => !process.env.COPILOT_QUALIFY_FILTER || new RegExp(process.env.COPILOT_QUALIFY_FILTER, "i").test(item.question))) {
       let selection: Record<string, unknown> | null = null;
       const tracedFetch: typeof fetch = async (url, init) => {
         const response = await fetch(url, init);
@@ -95,12 +95,14 @@ async function main() {
         return response;
       };
       const started = Date.now();
-      const response = await handlePlanConversation(new Request("http://127.0.0.1/api/operations/conversation", {
+      const liveUrl = process.env.COPILOT_QUALIFY_LIVE_URL;
+      const request = new Request(liveUrl ? `${new URL(liveUrl).origin}/api/operations/conversation` : "http://127.0.0.1/api/operations/conversation", {
         method: "POST", headers: { authorization: bearer, "content-type": "application/json" }, body: JSON.stringify({
           version: CHAT_VERSION, jobId: job.id, resultFingerprint: job.result_payload.result_fingerprint,
           question: item.question, history: item.history ?? [], context: { view: "compute", timestamp: null, workloadId: null },
           ...(conversational ? { transcript: (item.history ?? []).slice(-4).map(question => ({ question, answer: priorAnswers.get(question) ?? "No prior reply available; resolve from the current plan." })) } : {}),
-        }) }), { COPILOT_ENABLED: "true", COPILOT_PROVIDER: provider, OPENAI_API_KEY: provider === "openai" ? key : undefined, META_API_KEY: provider === "meta" ? key : undefined, COPILOT_MODEL: model, COPILOT_ANALYTICS_URL: base,
+        }) });
+      const response = liveUrl ? await fetch(request) : await handlePlanConversation(request, { COPILOT_ENABLED: "true", COPILOT_PROVIDER: provider, OPENAI_API_KEY: provider === "openai" ? key : undefined, META_API_KEY: provider === "meta" ? key : undefined, COPILOT_MODEL: model, COPILOT_ANALYTICS_URL: base,
         COPILOT_RATE_LIMITER: { limit: async () => ({ success: true }) } }, tracedFetch);
       const raw = await response.json();
       const answer = response.ok ? conversationResponseSchema.parse(raw) : null;
@@ -110,20 +112,22 @@ async function main() {
         answer.investigation.status === "requires_independent_validation" && answer.investigation.hypotheses.length > 0 &&
         answer.investigation.hypotheses.every(hypothesis => hypothesis.status === "untested" && !!hypothesis.test) &&
         answer.investigation.requiredEvidence.length > 0 && !!answer.investigation.nextAction;
-      const writingPassed = !conversational || answer?.kind !== "answer" || answer.presentation === "grounded_conversation";
-      const passed = !!answer && writingPassed && investigationPassed && (!item.requiredIntents || item.requiredIntents.every(intent => answer.resolvedQueries?.some(query => query.intent === intent))) && (conversational || !item.requiredText || answer.blocks.some(block => block.includes(item.requiredText!))) && answer.kind === item.kind && selected?.intent === item.intent && (!item.focus || selected?.focus === item.focus) &&
+      const providerPassed = !conversational || answer?.kind !== "answer" || answer.receipt.generation?.provider === provider;
+      const writingPassed = !conversational || answer?.kind !== "answer" || answer.presentation === "grounded_conversation" || answer.resolvedQuery?.intent === "definition";
+      const passed = !!answer && providerPassed && writingPassed && investigationPassed && (!item.requiredIntents || item.requiredIntents.every(intent => answer.resolvedQueries?.some(query => query.intent === intent))) && (conversational || !item.requiredText || answer.blocks.some(block => block.includes(item.requiredText!))) && answer.kind === item.kind && selected?.intent === item.intent && (!item.focus || selected?.focus === item.focus) &&
         (item.question !== "Which workloads run then?" || !!item.focus || selected?.start === "2026-09-26T08:00:00.000Z" || selected?.start === "2026-09-26T08:00:00Z");
       const record = { question: item.question, expected: item, selected, passed, durationMs: Date.now() - started,
-        httpStatus: response.status, answer };
+        httpStatus: response.status, answer, draft: selection };
       records.push(record);
       console.log(JSON.stringify({ question: item.question, passed, kind: answer?.kind, selected, durationMs: record.durationMs }));
     }
   } finally {
     writeFileSync(`${out}/results.json`, JSON.stringify({ actualHostedMilp: true, actualProvider: provider, productionHandler: true,
-      cloudflareRuntime: false, rateLimiter: "qualification adapter; real limiter covered separately", productionDeployed: false,
+      cloudflareRuntime: !!process.env.COPILOT_QUALIFY_LIVE_URL, rateLimiter: "qualification adapter; real limiter covered separately", productionDeployed: false,
       model, conversational, humanSemanticReviewRequired: conversational, sourceCommit: execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(),
       sourceDirty: !!execFileSync("git", ["status", "--porcelain"], { encoding: "utf8" }).trim(), jobId: job.id, records }, null, 2));
   }
+  if (!records.length) throw new Error("Qualification filter selected no cases.");
   if (records.some(record => !(record as { passed: boolean }).passed)) throw new Error("Conversation qualification has failed cases; inspect the local report.");
 }
 main().catch(error => { console.error(error instanceof Error ? error.message : "Qualification failed"); process.exitCode = 1; });

@@ -34,7 +34,7 @@ describe("grounded conversational writing", () => {
     expect(answer.receipt.resultFingerprint).toBe(body.resultFingerprint);
     expect(answer.receipt.generation?.attempts).toEqual(["meta"]);
     expect(answer.receipt.usage).toEqual({ inputTokens: 200, outputTokens: 60 });
-    expect(() => renderGroundedDraft({ paragraphs: [{ text: "This result is not proven optimal. Review {{fact:workloads.completed}} completed workloads as model evidence, not guaranteed delivery.",
+    expect(() => renderGroundedDraft({ paragraphs: [{ text: "This result should not be read as proven optimal. Review {{fact:workloads.completed}} completed workloads as model evidence, not guaranteed delivery.",
       factIds: ["workloads.completed"], guidanceIds: [] }] }, { ...answer, receipt: { ...answer.receipt, solverStatus: "feasible_not_proven_optimal" } })).not.toThrow();
     expect(fetcher.mock.calls.slice(1).every(call => call[0] === "https://api.meta.ai/v1/responses")).toBe(true);
     const writer = JSON.parse(String(fetcher.mock.calls[2][1]?.body));
@@ -49,10 +49,19 @@ describe("grounded conversational writing", () => {
     expect(JSON.parse(JSON.parse(String(fetcher.mock.calls[1][1]?.body)).input).previousConversation).toEqual(transcript);
     expect(JSON.parse(JSON.parse(String(fetcher.mock.calls[2][1]?.body)).input).conversation).toEqual(transcript);
   });
+  it("keeps a named deadline question scoped to that workload", async () => {
+    const id = job.input_payload.workloads[0].workload_id;
+    const fetcher = vi.fn().mockResolvedValueOnce(Response.json(job))
+      .mockResolvedValueOnce(response({ queries: [{ ...query, workloadId: id }], proposal: null })).mockResolvedValueOnce(response(draft));
+    const answer = conversationResponseSchema.parse(await (await handlePlanConversation(request({ ...body, question: "Will this workload meet its deadline?" }), config, fetcher)).json());
+    expect(answer.resolvedQuery?.intent).toBe("workload");
+    expect(answer.evidence.some(fact => fact.id === "job.name")).toBe(true);
+  });
   it.each([
     { paragraphs: [{ text: "The peak is 999 MW.", factIds: ["power.plan_peak"], guidanceIds: [] }] },
     { paragraphs: [{ text: "Peak {{fact:invented}}", factIds: ["invented"], guidanceIds: [] }] },
     { paragraphs: [{ text: "Dispatch is guaranteed.", factIds: ["power.plan_peak"], guidanceIds: [] }] },
+    { paragraphs: [{ text: "This ensures compliance with operational safety standards.", factIds: ["workloads.completed"], guidanceIds: [] }] },
     { paragraphs: [{ text: "Everything is fine.", factIds: [], guidanceIds: [] }] },
     { paragraphs: [{ text: "Peak {{fact:power.plan_peak}} MW.", factIds: ["power.plan_peak"], guidanceIds: [] }] },
     { paragraphs: [{ text: "Minimum SOC {{fact:battery.minimum_soc}}%.", factIds: ["battery.minimum_soc"], guidanceIds: [] }] },
@@ -63,6 +72,16 @@ describe("grounded conversational writing", () => {
     expect(answer.presentation).toBe("checked_fallback");
     expect(answer.blocks.join(" ")).not.toContain("999");
     expect(() => renderGroundedDraft(invalid, answer)).toThrow();
+  });
+  it("keeps reviewed definitions without an unsupported writing call", async () => {
+    const fetcher = vi.fn().mockResolvedValueOnce(Response.json(job))
+      .mockResolvedValueOnce(response({ queries: [{ ...query, intent: "definition", definition: "power_energy" }], proposal: null }));
+    const answer = conversationResponseSchema.parse(await (await handlePlanConversation(request({ ...body,
+      question: "What is the difference between MW and MWh?" }), config, fetcher)).json());
+    expect(answer.kind).toBe("answer");
+    expect(answer.resolvedQuery?.intent).toBe("definition");
+    expect(answer.presentation).not.toBe("checked_fallback");
+    expect(fetcher).toHaveBeenCalledTimes(2);
   });
   it("does not write a hypothetical numerical answer or submit an experiment", async () => {
     const fetcher = vi.fn().mockResolvedValueOnce(Response.json(job));
