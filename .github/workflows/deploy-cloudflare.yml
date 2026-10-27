@@ -18,6 +18,8 @@ jobs:
     if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    env:
+      GRIDPULSE_SMOKE_BROWSER_CHANNEL: chrome
     concurrency:
       group: gridpulse-production-publish
       cancel-in-progress: false
@@ -29,8 +31,10 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Prepare production smoke-test browser
-        timeout-minutes: 8
-        run: npx playwright install --with-deps chromium
+        timeout-minutes: 2
+        run: |
+          google-chrome --version
+          node --input-type=module -e 'import { chromium } from "playwright"; const browser = await chromium.launch({channel: process.env.GRIDPULSE_SMOKE_BROWSER_CHANNEL, headless: true}); console.log(await browser.version()); await browser.close();'
       - uses: actions/download-artifact@v4
         with:
           name: ${{ needs.validate.outputs.artifact }}

@@ -38,7 +38,15 @@ test("PR and release reuse validation; only validated main artifacts can publish
   assert.ok(!steps.some((step) => step.run === "npm run build"));
   assert.ok(steps.some((step) => step.run?.includes("candidate-artifact.mjs verify")));
   assert.ok(steps.some((step) => step.run?.includes("git ls-remote")));
-  assert.ok(steps.some((step) => step.run === "npx playwright install --with-deps chromium"));
+  assert.equal(deploy.jobs.publish.env.GRIDPULSE_SMOKE_BROWSER_CHANNEL, "chrome");
+  const browserSetup = steps.find(step => step.name === "Prepare production smoke-test browser");
+  assert.equal(browserSetup["timeout-minutes"], 2);
+  assert.match(browserSetup.run, /google-chrome --version/);
+  assert.match(browserSetup.run, /chromium.launch/);
+  assert.ok(!steps.some(step => step.run?.includes("playwright install")));
+  for (const script of ["check-production-map.mjs", "check-production-milp.mjs"]) {
+    assert.match(readFileSync(`scripts/${script}`, "utf8"), /channel: process.env.GRIDPULSE_SMOKE_BROWSER_CHANNEL/);
+  }
   for (const step of steps)
     if (step.env?.CLOUDFLARE_API_TOKEN)
       assert.ok(["npx wrangler deploy --config dist/server/wrangler.json", "node scripts/configure-copilot-secret.mjs"].includes(step.run));
