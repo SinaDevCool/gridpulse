@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { FacilityPlanRequest } from "../analytics/contracts";
+import { planDiagnosticEvidenceSchema, type FacilityPlanRequest } from "../analytics/contracts";
 import { acceptCanonicalJobResult } from "./canonical-job-result";
 import type { BatteryTimelinePoint } from "./power/select-battery-workspace";
 import { canonicalBatteryPresentation } from "./canonical-battery-presentation";
@@ -40,7 +40,9 @@ export function selectCanonicalPresentation(rawJob: unknown, request: FacilityPl
       constraintCode: "modeled", constraintLabel: "Binding-constraint explanation unavailable",
     };
   });
-  return { projected, request, points, batteryAudit, limitMw: facility.import_limit_mw, targetMw: target,
+  const diagnosticEvidence = z.object({ result_payload: z.object({ diagnostic_evidence: planDiagnosticEvidenceSchema.optional() }) }).safeParse(rawJob);
+  return { diagnosticEvidence: diagnosticEvidence.success ? diagnosticEvidence.data.result_payload.diagnostic_evidence : undefined,
+    projected, request, points, batteryAudit, limitMw: facility.import_limit_mw, targetMw: target,
     protectedSocPercent: batteryAudit?.protectedSocPercent ?? 0,
     baselinePeakMw: Math.max(...projected.overview.baseline.map(point => point.grid_import_mw)),
     planPeakMw: Math.max(...points.map(point => point.gridImportMw)),

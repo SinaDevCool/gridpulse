@@ -1,3 +1,5 @@
+import { AccountingReview } from "./copilot/AccountingReview";
+import { AlternativePlanReview } from "./copilot/AlternativePlanReview";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { SYNTHETIC_RESOLUTION_LABEL } from "./synthetic-milp-request";
 import { useNavigate } from "@tanstack/react-router";
@@ -311,7 +313,9 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
             {showMilp && canonical ? <PlanCopilot state={copilot} jobId={canonical.jobId} current={!!canonicalCurrent}
               open={copilotOpen} onClose={closeCopilot} context={<>{contextLabel(chatContext, canonical.assessment.points.find(point => point.timestamp === canonicalTime)?.endTimestamp)}{canonicalWorkload ? <strong>{String(canonical.assessment.request.workloads.find(job => job.workload_id === canonicalWorkload)?.name ?? canonicalWorkload)}</strong> : null}</>}
               onNavigate={nextView => inspectCopilot({ view: nextView, timestamp: null, workloadId: null })}>
-              <PlanConversation active={copilotOpen} state={conversation} enabled={!!canonicalCurrent} context={chatContext}
+              <PlanConversation alternative={<><AccountingReview key={`accounting:${canonical.assessment.projected.identity.resultFingerprint}`} baseline={canonical.assessment} jobId={canonical.jobId} enabled={!!canonicalCurrent && !!conversation.turns.at(-1)?.answer.capabilities?.some(cap => cap.intent === "accounting" && cap.available) && !!conversation.turns.at(-1)?.answer.resolvedQueries?.some(query => query.intent === "accounting")} /><AlternativePlanReview key={`${canonical.assessment.projected.identity.resultFingerprint}:${conversation.turns.at(-1)?.answer.proposal?.digest ?? "manual"}`}
+                proposal={conversation.turns.at(-1)?.answer.proposal} exactAvailable={conversation.turns.at(-1)?.answer.capabilities?.some(cap => cap.intent === "what_if" && cap.available)}
+                scenario={scenario} baseline={canonical.assessment} baselineJobId={canonical.jobId} onExperiment={conversation.selectExperiment} enabled={!!canonicalCurrent && conversation.turns.at(-1)?.answer.kind === "requires_calculation"} /></>} active={copilotOpen} state={conversation} enabled={!!canonicalCurrent} context={chatContext}
                 identity={`${canonical.jobId}:${canonical.assessment.projected.identity.resultFingerprint}`} onNavigate={inspectCopilot} />
             </PlanCopilot> : null}
           </div>

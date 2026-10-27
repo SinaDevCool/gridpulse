@@ -21,6 +21,14 @@ const payload = () => ({
 });
 
 describe("staged canonical cross-tab projection", () => {
+  it("accepts typed additive engine diagnostics while rejecting causal or malformed evidence", () => {
+    const evidence = { basis: "canonical_physical_replay", available: true, causal_binding_constraints_assessed: false,
+      findings: [{ code: "peak_import_margin", asset_id: "facility", interval_index: 0, value: 2, unit: "MW", source_field: "facility.points.grid_import_mw" }] };
+    expect(projectCanonicalAssessment({ ...payload(), diagnostic_evidence: evidence }, hash).identity.status).toBe("optimal");
+    expect(() => projectCanonicalAssessment({ ...payload(), diagnostic_evidence: { ...evidence, causal_binding_constraints_assessed: true } }, hash)).toThrow();
+    expect(() => projectCanonicalAssessment({ ...payload(), diagnostic_evidence: { ...evidence, findings: [{ ...evidence.findings[0], value: NaN }] } }, hash)).toThrow();
+    expect(() => projectCanonicalAssessment({ ...payload(), invented_evidence: evidence }, hash)).toThrow();
+  });
   it("accepts a bounded replay-valid incumbent without claiming optimality", () => {
     const value = payload();
     value.result.status = "feasible_not_proven_optimal";

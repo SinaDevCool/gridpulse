@@ -1,3 +1,5 @@
+import { accountingRequestSchema, type AccountingRequest } from "../features/analytics/experiment-contracts";
+import { experimentRequestSchema, type ExperimentRequest } from "../features/analytics/experiment-contracts";
 import {
   capacityRequirementRequestSchema,
   facilityHistoricalReplayRequestSchema,
@@ -223,4 +225,17 @@ export function safeAnalyticsError(job: AnalyticsJob): string | null {
   return job.error
     ? "The study could not complete. Review quarantined cases or retry."
     : "The study could not complete.";
+}
+
+
+export function startFacilityExperiment(input: ExperimentRequest): Promise<JobAccepted> {
+  return acceptedRequest("/v1/jobs/facility-experiment", {
+    method: "POST", body: JSON.stringify(experimentRequestSchema.parse(input)),
+  });
+}
+
+export function startFacilityAccounting(input: AccountingRequest): Promise<JobAccepted> {
+  return acceptedRequest("/v1/jobs/facility-accounting", {
+    method: "POST", body: JSON.stringify(accountingRequestSchema.parse(input)),
+  });
 }

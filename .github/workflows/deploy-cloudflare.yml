@@ -47,6 +47,11 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          META_API_KEY: ${{ secrets.META_API_KEY }}
+          COPILOT_PROVIDER: ${{ vars.COPILOT_PROVIDER }}
+          COPILOT_MODEL: ${{ vars.COPILOT_MODEL }}
+          COPILOT_FALLBACK_PROVIDER: ${{ vars.COPILOT_FALLBACK_PROVIDER }}
+          COPILOT_FALLBACK_MODEL: ${{ vars.COPILOT_FALLBACK_MODEL }}
           COPILOT_ANALYTICS_URL: ${{ vars.OPERATIONS_MILP_API_URL }}
       - name: Publish the validated artifact
         run: npx wrangler deploy --config dist/server/wrangler.json

@@ -12,7 +12,10 @@ export function contextLabel(context: CopilotNavigation, endTimestamp?: string |
 
 /** No prose parsing, inferred arithmetic, or absent values converted into zero. */
 export function answerFacts(facts: BriefFact[]) {
-  return facts.filter(fact => fact.availability === "available" && typeof fact.value === "number").slice(0, 3);
+  const priority = ["power.plan_peak", "power.target", "battery.minimum_soc", "workloads.completed", "workloads.remaining"];
+  return facts.filter(fact => fact.availability === "available" && typeof fact.value === "number")
+    .map((fact, index) => ({ fact, rank: priority.includes(fact.id) ? priority.indexOf(fact.id) : 100 + index }))
+    .sort((a, b) => a.rank - b.rank).slice(0, 3).map(item => item.fact);
 }
 
 export function answerBlocks(blocks: string[], facts: BriefFact[]) {

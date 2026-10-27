@@ -5,17 +5,18 @@ import { CHAT_VERSION, conversationResponseSchema, type ConversationAnswer, type
 
 export type ConversationTurn = { question: string; answer: ConversationAnswer };
 export type PlanConversationState = { turns: ConversationTurn[]; pending: string | null; error: string | null;
-  ask: (question: string) => Promise<boolean>; stop: () => void; clear: () => void };
+  ask: (question: string) => Promise<boolean>; stop: () => void; clear: () => void; selectExperiment?: (jobId: string) => void };
 export function usePlanConversation(jobId: string | undefined, fingerprint: string, current: boolean, context: CopilotNavigation): PlanConversationState {
   const identity = `${jobId}:${fingerprint}:${current}`;
   const latest = useRef(identity); latest.current = identity;
   const gate = useRef(createBriefRequestLifecycle());
   const [saved, setSaved] = useState<{ identity: string; turns: ConversationTurn[] }>({ identity, turns: [] });
+  const experimentId = useRef<string | undefined>(undefined);
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const turns = saved.identity === identity && current ? saved.turns : [];
   useEffect(() => {
-    gate.current.sync(identity); setSaved({ identity, turns: [] }); setPending(null); setError(null);
+    experimentId.current = undefined; gate.current.sync(identity); setSaved({ identity, turns: [] }); setPending(null); setError(null);
     const lifecycle = gate.current;
     return () => lifecycle.cancel();
   }, [identity]);
@@ -28,7 +29,7 @@ export function usePlanConversation(jobId: string | undefined, fingerprint: stri
     const accepts = () => gate.current.accepts(ticket, latest.current);
     try {
       const answer = conversationResponseSchema.parse(await requestCopilot("conversation", { version: CHAT_VERSION, jobId,
-        resultFingerprint: fingerprint, question, history: turns.slice(-6).map(turn => turn.question), context },
+        resultFingerprint: fingerprint, experimentJobId: experimentId.current, question, history: turns.slice(-6).map(turn => turn.question), previousQueries: turns.slice(-3).flatMap(turn => turn.answer.resolvedQueries ?? [turn.answer.resolvedQuery]).slice(-3), context },
       AbortSignal.any([ticket.abort.signal, AbortSignal.timeout(80_000)])));
       if (answer.receipt.jobId !== jobId || answer.receipt.resultFingerprint !== fingerprint || answer.question !== question)
         throw new Error("Answer refers to a different question or plan.");
@@ -39,7 +40,7 @@ export function usePlanConversation(jobId: string | undefined, fingerprint: stri
       return false;
     } finally { if (gate.current.finish(ticket) && latest.current === identity) setPending(null); }
   }
-  return { turns, pending: current ? pending : null, error: current ? error : null, ask,
+  return { selectExperiment: id => { experimentId.current = id; }, turns, pending: current ? pending : null, error: current ? error : null, ask,
     stop: () => { gate.current.cancel(); setPending(null); setError("Stopped. You can retry; provider cancellation is not guaranteed."); },
-    clear: () => { gate.current.cancel(); setSaved({ identity, turns: [] }); setPending(null); setError(null); } };
+    clear: () => { experimentId.current = undefined; gate.current.cancel(); setSaved({ identity, turns: [] }); setPending(null); setError(null); } };
 }

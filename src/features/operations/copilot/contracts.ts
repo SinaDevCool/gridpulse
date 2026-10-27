@@ -10,7 +10,7 @@ export const briefRequestSchema = z.object({ version: z.literal(BRIEF_VERSION), 
   resultFingerprint: fingerprint }).strict();
 const factBase = { id: z.string().min(1).max(120), label: z.string().max(180),
   unit: z.enum(["MW", "MWh AC", "MWh DC", "%", "work h", "count", "min", "status"]),
-  scope: z.enum(["full_horizon", "workload_horizon", "submitted_model", "interval"]),
+  scope: z.enum(["full_horizon", "workload_horizon", "submitted_model", "interval", "selected_range"]),
   source: z.object({ selector: z.string(), field: z.string(), view: z.enum(["overview", "compute", "power"]) }).strict() };
 export const factSchema = z.discriminatedUnion("availability", [
   z.object({ ...factBase, availability: z.literal("available"), value: z.union([z.number().finite(), z.boolean(), z.string().max(200)]) }).strict(),
@@ -27,7 +27,9 @@ export const receiptSchema = z.object({ jobId: z.string().uuid().nullable(), inp
   optimalityGap: z.number().nonnegative().nullable(), truthClass: z.string(),
   horizonStart: z.string().datetime({ offset: true }), horizonEnd: z.string().datetime({ offset: true }),
   intervalCount: z.number().int().positive(), intervalMinutes: z.array(z.number().positive()).min(1),
-  evidenceVersion: z.literal(EVIDENCE_VERSION), promptVersion: z.enum([PROMPT_VERSION, "conversation-query-v1"]),
+  evidenceVersion: z.literal(EVIDENCE_VERSION), promptVersion: z.enum([PROMPT_VERSION, "conversation-query-v1", "conversation-analysis-v2"]),
+  generation: z.object({ provider: z.enum(["openai", "meta", "deterministic"]), attempts: z.array(z.enum(["openai", "meta"])).max(2),
+    elapsedMs: z.number().nonnegative() }).strict().optional(),
   providerResponseId: z.string().max(200).nullable(),
   usage: z.object({ inputTokens: z.number().int().nonnegative(), outputTokens: z.number().int().nonnegative() }).nullable(),
 }).strict();
