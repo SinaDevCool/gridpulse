@@ -18,7 +18,7 @@ export function CanonicalBatteryDetails({ assessment: a, model: m }: { assessmen
     </details>
     <details className="operations-assurance-panel"><summary>Power path</summary>
       <h3>Selected-interval facility power balance</h3>
-      {m.flow ? <PowerBalanceDiagram balance={m.flow} limitMw={a.limitMw} /> :
+      {m.flow ? <PowerBalanceDiagram balance={m.flow} limitMw={m.selected.limitMw} /> :
         <p role="status">Ribbon view unavailable for generation/export or unreconciled accounting. Returned components are shown below; no flows are estimated.</p>}
       <dl className="ops-compact-facts">{m.components.map(component => <div key={component.label}><dt>{component.label}</dt><dd>{component.value == null ? "Unavailable" : formatMw(component.value)}</dd></div>)}</dl>
       <p>Modelled components, not measured submeter readings. Workload power is not substituted for total IT load.</p>

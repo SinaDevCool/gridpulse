@@ -110,3 +110,19 @@ describe("conversation evidence queries", () => {
     expect(querySchema.safeParse({ ...query, answer: "invented" }).success).toBe(false);
   });
 });
+
+describe("accepted market context in conversation", () => {
+  it("grounds German guidance and restrictions in the accepted request", () => {
+    const presentation = { ...a, request: { ...a.request, policy: { ...a.request.policy, allow_battery: false }, planning_context: { timezone: "Europe/Berlin", local_date: "2026-09-26" } } };
+    const result = answerConversation(presentation, request, { ...query, intent: "knowledge" }, provider);
+    expect(result.evidence.find(f => f.id === "planning.local_day")?.value).toBe("2026-09-26");
+    expect(result.evidence.find(f => f.id === "planning.battery_permission")?.value).toBe(false);
+    expect(result.evidence.some(f => f.id === "planning.reporting_compliance")).toBe(false);
+  });
+  it("returns the interval limits rather than substituting a static ceiling", () => {
+    const presentation = { ...a, points: a.points.map((p, i) => i ? p : { ...p, limitMw: 80, targetMw: 78 }) };
+    const result = answerConversation(presentation, request, query, provider);
+    expect(result.evidence.find(f => f.id === "interval.0.limit")?.value).toBe(80);
+    expect(result.evidence.find(f => f.id === "interval.0.target")?.value).toBe(78);
+  });
+});

@@ -562,6 +562,8 @@
   float: right;
   color: var(--ops-muted);
 }
+.ops-configuration-form textarea,
+.ops-configuration-form select,
 .ops-configuration-form input:not([type="checkbox"]),
 .ops-evidence-inputs input {
   display: block;
@@ -576,6 +578,7 @@
   color: var(--ops-text);
   font: inherit;
 }
+.ops-configuration-form textarea[aria-invalid="true"],
 .ops-configuration-form input[aria-invalid="true"] {
   border-color: var(--ops-limit);
 }

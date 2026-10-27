@@ -16,6 +16,8 @@ export function selectCanonicalPresentation(rawJob: unknown, request: FacilityPl
   const projected = acceptCanonicalJobResult(rawJob, request);
   if (projected.power.batteries.length > 1) throw new Error("Multi-battery presentation is not qualified");
   const facility = z.object({ import_limit_mw: finite.positive() }).parse(request.facility);
+  const limits = request.facility.import_limit_profile_mw == null ? null : z.array(finite.nonnegative()).length(projected.intervals.length).parse(request.facility.import_limit_profile_mw);
+  const targets = request.policy.operating_target_profile_mw == null ? null : z.array(finite.nonnegative()).length(projected.intervals.length).parse(request.policy.operating_target_profile_mw);
   const target = request.policy.operating_target_mw == null ? facility.import_limit_mw :
     finite.nonnegative().parse(request.policy.operating_target_mw);
   const asset = request.batteries?.[0];
@@ -27,6 +29,8 @@ export function selectCanonicalPresentation(rawJob: unknown, request: FacilityPl
     const power = components.parse(point);
     const interval = projected.intervals[index];
     const state = bpoints?.[index];
+    const limit = limits?.[index] ?? facility.import_limit_mw;
+    const intervalTarget = targets?.[index] ?? target;
     return { timestamp: interval.start, label: interval.start, durationMinutes: interval.duration_minutes,
       baselineDemandMw: projected.overview.baseline[index].grid_import_mw,
       workloadPowerMw: projected.compute.workloads.reduce((sum, job) => sum + execution.parse(job.points[index]).power_mw, 0),
@@ -35,8 +39,8 @@ export function selectCanonicalPresentation(rawJob: unknown, request: FacilityPl
       gridImportMw: point.grid_import_mw, batteryPowerMw: point.battery_discharge_mw - point.battery_charge_mw,
       socPercent: state && batteryAudit ? state.soc_mwh / batteryAudit.capacity * 100 : null,
       startingSocPercent: state && batteryAudit ? (index ? bpoints![index - 1].soc_mwh / batteryAudit.capacity * 100 : batteryAudit.initialSocPercent) : null,
-      availableDischargeMw: state?.available_power_mw ?? null, targetMw: target, limitMw: facility.import_limit_mw,
-      shortfallMw: Math.max(0, point.grid_import_mw - target), limitExceedanceMw: Math.max(0, point.grid_import_mw - facility.import_limit_mw),
+      availableDischargeMw: state?.available_power_mw ?? null, targetMw: intervalTarget, limitMw: limit,
+      shortfallMw: Math.max(0, point.grid_import_mw - intervalTarget), limitExceedanceMw: Math.max(0, point.grid_import_mw - limit),
       constraintCode: "modeled", constraintLabel: "Binding-constraint explanation unavailable",
     };
   });

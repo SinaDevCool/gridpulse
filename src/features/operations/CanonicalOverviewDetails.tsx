@@ -10,17 +10,18 @@ import { CanonicalModelChecks } from "./CanonicalModelChecks";
 
 export function CanonicalOperatingSummary({ assessment: a }: { assessment: CanonicalPresentation }) {
   const attention = canonicalCheckSummary(a).state !== "passed";
-  const met = a.planPeakMw <= a.targetMw + .01;
-  const margin = a.targetMw - a.planPeakMw;
+  const margins = canonicalMargins(a, 0)[0];
+  const met = margins.safety >= -.01;
+  const margin = margins.safety;
   return <section className="ops-operating-summary" aria-label="Operating summary">
     <PeakImportGauge peak={a.planPeakMw} target={a.targetMw} limit={a.limitMw}
       maximum={Math.ceil(Math.max(a.limitMw * 1.15, a.baselinePeakMw, a.planPeakMw, 1) / 10) * 10}
-      caption="Full-horizon peak · optimised plan" />
-    <div className="ops-headroom-summary"><p className="context-label">Peak safety margin</p>
+      caption={a.request.facility.import_limit_profile_mw ? "Peak import; gauge markers show reference ceilings, margins use interval limits" : "Full-horizon peak · optimised plan"} />
+    <div className="ops-headroom-summary"><p className="context-label">{a.request.facility.import_limit_profile_mw ? "Tightest safety margin" : "Peak safety margin"}</p>
       <strong>{formatMw(margin)}</strong><span>{margin < 0 ? "Shortfall to safety target" : "Below safety target"}</span>
       <div className="ops-headroom-track" aria-hidden="true"><i className={margin < 0 ? "negative" : "positive"}
         style={{ width: `${Math.min(50, Math.abs(margin) / Math.max(a.limitMw, 1) * 100)}%` }} /></div>
-      <p>{formatMw(Math.abs(a.limitMw - a.planPeakMw))} {a.planPeakMw > a.limitMw ? "above" : "below"} facility limit</p>
+      <p>{formatMw(Math.abs(margins.facility))} {margins.facility < 0 ? "above" : "below"} facility limit</p>
     </div>
     <div className={`ops-plan-status ${met && !attention ? "clear" : "attention"}`}>
       <p className="context-label">Model assessment · full horizon</p>
@@ -44,7 +45,7 @@ export function CanonicalOverviewDetails({ assessment: a, index }: { assessment:
           selected: true, outcome: "Accepted joint MILP replay" },
       ]} />
       <details className="ops-result-help"><summary>About these comparisons</summary>
-        <p>Baseline and joint plan share the same submitted model. Battery-only and workload-only alternatives were not solved; heuristic comparisons are not substituted. Peaks may occur at different times.</p>
+        <p>Baseline and joint plan share the same submitted model. When an interval envelope is supplied, exceedance durations use each interval limit; comparison markers show reference ceilings. Battery-only and workload-only alternatives were not solved; heuristic comparisons are not substituted. Peaks may occur at different times.</p>
       </details></>}
     interval={<section className="ops-response-breakdown" aria-label="MILP interval explanation">
       <header><div><h4>{formatOperationsTime(selected.timestamp)}–{formatOperationsTime(selected.endTimestamp!)}{new Date(selected.endTimestamp!).getUTCDate() !== new Date(selected.timestamp).getUTCDate() ? " · next day" : ""}</h4>

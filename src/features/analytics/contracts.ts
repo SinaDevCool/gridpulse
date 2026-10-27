@@ -50,6 +50,7 @@ export const facilityPlanRequestSchema = z
     fatigue_limits: z.record(z.unknown()).nullable().optional(),
     fleet_gpu_capacity: z.number().int().positive().optional(),
     idle_gpu_power_watts: z.number().finite().nonnegative().optional(),
+    planning_context: z.record(z.string(), z.unknown()).optional(),
   })
   .strict();
 

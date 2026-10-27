@@ -44,8 +44,14 @@ export function answerConversation(a: CanonicalPresentation, request: Conversati
     "I can inspect this modelled plan, workloads, battery, limits and checks. I cannot establish unmodelled cost/carbon savings, live equipment status, backup guarantees or execute control commands.");
   if (query.intent === "clarify") return stop("clarification",
     "Which workload, interval (date and UTC time), or plan metric do you mean? You can select an interval in the charts and ask about that interval.");
+  if (query.intent === "knowledge" || (query.intent === "constraints" && !query.workloadId)) {
+    for (const fact of envelope.facts.filter(f => f.id.startsWith("planning.") || f.id === "power.interval_envelope")) {
+      facts.push(fact); blocks.push(`${fact.label}: ${formatBriefFact(fact)}.`);
+    }
+    if (facts.some(f => f.id === "planning.reporting_gaps")) blocks.push("Reporting completeness is an evidence review, not legal certification. A daily plan does not establish annual measured performance.");
+  }
   if (query.intent === "knowledge") return stop("answer", "Operational guidance is shown with its source below. It does not establish this site's equipment condition or authorise operation.");
-  if (query.intent === "accounting") return stop("answer", "Fixed-schedule tariff accounting does not require another MILP solve. Use the reviewed accounting tool with a complete EUR/MWh tariff. Billing-period demand charges, taxes, export credits and network fees require their own supplied rules; no saving is inferred from this plan alone.");
+  if (query.intent === "accounting") return stop("answer", "Fixed-schedule tariff accounting does not require another MILP solve. Use the reviewed accounting tool with a complete EUR/MWh tariff. The reviewed tariff tool can include supplied supplier markup, network energy charges and incremental annual capacity liability against a prior billing peak. Taxes and export credits require separate rules; no total-bill saving is inferred from this plan alone.");
   if (query.intent === "experiment") return stop("clarification", "Select a completed stress experiment attached to this accepted plan.");
   if (query.intent === "definition") { blocks.push(definitionText[query.definition]); return respond(); }
   const job = query.workloadId ? compute.jobs.find(j => j.id === query.workloadId) : null;
@@ -166,6 +172,13 @@ export function answerConversation(a: CanonicalPresentation, request: Conversati
       add(`interval.${i}.time`, "Interval (UTC)", `${p.timestamp} – ${p.endTimestamp}`, "status", "power", "CanonicalPresentation", `points[${i}]`);
       add(`interval.${i}.demand`, "Planned demand before battery", p.facilityDemandMw ?? null, "MW", "power", "CanonicalPresentation", `points[${i}].facilityDemandMw`);
       add(`interval.${i}.import`, "Grid import", p.gridImportMw, "MW", "power", "CanonicalPresentation", `points[${i}].gridImportMw`);
+      if (a.request.facility.import_limit_profile_mw || p.limitMw !== a.limitMw || p.targetMw !== a.targetMw) {
+      add(`interval.${i}.limit`, "Interval facility limit", p.limitMw ?? a.limitMw, "MW", "power", "CanonicalPresentation", `points[${i}].limitMw`);
+      const limitText = blocks.pop()!;
+      add(`interval.${i}.target`, "Interval safety target", p.targetMw ?? a.targetMw, "MW", "power", "CanonicalPresentation", `points[${i}].targetMw`);
+      const targetText = blocks.pop()!;
+      blocks[blocks.length - 1] += ` ${limitText} ${targetText}`;
+      }
       add(`interval.${i}.battery`, "Battery dispatch (+ discharge / − charge)", p.batteryPowerMw ?? null, "MW", "power", "CanonicalPresentation", `points[${i}].batteryPowerMw`);
       if (query.intent === "battery") {
         add(`interval.${i}.startSoc`, "Start SOC", p.startingSocPercent ?? null, "%", "power", "CanonicalPresentation", `points[${i}].startingSocPercent`);

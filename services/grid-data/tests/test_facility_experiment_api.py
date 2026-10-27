@@ -214,3 +214,32 @@ def test_accounting_is_owner_scoped_idempotent_and_requires_aligned_prices():
         )
     )
     assert other.post("/v1/jobs/facility-accounting", json=payload).status_code == 404
+
+
+def test_reviewed_tariff_contract_preserves_version_boundary():
+    import pytest
+    from pydantic import ValidationError
+
+    from grid_data.api.models import FacilityAccountingRequest
+
+    payload = {
+        "schema_version": "gridpulse-facility-accounting-request-v2",
+        "baseline_job_id": str(uuid4()),
+        "baseline_result_fingerprint": "a" * 64,
+        "prices_eur_per_mwh": [-20] * 100,
+        "tariff": {
+            "supplier_markup_eur_per_mwh": 2,
+            "network_energy_eur_per_mwh": 10,
+            "capacity_eur_per_kw_year": 100,
+            "prior_billing_peak_mw": 80,
+            "source": "Reviewed contract",
+            "reviewed_at": "2026-10-27T00:00:00Z",
+        },
+    }
+    assert FacilityAccountingRequest(**payload).tariff.capacity_eur_per_kw_year == 100
+    with pytest.raises(ValidationError):
+        FacilityAccountingRequest(
+            **{**payload, "schema_version": "gridpulse-facility-accounting-request-v1"}
+        )
+    with pytest.raises(ValidationError):
+        FacilityAccountingRequest(**{**payload, "tariff": None})

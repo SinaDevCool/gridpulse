@@ -1,3 +1,4 @@
+import type { GermanPlanning } from "../german-planning";
 import { experimentResultSchema, type ExperimentRequest, type ExperimentResult } from "../../analytics/experiment-contracts";
 import { useEffect, useRef, useState } from "react";
 import { startFacilityPlan, startFacilityExperiment, waitForAnalyticsJob, cancelAnalyticsJob, type AnalyticsJob } from "@/lib/analytics-api";
@@ -20,15 +21,16 @@ export function useMilpCalculation() {
   const identity = useRef("");
   useEffect(() => () => controller.current?.abort(), []);
 
-  async function run(scenario: OperationsScenario, resumeId?: string, experimentRequest?: ExperimentRequest) {
+  async function run(scenario: OperationsScenario, resumeId?: string, experimentRequest?: ExperimentRequest, planning?: GermanPlanning) {
     if (active.current) return;
     active.current = true; setBusy(true); setError(null);
     controller.current?.abort();
     const abort = new AbortController(); controller.current = abort;
     try {
-      if (!resumeId) {
-        snapshot.current = buildSyntheticMilpRequest(scenario);
-        identity.current = stableOperationsJson(scenario);
+      if (!resumeId && !experimentRequest) {
+        snapshot.current = buildSyntheticMilpRequest(scenario, planning);
+        if (planning?.enabled && publicMilpEnabled()) throw new Error("German market inputs require a separately qualified private runtime. Public synthetic planning remains unchanged.");
+        identity.current = stableOperationsJson(planning?.enabled ? { scenario, planning } : scenario);
         setResult(null); setJob(null); setExperiment(null); setJobId(null);
         if (publicMilpEnabled()) await ensureVisitorSession(publicMilpClient().auth);
       }

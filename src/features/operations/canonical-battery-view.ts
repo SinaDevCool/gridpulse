@@ -16,8 +16,8 @@ export function selectCanonicalBatteryView(a: CanonicalPresentation, timestamp: 
   const states = a.points.map(point => {
     const dispatch = point.batteryPowerMw ?? 0;
     const direction = dispatchDirection(dispatch);
-    const exceedance = point.gridImportMw > a.limitMw + .01 ? "Above facility limit" :
-      point.gridImportMw > a.targetMw + .01 ? "Above safety target" : "Within safety target";
+    const exceedance = point.gridImportMw > point.limitMw + .01 ? "Above facility limit" :
+      point.gridImportMw > point.targetMw + .01 ? "Above safety target" : "Within safety target";
     return { ...point, constraintCode: `${direction}-${exceedance}`, constraintLabel: `${direction} · ${exceedance}` };
   });
   const minimum = audit ? a.points.reduce((best, point) => point.socPercent! < best.socPercent! ? point : best) : null;
@@ -25,7 +25,7 @@ export function selectCanonicalBatteryView(a: CanonicalPresentation, timestamp: 
     { label: "First discharge", point: a.points.find(point => (point.batteryPowerMw ?? 0) > .005) },
     { label: "First charge", point: a.points.find(point => (point.batteryPowerMw ?? 0) < -.005) },
     { label: "Minimum interval-end SOC", point: minimum },
-    { label: "First target exceedance", point: a.points.find(point => point.gridImportMw > a.targetMw + .01) },
+    { label: "First target exceedance", point: a.points.find(point => point.gridImportMw > point.targetMw + .01) },
   ].filter(event => event.point != null);
   const raw = a.projected.power.power[index];
   const components = [
@@ -39,8 +39,8 @@ export function selectCanonicalBatteryView(a: CanonicalPresentation, timestamp: 
   const flowSupported = generation === 0 && balance.inputDifferenceMw != null && Math.abs(balance.inputDifferenceMw) <= .05;
   return { selected, index, audit, facts, segments: batteryConstraintSegments(states), events, components,
     direction: dispatchDirection(selected.batteryPowerMw ?? 0),
-    margins: { safety: a.targetMw - selected.gridImportMw, facility: a.limitMw - selected.gridImportMw,
-      target: a.targetMw, limit: a.limitMw },
+    margins: { safety: selected.targetMw - selected.gridImportMw, facility: selected.limitMw - selected.gridImportMw,
+      target: selected.targetMw, limit: selected.limitMw },
     terminal: audit ? { endMwh: audit.points.at(-1)!.soc_mwh, targetMwh: audit.terminalTargetMwh,
       state: facts.terminalTargetsMet === null ? "unavailable" as const : facts.terminalTargetsMet ? "met" as const : "unresolved" as const } : null,
     accounting: audit ? { storedStartMwh: (index ? audit.points[index - 1].soc_mwh : audit.initialSocPercent / 100 * audit.capacity),
@@ -53,7 +53,7 @@ export function selectCanonicalBatteryView(a: CanonicalPresentation, timestamp: 
     minimumSoc: audit ? Math.min(audit.initialSocPercent, ...a.points.map(point => point.socPercent!)) : null,
     energyAboveReserveMwh: audit ? Math.max(0, audit.points[index].soc_mwh - audit.reserve) : null,
     reserveProtected: audit ? audit.points.every(point => point.soc_mwh + 1e-5 >= audit.reserve) : null,
-    targetMet: a.points.every(point => point.gridImportMw <= a.targetMw + .01),
+    targetMet: a.points.every(point => point.gridImportMw <= point.targetMw + .01),
     peak: a.points.reduce((best, point) => point.gridImportMw > best.gridImportMw ? point : best).timestamp,
   };
 }

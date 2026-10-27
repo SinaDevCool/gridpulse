@@ -25,3 +25,8 @@ describe("reviewed operational retrieval", () => {
     expect(report).toHaveProperty("excludedUses", expect.arrayContaining(["dispatch_authorisation"]));
   });
 });
+
+it("retrieves German reporting and connection terminology", () => {
+  expect(retrieveOperationalKnowledge("Welche Berichtspflichten gelten?").some(item => item.id === "de-reporting")).toBe(true);
+  expect(retrieveOperationalKnowledge("Netzanschlussvertrag").some(item => item.id === "de-flexible-connection")).toBe(true);
+});

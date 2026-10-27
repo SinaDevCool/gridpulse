@@ -40,17 +40,30 @@ export const experimentResultSchema = z.object({
 export type ExperimentResult = z.infer<typeof experimentResultSchema>;
 
 
-export const accountingRequestSchema = z.object({ schema_version: z.literal("gridpulse-facility-accounting-request-v1"),
-  baseline_job_id: z.string().uuid(), baseline_result_fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
-  prices_eur_per_mwh: z.array(z.number().finite()).min(1).max(96),
+export const reviewedTariffSchema = z.object({
+  supplier_markup_eur_per_mwh: z.number().finite().nonnegative(), network_energy_eur_per_mwh: z.number().finite().nonnegative(),
+  capacity_eur_per_kw_year: z.number().finite().nonnegative(), prior_billing_peak_mw: z.number().finite().nonnegative(),
+  source: z.string().trim().min(1).max(500), reviewed_at: z.string().datetime(),
 }).strict();
-export const accountingResultSchema = z.object({ schema_version: z.literal("gridpulse-facility-accounting-result-v1"),
+export const accountingRequestSchema = z.object({ schema_version: z.enum(["gridpulse-facility-accounting-request-v1", "gridpulse-facility-accounting-request-v2"]),
+  baseline_job_id: z.string().uuid(), baseline_result_fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
+  prices_eur_per_mwh: z.array(z.number().finite()).min(1).max(100),
+  tariff: reviewedTariffSchema.optional(),
+}).strict().refine(v => (v.tariff !== undefined) === v.schema_version.endsWith("-v2"), "Reviewed tariff is required only for accounting v2");
+const energyAccountingSchema = z.object({ schema_version: z.literal("gridpulse-facility-accounting-result-v1"),
   baseline_result_fingerprint: z.string().regex(/^[a-f0-9]{64}$/), result_fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
   input_fingerprint: z.string().regex(/^[a-f0-9]{64}$/), engine_version: z.string(), basis: z.literal("fixed_schedule_energy_only"),
   grid_import_mwh: z.number().finite().nonnegative(), energy_cost_eur: z.number().finite(),
   baseline_energy_cost_eur: z.number().finite(), energy_cost_difference_eur: z.number().finite(),
   excluded: z.array(z.string()), automatic_live_dispatch_authorized: z.literal(false),
 }).strict();
+const chargesSchema = z.object({ energy_eur: z.number().finite(), supplier_markup_eur: z.number().finite(),
+  network_energy_eur: z.number().finite(), incremental_annual_capacity_eur: z.number().finite().nonnegative(), total_eur: z.number().finite() }).strict();
+export const accountingResultSchema = z.discriminatedUnion("schema_version", [energyAccountingSchema,
+  energyAccountingSchema.extend({ schema_version: z.literal("gridpulse-facility-accounting-result-v2"),
+    basis: z.literal("fixed_schedule_reviewed_tariff"), tariff: reviewedTariffSchema,
+    plan_charges: chargesSchema, baseline_charges: chargesSchema,
+    capacity_basis: z.literal("incremental_annual_liability_above_prior_billing_peak_not_prorated_day_cost") })]);
 export type AccountingRequest = z.infer<typeof accountingRequestSchema>;
 
 
@@ -63,7 +76,7 @@ export const experimentFields = {
   workload_duration_multiplier: { label: "Workload duration multiplier", unit: "x", asset: "workload", min: 0.5, max: 2 },
   generation_multiplier: { label: "Generation multiplier", unit: "x", asset: "none", min: 0, max: 2 },
   cooling_load_multiplier: { label: "Cooling load multiplier", unit: "x", asset: "none", min: 0.5, max: 2 },
-  battery_unavailable_interval: { label: "Battery outage interval index", unit: "index", asset: "battery", min: 0, max: 95 },
+  battery_unavailable_interval: { label: "Battery outage interval index", unit: "index", asset: "battery", min: 0, max: 99 },
   workload_availability_delay_minutes: { label: "Workload start-availability delay", unit: "min", asset: "workload", min: 0, max: 1440 },
 } as const;
 export type ExperimentField = keyof typeof experimentFields;

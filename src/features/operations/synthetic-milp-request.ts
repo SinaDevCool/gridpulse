@@ -1,3 +1,4 @@
+import { applyGermanPlanning, germanDayIntervals, berlinIntervalLabel, type GermanPlanning } from "./german-planning";
 import { mapCanonicalComponentInputs } from "./canonical-input-mapping";
 import { operationsScenarioSchema, type OperationsScenario } from "./scenario-engine";
 import type { FacilityPlanRequest } from "../analytics/contracts";
@@ -9,13 +10,23 @@ export const SYNTHETIC_INTERVAL_COUNT = SYNTHETIC_HORIZON_MINUTES / SYNTHETIC_IN
 export const SYNTHETIC_RESOLUTION_LABEL = `${SYNTHETIC_INTERVAL_COUNT} × ${SYNTHETIC_INTERVAL_MINUTES}-minute intervals`;
 const truth = "synthetic_demonstration";
 const origin = Date.parse("2026-09-26T00:00:00Z");
-const at = (minutes: number) => new Date(origin + minutes * 60_000).toISOString();
 
 /** Explicit synthetic model, not inferred customer permissions or a second calculator.
  * Fixed component coefficients/profile shapes are mock assumptions; the canonical engine
  * alone calculates schedules, power, SOC and feasibility. PUE is reference-only.
  */
-export function buildSyntheticMilpRequest(raw: OperationsScenario): FacilityPlanRequest {
+export function buildSyntheticMilpRequest(raw: OperationsScenario, planning?: GermanPlanning): FacilityPlanRequest {
+  const day = planning?.enabled ? germanDayIntervals(planning.localDate) : null;
+  const count = day?.length ?? SYNTHETIC_INTERVAL_COUNT;
+  const at = (minutes: number) => {
+    if (!day) return new Date(origin + minutes * 60_000).toISOString();
+    if (minutes >= 0 && minutes < 1440) {
+      const label = `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
+      const interval = day.find(p => berlinIntervalLabel(p.start).startsWith(label));
+      if (interval) return interval.start;
+    }
+    return new Date(Date.parse(day[0].start) + (minutes === 1440 ? count * 15 : minutes) * 60_000).toISOString();
+  };
   const scenario = operationsScenarioSchema.parse(raw);
   if (scenario.gpuCount < 20) throw new Error("The five-job demonstration requires at least 20 GPUs.");
   const specifications = [
@@ -33,7 +44,7 @@ export function buildSyntheticMilpRequest(raw: OperationsScenario): FacilityPlan
       earliest_start: at(start), nominal_gpu_count: count, minimum_gpu_count: count,
       maximum_gpu_count: count, nominal_power_mw: power,
       minimum_power_cap_mw: protectedJob ? power : power * .8,
-      expected_duration_minutes: duration, checkpoint_duration_minutes: 0, restart_duration_minutes: 0,
+      expected_duration_minutes: protectedJob ? (day?.length ?? SYNTHETIC_INTERVAL_COUNT) * 15 : duration, checkpoint_duration_minutes: 0, restart_duration_minutes: 0,
       maximum_start_delay_minutes: protectedJob ? 0 : scenario.maximumDelayMinutes,
       geographic_movement_permitted: false, allowed_site_ids: ["public-mock-site"],
       data_residency_regions: ["DE"], execution_mode: "uninterrupted",
@@ -59,7 +70,7 @@ export function buildSyntheticMilpRequest(raw: OperationsScenario): FacilityPlan
       recovery_ramp_mw_per_minute: null, rebound_limit_mw: null, reactive_power_requirement: null,
       evidence_cutoff: at(-1440), truth_class: truth, operator_confirmed: false,
       capacity_is_lower_bound: false, feasible_within_conditional_envelope: true },
-    intervals: Array.from({ length: SYNTHETIC_INTERVAL_COUNT }, (_, index) => ({
+    intervals: day ?? Array.from({ length: count }, (_, index) => ({
       index, start: at(index * SYNTHETIC_INTERVAL_MINUTES), duration_minutes: SYNTHETIC_INTERVAL_MINUTES,
     })),
     facility: { facility_id: "public-mock", site_id: "public-mock-site", import_limit_mw: scenario.importLimitMw,
@@ -78,19 +89,19 @@ export function buildSyntheticMilpRequest(raw: OperationsScenario): FacilityPlan
       terminal_target_mwh: b.usableEnergyMwh * b.stateOfHealthPercent / 100 * b.initialSocPercent / 100 }] : [],
     // Illustrative morning event only. Recovery outside it still respects the
     // full-horizon operating target, workload deadlines and terminal battery SOC.
-    policy: { event_intervals: Array.from({ length: SYNTHETIC_INTERVAL_COUNT }, (_, index) => {
-      const minute = index * SYNTHETIC_INTERVAL_MINUTES;
+    policy: { event_intervals: Array.from({ length: count }, (_, index) => {
+      const minute = day ? Number(berlinIntervalLabel(day[index].start).slice(0, 2)) * 60 + Number(berlinIntervalLabel(day[index].start).slice(3, 5)) : index * SYNTHETIC_INTERVAL_MINUTES;
       return minute >= 7 * 60 && minute < 10 * 60;
-    }), battery_temperature_c: Array(SYNTHETIC_INTERVAL_COUNT).fill(20),
+    }), battery_temperature_c: Array(count).fill(20),
       solver_time_limit_seconds: 30, maximum_variables: 20000, allow_cooling_reduction: false },
-    economics: { import_price_eur_per_mwh: Array(SYNTHETIC_INTERVAL_COUNT).fill(100), peak_import_eur_per_mw: 1000 },
+    economics: { import_price_eur_per_mwh: Array(count).fill(100), peak_import_eur_per_mw: 1000 },
     cooling: { baseline_power_mw: 0, maximum_reduction_mw: 0, thermal_capacity_mwh: 0 },
-    onsite_generation_mw: Array(SYNTHETIC_INTERVAL_COUNT).fill(0),
+    onsite_generation_mw: Array(count).fill(0),
   };
   const mapped = mapCanonicalComponentInputs(scenario, request, {
     gpuModel: scenario.gpuModel, activeWatts: scenario.gpuActivePowerWatts,
     idleWatts: scenario.gpuIdlePowerWatts, shiftablePercent: scenario.maximumShiftablePercent,
   });
   if (!mapped.request) throw new Error(mapped.blockers.join(" "));
-  return mapped.request;
+  return planning ? applyGermanPlanning(mapped.request, planning) : mapped.request;
 }
