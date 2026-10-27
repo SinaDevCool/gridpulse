@@ -53,6 +53,13 @@ export const facilityPlanRequestSchema = z
   })
   .strict();
 
+export const planDiagnosticEvidenceSchema = z.object({
+  basis: z.literal("canonical_physical_replay"), available: z.boolean(), causal_binding_constraints_assessed: z.literal(false),
+  findings: z.array(z.object({ code: z.enum(["peak_import_margin", "peak_target_margin", "minimum_battery_reserve_margin"]),
+    asset_id: z.string().max(200), interval_index: z.number().int().nonnegative(), value: z.number().finite(),
+    unit: z.enum(["MW", "MWh"]), source_field: z.string().max(200) }).strict()).max(16),
+}).strict();
+
 export const facilityPlanResultSchema = z
   .object({
     schema_version: z.literal("gridpulse-facility-plan-application-result-v1"),
@@ -63,6 +70,7 @@ export const facilityPlanResultSchema = z
     capacity_claim: z.literal(false),
     automatic_live_dispatch_authorized: z.literal(false),
     result: z.record(z.unknown()),
+    diagnostic_evidence: planDiagnosticEvidenceSchema.optional(),
   })
   .strict();
 
