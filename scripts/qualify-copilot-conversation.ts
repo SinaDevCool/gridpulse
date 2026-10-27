@@ -39,7 +39,7 @@ async function main() {
   if (job?.status !== "succeeded") throw new Error("Synthetic job did not complete within the qualification budget.");
   const a = selectCanonicalPresentation(job, input);
   const firstJob = selectCanonicalComputeView(a, a.points[0].timestamp).jobs[0];
-  const cases: { question: string; intent: string; kind: string; history?: string[]; focus?: string; requiredIntents?: string[]; requiredText?: string }[] = [
+  const cases: { question: string; intent: string; kind: string; history?: string[]; focus?: string; requiredIntents?: string[]; requiredText?: string; requiresInvestigation?: boolean }[] = [
     { question: "What did this plan achieve?", intent: "summary", kind: "answer" },
     { question: "What happens at 08:00 UTC?", intent: "interval", kind: "answer" },
     { question: "Which workloads run then?", history: ["What happens at 08:00 UTC?"], intent: "interval", kind: "answer" },
@@ -61,7 +61,7 @@ async function main() {
   // Domain cases augment the same harness; no second provider/evaluation stack.
   cases.push(
     { question: "Summarise the peak reduction, battery contribution and which workloads moved.", intent: "power", kind: "answer", requiredIntents: ["power", "battery", "workloads"], requiredText: "cannot establish which jobs moved" },
-    { question: "The battery is not discharging at peak. What possible reasons should we investigate?", intent: "diagnosis", kind: "answer", requiredText: "hypotheses, not proven" },
+    { question: "The battery is not discharging at peak. What possible reasons should we investigate?", intent: "diagnosis", kind: "answer", requiresInvestigation: true },
     { question: "What does PUE mean in this component model?", intent: "definition", kind: "answer" },
     { question: "What is the difference between MW and MWh?", intent: "definition", kind: "answer" },
     { question: "Can we approve this plan for operating the site?", intent: "readiness", kind: "answer" },
@@ -102,7 +102,11 @@ async function main() {
       const raw = await response.json();
       const answer = response.ok ? conversationResponseSchema.parse(raw) : null;
       const selected = answer?.resolvedQueries?.find(query => query.intent === item.intent) ?? answer?.resolvedQuery ?? selection as Record<string, unknown> | null;
-      const passed = !!answer && (!item.requiredIntents || item.requiredIntents.every(intent => answer.resolvedQueries?.some(query => query.intent === intent))) && (!item.requiredText || answer.blocks.some(block => block.includes(item.requiredText!))) && answer.kind === item.kind && selected?.intent === item.intent && (!item.focus || selected?.focus === item.focus) &&
+      const investigationPassed = !item.requiresInvestigation || !!answer?.investigation &&
+        answer.investigation.status === "requires_independent_validation" && answer.investigation.hypotheses.length > 0 &&
+        answer.investigation.hypotheses.every(hypothesis => hypothesis.status === "untested" && !!hypothesis.test) &&
+        answer.investigation.requiredEvidence.length > 0 && !!answer.investigation.nextAction;
+      const passed = !!answer && investigationPassed && (!item.requiredIntents || item.requiredIntents.every(intent => answer.resolvedQueries?.some(query => query.intent === intent))) && (!item.requiredText || answer.blocks.some(block => block.includes(item.requiredText!))) && answer.kind === item.kind && selected?.intent === item.intent && (!item.focus || selected?.focus === item.focus) &&
         (item.question !== "Which workloads run then?" || !!item.focus || selected?.start === "2026-09-26T08:00:00.000Z" || selected?.start === "2026-09-26T08:00:00Z");
       const record = { question: item.question, expected: item, selected, passed, durationMs: Date.now() - started,
         httpStatus: response.status, answer };
