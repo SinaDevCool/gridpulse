@@ -27,7 +27,7 @@ export const receiptSchema = z.object({ jobId: z.string().uuid().nullable(), inp
   optimalityGap: z.number().nonnegative().nullable(), truthClass: z.string(),
   horizonStart: z.string().datetime({ offset: true }), horizonEnd: z.string().datetime({ offset: true }),
   intervalCount: z.number().int().positive(), intervalMinutes: z.array(z.number().positive()).min(1),
-  evidenceVersion: z.literal(EVIDENCE_VERSION), promptVersion: z.enum([PROMPT_VERSION, "conversation-query-v1", "conversation-analysis-v2"]),
+  evidenceVersion: z.literal(EVIDENCE_VERSION), promptVersion: z.enum([PROMPT_VERSION, "conversation-query-v1", "conversation-analysis-v2", "conversation-grounded-v1"]),
   generation: z.object({ provider: z.enum(["openai", "meta", "deterministic"]), attempts: z.array(z.enum(["openai", "meta"])).max(2),
     elapsedMs: z.number().nonnegative() }).strict().optional(),
   providerResponseId: z.string().max(200).nullable(),

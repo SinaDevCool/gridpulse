@@ -72,6 +72,8 @@ export function providerSettings(config: ProviderConfig): ProviderSettings {
 /** Request-scoped provider selection. Analytics authentication never passes through this adapter. */
 export function providerTransport(settings: ProviderSettings, fetcher: typeof fetch = fetch, attempts: string[] = []): typeof fetch {
   const deadline = AbortSignal.timeout(45_000);
+  let active = settings;
+  let fallbackUsed = false;
   return async (input, init) => {
     if (String(input) !== "https://api.openai.com/v1/responses") return fetcher(input, init);
     const send = (target: ProviderSettings) => {
@@ -84,16 +86,19 @@ export function providerTransport(settings: ProviderSettings, fetcher: typeof fe
           body: JSON.stringify(body), redirect: "manual", signal: AbortSignal.any([deadline, ...(init?.signal ? [init.signal] : [])]) });
     };
     let response: Response;
-    try { response = await send(settings); }
+    try { response = await send(active); }
     catch (error) {
-      if (settings.fallback && error instanceof TypeError && !deadline.aborted && !init?.signal?.aborted)
-        return send(settings.fallback);
+      if (!fallbackUsed && settings.fallback && error instanceof TypeError && !deadline.aborted && !init?.signal?.aborted) {
+        fallbackUsed = true; active = settings.fallback;
+        return send(active);
+      }
       throw error;
     }
     // One explicitly configured fallback, within the original deadline. Never retry refusals or invalid output.
-    if (settings.fallback && [402, 429, 500, 502, 503, 504].includes(response.status)) {
+    if (!fallbackUsed && settings.fallback && [402, 429, 500, 502, 503, 504].includes(response.status)) {
       await response.body?.cancel();
-      return send(settings.fallback);
+      fallbackUsed = true; active = settings.fallback;
+      return send(active);
     }
     return response;
   };

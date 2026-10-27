@@ -46,15 +46,15 @@ export function PlanConversation({ state, enabled, context, onNavigate, identity
         <small>Choose a question to edit, then send.</small></> : null}
       {state.turns.map((turn, index) => <article key={`${turn.answer.generatedAt}:${turn.question}:${turn.answer.receipt.providerResponseId ?? index}`} aria-label={`Answer ${index + 1}`}>
         <div className="ops-chat-question"><span className="sr-only">Your question: </span>{turn.question}</div>
-        <small>{turn.answer.basis === "general_explanation" ? "General explanation" : turn.answer.kind === "answer" ? "Checked model evidence" : turn.answer.kind.replaceAll("_", " ")}</small>
+        <small>{turn.answer.presentation === "checked_fallback" ? "Checked summary · conversational answer unavailable" : turn.answer.presentation === "grounded_conversation" ? "AI explanation · linked evidence" : turn.answer.basis === "general_explanation" ? "General explanation" : turn.answer.kind === "answer" ? "Checked model evidence" : turn.answer.kind.replaceAll("_", " ")}</small>
         {answerBlocks(turn.answer.blocks, turn.answer.evidence).map((block, i) => <p key={i}>{block}</p>)}
         {turn.answer.proposalClarification ? <p role="status">{turn.answer.proposalClarification}</p> : null}
-        {answerFacts(turn.answer.evidence).length ? <dl className="ops-chat-facts">{answerFacts(turn.answer.evidence).map(fact =>
+        {!turn.answer.presentation && answerFacts(turn.answer.evidence).length ? <dl className="ops-chat-facts">{answerFacts(turn.answer.evidence).map(fact =>
           <div key={fact.id}><dt>{fact.label}</dt><dd>{formatBriefFact(fact)}</dd></div>)}</dl> : null}
         {turn.answer.coverage && turn.answer.coverage.some(part => part.status !== "answer") ? <small role="status">
           {turn.answer.coverage.map(part => `${part.intent.replaceAll("_", " ")}: ${part.status.replaceAll("_", " ")}`).join(" | ")}
         </small> : null}
-        {turn.answer.limitations.length ? <ul className="ops-chat-limitations" aria-label="Answer limitations">{turn.answer.limitations.map(text => <li key={text}>{text}</li>)}</ul> : null}
+        {turn.answer.limitations.length ? <details><summary>Scope & limitations</summary><ul className="ops-chat-limitations" aria-label="Answer limitations">{turn.answer.limitations.map(text => <li key={text}>{text}</li>)}</ul></details> : null}
         {turn.answer.navigation.map((target, i) => <button type="button" className="secondary-button" key={i} onClick={() => onNavigate(target)}>
           Inspect {target.workloadId ? "workload" : target.view === "power" ? "battery interval" : target.view === "compute" ? "interval workloads" : "power outcome"}
         </button>)}
@@ -75,8 +75,8 @@ export function PlanConversation({ state, enabled, context, onNavigate, identity
         </details>
       </article>)}
       {alternative}
-      {state.turns.length >= 20 ? <small>Showing the latest 20 answers. Up to 6 recent questions are used for follow-ups.</small> : null}
-      {state.pending ? <div className="ops-chat-pending"><div className="ops-chat-question">{state.pending}</div><p>Checking plan evidence…</p></div> : null}
+      {state.turns.length >= 20 ? <small>Showing the latest 20 answers. Recent questions and replies provide follow-up context.</small> : null}
+      {state.pending ? <div className="ops-chat-pending"><div className="ops-chat-question">{state.pending}</div><p>Reviewing evidence and preparing your answer…</p></div> : null}
       {state.error ? <div className="ops-chat-error"><div className="ops-chat-question">{attempted.current}</div><p>{state.error}</p><button type="button" disabled={!enabled || !!state.pending} onClick={() => { setQuestion(attempted.current); void state.ask(attempted.current).then(ok => { if (ok) setQuestion(""); }); }}>Retry question</button></div> : null}
     </div>
     <p className="sr-only" role="status">{state.pending ? "Checking plan evidence" : state.error ? state.error : state.turns.length ? "Answer ready" : notice}</p>

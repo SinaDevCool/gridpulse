@@ -16,6 +16,7 @@ async function main() {
   if (!key || !supabase || !publicKey) throw new Error("Required local API/Supabase settings missing; do not paste secrets in output.");
   const base = process.env.COPILOT_ANALYTICS_URL ?? "https://gridpulse-operations-milp.onrender.com";
   const model = process.env.COPILOT_MODEL ?? (provider === "meta" ? "muse-spark-1.3" : "gpt-4o-mini");
+  const conversational = process.env.COPILOT_QUALIFY_CONVERSATIONAL === "true";
   const out = ".codex-tmp/conversation-qualification";
   mkdirSync(out, { recursive: true });
   const auth = await fetch(`${supabase}/auth/v1/signup`, { method: "POST", headers: { apikey: publicKey, "content-type": "application/json" },
@@ -79,6 +80,7 @@ async function main() {
     { question: "Which restrictions apply to the whole submitted model?", intent: "constraints", kind: "answer" },
   );
   const records: unknown[] = [];
+  const priorAnswers = new Map<string, string>();
   try {
     for (const item of cases) {
       let selection: Record<string, unknown> | null = null;
@@ -97,16 +99,19 @@ async function main() {
         method: "POST", headers: { authorization: bearer, "content-type": "application/json" }, body: JSON.stringify({
           version: CHAT_VERSION, jobId: job.id, resultFingerprint: job.result_payload.result_fingerprint,
           question: item.question, history: item.history ?? [], context: { view: "compute", timestamp: null, workloadId: null },
+          ...(conversational ? { transcript: (item.history ?? []).slice(-4).map(question => ({ question, answer: priorAnswers.get(question) ?? "No prior reply available; resolve from the current plan." })) } : {}),
         }) }), { COPILOT_ENABLED: "true", COPILOT_PROVIDER: provider, OPENAI_API_KEY: provider === "openai" ? key : undefined, META_API_KEY: provider === "meta" ? key : undefined, COPILOT_MODEL: model, COPILOT_ANALYTICS_URL: base,
         COPILOT_RATE_LIMITER: { limit: async () => ({ success: true }) } }, tracedFetch);
       const raw = await response.json();
       const answer = response.ok ? conversationResponseSchema.parse(raw) : null;
+      if (answer) priorAnswers.set(item.question, answer.blocks.join("\n\n").slice(0, 3000));
       const selected = answer?.resolvedQueries?.find(query => query.intent === item.intent) ?? answer?.resolvedQuery ?? selection as Record<string, unknown> | null;
       const investigationPassed = !item.requiresInvestigation || !!answer?.investigation &&
         answer.investigation.status === "requires_independent_validation" && answer.investigation.hypotheses.length > 0 &&
         answer.investigation.hypotheses.every(hypothesis => hypothesis.status === "untested" && !!hypothesis.test) &&
         answer.investigation.requiredEvidence.length > 0 && !!answer.investigation.nextAction;
-      const passed = !!answer && investigationPassed && (!item.requiredIntents || item.requiredIntents.every(intent => answer.resolvedQueries?.some(query => query.intent === intent))) && (!item.requiredText || answer.blocks.some(block => block.includes(item.requiredText!))) && answer.kind === item.kind && selected?.intent === item.intent && (!item.focus || selected?.focus === item.focus) &&
+      const writingPassed = !conversational || answer?.kind !== "answer" || answer.presentation === "grounded_conversation";
+      const passed = !!answer && writingPassed && investigationPassed && (!item.requiredIntents || item.requiredIntents.every(intent => answer.resolvedQueries?.some(query => query.intent === intent))) && (conversational || !item.requiredText || answer.blocks.some(block => block.includes(item.requiredText!))) && answer.kind === item.kind && selected?.intent === item.intent && (!item.focus || selected?.focus === item.focus) &&
         (item.question !== "Which workloads run then?" || !!item.focus || selected?.start === "2026-09-26T08:00:00.000Z" || selected?.start === "2026-09-26T08:00:00Z");
       const record = { question: item.question, expected: item, selected, passed, durationMs: Date.now() - started,
         httpStatus: response.status, answer };
@@ -116,7 +121,7 @@ async function main() {
   } finally {
     writeFileSync(`${out}/results.json`, JSON.stringify({ actualHostedMilp: true, actualProvider: provider, productionHandler: true,
       cloudflareRuntime: false, rateLimiter: "qualification adapter; real limiter covered separately", productionDeployed: false,
-      model, sourceCommit: execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(),
+      model, conversational, humanSemanticReviewRequired: conversational, sourceCommit: execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(),
       sourceDirty: !!execFileSync("git", ["status", "--porcelain"], { encoding: "utf8" }).trim(), jobId: job.id, records }, null, 2));
   }
   if (records.some(record => !(record as { passed: boolean }).passed)) throw new Error("Conversation qualification has failed cases; inspect the local report.");

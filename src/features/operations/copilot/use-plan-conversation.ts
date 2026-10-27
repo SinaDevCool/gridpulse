@@ -29,7 +29,9 @@ export function usePlanConversation(jobId: string | undefined, fingerprint: stri
     const accepts = () => gate.current.accepts(ticket, latest.current);
     try {
       const answer = conversationResponseSchema.parse(await requestCopilot("conversation", { version: CHAT_VERSION, jobId,
-        resultFingerprint: fingerprint, experimentJobId: experimentId.current, question, history: turns.slice(-6).map(turn => turn.question), previousQueries: turns.slice(-3).flatMap(turn => turn.answer.resolvedQueries ?? [turn.answer.resolvedQuery]).slice(-3), context },
+        resultFingerprint: fingerprint, experimentJobId: experimentId.current, question, history: turns.slice(-6).map(turn => turn.question),
+        transcript: turns.slice(-4).map(turn => ({ question: turn.question, answer: turn.answer.blocks.join("\n\n").slice(0, 3000) })),
+        previousQueries: turns.slice(-3).flatMap(turn => turn.answer.resolvedQueries ?? [turn.answer.resolvedQuery]).slice(-3), context },
       AbortSignal.any([ticket.abort.signal, AbortSignal.timeout(80_000)])));
       if (answer.receipt.jobId !== jobId || answer.receipt.resultFingerprint !== fingerprint || answer.question !== question)
         throw new Error("Answer refers to a different question or plan.");

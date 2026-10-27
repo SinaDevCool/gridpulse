@@ -114,7 +114,7 @@ existing optimiser; they do not edit or submit alternatives. Equipment control, 
 cost/carbon savings and live guarantees are unsupported.
 
 One dashboard-owned conversation persists across tabs, with at most 20 visible turns and
-six user questions sent as context. It resets when inputs become stale or an accepted plan
+six user questions and four bounded question/reply pairs sent as context. It resets when inputs become stale or an accepted plan
 is replaced. The lifecycle gate blocks synchronous duplicates and rejects late answers;
 Stop retains the typed question for retry. Requests time out after 80 seconds in the browser.
 Chart links validate the result's interval/job IDs and reuse dashboard selection state.
@@ -133,3 +133,45 @@ test adapter. It writes no secrets and reports under ignored
 `.codex-tmp/conversation-qualification/results.json`. It measures routing, response kind,
 follow-up focus, elapsed time and provider usage. This is not a Cloudflare-runtime
 deployment test, production activation, human review or proof of arbitrary-question accuracy.
+
+### Grounded conversational answers
+
+The current browser includes `transcript` (including an empty array on the first turn).
+This opts into natural answer composition after the existing bounded query planner and
+deterministic evidence selectors. Older clients remain compatible with checked summaries.
+There is one provider adapter, one conversation endpoint and one calculation ownership
+boundary. No second solver, vector database, chat framework or engine copy is introduced.
+
+The server reloads the accepted assessment by authenticated job ID and fingerprint on
+every request. Previous replies are untrusted context for resolving follow-ups, never
+numerical evidence. The query planner may select up to four existing read-only selectors.
+Reviewed operational guidance is retrieved before the writing stage. The writer sees
+only checked findings, typed facts, limitations and reviewed source excerpts.
+
+The writer returns up to four short paragraphs with fact/source IDs. Numeric values and
+timestamps use fact placeholders; the application formats them from the accepted result.
+Unknown references, unbound numerical characters, markup, overlong output and explicit
+unsupported guarantees are rejected. Paragraph-source links are retained in the response.
+These checks establish reference and value integrity, not proof that every qualitative
+sentence is correct. Human semantic review remains necessary for operational decisions.
+
+Ambiguous questions, refusals and changed-input boundaries keep their existing checked
+responses. The writer cannot run a solver, change inputs, approve a plan or control equipment.
+Completed experiment explanations reuse the existing owned, fingerprint-bound experiment
+result. New experiments still require the existing proposal review and explicit submission.
+
+Both stages share the provider transport's original time budget. An explicitly configured
+fallback can be selected once and remains selected for the rest of that request; credentials
+never reach the browser. No implicit fallback or production provider change is performed.
+If writing fails, the checked answer remains visible with a fallback label. Sources,
+limitations, investigation evidence and technical receipts remain expandable; repeated
+number cards are omitted for conversational replies.
+
+Qualification reuses `scripts/qualify-copilot-conversation.ts`. Set
+`COPILOT_QUALIFY_CONVERSATIONAL=true` to exercise writing and real prior replies in the
+existing paid-provider synthetic harness. It treats a writing fallback as a failed
+conversational qualification, and flags the report for human semantic review. Do not
+confuse deterministic mocked tests with a successful live Meta qualification. Review
+directness, source relevance, follow-up resolution, model/general-guidance separation,
+uncertainty and refusal quality before enabling a release. The harness creates a synthetic
+hosted job and uses provider credits; it is opt-in and never part of ordinary unit tests.

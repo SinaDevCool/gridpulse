@@ -22,12 +22,15 @@ export const conversationRequestSchema = z.object({ version: z.literal(CHAT_VERS
   history: z.array(z.string().trim().min(1).max(1000)).max(6),
   context: navigationSchema,
   previousQueries: z.array(querySchema).max(3).optional(),
+  transcript: z.array(z.object({ question: z.string().max(1000), answer: z.string().max(3000) }).strict()).max(4).optional(),
   experimentJobId: z.string().uuid().optional(),
 }).strict();
 export type ConversationRequest = z.infer<typeof conversationRequestSchema>;
 export const conversationResponseSchema = z.object({ version: z.literal(CHAT_VERSION),
   kind: z.enum(["answer", "clarification", "requires_calculation", "unsupported"]),
   basis: z.enum(["model_evidence", "general_explanation", "no_calculation"]),
+  presentation: z.enum(["grounded_conversation", "checked_fallback"]).optional(),
+  paragraphSources: z.array(z.object({ factIds: z.array(z.string()).max(16), guidanceIds: z.array(z.string()).max(4) }).strict()).max(4).optional(),
   resolvedQuery: querySchema,
   resolvedQueries: z.array(querySchema).min(1).max(4).optional(),
   coverage: z.array(z.object({ intent: z.enum(intents), status: z.enum(["answer", "clarification", "requires_calculation", "unsupported"]) }).strict()).max(4).optional(),
@@ -51,5 +54,7 @@ export const conversationResponseSchema = z.object({ version: z.literal(CHAT_VER
   capabilities: z.array(z.object({ intent: z.enum(intents), execution: z.string(), available: z.boolean(),
     limitations: z.string(), unavailableReason: z.string().nullable() }).strict()).max(24).optional(),
 }).strict().refine(value => new Set(value.evidence.map(fact => fact.id)).size === value.evidence.length,
-  "Duplicate evidence");
+  "Duplicate evidence").refine(value => !value.paragraphSources || value.paragraphSources.length === value.blocks.length &&
+    value.paragraphSources.every(paragraph => paragraph.factIds.every(id => value.evidence.some(fact => fact.id === id)) &&
+      paragraph.guidanceIds.every(id => value.guidance?.some(item => item.id === id))), "Invalid paragraph sources");
 export type ConversationAnswer = z.infer<typeof conversationResponseSchema>;

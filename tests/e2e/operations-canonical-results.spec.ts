@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { canonicalMilpJob } from "../fixtures/canonical-milp-job";
 import type { FacilityPlanRequest } from "../../src/features/analytics/contracts";
-import { buildBriefEvidence, renderPlanBrief } from "../../src/features/operations/copilot/brief";
+import { buildBriefEvidence, renderPlanBrief, formatBriefFact } from "../../src/features/operations/copilot/brief";
 import { selectCanonicalPresentation } from "../../src/features/operations/canonical-presentation";
 import { readFile } from "node:fs/promises";
 import { answerConversation } from "../../src/features/operations/copilot/conversation-query";
@@ -35,8 +35,20 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
     const query: ConversationQuery = { intent: input.question.includes("training") ? "workload" : input.question.includes("alternative") ? "what_if" :
       input.question.includes("Which") ? "interval" : "summary", start: null, end: null, workloadId: null, focus: "selected", definition: "none" };
     if (query.intent === "workload") query.workloadId = String(request.workloads[0].workload_id);
-    await route.fulfill({ json: answerConversation(selectCanonicalPresentation(job, request), input, query,
-      { model: "browser-test-fixture", responseId: null, usage: null }) }).catch(() => {});
+    const answer = answerConversation(selectCanonicalPresentation(job, request), input, query,
+      { model: "browser-test-fixture", responseId: null, usage: null });
+    if (input.question === "What did this plan achieve?") {
+      expect(input.transcript).toEqual([]);
+      const peak = answer.evidence.find(fact => fact.id === "power.plan_peak")!;
+      answer.blocks = [`Modelled peak import is ${formatBriefFact(peak)}. Review the workload and battery checks before using this modelled plan.`];
+      answer.presentation = "grounded_conversation";
+      answer.paragraphSources = [{ factIds: [peak.id], guidanceIds: [] }];
+    }
+    if (input.question === "Which workloads run then?") {
+      expect(input.transcript?.[0].answer).toContain("Review the workload and battery checks");
+      answer.presentation = "checked_fallback";
+    }
+    await route.fulfill({ json: answer }).catch(() => {});
   });
   await page.route("**/api/operations/brief", route => {
     explanations++;
@@ -99,9 +111,12 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await questionInput.fill("What did this plan achieve?");
   await questionInput.press("Enter");
   await expect(chat.getByRole("article").first()).toContainText("Modelled peak import");
+  await expect(chat.getByRole("article").first()).toContainText("AI explanation · linked evidence");
+  await expect(chat.getByRole("article").first().locator(".ops-chat-facts")).toHaveCount(0);
   await questionInput.fill("Which workloads run then?");
   await chat.getByRole("button", { name: "Ask", exact: true }).click();
   await expect(chat.getByRole("article").nth(1)).toContainText("Grid import");
+  await expect(chat.getByRole("article").nth(1)).toContainText("conversational answer unavailable");
   await chat.getByRole("article").nth(1).getByText(/^Sources/).click();
   await chat.getByRole("article").nth(1).getByText("Technical sources", { exact: true }).click();
   await expect(chat.getByRole("article").nth(1)).toContainText("CanonicalPresentation.points[0].gridImportMw");

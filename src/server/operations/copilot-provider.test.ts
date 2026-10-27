@@ -2,6 +2,17 @@ import { describe, expect, it, vi } from "vitest";
 import { providerSettings, providerTransport, requestCopilotSelection } from "./copilot";
 
 describe("interchangeable copilot transport", () => {
+  it("keeps an explicit fallback selected for later stages of the same request", async () => {
+    const fetcher = vi.fn().mockResolvedValueOnce(new Response(null, { status: 429 }))
+      .mockResolvedValueOnce(Response.json({ ok: true })).mockResolvedValueOnce(Response.json({ ok: true }));
+    const transport = providerTransport({ provider: "meta", key: "m", model: "muse-spark-1.3",
+      fallback: { provider: "openai", key: "o", model: "gpt-4o-mini" } }, fetcher);
+    await transport("https://api.openai.com/v1/responses", { body: "{}" });
+    await transport("https://api.openai.com/v1/responses", { body: "{}" });
+    expect(fetcher.mock.calls.map(call => call[0])).toEqual([
+      "https://api.meta.ai/v1/responses", "https://api.openai.com/v1/responses", "https://api.openai.com/v1/responses",
+    ]);
+  });
   it("requires the selected provider key and an explicit Meta model", () => {
     expect(() => providerSettings({ COPILOT_PROVIDER: "meta", OPENAI_API_KEY: "other" })).toThrow();
     expect(() => providerSettings({ COPILOT_PROVIDER: "unknown" })).toThrow();

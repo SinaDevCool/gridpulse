@@ -5,11 +5,12 @@ import { answerAnalysisPlan } from "../../features/operations/copilot/analysis-p
 import { briefRequestSchema } from "../../features/operations/copilot/brief";
 import { readOperationsJson, OperationsPayloadError } from "../../lib/operations-request";
 import { BriefError, generatePlanBrief, ownedBriefEvidence, ownedAssessment, ownedAnalyticsJob, providerSettings, providerTransport, type ProviderConfig } from "./copilot";
-import { conversationRequestSchema } from "../../features/operations/copilot/conversation-contracts";
+import { conversationRequestSchema, conversationResponseSchema } from "../../features/operations/copilot/conversation-contracts";
 import { answerConversation } from "../../features/operations/copilot/conversation-query";
 import { interpretQuestion } from "./copilot-conversation";
 import { copilotCapabilities } from "./copilot-capabilities";
 import { compileExperimentProposal } from "../../features/operations/copilot/experiment-proposal";
+import { composeConversation } from "./copilot-composition";
 
 export type CopilotConfig = ProviderConfig & { OPENAI_API_KEY?: string; COPILOT_ENABLED?: string;
   COPILOT_MODEL?: string; COPILOT_ANALYTICS_URL?: string; COPILOT_EXPERIMENTS_ENABLED?: string; COPILOT_ACCOUNTING_ENABLED?: string;
@@ -26,11 +27,15 @@ async function handleCopilot(request: Request, config: CopilotConfig, fetcher: t
     const started = Date.now();
     // Resolve credentials only if a provider call is actually required. Deterministic
     // clarification/definitions remain available without a configured language model.
-    const transport: typeof fetch = (input, init) => providerTransport(providerSettings(config), fetcher, attempts)(input, init);
-    const receipt = () => ({ provider: attempts.at(-1) ?? "deterministic", attempts, elapsedMs: Date.now() - started });
+    let selectedTransport: typeof fetch | undefined;
+    const transport: typeof fetch = (input, init) => {
+      selectedTransport ??= providerTransport(providerSettings(config), fetcher, attempts);
+      return selectedTransport(input, init);
+    };
+    const receipt = () => ({ provider: attempts.at(-1) ?? "deterministic", attempts: [...new Set(attempts)], elapsedMs: Date.now() - started });
     const bearer = request.headers.get("authorization") ?? "";
     if (!/^Bearer [^\s]+$/i.test(bearer)) throw new BriefError(401, "A calculation session is required.");
-    const raw = await readOperationsJson(request, conversation ? 16_384 : 2048);
+    const raw = await readOperationsJson(request, conversation ? 32_768 : 2048);
     const input = (conversation ? conversationRequestSchema : briefRequestSchema).safeParse(raw);
     if (!input.success) throw new BriefError(400, "Invalid explanation request or unsupported brief version.");
     const allowed = await config.COPILOT_RATE_LIMITER.limit({ key: `brief:${request.headers.get("cf-connecting-ip") ?? "local"}` });
@@ -68,14 +73,16 @@ async function handleCopilot(request: Request, config: CopilotConfig, fetcher: t
         ].map(f => factSchema.parse({ id: `experiment.${index}.${f.key}`, label: f.label, unit: f.unit, scope: "full_horizon",
           availability: f.value == null ? "unavailable" : "available", value: f.value ?? null,
           source: { view: "overview", selector: `Experiment:${job.id}:${experiment.result_fingerprint}`, field: `cases[${index}].${item.metrics && f.key in item.metrics ? "metrics." : ""}${f.key}` } })));
-        return Response.json({ ...answer, blocks: experiment.cases.flatMap(item => [
+        const experimentAnswer = conversationResponseSchema.parse({ ...answer, blocks: experiment.cases.flatMap(item => [
           `Experiment ${item.case_id}: ${item.mode === "frozen_plan" ? "accepted commands held fixed" : "separate re-optimisation"}. ${item.status === "unsupported_or_invalid" ? "This case could not be assessed." : item.accepted ? "The supplied checks passed." : "The supplied checks did not pass."}`,
           ...(item.first_violation_index != null ? [`First returned violation: ${assessment.points[item.first_violation_index]?.timestamp ?? "unknown interval"}.`] : []),
           ...(item.violations?.length ? [`Returned violations: ${[...new Set(item.violations.map(v => v.code))].join(", ")}.`] : []),
         ]), evidence: facts, navigation: [], capabilities, guidance: retrieveOperationalKnowledge(question.question),
           limitations: ["Assumed stress scenarios are not a calibrated reliability probability.",
             "This tests the submitted model, not measured delivery, rack temperatures or subinterval ramps."],
-          receipt: { ...answer.receipt, generation: receipt() } }, { headers });
+          receipt: { ...answer.receipt, generation: receipt() } });
+        const composed = question.transcript ? await composeConversation(question, experimentAnswer, transport) : experimentAnswer;
+        return Response.json(conversationResponseSchema.parse({ ...composed, receipt: { ...composed.receipt, generation: receipt() } }), { headers });
       }
       if (!interpreted) throw new BriefError(422, "Question interpretation unavailable.");
       const answer = answerAnalysisPlan(assessment, question, queries, interpreted.provider);
@@ -90,7 +97,10 @@ async function handleCopilot(request: Request, config: CopilotConfig, fetcher: t
       }
       const guidanceAllowed = answer.kind === "answer" || answer.evidence.length > 0 ||
         queries.some(query => ["what_if", "readiness", "diagnosis", "knowledge", "accounting"].includes(query.intent));
-      return Response.json({ ...answer, capabilities, proposal, proposalClarification, receipt: { ...answer.receipt, generation: receipt() }, guidance: guidanceAllowed ? retrieveOperationalKnowledge(question.question, { intents: queries.map(query => query.intent) }) : [] }, { headers });
+      const grounded = conversationResponseSchema.parse({ ...answer, capabilities, proposal, proposalClarification,
+        guidance: guidanceAllowed ? retrieveOperationalKnowledge(`${question.question} ${queries.map(query => query.intent).join(" ")}`, { intents: queries.map(query => query.intent) }) : [] });
+      const composed = question.transcript ? await composeConversation(question, grounded, transport) : grounded;
+      return Response.json(conversationResponseSchema.parse({ ...composed, receipt: { ...composed.receipt, generation: receipt() } }), { headers });
     }
     const evidence = await ownedBriefEvidence(config.COPILOT_ANALYTICS_URL, bearer, input.data.jobId, input.data.resultFingerprint, fetcher);
     const provider = providerSettings(config);
