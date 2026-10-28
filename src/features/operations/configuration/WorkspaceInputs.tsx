@@ -85,11 +85,11 @@ export function WorkspaceInputs({
           work remain full-horizon assessments.
         </p>
         <p>
-          Live control unavailable. Historical evidence is displayed in Power & Battery; other views
-          remain scenario comparisons.
+          Live control unavailable.{" "}
+          {milp ? "All three tabs inspect the same accepted workload and battery plan. Results are modelled, not measured delivery or equipment control." : "Historical evidence is displayed in Power & Battery; other views remain scenario comparisons."}
         </p>
         <small>
-          Scenario data:{" "}
+          {milp ? "Illustrative input profile:" : "Scenario data:"}{" "}
           {model.intervals.length
             ? formatOperationsTime(model.intervals[0].timestamp, true)
             : "Unavailable"}{" "}
