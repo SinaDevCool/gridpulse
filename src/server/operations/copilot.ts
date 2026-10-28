@@ -4,6 +4,7 @@ import { analyticsJobSchema } from "../../features/analytics/job-contracts";
 import { selectCanonicalPresentation } from "../../features/operations/canonical-presentation";
 import { buildBriefEvidence, eligibleBriefClaims, eligibleBriefActions, renderPlanBrief, type BriefEvidence } from "../../features/operations/copilot/brief";
 import { readOperationsJson } from "../../lib/operations-request";
+import { providerStageSchema, type ProviderStage } from "../../features/operations/copilot/contracts";
 
 export class BriefError extends Error {
   constructor(public status: number, message: string) { super(message); }
@@ -62,6 +63,8 @@ export function providerSettings(config: ProviderConfig): ProviderSettings {
     if (name !== "openai" && name !== "meta") throw new BriefError(503, "Unsupported copilot provider.");
     const key = name === "meta" ? config.META_API_KEY : config.OPENAI_API_KEY;
     if (!key || (name === "meta" && !model)) throw new BriefError(503, "Copilot provider credentials or model are missing.");
+    if (name === "meta" && !["muse-spark-1.3", "muse-spark-1.2", "muse-spark-1.1", "muse-wonder-1.0"].includes(model!))
+      throw new BriefError(503, "Select an approved Standard Meta model for private planning data.");
     return { provider: name, key, model: model ?? "gpt-4o-mini" };
   };
   const primary = resolve(config.COPILOT_PROVIDER ?? "openai", config.COPILOT_MODEL);
@@ -70,27 +73,42 @@ export function providerSettings(config: ProviderConfig): ProviderSettings {
   return primary;
 }
 /** Request-scoped provider selection. Analytics authentication never passes through this adapter. */
-export function providerTransport(settings: ProviderSettings, fetcher: typeof fetch = fetch, attempts: string[] = []): typeof fetch {
+export function providerTransport(settings: ProviderSettings, fetcher: typeof fetch = fetch, attempts: string[] = [], stages: ProviderStage[] = []): typeof fetch {
   const deadline = AbortSignal.timeout(45_000);
   let active = settings;
   let fallbackUsed = false;
   return async (input, init) => {
     if (String(input) !== "https://api.openai.com/v1/responses") return fetcher(input, init);
-    const send = (target: ProviderSettings) => {
+    const send = async (target: ProviderSettings, fallbackReason: string | null = null) => {
       attempts.push(target.provider);
       const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
       body.model = target.model;
       if (target.provider === "meta") { body.max_output_tokens = 4096; body.reasoning = { effort: "low" }; }
-      return fetcher(target.provider === "meta" ? "https://api.meta.ai/v1/responses" : "https://api.openai.com/v1/responses",
+      const started = Date.now();
+      const stage = new Headers(init?.headers).get("x-gridpulse-stage") ?? "interpretation";
+      const base = { stage, provider: target.provider, requestedModel: target.model, fallbackReason };
+      try {
+      const response = await fetcher(target.provider === "meta" ? "https://api.meta.ai/v1/responses" : "https://api.openai.com/v1/responses",
         { ...init, headers: { authorization: `Bearer ${target.key}`, "content-type": "application/json" },
           body: JSON.stringify(body), redirect: "manual", signal: AbortSignal.any([deadline, ...(init?.signal ? [init.signal] : [])]) });
+      const parsed = providerSchema.safeParse(await boundedResponse(response.clone(), 32_000).catch(() => null));
+      const payload = parsed.success ? parsed.data : null;
+      stages.push(providerStageSchema.parse({ ...base, servedModel: payload?.model ?? null,
+        responseId: payload?.id ?? null, httpStatus: response.status, elapsedMs: Date.now() - started,
+        outcome: "responded", usage: payload?.usage ? { inputTokens: payload.usage.input_tokens, outputTokens: payload.usage.output_tokens } : null }));
+      return response;
+      } catch (error) {
+        stages.push(providerStageSchema.parse({ ...base, servedModel: null, responseId: null,
+          httpStatus: null, elapsedMs: Date.now() - started, outcome: "network_error", usage: null }));
+        throw error;
+      }
     };
     let response: Response;
     try { response = await send(active); }
     catch (error) {
       if (!fallbackUsed && settings.fallback && error instanceof TypeError && !deadline.aborted && !init?.signal?.aborted) {
         fallbackUsed = true; active = settings.fallback;
-        return send(active);
+        return send(active, "network_error");
       }
       throw error;
     }
@@ -98,18 +116,18 @@ export function providerTransport(settings: ProviderSettings, fetcher: typeof fe
     if (!fallbackUsed && settings.fallback && [402, 429, 500, 502, 503, 504].includes(response.status)) {
       await response.body?.cancel();
       fallbackUsed = true; active = settings.fallback;
-      return send(active);
+      return send(active, `http_${response.status}`);
     }
     return response;
   };
 }
 /** Shared structured selection used by both providers; all returned selections are validated by callers. */
 export async function requestCopilotSelection(input: unknown, instructions: string, schema: Record<string, unknown>,
-  key: string, model: string, fetcher: typeof fetch = fetch) {
+  key: string, model: string, fetcher: typeof fetch = fetch, stage: ProviderStage["stage"] = "interpretation") {
   const serialized = JSON.stringify(input);
   if (new TextEncoder().encode(serialized).length > 32_000) throw new BriefError(413, "Question context exceeds the evidence budget.");
   const response = await fetcher("https://api.openai.com/v1/responses", {
-    method: "POST", headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
+    method: "POST", headers: { authorization: `Bearer ${key}`, "content-type": "application/json", "x-gridpulse-stage": stage },
     redirect: "manual", signal: AbortSignal.timeout(45_000),
     body: JSON.stringify({ model, store: false, max_output_tokens: 800, instructions, input: serialized,
       text: { format: { type: "json_schema", name: "copilot_selection", strict: true, schema } } }),
@@ -141,7 +159,7 @@ export async function generatePlanBrief(evidence: BriefEvidence, key: string,
     { type: "object", additionalProperties: false, required: ["findings", "actions"], properties: {
       findings: { type: "array", minItems: 1, maxItems: 8, items: { type: "string", enum: claims.map(claim => claim.id) } },
       actions: { type: "array", minItems: 1, maxItems: 3, items: { type: "string", enum: eligibleBriefActions(evidence) } },
-    } }, key, model, fetcher);
+    } }, key, model, fetcher, "brief_selection");
   return renderPlanBrief(result.selection, evidence, result.model, { responseId: result.responseId ?? undefined,
     usage: result.usage ?? undefined });
 }

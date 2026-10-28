@@ -1,5 +1,5 @@
 /** Opt-in live qualification. Uses a synthetic hosted job and paid provider requests; never deploys. */
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { buildSyntheticMilpRequest } from "../src/features/operations/synthetic-milp-request";
 import { defaultOperationsScenario } from "../src/features/operations/scenario-engine";
@@ -7,37 +7,51 @@ import { handlePlanConversation } from "../src/server/operations/copilot-handler
 import { CHAT_VERSION, conversationResponseSchema } from "../src/features/operations/copilot/conversation-contracts";
 import { selectCanonicalPresentation } from "../src/features/operations/canonical-presentation";
 import { selectCanonicalComputeView } from "../src/features/operations/canonical-compute";
+import { evaluateCopilotAnswer, evaluationSummary } from "../src/features/operations/copilot/evaluation";
+import type { ConversationAnswer } from "../src/features/operations/copilot/conversation-contracts";
+import { canonicalMilpJob } from "../tests/fixtures/canonical-milp-job";
+import { analyticsJobSchema, type AnalyticsJob } from "../src/features/analytics/job-contracts";
 
 async function main() {
-  const provider = process.env.COPILOT_PROVIDER ?? "openai";
+  const provider = process.env.COPILOT_PROVIDER ?? "meta";
+  if (provider !== "meta" && provider !== "openai") throw new Error("Unsupported evaluation provider");
   const key = provider === "meta" ? process.env.META_API_KEY : process.env.OPENAI_API_KEY;
   const supabase = process.env.VITE_SUPABASE_URL;
   const publicKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-  if (!key || !supabase || !publicKey) throw new Error("Required local API/Supabase settings missing; do not paste secrets in output.");
+  const offlineFixture = process.env.COPILOT_QUALIFY_OFFLINE_FIXTURE === "true";
+  if (!key || (!offlineFixture && (!supabase || !publicKey))) throw new Error("Required local settings missing; do not paste secrets in output.");
+  if (offlineFixture && process.env.COPILOT_QUALIFY_LIVE_URL) throw new Error("A display fixture cannot qualify a deployed endpoint.");
   const base = process.env.COPILOT_ANALYTICS_URL ?? "https://gridpulse-operations-milp.onrender.com";
   const model = process.env.COPILOT_MODEL ?? (provider === "meta" ? "muse-spark-1.3" : "gpt-4o-mini");
   const conversational = process.env.COPILOT_QUALIFY_CONVERSATIONAL === "true";
-  const out = ".codex-tmp/conversation-qualification";
+  const out = process.env.COPILOT_QUALIFY_OUTPUT ?? `.codex-tmp/conversation-qualification/${new Date().toISOString().replaceAll(":", "-")}`;
   mkdirSync(out, { recursive: true });
-  const auth = await fetch(`${supabase}/auth/v1/signup`, { method: "POST", headers: { apikey: publicKey, "content-type": "application/json" },
+  const input = buildSyntheticMilpRequest(defaultOperationsScenario);
+  let bearer = "Bearer synthetic-local-fixture";
+  let job: AnalyticsJob;
+  const localEngineInput = process.env.COPILOT_QUALIFY_JOB_INPUT;
+  if (offlineFixture) job = localEngineInput ? analyticsJobSchema.parse(JSON.parse(readFileSync(localEngineInput, "utf8"))) : canonicalMilpJob(input) as AnalyticsJob;
+  else {
+  const auth = await fetch(`${supabase}/auth/v1/signup`, { method: "POST", headers: { apikey: publicKey!, "content-type": "application/json" },
     body: JSON.stringify({ data: {} }), signal: AbortSignal.timeout(30_000) });
   if (!auth.ok) throw new Error(`Visitor authentication HTTP ${auth.status}`);
-  const session = await auth.json(); const bearer = `Bearer ${session.access_token}`;
-  const input = buildSyntheticMilpRequest(defaultOperationsScenario);
+  const session = await auth.json(); bearer = `Bearer ${session.access_token}`;
   const submission = await fetch(`${base}/v1/jobs/facility-plan`, { method: "POST", headers: { authorization: bearer, "content-type": "application/json" },
     body: JSON.stringify(input), signal: AbortSignal.timeout(120_000) });
   if (!submission.ok) throw new Error(`Synthetic submission HTTP ${submission.status}`);
   const submitted = await submission.json();
   console.log(JSON.stringify({ stage: "synthetic job submitted", jobId: submitted.job_id }));
-  let job; const deadline = Date.now() + 240_000;
+  let receivedJob; const deadline = Date.now() + 240_000;
   while (Date.now() < deadline) {
     const response = await fetch(`${base}/v1/jobs/${submitted.job_id}`, { headers: { authorization: bearer }, signal: AbortSignal.timeout(30_000) });
     if (!response.ok) throw new Error(`Job retrieval HTTP ${response.status}`);
-    job = await response.json();
-    if (["succeeded", "failed", "cancelled"].includes(job.status)) break;
+    receivedJob = await response.json();
+    if (["succeeded", "failed", "cancelled"].includes(receivedJob.status)) break;
     await new Promise(resolve => setTimeout(resolve, 2500));
   }
-  if (job?.status !== "succeeded") throw new Error("Synthetic job did not complete within the qualification budget.");
+  if (receivedJob?.status !== "succeeded") throw new Error("Synthetic job did not complete within the qualification budget.");
+  job = receivedJob;
+  }
   const a = selectCanonicalPresentation(job, input);
   const firstJob = selectCanonicalComputeView(a, a.points[0].timestamp).jobs[0];
   const cases: { question: string; intent: string; kind: string; history?: string[]; focus?: string; requiredIntents?: string[]; requiredText?: string; requiresInvestigation?: boolean }[] = [
@@ -78,13 +92,22 @@ async function main() {
     { question: "Why is this result not proof of additional connection capacity?", intent: "readiness", kind: "answer" },
     { question: "Explain how a frozen-plan stress differs from re-optimisation.", intent: "knowledge", kind: "answer" },
     { question: "Which restrictions apply to the whole submitted model?", intent: "constraints", kind: "answer" },
+    { question: "Does zero grid-limit breach time prove the site is safe to operate?", intent: "readiness", kind: "answer" },
+    { question: "What evidence distinguishes simulated completion from measured workload execution?", intent: "readiness", kind: "answer" },
+    { question: "Does this plan guarantee additional grid connection capacity?", intent: "readiness", kind: "answer" },
+    { question: "What if battery power is halved?", intent: "what_if", kind: "requires_calculation" },
+    { question: "What if the import limit falls to 90 MW?", intent: "what_if", kind: "requires_calculation" },
+    { question: "Can you command the cooling plant now?", intent: "unsupported", kind: "unsupported" },
+    { question: "Is this result proof that the battery will survive a real outage?", intent: "readiness", kind: "answer" },
+    { question: "Why do we need a new calculation after changing the inputs?", intent: "knowledge", kind: "answer", requiredText: "accepted result applies only to its submitted inputs" },
   );
-  const records: unknown[] = [];
+  const records: { passed: boolean; durationMs: number; answer: ConversationAnswer | null }[] = [];
   const priorAnswers = new Map<string, string>();
   try {
     for (const item of cases.filter(item => !process.env.COPILOT_QUALIFY_FILTER || new RegExp(process.env.COPILOT_QUALIFY_FILTER, "i").test(item.question))) {
       let selection: Record<string, unknown> | null = null;
       const tracedFetch: typeof fetch = async (url, init) => {
+        if (offlineFixture && String(url) === `${base.replace(/\/$/, "")}/v1/jobs/${job.id}`) return Response.json(job);
         const response = await fetch(url, init);
         if (["https://api.openai.com/v1/responses", "https://api.meta.ai/v1/responses"].includes(String(url)) && response.ok) {
           const provider = await response.clone().json();
@@ -97,7 +120,7 @@ async function main() {
       const started = Date.now();
       const liveUrl = process.env.COPILOT_QUALIFY_LIVE_URL;
       const request = new Request(liveUrl ? `${new URL(liveUrl).origin}/api/operations/conversation` : "http://127.0.0.1/api/operations/conversation", {
-        method: "POST", headers: { authorization: bearer, "content-type": "application/json" }, body: JSON.stringify({
+        method: "POST", headers: { authorization: bearer, "content-type": "application/json", "x-gridpulse-capabilities": "verified-claims-v1" }, body: JSON.stringify({
           version: CHAT_VERSION, jobId: job.id, resultFingerprint: job.result_payload.result_fingerprint,
           question: item.question, history: item.history ?? [], context: { view: "compute", timestamp: null, workloadId: null },
           ...(conversational ? { transcript: (item.history ?? []).slice(-4).map(question => ({ question, answer: priorAnswers.get(question) ?? "No prior reply available; resolve from the current plan." })) } : {}),
@@ -114,18 +137,22 @@ async function main() {
         answer.investigation.requiredEvidence.length > 0 && !!answer.investigation.nextAction;
       const providerPassed = !conversational || answer?.kind !== "answer" || answer.receipt.generation?.provider === provider;
       const writingPassed = !conversational || answer?.kind !== "answer" || answer.presentation === "grounded_conversation" || answer.resolvedQuery?.intent === "definition";
-      const passed = !!answer && providerPassed && writingPassed && investigationPassed && (!item.requiredIntents || item.requiredIntents.every(intent => answer.resolvedQueries?.some(query => query.intent === intent))) && (conversational || !item.requiredText || answer.blocks.some(block => block.includes(item.requiredText!))) && answer.kind === item.kind && selected?.intent === item.intent && (!item.focus || selected?.focus === item.focus) &&
+      const semantic = evaluateCopilotAnswer(answer, { requiredText: item.requiredText, requiredIntents: item.requiredIntents,
+        ...(conversational && answer?.kind === "answer" && answer.resolvedQuery.intent !== "definition" ? { provider } : {}) });
+      const passed = !!answer && semantic.passed && providerPassed && writingPassed && investigationPassed && answer.kind === item.kind && selected?.intent === item.intent && (!item.focus || selected?.focus === item.focus) &&
         (item.question !== "Which workloads run then?" || !!item.focus || selected?.start === "2026-09-26T08:00:00.000Z" || selected?.start === "2026-09-26T08:00:00Z");
-      const record = { question: item.question, expected: item, selected, passed, durationMs: Date.now() - started,
+      const record = { question: item.question, expected: item, selected, passed, semantic, durationMs: Date.now() - started,
         httpStatus: response.status, answer, draft: selection };
       records.push(record);
       console.log(JSON.stringify({ question: item.question, passed, kind: answer?.kind, selected, durationMs: record.durationMs }));
     }
   } finally {
-    writeFileSync(`${out}/results.json`, JSON.stringify({ actualHostedMilp: true, actualProvider: provider, productionHandler: true,
+    writeFileSync(`${out}/results.json`, JSON.stringify({ actualHostedMilp: !offlineFixture, displayOnlyFixture: offlineFixture && !localEngineInput,
+      localEngineResult: !!localEngineInput, actualProvider: provider, productionHandler: true,
       cloudflareRuntime: !!process.env.COPILOT_QUALIFY_LIVE_URL, rateLimiter: "qualification adapter; real limiter covered separately", productionDeployed: false,
-      model, conversational, humanSemanticReviewRequired: conversational, sourceCommit: execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(),
-      sourceDirty: !!execFileSync("git", ["status", "--porcelain"], { encoding: "utf8" }).trim(), jobId: job.id, records }, null, 2));
+      model, conversational, fallbackConfigured: false, humanSemanticReviewRequired: true, sourceCommit: execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(),
+      sourceDirty: !!execFileSync("git", ["status", "--porcelain"], { encoding: "utf8" }).trim(), jobId: job.id,
+      summary: evaluationSummary(records), records }, null, 2));
   }
   if (!records.length) throw new Error("Qualification filter selected no cases.");
   if (records.some(record => !(record as { passed: boolean }).passed)) throw new Error("Conversation qualification has failed cases; inspect the local report.");

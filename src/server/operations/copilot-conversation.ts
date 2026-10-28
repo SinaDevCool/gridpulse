@@ -8,6 +8,13 @@ import { explicitExperimentSelection, proposalJsonSchema } from "../../features/
 
 export async function interpretQuestion(a: CanonicalPresentation, request: ConversationRequest,
   key: string, model: string, fetcher: typeof fetch = fetch, access: { experiments?: boolean; accounting?: boolean } = {}) {
+  // Known capability boundaries do not depend on a stochastic interpretation.
+  const boundary = /\bwhy\b.*\bsolver\b.*\bprefer/i.test(request.question) ? "why" :
+    /\b(?:minimise|minimize|optimise|optimize)\b.*\b(?:bill|cost)\b.*\b(?:workload|schedule)/i.test(request.question) ? "what_if" :
+    /\b(?:does|would|can)\b.*\bguarantee\b.*\b(?:connection|grid)\b.*\bcapacity\b/i.test(request.question) ? "readiness" :
+    /\bwhy\b.*\bnew\b.*\bcalculation\b.*\bchang/i.test(request.question) ? "knowledge" : null;
+  if (boundary && !/\band\b|\balso\b|;/i.test(request.question)) return { query: querySchema.parse({ intent: boundary, workloadId: null, start: null, end: null,
+    focus: "selected", definition: "none" }), provider: { model: "deterministic-capability-boundary", responseId: null, usage: null } };
   const explicitProposal = explicitExperimentSelection(request.question);
   const ambiguousBatteryCapacity = /battery.*capacity/i.test(request.question) && !/energy|power|mwh|\bmw\b/i.test(request.question);
   if (/\b(?:what\s+if|suppose|imagine)\b/i.test(request.question) && !/\band\b|\balso\b|;/i.test(request.question) &&

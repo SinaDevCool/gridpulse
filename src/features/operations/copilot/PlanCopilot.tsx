@@ -29,6 +29,11 @@ export function PlanBrief({ state, current, jobId, onNavigate, children }: {
         </div>)}
       </details>)}</div>
       <h3>Review next</h3><ul>{brief.actions.map(action => <li key={action}>{action}</li>)}</ul>
+      {brief.investigation ? <section aria-label="Investigation brief"><h3>Investigation</h3>
+        {brief.investigation.result.cases.map(item => <p key={item.case_id}>
+          {item.case_id}: {item.mode === "frozen_plan" ? "Accepted schedule held fixed" : "Separate re-optimisation"} — {item.status === "unsupported_or_invalid" ? "Not assessed" : item.accepted ? "Passed supplied model checks" : "Did not pass supplied model checks"}.
+        </p>)}<small>Assumed conditions; not a measured delivery or reliability probability.</small>
+      </section> : null}
       <details><summary>Receipt and limitations</summary>
         <p>Assessment {brief.resultFingerprint} · {brief.model} · {brief.generatedAt}</p>
         <ul>{brief.limitations.map(text => <li key={text}>{text}</li>)}</ul>
@@ -44,6 +49,12 @@ export function PlanBrief({ state, current, jobId, onNavigate, children }: {
         const link = document.createElement("a"); link.href = url; link.download = "gridpulse-plan-brief.txt";
         link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
       }}>Download brief</button>
+      <button type="button" className="secondary-button" disabled={!reviewed} onClick={() => {
+        const url = URL.createObjectURL(new Blob([JSON.stringify({ brief, reviewAcknowledgedAt: reviewedAt,
+          operationalApproval: false }, null, 2)], { type: "application/json" }));
+        const link = document.createElement("a"); link.href = url; link.download = "gridpulse-evidence-brief.json";
+        link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }}>Download evidence JSON</button>
     </> : null}
     {children}
   </section>;

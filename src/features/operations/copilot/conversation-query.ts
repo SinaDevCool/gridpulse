@@ -50,7 +50,9 @@ export function answerConversation(a: CanonicalPresentation, request: Conversati
     }
     if (facts.some(f => f.id === "planning.reporting_gaps")) blocks.push("Reporting completeness is an evidence review, not legal certification. A daily plan does not establish annual measured performance.");
   }
-  if (query.intent === "knowledge") return stop("answer", "Operational guidance is shown with its source below. It does not establish this site's equipment condition or authorise operation.");
+  if (query.intent === "knowledge") return stop("answer", /\bwhy\b.*\bnew\b.*\bcalculation\b.*\bchang/i.test(request.question)
+    ? "The accepted result applies only to its submitted inputs. Changing an input can change feasibility, battery reserve and workload completion. A separately confirmed calculation is required before comparing outcomes; the original plan remains unchanged."
+    : "Operational guidance is shown with its source below. It does not establish this site's equipment condition or authorise operation.");
   if (query.intent === "accounting") return stop("answer", "Fixed-schedule tariff accounting does not require another MILP solve. Use the reviewed accounting tool with a complete EUR/MWh tariff. The reviewed tariff tool can include supplied supplier markup, network energy charges and incremental annual capacity liability against a prior billing peak. Taxes and export credits require separate rules; no total-bill saving is inferred from this plan alone.");
   if (query.intent === "experiment") return stop("clarification", "Select a completed stress experiment attached to this accepted plan.");
   if (query.intent === "definition") { blocks.push(definitionText[query.definition]); return respond(); }

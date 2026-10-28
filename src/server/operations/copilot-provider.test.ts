@@ -16,6 +16,7 @@ describe("interchangeable copilot transport", () => {
   it("requires the selected provider key and an explicit Meta model", () => {
     expect(() => providerSettings({ COPILOT_PROVIDER: "meta", OPENAI_API_KEY: "other" })).toThrow();
     expect(() => providerSettings({ COPILOT_PROVIDER: "unknown" })).toThrow();
+    expect(() => providerSettings({ COPILOT_PROVIDER: "meta", META_API_KEY: "m", COPILOT_MODEL: "muse-spark-1.3-contributor" })).toThrow("Standard");
   });
   it("routes Meta with its own credential and reasoning budget", async () => {
     const fetcher = vi.fn().mockResolvedValue(Response.json({ status: "completed", model: "muse-spark-1.3",

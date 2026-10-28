@@ -8,8 +8,8 @@ export type PlanCopilotState = {
   explain: () => Promise<void>; setReviewed: (value: boolean) => void;
   setCopied: (value: boolean) => void; setError: (value: string | null) => void;
 };
-export function usePlanCopilot({ jobId, fingerprint, current }: {
-  jobId?: string; fingerprint: string; current: boolean;
+export function usePlanCopilot({ jobId, fingerprint, current, experimentJobId }: {
+  jobId?: string; fingerprint: string; current: boolean; experimentJobId?: string;
 }): PlanCopilotState {
   const [saved, setSaved] = useState<{ identity: string; brief: PlanBrief } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -17,7 +17,7 @@ export function usePlanCopilot({ jobId, fingerprint, current }: {
   const [review, setReview] = useState<{ identity: string; at: string } | null>(null);
   const [copied, setCopied] = useState(false);
   const gate = useRef(createBriefRequestLifecycle());
-  const identity = `${jobId}:${fingerprint}:${current}`;
+  const identity = `${jobId}:${fingerprint}:${current}:${experimentJobId ?? ""}`;
   const latestIdentity = useRef(identity); latestIdentity.current = identity;
   const brief = saved?.identity === identity && current ? saved.brief : null;
   const reviewedAt = review?.identity === identity && brief ? review.at : null;
@@ -34,11 +34,12 @@ export function usePlanCopilot({ jobId, fingerprint, current }: {
     setBusy(true); setError(null);
     const accepts = () => gate.current.accepts(ticket, latestIdentity.current);
     try {
-      const raw = await requestCopilot("brief", { version: BRIEF_VERSION, jobId, resultFingerprint: fingerprint },
+      const raw = await requestCopilot("brief", { version: BRIEF_VERSION, jobId, resultFingerprint: fingerprint, experimentJobId },
         AbortSignal.any([ticket.abort.signal, AbortSignal.timeout(80_000)]));
       const accepted = briefSchema.parse(raw);
       if (accepted.resultFingerprint !== fingerprint || accepted.receipt.jobId !== jobId)
         throw new Error("Explanation refers to a different plan.");
+      if (accepted.investigation?.jobId !== experimentJobId) throw new Error("Investigation identity changed.");
       if (accepts()) setSaved({ identity, brief: accepted });
     } catch (reason) {
       if (accepts()) setError(reason instanceof Error ? reason.message : "Explanation unavailable.");
