@@ -1,3 +1,4 @@
+import { retrieveOperationalKnowledge } from "./operational-knowledge";
 import { experimentFields } from "../../features/analytics/experiment-contracts";
 import { copilotCapabilities } from "./copilot-capabilities";
 import type { CanonicalPresentation } from "../../features/operations/canonical-presentation";
@@ -9,12 +10,15 @@ import { explicitExperimentSelection, proposalJsonSchema } from "../../features/
 export async function interpretQuestion(a: CanonicalPresentation, request: ConversationRequest,
   key: string, model: string, fetcher: typeof fetch = fetch, access: { experiments?: boolean; accounting?: boolean } = {}) {
   // Known capability boundaries do not depend on a stochastic interpretation.
-  const boundary = /\bwhy\b.*\bsolver\b.*\bprefer/i.test(request.question) ? "why" :
+  const conceptualReport = /\b(?:can|what|how|why|explain|does|is|would)\b/i.test(request.question) && !/\b(?:command|execute|activate|switch)\b|dispatch\s+(?:the|my|our)/i.test(request.question);
+  const researchBoundary=conceptualReport && (/\bTEM\b/i.test(request.question) && /dispatch|projection|quarter|scope|sensitivity/i.test(request.question) || /\b(?:efficiency|infrastructure|IT)\b.*\b(?:label|certification)/i.test(request.question) || /\bbenchmark\b/i.test(request.question) && /hardware|useful|throughput|server/i.test(request.question));
+  const readinessBoundary = conceptualReport && /\b(?:proof|prove|proves|guarantee|guarantees|certify|readiness|ready|approve|approved|approval)\b/i.test(request.question) && /\b(?:plan|result|site|battery|grid|connection|outage|capacity|safe|cooling|protocol|dispatch)\b/i.test(request.question);
+  const boundary = readinessBoundary ? "readiness" : researchBoundary ? "knowledge" : /\bwhy\b.*\bsolver\b.*\bprefer/i.test(request.question) ? "why" :
     /\b(?:minimise|minimize|optimise|optimize)\b.*\b(?:bill|cost)\b.*\b(?:workload|schedule)/i.test(request.question) ? "what_if" :
     /\b(?:does|would|can)\b.*\bguarantee\b.*\b(?:connection|grid)\b.*\bcapacity\b/i.test(request.question) ? "readiness" :
     /\b(?:simulated|modelled|modeled)\b/i.test(request.question) && /\bmeasured\b/i.test(request.question) && /\b(?:evidence|distinguish|difference)\b/i.test(request.question) ? "readiness" :
     /\bwhy\b.*\bnew\b.*\bcalculation\b.*\bchang/i.test(request.question) ? "knowledge" : null;
-  if (boundary && !/\band\b|\balso\b|;/i.test(request.question)) return { query: querySchema.parse({ intent: boundary, workloadId: null, start: null, end: null,
+  if (boundary && (!/\band\b|\balso\b|;/i.test(request.question) || researchBoundary && !/;|\b(?:and|also)\s+(?:what|how|why|can|does|show|tell|change|run|command|activate)\b/i.test(request.question))) return { query: querySchema.parse({ intent: boundary, workloadId: null, start: null, end: null,
     focus: "selected", definition: "none" }), provider: { model: "deterministic-capability-boundary", responseId: null, usage: null } };
   const explicitProposal = explicitExperimentSelection(request.question);
   const ambiguousBatteryCapacity = /battery.*capacity/i.test(request.question) && !/energy|power|mwh|\bmw\b/i.test(request.question);
@@ -78,7 +82,13 @@ For overall risks or review select readiness; the application gathers checks, po
       } } },
     } }, key, model, fetcher);
   const plan = analysisPlanSchema.safeParse(result.selection);
-  const queries = (plan.success ? plan.data.queries : [querySchema.parse(result.selection)]).map(query =>
-    query.intent === "checks" && query.workloadId ? { ...query, intent: "workload" as const } : query);
+  const explicitPue = /\bPUE\b|power usage effectiveness/i.test(request.question);
+  const pueFollowup = /\b(?:that|it|this term)\b/i.test(request.question) && request.previousQueries?.at(-1)?.definition === "pue";
+  const queries = (plan.success ? plan.data.queries : [querySchema.parse(result.selection)]).map(query => {
+    if (query.intent === "definition" && query.definition === "pue" && !explicitPue && !pueFollowup) {
+      return querySchema.parse({ ...empty, intent: conceptualReport && retrieveOperationalKnowledge(request.question).length ? "knowledge" : "clarify" });
+    }
+    return query.intent === "checks" && query.workloadId ? { ...query, intent: "workload" as const } : query;
+  });
   return { query: queries[0], queries, proposal: plan.success ? plan.data.proposal ?? explicitExperimentSelection(request.question) : explicitExperimentSelection(request.question), provider: result };
 }

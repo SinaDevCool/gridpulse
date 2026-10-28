@@ -385,3 +385,40 @@
 .ops-chat-alternative input[type="checkbox"] { margin-top: .2rem; flex-shrink: 0; }
 .ops-chat-alternative .ops-chat-facts { grid-template-columns: repeat(auto-fit,minmax(120px,1fr)); margin: 0; }
 .ops-chat-alternative details { min-width: 0; overflow-wrap: anywhere; }
+
+/* Domain evidence controls retain the dashboard's existing tokens and touch targets. */
+.ops-guidance-references, .ops-guidance-reference, .ops-checked-finding,
+.ops-private-analysis, .ops-offline-review { min-width: 0; overflow-wrap: anywhere; }
+.ops-guidance-reference { padding-block: .75rem; border-top: 1px solid var(--ops-border); }
+.ops-guidance-reference h4 { margin: 0 0 .4rem; font-size: .9375rem; }
+.ops-guidance-reference a { text-decoration: underline; text-underline-offset: .2em; }
+.ops-guidance-reference a:hover { text-decoration-thickness: 2px; }
+.ops-guidance-exclusions { margin-block: .5rem; font-size: .8125rem; }
+.ops-guidance-reference ul { padding-left: 1.25rem; }
+.ops-guidance-reference dd, .ops-offline-review code { overflow-wrap: anywhere; }
+.ops-checked-finding[data-kind="guidance"] { padding: .75rem; border: 1px solid var(--ops-border); border-radius: .4rem; background: var(--ops-accent); margin-block: .65rem; }
+.ops-checked-finding p { margin-block: .4rem .75rem; }
+.ops-private-analysis > details > summary { font-weight: 600; }
+.ops-private-analysis .ops-chat-alternative-field { margin-block: .75rem; }
+.ops-private-analysis .ops-chat-alternative-confirm { display: flex; gap: .5rem; align-items: flex-start; margin-block: .75rem; }
+.ops-private-analysis input[type="checkbox"] { flex-shrink: 0; margin-top: .2rem; }
+.ops-private-analysis pre { max-height: 18rem; overflow: auto; }
+.ops-private-analysis :is(input,select,button,summary):focus-visible,
+.ops-offline-review :is(input,button,summary):focus-visible { outline: 2px solid var(--ops-demand); outline-offset: 2px; }
+.ops-offline-review input[type="file"] { display: block; max-width: 100%; margin-block: .5rem; }
+.ops-offline-review small, .ops-offline-status, .ops-analysis-hint { font-size: .8125rem; line-height: 1.5; }
+.ops-copilot-panel .ops-chat-help { margin-block: .25rem 0; font-size: .75rem; }
+.ops-copilot-panel .ops-chat-help summary { padding-block: .2rem; }
+@media (max-width: 620px) {
+  .ops-copilot-panel form { max-height: 48dvh; overflow-y: auto; overscroll-behavior: contain; }
+  .ops-copilot-panel form > small { font-size: .6875rem; }
+  .ops-copilot-panel textarea { min-height: 3rem; }
+}
+
+.ops-offline-review h3 { font-size: .9375rem; }
+
+.ops-offline-review > p, .ops-offline-review > details { margin-block: .5rem; }
+.ops-offline-review > small { display: block; margin-block: .5rem; }
+.ops-offline-review button { min-height: 2.75rem; padding: .5rem .75rem; border: 1px solid var(--ops-border); border-radius: .375rem; background: var(--ops-card); color: inherit; }
+.ops-offline-review button:hover { border-color: var(--ops-demand); }
+.ops-offline-review input[type="file"] { min-height: 2.75rem; padding: .5rem; width: 100%; }

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { requestCopilot } from "./copilot-client";
-import { BRIEF_VERSION, briefSchema, type PlanBrief } from "./brief";
+import { BRIEF_VERSION, briefSchema, briefReviewIdentity, type PlanBrief } from "./brief";
 import { createBriefRequestLifecycle } from "./request-lifecycle";
 
 export type PlanCopilotState = {
@@ -14,13 +14,13 @@ export function usePlanCopilot({ jobId, fingerprint, current, experimentJobId }:
   const [saved, setSaved] = useState<{ identity: string; brief: PlanBrief } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [review, setReview] = useState<{ identity: string; at: string } | null>(null);
+  const [review, setReview] = useState<{ identity: string; content:string; at: string } | null>(null);
   const [copied, setCopied] = useState(false);
   const gate = useRef(createBriefRequestLifecycle());
   const identity = `${jobId}:${fingerprint}:${current}:${experimentJobId ?? ""}`;
   const latestIdentity = useRef(identity); latestIdentity.current = identity;
   const brief = saved?.identity === identity && current ? saved.brief : null;
-  const reviewedAt = review?.identity === identity && brief ? review.at : null;
+  const reviewedAt = review?.identity === identity && brief && review.content===briefReviewIdentity(brief) ? review.at : null;
   useEffect(() => {
     gate.current.sync(identity);
     setSaved(null); setReview(null); setError(null); setBusy(false); setCopied(false);
@@ -48,5 +48,5 @@ export function usePlanCopilot({ jobId, fingerprint, current, experimentJobId }:
     }
   }
   return { brief, busy, error, reviewed: !!reviewedAt, reviewedAt, copied, explain,
-    setReviewed: value => setReview(value && brief ? { identity, at: new Date().toISOString() } : null), setCopied, setError };
+    setReviewed: value => setReview(value && brief ? { identity, content:briefReviewIdentity(brief), at: new Date().toISOString() } : null), setCopied, setError };
 }

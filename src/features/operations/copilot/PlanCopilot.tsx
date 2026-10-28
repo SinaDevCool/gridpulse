@@ -1,6 +1,7 @@
+import { GuidanceReferences } from "./GuidanceReferences";
 import { useEffect, useRef, useState } from "react";
 import { CopilotEvidence } from "./CopilotEvidence";
-import { briefText, sectionLabels } from "./brief";
+import { briefText, briefContentDigest, sectionLabels } from "./brief";
 import type { PlanCopilotState } from "./use-plan-copilot";
 import type { ReactNode } from "react";
 
@@ -10,6 +11,7 @@ export function PlanBrief({ state, current, jobId, onNavigate, children }: {
   children?: ReactNode;
 }) {
   const { brief, busy, error, reviewed, reviewedAt, copied, explain, setReviewed, setCopied, setError } = state;
+  const latestBrief=useRef({brief,reviewed});latestBrief.current={brief,reviewed};
   return <section className="data-panel ops-plan-copilot" aria-label="Plan brief" aria-busy={busy}>
     <h3>Plan brief</h3>
     <p>Explain and inspect this modelled plan · review evidence before a decision</p>
@@ -34,6 +36,7 @@ export function PlanBrief({ state, current, jobId, onNavigate, children }: {
           {item.case_id}: {item.mode === "frozen_plan" ? "Accepted schedule held fixed" : "Separate re-optimisation"} — {item.status === "unsupported_or_invalid" ? "Not assessed" : item.accepted ? "Passed supplied model checks" : "Did not pass supplied model checks"}.
         </p>)}<small>Assumed conditions; not a measured delivery or reliability probability.</small>
       </section> : null}
+      <GuidanceReferences references={brief.guidance ?? []} />
       <details><summary>Receipt and limitations</summary>
         <p>Assessment {brief.resultFingerprint} · {brief.model} · {brief.generatedAt}</p>
         <ul>{brief.limitations.map(text => <li key={text}>{text}</li>)}</ul>
@@ -49,11 +52,15 @@ export function PlanBrief({ state, current, jobId, onNavigate, children }: {
         const link = document.createElement("a"); link.href = url; link.download = "gridpulse-plan-brief.txt";
         link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
       }}>Download brief</button>
-      <button type="button" className="secondary-button" disabled={!reviewed} onClick={() => {
-        const url = URL.createObjectURL(new Blob([JSON.stringify({ brief, reviewAcknowledgedAt: reviewedAt,
+      <button type="button" className="secondary-button" disabled={!reviewed} onClick={async () => {
+        try {
+        const contentDigest=await briefContentDigest(brief);
+        if(latestBrief.current.brief!==brief || !latestBrief.current.reviewed)return;
+        const url = URL.createObjectURL(new Blob([JSON.stringify({ brief, contentDigest, reviewAcknowledgedAt: reviewedAt,
           operationalApproval: false }, null, 2)], { type: "application/json" }));
         const link = document.createElement("a"); link.href = url; link.download = "gridpulse-evidence-brief.json";
         link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+        } catch { setError("Evidence export unavailable. Please try again."); }
       }}>Download evidence JSON</button>
     </> : null}
     {children}

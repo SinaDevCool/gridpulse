@@ -3,7 +3,7 @@ import { canonicalMilpJob } from "../../../../tests/fixtures/canonical-milp-job"
 import { buildSyntheticMilpRequest } from "../synthetic-milp-request";
 import { defaultOperationsScenario } from "../scenario-engine";
 import { selectCanonicalPresentation } from "../canonical-presentation";
-import { buildBriefEvidence, renderPlanBrief, briefText, eligibleBriefClaims, formatBriefFact } from "./brief";
+import { buildBriefEvidence, renderPlanBrief, briefText, eligibleBriefClaims, formatBriefFact, briefReviewIdentity, briefContentDigest } from "./brief";
 import { factSchema, briefSchema } from "./contracts";
 
 function fixture() {
@@ -95,4 +95,16 @@ describe("grounded plan brief", () => {
     expect(() => briefSchema.parse({ ...brief, findings: Array.from({ length: 13 }, (_, i) => ({ ...brief.findings[0], id: `claim${i}` })) })).toThrow();
     expect(() => briefSchema.parse({ ...brief, evidence: [] })).toThrow();
   });
+});
+
+
+it("invalidates review identity and export digest when evidence content changes", async () => {
+  const { request, job } = fixture();
+  const brief = renderPlanBrief({ findings: ["peak"], actions: ["review_inputs"] }, buildBriefEvidence(selectCanonicalPresentation(job, request)), "test");
+  const original = briefReviewIdentity(brief);
+  const digest = await briefContentDigest(brief);
+  expect(digest).toMatch(/^[a-f0-9]{64}$/);
+  const changed = { ...brief, knowledgeVersion: "changed-corpus" };
+  expect(briefReviewIdentity(changed)).not.toBe(original);
+  expect(await briefContentDigest(changed)).not.toBe(digest);
 });

@@ -1,3 +1,4 @@
+import { OfflineEvidenceReview } from "./OfflineEvidenceReview";
 import { usePowerEvidence } from "../hooks/use-power-evidence";
 import { useSharedWorkloadEvidence } from "../hooks/workload-evidence-context";
 import { useOperationsEvidenceDataStore } from "../hooks/evidence-store";
@@ -50,6 +51,7 @@ export function EvidenceInputs({
           ) : null,
         )}
       </ul>
+      <OfflineEvidenceReview />
       <small>
         Evidence stays in this workspace session. Reloading clears imports. No database save is
         performed.

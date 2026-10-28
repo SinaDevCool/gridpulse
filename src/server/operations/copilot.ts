@@ -1,3 +1,4 @@
+import type { PaidStageBudget } from "./budget-ledger";
 import { z } from "zod";
 import { facilityPlanRequestSchema } from "../../features/analytics/contracts";
 import { analyticsJobSchema } from "../../features/analytics/job-contracts";
@@ -73,7 +74,7 @@ export function providerSettings(config: ProviderConfig): ProviderSettings {
   return primary;
 }
 /** Request-scoped provider selection. Analytics authentication never passes through this adapter. */
-export function providerTransport(settings: ProviderSettings, fetcher: typeof fetch = fetch, attempts: string[] = [], stages: ProviderStage[] = []): typeof fetch {
+export function providerTransport(settings: ProviderSettings, fetcher: typeof fetch = fetch, attempts: string[] = [], stages: ProviderStage[] = [], budget?: PaidStageBudget): typeof fetch {
   const deadline = AbortSignal.timeout(45_000);
   let active = settings;
   let fallbackUsed = false;
@@ -84,6 +85,12 @@ export function providerTransport(settings: ProviderSettings, fetcher: typeof fe
       const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
       body.model = target.model;
       if (target.provider === "meta") { body.max_output_tokens = 4096; body.reasoning = { effort: "low" }; }
+      const reservation=crypto.randomUUID();
+      if(budget) {
+        if(target.provider!=="meta"||target.model!=="muse-spark-1.3")throw new BriefError(503,"This model has no approved budget pricing policy.");
+        const upper=Math.ceil(new TextEncoder().encode(JSON.stringify(body)).length*1.25+4096*4.25);
+        if(!await budget.reserve(reservation,upper))throw new BriefError(503,"AI budget exhausted; no paid request admitted.");
+      }
       const started = Date.now();
       const stage = new Headers(init?.headers).get("x-gridpulse-stage") ?? "interpretation";
       const base = { stage, provider: target.provider, requestedModel: target.model, fallbackReason };
@@ -93,6 +100,7 @@ export function providerTransport(settings: ProviderSettings, fetcher: typeof fe
           body: JSON.stringify(body), redirect: "manual", signal: AbortSignal.any([deadline, ...(init?.signal ? [init.signal] : [])]) });
       const parsed = providerSchema.safeParse(await boundedResponse(response.clone(), 32_000).catch(() => null));
       const payload = parsed.success ? parsed.data : null;
+      if(budget && payload?.model==="muse-spark-1.3" && payload.usage) await budget.settle(reservation,Math.ceil(payload.usage.input_tokens*1.25+payload.usage.output_tokens*4.25));
       stages.push(providerStageSchema.parse({ ...base, servedModel: payload?.model ?? null,
         responseId: payload?.id ?? null, httpStatus: response.status, elapsedMs: Date.now() - started,
         outcome: "responded", usage: payload?.usage ? { inputTokens: payload.usage.input_tokens, outputTokens: payload.usage.output_tokens } : null }));

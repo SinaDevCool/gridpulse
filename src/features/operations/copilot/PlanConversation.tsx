@@ -1,3 +1,4 @@
+import { GuidanceReferences } from "./GuidanceReferences";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { formatBriefFact } from "./brief";
 import { CopilotEvidence } from "./CopilotEvidence";
@@ -48,10 +49,10 @@ export function PlanConversation({ state, enabled, context, onNavigate, identity
       {state.turns.map((turn, index) => <article key={`${turn.answer.generatedAt}:${turn.question}:${turn.answer.receipt.providerResponseId ?? index}`} aria-label={`Answer ${index + 1}`}>
         <div className="ops-chat-question"><span className="sr-only">Your question: </span>{turn.question}</div>
         <small>{turn.answer.presentation === "checked_fallback" ? "Checked summary · conversational answer unavailable" : turn.answer.presentation === "grounded_conversation" ? "AI explanation · linked evidence" : turn.answer.basis === "general_explanation" ? "General explanation" : turn.answer.kind === "answer" ? "Checked model evidence" : turn.answer.kind.replaceAll("_", " ")}</small>
-        {turn.answer.receipt.generation?.stages?.length ? <small>
-          AI stages: {turn.answer.receipt.generation.stages.map(stage => `${stage.stage.replaceAll("_", " ")}: ${stage.provider} · ${stage.servedModel ?? stage.requestedModel}${stage.fallbackReason ? " (fallback)" : ""}`).join(" | ")}
-        </small> : null}
-        {answerBlocks(turn.answer.blocks, turn.answer.evidence).map((block, i) => <p key={i}>{block}</p>)}
+        {turn.answer.findings?.length ? turn.answer.findings.map(finding => <div className="ops-checked-finding" data-kind={finding.kind} key={finding.id}>
+          {finding.kind === "guidance" ? <small>Report guidance</small> : null}
+          <p>{finding.checkedText}</p>
+        </div>) : answerBlocks(turn.answer.blocks, turn.answer.evidence, !turn.answer.presentation).map((block, i) => <p key={i}>{block}</p>)}
         {turn.answer.proposalClarification ? <p role="status">{turn.answer.proposalClarification}</p> : null}
         {!turn.answer.presentation && answerFacts(turn.answer.evidence).length ? <dl className="ops-chat-facts">{answerFacts(turn.answer.evidence).map(fact =>
           <div key={fact.id}><dt>{fact.label}</dt><dd>{formatBriefFact(fact)}</dd></div>)}</dl> : null}
@@ -62,18 +63,17 @@ export function PlanConversation({ state, enabled, context, onNavigate, identity
         {turn.answer.navigation.map((target, i) => <button type="button" className="secondary-button" key={i} onClick={() => onNavigate(target)}>
           Inspect {target.workloadId ? "workload" : target.view === "power" ? "battery interval" : target.view === "compute" ? "interval workloads" : "power outcome"}
         </button>)}
-        <CopilotEvidence facts={turn.answer.evidence} />
+        <CopilotEvidence facts={turn.answer.evidence} onNavigate={onNavigate} />
         {turn.answer.investigation ? <details><summary>Investigation | evidence still needed</summary>
           {turn.answer.investigation.hypotheses.map(item => <section key={item.label}><strong>{item.label}</strong><small>Untested hypothesis</small><p>{item.test}</p></section>)}
           <strong>Verify against site evidence</strong><ul>{turn.answer.investigation.requiredEvidence.map(item => <li key={item}>{item}</li>)}</ul>
+          {turn.answer.investigation.gaps?.map(gap=><section key={gap.id}><strong>{gap.scope}: {gap.status}</strong><p>{gap.reason}</p><button className="secondary-button" type="button" disabled={!!state.pending} onClick={()=>{setQuestion(gap.question);input.current?.focus();}}>Investigate {gap.scope}</button></section>)}
           <p>{turn.answer.investigation.nextAction}</p>
         </details> : null}
-        {turn.answer.guidance?.length ? <details><summary>Operational guidance | general knowledge</summary>
-          {turn.answer.guidance.map(item => <section key={item.id}><strong>{item.title}</strong><p>{item.text}</p>
-            <a href={item.source} target="_blank" rel="noreferrer">Reference</a><small> | editorial guidance {item.version}{item.section ? ` | ${item.section}` : ""}{item.pdfPages ? ` | PDF pages ${item.pdfPages.join(", ")}` : ""}</small>{item.applicability ? <small>{item.applicability}</small> : null}
-            {item.excludedUses?.length ? <small>Not evidence for: {item.excludedUses.join(", ").replaceAll("_", " ")}</small> : null}</section>)}
-        </details> : null}
+        <GuidanceReferences references={turn.answer.guidance ?? []} describedIds={turn.answer.findings?.flatMap(finding => finding.guidanceRefs.map(ref => ref.id))} />
         <details><summary>Technical receipt</summary>
+          {turn.answer.receipt.generation?.stages?.length ? <p>AI stages: {turn.answer.receipt.generation.stages.map(stage => `${stage.stage.replaceAll("_", " ")}: ${stage.provider} · ${stage.servedModel ?? stage.requestedModel}${stage.fallbackReason ? " (fallback)" : ""}`).join(" | ")}</p> : null}
+          {turn.answer.findings?.length ? <details><summary>Finding identities & assessment context</summary><pre tabIndex={0}>{JSON.stringify(turn.answer.findings, null, 2)}</pre></details> : null}
           <p>Question interpretation</p><pre tabIndex={0} aria-label="Resolved question">{JSON.stringify(turn.answer.resolvedQueries ?? [turn.answer.resolvedQuery], null, 2)}</pre>
           <pre tabIndex={0} aria-label="Answer receipt">{JSON.stringify(turn.answer.receipt, null, 2)}</pre>
         </details>
@@ -99,9 +99,11 @@ export function PlanConversation({ state, enabled, context, onNavigate, identity
       {confirmClear ? <div role="group" aria-label="Confirm clear conversation"><p>Clear this conversation?</p>
         <button type="button" onClick={() => { state.clear(); setConfirmClear(false); setNotice("Conversation cleared."); input.current?.focus(); }}>Confirm clear</button>
         <button type="button" onClick={() => setConfirmClear(false)}>Keep conversation</button></div> : null}
-      <small id="plan-question-help">Enter to send; Shift+Enter for a new line. Alternatives need a new calculation. {question.length}/1000</small>
-      <small>Session only. A new plan clears the conversation. Brief review applies only to the brief.</small>
-      <small>AI interprets your question and prioritises checked findings. Planning evidence is sent to the configured AI provider; no equipment commands are issued.</small>
+      <small id="plan-question-help">{question.length}/1000 characters · alternatives require a separate calculation.</small>
+      <small>Planning evidence is sent to your configured AI provider.</small>
+      <details className="ops-chat-help"><summary>Keyboard, privacy & session details</summary>
+        <small>Enter to send; Shift+Enter for a new line. Session only: a new plan clears this conversation. Brief review applies to the brief. AI interprets questions and prioritises checked findings. Equipment control is unavailable.</small>
+      </details>
     </form>
   </section>;
 }

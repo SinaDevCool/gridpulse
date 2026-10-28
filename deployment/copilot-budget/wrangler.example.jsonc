@@ -1,0 +1,8 @@
+{
+  "name":"gridpulse-copilot-budget",
+  "main":"worker.ts",
+  "compatibility_date":"2026-07-18",
+  "workers_dev":false,
+  "durable_objects":{"bindings":[{"name":"BUDGET","class_name":"CopilotBudget"}]},
+  "migrations":[{"tag":"budget-v1","new_sqlite_classes":["CopilotBudget"]}]
+}

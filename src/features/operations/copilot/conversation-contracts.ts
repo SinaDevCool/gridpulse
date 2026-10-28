@@ -1,3 +1,4 @@
+import { guidanceSchema } from "./guidance-contracts";
 import { z } from "zod";
 import { factSchema, receiptSchema } from "./contracts";
 import { proposalSelectionSchema, reviewedProposalSchema } from "./experiment-proposal";
@@ -30,6 +31,11 @@ export const conversationResponseSchema = z.object({ version: z.literal(CHAT_VER
   kind: z.enum(["answer", "clarification", "requires_calculation", "unsupported"]),
   basis: z.enum(["model_evidence", "general_explanation", "no_calculation"]),
   presentation: z.enum(["grounded_conversation", "checked_fallback"]).optional(),
+  findings: z.array(z.object({id:z.string().max(120),checkedText:z.string().max(2000),kind:z.enum(["answer","evidence","guidance"]),
+    contextFactIds:z.array(z.string()).max(160),guidanceRefs:z.array(z.object({id:z.string(),revision:z.string()}).strict()).max(4),
+    mandatory:z.literal(true),resultFingerprint:z.string().regex(/^[a-f0-9]{64}$/)}).strict()).max(64).optional(),
+  analysisCapabilities:z.object({uncertainty:z.boolean(),chronologicalShadow:z.boolean()}).strict().optional(),
+  knowledgeFingerprint:z.string().regex(/^[a-f0-9]{64}$/).optional(), knowledgeVersion:z.string().max(100).optional(),
   verifiedFindingIds: z.array(z.string().max(120)).max(64).optional(),
   paragraphSources: z.array(z.object({ factIds: z.array(z.string()).max(16), guidanceIds: z.array(z.string()).max(4) }).strict()).max(4).optional(),
   resolvedQuery: querySchema,
@@ -38,16 +44,14 @@ export const conversationResponseSchema = z.object({ version: z.literal(CHAT_VER
     question: z.string().max(1000), blocks: z.array(z.string().max(2000)).min(1).max(64),
     investigation: z.object({
       status: z.literal("requires_independent_validation"),
+      gaps:z.array(z.object({id:z.string(),scope:z.string(),status:z.enum(["unknown","missing","supplied","quality_failed","reviewed"]),reason:z.string().max(400),actionId:z.enum(["review_measurements","review_battery","review_workloads"]),question:z.string().max(200)}).strict()).max(8).optional(),
       hypotheses: z.array(z.object({ label: z.string().max(200), status: z.literal("untested"),
         test: z.string().max(400) }).strict()).max(6),
       requiredEvidence: z.array(z.string().max(300)).max(8),
       nextAction: z.string().max(500),
     }).strict().optional(),
   evidence: z.array(factSchema).max(160), navigation: z.array(navigationSchema).max(8),
-  guidance: z.array(z.object({ id: z.string(), title: z.string(), text: z.string().max(1000), source: z.string().url(),
-    version: z.string(), section: z.string().optional(), applicability: z.string().optional(), license: z.string().optional(), reviewStatus: z.literal("editorial_guidance").optional(),
-    sourceId: z.string().optional(), pdfPages: z.array(z.number().int().positive()).max(20).optional(),
-    evidenceClass: z.literal("report_guidance").optional(), excludedUses: z.array(z.string()).max(8).optional() }).strict()).max(4).optional(),
+  guidance: z.array(guidanceSchema).max(4).optional(),
   receipt: receiptSchema, generatedAt: z.string().datetime({ offset: true }), model: z.string().max(100),
   limitations: z.array(z.string().max(500)).max(8),
   proposal: reviewedProposalSchema.optional(),
@@ -55,7 +59,7 @@ export const conversationResponseSchema = z.object({ version: z.literal(CHAT_VER
   capabilities: z.array(z.object({ intent: z.enum(intents), execution: z.string(), available: z.boolean(),
     limitations: z.string(), unavailableReason: z.string().nullable() }).strict()).max(24).optional(),
 }).strict().refine(value => new Set(value.evidence.map(fact => fact.id)).size === value.evidence.length,
-  "Duplicate evidence").refine(value => !value.paragraphSources || value.paragraphSources.length === value.blocks.length &&
+  "Duplicate evidence").refine(value => !value.findings || value.findings.every(f => f.resultFingerprint===value.receipt.resultFingerprint && f.contextFactIds.every(id=>value.evidence.some(fact=>fact.id===id)) && f.guidanceRefs.every(ref=>value.guidance?.some(g=>g.id===ref.id && (g.revision??g.version)===ref.revision))), "Invalid checked finding provenance").refine(value => !value.paragraphSources || value.paragraphSources.length === value.blocks.length &&
     value.paragraphSources.every(paragraph => paragraph.factIds.every(id => value.evidence.some(fact => fact.id === id)) &&
       paragraph.guidanceIds.every(id => value.guidance?.some(item => item.id === id))), "Invalid paragraph sources");
 export type ConversationAnswer = z.infer<typeof conversationResponseSchema>;

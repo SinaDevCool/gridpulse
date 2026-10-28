@@ -241,3 +241,12 @@ it("returns schedules and explicitly withholds unreturned per-job baseline movem
   expect(answer.evidence.filter(fact => fact.id.startsWith("schedule."))).toHaveLength(5);
   expect(answer.resolvedQueries).toHaveLength(2);
 });
+
+
+it("rejects an unrequested provider PUE definition in a cooling comparison", async () => {
+  const fetcher = vi.fn().mockResolvedValueOnce(Response.json(job)).mockResolvedValueOnce(response({ ...query, intent: "definition", definition: "pue" }));
+  const result = await handlePlanConversation(request({ ...body, question: "Why should a liquid cooling retrofit compare total energy?" }), options(), fetcher);
+  const answer = conversationResponseSchema.parse(await result.json());
+  expect(answer.resolvedQuery.intent).toBe("knowledge");
+  expect(answer.guidance?.some(item => item.sourceId === "B04")).toBe(true);
+});

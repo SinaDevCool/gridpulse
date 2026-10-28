@@ -29,6 +29,14 @@ def _calculate(connection, payload: dict) -> None:
             from capacity_backtest.application.rolling import run_chronological_shadow
 
             result = run_chronological_shadow(payload)
+        elif payload.get("schema_version") == "gridpulse-facility-uncertainty-request-v1":
+            from capacity_backtest.application import run_facility_uncertainty
+
+            result = run_facility_uncertainty(payload)
+        elif payload.get("schema_version") == "gridpulse-rolling-facility-plan-request-v1":
+            from capacity_backtest.application import run_rolling_facility_plan
+
+            result = run_rolling_facility_plan(payload)
         else:
             result = run_facility_plan(payload)
         encoded = json.dumps({"result": result}, allow_nan=False).encode()

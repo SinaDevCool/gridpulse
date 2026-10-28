@@ -1,3 +1,4 @@
+import { guidanceSchema } from "./guidance-contracts";
 import { z } from "zod";
 import { experimentResultSchema } from "../../analytics/experiment-contracts";
 
@@ -29,6 +30,7 @@ export const providerStageSchema = z.object({
   httpStatus: z.number().int().nullable(), elapsedMs: z.number().nonnegative(),
   outcome: z.enum(["responded", "network_error"]),
   fallbackReason: z.string().max(80).nullable(),
+  validation: z.enum(["accepted_by_application","rejected_by_application","not_verified"]).optional(),
   usage: z.object({ inputTokens: z.number().int().nonnegative(), outputTokens: z.number().int().nonnegative() }).nullable(),
 }).strict();
 export type ProviderStage = z.infer<typeof providerStageSchema>;
@@ -46,6 +48,7 @@ export const receiptSchema = z.object({ jobId: z.string().uuid().nullable(), inp
 }).strict();
 export const briefSchema = z.object({ version: z.literal(BRIEF_VERSION), resultFingerprint: fingerprint,
   generatedAt: z.string().datetime({ offset: true }), model: z.string().min(1).max(100), receipt: receiptSchema,
+  guidance: z.array(guidanceSchema).max(4).optional(), knowledgeFingerprint:z.string().regex(/^[a-f0-9]{64}$/).optional(), knowledgeVersion:z.string().max(100).optional(),
   findings: z.array(findingSchema).min(1).max(12), evidence: z.array(factSchema).max(256),
   actions: z.array(z.string().max(300)).min(1).max(3), limitations: z.array(z.string().max(500)).max(8),
   investigation: z.object({ jobId: z.string().uuid(), result: experimentResultSchema }).strict().optional(),
