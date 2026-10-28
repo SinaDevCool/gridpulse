@@ -12,8 +12,8 @@ export async function interpretQuestion(a: CanonicalPresentation, request: Conve
   // Known capability boundaries do not depend on a stochastic interpretation.
   const conceptualReport = /\b(?:can|what|how|why|explain|does|is|would)\b/i.test(request.question) && !/\b(?:command|execute|activate|switch)\b|dispatch\s+(?:the|my|our)/i.test(request.question);
   const researchBoundary=conceptualReport && (/\bTEM\b/i.test(request.question) && /dispatch|projection|quarter|scope|sensitivity/i.test(request.question) || /\b(?:efficiency|infrastructure|IT)\b.*\b(?:label|certification)/i.test(request.question) || /\bbenchmark\b/i.test(request.question) && /hardware|useful|throughput|server/i.test(request.question));
-  const unqualifiedProof = conceptualReport && /\b(?:proof|prove|proves|guarantee|guarantees|certify)\b/i.test(request.question) && /\b(?:plan|result|site|battery|grid|connection|outage|capacity|safe|cooling)\b/i.test(request.question);
-  const boundary = unqualifiedProof ? "readiness" : researchBoundary ? "knowledge" : /\bwhy\b.*\bsolver\b.*\bprefer/i.test(request.question) ? "why" :
+  const readinessBoundary = conceptualReport && /\b(?:proof|prove|proves|guarantee|guarantees|certify|readiness|ready|approve|approved|approval)\b/i.test(request.question) && /\b(?:plan|result|site|battery|grid|connection|outage|capacity|safe|cooling|protocol|dispatch)\b/i.test(request.question);
+  const boundary = readinessBoundary ? "readiness" : researchBoundary ? "knowledge" : /\bwhy\b.*\bsolver\b.*\bprefer/i.test(request.question) ? "why" :
     /\b(?:minimise|minimize|optimise|optimize)\b.*\b(?:bill|cost)\b.*\b(?:workload|schedule)/i.test(request.question) ? "what_if" :
     /\b(?:does|would|can)\b.*\bguarantee\b.*\b(?:connection|grid)\b.*\bcapacity\b/i.test(request.question) ? "readiness" :
     /\b(?:simulated|modelled|modeled)\b/i.test(request.question) && /\bmeasured\b/i.test(request.question) && /\b(?:evidence|distinguish|difference)\b/i.test(request.question) ? "readiness" :
