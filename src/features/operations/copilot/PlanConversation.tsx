@@ -34,8 +34,7 @@ export function PlanConversation({ state, enabled, context, onNavigate, identity
   const send = () => {
     if (!enabled || state.pending || !question.trim()) return;
     follow.current = true; setNotice(""); attempted.current = question;
-    const submitted = question;
-    void state.ask(submitted).then(ok => { if (ok) setQuestion(current => current === submitted ? "" : current); });
+    void state.ask(question).then(ok => { if (ok) setQuestion(""); });
   };
   return <section className="ops-plan-conversation" aria-label="Ask about this plan">
     <div ref={transcript} className="ops-chat-transcript" tabIndex={0} aria-label="Plan conversation"
@@ -78,7 +77,7 @@ export function PlanConversation({ state, enabled, context, onNavigate, identity
       {alternative}
       {state.turns.length >= 20 ? <small>Showing the latest 20 answers. Recent questions and replies provide follow-up context.</small> : null}
       {state.pending ? <div className="ops-chat-pending"><div className="ops-chat-question">{state.pending}</div><p>Reviewing evidence and preparing your answer…</p></div> : null}
-      {state.error ? <div className="ops-chat-error"><div className="ops-chat-question">{attempted.current}</div><p>{state.error}</p><button type="button" disabled={!enabled || !!state.pending} onClick={() => { setQuestion(attempted.current); const submitted = attempted.current; void state.ask(submitted).then(ok => { if (ok) setQuestion(current => current === submitted ? "" : current); }); }}>Retry question</button></div> : null}
+      {state.error ? <div className="ops-chat-error"><div className="ops-chat-question">{attempted.current}</div><p>{state.error}</p><button type="button" disabled={!enabled || !!state.pending} onClick={() => { setQuestion(attempted.current); void state.ask(attempted.current).then(ok => { if (ok) setQuestion(""); }); }}>Retry question</button></div> : null}
     </div>
     <p className="sr-only" role="status">{state.pending ? "Checking plan evidence" : state.error ? state.error : state.turns.length ? "Answer ready" : notice}</p>
     {notice ? <small className="ops-copilot-notice">{notice}</small> : null}

@@ -7,10 +7,6 @@ export function GermanPlanningInputs({ value, ceiling, onChange, onValidation }:
   const current = useRef(value);
   current.current = value;
   const [error, setError] = useState("");
-  const [dateText, setDateText] = useState(value.localDate);
-  useEffect(() => setDateText(value.localDate), [value.localDate]);
-  let dateError = "";
-  try { germanDayIntervals(dateText); } catch { dateError = "Select a valid planning date."; }
   const [limitsText, setLimitsText] = useState(value.importLimits.join(" "));
   useEffect(() => setLimitsText(value.importLimits.join(" ")), [value.importLimits]);
   const count = germanDayIntervals(value.localDate).length;
@@ -18,19 +14,17 @@ export function GermanPlanningInputs({ value, ceiling, onChange, onValidation }:
   const sourceError = (value.prices.length > 0 || limitsText.trim() !== "") && !value.evidence?.source.trim()
     ? "Add a source or contract reference for imported profiles." : "";
   const [reportingError, setReportingError] = useState("");
-  useEffect(() => { onValidation?.(value.enabled ? (dateError || limitsError || sourceError || reportingError || error) : ""); },
-    [dateError, error, limitsError, sourceError, reportingError, value.enabled, onValidation]);
+  useEffect(() => { onValidation?.(value.enabled ? (limitsError || sourceError || reportingError || error) : ""); },
+    [error, limitsError, sourceError, reportingError, value.enabled, onValidation]);
   function update(next: GermanPlanning) { onChange(next); setError(""); }
   return <details className="ops-evidence-section"><summary>German market & permissions</summary>
     <label className="ops-check"><input type="checkbox" checked={value.enabled}
       onChange={e => update({ ...value, enabled: e.target.checked })} />Use a German local planning day</label>
     {value.enabled ? <>
-      <label>Planning date · Europe/Berlin<input type="date" aria-invalid={!!dateError} aria-describedby={dateError ? "german-planning-date-error" : undefined} value={dateText} onChange={e => {
-        setDateText(e.target.value);
+      <label>Planning date · Europe/Berlin<input type="date" value={value.localDate} onChange={e => {
         try { germanDayIntervals(e.target.value); update({ ...value, localDate: e.target.value, prices: [], importLimits: [] }); }
-        catch { /* Preserve invalid draft; dateError blocks submission until corrected. */ }
+        catch { setError("Select a valid planning date."); }
       }} /></label>
-      {dateError ? <small id="german-planning-date-error" role="alert" className="ops-field-error">{dateError}</small> : null}
       <small>{germanDayIntervals(value.localDate).length} × 15-minute intervals · UTC engine timestamps. Changing date clears imported profiles.</small>
       <label>Source / contract reference<input value={value.evidence?.source ?? ""} maxLength={500}
         onChange={e => update({ ...value, evidence: { source: e.target.value, basis: value.evidence?.basis ?? "assumption", reviewedAt: new Date().toISOString() } })} /></label>
@@ -62,7 +56,7 @@ export function GermanPlanningInputs({ value, ceiling, onChange, onValidation }:
         onChange={e => update({ ...value, batteryFlexPermitted: e.target.checked })} />Battery permitted for flexibility</label>
       <small>Backup reserve and terminal target still apply. A UPS is not assumed to permit market dispatch.</small>
       <GermanReportingInputs value={value.reporting} onChange={reporting => update({ ...value, reporting })} onValidation={setReportingError} />
-      <button type="button" onClick={() => { setDateText(defaultGermanPlanning.localDate); update({ ...defaultGermanPlanning }); }}>Reset market assumptions</button>
+      <button type="button" onClick={() => update({ ...defaultGermanPlanning })}>Reset market assumptions</button>
     </> : null}
     {error || sourceError ? <p role="alert" className="ops-field-error">{error || sourceError}</p> : null}
 
