@@ -439,6 +439,25 @@ class AnalyticsApiTests(unittest.TestCase):
             "windows": [{"window_id": "w1"}],
             "confidence": 0.9,
         }
+        rejected = self.client.post("/v1/jobs/rolling-facility-plan", json=rolling)
+        self.assertEqual(rejected.status_code, 422)
+        rolling["windows"] = [
+            {
+                "window_id": "w1",
+                "cutoff": "2026-01-01T00:00:00Z",
+                "forecast_fingerprint": "a" * 64,
+                "recalculation_reason": "initial",
+                "scenarios": [
+                    {
+                        "scenario_id": "reviewed-base",
+                        "probability": 1,
+                        "battery_temperature_c": [20],
+                        "onsite_generation_mw": [0],
+                        "assumption_ids": ["fixture:forecast"],
+                    }
+                ],
+            }
+        ]
         accepted = self.client.post("/v1/jobs/rolling-facility-plan", json=rolling)
         self.assertEqual(accepted.status_code, 202)
         result = self.client.get(f"/v1/jobs/{accepted.json()['job_id']}").json()["result_payload"]
