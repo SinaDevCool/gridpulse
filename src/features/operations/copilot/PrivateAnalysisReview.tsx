@@ -1,13 +1,13 @@
 import { analysisSummary } from "./analysis-summary";
-import { useEffect, useRef, useState } from "react";
-import { publicMilpEnabled } from "@/lib/public-milp-session";
+import { useEffect, useId, useRef, useState } from "react";
+import { publicMilpEnabled } from "../../../lib/public-milp-session";
 import {
   listAnalyticsJobs,
   startChronologicalShadow,
   startFacilityUncertainty,
   waitForAnalyticsJob,
-} from "@/lib/analytics-api";
-import { stableOperationsJson } from "@/lib/operations-request";
+} from "../../../lib/analytics-api";
+import { stableOperationsJson } from "../../../lib/operations-request";
 import { facilityUncertaintyRequestSchema } from "../../analytics/contracts";
 import {
   chronologicalShadowRequestSchema,
@@ -199,6 +199,7 @@ export function PrivateAnalysisReview({
   baseline: CanonicalPresentation;
   enabled: boolean;
 }) {
+  const methodHelp = useId();
   const {
     mode,
     setMode,
@@ -223,8 +224,12 @@ export function PrivateAnalysisReview({
   } = usePrivateAnalysis(baseline);
   if (!enabled || publicMilpEnabled()) return null;
   return (
-    <section className="data-panel" aria-label="Private scenario analysis">
+    <section className="data-panel ops-private-analysis" aria-label="Private scenario analysis" aria-busy={busy}>
+      <details>
+      <summary>Explore separate scenarios</summary>
       <h3>Private scenario analysis</h3>
+      <p>Choose how to test this plan, review the assumptions, then run a separate analysis.</p>
+      <details><summary>Baseline & calculation limits</summary>
       <p>
         Separate analysis uses a solver time cap of{" "}
         {String(reviewedPlan.policy.solver_time_limit_seconds)} seconds per
@@ -234,9 +239,12 @@ export function PrivateAnalysisReview({
         Accepted baseline: {baseline.projected.identity.resultFingerprint}. Your
         current plan stays unchanged.
       </p>
-      <label>
-        Method
+      </details>
+      <label className="ops-chat-alternative-field">
+        Analysis method
         <select
+          name="private-analysis-method"
+          aria-describedby={methodHelp}
           value={mode}
           disabled={submitted}
           onChange={(event) => {
@@ -255,11 +263,15 @@ export function PrivateAnalysisReview({
           </option>
         </select>
       </label>
+      <p id={methodHelp}>{mode === "independent_scenario_benchmark" ? "Optimise each assumed case separately. This compares scenarios; it does not produce one shared schedule." : mode === "common_command_scenario_milp" ? "Test one set of shared commands across the supplied cases." : "Carry modelled battery, cooling and workload state between two windows."}</p>
       {mode !== "chronological" ? (
-        <label>
+        <label className="ops-chat-alternative-field">
           Assumed minimum battery temperature, °C
           <input
             type="number"
+            name="minimum-battery-temperature"
+            step="any"
+            autoComplete="off"
             value={temperature}
             disabled={submitted}
             onChange={(event) => {
@@ -271,10 +283,13 @@ export function PrivateAnalysisReview({
       ) : null}
       {mode !== "chronological" ? (
         <>
-          <label>
+          <label className="ops-chat-alternative-field">
             Assumed maximum battery temperature, °C
             <input
               type="number"
+              name="maximum-battery-temperature"
+              step="any"
+              autoComplete="off"
               value={temperatureMax}
               disabled={submitted}
               onChange={(e) => {
@@ -283,10 +298,13 @@ export function PrivateAnalysisReview({
               }}
             />
           </label>
-          <label>
+          <label className="ops-chat-alternative-field">
             Assumed maximum onsite generation, MW
             <input
               type="number"
+              name="maximum-onsite-generation"
+              step="any"
+              autoComplete="off"
               min="0"
               value={generationMax}
               disabled={submitted}
@@ -298,10 +316,12 @@ export function PrivateAnalysisReview({
           </label>
         </>
       ) : (
-        <label>
+        <label className="ops-chat-alternative-field">
           Generation multiplier after the middle cutoff
           <input
             type="number"
+            name="generation-multiplier"
+            autoComplete="off"
             min="0"
             max="2"
             step="0.1"
@@ -319,8 +339,10 @@ export function PrivateAnalysisReview({
           ? "Two windows; apply the reviewed generation multiplier at the middle cutoff. Modelled SOC, thermal debt and remaining work carry into the second window. This does not establish repeated daily delivery."
           : "Two seeded sampled cases within the entered temperature range and 0–maximum generation range; seed 0, equal assumed weights and a 90% scenario threshold. These are assumed scenarios, not calibrated failure probabilities or the unchanged baseline inputs."}
       </p>
-      <label>
+      {mode !== "chronological" && !valid ? <p className="ops-analysis-hint">Enter both temperatures and a nonnegative generation limit. Minimum temperature must not exceed maximum.</p> : null}
+      <label className="ops-chat-alternative-confirm">
         <input
+          name="private-analysis-confirmation"
           type="checkbox"
           checked={confirmed}
           disabled={submitted}
@@ -343,14 +365,14 @@ export function PrivateAnalysisReview({
         }
         onClick={() => void run(false)}
       >
-        Run separate analysis
+        {busy ? "Checking analysis…" : "Run separate analysis"}
       </button>
       {submitted && !result ? (
         <button type="button" disabled={busy} onClick={() => void run(true)}>
-          Check owned analysis
+          {busy ? "Checking analysis…" : "Check analysis status"}
         </button>
       ) : null}
-      {message ? <p role="status">{message}</p> : null}
+      <p role="status">{busy ? "Your analysis is being checked. This may take a few minutes." : message || (submitted ? "Analysis submitted." : "Review and confirm the assumptions to enable analysis.")}</p>
       {summary ? (
         <section>
           <p role={summary.accepted ? "status" : "alert"}>
@@ -370,10 +392,10 @@ export function PrivateAnalysisReview({
         </section>
       ) : null}
       {result ? (
-        <p>
+        <details><summary>Result identity</summary><p translate="no">
           Result identity: {String(result.result_fingerprint)}. Review every
           case outcome below; a returned result may contain failed cases.
-        </p>
+        </p></details>
       ) : null}
       {result ? (
         <details>
@@ -385,6 +407,7 @@ export function PrivateAnalysisReview({
         Private analytical result only. No measured reliability, market
         enrolment or equipment command.
       </small>
+      </details>
     </section>
   );
 }

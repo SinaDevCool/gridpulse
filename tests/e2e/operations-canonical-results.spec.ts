@@ -1,3 +1,7 @@
+import { guidanceSchema } from "../../src/features/operations/copilot/guidance-contracts";
+import { checkedFindings } from "../../src/features/operations/copilot/checked-findings";
+import { retrieveOperationalKnowledge } from "../../src/server/operations/operational-knowledge";
+import { openEvidenceInputs } from "./operations-inputs";
 import { createHash } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
@@ -7,7 +11,7 @@ import { buildBriefEvidence, renderPlanBrief, formatBriefFact } from "../../src/
 import { selectCanonicalPresentation } from "../../src/features/operations/canonical-presentation";
 import { readFile } from "node:fs/promises";
 import { answerConversation } from "../../src/features/operations/copilot/conversation-query";
-import { conversationRequestSchema, type ConversationQuery } from "../../src/features/operations/copilot/conversation-contracts";
+import { conversationRequestSchema, conversationResponseSchema, type ConversationQuery } from "../../src/features/operations/copilot/conversation-contracts";
 
 test.use({ storageState: { cookies: [], origins: [] } });
 test("MILP charts retain physical SOC, geometry and shared keyboard/pointer inspection", async ({ page }) => {
@@ -42,15 +46,21 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
     if (input.question === "What did this plan achieve?") {
       expect(input.transcript).toEqual([]);
       const peak = answer.evidence.find(fact => fact.id === "power.plan_peak")!;
-      answer.blocks = [`Modelled peak import is ${formatBriefFact(peak)}. Review the workload and battery checks before using this modelled plan.`];
+      const additionalCheckedText = answer.blocks.slice(1, 3);
+      answer.blocks = [`Modelled peak import is ${formatBriefFact(peak)}. Review the workload and battery checks before using this modelled plan.`, ...additionalCheckedText];
       answer.presentation = "grounded_conversation";
-      answer.paragraphSources = [{ factIds: [peak.id], guidanceIds: [] }];
+      answer.paragraphSources = answer.blocks.map(() => ({ factIds: answer.evidence.slice(0, 16).map(fact => fact.id), guidanceIds: [] }));
+      const guidance = guidanceSchema.parse(retrieveOperationalKnowledge("liquid cooling topology").find(item => "sourceId" in item && item.sourceId === "B04"));
+      answer.guidance = [guidance];
+      answer.blocks.push(`General guidance — ${guidance.title}: ${guidance.text}`);
+      answer.paragraphSources.push({ factIds: [], guidanceIds: [guidance.id] });
+      answer.findings = checkedFindings(answer);
     }
     if (input.question === "Which workloads run then?") {
       expect(input.transcript?.[0].answer).toContain("Review the workload and battery checks");
       answer.presentation = "checked_fallback";
     }
-    await route.fulfill({ json: answer }).catch(() => {});
+    await route.fulfill({ json: conversationResponseSchema.parse(answer) }).catch(() => {});
   });
   await page.route("**/api/operations/brief", route => {
     explanations++;
@@ -115,6 +125,23 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await expect(chat.getByRole("article").first()).toContainText("Modelled peak import");
   await expect(chat.getByRole("article").first()).toContainText("AI explanation · linked evidence");
   await expect(chat.getByRole("article").first().locator(".ops-chat-facts")).toHaveCount(0);
+  const firstAnswer = chat.getByRole("article").first();
+  await expect(firstAnswer.locator('.ops-checked-finding[data-kind="guidance"]')).toContainText("General guidance");
+  await firstAnswer.getByText("Report guidance & sources · 1", { exact: true }).click();
+  await expect(firstAnswer.getByRole("link", { name: /Read source:/ })).toHaveAttribute("href", /\.pdf#page=\d+$/);
+  await expect(firstAnswer.getByText("Excluded uses", { exact: true })).toBeVisible();
+  await expect(firstAnswer.getByText("Source version & integrity", { exact: true })).toBeVisible();
+  await expect(firstAnswer.getByText(/Supporting assessment evidence:/)).toHaveCount(0);
+  const originalViewport = page.viewportSize()!;
+  await page.setViewportSize({ width: 390, height: 844 });
+  for (const theme of ["light", "dark"]) {
+    await page.evaluate(value => document.documentElement.dataset.theme = value, theme);
+    await firstAnswer.getByRole("link", { name: /Read source:/ }).scrollIntoViewIfNeeded();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
+    expect((await new AxeBuilder({ page }).include(".ops-copilot-panel").analyze()).violations).toEqual([]);
+    await copilot.screenshot({ path: `test-results/copilot-guidance-mobile-${theme}.png` });
+  }
+  await page.setViewportSize(originalViewport);
   await questionInput.fill("Which workloads run then?");
   await chat.getByRole("button", { name: "Ask", exact: true }).click();
   await expect(chat.getByRole("article").nth(1)).toContainText("Grid import");
@@ -439,13 +466,21 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
     await batteryInspector.screenshot({ path: `test-results/canonical-battery-sidebar-open-${theme}.png` });
     await batteryInspector.getByText("Energy accounting", { exact: true }).click();
   }
-  await page.setViewportSize({ width: 390, height: 1500 });
+  await page.setViewportSize({ width: 390, height: 844 });
   await launcher.click();
   await copilot.getByRole("button", { name: "Conversation", exact: true }).click();
+  const composerBounds = (await chat.locator("form").boundingBox())!;
+  expect(composerBounds.height).toBeLessThanOrEqual(844 * .48 + 1);
+  expect((await chat.locator(".ops-chat-transcript").boundingBox())!.height).toBeGreaterThan(200);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
   await copilot.screenshot({ path: "test-results/copilot-mobile.png" });
+  await chat.getByText("Keyboard, privacy & session details", { exact: true }).click();
+  expect((await chat.locator("form").boundingBox())!.height).toBeLessThanOrEqual(844 * .48 + 1);
+  await chat.getByText("Keyboard, privacy & session details", { exact: true }).click();
   expect((await new AxeBuilder({ page }).include(".ops-copilot-panel").analyze()).violations).toEqual([]);
   await copilot.getByRole("button", { name: "Close copilot", exact: true }).click();
   await batteryInspector.getByText("Energy accounting", { exact: true }).click();
+  await page.setViewportSize({ width: 390, height: 1500 });
   await batteryInspector.screenshot({ path: "test-results/canonical-battery-sidebar-mobile.png" });
   expect((await new AxeBuilder({ page }).include(".ops-canonical").analyze()).violations).toEqual([]);
   expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
@@ -542,4 +577,33 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await expect(result).toHaveAttribute("data-assessment-id", baselineIdentity!);
   await finalAlternative.screenshot({ path: "test-results/copilot-confirmed-alternative.png" });
 
+});
+
+
+test("offline evidence review explains invalid files and supports clearing and same-file reload on mobile", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/operations?view=power");
+  await openEvidenceInputs(page);
+  const review = page.getByRole("region", { name: "Offline evidence review", exact: true });
+  const input = review.getByLabel("Offline quality report JSON");
+  await input.setInputFiles({ name: "wrong.json", mimeType: "application/json", buffer: Buffer.from('{"schema_version":"unknown"}') });
+  await expect(review.getByRole("alert")).toContainText("Choose a GridPulse quality review JSON");
+  const report = { schema_version: "gridpulse-component-intake-review-v1", dataset_id: "synthetic-" + "a".repeat(160), capture_sha256: "a".repeat(64), quality_accepted: false, blockers: ["missing_interval"], calibrated: false, activated: false, automatic_live_dispatch_authorized: false };
+  const file = { name: "review.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(report)) };
+  await input.setInputFiles(file);
+  await expect(review.getByRole("status")).toContainText("Review the failed checks");
+  await expect(review).toContainText("missing interval");
+  await review.getByRole("button", { name: "Clear report", exact: true }).click();
+  await expect(input).toHaveValue("");
+  await expect(input).toBeFocused();
+  await input.setInputFiles(file);
+  await expect(review.getByRole("status")).toContainText("Local report loaded.");
+  await expect(review.getByRole("alert")).toHaveCount(0);
+  await review.getByText("Capture identity", { exact: true }).click();
+  for (const theme of ["light", "dark"]) {
+    await page.evaluate(value => document.documentElement.dataset.theme = value, theme);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
+    expect((await new AxeBuilder({ page }).include(".ops-offline-review").analyze()).violations).toEqual([]);
+    await review.screenshot({ path: `test-results/offline-review-mobile-${theme}.png` });
+  }
 });

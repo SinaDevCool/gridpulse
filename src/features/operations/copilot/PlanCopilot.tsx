@@ -1,3 +1,4 @@
+import { GuidanceReferences } from "./GuidanceReferences";
 import { useEffect, useRef, useState } from "react";
 import { CopilotEvidence } from "./CopilotEvidence";
 import { briefText, briefContentDigest, sectionLabels } from "./brief";
@@ -35,16 +36,7 @@ export function PlanBrief({ state, current, jobId, onNavigate, children }: {
           {item.case_id}: {item.mode === "frozen_plan" ? "Accepted schedule held fixed" : "Separate re-optimisation"} — {item.status === "unsupported_or_invalid" ? "Not assessed" : item.accepted ? "Passed supplied model checks" : "Did not pass supplied model checks"}.
         </p>)}<small>Assumed conditions; not a measured delivery or reliability probability.</small>
       </section> : null}
-      {brief.guidance?.length ? <details><summary>Report guidance and applicability</summary>
-        <p>Editorial guidance; not measured site evidence or engineering approval.</p>
-        {brief.guidance.map(guidance => <article key={guidance.id}>
-          <h4>{guidance.title}</h4><p>{guidance.text}</p>
-          {guidance.applicability ? <p>{guidance.applicability}</p> : null}
-          <a href={`${guidance.source}#page=${guidance.pdfPages?.[0] ?? 1}`} target="_blank" rel="noreferrer">Source report · PDF pages {guidance.pdfPages?.join(", ")}</a>
-          <small> Revision {guidance.revision ?? guidance.version}</small>
-          {guidance.excludedUses?.length ? <ul>{guidance.excludedUses.map(use => <li key={use}>{use}</li>)}</ul> : null}
-        </article>)}
-      </details> : null}
+      <GuidanceReferences references={brief.guidance ?? []} />
       <details><summary>Receipt and limitations</summary>
         <p>Assessment {brief.resultFingerprint} · {brief.model} · {brief.generatedAt}</p>
         <ul>{brief.limitations.map(text => <li key={text}>{text}</li>)}</ul>
