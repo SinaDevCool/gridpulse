@@ -1,3 +1,4 @@
+import { retrieveOperationalKnowledge } from "./operational-knowledge";
 import { experimentFields } from "../../features/analytics/experiment-contracts";
 import { copilotCapabilities } from "./copilot-capabilities";
 import type { CanonicalPresentation } from "../../features/operations/canonical-presentation";
@@ -80,7 +81,13 @@ For overall risks or review select readiness; the application gathers checks, po
       } } },
     } }, key, model, fetcher);
   const plan = analysisPlanSchema.safeParse(result.selection);
-  const queries = (plan.success ? plan.data.queries : [querySchema.parse(result.selection)]).map(query =>
-    query.intent === "checks" && query.workloadId ? { ...query, intent: "workload" as const } : query);
+  const explicitPue = /\bPUE\b|power usage effectiveness/i.test(request.question);
+  const pueFollowup = /\b(?:that|it|this term)\b/i.test(request.question) && request.previousQueries?.at(-1)?.definition === "pue";
+  const queries = (plan.success ? plan.data.queries : [querySchema.parse(result.selection)]).map(query => {
+    if (query.intent === "definition" && query.definition === "pue" && !explicitPue && !pueFollowup) {
+      return querySchema.parse({ ...empty, intent: conceptualReport && retrieveOperationalKnowledge(request.question).length ? "knowledge" : "clarify" });
+    }
+    return query.intent === "checks" && query.workloadId ? { ...query, intent: "workload" as const } : query;
+  });
   return { query: queries[0], queries, proposal: plan.success ? plan.data.proposal ?? explicitExperimentSelection(request.question) : explicitExperimentSelection(request.question), provider: result };
 }

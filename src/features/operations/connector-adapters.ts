@@ -120,7 +120,7 @@ export function normalizeOpenEmsSnapshot(
   ];
   return fields.flatMap(([field, metricKey, scale, unit]): ConnectorMeasurement[] => {
     const value = input[field];
-    if (value == null || typeof value === "boolean" || typeof value === "string" && !value.trim()) return [];
+    if (value == null || !["number", "string"].includes(typeof value) || typeof value === "string" && !value.trim()) return [];
     const raw = Number(value);
     if (!Number.isFinite(raw) || field === "essSocPercent" && (raw < 0 || raw > 100)) return [];
     return [
@@ -197,7 +197,7 @@ export function reviewOpenEmsSnapshot(input: Record<string, unknown>, observedAt
 }
 
 function requiredCount(value:unknown){const count=requiredPositive(value,"GPU count");if(!Number.isInteger(count))throw new Error("GPU count must be an integer.");return count;}
-function optionalPower(value:unknown){if(value==null||value==="")return null;const power=Number(value);if(typeof value==="boolean"||!Number.isFinite(power)||power<0)throw new Error("Invalid measured power.");return power;}
+function optionalPower(value:unknown){if(value==null||typeof value==="string"&&!value.trim())return null;const power=Number(value);if(!["number","string"].includes(typeof value)||!Number.isFinite(power)||power<0)throw new Error("Invalid measured power.");return power;}
 export function reviewDcgmCapture(text:string,observedAt:string):ConnectorReview<ConnectorMeasurement>{
  try{const records=parseDcgmPrometheus(text,observedAt);return {records,issues:records.length?[]:[{record:"capture",reason:"No valid supported DCGM samples; no zero-filled measurements."}],assumptions:["Device snapshot only; confirm collector version, metric identity, cadence and measurement boundary."],qualifiedForPlanning:false};}
  catch(error){return {records:[],issues:[{record:"capture",reason:error instanceof Error?error.message:"Invalid capture"}],assumptions:[],qualifiedForPlanning:false};}

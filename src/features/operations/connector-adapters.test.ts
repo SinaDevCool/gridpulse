@@ -69,3 +69,12 @@ it("retains timestamped device identity and rejects duplicate or sentinel metric
   expect(()=>parseDcgmPrometheus(line+"\n"+line)).toThrow("Duplicate");
   expect(parseDcgmPrometheus('DCGM_FI_DEV_POWER_USAGE{UUID="a"} 9223372036854775794')).toEqual([]);
 });
+
+
+it("keeps whitespace and malformed measurement values distinct from measured zero", () => {
+  const job = { job_id: "j", submit_time: "2026-01-01T00:00:00Z", time_limit_minutes: 60, gpu_count: 1 };
+  expect(reviewSlurmJobs([{ ...job, measured_power_mw: "  " }]).records[0].measuredPowerMw).toBeNull();
+  expect(reviewSlurmJobs([{ ...job, measured_power_mw: [] }]).issues).toHaveLength(1);
+  expect(normalizeOpenEmsSnapshot({ gridActivePowerW: [] })).toEqual([]);
+  expect(reviewSlurmJobs([{ ...job, measured_power_mw: 0 }]).records[0].measuredPowerMw).toBe(0);
+});
