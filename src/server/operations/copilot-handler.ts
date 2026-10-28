@@ -11,6 +11,8 @@ import { interpretQuestion } from "./copilot-conversation";
 import { copilotCapabilities } from "./copilot-capabilities";
 import { compileExperimentProposal } from "../../features/operations/copilot/experiment-proposal";
 import { composeConversation } from "./copilot-composition";
+import type { ProviderStage } from "../../features/operations/copilot/contracts";
+import { modelAccessAllowed } from "./copilot-policy";
 
 export type CopilotConfig = ProviderConfig & { OPENAI_API_KEY?: string; COPILOT_ENABLED?: string;
   COPILOT_MODEL?: string; COPILOT_ANALYTICS_URL?: string; COPILOT_EXPERIMENTS_ENABLED?: string; COPILOT_ACCOUNTING_ENABLED?: string;
@@ -19,20 +21,34 @@ export type CopilotConfig = ProviderConfig & { OPENAI_API_KEY?: string; COPILOT_
 /** One handler shared by the Worker route and direct boundary tests. No second job API. */
 async function handleCopilot(request: Request, config: CopilotConfig, fetcher: typeof fetch, conversation: boolean) {
   const headers = { "cache-control": "no-store" };
+  const supportsClaims = request.headers.get("x-gridpulse-capabilities") === "verified-claims-v1";
+  const respond = (payload: Record<string, unknown>) => {
+    if (!supportsClaims) {
+      const { verifiedFindingIds: _ids, ...legacy } = payload;
+      const receipt = legacy.receipt as Record<string, unknown>;
+      const generation = receipt.generation as Record<string, unknown> | undefined;
+      const { stages: _stages, ...oldGeneration } = generation ?? {};
+      return Response.json({ ...legacy, receipt: { ...receipt,
+        ...(generation ? { generation: oldGeneration } : {}) } }, { headers });
+    }
+    return Response.json(payload, { headers });
+  };
   if (config.COPILOT_ENABLED !== "true" || !config.COPILOT_ANALYTICS_URL || !config.COPILOT_RATE_LIMITER)
     return Response.json({ error: "Plan explanations are not configured." }, { status: 503, headers });
   try {
     if (!conversation) providerSettings(config);
     const attempts: string[] = [];
+    const stages: ProviderStage[] = [];
     const started = Date.now();
     // Resolve credentials only if a provider call is actually required. Deterministic
     // clarification/definitions remain available without a configured language model.
     let selectedTransport: typeof fetch | undefined;
     const transport: typeof fetch = (input, init) => {
-      selectedTransport ??= providerTransport(providerSettings(config), fetcher, attempts);
+      if (!modelAccessAllowed(request)) throw new BriefError(403, "AI explanations are unavailable in this location.");
+      selectedTransport ??= providerTransport(providerSettings(config), fetcher, attempts, stages);
       return selectedTransport(input, init);
     };
-    const receipt = () => ({ provider: attempts.at(-1) ?? "deterministic", attempts: [...new Set(attempts)], elapsedMs: Date.now() - started });
+    const receipt = () => ({ provider: attempts.at(-1) ?? "deterministic", attempts: [...new Set(attempts)], elapsedMs: Date.now() - started, stages });
     const bearer = request.headers.get("authorization") ?? "";
     if (!/^Bearer [^\s]+$/i.test(bearer)) throw new BriefError(401, "A calculation session is required.");
     const raw = await readOperationsJson(request, conversation ? 32_768 : 2048);
@@ -52,6 +68,8 @@ async function handleCopilot(request: Request, config: CopilotConfig, fetcher: t
       const queries = interpreted ? interpreted.queries ?? [interpreted.query] : [];
       if (question.experimentJobId && (fastExperiment || queries.length === 1 && queries[0].intent === "experiment")) {
         const job = await ownedAnalyticsJob(config.COPILOT_ANALYTICS_URL, bearer, question.experimentJobId, fetcher);
+        if (job.status !== "succeeded" || job.job_type !== "facility_historical_replay")
+          throw new BriefError(409, "Select a completed experiment for this plan.");
         if (job.status !== "succeeded" || job.job_type !== "facility_historical_replay")
           throw new BriefError(409, "Experiment is not complete.");
         const experiment = experimentResultSchema.parse(job.result_payload);
@@ -81,8 +99,8 @@ async function handleCopilot(request: Request, config: CopilotConfig, fetcher: t
           limitations: ["Assumed stress scenarios are not a calibrated reliability probability.",
             "This tests the submitted model, not measured delivery, rack temperatures or subinterval ramps."],
           receipt: { ...answer.receipt, generation: receipt() } });
-        const composed = question.transcript ? await composeConversation(question, experimentAnswer, transport) : experimentAnswer;
-        return Response.json(conversationResponseSchema.parse({ ...composed, receipt: { ...composed.receipt, generation: receipt() } }), { headers });
+        const composed = question.transcript && supportsClaims ? await composeConversation(question, experimentAnswer, transport) : experimentAnswer;
+        return respond(conversationResponseSchema.parse({ ...composed, receipt: { ...composed.receipt, generation: receipt() } }));
       }
       if (!interpreted) throw new BriefError(422, "Question interpretation unavailable.");
       const answer = answerAnalysisPlan(assessment, question, queries, interpreted.provider);
@@ -97,15 +115,28 @@ async function handleCopilot(request: Request, config: CopilotConfig, fetcher: t
       }
       const guidanceAllowed = answer.kind === "answer" || answer.evidence.length > 0 ||
         queries.some(query => ["what_if", "readiness", "diagnosis", "knowledge", "accounting"].includes(query.intent));
+      const guidance = guidanceAllowed ? retrieveOperationalKnowledge(`${question.question} ${queries.map(query => query.intent).join(" ")}`, { intents: queries.map(query => query.intent) }) : [];
       const grounded = conversationResponseSchema.parse({ ...answer, capabilities, proposal, proposalClarification,
-        guidance: guidanceAllowed ? retrieveOperationalKnowledge(`${question.question} ${queries.map(query => query.intent).join(" ")}`, { intents: queries.map(query => query.intent) }) : [] });
-      const composed = question.transcript ? await composeConversation(question, grounded, transport) : grounded;
-      return Response.json(conversationResponseSchema.parse({ ...composed, receipt: { ...composed.receipt, generation: receipt() } }), { headers });
+        blocks: queries.every(query => query.intent === "knowledge") ? [...answer.blocks,
+          ...guidance.map(item => `General guidance — ${item.title}: ${item.text}`)] : answer.blocks,
+        guidance });
+      const composed = question.transcript && supportsClaims ? await composeConversation(question, grounded, transport) : grounded;
+      return respond(conversationResponseSchema.parse({ ...composed, receipt: { ...composed.receipt, generation: receipt() } }));
     }
     const evidence = await ownedBriefEvidence(config.COPILOT_ANALYTICS_URL, bearer, input.data.jobId, input.data.resultFingerprint, fetcher);
     const provider = providerSettings(config);
     const brief = await generatePlanBrief(evidence, provider.key, provider.model, transport);
-    return Response.json({ ...brief, receipt: { ...brief.receipt, generation: receipt() } }, { headers });
+    let investigation;
+    if ("experimentJobId" in input.data && input.data.experimentJobId) {
+      const job = await ownedAnalyticsJob(config.COPILOT_ANALYTICS_URL, bearer, input.data.experimentJobId, fetcher);
+      if (job.status !== "succeeded" || job.job_type !== "facility_historical_replay")
+        throw new BriefError(409, "Select a completed experiment for this plan.");
+      const result = experimentResultSchema.parse(job.result_payload);
+      if (result.baseline_result_fingerprint !== brief.resultFingerprint)
+        throw new BriefError(409, "Experiment baseline identity mismatch.");
+      investigation = { jobId: job.id, result };
+    }
+    return respond({ ...brief, ...(investigation ? { investigation } : {}), receipt: { ...brief.receipt, generation: receipt() } });
   } catch (error) {
     if (error instanceof BriefError || error instanceof OperationsPayloadError)
       return Response.json({ error: error.message }, { status: error.status, headers });

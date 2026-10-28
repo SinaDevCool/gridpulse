@@ -69,7 +69,7 @@ export function AlternativePlanReview({ scenario, baseline, baselineJobId, onExp
     {!proposal ? <>
     {experimentsAvailable ? <label className="ops-chat-alternative-field">Analysis<select value={mode} disabled={submitted}
       onChange={event => { setMode(event.target.value as typeof mode); setConfirmed(false); }}>
-      <option value="alternative">Re-optimise an alternative</option><option value="frozen_plan">Stress the current plan</option>
+      <option value="alternative">Find a new schedule for changed conditions</option><option value="frozen_plan">Keep the accepted schedule fixed and test changed conditions</option>
     </select></label> : <small>Fixed-plan stress tests require the qualified experiment service. Re-optimised alternatives remain available.</small>}
     <label className="ops-chat-alternative-field">Change<select value={field} disabled={submitted}
       onChange={event => { setField(event.target.value as Field); setExtraField(""); setConfirmed(false); }}>
@@ -89,6 +89,7 @@ export function AlternativePlanReview({ scenario, baseline, baselineJobId, onExp
     {extraField ? <p>Review: {spec.label} = {value || "not supplied"} {spec.unit}; asset: {selectedAsset ?? "facility"}.</p> :
       <p>Current: {originalValue} {fields[field].unit}{canSubmit ? ` → proposed: ${numeric} ${fields[field].unit}` : ""}</p>}
     {experimentField === "battery_energy_mwh" && useExperiment ? <small>SOC, reserve and terminal fractions are preserved. Discharge MW stays unchanged.</small> : null}
+    {experimentField === "import_limit_mw" && useExperiment ? <small>The submitted margin between import limit and operating target is preserved. This is an assumed model limit, not an amended connection agreement.</small> : null}
     {value && !canSubmit ? <p role="alert">Enter a value compatible with the current model restrictions.</p> : null}
     </> : null}
     {!submitted ? <><label className="ops-chat-alternative-confirm"><input type="checkbox" checked={confirmed} disabled={!canSubmit}
@@ -99,10 +100,13 @@ export function AlternativePlanReview({ scenario, baseline, baselineJobId, onExp
     {calculation.busy ? <p role="status">Calculating alternative… {calculation.job?.status}</p> : null}
     {calculation.error ? <p role="alert">{calculation.error}</p> : null}
     {submitted && calculation.error && !calculation.jobId ? <p>Submission status is unknown. Do not submit again automatically; check the job service first.</p> : null}
+    {submitted && calculation.error && !calculation.jobId && useExperiment ? <button type="button" disabled={calculation.busy}
+      onClick={() => void calculation.recoverExperiment(original)}>Check my existing experiment jobs</button> : null}
     {calculation.error && calculation.jobId ? <button type="button" disabled={calculation.busy} onClick={() => {
       if (canSubmit) void calculation.run(proposed ?? original, calculation.jobId!, experimentRequest);
     }}>Check existing calculation</button> : null}
     {stress ? <section aria-label="Experiment result"><h4>{stress.mode === "frozen_plan" ? "Fixed-plan stress result" : "Alternative experiment"}</h4>
+      <p>{stress.mode === "frozen_plan" ? "This tests whether the original commands survive the changed conditions." : "A new schedule was sought. This does not establish that the original schedule survives the changed conditions."}</p>
       <p>{stress.status === "unsupported_or_invalid" ? stress.reason : stress.accepted ? "Passed the supplied model checks" : "The tested conditions did not pass"}</p>
       {stress.peak_import_mw != null ? <p>Peak import: {stress.peak_import_mw.toFixed(1)} MW | Above import limit: {stress.above_import_limit_minutes} min</p> : null}
       {stress.remaining_work_hours != null ? <p>Remaining work: {stress.remaining_work_hours.toFixed(2)} work h</p> : null}

@@ -5,18 +5,19 @@ import { CHAT_VERSION, conversationResponseSchema, type ConversationAnswer, type
 
 export type ConversationTurn = { question: string; answer: ConversationAnswer };
 export type PlanConversationState = { turns: ConversationTurn[]; pending: string | null; error: string | null;
-  ask: (question: string) => Promise<boolean>; stop: () => void; clear: () => void; selectExperiment?: (jobId: string) => void };
+  ask: (question: string) => Promise<boolean>; stop: () => void; clear: () => void; selectExperiment?: (jobId: string) => void; experimentJobId?: string };
 export function usePlanConversation(jobId: string | undefined, fingerprint: string, current: boolean, context: CopilotNavigation): PlanConversationState {
   const identity = `${jobId}:${fingerprint}:${current}`;
   const latest = useRef(identity); latest.current = identity;
   const gate = useRef(createBriefRequestLifecycle());
   const [saved, setSaved] = useState<{ identity: string; turns: ConversationTurn[] }>({ identity, turns: [] });
   const experimentId = useRef<string | undefined>(undefined);
+  const [attachedExperiment, setAttachedExperiment] = useState<{ identity: string; id: string } | null>(null);
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const turns = saved.identity === identity && current ? saved.turns : [];
   useEffect(() => {
-    experimentId.current = undefined; gate.current.sync(identity); setSaved({ identity, turns: [] }); setPending(null); setError(null);
+    experimentId.current = undefined; setAttachedExperiment(null); gate.current.sync(identity); setSaved({ identity, turns: [] }); setPending(null); setError(null);
     const lifecycle = gate.current;
     return () => lifecycle.cancel();
   }, [identity]);
@@ -42,7 +43,8 @@ export function usePlanConversation(jobId: string | undefined, fingerprint: stri
       return false;
     } finally { if (gate.current.finish(ticket) && latest.current === identity) setPending(null); }
   }
-  return { selectExperiment: id => { experimentId.current = id; }, turns, pending: current ? pending : null, error: current ? error : null, ask,
+  return { experimentJobId: attachedExperiment?.identity === identity ? attachedExperiment.id : undefined,
+    selectExperiment: id => { experimentId.current = id; setAttachedExperiment({ identity, id }); }, turns, pending: current ? pending : null, error: current ? error : null, ask,
     stop: () => { gate.current.cancel(); setPending(null); setError("Stopped. You can retry; provider cancellation is not guaranteed."); },
-    clear: () => { experimentId.current = undefined; gate.current.cancel(); setSaved({ identity, turns: [] }); setPending(null); setError(null); } };
+    clear: () => { experimentId.current = undefined; setAttachedExperiment(null); gate.current.cancel(); setSaved({ identity, turns: [] }); setPending(null); setError(null); } };
 }

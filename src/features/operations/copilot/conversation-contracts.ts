@@ -30,6 +30,7 @@ export const conversationResponseSchema = z.object({ version: z.literal(CHAT_VER
   kind: z.enum(["answer", "clarification", "requires_calculation", "unsupported"]),
   basis: z.enum(["model_evidence", "general_explanation", "no_calculation"]),
   presentation: z.enum(["grounded_conversation", "checked_fallback"]).optional(),
+  verifiedFindingIds: z.array(z.string().max(120)).max(64).optional(),
   paragraphSources: z.array(z.object({ factIds: z.array(z.string()).max(16), guidanceIds: z.array(z.string()).max(4) }).strict()).max(4).optional(),
   resolvedQuery: querySchema,
   resolvedQueries: z.array(querySchema).min(1).max(4).optional(),

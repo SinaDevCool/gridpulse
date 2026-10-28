@@ -28,6 +28,7 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   let conversations = 0;
   let holdConversation = false;
   await page.route("**/api/operations/conversation", async route => {
+    expect(route.request().headers()["x-gridpulse-capabilities"]).toBe("verified-claims-v1");
     conversations++;
     if (holdConversation) { await new Promise(resolve => setTimeout(resolve, 800)); }
     const input = conversationRequestSchema.parse(route.request().postDataJSON());
@@ -184,6 +185,7 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await page.setViewportSize({ width: 1280, height: 720 });
   await expect.poll(() => copilot.evaluate(node => node.matches(":modal"))).toBe(true);
   await expect(copilot.getByRole("button", { name: "Download brief", exact: true })).toBeDisabled();
+  await expect(copilot.getByRole("button", { name: "Download evidence JSON", exact: true })).toBeDisabled();
   await copilot.getByRole("checkbox").check();
   await expect(copilot.getByRole("button", { name: "Download brief", exact: true })).toBeEnabled();
   const download = page.waitForEvent("download");
@@ -194,6 +196,14 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   const exported = await readFile((await downloaded.path())!, "utf8");
   expect(exported).toContain('"jobId": "00000000-0000-4000-8000-000000000001"');
   expect(exported).toContain("Human review: 20");
+  const jsonDownload = page.waitForEvent("download");
+  await copilot.getByRole("button", { name: "Download evidence JSON", exact: true }).click();
+  const jsonArtifact = await jsonDownload;
+  await jsonArtifact.saveAs("test-results/copilot-reviewed-export.json");
+  const exportedJson = JSON.parse(await readFile("test-results/copilot-reviewed-export.json", "utf8"));
+  expect(exportedJson.operationalApproval).toBe(false);
+  expect(exportedJson.reviewAcknowledgedAt).toMatch(/^20/);
+  expect(exportedJson.brief.resultFingerprint).toBe(canonicalMilpJob(request).result_payload.result_fingerprint);
   expect(exported).toContain("Review acknowledgement is not operational approval.");
   await copilot.getByText("Receipt and limitations", { exact: true }).click();
   await copilot.screenshot({ path: "test-results/copilot-reviewed-receipt.png" });

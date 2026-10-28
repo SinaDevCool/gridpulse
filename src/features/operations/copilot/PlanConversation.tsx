@@ -48,6 +48,9 @@ export function PlanConversation({ state, enabled, context, onNavigate, identity
       {state.turns.map((turn, index) => <article key={`${turn.answer.generatedAt}:${turn.question}:${turn.answer.receipt.providerResponseId ?? index}`} aria-label={`Answer ${index + 1}`}>
         <div className="ops-chat-question"><span className="sr-only">Your question: </span>{turn.question}</div>
         <small>{turn.answer.presentation === "checked_fallback" ? "Checked summary · conversational answer unavailable" : turn.answer.presentation === "grounded_conversation" ? "AI explanation · linked evidence" : turn.answer.basis === "general_explanation" ? "General explanation" : turn.answer.kind === "answer" ? "Checked model evidence" : turn.answer.kind.replaceAll("_", " ")}</small>
+        {turn.answer.receipt.generation?.stages?.length ? <small>
+          AI stages: {turn.answer.receipt.generation.stages.map(stage => `${stage.stage.replaceAll("_", " ")}: ${stage.provider} · ${stage.servedModel ?? stage.requestedModel}${stage.fallbackReason ? " (fallback)" : ""}`).join(" | ")}
+        </small> : null}
         {answerBlocks(turn.answer.blocks, turn.answer.evidence).map((block, i) => <p key={i}>{block}</p>)}
         {turn.answer.proposalClarification ? <p role="status">{turn.answer.proposalClarification}</p> : null}
         {!turn.answer.presentation && answerFacts(turn.answer.evidence).length ? <dl className="ops-chat-facts">{answerFacts(turn.answer.evidence).map(fact =>
@@ -98,6 +101,7 @@ export function PlanConversation({ state, enabled, context, onNavigate, identity
         <button type="button" onClick={() => setConfirmClear(false)}>Keep conversation</button></div> : null}
       <small id="plan-question-help">Enter to send; Shift+Enter for a new line. Alternatives need a new calculation. {question.length}/1000</small>
       <small>Session only. A new plan clears the conversation. Brief review applies only to the brief.</small>
+      <small>AI interprets your question and prioritises checked findings. Planning evidence is sent to the configured AI provider; no equipment commands are issued.</small>
     </form>
   </section>;
 }

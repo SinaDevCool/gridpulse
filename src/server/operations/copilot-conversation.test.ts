@@ -18,6 +18,29 @@ const request = (input: unknown = body, auth = "Bearer visitor-token") => new Re
   method: "POST", headers: { authorization: auth, "content-type": "application/json" }, body: JSON.stringify(input) });
 
 describe("conversation boundary", () => {
+  it("puts relevant reviewed calibration guidance in the answer instead of unrelated plan facts", async () => {
+    const fetcher = vi.fn().mockResolvedValueOnce(Response.json(job)).mockResolvedValueOnce(response({ ...query, intent: "knowledge" }));
+    const result = await handlePlanConversation(request({ ...body, question: "What cooling measurements are needed for calibration generally?" }), options(), fetcher);
+    const answer = conversationResponseSchema.parse(await result.json());
+    expect(answer.blocks.join(" ")).toContain("measured cooling power and ambient conditions");
+    expect(answer.blocks.join(" ")).not.toContain("Battery flexibility permitted");
+    expect(answer.guidance?.some(item => item.id === "cooling-validity")).toBe(true);
+  });
+  it.each([
+    ["Why did the solver prefer this exact training start over every other start?", "unsupported", "why"],
+    ["Minimise the bill by changing the workload schedule.", "requires_calculation", "what_if"],
+    ["Does this plan guarantee additional grid connection capacity?", "answer", "readiness"],
+    ["What evidence distinguishes simulated completion from measured workload execution?", "answer", "readiness"],
+    ["Why do we need a new calculation after changing the inputs?", "answer", "knowledge"],
+  ])("keeps a known capability boundary deterministic: %s", async (question, kind, intent) => {
+    const fetcher = vi.fn().mockResolvedValueOnce(Response.json(job));
+    const result = await handlePlanConversation(request({ ...body, question }), options(), fetcher);
+    const answer = conversationResponseSchema.parse(await result.json());
+    expect(answer.kind).toBe(kind);
+    expect(answer.resolvedQuery.intent).toBe(intent);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    if (intent === "knowledge") expect(answer.blocks.join(" ")).toContain("accepted result applies only");
+  });
   it("prepares an exact proposal only when enabled, without submitting a job", async () => {
     const fetcher = vi.fn().mockResolvedValueOnce(Response.json(job));
     const result = await handlePlanConversation(request({ ...body, question: "What if battery energy is halved?" }),

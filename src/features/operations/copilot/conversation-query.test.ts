@@ -114,10 +114,15 @@ describe("conversation evidence queries", () => {
 describe("accepted market context in conversation", () => {
   it("grounds German guidance and restrictions in the accepted request", () => {
     const presentation = { ...a, request: { ...a.request, policy: { ...a.request.policy, allow_battery: false }, planning_context: { timezone: "Europe/Berlin", local_date: "2026-09-26" } } };
-    const result = answerConversation(presentation, request, { ...query, intent: "knowledge" }, provider);
+    const result = answerConversation(presentation, request, { ...query, intent: "constraints" }, provider);
     expect(result.evidence.find(f => f.id === "planning.local_day")?.value).toBe("2026-09-26");
     expect(result.evidence.find(f => f.id === "planning.battery_permission")?.value).toBe(false);
     expect(result.evidence.some(f => f.id === "planning.reporting_compliance")).toBe(false);
+  });
+  it("does not turn general knowledge into an unrelated site-policy answer", () => {
+    const result = answerConversation(a, { ...request, question: "What cooling measurements are needed generally?" }, { ...query, intent: "knowledge" }, provider);
+    expect(result.evidence).toEqual([]);
+    expect(result.blocks.join(" ")).not.toContain("Battery flexibility permitted");
   });
   it("returns the interval limits rather than substituting a static ceiling", () => {
     const presentation = { ...a, points: a.points.map((p, i) => i ? p : { ...p, limitMw: 80, targetMw: 78 }) };

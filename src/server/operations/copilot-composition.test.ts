@@ -16,10 +16,9 @@ const config: CopilotConfig = { COPILOT_ENABLED: "true", META_API_KEY: "meta-tes
 const query = { intent: "checks", workloadId: null, start: null, end: null, focus: "selected", definition: "none" };
 const response = (selection: unknown) => Response.json({ id: "writer-response", status: "completed", model: "muse-spark-1.3",
   usage: { input_tokens: 100, output_tokens: 30 }, output: [{ content: [{ type: "output_text", text: JSON.stringify(selection) }] }] });
-const draft = { paragraphs: [{ text: "The plan completes {{fact:workloads.completed}} workloads. This is modelled completion, so verify execution with the scheduler before relying on delivery.",
-  factIds: ["workloads.completed"], guidanceIds: [] }] };
+const draft = { findingIds: ["finding.0"] };
 const request = (input: unknown = body) => new Request("https://app.invalid/api/operations/conversation", {
-  method: "POST", headers: { authorization: "Bearer visitor", "content-type": "application/json" }, body: JSON.stringify(input) });
+  method: "POST", headers: { authorization: "Bearer visitor", "content-type": "application/json", "x-gridpulse-capabilities": "verified-claims-v1" }, body: JSON.stringify(input) });
 
 describe("grounded conversational writing", () => {
   it("uses Meta for interpretation and natural writing, retaining checked receipt and sources", async () => {
@@ -29,17 +28,17 @@ describe("grounded conversational writing", () => {
     expect(result.status).toBe(200);
     const answer = conversationResponseSchema.parse(await result.json());
     expect(answer.presentation).toBe("grounded_conversation");
-    expect(answer.blocks[0]).toContain("modelled completion");
+    expect(answer.blocks.length).toBeGreaterThan(0);
     expect(answer.blocks[0]).not.toContain("{{fact:");
     expect(answer.receipt.resultFingerprint).toBe(body.resultFingerprint);
     expect(answer.receipt.generation?.attempts).toEqual(["meta"]);
     expect(answer.receipt.usage).toEqual({ inputTokens: 200, outputTokens: 60 });
-    expect(() => renderGroundedDraft({ paragraphs: [{ text: "This result should not be read as proven optimal. Review {{fact:workloads.completed}} completed workloads as model evidence, not guaranteed delivery.",
-      factIds: ["workloads.completed"], guidanceIds: [] }] }, { ...answer, receipt: { ...answer.receipt, solverStatus: "feasible_not_proven_optimal" } })).not.toThrow();
+    expect(answer.receipt.generation?.stages?.map(stage => stage.stage)).toEqual(["interpretation", "claim_selection"]);
+    expect(() => renderGroundedDraft({ findingIds: ["finding.0"] }, answer)).not.toThrow();
     expect(fetcher.mock.calls.slice(1).every(call => call[0] === "https://api.meta.ai/v1/responses")).toBe(true);
     const writer = JSON.parse(String(fetcher.mock.calls[2][1]?.body));
     expect(writer.store).toBe(false);
-    expect(JSON.parse(writer.input).facts.some((fact: { id: string }) => fact.id === "workloads.completed")).toBe(true);
+    expect(JSON.parse(writer.input).claims.length).toBeGreaterThan(0);
   });
   it("passes bounded assistant replies to both stages as untrusted follow-up context", async () => {
     const transcript = [{ question: "How did it perform?", answer: "The plan completed the submitted work." }];

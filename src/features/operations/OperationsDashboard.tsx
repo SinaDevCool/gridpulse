@@ -90,11 +90,12 @@ function OperationsDashboardContent({ view, window, mode }: Props) {
   const [canonicalPreview, setCanonicalPreview] = useState<string | null>(null);
   const [canonicalWorkload, setCanonicalWorkload] = useState<string | null>(null);
   const canonicalCurrent = canonical && !draft.dirty && !planningDirty && canonical.scenarioIdentity === stableOperationsJson(appliedPlanning.enabled ? { scenario, planning: appliedPlanning } : scenario);
-  const copilot = usePlanCopilot({ jobId: canonical?.jobId,
-    fingerprint: canonical?.assessment.projected.identity.resultFingerprint ?? "", current: !!canonicalCurrent });
   const chatContext: CopilotNavigation = { view, timestamp: canonicalTime || null, workloadId: canonicalWorkload };
   const conversation = usePlanConversation(canonical?.jobId,
     canonical?.assessment.projected.identity.resultFingerprint ?? "", !!canonicalCurrent, chatContext);
+  const copilot = usePlanCopilot({ jobId: canonical?.jobId,
+    fingerprint: canonical?.assessment.projected.identity.resultFingerprint ?? "", current: !!canonicalCurrent,
+    experimentJobId: conversation.experimentJobId });
   const [copilotOpen, setCopilotOpen] = useState(false);
   const copilotTrigger = useRef<HTMLButtonElement>(null);
   const [inspection, setInspection] = useState<CopilotNavigation | null>(null);

@@ -105,5 +105,11 @@ export function briefText(brief: PlanBrief, reviewedAt?: string) {
     `Generated: ${brief.generatedAt} · ${brief.model}`, `Human review: ${reviewedAt ?? "Not acknowledged"}`,
     "Review acknowledgement is not operational approval.", "", ...sections, "Review next", ...brief.actions,
     "", "Evidence", ...brief.evidence.map(fact => `[${fact.id}] ${fact.label}: ${formatBriefFact(fact)} · raw ${JSON.stringify(fact.value)} ${fact.unit} · ${fact.scope} · ${fact.availability} · ${fact.source.selector}.${fact.source.field}`),
-    "", "Limitations", ...brief.limitations, "", "Generation receipt", JSON.stringify(brief.receipt, null, 2)].join("\n");
+    "", "Limitations", ...brief.limitations,
+    ...(brief.investigation ? ["", "Investigation", `Experiment job: ${brief.investigation.jobId}`,
+      `Experiment result: ${brief.investigation.result.result_fingerprint}`,
+      "Assumed scenarios; not calibrated reliability or measured delivery.",
+      ...brief.investigation.result.cases.map(item => `${item.case_id}: ${item.mode === "frozen_plan" ? "Accepted commands held fixed" : "Separate re-optimisation"}; ${item.status === "unsupported_or_invalid" ? "Unsupported or invalid" : item.accepted ? "Passed supplied model checks" : "Did not pass supplied model checks"}.`),
+      JSON.stringify(brief.investigation.result, null, 2)] : []),
+    "", "Generation receipt", JSON.stringify(brief.receipt, null, 2)].join("\n");
 }
