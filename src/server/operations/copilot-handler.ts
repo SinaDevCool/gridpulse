@@ -115,8 +115,11 @@ async function handleCopilot(request: Request, config: CopilotConfig, fetcher: t
       }
       const guidanceAllowed = answer.kind === "answer" || answer.evidence.length > 0 ||
         queries.some(query => ["what_if", "readiness", "diagnosis", "knowledge", "accounting"].includes(query.intent));
+      const guidance = guidanceAllowed ? retrieveOperationalKnowledge(`${question.question} ${queries.map(query => query.intent).join(" ")}`, { intents: queries.map(query => query.intent) }) : [];
       const grounded = conversationResponseSchema.parse({ ...answer, capabilities, proposal, proposalClarification,
-        guidance: guidanceAllowed ? retrieveOperationalKnowledge(`${question.question} ${queries.map(query => query.intent).join(" ")}`, { intents: queries.map(query => query.intent) }) : [] });
+        blocks: queries.every(query => query.intent === "knowledge") ? [...answer.blocks,
+          ...guidance.map(item => `General guidance — ${item.title}: ${item.text}`)] : answer.blocks,
+        guidance });
       const composed = question.transcript && supportsClaims ? await composeConversation(question, grounded, transport) : grounded;
       return respond(conversationResponseSchema.parse({ ...composed, receipt: { ...composed.receipt, generation: receipt() } }));
     }

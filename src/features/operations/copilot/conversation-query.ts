@@ -44,7 +44,7 @@ export function answerConversation(a: CanonicalPresentation, request: Conversati
     "I can inspect this modelled plan, workloads, battery, limits and checks. I cannot establish unmodelled cost/carbon savings, live equipment status, backup guarantees or execute control commands.");
   if (query.intent === "clarify") return stop("clarification",
     "Which workload, interval (date and UTC time), or plan metric do you mean? You can select an interval in the charts and ask about that interval.");
-  if (query.intent === "knowledge" || (query.intent === "constraints" && !query.workloadId)) {
+  if (query.intent === "constraints" && !query.workloadId) {
     for (const fact of envelope.facts.filter(f => f.id.startsWith("planning.") || f.id === "power.interval_envelope")) {
       facts.push(fact); blocks.push(`${fact.label}: ${formatBriefFact(fact)}.`);
     }

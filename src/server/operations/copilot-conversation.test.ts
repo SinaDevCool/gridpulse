@@ -18,6 +18,14 @@ const request = (input: unknown = body, auth = "Bearer visitor-token") => new Re
   method: "POST", headers: { authorization: auth, "content-type": "application/json" }, body: JSON.stringify(input) });
 
 describe("conversation boundary", () => {
+  it("puts relevant reviewed calibration guidance in the answer instead of unrelated plan facts", async () => {
+    const fetcher = vi.fn().mockResolvedValueOnce(Response.json(job)).mockResolvedValueOnce(response({ ...query, intent: "knowledge" }));
+    const result = await handlePlanConversation(request({ ...body, question: "What cooling measurements are needed for calibration generally?" }), options(), fetcher);
+    const answer = conversationResponseSchema.parse(await result.json());
+    expect(answer.blocks.join(" ")).toContain("measured cooling power and ambient conditions");
+    expect(answer.blocks.join(" ")).not.toContain("Battery flexibility permitted");
+    expect(answer.guidance?.some(item => item.id === "cooling-validity")).toBe(true);
+  });
   it.each([
     ["Why did the solver prefer this exact training start over every other start?", "unsupported", "why"],
     ["Minimise the bill by changing the workload schedule.", "requires_calculation", "what_if"],

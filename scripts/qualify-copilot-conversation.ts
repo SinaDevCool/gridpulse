@@ -84,7 +84,7 @@ async function main() {
     { question: "What are the operational risks of this plan?", intent: "readiness", kind: "answer" },
     { question: "How should we validate the model against meters?", intent: "knowledge", kind: "answer" },
     { question: "Explain GPU telemetry versus facility metering generally.", intent: "knowledge", kind: "answer" },
-    { question: "What cooling measurements are needed for calibration generally?", intent: "knowledge", kind: "answer" },
+    { question: "What cooling measurements are needed for calibration generally?", intent: "knowledge", kind: "answer", requiredText: "measured cooling power and ambient conditions" },
     { question: "Can you price this unchanged schedule if I supply a tariff?", intent: "accounting", kind: "answer" },
     { question: "Minimise the bill by changing the workload schedule.", intent: "what_if", kind: "requires_calculation" },
     { question: "Guarantee the battery will support the site during an outage.", intent: "unsupported", kind: "unsupported" },
