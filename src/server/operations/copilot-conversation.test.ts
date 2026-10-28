@@ -22,6 +22,7 @@ describe("conversation boundary", () => {
     ["Why did the solver prefer this exact training start over every other start?", "unsupported", "why"],
     ["Minimise the bill by changing the workload schedule.", "requires_calculation", "what_if"],
     ["Does this plan guarantee additional grid connection capacity?", "answer", "readiness"],
+    ["What evidence distinguishes simulated completion from measured workload execution?", "answer", "readiness"],
     ["Why do we need a new calculation after changing the inputs?", "answer", "knowledge"],
   ])("keeps a known capability boundary deterministic: %s", async (question, kind, intent) => {
     const fetcher = vi.fn().mockResolvedValueOnce(Response.json(job));
