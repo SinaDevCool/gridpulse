@@ -136,6 +136,15 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   await page.setViewportSize({ width: 390, height: 844 });
   for (const theme of ["light", "dark"]) {
     await page.evaluate(value => document.documentElement.dataset.theme = value, theme);
+    // A source-link scan can clip the earlier guidance card out of the scrollport.
+    // Exercise each highlighted surface while visible, with the Ask button enabled.
+    await questionInput.fill("Which evidence should I review?");
+    await expect(chat.getByRole("button", { name: "Ask", exact: true })).toBeEnabled();
+    for (const surface of [firstAnswer.locator(".ops-chat-question"), firstAnswer.locator('.ops-checked-finding[data-kind="guidance"]')]) {
+      await surface.scrollIntoViewIfNeeded();
+      expect((await new AxeBuilder({ page }).include(".ops-copilot-panel").analyze()).violations).toEqual([]);
+    }
+    await questionInput.fill("");
     await firstAnswer.getByRole("link", { name: /Read source:/ }).scrollIntoViewIfNeeded();
     expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
     expect((await new AxeBuilder({ page }).include(".ops-copilot-panel").analyze()).violations).toEqual([]);
