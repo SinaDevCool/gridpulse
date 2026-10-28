@@ -177,7 +177,7 @@ def build_router(
         job, created = canonical_job(
             owner_id=user.id,
             job_type="facility_uncertainty",
-            payload=request.model_dump(mode="json"),
+            payload=request.model_dump(mode="json", exclude_none=True),
         )
         if created:
             dispatch(background_tasks, dependencies.execution_for("facility_uncertainty"), job.id)
@@ -215,7 +215,7 @@ def build_router(
         job, created = canonical_job(
             owner_id=user.id,
             job_type="rolling_facility_plan",
-            payload=request.model_dump(mode="json"),
+            payload=request.model_dump(mode="json", exclude_none=True),
         )
         if created:
             dispatch(background_tasks, dependencies.execution_for("rolling_facility_plan"), job.id)

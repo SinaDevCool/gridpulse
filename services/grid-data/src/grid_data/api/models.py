@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, ConfigDict, Field, model_serializer, model_validator
+from pydantic import BaseModel, ConfigDict, Field, FiniteFloat, model_serializer, model_validator
+
+StrictFiniteFloat = Annotated[FiniteFloat, Field(strict=True)]
 
 
 class JobStatus(str, Enum):
@@ -89,13 +91,42 @@ class FcaIntervalRequest(BaseModel):
     settings: dict[str, Any]
 
 
+class ScenarioBoundsRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    temperature_min_c: StrictFiniteFloat
+    temperature_max_c: StrictFiniteFloat
+    onsite_generation_min_mw: StrictFiniteFloat = Field(ge=0)
+    onsite_generation_max_mw: StrictFiniteFloat = Field(ge=0)
+
+
+class UncertaintyScenarioRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    scenario_id: str = Field(min_length=1, max_length=200)
+    probability: StrictFiniteFloat = Field(gt=0, le=1)
+    battery_temperature_c: list[StrictFiniteFloat] = Field(min_length=1, max_length=96)
+    onsite_generation_mw: list[StrictFiniteFloat] = Field(min_length=1, max_length=96)
+    assumption_ids: list[str] = Field(default_factory=list, max_length=20)
+
+
+class RollingWindowRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    window_id: str = Field(min_length=1, max_length=200)
+    cutoff: str
+    forecast_fingerprint: str = Field(pattern="^[a-f0-9]{64}$")
+    scenarios: list[UncertaintyScenarioRequest] = Field(min_length=1, max_length=4)
+    recalculation_reason: str = Field(min_length=1, max_length=500)
+
+
 class FacilityUncertaintyRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     schema_version: Literal["gridpulse-facility-uncertainty-request-v1"]
     facility_plan: FacilityPlanRequest
-    bounds: dict[str, Any]
-    scenario_count: int = Field(ge=1, le=1_000)
+    bounds: ScenarioBoundsRequest
+    scenario_count: int = Field(strict=True, ge=1, le=32)
+    evaluation_method: Literal["independent_scenario_benchmark", "common_command_scenario_milp"] = (
+        "independent_scenario_benchmark"
+    )
     seed: int
     risk_policy: Literal["chance_constrained", "distributionally_robust", "cvar"] = (
         "chance_constrained"
@@ -118,7 +149,7 @@ class RollingFacilityPlanRequest(BaseModel):
 
     schema_version: Literal["gridpulse-rolling-facility-plan-request-v1"]
     facility_plan: FacilityPlanRequest
-    windows: list[dict[str, Any]] = Field(min_length=1, max_length=100)
+    windows: list[RollingWindowRequest] = Field(min_length=1, max_length=4)
     confidence: float = Field(default=0.9, gt=0, lt=1)
 
 
@@ -165,23 +196,53 @@ class OperatorEnquiryPackageRequest(BaseModel):
 class ShadowVerificationRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    schema_version: Literal["gridpulse-shadow-verification-request-v1"]
+    schema_version: Literal[
+        "gridpulse-shadow-verification-request-v1", "gridpulse-shadow-verification-request-v2"
+    ]
+    expected_measurement_ids: list[str] | None = Field(default=None, min_length=1, max_length=1000)
+    planning_cutoff: str | None = None
     facility_id: str = Field(min_length=1, max_length=200)
     generated_at: str
     plan_fingerprint: str = Field(pattern="^[a-fA-F0-9]{64}$")
-    planned_grid_import_mw: list[float] = Field(min_length=1, max_length=35_040)
-    observed_grid_import_mw: list[float] = Field(min_length=1, max_length=35_040)
-    uncertainty_band_mw: list[float] = Field(min_length=1, max_length=35_040)
+    planned_grid_import_mw: list[StrictFiniteFloat] = Field(min_length=1, max_length=35_040)
+    observed_grid_import_mw: list[StrictFiniteFloat] = Field(min_length=1, max_length=35_040)
+    uncertainty_band_mw: list[StrictFiniteFloat] = Field(min_length=1, max_length=35_040)
     observations: list[dict[str, Any]] = Field(min_length=1, max_length=200_000)
     reference_times: list[str] = Field(min_length=1, max_length=35_040)
-    supplied_energy_mwh: float = Field(ge=0)
-    consumed_energy_mwh: float = Field(ge=0)
+    supplied_energy_mwh: StrictFiniteFloat = Field(ge=0)
+    consumed_energy_mwh: StrictFiniteFloat = Field(ge=0)
     required_reduction_mw: float = Field(ge=0, le=2_000)
     delivered_reduction_mw: float = Field(ge=0, le=2_000)
     security_controls: dict[str, bool]
-    quality_thresholds: dict[str, float] = Field(default_factory=dict)
+    quality_thresholds: dict[str, StrictFiniteFloat] = Field(default_factory=dict)
     warning_consecutive_intervals: int = Field(default=2, ge=1)
     safe_limit_consecutive_intervals: int = Field(default=3, ge=1)
+
+    @model_validator(mode="after")
+    def validate_quality_provenance(self):
+        allowed = {
+            "maximum_clock_offset_seconds",
+            "maximum_sampling_jitter_seconds",
+            "maximum_energy_residual_fraction",
+        }
+        from math import isfinite
+
+        if set(self.quality_thresholds) - allowed or any(
+            not isfinite(v) or v < 0 for v in self.quality_thresholds.values()
+        ):
+            raise ValueError("invalid telemetry quality thresholds")
+        if self.schema_version.endswith("v2"):
+            if (
+                not self.expected_measurement_ids
+                or len(set(self.expected_measurement_ids)) != len(self.expected_measurement_ids)
+                or not self.planning_cutoff
+            ):
+                raise ValueError("v2 requires unique expected channels and planning cutoff")
+            if datetime.fromisoformat(self.planning_cutoff.replace("Z", "+00:00")).tzinfo is None:
+                raise ValueError("planning cutoff must be timezone-aware")
+            if len(self.reference_times) != len(self.planned_grid_import_mw):
+                raise ValueError("v2 reference and planned trajectories must align")
+        return self
 
 
 class CapacityRequirementRequest(BaseModel):

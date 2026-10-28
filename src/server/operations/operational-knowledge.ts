@@ -1,3 +1,5 @@
+import {sha256,stableOperationsJson} from "../../lib/operations-request";
+import { reportProvenance } from "./report-provenance";
 /** Server-owned, curated public summaries. No customer documents or runtime web fetching. */
 export const operationalKnowledge = [
 {"id": "de-tariff", "title": "German electricity tariff boundaries", "terms": ["netzentgelt", "strompreis", "smard", "tariff", "leistungspreis", "arbeitspreis", "germany", "german", "deutschland"], "text": "SMARD wholesale prices are not an electricity bill. Keep EUR/MWh energy prices, supplier markup, network energy charges and annual EUR/kW capacity charges separate. Evaluate incremental annual capacity liability against the existing billing peak; do not prorate it as a daily saving. Negative wholesale prices do not imply a negative total bill.", "source": "https://www.gesetze-im-internet.de/stromnev/__17.html", "section": "German market evidence boundaries", "applicability": "Germany; contract and legal applicability require site-specific review.", "version": "2026-10-27", "reviewStatus": "editorial_guidance", "license": "Linked reference; independently authored summary."},
@@ -219,7 +221,7 @@ const reportKnowledge = [
     id: "edna-liquid-cooling", title: "Cooling topology and total energy",
     terms: ["liquid", "cooling", "immersion", "retrofit", "topology", "direct"],
     text: "Compare server and facility energy together when assessing liquid cooling; PUE can obscure improvements that move energy across those boundaries. Identify the cooling topology and retrofit constraints before estimating savings. Report-wide savings are not a site-specific prediction.",
-    source: "https://www.iea-4e.org/edna/publications/liquid-cooling-in-data-centres/",
+    source: "https://www.iea-4e.org/wp-content/uploads/2026/02/EDNA-2026-LIQUID-COOLING-IN-DATA-CENTRES3.pdf",
     section: "Technology and efficiency scope", sourceId: "B04",
     evidenceClass: "report_guidance", excludedUses: ["ai_workload_savings_calibration", "rack_temperature_safety", "automatic_retrofit_savings"],
     applicability: "Qualitative topology review. The report's non-AI quantitative model is not a calibrated AI facility model; Table 4 totals require reconciliation.",
@@ -249,7 +251,7 @@ const reportKnowledge = [
     id: "edna-tem-scope", title: "Long-term scenarios are not dispatch models",
     terms: ["tem", "policy", "long", "projection", "consolidation"],
     text: "TEM models computational capacity, efficiency and market segments for long-term policy scenarios. Its sensitivity approach helps organise assumptions, but its trajectories do not establish a site's quarter-hour dispatch, workload duration or available battery energy.",
-    source: "https://www.iea-4e.org/publications/edna/total-energy-model-4-0-data-centres/",
+    source: "https://www.iea-4e.org/wp-content/uploads/2025/05/TEM-4-Report-Draft-v0-15-FINAL.pdf",
     section: "Model purpose and methodology", sourceId: "A04",
     evidenceClass: "report_guidance", excludedUses: ["dispatch_calibration", "workload_runtime_prediction"],
     applicability: "Long-term scenario framing only.",
@@ -257,9 +259,9 @@ const reportKnowledge = [
   },
   {
     id: "edna-usable-flexibility", title: "Usable flexibility needs operational permission",
-    terms: ["flexibility", "commercial", "permission", "revenue", "participation", "market"],
+    terms: ["flexibility", "commercial", "permission", "revenue", "participation", "market", "ups", "tenant", "sla", "backup", "duration", "response time", "opportunity cost"],
     text: "Technical flexibility is not automatically available to a market or grid service. Check workload permissions, service obligations, reserve requirements, event timing and commercial terms together. A modelled schedule does not establish an offer or delivered response.",
-    source: "https://www.iea-4e.org/edna/publications/data-centres-and-flexibility/",
+    source: "https://www.iea-4e.org/wp-content/uploads/2026/02/EDNA-2026-Data-Centres-and-Flexibility-web.pdf",
     section: "Abstract and scope", sourceId: "B05", pdfPages: [3],
     evidenceClass: "report_guidance", excludedUses: ["site_calibration", "dispatch_authorisation", "failure_probability"],
     applicability: "Qualitative data-centre flexibility assessment; site and service-specific qualification remains necessary.",
@@ -278,15 +280,33 @@ const reportKnowledge = [
     license: "Independently authored summary; source copyright retained."
   }
 ] as const;
-export const reviewedKnowledge = [...operationalKnowledge, ...reportKnowledge];
-const tokens = (text: string) => [...new Set(text.toLowerCase().normalize("NFKC").match(/[\p{L}\p{N}]+/gu) ?? [])];
+const additionalReports = [
+  {id:"edna-event-evidence",title:"Event baseline and delivery evidence",terms:["baseline","activation","verification","event evidence","measurement and verification"],text:"Freeze a reviewed baseline before the event and retain activation, interval measurements and recovery evidence. Case-study market arrangements are examples, not current participation rules or proof of delivered response.",source:"https://www.iea-4e.org/wp-content/uploads/2025/01/DF8-Demand-Side-Flexibility-Case-study-Report_Final-clean.pdf",sourceId:"A01",requiredInputs:["baseline method","activation timestamps","meter coverage"],supportedActionIds:["review_measurements"],excludedUses:["current_market_rules","measured_delivery"]},
+  {id:"edna-label-boundaries",title:"Infrastructure labels and useful IT work",terms:["label","certification","infrastructure efficiency","IT efficiency"],text:"Infrastructure efficiency indicators do not establish useful IT-system efficiency. Keep the measurement period and boundary explicit and obtain the applicable independent assessment before claiming a label or certification.",source:"https://www.iea-4e.org/wp-content/uploads/2025/12/4E-Policy-Brief-EDNA-23-20251216.pdf",sourceId:"A05",requiredInputs:["measurement boundary","assessment period","useful work"],supportedActionIds:["review_measurements"],excludedUses:["certification","legal_compliance"]},
+  {id:"edna-platform-roles",title:"Flexibility platform and aggregator roles",terms:["aggregator","platform","enrolment","settlement"],text:"A platform can coordinate flexibility participation, dispatch or settlement, but a modelled facility plan is not an enrolled offer. Identify the aggregator, product terms and verified-delivery requirements separately. This brief focuses on residential and commercial flexibility.",source:"https://www.iea-4e.org/wp-content/uploads/2026/02/4E-Policy-Brief-EDNA-21-2060303.pdf",sourceId:"B01",requiredInputs:["product terms","participation agreement","delivery evidence"],supportedActionIds:["review_permissions"],excludedUses:["revenue_forecast","market_enrolment"]},
+  {id:"edna-service-preserving-measurement",title:"Preserve useful service in efficiency comparisons",terms:["service quality","test conditions","measurement methodology"],text:"The display-policy report illustrates why test conditions and delivered service matter. For compute, define equivalent useful work and service quality before comparing energy. Display measurements and power curves cannot calibrate GPUs or data centres.",source:"https://www.iea-4e.org/wp-content/uploads/2026/02/EDNA-2026-Displays-summary-web.pdf",sourceId:"B03",requiredInputs:["useful work","service quality","test conditions"],supportedActionIds:["review_measurements"],excludedUses:["gpu_calibration","site_energy_prediction"]},
+] as const;
+const extendedReports = additionalReports.map(item => ({...item, section:"Reviewed physical PDF pages", applicability:"General research guidance; site-specific engineering review required.", evidenceClass:"report_guidance" as const,version:"2026-10-28",reviewStatus:"editorial_guidance" as const,license:"Independently authored summary; source copyright retained."}));
+export const reviewedKnowledge = [...operationalKnowledge, ...reportKnowledge, ...extendedReports].map(item => ({...item,
+  ...("sourceId" in item ? reportProvenance[item.sourceId] : {}),
+}));
+export const KNOWLEDGE_VERSION = "operations-guidance-2026-10-28.1";
+const tokens = (text: string) => text.toLowerCase().normalize("NFKC").match(/[\p{L}\p{N}]+/gu) ?? [];
+const aliases: Record<string,string> = {berichtspflichten:"reporting",netzanschlussvertrag:"connection",batteries:"battery",akkus:"battery",kuehlung:"cooling",kühlung:"cooling",deadlines:"deadline",workloads:"workload",reserves:"reserve"};
 export function retrieveOperationalKnowledge(question: string, context: { intents?: readonly string[]; purpose?: "general_guidance" | "site_calibration" | "dispatch_authorisation" } = {}) {
-  // Guidance cannot substitute for a numerical counterfactual or causal proof.
   if (context.intents?.length && context.intents.every(intent => ["unsupported", "why", "clarify"].includes(intent))) return [];
   if (context.purpose && context.purpose !== "general_guidance") return [];
-  const words = tokens(question);
-  return reviewedKnowledge.map(item => ({ item, score: words.reduce((sum, word) =>
-    sum + (item.terms.some(term => tokens(term).length === 1 && (word === term || (term.length >= 5 && word.startsWith(term)))) ? 1 : 0), 0) }))
-    .filter(entry => entry.score > 0).sort((a, b) => b.score - a.score || a.item.id.localeCompare(b.item.id))
-    .slice(0, 4).map(({ item: { terms: _terms, ...reference } }) => reference);
+  const words = tokens(question).map(word => aliases[word] ?? word), phrase = ` ${words.join(" ")} `;
+  return reviewedKnowledge.map(item => ({item,score:item.terms.reduce((sum,term)=>{
+    const termWords=tokens(term); const exact=phrase.includes(` ${termWords.join(" ")} `);
+    return sum+(exact ? termWords.length>1 ? 5 : 1 : 0);
+  },0)})).filter(entry=>entry.score>0).sort((a,b)=>b.score-a.score||a.item.id.localeCompare(b.item.id)).slice(0,4)
+    .map(({item:{terms:_terms,...reference}})=>reference);
 }
+export function knowledgeCoverage(question:string) {
+  const records=retrieveOperationalKnowledge(question);
+  return {version:KNOWLEDGE_VERSION,status:records.length ? "guidance_available" : "no_reviewed_match",records};
+}
+
+let corpusHash:Promise<string>|undefined;
+export function knowledgeFingerprint(){return corpusHash??=sha256(stableOperationsJson(reviewedKnowledge));}

@@ -40,13 +40,13 @@ describe("grounded conversational writing", () => {
     expect(writer.store).toBe(false);
     expect(JSON.parse(writer.input).claims.length).toBeGreaterThan(0);
   });
-  it("passes bounded assistant replies to both stages as untrusted follow-up context", async () => {
+  it("keeps follow-up interpretation context but minimises prioritisation history", async () => {
     const transcript = [{ question: "How did it perform?", answer: "The plan completed the submitted work." }];
     const fetcher = vi.fn().mockResolvedValueOnce(Response.json(job))
       .mockResolvedValueOnce(response({ queries: [query], proposal: null })).mockResolvedValueOnce(response(draft));
     await handlePlanConversation(request({ ...body, question: "What should I check next?", transcript }), config, fetcher);
     expect(JSON.parse(JSON.parse(String(fetcher.mock.calls[1][1]?.body)).input).previousConversation).toEqual(transcript);
-    expect(JSON.parse(JSON.parse(String(fetcher.mock.calls[2][1]?.body)).input).conversation).toEqual(transcript);
+    expect(JSON.parse(JSON.parse(String(fetcher.mock.calls[2][1]?.body)).input).conversation).toEqual(transcript.map(({question})=>({question})));
   });
   it("keeps a named deadline question scoped to that workload", async () => {
     const id = job.input_payload.workloads[0].workload_id;
@@ -89,4 +89,14 @@ describe("grounded conversational writing", () => {
     expect(answer.kind).toBe("requires_calculation");
     expect(fetcher).toHaveBeenCalledTimes(1);
   });
+});
+
+it("negotiates structured finding provenance and keeps analysis disabled by default",async()=>{
+ const req=request();req.headers.set("x-gridpulse-capabilities","verified-findings-v2");
+ const fetcher=vi.fn().mockResolvedValueOnce(Response.json(job)).mockResolvedValueOnce(response({queries:[query],proposal:null})).mockResolvedValueOnce(response(draft));
+ const result=await handlePlanConversation(req,config,fetcher);expect(result.status).toBe(200);
+ const answer=conversationResponseSchema.parse(await result.json());expect(answer.findings?.length).toBe(answer.blocks.length);
+ expect(answer.findings?.every(f=>f.resultFingerprint===answer.receipt.resultFingerprint)).toBe(true);
+ expect(answer.analysisCapabilities).toEqual({uncertainty:false,chronologicalShadow:false});
+ expect(answer.receipt.generation?.stages?.every(s=>s.validation==="accepted_by_application")).toBe(true);
 });

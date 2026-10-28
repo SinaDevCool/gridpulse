@@ -44,7 +44,7 @@ export function usePlanConversation(jobId: string | undefined, fingerprint: stri
     } finally { if (gate.current.finish(ticket) && latest.current === identity) setPending(null); }
   }
   return { experimentJobId: attachedExperiment?.identity === identity ? attachedExperiment.id : undefined,
-    selectExperiment: id => { experimentId.current = id; setAttachedExperiment({ identity, id }); }, turns, pending: current ? pending : null, error: current ? error : null, ask,
+    selectExperiment: id => { if (experimentId.current !== id) { gate.current.cancel(); setPending(null); setSaved({identity,turns:[]}); setError(null); } experimentId.current = id; setAttachedExperiment({ identity, id }); }, turns, pending: current ? pending : null, error: current ? error : null, ask,
     stop: () => { gate.current.cancel(); setPending(null); setError("Stopped. You can retry; provider cancellation is not guaranteed."); },
     clear: () => { experimentId.current = undefined; setAttachedExperiment(null); gate.current.cancel(); setSaved({ identity, turns: [] }); setPending(null); setError(null); } };
 }

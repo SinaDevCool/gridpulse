@@ -56,3 +56,14 @@ describe("interchangeable copilot transport", () => {
     expect(fetcher.mock.calls[0][1].headers.authorization).toBe("Bearer visitor");
   });
 });
+
+it("reserves paid calls before dispatch and retains unknown usage reservations",async()=>{
+ const reserve=vi.fn().mockResolvedValue(false),settle=vi.fn();const fetcher=vi.fn();
+ const settings={provider:"meta" as const,key:"test",model:"muse-spark-1.3"};
+ await expect(providerTransport(settings,fetcher,[],[],{reserve,settle})("https://api.openai.com/v1/responses",{body:"{}"})).rejects.toThrow("budget exhausted");
+ expect(fetcher).not.toHaveBeenCalled();
+ reserve.mockResolvedValue(true);fetcher.mockResolvedValue(Response.json({status:"completed",model:"muse-spark-1.3",output:[]}));
+ await providerTransport(settings,fetcher,[],[],{reserve,settle})("https://api.openai.com/v1/responses",{body:"{}"});expect(settle).not.toHaveBeenCalled();
+ fetcher.mockResolvedValue(Response.json({status:"completed",model:"muse-spark-1.3",usage:{input_tokens:100,output_tokens:10},output:[]}));
+ await providerTransport(settings,fetcher,[],[],{reserve,settle})("https://api.openai.com/v1/responses",{body:"{}"});expect(settle).toHaveBeenCalledWith(expect.any(String),168);
+});

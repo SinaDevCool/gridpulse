@@ -18,8 +18,8 @@ export function answerFacts(facts: BriefFact[]) {
     .sort((a, b) => a.rank - b.rank).slice(0, 3).map(item => item.fact);
 }
 
-export function answerBlocks(blocks: string[], facts: BriefFact[]) {
-  const cards = answerFacts(facts);
+export function answerBlocks(blocks: string[], facts: BriefFact[], cardsRendered = true) {
+  const cards = cardsRendered ? answerFacts(facts) : [];
   return blocks.filter(block => !cards.some(fact => block === `${fact.label}: ${formatBriefFact(fact)}.`))
     .map(block => facts.reduce((text, fact) => {
       if (fact.availability !== "available" || typeof fact.value !== "string" || !/^\d{4}-\d{2}-\d{2}T/.test(fact.value)) return text;

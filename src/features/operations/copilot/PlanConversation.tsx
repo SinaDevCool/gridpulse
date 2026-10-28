@@ -51,7 +51,10 @@ export function PlanConversation({ state, enabled, context, onNavigate, identity
         {turn.answer.receipt.generation?.stages?.length ? <small>
           AI stages: {turn.answer.receipt.generation.stages.map(stage => `${stage.stage.replaceAll("_", " ")}: ${stage.provider} · ${stage.servedModel ?? stage.requestedModel}${stage.fallbackReason ? " (fallback)" : ""}`).join(" | ")}
         </small> : null}
-        {answerBlocks(turn.answer.blocks, turn.answer.evidence).map((block, i) => <p key={i}>{block}</p>)}
+        {turn.answer.findings ? turn.answer.findings.map(finding=><section key={finding.id} aria-label={`Checked ${finding.kind}`}>
+          <p>{finding.checkedText}</p>{finding.contextFactIds.length ? <small>Supporting assessment evidence: {finding.contextFactIds.length} facts in Sources.</small> : null}
+          {finding.guidanceRefs.map(ref=><small key={ref.id}>Guidance: {ref.id} · {ref.revision}</small>)}
+        </section>) : answerBlocks(turn.answer.blocks, turn.answer.evidence, !turn.answer.presentation).map((block, i) => <p key={i}>{block}</p>)}
         {turn.answer.proposalClarification ? <p role="status">{turn.answer.proposalClarification}</p> : null}
         {!turn.answer.presentation && answerFacts(turn.answer.evidence).length ? <dl className="ops-chat-facts">{answerFacts(turn.answer.evidence).map(fact =>
           <div key={fact.id}><dt>{fact.label}</dt><dd>{formatBriefFact(fact)}</dd></div>)}</dl> : null}
@@ -62,15 +65,16 @@ export function PlanConversation({ state, enabled, context, onNavigate, identity
         {turn.answer.navigation.map((target, i) => <button type="button" className="secondary-button" key={i} onClick={() => onNavigate(target)}>
           Inspect {target.workloadId ? "workload" : target.view === "power" ? "battery interval" : target.view === "compute" ? "interval workloads" : "power outcome"}
         </button>)}
-        <CopilotEvidence facts={turn.answer.evidence} />
+        <CopilotEvidence facts={turn.answer.evidence} onNavigate={onNavigate} />
         {turn.answer.investigation ? <details><summary>Investigation | evidence still needed</summary>
           {turn.answer.investigation.hypotheses.map(item => <section key={item.label}><strong>{item.label}</strong><small>Untested hypothesis</small><p>{item.test}</p></section>)}
           <strong>Verify against site evidence</strong><ul>{turn.answer.investigation.requiredEvidence.map(item => <li key={item}>{item}</li>)}</ul>
+          {turn.answer.investigation.gaps?.map(gap=><section key={gap.id}><strong>{gap.scope}: {gap.status}</strong><p>{gap.reason}</p><button className="secondary-button" type="button" disabled={!!state.pending} onClick={()=>{setQuestion(gap.question);input.current?.focus();}}>Investigate {gap.scope}</button></section>)}
           <p>{turn.answer.investigation.nextAction}</p>
         </details> : null}
         {turn.answer.guidance?.length ? <details><summary>Operational guidance | general knowledge</summary>
           {turn.answer.guidance.map(item => <section key={item.id}><strong>{item.title}</strong><p>{item.text}</p>
-            <a href={item.source} target="_blank" rel="noreferrer">Reference</a><small> | editorial guidance {item.version}{item.section ? ` | ${item.section}` : ""}{item.pdfPages ? ` | PDF pages ${item.pdfPages.join(", ")}` : ""}</small>{item.applicability ? <small>{item.applicability}</small> : null}
+            <a href={item.source.endsWith(".pdf") && item.pdfPages?.length ? `${item.source}#page=${item.pdfPages[0]}` : item.source} target="_blank" rel="noreferrer">Reference</a><small> | editorial guidance {item.version}{item.section ? ` | ${item.section}` : ""}{item.pdfPages ? ` | PDF pages ${item.pdfPages.join(", ")}` : ""}</small>{item.applicability ? <small>{item.applicability}</small> : null}
             {item.excludedUses?.length ? <small>Not evidence for: {item.excludedUses.join(", ").replaceAll("_", " ")}</small> : null}</section>)}
         </details> : null}
         <details><summary>Technical receipt</summary>

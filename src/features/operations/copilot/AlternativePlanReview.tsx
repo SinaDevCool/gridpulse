@@ -58,6 +58,7 @@ export function AlternativePlanReview({ scenario, baseline, baselineJobId, onExp
   const canSubmit = useExperiment ? !!experimentRequest : !proposal && !!proposed && baseline.request.requirement.truth_class === "synthetic_demonstration";
   const stress = calculation.experiment?.cases[0];
   const outcome = calculation.result?.assessment;
+  const deltaUnits:Record<string,string>={grid_import_mwh:"MWh AC",above_target_minutes:"min",minimum_soc_fraction:"SOC fraction",battery_delivered_mwh:"MWh AC",deadline_checks_met:"count",rebound_peak_mw:"MW"};
   const ids = ["power.plan_peak", "workloads.completed", "workloads.deadlines_met", "battery.minimum_soc", "battery.reserve_protected", "check.terminal"];
   const before = outcome ? buildBriefEvidence(baseline, null).facts : [];
   const after = outcome ? buildBriefEvidence(outcome, calculation.jobId).facts : [];
@@ -123,6 +124,7 @@ export function AlternativePlanReview({ scenario, baseline, baselineJobId, onExp
       <small>Assumed conditions, not a reliability probability. Rack temperature, subinterval ramps and measured delivery are not validated.</small>
       <details><summary>Experiment receipt</summary><p>{calculation.experiment?.engine_version}</p><p>{calculation.experiment?.result_fingerprint}</p></details>
     </section> : null}
+    {stress?.delta_metrics ? <section aria-label="Canonical comparison differences"><h4>Alternative minus baseline</h4><dl>{Object.entries(stress.delta_metrics).map(([name,value])=><div key={name}><dt>{name.replaceAll("_"," ")}</dt><dd>{value===null?"Unavailable":`${value.toFixed(3)} ${deltaUnits[name]??""}`}</dd></div>)}</dl><small>Calculated by the Engine. Target exceedance uses each case's submitted target; changes are not automatically benefits or causal explanations.</small></section> : null}
     {outcome ? <><h4>Accepted model comparison</h4><table><thead><tr><th scope="col">Measure</th><th scope="col">Current</th><th scope="col">Alternative</th></tr></thead>
       <tbody>{ids.map(id => { const a = before.find(fact => fact.id === id), b = after.find(fact => fact.id === id);
         return a && b ? <tr key={id}><th scope="row">{a.label}</th><td>{formatBriefFact(a)}</td><td>{formatBriefFact(b)}</td></tr> : null;

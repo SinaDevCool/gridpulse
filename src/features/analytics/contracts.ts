@@ -180,7 +180,8 @@ export const facilityUncertaintyRequestSchema = z
         onsite_generation_max_mw: z.number().nonnegative(),
       })
       .strict(),
-    scenario_count: z.number().int().min(1).max(1_000),
+    scenario_count: z.number().int().min(1).max(32),
+    evaluation_method: z.enum(["independent_scenario_benchmark","common_command_scenario_milp"]).default("independent_scenario_benchmark"),
     seed: z.number().int(),
     risk_policy: z.enum(["chance_constrained", "distributionally_robust", "cvar"]),
     confidence: z.number().gt(0).lt(1),
@@ -247,19 +248,19 @@ export const rollingFacilityPlanRequestSchema = z
                   .object({
                     scenario_id: z.string().min(1),
                     probability: z.number().gt(0).lte(1),
-                    battery_temperature_c: z.array(z.number()).min(1).max(35_040),
-                    onsite_generation_mw: z.array(z.number().nonnegative()).min(1).max(35_040),
+                    battery_temperature_c: z.array(z.number()).min(1).max(96),
+                    onsite_generation_mw: z.array(z.number().nonnegative()).min(1).max(96),
                     assumption_ids: z.array(z.string()).default([]),
                   })
                   .strict(),
               )
               .min(1)
-              .max(1_000),
+              .max(4),
           })
           .strict(),
       )
       .min(1)
-      .max(100),
+      .max(4),
     confidence: z.number().gt(0).lt(1).default(0.9),
   })
   .strict();
@@ -267,6 +268,7 @@ export const rollingFacilityPlanRequestSchema = z
 export const marketQualificationResultSchema = z
   .object({
     schema_version: z.literal("gridpulse-market-qualification-application-result-v1"),
+    scope:z.literal("technical_scenario_screening_only_not_enrolment").optional(),
     engine_version: z.string().min(1),
     input_fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
     result_fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
@@ -352,7 +354,8 @@ export type OperatorEnquiryPackageResult = z.infer<typeof operatorEnquiryPackage
 
 export const shadowVerificationRequestSchema = z
   .object({
-    schema_version: z.literal("gridpulse-shadow-verification-request-v1"),
+    schema_version: z.enum(["gridpulse-shadow-verification-request-v1","gridpulse-shadow-verification-request-v2"]),
+    expected_measurement_ids:z.array(z.string().min(1)).min(1).max(1000).optional(),planning_cutoff:z.string().datetime({offset:true}).optional(),
     facility_id: z.string().min(1).max(200),
     generated_at: z.string().min(1),
     plan_fingerprint: z.string().regex(/^[a-fA-F0-9]{64}$/),
@@ -372,6 +375,7 @@ export const shadowVerificationRequestSchema = z
   })
   .strict()
   .superRefine((value, ctx) => {
+    if(value.schema_version.endsWith("v2") && (!value.expected_measurement_ids?.length || !value.planning_cutoff || value.reference_times.length!==value.planned_grid_import_mw.length))ctx.addIssue({code:"custom",message:"v2 requires expected channels, cutoff and aligned reference times"});
     const size = value.planned_grid_import_mw.length;
     if (value.observed_grid_import_mw.length !== size || value.uncertainty_band_mw.length !== size)
       ctx.addIssue({
@@ -407,6 +411,7 @@ export const shadowVerificationResultSchema = z
       delivered_reduction_mw: z.number(),
       automatic_live_dispatch_authorized: z.literal(false),
       telemetry: z.object({
+        completeness_fraction:z.number().min(0).max(1).optional(),provenance_qualified:z.boolean().optional(),
         accepted: z.boolean(),
         maximum_clock_offset_seconds: z.number(),
         maximum_sampling_jitter_seconds: z.number(),

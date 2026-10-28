@@ -111,5 +111,13 @@ export function briefText(brief: PlanBrief, reviewedAt?: string) {
       "Assumed scenarios; not calibrated reliability or measured delivery.",
       ...brief.investigation.result.cases.map(item => `${item.case_id}: ${item.mode === "frozen_plan" ? "Accepted commands held fixed" : "Separate re-optimisation"}; ${item.status === "unsupported_or_invalid" ? "Unsupported or invalid" : item.accepted ? "Passed supplied model checks" : "Did not pass supplied model checks"}.`),
       JSON.stringify(brief.investigation.result, null, 2)] : []),
+    ...(brief.guidance?.length ? ["",`Guidance corpus: ${brief.knowledgeVersion ?? "unspecified"}`,...brief.guidance.map(g=>`${g.id} · ${g.revision??g.version} · ${g.title}: ${g.text} · ${g.source} · PDF pages ${g.pdfPages?.join(",")??"not supplied"} · ${g.sourceContentHash??"no source hash"}`)] : []),
     "", "Generation receipt", JSON.stringify(brief.receipt, null, 2)].join("\n");
+}
+
+/** Review identity includes every exported field, including attached experiments and guidance. */
+export function briefReviewIdentity(brief:PlanBrief):string { return JSON.stringify(brief); }
+export async function briefContentDigest(brief:PlanBrief) {
+  const bytes=new TextEncoder().encode(briefReviewIdentity(brief));
+  return [...new Uint8Array(await crypto.subtle.digest("SHA-256",bytes))].map(v=>v.toString(16).padStart(2,"0")).join("");
 }

@@ -1,3 +1,4 @@
+import {z} from "zod";
 /** Opt-in live qualification. Uses a synthetic hosted job and paid provider requests; never deploys. */
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
@@ -54,7 +55,7 @@ async function main() {
   }
   const a = selectCanonicalPresentation(job, input);
   const firstJob = selectCanonicalComputeView(a, a.points[0].timestamp).jobs[0];
-  const cases: { question: string; intent: string; kind: string; history?: string[]; focus?: string; requiredIntents?: string[]; requiredText?: string; requiresInvestigation?: boolean }[] = [
+  const cases: { question: string; intent: string; kind: string; history?: string[]; focus?: string; requiredIntents?: string[]; requiredText?: string; requiresInvestigation?: boolean; id?:string; acceptableIntents?:string[];requiredGuidanceIds?:string[] }[] = [
     { question: "What did this plan achieve?", intent: "summary", kind: "answer" },
     { question: "What happens at 08:00 UTC?", intent: "interval", kind: "answer" },
     { question: "Which workloads run then?", history: ["What happens at 08:00 UTC?"], intent: "interval", kind: "answer" },
@@ -101,6 +102,8 @@ async function main() {
     { question: "Is this result proof that the battery will survive a real outage?", intent: "readiness", kind: "answer" },
     { question: "Why do we need a new calculation after changing the inputs?", intent: "knowledge", kind: "answer", requiredText: "accepted result applies only to its submitted inputs" },
   );
+  const domain=z.object({version:z.string(),reviewStatus:z.string(),cases:z.array(z.object({id:z.string(),question:z.string().max(1000),intent:z.string(),acceptableIntents:z.array(z.string()),kind:z.string(),requiredGuidanceIds:z.array(z.string())}).strict()).max(100)}).strict().parse(JSON.parse(readFileSync(new URL("../tests/fixtures/operations-domain-evaluation.json",import.meta.url),"utf8")));
+  cases.push(...domain.cases);
   const records: { passed: boolean; durationMs: number; answer: ConversationAnswer | null }[] = [];
   const priorAnswers = new Map<string, string>();
   try {
@@ -120,7 +123,7 @@ async function main() {
       const started = Date.now();
       const liveUrl = process.env.COPILOT_QUALIFY_LIVE_URL;
       const request = new Request(liveUrl ? `${new URL(liveUrl).origin}/api/operations/conversation` : "http://127.0.0.1/api/operations/conversation", {
-        method: "POST", headers: { authorization: bearer, "content-type": "application/json", "x-gridpulse-capabilities": "verified-claims-v1" }, body: JSON.stringify({
+        method: "POST", headers: { authorization: bearer, "content-type": "application/json", "x-gridpulse-capabilities": "verified-findings-v2" }, body: JSON.stringify({
           version: CHAT_VERSION, jobId: job.id, resultFingerprint: job.result_payload.result_fingerprint,
           question: item.question, history: item.history ?? [], context: { view: "compute", timestamp: null, workloadId: null },
           ...(conversational ? { transcript: (item.history ?? []).slice(-4).map(question => ({ question, answer: priorAnswers.get(question) ?? "No prior reply available; resolve from the current plan." })) } : {}),
@@ -135,11 +138,13 @@ async function main() {
         answer.investigation.status === "requires_independent_validation" && answer.investigation.hypotheses.length > 0 &&
         answer.investigation.hypotheses.every(hypothesis => hypothesis.status === "untested" && !!hypothesis.test) &&
         answer.investigation.requiredEvidence.length > 0 && !!answer.investigation.nextAction;
-      const providerPassed = !conversational || answer?.kind !== "answer" || answer.receipt.generation?.provider === provider;
-      const writingPassed = !conversational || answer?.kind !== "answer" || answer.presentation === "grounded_conversation" || answer.resolvedQuery?.intent === "definition";
-      const semantic = evaluateCopilotAnswer(answer, { requiredText: item.requiredText, requiredIntents: item.requiredIntents,
-        ...(conversational && answer?.kind === "answer" && answer.resolvedQuery.intent !== "definition" ? { provider } : {}) });
-      const passed = !!answer && semantic.passed && providerPassed && writingPassed && investigationPassed && answer.kind === item.kind && selected?.intent === item.intent && (!item.focus || selected?.focus === item.focus) &&
+      const hasPaidStages=!!answer?.receipt.generation?.stages?.length;
+      const providerPassed = !hasPaidStages || !conversational || answer?.kind !== "answer" || answer.receipt.generation?.provider === provider;
+      const prioritisationAttempted=answer?.receipt.generation?.stages?.some(stage=>stage.stage==="claim_selection");
+      const writingPassed = !prioritisationAttempted || !conversational || answer?.kind !== "answer" || answer.presentation === "grounded_conversation" || answer.resolvedQuery?.intent === "definition";
+      const semantic = evaluateCopilotAnswer(answer, { requiredText: item.requiredText, requiredIntents: item.requiredIntents, requiredGuidanceIds:item.requiredGuidanceIds,
+        ...(hasPaidStages && conversational && answer?.kind === "answer" && answer.resolvedQuery.intent !== "definition" ? { provider } : {}) });
+      const passed = !!answer && semantic.passed && providerPassed && writingPassed && investigationPassed && answer.kind === item.kind && (item.acceptableIntents??[item.intent]).includes(String(selected?.intent)) && (!item.focus || selected?.focus === item.focus) &&
         (item.question !== "Which workloads run then?" || !!item.focus || selected?.start === "2026-09-26T08:00:00.000Z" || selected?.start === "2026-09-26T08:00:00Z");
       const record = { question: item.question, expected: item, selected, passed, semantic, durationMs: Date.now() - started,
         httpStatus: response.status, answer, draft: selection };
@@ -148,7 +153,7 @@ async function main() {
     }
   } finally {
     writeFileSync(`${out}/results.json`, JSON.stringify({ actualHostedMilp: !offlineFixture, displayOnlyFixture: offlineFixture && !localEngineInput,
-      localEngineResult: !!localEngineInput, actualProvider: provider, productionHandler: true,
+      localEngineResult: !!localEngineInput, configuredProvider:provider, actualProvider: records.some(r=>r.answer?.receipt.generation?.stages?.length) ? provider : "deterministic", domainVersion:domain.version, domainReviewStatus:domain.reviewStatus, productionHandler: true,
       cloudflareRuntime: !!process.env.COPILOT_QUALIFY_LIVE_URL, rateLimiter: "qualification adapter; real limiter covered separately", productionDeployed: false,
       model, conversational, fallbackConfigured: false, humanSemanticReviewRequired: true, sourceCommit: execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(),
       sourceDirty: !!execFileSync("git", ["status", "--porcelain"], { encoding: "utf8" }).trim(), jobId: job.id,

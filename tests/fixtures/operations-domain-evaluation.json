@@ -1,0 +1,357 @@
+{
+  "version": "domain-evaluation-2026-10-28.1",
+  "reviewStatus": "application_authored_not_expert_approved",
+  "cases": [
+    {
+      "id": "domain-B05-1",
+      "question": "In general, how do tenant permissions restrict flexibility?",
+      "intent": "knowledge",
+      "acceptableIntents": [
+        "knowledge",
+        "readiness"
+      ],
+      "kind": "answer",
+      "requiredGuidanceIds": [
+        "edna-usable-flexibility"
+      ]
+    },
+    {
+      "id": "domain-B05-2",
+      "question": "Explain the commercial and permission barriers to flexibility participation.",
+      "intent": "knowledge",
+      "acceptableIntents": [
+        "knowledge",
+        "readiness"
+      ],
+      "kind": "answer",
+      "requiredGuidanceIds": [
+        "edna-usable-flexibility"
+      ]
+    },
+    {
+      "id": "domain-B05-3",
+      "question": "What should be reviewed before claiming flexibility revenue?",
+      "intent": "knowledge",
+      "acceptableIntents": [
+        "knowledge",
+        "readiness"
+      ],
+      "kind": "answer",
+      "requiredGuidanceIds": [
+        "edna-usable-flexibility"
+      ]
+    },
+    {
+      "id": "domain-B05-4",
+      "question": "Why is technical flexibility not permission to participate in a market?",
+      "intent": "knowledge",
+      "acceptableIntents": [
+        "knowledge",
+        "readiness"
+      ],
+      "kind": "answer",
+      "requiredGuidanceIds": [
+        "edna-usable-flexibility"
+      ]
+    },
+    {
+      "id": "domain-B04-1",
+      "question": "Explain generally how liquid cooling topology affects an efficiency comparison.",
+      "intent": "knowledge",
+      "acceptableIntents": [
+        "knowledge",
+        "readiness"
+      ],
+      "kind": "answer",
+      "requiredGuidanceIds": [
+        "edna-liquid-cooling"
+      ]
+    },
+    {
+      "id": "domain-B04-2",
+      "question": "Why should a liquid cooling retrofit compare total energy?",
+      "intent": "knowledge",
+      "acceptableIntents": [
+        "knowledge",
+        "readiness"
+      ],
+      "kind": "answer",
+      "requiredGuidanceIds": [
+        "edna-liquid-cooling"
+      ]
+    },
+    {
+      "id": "domain-B04-3",
+      "question": "Can report-wide liquid cooling savings predict this site's savings?",
+      "intent": "knowledge",
+      "acceptableIntents": [
+        "knowledge",
+        "readiness"
+      ],
+      "kind": "answer",
+      "requiredGuidanceIds": [
+        "edna-liquid-cooling"
+      ]
+    },
+    {
+      "id": "domain-B04-4",
+      "question": "What topology information is needed for an immersion cooling comparison?",
+      "intent": "knowledge",
+      "acceptableIntents": [
+        "knowledge",
+        "readiness"
+      ],
+      "kind": "answer",
+      "requiredGuidanceIds": [
+        "edna-liquid-cooling"
+      ]
+    },
+    {
+      "id": "domain-A03-1",
+      "question": "What must match when benchmarking server energy efficiency?",
+      "intent": "knowledge",
+      "acceptableIntents": [
+        "knowledge",
+        "readiness"
+      ],
+      "kind": "answer",
+      "requiredGuidanceIds": [
+        "edna-server-performance"
+      ]
+    },
+    {
+      "id": "domain-A03-2",
+      "question": "Why does GPU calibration need workload-specific throughput measurements?",
+      "intent": "knowledge",
+      "acceptableIntents": [
+        "knowledge",
+        "readiness"
+      ],
+      "kind": "answer",
+      "requiredGuidanceIds": [
+        "edna-server-performance"
+      ]
+    },
+    {
+      "id": "domain-A03-3",
+      "question": "Can server benchmark ratings replace site calibration?",
+      "intent": "knowledge",
+      "acceptableIntents": [
+        "knowledge",
+        "readiness"
+      ],
+      "kind": "answer",
+      "requiredGuidanceIds": [
+        "edna-server-performance"
+      ]
+    },
+    {
+      "id": "domain-A03-4",
+      "question": "How should hardware and useful throughput be compared in a benchmark?",
+      "intent": "knowledge",
+      "acceptableIntents": [
+        "knowledge",
+        "readiness"
+      ],
+      "kind": "answer",
+      "requiredGuidanceIds": [
+        "edna-server-performance"
+      ]
+    },
+    {
+      "id": "domain-A02-1",
+      "question": "Why are sector energy estimates different from site evidence?",
+      "intent": "knowledge",
+      "acceptableIntents": [
+        "knowledge",
+        "readiness"
+      ],
+      "kind": "answer",
+      "requiredGuidanceIds": [
+        "edna-estimate-boundaries"
+      ]
+    },
+    {
+      "id": "domain-A02-2",
+      "question": "How should sector projections and model assumptions be labelled?",
+      "intent": "knowledge",
+      "acceptableIntents": [
+        "knowledge",
+        "readiness"
+      ],
+      "kind": "answer",
+      "requiredGuidanceIds": [
+        "edna-estimate-boundaries"
+      ]
+    },
+    {
+      "id": "domain-A02-3",
+      "question": "Can a sector forecast calibrate facility demand?",
+      "intent": "knowledge",
+      "acceptableIntents": [
+        "knowledge",
+        "readiness"
+      ],
+      "kind": "answer",
+      "requiredGuidanceIds": [
+        "edna-estimate-boundaries"
+      ]
+    },
+    {
+      "id": "domain-A04-1",
+      "question": "What is the scope of TEM long-term policy modelling?",
+      "intent": "knowledge",
+      "acceptableIntents": [
+        "knowledge",
+        "readiness"
+      ],
+      "kind": "answer",
+      "requiredGuidanceIds": [
+        "edna-tem-scope"
+      ]
+    },
+    {
+      "id": "domain-A04-2",
+      "question": "Can TEM projections supply quarter-hour dispatch inputs?",
+      "intent": "knowledge",
+      "acceptableIntents": [
+        "knowledge",
+        "readiness"
+      ],
+      "kind": "answer",
+      "requiredGuidanceIds": [
+        "edna-tem-scope"
+      ]
+    },
+    {
+      "id": "domain-A04-3",
+      "question": "How can TEM sensitivity analysis organise assumptions?",
+      "intent": "knowledge",
+      "acceptableIntents": [
+        "knowledge",
+        "readiness"
+      ],
+      "kind": "answer",
+      "requiredGuidanceIds": [
+        "edna-tem-scope"
+      ]
+    },
+    {
+      "id": "domain-B02-1",
+      "question": "Does an OpenADR protocol connection establish dispatch readiness?",
+      "intent": "knowledge",
+      "acceptableIntents": [
+        "knowledge",
+        "readiness"
+      ],
+      "kind": "answer",
+      "requiredGuidanceIds": [
+        "edna-protocol-scope"
+      ]
+    },
+    {
+      "id": "domain-B02-2",
+      "question": "How applicable is residential EEBUS protocol research to a data centre?",
+      "intent": "knowledge",
+      "acceptableIntents": [
+        "knowledge",
+        "readiness"
+      ],
+      "kind": "answer",
+      "requiredGuidanceIds": [
+        "edna-protocol-scope"
+      ]
+    },
+    {
+      "id": "domain-B02-3",
+      "question": "What must an integration verify beyond protocol connectivity?",
+      "intent": "knowledge",
+      "acceptableIntents": [
+        "knowledge",
+        "readiness"
+      ],
+      "kind": "answer",
+      "requiredGuidanceIds": [
+        "edna-protocol-scope"
+      ]
+    },
+    {
+      "id": "domain-A01-1",
+      "question": "What event evidence is needed for measurement and verification?",
+      "intent": "knowledge",
+      "acceptableIntents": [
+        "knowledge",
+        "readiness"
+      ],
+      "kind": "answer",
+      "requiredGuidanceIds": [
+        "edna-event-evidence"
+      ]
+    },
+    {
+      "id": "domain-A01-2",
+      "question": "Why should an activation baseline be frozen before verification?",
+      "intent": "knowledge",
+      "acceptableIntents": [
+        "knowledge",
+        "readiness"
+      ],
+      "kind": "answer",
+      "requiredGuidanceIds": [
+        "edna-event-evidence"
+      ]
+    },
+    {
+      "id": "domain-A05-1",
+      "question": "How should an infrastructure efficiency label be interpreted?",
+      "intent": "knowledge",
+      "acceptableIntents": [
+        "knowledge",
+        "readiness"
+      ],
+      "kind": "answer",
+      "requiredGuidanceIds": [
+        "edna-label-boundaries"
+      ]
+    },
+    {
+      "id": "domain-A05-2",
+      "question": "Can IT efficiency certification be inferred from an infrastructure label?",
+      "intent": "knowledge",
+      "acceptableIntents": [
+        "knowledge",
+        "readiness"
+      ],
+      "kind": "answer",
+      "requiredGuidanceIds": [
+        "edna-label-boundaries"
+      ]
+    },
+    {
+      "id": "domain-B01-1",
+      "question": "How do aggregator enrolment and settlement differ from a modelled offer?",
+      "intent": "knowledge",
+      "acceptableIntents": [
+        "knowledge",
+        "readiness"
+      ],
+      "kind": "answer",
+      "requiredGuidanceIds": [
+        "edna-platform-roles"
+      ]
+    },
+    {
+      "id": "domain-B01-2",
+      "question": "What does a flexibility platform establish about market enrolment?",
+      "intent": "knowledge",
+      "acceptableIntents": [
+        "knowledge",
+        "readiness"
+      ],
+      "kind": "answer",
+      "requiredGuidanceIds": [
+        "edna-platform-roles"
+      ]
+    }
+  ]
+}

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   normalizeOpenEmsSnapshot,
   normalizeSlurmJobs,
-  parseDcgmPrometheus,
+  parseDcgmPrometheus, reviewSlurmJobs, reviewOpenEmsSnapshot,
 } from "./connector-adapters";
 
 describe("operations connector adapters", () => {
@@ -51,4 +51,21 @@ describe("operations connector adapters", () => {
       measuredPowerMw: null,
     });
   });
+});
+
+it("keeps missing OpenEMS values distinct from zero and rejects invalid SOC", () => {
+  expect(normalizeOpenEmsSnapshot({ gridActivePowerW: null, essActivePowerW: "", essSocPercent: 101 })).toEqual([]);
+  expect(reviewOpenEmsSnapshot({gridActivePowerW:0}, "2026-01-01T00:00:00Z")).toMatchObject({qualifiedForPlanning:false, records:[{value:0}]});
+});
+it("does not grant string-false permissions or invent missing GPU/runtime evidence", () => {
+  const review=reviewSlurmJobs([{job_id:"j", submit_time:"2026-01-01T00:00:00Z",time_limit_minutes:60,gpu_count:1, checkpointable:"false",preemptible:"false"}]);
+  expect(review.records[0]).toMatchObject({checkpointable:false,preemptible:false});
+  expect(review.assumptions.length).toBeGreaterThan(0);
+  expect(reviewSlurmJobs([{job_id:"j"}]).issues).toHaveLength(1);
+});
+it("retains timestamped device identity and rejects duplicate or sentinel metrics", () => {
+  const line='DCGM_FI_DEV_POWER_USAGE{UUID="GPU-a",GPU_I_ID="1"} 100 1767225600000';
+  expect(parseDcgmPrometheus(line)[0]).toMatchObject({assetId:"gpu:GPU-a:1",eventAt:"2026-01-01T00:00:00.000Z"});
+  expect(()=>parseDcgmPrometheus(line+"\n"+line)).toThrow("Duplicate");
+  expect(parseDcgmPrometheus('DCGM_FI_DEV_POWER_USAGE{UUID="a"} 9223372036854775794')).toEqual([]);
 });

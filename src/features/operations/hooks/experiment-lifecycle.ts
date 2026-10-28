@@ -31,3 +31,8 @@ export function acceptExperimentResult(raw: unknown, request: ExperimentRequest)
     throw new Error("Experiment baseline or case identity mismatch");
   return result;
 }
+
+/** Owner-scoped history recovery for the exact frozen reviewed request; never resubmit. */
+export function matchingReviewedAnalysisJobs(jobs:AnalyticsJob[],request:Record<string,unknown>,jobType:"facility_uncertainty"|"rolling_facility_plan") {
+  return jobs.filter(job=>job.job_type===jobType && stableOperationsJson(job.input_payload)===stableOperationsJson(request));
+}

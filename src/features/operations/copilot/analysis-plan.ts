@@ -1,3 +1,4 @@
+import { investigationFor } from "./investigation";
 import type { CanonicalPresentation } from "../canonical-presentation";
 import { answerConversation } from "./conversation-query";
 import { conversationResponseSchema, type ConversationQuery, type ConversationRequest } from "./conversation-contracts";
@@ -39,16 +40,7 @@ export function answerAnalysisPlan(a: CanonicalPresentation, request: Conversati
       resolvedQueries: selected, coverage: selected.map(query => ({ intent: query.intent, status: "clarification" })) });
   return conversationResponseSchema.parse({ ...first, kind,
     ...(selected.some(query => ["readiness", "diagnosis", "what_if"].includes(query.intent)) ? {
-      investigation: {
-        status: "requires_independent_validation",
-        hypotheses: selected.some(query => query.intent === "diagnosis") ? [
-          { label: "Battery capability or availability limits response", status: "untested", test: "Inspect the submitted rating and outage intervals; compare a separately reviewed power or availability experiment." },
-          { label: "Reserve or terminal energy restricts dispatch", status: "untested", test: "Inspect the full SOC trajectory and terminal target; test a reviewed energy-capacity alternative without removing protected reserve." },
-          { label: "Workload permissions or cooling recovery restrict shifting", status: "untested", test: "Review deadlines, interruption permissions and thermal-debt recovery before testing an alternative schedule." }
-        ] : [],
-        requiredEvidence: ["PCC and IT meter boundaries, timestamps, units and completeness", "Battery measured usable capacity, SOC, efficiencies and reserve policy", "Scheduler runtime, deadlines and interruption permissions", "Cooling topology, load/temperature operating range and electrical limits"],
-        nextAction: "Review evidence gaps first. Confirm any alternative calculation separately; retain the accepted baseline and compare returned checks. No dispatch is authorised."
-      }
+      investigation: investigationFor(a, selected)
     } : {}),
     basis: hasAnswer ? (answers.filter(answer => answer.kind === "answer").every(answer => answer.basis === "general_explanation") ? "general_explanation" : "model_evidence") : "no_calculation",
     blocks, evidence: [...new Map(facts.map(fact => [fact.id, fact])).values()],

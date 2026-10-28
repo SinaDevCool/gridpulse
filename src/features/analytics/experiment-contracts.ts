@@ -34,6 +34,7 @@ export const experimentResultSchema = z.object({
     peak_import_mw: z.number().finite().nonnegative().optional(), above_import_limit_minutes: z.number().finite().nonnegative().optional(),
     remaining_work_hours: z.number().finite().nonnegative().optional(), first_violation_index: z.number().int().nonnegative().nullable().optional(),
     metrics: comparisonMetricsSchema.optional(),
+    delta_metrics:z.record(z.number().finite().nullable()).optional(),
     violations: z.array(violationSchema).optional(), unsupported_checks: z.array(z.string()).optional(),
   }).passthrough()).min(1).max(4),
 });

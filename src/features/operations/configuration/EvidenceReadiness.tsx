@@ -37,7 +37,7 @@ export function EvidenceReadiness() {
         {data?.connectors.map((item) => (
           <li key={item.id}>
             <span>{item.label}</span>
-            <strong>{item.status.replaceAll("_", " ")}</strong>
+            <strong>{item.status.replaceAll("_", " ")}</strong><small>Freshness, measurement quality and operating permission require separate evidence.</small>
           </li>
         ))}
       </ul>

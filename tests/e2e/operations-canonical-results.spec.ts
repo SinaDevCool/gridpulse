@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { canonicalMilpJob } from "../fixtures/canonical-milp-job";
@@ -28,7 +29,7 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   let conversations = 0;
   let holdConversation = false;
   await page.route("**/api/operations/conversation", async route => {
-    expect(route.request().headers()["x-gridpulse-capabilities"]).toBe("verified-claims-v1");
+    expect(route.request().headers()["x-gridpulse-capabilities"]).toBe("verified-findings-v2");
     conversations++;
     if (holdConversation) { await new Promise(resolve => setTimeout(resolve, 800)); }
     const input = conversationRequestSchema.parse(route.request().postDataJSON());
@@ -201,6 +202,7 @@ test("MILP charts retain physical SOC, geometry and shared keyboard/pointer insp
   const jsonArtifact = await jsonDownload;
   await jsonArtifact.saveAs("test-results/copilot-reviewed-export.json");
   const exportedJson = JSON.parse(await readFile("test-results/copilot-reviewed-export.json", "utf8"));
+  expect(exportedJson.contentDigest).toBe(createHash("sha256").update(JSON.stringify(exportedJson.brief)).digest("hex"));
   expect(exportedJson.operationalApproval).toBe(false);
   expect(exportedJson.reviewAcknowledgedAt).toMatch(/^20/);
   expect(exportedJson.brief.resultFingerprint).toBe(canonicalMilpJob(request).result_payload.result_fingerprint);

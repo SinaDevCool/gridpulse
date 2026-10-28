@@ -7,7 +7,7 @@ export async function requestCopilot(path: "brief" | "conversation", body: unkno
   signal.throwIfAborted();
   if (!session) throw new Error("Run a calculation to establish a session first.");
   const response = await fetch(`/api/operations/${path}`, { method: "POST", signal,
-    headers: { "content-type": "application/json", "x-gridpulse-capabilities": "verified-claims-v1", authorization: `Bearer ${session.access_token}` }, body: JSON.stringify(body) });
+    headers: { "content-type": "application/json", "x-gridpulse-capabilities": "verified-findings-v2", authorization: `Bearer ${session.access_token}` }, body: JSON.stringify(body) });
   const raw = await response.json();
   if (!response.ok) throw new Error(raw.error ?? "Explanation unavailable.");
   return raw;

@@ -1,3 +1,4 @@
+import {chronologicalShadowRequestSchema} from "../features/analytics/investigation-contracts";
 import { accountingRequestSchema, type AccountingRequest } from "../features/analytics/experiment-contracts";
 import { experimentRequestSchema, type ExperimentRequest } from "../features/analytics/experiment-contracts";
 import {
@@ -238,4 +239,8 @@ export function startFacilityAccounting(input: AccountingRequest): Promise<JobAc
   return acceptedRequest("/v1/jobs/facility-accounting", {
     method: "POST", body: JSON.stringify(accountingRequestSchema.parse(input)),
   });
+}
+
+export function startChronologicalShadow(input: import("zod").z.infer<typeof chronologicalShadowRequestSchema>):Promise<JobAccepted>{
+  return acceptedRequest("/v1/jobs/rolling-facility-plan",{method:"POST",body:JSON.stringify(chronologicalShadowRequestSchema.parse(input))});
 }

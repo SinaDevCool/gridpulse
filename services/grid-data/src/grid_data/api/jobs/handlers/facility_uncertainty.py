@@ -5,7 +5,6 @@ from grid_data.api.models import AnalyticsJob
 
 
 def calculate(context: JobContext, job: AnalyticsJob) -> dict:
-    from capacity_backtest.application import run_facility_uncertainty
+    from grid_data.api.jobs.isolated_facility import execute_isolated_facility
 
-    result = run_facility_uncertainty(job.input_payload)
-    return result
+    return execute_isolated_facility(context, job.input_payload)

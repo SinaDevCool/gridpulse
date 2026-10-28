@@ -1,6 +1,8 @@
+import { budgetFor, type BudgetConfig } from "./budget-ledger";
 import { experimentResultSchema } from "../../features/analytics/experiment-contracts";
 import { factSchema } from "../../features/operations/copilot/contracts";
-import { retrieveOperationalKnowledge } from "./operational-knowledge";
+import { checkedFindings } from "../../features/operations/copilot/checked-findings";
+import { KNOWLEDGE_VERSION, knowledgeFingerprint, retrieveOperationalKnowledge } from "./operational-knowledge";
 import { answerAnalysisPlan } from "../../features/operations/copilot/analysis-plan";
 import { briefRequestSchema } from "../../features/operations/copilot/brief";
 import { readOperationsJson, OperationsPayloadError } from "../../lib/operations-request";
@@ -14,15 +16,17 @@ import { composeConversation } from "./copilot-composition";
 import type { ProviderStage } from "../../features/operations/copilot/contracts";
 import { modelAccessAllowed } from "./copilot-policy";
 
-export type CopilotConfig = ProviderConfig & { OPENAI_API_KEY?: string; COPILOT_ENABLED?: string;
-  COPILOT_MODEL?: string; COPILOT_ANALYTICS_URL?: string; COPILOT_EXPERIMENTS_ENABLED?: string; COPILOT_ACCOUNTING_ENABLED?: string;
+export type CopilotConfig = ProviderConfig & BudgetConfig & { OPENAI_API_KEY?: string; COPILOT_ENABLED?: string;
+  COPILOT_MODEL?: string; COPILOT_DATA_CLASS?:"public_synthetic"|"private_operational"; COPILOT_ANALYSIS_ENABLED?:string; COPILOT_ANALYTICS_URL?: string; COPILOT_EXPERIMENTS_ENABLED?: string; COPILOT_ACCOUNTING_ENABLED?: string;
   COPILOT_RATE_LIMITER?: { limit(input: { key: string }): Promise<{ success: boolean }> } };
 
 /** One handler shared by the Worker route and direct boundary tests. No second job API. */
 async function handleCopilot(request: Request, config: CopilotConfig, fetcher: typeof fetch, conversation: boolean) {
   const headers = { "cache-control": "no-store" };
-  const supportsClaims = request.headers.get("x-gridpulse-capabilities") === "verified-claims-v1";
-  const respond = (payload: Record<string, unknown>) => {
+  const capability = request.headers.get("x-gridpulse-capabilities");
+  const supportsClaims = capability === "verified-claims-v1" || capability === "verified-findings-v2";
+  const supportsFindings = capability === "verified-findings-v2";
+  const respond = async (payload: Record<string, unknown>) => {
     if (!supportsClaims) {
       const { verifiedFindingIds: _ids, ...legacy } = payload;
       const receipt = legacy.receipt as Record<string, unknown>;
@@ -30,6 +34,12 @@ async function handleCopilot(request: Request, config: CopilotConfig, fetcher: t
       const { stages: _stages, ...oldGeneration } = generation ?? {};
       return Response.json({ ...legacy, receipt: { ...receipt,
         ...(generation ? { generation: oldGeneration } : {}) } }, { headers });
+    }
+    if (conversation && supportsFindings) {
+      const answer=conversationResponseSchema.parse(payload);
+      const generation=answer.receipt.generation;
+      return Response.json(conversationResponseSchema.parse({...answer,findings:checkedFindings(answer),knowledgeVersion:KNOWLEDGE_VERSION,knowledgeFingerprint:await knowledgeFingerprint(),analysisCapabilities:{uncertainty:config.COPILOT_ANALYSIS_ENABLED==="true",chronologicalShadow:config.COPILOT_ANALYSIS_ENABLED==="true"},
+        receipt:{...answer.receipt,...(generation ? {generation:{...generation,stages:generation.stages?.map(stage=>({...stage,validation:stage.httpStatus!==200 ? "not_verified" : stage.stage==="claim_selection" && answer.presentation==="checked_fallback" ? "rejected_by_application" : "accepted_by_application"}))}} : {})}}),{headers});
     }
     return Response.json(payload, { headers });
   };
@@ -44,8 +54,8 @@ async function handleCopilot(request: Request, config: CopilotConfig, fetcher: t
     // clarification/definitions remain available without a configured language model.
     let selectedTransport: typeof fetch | undefined;
     const transport: typeof fetch = (input, init) => {
-      if (!modelAccessAllowed(request)) throw new BriefError(403, "AI explanations are unavailable in this location.");
-      selectedTransport ??= providerTransport(providerSettings(config), fetcher, attempts, stages);
+      if (!modelAccessAllowed(request,config.COPILOT_DATA_CLASS==="private_operational")) throw new BriefError(403, "AI explanations are unavailable in this location.");
+      selectedTransport ??= providerTransport(providerSettings(config), fetcher, attempts, stages, budgetFor(config));
       return selectedTransport(input, init);
     };
     const receipt = () => ({ provider: attempts.at(-1) ?? "deterministic", attempts: [...new Set(attempts)], elapsedMs: Date.now() - started, stages });
@@ -115,7 +125,7 @@ async function handleCopilot(request: Request, config: CopilotConfig, fetcher: t
       }
       const guidanceAllowed = answer.kind === "answer" || answer.evidence.length > 0 ||
         queries.some(query => ["what_if", "readiness", "diagnosis", "knowledge", "accounting"].includes(query.intent));
-      const guidance = guidanceAllowed ? retrieveOperationalKnowledge(`${question.question} ${queries.map(query => query.intent).join(" ")}`, { intents: queries.map(query => query.intent) }) : [];
+      const guidance = guidanceAllowed ? retrieveOperationalKnowledge(question.question, { intents: queries.map(query => query.intent) }) : [];
       const grounded = conversationResponseSchema.parse({ ...answer, capabilities, proposal, proposalClarification,
         blocks: queries.every(query => query.intent === "knowledge") ? [...answer.blocks,
           ...guidance.map(item => `General guidance — ${item.title}: ${item.text}`)] : answer.blocks,
@@ -136,7 +146,7 @@ async function handleCopilot(request: Request, config: CopilotConfig, fetcher: t
         throw new BriefError(409, "Experiment baseline identity mismatch.");
       investigation = { jobId: job.id, result };
     }
-    return respond({ ...brief, ...(investigation ? { investigation } : {}), receipt: { ...brief.receipt, generation: receipt() } });
+    return respond({ ...brief, ...(supportsFindings ? {knowledgeVersion:KNOWLEDGE_VERSION,knowledgeFingerprint:await knowledgeFingerprint(),guidance:retrieveOperationalKnowledge("battery workload cooling evidence")} : {}), ...(investigation ? { investigation } : {}), receipt: { ...brief.receipt, generation: receipt() } });
   } catch (error) {
     if (error instanceof BriefError || error instanceof OperationsPayloadError)
       return Response.json({ error: error.message }, { status: error.status, headers });
