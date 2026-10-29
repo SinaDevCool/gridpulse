@@ -44,6 +44,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: Qualify compiled staging APIs and MILP UI with local fixtures
         run: |
+          unset CLOUDFLARE_ENV
           npm run test:browser -- runtime
           npm run test:browser -- milp
         env:
