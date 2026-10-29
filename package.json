@@ -15,7 +15,7 @@
     "verify:local": "node scripts/resource-safe-validation.mjs",
     "verify:local:full": "node scripts/resource-safe-validation.mjs full",
     "verify:memory": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/measure-validation-memory.ps1",
-    "test:validation-tools": "node --test scripts/resource-safe-validation.test.mjs scripts/solution-boundaries.test.mjs scripts/e2e-manifest.test.mjs scripts/run-e2e.test.mjs scripts/candidate-artifact.test.mjs scripts/validation-workflow.test.mjs",
+    "test:validation-tools": "node --test scripts/resource-safe-validation.test.mjs scripts/solution-boundaries.test.mjs scripts/e2e-manifest.test.mjs scripts/run-e2e.test.mjs scripts/candidate-artifact.test.mjs scripts/validation-workflow.test.mjs scripts/check-staging-candidate.test.mjs",
     "test:browser": "node scripts/run-e2e.mjs",
     "test:operations:database": "node scripts/test-operations-database.mjs",
     "test:operations:runtime": "playwright test --config playwright.runtime.config.ts",

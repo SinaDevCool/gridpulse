@@ -1,0 +1,98 @@
+name: Deploy GridPulse staging
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: gridpulse-staging-release
+  cancel-in-progress: false
+jobs:
+  validate:
+    if: ${{ github.ref == 'refs/heads/main' }}
+    uses: ./.github/workflows/validate-candidate.yml
+    with:
+      production: false
+  build-staging:
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: staging
+    env:
+      CLOUDFLARE_ENV: staging
+      CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV: "false"
+      GRIDPULSE_BUILD_SHA: ${{ github.sha }}
+      GRIDPULSE_BUILD_ENV: staging
+      GRIDPULSE_PRODUCT_MODE: finder
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+      VITE_ANALYTICS_API_URL: ${{ vars.OPERATIONS_MILP_API_URL }}
+      VITE_OPERATIONS_MILP_ENABLED: "true"
+      VITE_PUBLIC_MILP_ENABLED: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node --test scripts/check-staging-candidate.test.mjs
+      - run: node scripts/check-staging-candidate.mjs build-env
+      - run: npm run build
+      - run: npm run check:performance-budgets
+      - run: node scripts/check-staging-candidate.mjs artifact
+      - run: node scripts/candidate-artifact.mjs seal
+      - run: npx playwright install --with-deps chromium
+      - name: Qualify compiled staging APIs and MILP UI with local fixtures
+        run: |
+          npm run test:browser -- runtime
+          npm run test:browser -- milp
+        env:
+          GRIDPULSE_TEST_COMPILED: "1"
+          GRIDPULSE_TEST_MILP_REQUIRED: "1"
+      - run: node scripts/candidate-artifact.mjs verify
+      - run: node scripts/check-staging-candidate.mjs artifact
+      - uses: actions/upload-artifact@v4
+        with:
+          name: staging-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}
+          path: dist/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 3
+  publish:
+    needs: build-staging
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: staging
+      url: https://staging.gridpulseinsights.com
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: staging-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}
+          path: dist
+      - run: node scripts/candidate-artifact.mjs verify
+      - run: node scripts/check-staging-candidate.mjs artifact
+      - name: Reject obsolete main candidate
+        run: test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$GITHUB_SHA"
+      - name: Validate packaged staging Worker without rebuilding
+        run: npx wrangler deploy --config dist/server/wrangler.json --dry-run
+      - run: node scripts/candidate-artifact.mjs verify
+      - name: Deploy only the verified staging Worker
+        run: npx wrangler deploy --config dist/server/wrangler.json
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      - name: Check staging pages
+        run: node scripts/check-production-health.mjs
+        env:
+          GRIDPULSE_HEALTH_BASE_URL: https://staging.gridpulseinsights.com
+      - name: Verify staging serves the exact deployed commit
+        run: |
+          node --input-type=module -e 'let matched=false; for(let attempt=0;attempt<12;attempt++){const r=await fetch("https://staging.gridpulseinsights.com/operations",{cache:"no-store",signal:AbortSignal.timeout(15000)}); const html=await r.text(); if(r.ok && html.includes(`name="gridpulse-build" content="${process.env.GITHUB_SHA}"`)){matched=true;break;} await new Promise(resolve=>setTimeout(resolve,5000));} if(!matched) throw new Error("Staging build does not match validated candidate");'
