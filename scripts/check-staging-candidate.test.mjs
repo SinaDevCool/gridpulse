@@ -1,9 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, writeFile, rm, readFile } from "node:fs/promises";
+import { mkdtemp, mkdir, writeFile, rm, readFile, readdir } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { sealCandidate, verifyCandidate } from "./candidate-artifact.mjs";
 import {
   checkBuildEnvironment,
   checkStagingCandidate,
@@ -80,7 +81,22 @@ test("artifact guard rejects production target, mixed routes and leaked config",
     const put = (value) => writeFile(join(root, "server/wrangler.json"), JSON.stringify(value));
     await put(config);
     await writeFile(join(root, "client/app.js"), JSON.stringify([staging.supabase, staging.api]));
+    await writeFile(join(root, "server/index.js"), "export default {};");
     await checkStagingCandidate(root);
+    const sha = "a".repeat(40);
+    await sealCandidate(root, sha, "123-1");
+    await mkdir(join(root, "server/.wrangler/tmp"), { recursive: true });
+    await checkStagingCandidate(root);
+    await verifyCandidate(root, sha, "123-1");
+    await assert.rejects(readdir(join(root, "server/.wrangler")), { code: "ENOENT" });
+    await mkdir(join(root, "server/.wrangler/tmp"), { recursive: true });
+    await writeFile(join(root, "server/.wrangler/tmp/state.json"), "sensitive");
+    await assert.rejects(checkStagingCandidate(root), /Wrangler runtime files/);
+    assert.equal(
+      await readFile(join(root, "server/.wrangler/tmp/state.json"), "utf8"),
+      "sensitive",
+    );
+    await rm(join(root, "server/.wrangler"), { recursive: true });
     await put({ ...config, name: "gridpulse-insights" });
     await assert.rejects(checkStagingCandidate(root));
     await put({

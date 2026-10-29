@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import { readFile, readdir } from "node:fs/promises";
-import { resolve, join } from "node:path";
+import { readFile, readdir, rmdir } from "node:fs/promises";
+import { resolve, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const staging = Object.freeze({
@@ -28,6 +28,19 @@ export function checkBuildEnvironment(env) {
     assert.ok(!env[key], `${key} must not be present in the build environment`);
 }
 
+// Wrangler removes its temporary files on exit but leaves .wrangler/tmp parents.
+// Remove empty directories only: never delete or hide files from artifact verification.
+async function removeEmptyRuntimeDirectories(folder) {
+  for (const entry of await readdir(folder, { withFileTypes: true })) {
+    assert.ok(
+      entry.isDirectory() && !entry.isSymbolicLink(),
+      "Candidate contains Wrangler runtime files",
+    );
+    await removeEmptyRuntimeDirectories(join(folder, entry.name));
+  }
+  await rmdir(folder);
+}
+
 export async function checkStagingCandidate(root) {
   const config = JSON.parse(await readFile(join(root, "server/wrangler.json"), "utf8"));
   assert.equal(config.name, staging.worker, "Refusing a Worker other than staging");
@@ -52,11 +65,15 @@ export async function checkStagingCandidate(root) {
   async function walk(folder) {
     for (const entry of await readdir(folder, { withFileTypes: true })) {
       assert.ok(!entry.isSymbolicLink(), "Candidate cannot contain symlinks");
+      const path = join(folder, entry.name);
+      if (entry.name === ".wrangler" && entry.isDirectory()) {
+        await removeEmptyRuntimeDirectories(path);
+        continue;
+      }
       assert.ok(
         !/^(?:\.dev\.vars(?:\..*)?|\.env(?:\..*)?|\.wrangler)$/.test(entry.name),
-        "Candidate contains local configuration or secrets",
+        `Candidate contains local configuration or secrets: ${relative(root, path)}`,
       );
-      const path = join(folder, entry.name);
       if (entry.isDirectory()) await walk(path);
       else if (path.includes(`${join(root, "client")}`) && /\.js$/.test(entry.name)) {
         const source = await readFile(path, "utf8");
