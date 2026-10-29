@@ -119,11 +119,14 @@ test("Compute & Workloads imports real scheduler and DCGM-compatible evidence", 
     releaseOverview = resolve;
   });
   let overviewReleased = false;
+  let overviewHeld = false;
   await page.route("**/api/operations/assess", async (route) => {
     if (
+      !overviewHeld &&
       route.request().postDataJSON()?.kind === "overview" &&
       !route.request().postDataJSON()?.evidence?.workloads?.length
     ) {
+      overviewHeld = true;
       const response = await route.fetch();
       await overviewGate;
       await route.fulfill({ response });
@@ -132,59 +135,68 @@ test("Compute & Workloads imports real scheduler and DCGM-compatible evidence", 
       await route.continue();
     }
   });
-  await page.goto("/operations?view=compute");
-  await openComputeQueue(page);
-  await openEvidenceInputs(page);
-  await expect(page.getByRole("heading", { name: "Inputs & evidence" })).toBeVisible();
-  await page.getByLabel(/Workload CSV/).setInputFiles({
-    name: "workloads.csv",
-    mimeType: "text/csv",
-    buffer: Buffer.from(
-      [
-        "workload_id,name,workload_class,status,priority,earliest_start,deadline,expected_duration_minutes,requested_gpu_count,minimum_gpu_count,checkpointable,preemptible,maximum_delay_minutes",
-        "job-live,Customer batch,batch,running,10,2026-09-26T01:00:00Z,2026-09-26T08:00:00Z,120,8,4,true,true,120",
-      ].join("\n"),
-    ),
-  });
-  await expect(
-    page
-      .locator(".ops-evidence-inputs")
-      .getByText("1 scheduler records loaded from workloads.csv."),
-  ).toBeVisible();
-  releaseOverview();
-  await expect.poll(() => overviewReleased).toBe(true);
-  await expect(
-    page
-      .locator(".ops-evidence-inputs")
-      .getByText("1 scheduler records loaded from workloads.csv."),
-  ).toBeVisible();
-  await page.getByLabel(/GPU telemetry CSV/).setInputFiles({
-    name: "gpu.csv",
-    mimeType: "text/csv",
-    buffer: Buffer.from(
-      [
-        "timestamp,workload_id,gpu_uuid,power_watts,gpu_utilization_percent",
-        "2026-09-26T02:00:00Z,job-live,GPU-a,500000,75",
-      ].join("\n"),
-    ),
-  });
-  await expect(
-    page.locator(".ops-evidence-inputs").getByText("1 GPU telemetry records loaded from gpu.csv."),
-  ).toBeVisible();
-  await expect(
-    page.locator(".compute-table-wrap").getByRole("button", { name: /Customer batch/ }),
-  ).toBeVisible();
-  await expect(page.getByText("measured", { exact: true }).first()).toBeVisible();
-  await page.getByRole("link", { name: "Overview", exact: true }).click();
-  await page.getByRole("link", { name: "Compute & Workloads", exact: true }).click();
-  await expect(
-    page.locator(".compute-table-wrap").getByRole("button", { name: /Customer batch/ }),
-  ).toBeVisible();
-  await expect(page.getByText("1 GPU telemetry records loaded from gpu.csv.")).toBeVisible();
-  await page.getByRole("button", { name: "Restore Scenario Workloads", exact: true }).click();
-  await expect(
-    page.locator(".compute-table-wrap").getByRole("button", { name: /Customer batch/ }),
-  ).toHaveCount(0);
+  try {
+    await page.goto("/operations?view=compute");
+    await openComputeQueue(page);
+    await openEvidenceInputs(page);
+    await expect(page.getByRole("heading", { name: "Inputs & evidence" })).toBeVisible();
+    await page.getByLabel(/Workload CSV/).setInputFiles({
+      name: "workloads.csv",
+      mimeType: "text/csv",
+      buffer: Buffer.from(
+        [
+          "workload_id,name,workload_class,status,priority,earliest_start,deadline,expected_duration_minutes,requested_gpu_count,minimum_gpu_count,checkpointable,preemptible,maximum_delay_minutes",
+          "job-live,Customer batch,batch,running,10,2026-09-26T01:00:00Z,2026-09-26T08:00:00Z,120,8,4,true,true,120",
+        ].join("\n"),
+      ),
+    });
+    await expect(
+      page
+        .locator(".ops-evidence-inputs")
+        .getByText("1 scheduler records loaded from workloads.csv."),
+    ).toBeVisible();
+    releaseOverview();
+    await expect.poll(() => overviewReleased).toBe(true);
+    await expect(
+      page
+        .locator(".ops-evidence-inputs")
+        .getByText("1 scheduler records loaded from workloads.csv."),
+    ).toBeVisible();
+    await page.getByLabel(/GPU telemetry CSV/).setInputFiles({
+      name: "gpu.csv",
+      mimeType: "text/csv",
+      buffer: Buffer.from(
+        [
+          "timestamp,workload_id,gpu_uuid,power_watts,gpu_utilization_percent",
+          "2026-09-26T02:00:00Z,job-live,GPU-a,500000,75",
+        ].join("\n"),
+      ),
+    });
+    await expect(
+      page
+        .locator(".ops-evidence-inputs")
+        .getByText("1 GPU telemetry records loaded from gpu.csv."),
+    ).toBeVisible();
+    await expect(
+      page.locator(".compute-table-wrap").getByRole("button", { name: /Customer batch/ }),
+    ).toBeVisible();
+    await expect(page.getByText("measured", { exact: true }).first()).toBeVisible();
+    await page.getByRole("link", { name: "Overview", exact: true }).click();
+    await page.getByRole("link", { name: "Compute & Workloads", exact: true }).click();
+    await expect(
+      page.locator(".compute-table-wrap").getByRole("button", { name: /Customer batch/ }),
+    ).toBeVisible();
+    await expect(page.getByText("1 GPU telemetry records loaded from gpu.csv.")).toBeVisible();
+    await page.getByRole("button", { name: "Restore Scenario Workloads", exact: true }).click();
+    await expect(
+      page.locator(".compute-table-wrap").getByRole("button", { name: /Customer batch/ }),
+    ).toHaveCount(0);
+  } finally {
+    // Release even when an assertion fails, then finish intercepted requests
+    // before Playwright tears down this page or starts the next test.
+    releaseOverview();
+    await page.unrouteAll({ behavior: "wait" });
+  }
 });
 
 test("Power & Battery exposes dispatch physics and imports measured evidence", async ({ page }) => {

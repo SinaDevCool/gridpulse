@@ -1,0 +1,43 @@
+# Review and place under .github/workflows/ before use. No deployment jobs or secrets.
+name: Qualify staging schema on PostgreSQL 17
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: staging-schema-qualification
+  cancel-in-progress: false
+jobs:
+  replay:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgis/postgis:17-3.5
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: disposable-ci-only
+          POSTGRES_DB: gridpulse_staging_replay
+        ports:
+          - 55439:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d gridpulse_staging_replay"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Replay only against disposable localhost PostgreSQL
+        env:
+          TEST_DATABASE_URL: postgresql://postgres:disposable-ci-only@127.0.0.1:55439/gridpulse_staging_replay
+        run: node scripts/qualify-staging-native.mjs
+      - name: Save qualification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-schema-qualification-${{ github.sha }}
+          path: .codex-tmp/native-staging-qualification/
+          retention-days: 7
