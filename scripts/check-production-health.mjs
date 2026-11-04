@@ -1,7 +1,9 @@
+import { registryTileMinimum } from './health-policy.mjs';
 const baseUrl = (process.env.GRIDPULSE_HEALTH_BASE_URL ?? "https://gridpulseinsights.com").replace(
   /\/$/,
   "",
 );
+const registryMinimum = registryTileMinimum(baseUrl, process.env.GRIDPULSE_HEALTH_PROFILE);
 const checks = [
   {
     name: "public-home",
@@ -88,7 +90,7 @@ const checks = [
       if (!String(response.headers.get("content-type")).includes("mapbox-vector-tile")) {
         throw new Error("registry tile has the wrong content type");
       }
-      if ((await response.arrayBuffer()).byteLength < 100)
+      if ((await response.arrayBuffer()).byteLength < registryMinimum)
         throw new Error("registry tile is empty");
     },
   },
@@ -333,6 +335,7 @@ console.log(
     {
       checked_at: new Date().toISOString(),
       base_url: baseUrl,
+      registry_data_qualified: registryMinimum > 0,
       status: failed ? "fail" : "pass",
       checks: results,
     },

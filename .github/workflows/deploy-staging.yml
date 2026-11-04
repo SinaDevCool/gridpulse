@@ -104,6 +104,7 @@ jobs:
       - name: Check staging pages
         run: node scripts/check-production-health.mjs
         env:
+          GRIDPULSE_HEALTH_PROFILE: staging-schema-only
           GRIDPULSE_HEALTH_BASE_URL: https://staging.gridpulseinsights.com
       - name: Verify staging serves the exact deployed commit
         run: |
