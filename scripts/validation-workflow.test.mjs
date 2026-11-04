@@ -5,6 +5,38 @@ import { createRequire } from "node:module";
 const { load } = createRequire(import.meta.url)("js-yaml");
 const workflow = (name) => load(readFileSync(`.github/workflows/${name}.yml`, "utf8"));
 
+test("deployments require live freezes and production requires exact staging evidence", () => {
+  for (const [file, environment] of [["deploy-cloudflare", "production"], ["deploy-staging", "staging"]]) {
+    const release = workflow(file);
+    assert.equal(release.on.push, undefined);
+    assert.equal(release.on.workflow_dispatch.inputs.change_reference.required, true);
+    const job = release.jobs.publish;
+    assert.equal(typeof job.environment === "string" ? job.environment : job.environment.name, environment);
+    const guard = job.steps.findIndex(step => step.run === "node scripts/release-guard.mjs");
+    const deploy = job.steps.findIndex(step => step.run === "npx wrangler deploy --config dist/server/wrangler.json");
+    assert.ok(guard >= 0 && guard < deploy);
+    assert.equal(job.steps[guard].env.RELEASE_ENVIRONMENT, environment);
+  }
+  assert.equal(workflow("deploy-cloudflare").jobs.publish.concurrency.group, "gridpulse-production-mutation");
+  assert.equal(workflow("deploy-cloudflare").on.workflow_dispatch.inputs.staging_run_id.required, true);
+});
+
+test("scheduled source monitoring has no production credentials or database writes", () => {
+  const source = readFileSync('.github/workflows/grid-source-health.yml', 'utf8');
+  assert.doesNotMatch(source, /SUPABASE_SERVICE_ROLE_KEY|publish-operator-health|ingest-grid-stress-smard/);
+  const steps = workflow('grid-source-health').jobs['mastr-source'].steps;
+  assert.equal(steps.find(step => step.uses === 'actions/upload-artifact@v4').if, 'always()');
+});
+
+test("legacy mutation jobs cannot bypass release governance", () => {
+  for (const [file, job] of [['activate-public-milp-auth','activate-auth'], ['configure-milp-render','configure'], ['public-milp-qualification','apply-approved-boundary'], ['milp-storage-preflight','apply-approved-scope']]) {
+    assert.equal(workflow(file).jobs[job].if, '${{ false }}');
+  }
+  const database = workflow('qualify-staging-schema');
+  assert.ok(database.on.pull_request.paths.includes('supabase/migrations/**'));
+  assert.match(database.jobs.replay.steps.find(step => step.env?.TEST_DATABASE_URL).env.TEST_DATABASE_URL, /127\.0\.0\.1:55439/);
+});
+
 test("one automatic PR run owns mandatory MILP qualification before full regression", () => {
   const pr = workflow("frontend-ci"), focused = workflow("milp-frontend-qualification");
   assert.ok(pr.on.pull_request);
@@ -62,7 +94,11 @@ test("fast gate precedes bounded, owned remote browser suites with reports", () 
   assert.ok(jobs.browsers.needs.includes("fast"));
   assert.equal(jobs.browsers.strategy["max-parallel"], 2);
   assert.deepEqual(jobs.browsers.strategy.matrix.suite, ["operations", "finder", "shared"]);
-  assert.deepEqual(jobs.gate.needs, ["build", "fast", "browsers", "isolation"]);
+  assert.deepEqual(jobs.gate.needs, ["build", "fast", "browsers", "isolation", "core"]);
+  assert.equal(jobs.core.uses, './.github/workflows/python-analytics-ci.yml');
+  assert.ok(!jobs.build.steps.some(step => step.run?.includes('python -m pytest')));
+  assert.ok(Object.hasOwn(workflow('python-analytics-ci').on, 'workflow_call'));
+  assert.ok(workflow('frontend-ci').on.pull_request.paths.includes('services/grid-data/**'));
   for (const name of ["build", "fast", "browsers"]) {
     assert.ok(jobs[name]["timeout-minutes"]);
     assert.ok(

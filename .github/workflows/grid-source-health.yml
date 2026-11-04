@@ -1,4 +1,4 @@
-name: Grid source health
+name: Data · Source health
 
 on:
   workflow_dispatch:
@@ -12,9 +12,6 @@ jobs:
   mastr-source:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    env:
-      SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -26,34 +23,22 @@ jobs:
         run: >-
           python -m grid_data.cli check-mastr
           --output grid-source-health/mastr.json
+        if: ${{ !cancelled() }}
       - name: Check national OpenStreetMap extract
         env:
           PYTHONPATH: services/grid-data/src
         run: >-
           python -m grid_data.cli check-geofabrik
           --output grid-source-health/geofabrik-germany.json
+        if: ${{ !cancelled() }}
       - name: Snapshot official operator endpoints
         env:
           PYTHONPATH: services/grid-data/src
         run: >-
           python -m grid_data.cli fetch-operator-evidence
           --output grid-source-health/operator-evidence.json
-      - name: Persist operator source checks
-        if: ${{ env.SUPABASE_URL != '' && env.SUPABASE_SERVICE_ROLE_KEY != '' }}
-        env:
-          PYTHONPATH: services/grid-data/src
-        run: >-
-          python -m grid_data.cli publish-operator-health
-          --input grid-source-health/operator-evidence.json
-      - name: Refresh real SMARD forecast features
-        if: ${{ env.SUPABASE_URL != '' && env.SUPABASE_SERVICE_ROLE_KEY != '' }}
-        env:
-          PYTHONPATH: services/grid-data/src
-        run: >-
-          python -m grid_data.cli ingest-grid-stress-smard
-          --start-year "$(date -u +%Y)"
-          --end-year "$(date -u +%Y)"
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: grid-source-health
           path: grid-source-health/

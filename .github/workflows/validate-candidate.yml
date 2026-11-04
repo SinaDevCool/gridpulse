@@ -16,6 +16,8 @@ on:
 permissions:
   contents: read
 jobs:
+  core:
+    uses: ./.github/workflows/python-analytics-ci.yml
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -41,17 +43,6 @@ jobs:
       - run: npm test
       - run: npm run test:operations:database
       - run: node scripts/test-strategy-transactions.mjs
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: pip
-      - run: python -m pip install -e "./services/grid-data[api,study,ml,dev]"
-      - run: python -m pytest services/grid-data/tests
-        env:
-          PYTHONPATH: services/grid-data/src
-      - run: python -m grid_data.cli audit-release --input public/power-finder/brandenburg-osm.json --output output/brandenburg-osm-audit.json
-        env:
-          PYTHONPATH: services/grid-data/src
       - name: Require production public configuration
         if: ${{ inputs.production }}
         run: test -n "$VITE_SUPABASE_URL" && test -n "$VITE_SUPABASE_PUBLISHABLE_KEY"
@@ -220,7 +211,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
   gate:
-    needs: [build, fast, browsers, isolation]
+    needs: [build, fast, browsers, isolation, core]
     if: ${{ always() }}
     runs-on: ubuntu-latest
     timeout-minutes: 2

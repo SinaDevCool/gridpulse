@@ -1,4 +1,4 @@
-name: Frontend architecture and regression checks
+name: CI · Application
 run-name: >-
   Frontend checks · ${{ github.event.pull_request.number && format('PR #{0}', github.event.pull_request.number) || github.ref_name }} · ${{ github.event.pull_request.head.sha || github.sha }}
 on:
@@ -6,6 +6,9 @@ on:
     paths:
       [
         "src/**",
+        "services/grid-data/**",
+        "tests/contracts/**",
+        "public/power-finder/**",
         "tests/**",
         "scripts/**",
         "supabase/migrations/**",

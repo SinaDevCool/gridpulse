@@ -1,10 +1,15 @@
-name: Deploy GridPulse staging
+name: Release · Staging
 on:
   workflow_dispatch:
+    inputs:
+      change_reference:
+        description: Change or rehearsal reference
+        required: true
+        type: string
 permissions:
   contents: read
 concurrency:
-  group: gridpulse-staging-release
+  group: gridpulse-staging-mutation
   cancel-in-progress: false
 jobs:
   validate:
@@ -58,7 +63,7 @@ jobs:
           path: dist/
           include-hidden-files: true
           if-no-files-found: error
-          retention-days: 3
+          retention-days: 30
   publish:
     needs: build-staging
     if: ${{ github.ref == 'refs/heads/main' }}
@@ -85,6 +90,12 @@ jobs:
       - name: Validate packaged staging Worker without rebuilding
         run: npx wrangler deploy --config dist/server/wrangler.json --dry-run
       - run: node scripts/candidate-artifact.mjs verify
+      - name: Recheck live release freeze after approval
+        run: node scripts/release-guard.mjs
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_POLICY_READ_TOKEN }}
+          RELEASE_ENVIRONMENT: staging
+          CHANGE_REFERENCE: ${{ inputs.change_reference }}
       - name: Deploy only the verified staging Worker
         run: npx wrangler deploy --config dist/server/wrangler.json
         env:
@@ -93,6 +104,7 @@ jobs:
       - name: Check staging pages
         run: node scripts/check-production-health.mjs
         env:
+          GRIDPULSE_HEALTH_PROFILE: staging-schema-only
           GRIDPULSE_HEALTH_BASE_URL: https://staging.gridpulseinsights.com
       - name: Verify staging serves the exact deployed commit
         run: |

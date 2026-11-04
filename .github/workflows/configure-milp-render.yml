@@ -8,6 +8,8 @@ permissions:
   contents: read
 jobs:
   configure:
+    # Retired production writer: use a reviewed, environment-protected change.
+    if: ${{ false }}
     runs-on: ubuntu-latest
     timeout-minutes: 4
     steps:

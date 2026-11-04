@@ -67,7 +67,8 @@ jobs:
           PY
   apply-approved-scope:
     needs: qualify-scope
-    if: github.repository == 'SinaDevCool/gridpulse' && github.ref == 'refs/heads/codex/production-milp-preflight'
+    # Retired production writer: use a reviewed, environment-protected change.
+    if: ${{ false }}
     runs-on: ubuntu-latest
     timeout-minutes: 4
     steps:

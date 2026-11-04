@@ -1,6 +1,13 @@
 # Review and place under .github/workflows/ before use. No deployment jobs or secrets.
-name: Qualify staging schema on PostgreSQL 17
+name: CI · Database
 on:
+  workflow_call:
+  pull_request:
+    paths:
+      - supabase/migrations/**
+      - scripts/qualify-staging-native.mjs
+      - deployment/supabase/**
+      - .github/workflows/qualify-staging-schema.yml
   workflow_dispatch:
 permissions:
   contents: read
