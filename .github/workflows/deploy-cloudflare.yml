@@ -1,8 +1,15 @@
-name: Deploy GridPulse
+name: Release · Production
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
+    inputs:
+      staging_run_id:
+        description: Successful Deploy GridPulse staging run for this exact main SHA
+        required: true
+        type: string
+      change_reference:
+        description: Approved change or incident reference
+        required: true
+        type: string
 permissions:
   contents: read
 jobs:
@@ -17,11 +24,12 @@ jobs:
     needs: validate
     if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
+    environment: production
     timeout-minutes: 25
     env:
       GRIDPULSE_SMOKE_BROWSER_CHANNEL: chrome
     concurrency:
-      group: gridpulse-production-publish
+      group: gridpulse-production-mutation
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
@@ -46,6 +54,13 @@ jobs:
       - run: node scripts/candidate-artifact.mjs verify
       - name: Reject an obsolete production candidate
         run: test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$GITHUB_SHA"
+      - name: Recheck live release freeze after approval
+        run: node scripts/release-guard.mjs
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_POLICY_READ_TOKEN }}
+          RELEASE_ENVIRONMENT: production
+          STAGING_RUN_ID: ${{ inputs.staging_run_id }}
+          CHANGE_REFERENCE: ${{ inputs.change_reference }}
       - name: Configure production copilot server secrets
         run: node scripts/configure-copilot-secret.mjs
         env:

@@ -1,4 +1,4 @@
-name: National grid-data ingestion
+name: Data · Ingestion
 
 on:
   workflow_dispatch:

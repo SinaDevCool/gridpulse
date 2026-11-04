@@ -1,13 +1,7 @@
-name: Python analytics CI
+name: CI · API and Grid Core
 
 on:
-  pull_request:
-    paths:
-      - "services/grid-data/**"
-      - "tests/contracts/**"
-      - "public/power-finder/**"
-      - "supabase/migrations/**"
-      - ".github/workflows/python-analytics-ci.yml"
+  workflow_call:
   push:
     branches: [main]
     paths:
