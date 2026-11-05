@@ -12,11 +12,14 @@ jobs:
   application-health:
     runs-on: ubuntu-latest
     timeout-minutes: 8
+    env:
+      GRIDPULSE_SMOKE_BROWSER_CHANNEL: chrome
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
       - name: Check production application and backend
         env:
           GRIDPULSE_HEALTH_BASE_URL: https://gridpulseinsights.com
@@ -24,7 +27,11 @@ jobs:
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
         run: node scripts/check-production-health.mjs
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      - name: Prepare production smoke-test browser
+        timeout-minutes: 2
+        run: |
+          google-chrome --version
+          node --input-type=module -e 'import { chromium } from "playwright"; const browser = await chromium.launch({channel: process.env.GRIDPULSE_SMOKE_BROWSER_CHANNEL, headless: true}); console.log(await browser.version()); await browser.close();'
       - name: Check production map in a browser
         env:
           GRIDPULSE_HEALTH_BASE_URL: https://gridpulseinsights.com
