@@ -63,9 +63,11 @@ class GeofabrikManifestTests(unittest.TestCase):
         index = self.index.replace(b'<a href="germany-261104.osm.pbf.md5">checksum</a>', b"")
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "manifest.json"
-            with patch("urllib.request.urlopen", return_value=FakeResponse(index)):
-                with self.assertRaisesRegex(RuntimeError, "checksum is missing"):
-                    discover_germany_pbf(output)
+            with (
+                patch("urllib.request.urlopen", return_value=FakeResponse(index)),
+                self.assertRaisesRegex(RuntimeError, "checksum is missing"),
+            ):
+                discover_germany_pbf(output)
             self.assertFalse(output.exists())
 
     def test_invalid_or_mismatched_checksum_cannot_be_accepted(self) -> None:
@@ -77,16 +79,20 @@ class GeofabrikManifestTests(unittest.TestCase):
             with self.subTest(checksum=checksum), tempfile.TemporaryDirectory() as directory:
                 output = Path(directory) / "manifest.json"
                 responses = [FakeResponse(self.index), FakeResponse(), FakeResponse(checksum)]
-                with patch("urllib.request.urlopen", side_effect=responses):
-                    with self.assertRaisesRegex(RuntimeError, "invalid Geofabrik checksum"):
-                        discover_germany_pbf(output)
+                with (
+                    patch("urllib.request.urlopen", side_effect=responses),
+                    self.assertRaisesRegex(RuntimeError, "invalid Geofabrik checksum"),
+                ):
+                    discover_germany_pbf(output)
                 self.assertFalse(output.exists())
 
     def test_missing_dated_release_fails_closed(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
-            with patch("urllib.request.urlopen", return_value=FakeResponse(b"<html></html>")):
-                with self.assertRaisesRegex(RuntimeError, "did not advertise"):
-                    discover_germany_pbf(Path(directory) / "manifest.json")
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            patch("urllib.request.urlopen", return_value=FakeResponse(b"<html></html>")),
+            self.assertRaisesRegex(RuntimeError, "did not advertise"),
+        ):
+            discover_germany_pbf(Path(directory) / "manifest.json")
 
 
 if __name__ == "__main__":
