@@ -8,8 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-GERMANY_PBF_URL = "https://download.geofabrik.de/europe/germany-latest.osm.pbf"
-GERMANY_CHECKSUM_URL = f"{GERMANY_PBF_URL}.md5"
+GERMANY_INDEX_URL = "https://download.geofabrik.de/europe/germany.html"
 USER_AGENT = "GridPulse grid-data/0.1 (+https://gridpulseinsights.com)"
 
 # Geofabrik publishes these as independent extracts.  Bremen is included in
@@ -35,8 +34,22 @@ STATE_EXTRACTS = {
 
 def discover_germany_pbf(output_path: Path) -> dict[str, Any]:
     """Record the immutable-input manifest without downloading the multi-gigabyte extract."""
+    # The rolling PBF alias does not always have a matching .md5 endpoint.
+    # Pin both files to the same dated release advertised by the publisher.
+    index_request = urllib.request.Request(GERMANY_INDEX_URL, headers={"User-Agent": USER_AGENT})
+    with urllib.request.urlopen(index_request, timeout=60) as response:
+        index_html = response.read(1_000_000).decode("utf-8", errors="replace")
+    files = set(re.findall(r"""href=["'](germany-\d{6}\.osm\.pbf(?:\.md5)?)["']""", index_html))
+    releases = sorted(name for name in files if name.endswith(".osm.pbf"))
+    if not releases:
+        raise RuntimeError("Geofabrik did not advertise a dated Germany PBF release")
+    filename = releases[-1]
+    if f"{filename}.md5" not in files:
+        raise RuntimeError(f"Geofabrik checksum is missing for {filename}")
+    pbf_url = f"https://download.geofabrik.de/europe/{filename}"
+    checksum_url = f"{pbf_url}.md5"
     request = urllib.request.Request(
-        GERMANY_PBF_URL,
+        pbf_url,
         method="HEAD",
         headers={"User-Agent": USER_AGENT},
     )
@@ -45,19 +58,26 @@ def discover_germany_pbf(output_path: Path) -> dict[str, Any]:
         status = getattr(response, "status", 200)
 
     checksum_request = urllib.request.Request(
-        GERMANY_CHECKSUM_URL,
+        checksum_url,
         headers={"User-Agent": USER_AGENT},
     )
     with urllib.request.urlopen(checksum_request, timeout=60) as response:
         checksum_text = response.read(1024).decode("ascii", errors="replace").strip()
-    expected_md5 = checksum_text.split()[0] if checksum_text else None
+    checksum_fields = checksum_text.split()
+    if (
+        len(checksum_fields) != 2
+        or not re.fullmatch(r"[a-fA-F0-9]{32}", checksum_fields[0])
+        or checksum_fields[1].lstrip("*") != filename
+    ):
+        raise RuntimeError(f"invalid Geofabrik checksum for {filename}")
+    expected_md5 = checksum_fields[0].lower()
 
     report = {
         "schema_version": "geofabrik-source-manifest-v1",
         "source_id": "geofabrik-germany-osm-pbf-v1",
         "publisher": "Geofabrik GmbH / OpenStreetMap contributors",
-        "url": GERMANY_PBF_URL,
-        "checksum_url": GERMANY_CHECKSUM_URL,
+        "url": pbf_url,
+        "checksum_url": checksum_url,
         "expected_md5": expected_md5,
         "content_length": _integer_header(headers.get("content-length")),
         "etag": headers.get("etag"),

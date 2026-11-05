@@ -28,6 +28,20 @@ test("scheduled source monitoring has no production credentials or database writ
   assert.equal(steps.find(step => step.uses === 'actions/upload-artifact@v4').if, 'always()');
 });
 
+test("production monitoring can reach its browser checks without installing system packages", () => {
+  const job = workflow("production-health").jobs["application-health"];
+  assert.equal(job.env.GRIDPULSE_SMOKE_BROWSER_CHANNEL, "chrome");
+  const steps = job.steps;
+  const setup = steps.find(step => step.name === "Prepare production smoke-test browser");
+  assert.ok(setup["timeout-minutes"] < job["timeout-minutes"]);
+  assert.match(setup.run, /chromium.launch/);
+  assert.ok(!steps.some(step => step.run?.includes("playwright install")));
+  for (const script of ["check-production-map.mjs", "check-production-milp.mjs"]) {
+    const check = steps.findIndex(step => step.run === `node scripts/${script}`);
+    assert.ok(check > steps.indexOf(setup));
+  }
+});
+
 test("legacy mutation jobs cannot bypass release governance", () => {
   for (const [file, job] of [['activate-public-milp-auth','activate-auth'], ['configure-milp-render','configure'], ['public-milp-qualification','apply-approved-boundary'], ['milp-storage-preflight','apply-approved-scope']]) {
     assert.equal(workflow(file).jobs[job].if, '${{ false }}');
