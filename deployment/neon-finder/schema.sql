@@ -130,7 +130,9 @@ begin
  select jsonb_build_object('type','FeatureCollection','metadata',
    snap.metadata||jsonb_build_object('dataset_release',snap.id,'artifact_sha256',snap.manifest_sha256,
     'record_count',(select count(*) from features),'geographic_scope',jsonb_build_array(w,s,e,n),
-    'available_kinds',coalesce((select jsonb_agg(kind order by kind) from counts),'[]'),
+    'available_kinds',case when nodes_only then jsonb_build_array('node')
+      else jsonb_build_array('node','line','industrial_site','generation_asset','storage_asset') end,
+    'returned_kinds',coalesce((select jsonb_agg(kind order by kind) from counts),'[]'),
     'kind_counts',coalesce((select jsonb_object_agg(kind,c) from counts),'{}'),
     'coverage_status','accepted_partial','retrieval_capped',(select count(*) from features)>=case when nodes_only then 1000 else 2500 end),
    'features',coalesce((select jsonb_agg(feature) from features),'[]')) into result
