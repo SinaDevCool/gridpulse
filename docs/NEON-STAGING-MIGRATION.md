@@ -152,3 +152,14 @@ Optional property-enrichment evidence is outside this snapshot. In the Neon
 preview, the enrichment endpoint explicitly returns unavailable source results
 and zero findings, without contacting Supabase or treating mapped proximity as
 parcel/environment clearance. Production keeps its existing enrichment path.
+
+### Bounded viewport layer metadata
+
+The existing public API's `available_kinds` advertises the supported backend
+layers, independently of a capped response's contents. Dense national-source
+viewports can fill the 2500-record cap with nodes before any other layer is
+returned. Preserve that capability contract; `returned_kinds` and
+`kind_counts` describe the actual returned batch, while `retrieval_capped`
+continues to warn that the sample is incomplete. Candidate-only queries
+advertise nodes only. This corrects the live health finding without relaxing
+the health checks or pretending that absent batch records were returned.
