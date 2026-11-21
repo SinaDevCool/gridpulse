@@ -58,6 +58,7 @@ test("staging build rejects production URLs and backend credentials", () => {
     { VITE_ANALYTICS_API_URL: "https://gridpulse-operations-milp.onrender.com" },
     { VITE_SUPABASE_PUBLISHABLE_KEY: "sb_secret_fixture" },
     { SUPABASE_SERVICE_ROLE_KEY: "private" },
+    { NEON_DATABASE_URL: "private" },
     { CLOUDFLARE_ENV: "production" },
   ])
     assert.throws(() => checkBuildEnvironment({ ...env, ...change }));
@@ -70,7 +71,13 @@ test("artifact guard rejects production target, mixed routes and leaked config",
     await mkdir(join(root, "client"));
     const config = {
       name: staging.worker,
-      vars: { COPILOT_ENABLED: "false", PUBLIC_FINDER_EXPERIMENTAL_MODE: "false" },
+      vars: {
+        COPILOT_ENABLED: "false",
+        PUBLIC_FINDER_EXPERIMENTAL_MODE: "false",
+        PUBLIC_FINDER_PROVIDER: "neon",
+        NEON_FINDER_HOST: staging.neonHost,
+        FINDER_DATA_RELEASE: staging.dataRelease,
+      },
       routes: [{ pattern: new URL(staging.site).hostname, custom_domain: true }],
       ratelimits: [
         { name: "COPILOT_RATE_LIMITER", namespace_id: "2003" },

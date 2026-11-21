@@ -35,6 +35,9 @@
       "vars": {
         "COPILOT_ENABLED": "false",
         "PUBLIC_FINDER_EXPERIMENTAL_MODE": "false",
+        "PUBLIC_FINDER_PROVIDER": "neon",
+        "NEON_FINDER_HOST": "ep-patient-breeze-bhm3qx7z-pooler.c-10.eu-central-1.aws.neon.tech",
+        "FINDER_DATA_RELEASE": "finder-public-20261121-v1",
       },
       "ratelimits": [
         {
