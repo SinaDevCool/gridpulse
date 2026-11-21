@@ -147,3 +147,8 @@ No Neon credential binding or PostgreSQL URI occurs in the client assets.
 Temporary local database credentials were removed after the encrypted staging
 reader secret was provisioned. Production Supabase schema/data/billing and
 parked Operations PR #37 were not changed.
+
+Optional property-enrichment evidence is outside this snapshot. In the Neon
+preview, the enrichment endpoint explicitly returns unavailable source results
+and zero findings, without contacting Supabase or treating mapped proximity as
+parcel/environment clearance. Production keeps its existing enrichment path.
