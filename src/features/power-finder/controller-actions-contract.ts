@@ -1,3 +1,4 @@
+import type { FinderSearch } from "./search-contract";
 import { type MapPreset } from "@/features/map/map-filter-state";
 import { type CandidateOpportunity } from "@/features/power-finder/candidate-intelligence";
 import { type FinderProject } from "@/features/power-finder/finder-project";
@@ -39,96 +40,7 @@ export interface FinderActionsContract {
     import("react").SetStateAction<import("../anonymous-workspace/schema").AnonymousProperty | null>
   >;
   setShowAllCandidates: import("react").Dispatch<import("react").SetStateAction<boolean>>;
-  updateSearch: (
-    patch: Partial<{
-      sort?: "context" | "name" | "voltage" | undefined;
-      q?: string | undefined;
-      voltage?: number | undefined;
-      operator?: string | undefined;
-      tso?: string | undefined;
-      dso?: string | undefined;
-      workflow?: "screen" | "discover" | undefined;
-      mw?: number | undefined;
-      distance?: number | undefined;
-      candidate?: string | undefined;
-      compare?: string | undefined;
-      region?:
-        | "DE"
-        | "DE-BB"
-        | "DE-BW"
-        | "DE-BY"
-        | "DE-BE"
-        | "DE-HB"
-        | "DE-HH"
-        | "DE-HE"
-        | "DE-MV"
-        | "DE-NI"
-        | "DE-NW"
-        | "DE-RP"
-        | "DE-SL"
-        | "DE-SN"
-        | "DE-ST"
-        | "DE-SH"
-        | "DE-TH"
-        | undefined;
-      mapMode?: "voltage" | "evidence" | "capacity" | undefined;
-      mapView?: "connection" | "infrastructure" | "generation" | undefined;
-      isolateVoltage?: "ehv" | "220kv" | "110kv" | "distribution" | "unknown" | undefined;
-      isolateTechnology?:
-        | "storage"
-        | "solar"
-        | "wind"
-        | "biomass"
-        | "hydro"
-        | "geothermal"
-        | "nuclear"
-        | "gas"
-        | "fossil_other"
-        | "other"
-        | undefined;
-      generationMinMw?: number | undefined;
-      generationMaxMw?: number | undefined;
-      storageMinMw?: number | undefined;
-      storageMaxMw?: number | undefined;
-      capacitySource?: "reference" | "private" | "demo" | "berlin_synthetic" | undefined;
-      capacityMetric?:
-        | "n0_import_mw"
-        | "firm_import_mw"
-        | "flexible_import_mw"
-        | "bess_assisted_import_mw"
-        | "staged_initial_import_mw"
-        | "eventual_import_mw"
-        | undefined;
-      requiredMw?: number | undefined;
-      workspaceId?: string | undefined;
-      study?: "activation" | undefined;
-      studyTab?:
-        | "options"
-        | "evidence"
-        | "geographic"
-        | "overview"
-        | "topology"
-        | "hourly"
-        | "commercial"
-        | undefined;
-      lat?: number | undefined;
-      lng?: number | undefined;
-      projectType?:
-        | "data_centre"
-        | "industrial_load"
-        | "battery_storage"
-        | "co_location"
-        | "electrolyser"
-        | "charging_hub"
-        | undefined;
-      exportMw?: number | undefined;
-      flexibleMw?: number | undefined;
-      batteryMw?: number | undefined;
-      batteryMwh?: number | undefined;
-      preferredVoltage?: number | undefined;
-      propertyId?: string | undefined;
-    }>,
-  ) => Promise<void>;
+  updateSearch: (patch: Partial<FinderSearch>) => Promise<void>;
   persistScreening: (
     candidatesToSave: CandidateOpportunity[],
     shortlistedCandidateId?: string | null,

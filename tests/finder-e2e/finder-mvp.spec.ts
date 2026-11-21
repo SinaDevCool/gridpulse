@@ -7,6 +7,106 @@ import {
   useOperatorContextViewport,
 } from "./finder-test-data";
 
+test("candidate search chips preserve the brief and a screening link survives clipboard denial", async ({
+  page,
+}) => {
+  await useBrandenburgViewport(page);
+  await page.addInitScript(() =>
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: () => Promise.reject(new Error("Test clipboard denial")) },
+    }),
+  );
+  await page.goto("/power-finder?lat=52.3316&lng=13.4995&mw=55&distance=50&voltage=110");
+  await page.getByRole("heading", { name: "Grid candidates", exact: true }).waitFor();
+  await page.getByRole("button", { name: "More Filters", exact: true }).focus();
+  await page.keyboard.press("/");
+  const search = page.getByRole("searchbox", { name: "Search nodes, operators, or identifiers" });
+  await expect(search).toBeFocused();
+  await search.fill("Example");
+  await page.keyboard.press("/");
+  await expect(search).toHaveValue("Example/");
+  await page.getByRole("button", { name: "Remove Search: Example/", exact: true }).click();
+  await expect(search).toHaveValue("");
+  await page.getByRole("button", { name: "Clear search filters", exact: true }).click();
+  await expect.poll(() => new URL(page.url()).searchParams.get("distance")).toBe("20");
+  expect(new URL(page.url()).searchParams.get("mw")).toBe("55");
+  expect(new URL(page.url()).searchParams.get("lat")).toBe("52.3316");
+  await page.getByRole("button", { name: "Copy screening link", exact: true }).click();
+  await expect(
+    page.getByText("Clipboard unavailable. Select and copy the screening link below.", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  const copied = new URL(
+    await page.getByRole("textbox", { name: "Public screening link", exact: true }).inputValue(),
+  );
+  expect(copied.searchParams.get("mw")).toBe("55");
+  expect(copied.searchParams.get("distance")).toBe("20");
+  expect(copied.searchParams.has("propertyId")).toBe(false);
+});
+
+test("the docked table shares candidate sorting, selection and map detail with cards", async ({
+  page,
+}) => {
+  await useBrandenburgViewport(page);
+  await useBrandenburgMapTiles(page);
+  await page.goto("/power-finder?lat=52.3316&lng=13.4995&mw=55&resultsView=table");
+  const dock = page.getByRole("region", { name: "Candidate table", exact: true });
+  await expect(dock).toBeVisible();
+  await expect(dock.getByRole("button", { name: /Show .* on map/ }).first()).toBeVisible();
+  await dock.getByRole("button", { name: "Candidate", exact: true }).click();
+  await expect(dock.getByRole("columnheader", { name: "Candidate", exact: true })).toHaveAttribute(
+    "aria-sort",
+    "ascending",
+  );
+  expect(new URL(page.url()).searchParams.get("sort")).toBe("name");
+  const first = dock.getByRole("button", { name: /Show .* on map/ }).first();
+  await first.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.locator(".power-finder-detail.open")).toBeVisible();
+  await expect(dock.locator('tr[data-selected="true"]')).toHaveCount(1);
+  const tableBox = await dock.boundingBox();
+  const detailBox = await page.locator(".power-finder-detail.open").boundingBox();
+  expect(tableBox!.x + tableBox!.width).toBeLessThan(detailBox!.x);
+  await page.screenshot({ path: ".codex-tmp/finder-table-desktop.png" });
+  await page.getByRole("button", { name: "Close detail", exact: true }).click();
+  await dock.getByRole("button", { name: "Expand table", exact: true }).click();
+  await expect(dock).toHaveClass(/is-expanded/);
+  await dock.getByRole("button", { name: "Return to cards", exact: true }).click();
+  await expect(dock).toHaveCount(0);
+  await expect(page.locator('[data-finder-view="cards"]')).toBeFocused();
+  await expect(page.locator(".power-finder-candidates [data-candidate-id]").first()).toBeVisible();
+});
+
+test("table and evidence controls fit a narrow light-theme Finder without page overflow", async ({
+  page,
+}) => {
+  await useBrandenburgViewport(page);
+  await useBrandenburgMapTiles(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => localStorage.setItem("gridpulse-theme", "light"));
+  await page.goto("/power-finder?lat=52.3316&lng=13.4995&mw=55&resultsView=table");
+  const dock = page.getByRole("region", { name: "Candidate table", exact: true });
+  await expect(dock).toBeVisible();
+  await dock.scrollIntoViewIfNeeded();
+  await expect(dock.getByRole("button", { name: /Show .* on map/ }).first()).toBeVisible();
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1),
+  ).toBe(true);
+  await expect(dock.locator("tbody th").first()).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await page.screenshot({ path: ".codex-tmp/finder-table-mobile.png" });
+  await dock.getByRole("button", { name: "Return to cards", exact: true }).click();
+  await page.getByText("Sources & coverage", { exact: true }).click();
+  await expect(page.getByText("Last viewport response", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Source catalogue and methodology", exact: true }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1),
+  ).toBe(true);
+});
+
 test("portfolio XLSX export round-trips German names through the upgraded writer", async ({
   page,
 }) => {

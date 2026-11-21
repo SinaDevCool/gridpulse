@@ -1,4 +1,7 @@
 import { Search } from "lucide-react";
+import { useEffect } from "react";
+import { FinderActiveFilters } from "./FinderActiveFilters";
+import { FinderViewTools } from "./FinderViewTools";
 import { formatMw } from "./page-formatting";
 import type { FinderControllerContract } from "./controller-contract";
 export function FinderFilters({ model }: { model: FinderControllerContract }) {
@@ -19,7 +22,35 @@ export function FinderFilters({ model }: { model: FinderControllerContract }) {
     activeCoverage,
     transmissionOperators,
     distributionOperators,
+    setSidebarOpen,
   } = model;
+  useEffect(() => {
+    const focusSearch = (event: KeyboardEvent) => {
+      if (
+        event.key !== "/" ||
+        event.defaultPrevented ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.altKey
+      )
+        return;
+      const target = event.target instanceof HTMLElement ? event.target : null;
+      if (
+        target?.closest(
+          'input, textarea, select, [contenteditable="true"], [role="dialog"], dialog',
+        ) ||
+        document.querySelector('[aria-modal="true"]')
+      )
+        return;
+      event.preventDefault();
+      setSidebarOpen(true);
+      window.requestAnimationFrame(() =>
+        document.querySelector<HTMLInputElement>('input[name="grid-search"]')?.focus(),
+      );
+    };
+    window.addEventListener("keydown", focusSearch);
+    return () => window.removeEventListener("keydown", focusSearch);
+  }, [setSidebarOpen]);
   return (
     <section className="power-finder-filter-panel" aria-label="Search and filter map">
       <label className="power-finder-search">
@@ -29,6 +60,7 @@ export function FinderFilters({ model }: { model: FinderControllerContract }) {
           type="search"
           value={query}
           name="grid-search"
+          aria-keyshortcuts="/"
           autoComplete="off"
           onChange={(event) => void updateSearch({ q: event.target.value || undefined })}
           placeholder="Search or filter connection points…"
@@ -44,6 +76,8 @@ export function FinderFilters({ model }: { model: FinderControllerContract }) {
       >
         Filters
       </button>
+      <FinderActiveFilters model={model} />
+      <FinderViewTools model={model} />
       <div
         id="finder-secondary-controls"
         className="power-finder-filter-grid"

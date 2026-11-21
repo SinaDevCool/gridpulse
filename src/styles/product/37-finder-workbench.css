@@ -1,0 +1,273 @@
+.finder-active-filters,
+.finder-view-tools__actions,
+.finder-results-switch,
+.finder-results-dock__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.finder-active-filters:empty {
+  display: none;
+}
+.finder-active-filters button,
+.finder-view-tools__actions button,
+.finder-results-switch button,
+.finder-results-dock button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border: 1px solid var(--map-panel-border, #35445a);
+  background: var(--map-panel, #152235);
+  border-radius: 7px;
+  min-height: 32px;
+  padding: 5px 9px;
+}
+.finder-active-filters button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  font-size: 0.7rem;
+  text-align: left;
+}
+.finder-active-filters button span:first-child {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.finder-active-filters .finder-filter-clear {
+  background: transparent;
+  text-decoration: underline;
+}
+.finder-view-tools {
+  min-width: 0;
+  font-size: 0.72rem;
+}
+.finder-view-tools__actions {
+  justify-content: space-between;
+}
+.finder-search-shortcut {
+  white-space: nowrap;
+  color: var(--map-control-muted, #94a3b8);
+}
+.finder-search-shortcut kbd {
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+.finder-view-tools p,
+.finder-view-tools small {
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+.finder-share-link {
+  display: grid;
+  gap: 5px;
+  margin: 8px 0;
+}
+.finder-share-link textarea {
+  width: 100%;
+  min-width: 0;
+  resize: vertical;
+  overflow-wrap: anywhere;
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 1px solid var(--map-panel-border, #35445a);
+  border-radius: 6px;
+  padding: 6px;
+}
+.finder-evidence-summary {
+  margin-top: 8px;
+  border-top: 1px solid var(--map-panel-border, #35445a);
+  padding-top: 8px;
+}
+.finder-evidence-summary summary {
+  cursor: pointer;
+  min-height: 28px;
+}
+.finder-evidence-summary dl {
+  display: grid;
+  gap: 7px;
+}
+.finder-evidence-summary dl div {
+  display: grid;
+  gap: 2px;
+}
+.finder-evidence-summary dt {
+  font-weight: 600;
+}
+.finder-evidence-summary dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.finder-evidence-summary li {
+  margin: 8px 0;
+  overflow-wrap: anywhere;
+}
+.finder-evidence-summary small {
+  display: block;
+}
+.finder-results-switch {
+  margin: 8px 0;
+}
+.finder-results-switch button[aria-pressed="true"] {
+  border-color: #14b8a6;
+  background: color-mix(in srgb, #14b8a6 16%, transparent);
+}
+.finder-results-dock,
+.finder-results-loading {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 14px;
+  z-index: 8;
+  color: var(--map-control-text, #e2e8f0);
+  background: var(--map-panel, #101b2c);
+  border: 1px solid var(--map-panel-border, #35445a);
+  border-radius: 12px;
+  box-shadow: 0 10px 35px #0004;
+}
+.finder-results-dock {
+  height: 42%;
+  min-height: 170px;
+  max-height: 440px;
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  gap: 8px;
+}
+.finder-results-dock.is-expanded {
+  height: 76%;
+  max-height: none;
+}
+.finder-results-dock > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.finder-results-dock h2 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+.finder-results-dock p {
+  margin: 3px 0;
+  font-size: 0.73rem;
+}
+.finder-results-scroll {
+  overflow: auto;
+  min-height: 0;
+  overscroll-behavior: contain;
+  border-radius: 5px;
+}
+.finder-results-dock table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+.finder-results-dock caption {
+  text-align: left;
+  white-space: normal;
+  padding: 4px 0 10px;
+  font-size: 0.72rem;
+}
+.finder-results-dock th,
+.finder-results-dock td {
+  padding: 9px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--map-panel-border, #35445a);
+}
+.finder-results-dock thead th {
+  position: sticky;
+  top: 0;
+  background: var(--map-panel, #101b2c);
+  z-index: 1;
+}
+.finder-results-dock table button {
+  border: 0;
+  background: transparent;
+  padding: 2px 0;
+  text-align: left;
+}
+.finder-results-dock tbody th {
+  color: inherit;
+  background: transparent;
+  font-weight: 500;
+}
+.finder-results-dock small {
+  display: block;
+  font-size: 0.68rem;
+  max-width: 230px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.finder-results-dock tr[data-selected="true"] {
+  background: color-mix(in srgb, #14b8a6 14%, transparent);
+}
+.power-finder-stage:has(.finder-results-dock) .power-finder-interactive-legend {
+  bottom: calc(42% + 28px);
+}
+.power-finder-stage:has(.finder-results-dock.is-expanded) .power-finder-interactive-legend {
+  bottom: calc(76% + 28px);
+}
+.finder-results-dock :focus-visible,
+.finder-view-tools :focus-visible,
+.finder-active-filters :focus-visible,
+.finder-results-switch :focus-visible {
+  outline: 2px solid #14b8a6;
+  outline-offset: 3px;
+}
+:root[data-theme="light"]
+  :is(
+    .finder-active-filters button,
+    .finder-view-tools__actions button,
+    .finder-results-switch button,
+    .finder-results-dock,
+    .finder-results-dock__actions button,
+    .finder-results-dock thead th
+  ) {
+  background: #fff;
+  color: #152235;
+  border-color: #cbd5e1;
+}
+:root[data-theme="light"] .finder-results-switch button[aria-pressed="true"] {
+  background: #ccfbf1;
+  border-color: #0f766e;
+}
+@media (max-width: 760px) {
+  .finder-results-dock {
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    padding: 9px;
+  }
+  .finder-results-dock > header {
+    gap: 6px;
+  }
+  .finder-results-dock button {
+    min-height: 36px;
+  }
+  .finder-results-dock table {
+    min-width: 700px;
+  }
+  .finder-results-dock.is-expanded {
+    height: 82%;
+  }
+  .finder-results-dock__actions {
+    gap: 5px;
+  }
+}
+
+@media (min-width: 1181px) {
+  .power-finder-stage:has(.power-finder-detail.open) .finder-results-dock {
+    right: 490px;
+  }
+}
+@media (max-width: 1180px) {
+  .power-finder-stage:has(.power-finder-detail.open) .finder-results-dock {
+    display: none;
+  }
+}

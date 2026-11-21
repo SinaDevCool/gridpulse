@@ -17,6 +17,9 @@ import { ActivationStudyPanel, InteractiveMapLegend, PowerFinderMap } from "./pa
 const FinderDetailPanel = lazy(() =>
   import("./FinderDetailPanel").then((module) => ({ default: module.FinderDetailPanel })),
 );
+const FinderResultsTable = lazy(() =>
+  import("./FinderResultsTable").then((module) => ({ default: module.FinderResultsTable })),
+);
 export function FinderStage({ model }: { model: FinderControllerContract }) {
   const {
     basemapMode,
@@ -426,6 +429,17 @@ export function FinderStage({ model }: { model: FinderControllerContract }) {
         </Suspense>
       )}
 
+      {model.search.resultsView === "table" && (
+        <Suspense
+          fallback={
+            <p className="finder-results-loading" role="status">
+              Loading candidate table…
+            </p>
+          }
+        >
+          <FinderResultsTable model={model} />
+        </Suspense>
+      )}
       {comparedCandidates.length > 0 && <FinderComparisonPanel model={model} />}
 
       {model.selectedDetailFeature && (
