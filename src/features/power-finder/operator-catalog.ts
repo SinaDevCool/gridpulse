@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { isFinderMvp } from "@/config/product-mode";
+import { finderReleaseToken } from "@/config/finder-release";
 import { canonicalOperatorName, knownOperatorRole } from "./operator-normalization";
 import { mergeOperatorBounds, type OperatorBounds } from "./operator-map-navigation";
 
@@ -26,9 +27,12 @@ export async function loadGridOperatorCatalog(): Promise<GridOperatorOption[]> {
   const { data, error } = isFinderMvp()
     ? await (async () => {
         try {
-          const result = await fetch("/api/power-finder/viewport?operators=true", {
-            signal: AbortSignal.timeout(8000),
-          });
+          const result = await fetch(
+            `/api/power-finder/viewport?operators=true&release=${encodeURIComponent(finderReleaseToken)}`,
+            {
+              signal: AbortSignal.timeout(8000),
+            },
+          );
           return { data: result.ok ? await result.json() : null, error: !result.ok };
         } catch {
           return { data: null, error: true };

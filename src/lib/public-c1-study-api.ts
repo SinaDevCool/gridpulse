@@ -1,6 +1,6 @@
 import { finderRequestAllowed } from "./finder-request-limit";
 import type { PublicFinderEnv } from "./public-power-finder-api";
-import { finderProviderAllowed, neonPublicRpc } from "./neon-finder-public";
+import { finderProviderAllowed, finderReleaseMatches, neonPublicRpc } from "./neon-finder-public";
 
 const PATH = "/api/power-finder/study";
 
@@ -25,6 +25,14 @@ export async function handlePublicC1StudyRequest(request: Request, env: PublicFi
   }
   if (!(await finderRequestAllowed(request, env, "c1-study")))
     return response({ error: "Too many requests." }, 429);
+  if (!finderReleaseMatches(url, env))
+    return response(
+      {
+        error: "Finder data changed. Reload this page before continuing.",
+        code: "release_changed",
+      },
+      409,
+    );
   if (!finderProviderAllowed(env))
     return response({ error: "Study registry is unavailable." }, 503);
   if (env.PUBLIC_FINDER_PROVIDER === "neon") {

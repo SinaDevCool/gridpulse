@@ -12,7 +12,20 @@ concurrency:
   group: gridpulse-staging-mutation
   cancel-in-progress: false
 jobs:
+  preflight:
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/check-release-input.mjs
+        env:
+          CHANGE_REFERENCE: ${{ inputs.change_reference }}
   validate:
+    needs: preflight
     if: ${{ github.ref == 'refs/heads/main' }}
     uses: ./.github/workflows/validate-candidate.yml
     with:
@@ -97,8 +110,9 @@ jobs:
           RELEASE_ENVIRONMENT: staging
           CHANGE_REFERENCE: ${{ inputs.change_reference }}
       - name: Bind qualified Neon staging reader
-        run: node scripts/bind-neon-staging-secret.mjs
+        run: node scripts/bind-neon-finder-secret.mjs
         env:
+          FINDER_DEPLOYMENT_ENVIRONMENT: staging
           NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

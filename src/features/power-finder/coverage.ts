@@ -1,3 +1,5 @@
+import { finderReleaseToken } from "../../config/finder-release";
+
 export type CoverageStatus = "accepted" | "partial" | "planned" | "unavailable";
 
 export interface PowerFinderCoverage {
@@ -130,7 +132,9 @@ export function resolveGovernedCoverage(payload: {
 
 export async function loadPowerFinderCoverage(): Promise<PowerFinderCoverage[]> {
   try {
-    const response = await fetch("/api/power-finder/viewport?coverage=true");
+    const response = await fetch(
+      `/api/power-finder/viewport?coverage=true&release=${encodeURIComponent(finderReleaseToken)}`,
+    );
     if (!response.ok) return fallbackCoverage;
     return resolveGovernedCoverage(await response.json());
   } catch {

@@ -1,4 +1,5 @@
 import { addMapSource } from "./registration";
+import { finderReleaseToken } from "@/config/finder-release";
 import { splitMapCollection } from "@/components/product/power-finder-map-data";
 import type { FeatureCollection, Point } from "geojson";
 import type { Map as MapLibreMap } from "maplibre-gl";
@@ -95,7 +96,7 @@ export function registerSources(
     type: "vector",
     promoteId: "id",
     tiles: [
-      `${window.location.origin}/api/power-finder/tile/{z}/{x}/{y}?content=grid&generation=false&storage=false`,
+      `${window.location.origin}/api/power-finder/tile/{z}/{x}/{y}?content=grid&generation=false&storage=false&release=${encodeURIComponent(finderReleaseToken)}`,
     ],
     minzoom: 4,
     // Overzoom the cached national z8 tile immediately. Finer distribution
@@ -105,7 +106,7 @@ export function registerSources(
   addMapSource(map, "power-finder-registry-tiles", {
     type: "vector",
     tiles: [
-      `${window.location.origin}/api/power-finder/tile/{z}/{x}/{y}?content=registry&v=20260926-tech-clusters-v2`,
+      `${window.location.origin}/api/power-finder/tile/{z}/{x}/{y}?content=registry&v=20260926-tech-clusters-v2&release=${encodeURIComponent(finderReleaseToken)}`,
     ],
     minzoom: 4,
     // Request finer registry tiles so dense exact-location assets do not

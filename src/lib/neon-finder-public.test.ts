@@ -4,6 +4,7 @@ import {
   finderProviderAllowed,
   neonFinderConfigured,
   neonPublicRpc,
+  finderReleaseMatches,
 } from "./neon-finder-public";
 import { handlePublicPowerFinderRequest } from "./public-power-finder-api";
 
@@ -18,6 +19,29 @@ const env = {
 };
 beforeEach(() => query.mockReset());
 describe("qualified staging public projection", () => {
+  it("accepts production only with its own host, explicit environment and manifest", () => {
+    const productionHost = "ep-restless-math-bgmiyiln-pooler.c-9.eu-central-1.aws.neon.tech";
+    const production = {
+      ...env,
+      PUBLIC_FINDER_ENVIRONMENT: "production",
+      NEON_FINDER_HOST: productionHost,
+      NEON_DATABASE_URL: env.NEON_DATABASE_URL.replace(host, productionHost),
+      FINDER_DATA_SHA256: "b11fd6fa698f3743b47c3e2bd516670e279368cf38c7be507c5b03da856098ed",
+    };
+    expect(neonFinderConfigured(production)).toBe(true);
+    expect(neonFinderConfigured({ ...production, FINDER_DATA_SHA256: undefined })).toBe(false);
+    expect(neonFinderConfigured({ ...production, NEON_FINDER_HOST: host })).toBe(false);
+    expect(finderCachePartition(production)).not.toBe(finderCachePartition(env));
+  });
+  it("rejects stale release requests before database access", async () => {
+    const url = new URL(
+      "https://example.com/api/power-finder/viewport?coverage=true&release=obsolete",
+    );
+    expect(finderReleaseMatches(url, env)).toBe(false);
+    const result = await handlePublicPowerFinderRequest(new Request(url), env);
+    expect(result?.status).toBe(409);
+    expect(query).not.toHaveBeenCalled();
+  });
   it("rejects owner credentials, mixed targets, unknown providers and missing TLS", () => {
     expect(neonFinderConfigured(env)).toBe(true);
     for (const change of [
@@ -45,7 +69,11 @@ describe("qualified staging public projection", () => {
     const [sql, parameters] = query.mock.calls[0];
     expect(sql).not.toContain(node);
     expect(sql).toContain("active_snapshot");
-    expect(parameters).toEqual([node, env.FINDER_DATA_RELEASE]);
+    expect(parameters).toEqual([
+      node,
+      env.FINDER_DATA_RELEASE,
+      "b11fd6fa698f3743b47c3e2bd516670e279368cf38c7be507c5b03da856098ed",
+    ]);
   });
   it("does not serve an absent or mismatched active projection", async () => {
     query.mockResolvedValue([]);
