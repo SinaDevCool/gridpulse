@@ -1,4 +1,22 @@
 import {
+  openDatabase,
+  requestValue,
+  transactionDone,
+  notify,
+  PROPERTIES,
+  VERSIONS,
+  METADATA,
+  DOCUMENTS,
+} from "./workspace-storage";
+export { subscribeAnonymousWorkspace } from "./workspace-storage";
+import { listSavedFinderViews, saveSavedFinderView } from "./saved-view-repository";
+export {
+  listSavedFinderViews,
+  saveSavedFinderView,
+  deleteSavedFinderView,
+} from "./saved-view-repository";
+import { parseSavedFinderViews } from "./saved-finder-views";
+import {
   ANONYMOUS_WORKSPACE_SCHEMA_VERSION,
   isAnonymousProperty,
   migrateAnonymousProperty,
@@ -8,84 +26,6 @@ import {
   defaultWorkspaceSettings,
   type AnonymousWorkspaceBackup,
 } from "./schema";
-
-const DB_NAME = "gridpulse-anonymous-workspace";
-const DB_VERSION = 2;
-const PROPERTIES = "properties";
-const VERSIONS = "propertyVersions";
-const METADATA = "workspaceMetadata";
-const DOCUMENTS = "documents";
-const CHANGE_EVENT = "gridpulse:anonymous-workspace-change";
-
-function openDatabase(): Promise<IDBDatabase> {
-  if (typeof indexedDB === "undefined")
-    return Promise.reject(new Error("Browser storage is unavailable."));
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-    request.onupgradeneeded = () => {
-      const db = request.result;
-      if (!db.objectStoreNames.contains(PROPERTIES)) {
-        const store = db.createObjectStore(PROPERTIES, { keyPath: "id" });
-        store.createIndex("updatedAt", "updatedAt");
-        store.createIndex("externalPropertyId", "externalPropertyId", { unique: false });
-      }
-      if (!db.objectStoreNames.contains(VERSIONS))
-        db.createObjectStore(VERSIONS, { keyPath: "id" });
-      if (!db.objectStoreNames.contains(METADATA)) db.createObjectStore(METADATA);
-      if (!db.objectStoreNames.contains(DOCUMENTS)) {
-        const store = db.createObjectStore(DOCUMENTS, { keyPath: "id" });
-        store.createIndex("propertyId", "propertyId", { unique: false });
-      }
-    };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () =>
-      reject(request.error ?? new Error("Browser storage could not be opened."));
-  });
-}
-
-function requestValue<T>(request: IDBRequest<T>): Promise<T> {
-  return new Promise((resolve, reject) => {
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
-}
-
-function transactionDone(transaction: IDBTransaction): Promise<void> {
-  return new Promise((resolve, reject) => {
-    transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(transaction.error);
-    transaction.onabort = () =>
-      reject(transaction.error ?? new Error("The browser transaction was cancelled."));
-  });
-}
-
-function notify() {
-  if (typeof window === "undefined") return;
-  window.dispatchEvent(new Event(CHANGE_EVENT));
-  try {
-    const channel = new BroadcastChannel(CHANGE_EVENT);
-    channel.postMessage("changed");
-    channel.close();
-  } catch {
-    /* optional */
-  }
-}
-
-export function subscribeAnonymousWorkspace(listener: () => void) {
-  if (typeof window === "undefined") return () => undefined;
-  window.addEventListener(CHANGE_EVENT, listener);
-  let channel: BroadcastChannel | null = null;
-  try {
-    channel = new BroadcastChannel(CHANGE_EVENT);
-    channel.onmessage = listener;
-  } catch {
-    channel = null;
-  }
-  return () => {
-    window.removeEventListener(CHANGE_EVENT, listener);
-    channel?.close();
-  };
-}
 
 export async function listAnonymousProperties(): Promise<AnonymousProperty[]> {
   const db = await openDatabase();
@@ -285,6 +225,7 @@ export async function exportAnonymousWorkspace(
     exportedAt: new Date().toISOString(),
     properties: await listAnonymousProperties(),
     settings: await getWorkspaceSettings(),
+    finderViews: await listSavedFinderViews(),
     documents: await listAllDocumentMetadata(),
     documentFiles: includeDocumentFiles
       ? await Promise.all(
@@ -321,6 +262,9 @@ export async function restoreAnonymousWorkspace(
     conflict,
   ).then(async (result) => {
     if (backup.settings) await saveWorkspaceSettings(backup.settings);
+    if (backup.finderViews)
+      for (const view of parseSavedFinderViews(backup.finderViews))
+        await saveSavedFinderView(view, conflict === "skip");
     if (backup.documentFiles?.length) await restoreDocumentFiles(backup.documentFiles);
     return result;
   });

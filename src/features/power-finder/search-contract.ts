@@ -3,6 +3,7 @@ import { isFinderMvp } from "../../config/product-mode";
 const safeNumber = (minimum: number, maximum: number) =>
   z.coerce.number().min(minimum).max(maximum).optional().catch(undefined);
 export const finderSearchSchema = z.object({
+  site: z.enum(["none"]).optional().catch(undefined),
   q: z.string().max(160).optional().catch(undefined),
   voltage: z.coerce
     .number()
@@ -12,8 +13,62 @@ export const finderSearchSchema = z.object({
   operator: z.string().max(160).optional().catch(undefined),
   tso: z.string().max(160).optional().catch(undefined),
   dso: z.string().max(160).optional().catch(undefined),
-  sort: z.enum(["context", "voltage", "name"]).optional().catch(undefined),
-  resultsView: z.enum(["cards", "table"]).optional().catch(undefined),
+  sort: z.enum(["context", "voltage", "name", "distance", "operator"]).optional().catch(undefined),
+  resultsView: z.enum(["cards", "table", "assets"]).optional().catch(undefined),
+  tableColumns: z
+    .string()
+    .max(160)
+    .regex(
+      /^(voltage|distance|operator|fit|capacity)(,(voltage|distance|operator|fit|capacity))*$|^none$/,
+    )
+    .optional()
+    .catch(undefined),
+  generationGroup: z
+    .string()
+    .regex(/^(all|solar|wind|biomass|hydro|geothermal|nuclear|gas|fossil_other|other)$/)
+    .optional()
+    .catch(undefined),
+  assetKind: z
+    .enum(["node", "line", "industrial_site", "generation_asset", "storage_asset"])
+    .optional()
+    .catch(undefined),
+  assetMissing: z.enum(["voltage", "operator", "rating"]).optional().catch(undefined),
+  assetEvidence: z
+    .enum(["official_operator", "official_regulatory", "official_public", "open_mapping"])
+    .optional()
+    .catch(undefined),
+  discoveryStrategy: z.enum(["connection", "balanced", "energy"]).optional().catch(undefined),
+  discoveryCount: z.coerce
+    .number()
+    .refine((v) => v === 10 || v === 20)
+    .optional()
+    .catch(undefined),
+  mapArea: z
+    .string()
+    .max(120)
+    .refine((value) => {
+      const a = value.split(",").map(Number);
+      return (
+        a.length === 4 &&
+        a.every(Number.isFinite) &&
+        a[0] >= 5 &&
+        a[2] <= 16 &&
+        a[1] >= 47 &&
+        a[3] <= 56 &&
+        a[0] < a[2] &&
+        a[1] < a[3]
+      );
+    })
+    .optional()
+    .catch(undefined),
+  layers: z
+    .string()
+    .max(100)
+    .regex(
+      /^(node|line|industrial_site|generation_asset|storage_asset)(,(node|line|industrial_site|generation_asset|storage_asset))*$|^none$/,
+    )
+    .optional()
+    .catch(undefined),
   workflow: z.enum(["screen", "discover"]).optional().catch(undefined),
   mw: safeNumber(0.1, 1000),
   distance: safeNumber(1, 100),

@@ -17,7 +17,7 @@ export const initialBounds: PowerFinderBounds = {
   north: 52.6,
 };
 
-export type CandidateSort = "context" | "voltage" | "name";
+export type CandidateSort = "context" | "voltage" | "name" | "distance" | "operator";
 
 export const distanceFormatter = new Intl.NumberFormat("en-GB", { maximumFractionDigits: 1 });
 

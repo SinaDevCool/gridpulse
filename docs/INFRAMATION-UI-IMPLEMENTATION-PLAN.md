@@ -3,6 +3,8 @@
 Review date: 21 November 2026. Scope: improve the German Power Finder's public
 investigation workflow using its current code and admitted public dataset.
 
+Further development is tracked in [the exploration roadmap](FINDER-EXPLORATION-ROADMAP.md); the phases in this document describe the first released increment.
+
 ## Evidence and coverage
 
 This review extends [the earlier interaction audit](INFRAMATION-INTERACTION-AUDIT.md).

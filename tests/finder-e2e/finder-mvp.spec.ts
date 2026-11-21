@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 import readXlsxFile from "read-excel-file/node";
 import {
@@ -1164,4 +1165,172 @@ test("candidate operator context identifies known DSO and TSO records", async ({
   ).toBeVisible();
   await expect(detail.getByText("TSO", { exact: true })).toBeVisible();
   expect(cspErrors).toEqual([]);
+});
+
+test("expanded candidate table presets sorting and exports preserve evidence", async ({ page }) => {
+  await useBrandenburgViewport(page);
+  await useBrandenburgMapTiles(page);
+  await page.goto("/power-finder?lat=52.3316&lng=13.4995&mw=55&resultsView=table");
+  const dock = page.getByRole("region", { name: "Candidate table", exact: true });
+  await expect(dock.getByRole("button", { name: /Show .* on map/ }).first()).toBeVisible();
+  await dock.getByText("Table options & exports", { exact: true }).click();
+  await dock.getByRole("button", { name: "Compact", exact: true }).click();
+  await expect(dock.getByRole("columnheader", { name: "Mapped voltage", exact: true })).toHaveCount(
+    0,
+  );
+  await dock.getByRole("button", { name: "Distance", exact: true }).click();
+  await expect(dock.getByRole("columnheader", { name: "Distance", exact: true })).toHaveAttribute(
+    "aria-sort",
+    "ascending",
+  );
+  const downloadPromise = page.waitForEvent("download");
+  await dock.getByRole("button", { name: "Export candidates JSON", exact: true }).click();
+  const download = await downloadPromise;
+  const body = JSON.parse(await readFile((await download.path())!, "utf8"));
+  expect(body.population).toBe("filtered site-to-node matches");
+  expect(body.rows.length).toBeGreaterThan(0);
+  expect(
+    body.rows.every((row: { availableImportMw: unknown }) => row.availableImportMw === null),
+  ).toBe(true);
+  expect(body.metadata.boundary).toContain("Filtered retrieved records only");
+  await dock.getByRole("button", { name: "Expand table", exact: true }).click();
+  await page.screenshot({ path: ".codex-tmp/exploration-table-desktop.png" });
+});
+test("infrastructure exploration needs no site and connects a mapped operator", async ({
+  page,
+}) => {
+  await useOperatorContextViewport(page);
+  await page.goto("/power-finder?site=none&resultsView=assets&region=DE-HB");
+  const dock = page.getByRole("region", { name: "Infrastructure records", exact: true });
+  await expect(
+    dock.getByRole("button", { name: "Inspect infrastructure Rönnebeck", exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText("No declared site yet", { exact: true })).toBeVisible();
+  await dock.getByText("Table options & exports", { exact: true }).click();
+  await page
+    .getByRole("combobox", { name: "Missing information", exact: true })
+    .selectOption("rating");
+  await expect(dock.getByText(/No retrieved active-layer records match/)).toBeVisible();
+  await page.getByRole("combobox", { name: "Missing information", exact: true }).selectOption("");
+  await dock.getByRole("button", { name: "Inspect infrastructure Rönnebeck", exact: true }).click();
+  const detail = page.locator(".power-finder-detail.open");
+  await detail.getByText("Record provenance & connected exploration", { exact: true }).click();
+  await detail
+    .getByRole("button", { name: "Explore mapped operator: wesernetz Bremen GmbH", exact: true })
+    .click();
+  await expect
+    .poll(() => new URL(page.url()).searchParams.get("dso"))
+    .toBe("wesernetz Bremen GmbH");
+  await expect(
+    dock.getByRole("button", { name: "Inspect infrastructure Rönnebeck", exact: true }),
+  ).toBeVisible();
+  expect(new URL(page.url()).searchParams.get("site")).toBe("none");
+  await dock.getByRole("button", { name: "Inspect infrastructure Rönnebeck", exact: true }).click();
+  await detail.getByText("Record provenance & connected exploration", { exact: true }).click();
+  await detail
+    .getByRole("button", { name: "Use mapped point in screening brief", exact: true })
+    .click();
+  await expect.poll(() => new URL(page.url()).searchParams.get("lat")).toBe("53.22");
+  await expect(page.getByRole("region", { name: "Candidate table", exact: true })).toBeVisible();
+  expect(new URL(page.url()).searchParams.has("site")).toBe(false);
+});
+test("saved searches reopen the public brief and explicit map configuration", async ({ page }) => {
+  await useBrandenburgViewport(page);
+  await useBrandenburgMapTiles(page);
+  await page.goto("/power-finder?lat=52.3316&lng=13.4995&mw=55&resultsView=assets");
+  await expect(
+    page.getByRole("region", { name: "Infrastructure records", exact: true }),
+  ).toBeVisible();
+  await page.getByLabel("Include current map area and active layers", { exact: true }).check();
+  await page.getByText("Saved searches on this device", { exact: true }).click();
+  await page.getByLabel("Search name", { exact: true }).fill("Berlin 55 MW");
+  await page.getByRole("button", { name: "Save current search", exact: true }).click();
+  const link = page.getByRole("link", { name: "Berlin 55 MW", exact: true });
+  await expect(link).toBeVisible();
+  const url = new URL((await link.getAttribute("href"))!, page.url());
+  expect(url.searchParams.get("mw")).toBe("55");
+  expect(url.searchParams.has("mapArea")).toBe(true);
+  expect(url.searchParams.has("layers")).toBe(true);
+  expect(url.searchParams.has("propertyId")).toBe(false);
+  await page.screenshot({ path: ".codex-tmp/exploration-saved-desktop.png" });
+  await link.click();
+  await expect(page).toHaveURL(/resultsView=assets/);
+  await page.getByText("Saved searches on this device", { exact: true }).click();
+  await page.getByRole("button", { name: "Delete saved search Berlin 55 MW", exact: true }).click();
+  await expect(page.getByRole("link", { name: "Berlin 55 MW", exact: true })).toHaveCount(0);
+});
+test("infrastructure table fits mobile dark theme and discovery retains criteria", async ({
+  page,
+}) => {
+  await useBrandenburgViewport(page);
+  await useBrandenburgMapTiles(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => localStorage.setItem("gridpulse-theme", "dark"));
+  await page.goto("/power-finder?site=none&resultsView=assets");
+  const dock = page.getByRole("region", { name: "Infrastructure records", exact: true });
+  await dock.scrollIntoViewIfNeeded();
+  await expect(dock.getByRole("button", { name: /Inspect infrastructure/ }).first()).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(
+    true,
+  );
+  await expect(page.locator("canvas.maplibregl-canvas")).toBeVisible();
+  await dock
+    .getByRole("button", { name: /Inspect infrastructure/ })
+    .first()
+    .scrollIntoViewIfNeeded();
+  await page.screenshot({ path: ".codex-tmp/exploration-infrastructure-mobile.png" });
+  await dock.getByRole("button", { name: "Return to cards", exact: true }).click();
+  await page.getByRole("button", { name: /Discover locations/ }).click();
+  await page
+    .getByRole("combobox", { name: "Ranking strategy", exact: true })
+    .selectOption("energy");
+  await page.getByRole("combobox", { name: "Number of results", exact: true }).selectOption("20");
+  await page.reload();
+  await page.getByText("Review discovery criteria", { exact: true }).click();
+  await expect(page.getByRole("combobox", { name: "Ranking strategy", exact: true })).toHaveValue(
+    "energy",
+  );
+  await expect(page.getByRole("combobox", { name: "Number of results", exact: true })).toHaveValue(
+    "20",
+  );
+  await expect(page.getByText(/Flood, parcels, planning and fibre are not assessed/)).toBeVisible();
+});
+
+test("saved search storage failures leave public screening usable", async ({ page }) => {
+  await useBrandenburgViewport(page);
+  await page.addInitScript(() =>
+    Object.defineProperty(window, "indexedDB", {
+      configurable: true,
+      get() {
+        throw new DOMException("Browser storage blocked", "SecurityError");
+      },
+    }),
+  );
+  await page.goto("/power-finder?site=none&resultsView=assets");
+  await page.getByText("Saved searches on this device", { exact: true }).click();
+  await expect(
+    page.getByText("Saved searches are unavailable. Browser storage may be blocked.", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Infrastructure records", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Copy screening link", exact: true }),
+  ).toBeEnabled();
+});
+
+test("an unsited search accepts a declared location without retaining its clear-site flag", async ({
+  page,
+}) => {
+  await useBrandenburgViewport(page);
+  await page.goto("/power-finder?site=none&resultsView=assets");
+  await page.getByRole("button", { name: "Screening brief", exact: true }).click();
+  await page.getByRole("spinbutton", { name: "Latitude", exact: true }).fill("52.3316");
+  await page.getByRole("spinbutton", { name: "Longitude", exact: true }).fill("13.4995");
+  await expect.poll(() => new URL(page.url()).searchParams.has("site")).toBe(false);
+  await page.reload();
+  await expect(page.getByText("No declared site yet", { exact: true })).toHaveCount(0);
+  expect(new URL(page.url()).searchParams.get("lat")).toBe("52.3316");
 });

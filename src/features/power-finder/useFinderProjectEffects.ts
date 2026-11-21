@@ -37,8 +37,8 @@ export function useFinderProjectEffects(context: Context) {
     setProject({
       ...saved,
       type: finderMvpFeatures.dataCentreOnly ? "data_centre" : (search.projectType ?? saved.type),
-      latitude: search.lat ?? saved.latitude,
-      longitude: search.lng ?? saved.longitude,
+      latitude: search.site === "none" ? null : (search.lat ?? saved.latitude),
+      longitude: search.site === "none" ? null : (search.lng ?? saved.longitude),
       importMw: search.mw ?? saved.importMw,
       ultimateImportMw: search.mw ?? saved.ultimateImportMw,
       minimumFirmMw: search.mw ?? saved.minimumFirmMw,
@@ -47,7 +47,10 @@ export function useFinderProjectEffects(context: Context) {
       batteryPowerMw: search.batteryMw ?? saved.batteryPowerMw,
       batteryEnergyMwh: search.batteryMwh ?? saved.batteryEnergyMwh,
       maxDistanceKm: search.distance ?? saved.maxDistanceKm,
-      preferredVoltageKv: search.preferredVoltage ?? saved.preferredVoltageKv,
+      preferredVoltageKv:
+        search.preferredVoltage === 0
+          ? null
+          : (search.preferredVoltage ?? saved.preferredVoltageKv),
     });
     setProjectHydrated(true);
     // The persisted project is intentionally loaded after hydration so the server and first client
@@ -101,6 +104,15 @@ export function useFinderProjectEffects(context: Context) {
       "voltage",
       "sort",
       "resultsView",
+      "mapArea",
+      "layers",
+      "tableColumns",
+      "assetKind",
+      "assetMissing",
+      "assetEvidence",
+      "discoveryStrategy",
+      "discoveryCount",
+      "generationGroup",
       "region",
       "mapMode",
       "projectType",

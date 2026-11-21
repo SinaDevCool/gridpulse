@@ -31,7 +31,8 @@ export function candidateSearchChips(search: FinderSearch, distance: number) {
   return chips;
 }
 
-const publicKeys = [
+export const publicKeys = [
+  "site",
   "q",
   "voltage",
   "operator",
@@ -39,6 +40,15 @@ const publicKeys = [
   "dso",
   "sort",
   "resultsView",
+  "tableColumns",
+  "assetKind",
+  "generationGroup",
+  "assetMissing",
+  "assetEvidence",
+  "discoveryStrategy",
+  "discoveryCount",
+  "mapArea",
+  "layers",
   "region",
   "mapMode",
   "mapView",
@@ -57,14 +67,17 @@ export function publicScreeningLink(origin: string, search: FinderSearch, projec
   if (!["https:", "http:"].includes(url.protocol)) throw new Error("Invalid link origin");
   const filters = Object.fromEntries(publicKeys.map((key) => [key, search[key]]));
   const brief = {
+    site: project.latitude == null && project.longitude == null ? ("none" as const) : undefined,
     lat: project.latitude ?? undefined,
     lng: project.longitude ?? undefined,
     mw: project.importMw,
     distance: project.maxDistanceKm,
-    preferredVoltage: project.preferredVoltageKv ?? undefined,
+    preferredVoltage: project.preferredVoltageKv ?? 0,
     projectType: project.type,
   };
   const validated = finderSearchSchema.parse({ ...filters, ...brief });
+  if (search.mapArea !== undefined && validated.mapArea !== search.mapArea)
+    throw new Error("Zoom to a map area within Germany before including the map area.");
   if (
     (brief.lat == null) !== (brief.lng == null) ||
     Object.entries(brief).some(
@@ -76,4 +89,32 @@ export function publicScreeningLink(origin: string, search: FinderSearch, projec
     if (value !== undefined) url.searchParams.set(key, String(value));
   }
   return url.href;
+}
+
+/** Revalidate restored queries and retain only the same public configuration keys. */
+export function publicFinderQuery(query: string) {
+  if (query.length > 4096) throw new Error("Saved search is too large.");
+  const raw = Object.fromEntries(new URLSearchParams(query));
+  const parsed = finderSearchSchema.parse(raw);
+  for (const key of ["lat", "lng", "mw", "distance", "preferredVoltage"] as const) {
+    if (raw[key] !== undefined && parsed[key] === undefined)
+      throw new Error("Saved search contains an invalid brief.");
+  }
+  if ((parsed.lat == null) !== (parsed.lng == null))
+    throw new Error("Saved coordinates are incomplete.");
+  if (parsed.site === "none" && parsed.lat != null)
+    throw new Error("Saved site state is contradictory.");
+  const keys = [
+    ...publicKeys,
+    "lat",
+    "lng",
+    "mw",
+    "distance",
+    "preferredVoltage",
+    "projectType",
+  ] as const;
+  const result = new URLSearchParams();
+  if (parsed.lat == null && parsed.site == null) result.set("site", "none");
+  for (const key of keys) if (parsed[key] !== undefined) result.set(key, String(parsed[key]));
+  return result.toString();
 }

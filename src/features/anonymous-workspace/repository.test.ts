@@ -1,3 +1,4 @@
+import { listSavedFinderViews, saveSavedFinderView, deleteSavedFinderView } from "./repository";
 import { indexedDB as fakeIndexedDb } from "fake-indexeddb";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { defaultFinderProject } from "../power-finder/finder-project";
@@ -85,4 +86,41 @@ describe("anonymous workspace repository", () => {
     await restoreAnonymousWorkspace(backup);
     expect((await listAnonymousProperties())[0].requiredItLoadMw).toBeNull();
   });
+});
+
+it("keeps concurrent saved searches, exports/restores them, and preserves old backups", async () => {
+  const base = {
+    version: 1 as const,
+    name: "Berlin",
+    search: "mw=55&site=none&propertyId=private",
+    createdAt: "2026-11-21T12:00:00Z",
+    release: "test-release",
+  };
+  await Promise.all([
+    saveSavedFinderView({ ...base, id: "view-a" }),
+    saveSavedFinderView({ ...base, id: "view-b" }),
+  ]);
+  expect(await listSavedFinderViews()).toHaveLength(2);
+  expect((await listSavedFinderViews())[0].search).not.toContain("private");
+  const backup = await exportAnonymousWorkspace();
+  await clearAnonymousWorkspace();
+  await restoreAnonymousWorkspace(backup);
+  expect(await listSavedFinderViews()).toHaveLength(2);
+  await deleteSavedFinderView("view-a");
+  expect((await listSavedFinderViews()).map((v) => v.id)).toEqual(["view-b"]);
+  await clearAnonymousWorkspace();
+  await restoreAnonymousWorkspace({ ...backup, finderViews: undefined });
+  expect(await listSavedFinderViews()).toEqual([]);
+});
+it("refuses saved search overflow without losing the previous searches", async () => {
+  const base = {
+    version: 1 as const,
+    name: "View",
+    search: "site=none",
+    createdAt: "2026-11-21T12:00:00Z",
+    release: null,
+  };
+  for (let i = 0; i < 20; i++) await saveSavedFinderView({ ...base, id: "view-" + i });
+  await expect(saveSavedFinderView({ ...base, id: "overflow" })).rejects.toThrow("maximum of 20");
+  expect(await listSavedFinderViews()).toHaveLength(20);
 });

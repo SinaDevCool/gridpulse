@@ -10,6 +10,7 @@
 .finder-active-filters:empty {
   display: none;
 }
+.finder-saved-views button,
 .finder-active-filters button,
 .finder-view-tools__actions button,
 .finder-results-switch button,
@@ -239,6 +240,7 @@
 }
 @media (max-width: 760px) {
   .finder-results-dock {
+    height: 58%;
     left: 8px;
     right: 8px;
     bottom: 8px;
@@ -270,4 +272,87 @@
   .power-finder-stage:has(.power-finder-detail.open) .finder-results-dock {
     display: none;
   }
+}
+.finder-table-tools {
+  max-height: 45%;
+  overflow: auto;
+  flex-shrink: 0;
+}
+.finder-table-tools summary {
+  cursor: pointer;
+}
+.finder-view-options {
+  display: grid;
+  gap: 6px;
+  padding: 6px 0;
+}
+.finder-view-options fieldset {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.finder-view-options label,
+.finder-saved-views label {
+  display: grid;
+  gap: 4px;
+}
+.finder-view-tools input[type="checkbox"],
+.finder-view-options input[type="checkbox"] {
+  width: auto;
+  min-height: 0;
+  display: inline;
+  margin-right: 6px;
+}
+.finder-saved-views ul {
+  padding-left: 18px;
+}
+.finder-saved-views li {
+  margin: 8px 0;
+  overflow-wrap: anywhere;
+}
+.finder-saved-views small {
+  display: block;
+}
+.finder-view-options select,
+.finder-saved-views input {
+  width: 100%;
+  max-width: 100%;
+  color: inherit;
+  background: var(--map-panel);
+  border: 1px solid var(--map-panel-border);
+  border-radius: 5px;
+  padding: 5px;
+}
+.finder-record-context {
+  margin: 12px 0;
+  font-size: 0.75rem;
+}
+.finder-record-context button {
+  margin-top: 8px;
+}
+.finder-discovery-steps {
+  font-size: 0.75rem;
+  padding-left: 20px;
+}
+.finder-view-options fieldset label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+@media (max-width: 760px) {
+  .power-finder-stage:has(.finder-results-dock) .power-finder-interactive-legend {
+    bottom: calc(58% + 28px);
+  }
+  .power-finder-stage:has(.finder-results-dock.is-expanded) .power-finder-interactive-legend {
+    bottom: calc(82% + 28px);
+  }
+}
+
+.finder-table-tools > summary {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--map-panel);
+  padding: 3px 0;
 }

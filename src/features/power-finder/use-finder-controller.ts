@@ -178,9 +178,11 @@ export function useFinderController(): import("./controller-contract").FinderCon
     // Late catalog effects may finish while the destination route is loading.
     // Never let a Finder filter update undo the user's workspace navigation.
     if (router.latestLocation.pathname !== "/power-finder") return Promise.resolve();
+    const changes = { ...patch };
+    if (patch.lat != null || patch.lng != null) changes.site = undefined;
     return navigate({
       to: "/power-finder",
-      search: (current) => ({ ...current, ...patch }),
+      search: (current) => ({ ...current, ...changes }),
       replace: true,
     });
   };
@@ -412,26 +414,7 @@ export function useFinderController(): import("./controller-contract").FinderCon
     selected ??
     (selectedOpportunity
       ? (opportunityNode(selectedOpportunity, rankingCollection) ??
-        opportunityNode(selectedOpportunity, collection) ?? {
-          type: "Feature" as const,
-          id: selectedOpportunity.nodeId,
-          geometry: {
-            type: "Point" as const,
-            // This fallback is detail-only. The node's mapped position remains represented
-            // by the ranked pathway distance and is never replaced with a capacity claim.
-            coordinates: [project.longitude ?? 0, project.latitude ?? 0],
-          },
-          properties: {
-            kind: "node" as const,
-            name: selectedOpportunity.nodeName,
-            operator: selectedOpportunity.operator ?? undefined,
-            voltage_kv: selectedOpportunity.voltageKv,
-            max_voltage_kv: Math.max(0, ...selectedOpportunity.voltageKv),
-            evidence_class: "open_mapping" as const,
-            capacity_state: "not_established" as const,
-            source_published_at: selectedOpportunity.sourcePublishedAt ?? undefined,
-          },
-        })
+        opportunityNode(selectedOpportunity, collection))
       : null);
   const closeDetail = async () => {
     detailDismissedRef.current = true;

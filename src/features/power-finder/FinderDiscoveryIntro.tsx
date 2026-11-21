@@ -35,6 +35,26 @@ export function FinderDiscoveryIntro({ model }: { model: FinderControllerContrac
         Compare mapped grid context, industrial land and the surrounding energy ecosystem without
         treating public mapping as capacity or feasibility evidence.
       </p>
+      <ol className="finder-discovery-steps">
+        <li>Set regional criteria</li>
+        <li>Run bounded sampling</li>
+        <li>Review mapped leads</li>
+        <li>Qualify a declared site</li>
+      </ol>
+      <details>
+        <summary>Review discovery criteria</summary>
+        <p>
+          {activeCoverage.regionName} · {project.importMw} MW declared demand ·{" "}
+          {project.preferredVoltageKv ?? "any/unknown"} kV preferred · within{" "}
+          {project.maxDistanceKm} km of a relevant node · {discoveryStrategy} strategy ·{" "}
+          {discoveryResultCount} results.
+        </p>
+        <p>
+          Energy context: {generationGroup}; minimum generation {minimumGenerationMw} MW and storage
+          power {minimumStorageMw} MW. Flood, parcels, planning and fibre are not assessed by this
+          search. These are sampling criteria, not a connection offer.
+        </p>
+      </details>
       <div className="finder-discovery-form">
         <label>
           <span>Bundesland</span>
@@ -115,6 +135,7 @@ export function FinderDiscoveryIntro({ model }: { model: FinderControllerContrac
             value={discoveryStrategy}
             onChange={(event) => {
               setDiscoveryStrategy(event.target.value as DiscoveryStrategy);
+              void updateSearch({ discoveryStrategy: event.target.value as DiscoveryStrategy });
               invalidateDiscoveryResults();
             }}
           >
@@ -129,6 +150,7 @@ export function FinderDiscoveryIntro({ model }: { model: FinderControllerContrac
             value={discoveryResultCount}
             onChange={(event) => {
               setDiscoveryResultCount(Number(event.target.value) as 10 | 20);
+              void updateSearch({ discoveryCount: Number(event.target.value) as 10 | 20 });
               invalidateDiscoveryResults();
             }}
           >
@@ -167,6 +189,7 @@ export function FinderDiscoveryIntro({ model }: { model: FinderControllerContrac
               value={generationGroup}
               onChange={(event) => {
                 setGenerationGroup(event.target.value);
+                void updateSearch({ generationGroup: event.target.value });
                 invalidateDiscoveryResults();
               }}
             >

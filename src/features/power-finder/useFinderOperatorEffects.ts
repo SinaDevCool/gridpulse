@@ -50,7 +50,7 @@ export function useFinderOperatorEffects(context: Context) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [distributionOperators, selectedDso, selectedTso, transmissionOperators]);
   useEffect(() => {
-    if (search.propertyId) return;
+    if (search.propertyId || search.mapArea) return;
     if (selectedDso !== "all" && operators.some((item) => item.name === selectedDso)) {
       navigateMapToOperator(selectedDso);
     } else if (selectedTso !== "all" && operators.some((item) => item.name === selectedTso)) {

@@ -20,6 +20,11 @@ const FinderDetailPanel = lazy(() =>
 const FinderResultsTable = lazy(() =>
   import("./FinderResultsTable").then((module) => ({ default: module.FinderResultsTable })),
 );
+const FinderInfrastructureExplorer = lazy(() =>
+  import("./FinderInfrastructureExplorer").then((m) => ({
+    default: m.FinderInfrastructureExplorer,
+  })),
+);
 export function FinderStage({ model }: { model: FinderControllerContract }) {
   const {
     basemapMode,
@@ -438,6 +443,17 @@ export function FinderStage({ model }: { model: FinderControllerContract }) {
           }
         >
           <FinderResultsTable model={model} />
+        </Suspense>
+      )}
+      {model.search.resultsView === "assets" && (
+        <Suspense
+          fallback={
+            <p className="finder-results-loading" role="status">
+              Loading infrastructure records…
+            </p>
+          }
+        >
+          <FinderInfrastructureExplorer model={model} />
         </Suspense>
       )}
       {comparedCandidates.length > 0 && <FinderComparisonPanel model={model} />}
