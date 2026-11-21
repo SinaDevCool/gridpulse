@@ -1,3 +1,5 @@
+import { finderReleaseToken, FinderReleaseChangedError } from "../../config/finder-release";
+
 export type C1StudyPayload = {
   node_study: {
     available: boolean;
@@ -87,9 +89,13 @@ export type C2EnvelopeResult = {
 
 export async function loadC1Study(nodeId: string, signal?: AbortSignal) {
   try {
-    const response = await fetch(`/api/power-finder/study?node=${encodeURIComponent(nodeId)}`, {
-      signal,
-    });
+    const response = await fetch(
+      `/api/power-finder/study?node=${encodeURIComponent(nodeId)}&release=${encodeURIComponent(finderReleaseToken)}`,
+      {
+        signal,
+      },
+    );
+    if (response.status === 409) throw new FinderReleaseChangedError();
     if (!response.ok) throw new Error("Study registry unavailable.");
     return (await response.json()) as C1StudyPayload;
   } catch (error) {
@@ -97,7 +103,10 @@ export async function loadC1Study(nodeId: string, signal?: AbortSignal) {
     return {
       node_study: {
         available: false,
-        reason: "Study service unavailable; no reviewed operator result was loaded.",
+        reason:
+          error instanceof FinderReleaseChangedError
+            ? error.message
+            : "Study service unavailable; no reviewed operator result was loaded.",
       },
       benchmark_validation: {
         available: false,

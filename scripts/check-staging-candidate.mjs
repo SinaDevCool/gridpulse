@@ -52,10 +52,17 @@ export async function checkStagingCandidate(root) {
   assert.equal(config.vars?.PUBLIC_FINDER_PROVIDER, "neon");
   assert.equal(config.vars?.NEON_FINDER_HOST, staging.neonHost);
   assert.equal(config.vars?.FINDER_DATA_RELEASE, staging.dataRelease);
+  assert.equal(config.vars?.PUBLIC_FINDER_ENVIRONMENT, "staging");
+  assert.equal(
+    config.vars?.FINDER_DATA_SHA256,
+    "b11fd6fa698f3743b47c3e2bd516670e279368cf38c7be507c5b03da856098ed",
+  );
   assert.deepEqual(Object.keys(config.vars).sort(), [
     "COPILOT_ENABLED",
     "FINDER_DATA_RELEASE",
+    "FINDER_DATA_SHA256",
     "NEON_FINDER_HOST",
+    "PUBLIC_FINDER_ENVIRONMENT",
     "PUBLIC_FINDER_EXPERIMENTAL_MODE",
     "PUBLIC_FINDER_PROVIDER",
   ]);

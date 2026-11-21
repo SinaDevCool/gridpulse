@@ -1,0 +1,16 @@
+{
+  "staging": {
+    "projectId": "icy-bread-85526938",
+    "directHost": "ep-patient-breeze-bhm3qx7z.c-10.eu-central-1.aws.neon.tech",
+    "pooledHost": "ep-patient-breeze-bhm3qx7z-pooler.c-10.eu-central-1.aws.neon.tech",
+    "worker": "gridpulse-insights-staging",
+    "site": "https://staging.gridpulseinsights.com"
+  },
+  "production": {
+    "projectId": "still-dust-71436907",
+    "directHost": "ep-restless-math-bgmiyiln.c-9.eu-central-1.aws.neon.tech",
+    "pooledHost": "ep-restless-math-bgmiyiln-pooler.c-9.eu-central-1.aws.neon.tech",
+    "worker": "gridpulse-insights",
+    "site": "https://gridpulseinsights.com"
+  }
+}

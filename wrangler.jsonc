@@ -27,6 +27,34 @@
   ],
   "observability": { "enabled": true },
   "env": {
+    "production": {
+      "name": "gridpulse-insights",
+      "vars": {
+        "PUBLIC_FINDER_EXPERIMENTAL_MODE": "false",
+        "PUBLIC_FINDER_PROVIDER": "neon",
+        "PUBLIC_FINDER_ENVIRONMENT": "production",
+        "NEON_FINDER_HOST": "ep-restless-math-bgmiyiln-pooler.c-9.eu-central-1.aws.neon.tech",
+        "FINDER_DATA_RELEASE": "finder-public-20261121-v1",
+        "FINDER_DATA_SHA256": "b11fd6fa698f3743b47c3e2bd516670e279368cf38c7be507c5b03da856098ed",
+      },
+      "ratelimits": [
+        {
+          "name": "COPILOT_RATE_LIMITER",
+          "namespace_id": "1003",
+          "simple": { "limit": 2, "period": 60 },
+        },
+        {
+          "name": "PUBLIC_FINDER_RATE_LIMITER",
+          "namespace_id": "1001",
+          "simple": { "limit": 600, "period": 60 },
+        },
+        {
+          "name": "OPERATIONS_RATE_LIMITER",
+          "namespace_id": "1002",
+          "simple": { "limit": 600, "period": 60 },
+        },
+      ],
+    },
     "staging": {
       "name": "gridpulse-insights-staging",
       "workers_dev": true,
@@ -36,6 +64,8 @@
         "COPILOT_ENABLED": "false",
         "PUBLIC_FINDER_EXPERIMENTAL_MODE": "false",
         "PUBLIC_FINDER_PROVIDER": "neon",
+        "PUBLIC_FINDER_ENVIRONMENT": "staging",
+        "FINDER_DATA_SHA256": "b11fd6fa698f3743b47c3e2bd516670e279368cf38c7be507c5b03da856098ed",
         "NEON_FINDER_HOST": "ep-patient-breeze-bhm3qx7z-pooler.c-10.eu-central-1.aws.neon.tech",
         "FINDER_DATA_RELEASE": "finder-public-20261121-v1",
       },

@@ -2,8 +2,10 @@ import { scopeFallback } from "../features/power-finder/fallback-scope";
 import type { PowerFinderCollection } from "@/features/power-finder/fixture-data";
 import { publicFinderCoverage } from "./public-finder-coverage";
 import { finderRequestAllowed } from "./finder-request-limit";
+import { cachedFinderMetadata } from "./finder-metadata-cache";
 import {
   finderCachePartition,
+  finderReleaseMatches,
   finderProviderAllowed,
   neonFinderConfigured,
   neonPublicRpc,
@@ -177,30 +179,51 @@ export async function handlePublicPowerFinderRequest(
       "retry-after": "60",
     });
   }
-  if (url.searchParams.get("coverage") === "true") return publicFinderCoverage(env);
+  if (!finderReleaseMatches(url, env))
+    return jsonResponse(
+      {
+        error: "Finder data changed. Reload this page before continuing.",
+        code: "release_changed",
+      },
+      409,
+      { "cache-control": "no-store" },
+    );
+  if (url.searchParams.get("coverage") === "true")
+    return cachedFinderMetadata(url, env, "coverage", () => publicFinderCoverage(env), context);
   if (url.searchParams.get("operators") === "true") {
     if (!finderProviderAllowed(env))
       return jsonResponse({ error: "Operator catalog unavailable." }, 503);
-    try {
-      if (env.PUBLIC_FINDER_PROVIDER === "neon") return await neonPublicRpc(env, "operators");
-      const origin = environmentValue(env, "SUPABASE_URL");
-      const key = environmentValue(env, "SUPABASE_PUBLISHABLE_KEY");
-      if (!origin || !key) return jsonResponse([], 503);
-      const headers: Record<string, string> = { apikey: key, "content-type": "application/json" };
-      if (key.startsWith("eyJ")) headers.authorization = `Bearer ${key}`;
-      const result = await fetch(`${origin}/rest/v1/rpc/power_finder_public_operators`, {
-        method: "POST",
-        headers,
-        body: "{}",
-        signal: AbortSignal.timeout(8000),
-      });
-      if (!result.ok) return jsonResponse([], 502);
-      const data: unknown = await result.json();
-      if (!Array.isArray(data) || data.length > 5000) return jsonResponse([], 502);
-      return jsonResponse(data, 200, { "cache-control": "public, max-age=60, s-maxage=300" });
-    } catch {
-      return jsonResponse([], 502);
-    }
+    return cachedFinderMetadata(
+      url,
+      env,
+      "operators",
+      async () => {
+        try {
+          if (env.PUBLIC_FINDER_PROVIDER === "neon") return await neonPublicRpc(env, "operators");
+          const origin = environmentValue(env, "SUPABASE_URL");
+          const key = environmentValue(env, "SUPABASE_PUBLISHABLE_KEY");
+          if (!origin || !key) return jsonResponse([], 503);
+          const headers: Record<string, string> = {
+            apikey: key,
+            "content-type": "application/json",
+          };
+          if (key.startsWith("eyJ")) headers.authorization = `Bearer ${key}`;
+          const result = await fetch(`${origin}/rest/v1/rpc/power_finder_public_operators`, {
+            method: "POST",
+            headers,
+            body: "{}",
+            signal: AbortSignal.timeout(8000),
+          });
+          if (!result.ok) return jsonResponse([], 502);
+          const data: unknown = await result.json();
+          if (!Array.isArray(data) || data.length > 5000) return jsonResponse([], 502);
+          return jsonResponse(data, 200, { "cache-control": "public, max-age=60, s-maxage=300" });
+        } catch {
+          return jsonResponse([], 502);
+        }
+      },
+      context,
+    );
   }
 
   let parameters: ViewportParameters;
@@ -349,6 +372,15 @@ export async function handlePublicPowerFinderTileRequest(
   }
   const [z, x, y] = match.slice(1).map(Number);
   const registryOnly = requestUrl.searchParams.get("content") === "registry";
+  if (!finderReleaseMatches(requestUrl, env))
+    return jsonResponse(
+      {
+        error: "Finder data changed. Reload this page before continuing.",
+        code: "release_changed",
+      },
+      409,
+      { "cache-control": "no-store" },
+    );
   const includeGeneration = requestUrl.searchParams.get("generation") !== "false";
   const includeStorage = requestUrl.searchParams.get("storage") !== "false";
   if (z < 4 || z > 16 || x < 0 || y < 0 || x >= 2 ** z || y >= 2 ** z) {

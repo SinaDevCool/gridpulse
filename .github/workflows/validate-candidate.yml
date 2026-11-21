@@ -52,6 +52,7 @@ jobs:
       - name: Build candidate once
         run: npm run build
         env:
+          CLOUDFLARE_ENV: ${{ inputs.production && 'production' || '' }}
           # PRs use a non-resolving test origin, never deployment credentials.
           # It permits client construction so browser routes can supply fixed RPC fixtures.
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || (!inputs.production && 'https://browser-fixture.invalid') || '' }}
@@ -60,6 +61,9 @@ jobs:
           VITE_PUBLIC_MILP_ENABLED: ${{ inputs.production && vars.PUBLIC_MILP_ENABLED || 'false' }}
           VITE_ANALYTICS_API_URL: ${{ vars.OPERATIONS_MILP_API_URL || '' }}
       - run: npm run check:performance-budgets
+      - name: Validate production Finder environment
+        if: ${{ inputs.production }}
+        run: node scripts/check-finder-production-candidate.mjs
       - run: node scripts/candidate-artifact.mjs seal
       - name: Check compiled APIs and solution boundaries
         run: npm run test:browser -- runtime
@@ -83,8 +87,8 @@ jobs:
         run: npm run build
         env:
           GRIDPULSE_BUILD_ENV: compatibility
-          VITE_OPERATIONS_MILP_ENABLED: 'false'
-          VITE_PUBLIC_MILP_ENABLED: 'false'
+          VITE_OPERATIONS_MILP_ENABLED: "false"
+          VITE_PUBLIC_MILP_ENABLED: "false"
           VITE_SUPABASE_URL: https://browser-fixture.invalid
           VITE_SUPABASE_PUBLISHABLE_KEY: browser-fixture-not-a-credential
           VITE_ANALYTICS_API_URL: https://browser-fixture.invalid
@@ -124,7 +128,7 @@ jobs:
           npm run test:browser -- milp
           node scripts/candidate-artifact.mjs verify
         env:
-          GRIDPULSE_TEST_MILP_REQUIRED: '1'
+          GRIDPULSE_TEST_MILP_REQUIRED: "1"
       - name: Keep the production artifact separate from scenario compatibility
         if: ${{ inputs.production }}
         run: mv dist validated-production-dist

@@ -4,6 +4,7 @@ import {
   type PowerFinderCollection,
 } from "@/features/power-finder/fixture-data";
 import { isFinderMvp } from "@/config/product-mode";
+import { finderReleaseToken, FinderReleaseChangedError } from "@/config/finder-release";
 import { scopeFallback } from "./fallback-scope";
 import { toPublicPowerFinderCollection } from "./public-data";
 
@@ -38,6 +39,7 @@ async function loadPublicViewport(
   layers: { generation: boolean; storage: boolean } = { generation: true, storage: true },
 ) {
   const query = new URLSearchParams({
+    release: finderReleaseToken,
     west: String(bounds.west),
     south: String(bounds.south),
     east: String(bounds.east),
@@ -47,6 +49,7 @@ async function loadPublicViewport(
   });
   if (!layers.generation && !layers.storage) query.set("ranking", "true");
   const response = await fetch(`/api/power-finder/viewport?${query}`, { signal });
+  if (response.status === 409) throw new FinderReleaseChangedError();
   if (!response.ok) throw new Error(`Public Finder API returned ${response.status}.`);
   return toPublicPowerFinderCollection(parsePowerFinderCollection(await response.json()));
 }
@@ -76,6 +79,7 @@ export async function loadPowerFinderViewport(
             : "public_database",
       };
     } catch (error) {
+      if (error instanceof FinderReleaseChangedError) throw error;
       if (signal?.aborted) throw error;
       if (options.fallbackAllowed === false) throw error;
       return { collection: await loadFallback(bounds, signal), mode: "published_artifact" };

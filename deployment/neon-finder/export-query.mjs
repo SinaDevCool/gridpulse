@@ -1,11 +1,6 @@
-export const projectionId = "finder-public-20261121-v1";
-export const expectedCounts = {
-  node: 105160,
-  line: 123741,
-  industrial_site: 60703,
-  generation_asset: 357703,
-  storage_asset: 6960,
-};
+import release from "./release.json" with { type: "json" };
+export const projectionId = release.id;
+export const expectedCounts = release.expectedCounts;
 const gridRelease = "40daf143-2b0b-4f7b-933d-0efc48ca4649";
 const registryRelease = "94ce31d6-3b18-4d81-a301-8503f77b586c";
 const definitions = {

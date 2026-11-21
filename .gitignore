@@ -48,6 +48,7 @@ services/grid-data/build/
 .ruff_cache/
 
 # Local Worker diagnostics
+.release-state/
 *.cpuprofile
 
 # Private Release 2 model and benchmark artifacts (never ship in the public bundle)

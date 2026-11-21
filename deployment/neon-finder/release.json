@@ -1,0 +1,12 @@
+{
+  "id": "finder-public-20261121-v1",
+  "manifestSha256": "b11fd6fa698f3743b47c3e2bd516670e279368cf38c7be507c5b03da856098ed",
+  "maxDatabaseBytes": 734003200,
+  "expectedCounts": {
+    "node": 105160,
+    "line": 123741,
+    "industrial_site": 60703,
+    "generation_asset": 357703,
+    "storage_asset": 6960
+  }
+}

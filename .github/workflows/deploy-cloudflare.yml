@@ -13,7 +13,20 @@ on:
 permissions:
   contents: read
 jobs:
+  preflight:
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/check-release-input.mjs
+        env:
+          CHANGE_REFERENCE: ${{ inputs.change_reference }}
   validate:
+    needs: preflight
     uses: ./.github/workflows/validate-candidate.yml
     with:
       production: true
@@ -51,6 +64,7 @@ jobs:
         run: node scripts/candidate-artifact.mjs verify
       - name: Validate packaged Worker without rebuilding
         run: npx wrangler deploy --config dist/server/wrangler.json --dry-run
+      - run: node scripts/check-finder-production-candidate.mjs
       - run: node scripts/candidate-artifact.mjs verify
       - name: Reject an obsolete production candidate
         run: test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$GITHUB_SHA"
@@ -61,6 +75,13 @@ jobs:
           RELEASE_ENVIRONMENT: production
           STAGING_RUN_ID: ${{ inputs.staging_run_id }}
           CHANGE_REFERENCE: ${{ inputs.change_reference }}
+      - name: Bind qualified Neon production reader
+        run: node scripts/bind-neon-finder-secret.mjs
+        env:
+          FINDER_DEPLOYMENT_ENVIRONMENT: production
+          NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       - name: Configure production copilot server secrets
         run: node scripts/configure-copilot-secret.mjs
         env:
@@ -73,7 +94,9 @@ jobs:
           COPILOT_FALLBACK_PROVIDER: ${{ vars.COPILOT_FALLBACK_PROVIDER }}
           COPILOT_FALLBACK_MODEL: ${{ vars.COPILOT_FALLBACK_MODEL }}
           COPILOT_ANALYTICS_URL: ${{ vars.OPERATIONS_MILP_API_URL }}
+      - run: node scripts/candidate-artifact.mjs verify
       - name: Publish the validated artifact
+        id: publish_worker
         run: npx wrangler deploy --config dist/server/wrangler.json
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -94,9 +117,23 @@ jobs:
       - name: Verify real public MILP and shared Operations result
         if: vars.OPERATIONS_MILP_ENABLED == 'true' && vars.PUBLIC_MILP_ENABLED == 'true'
         env:
-          GRIDPULSE_CHECK_COPILOT: 'true'
+          GRIDPULSE_CHECK_COPILOT: "true"
           GRIDPULSE_EXPECT_COPILOT_PROVIDER: ${{ vars.COPILOT_PROVIDER || 'openai' }}
         run: node scripts/check-production-milp.mjs
+      - name: Restore recorded Worker after a failed live release
+        if: ${{ failure() && steps.publish_worker.outcome == 'success' }}
+        run: node scripts/rollback-finder-worker.mjs
+        env:
+          FINDER_DEPLOYMENT_ENVIRONMENT: production
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() }}
+        with:
+          name: production-rollback-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .release-state/production-previous.json
+          if-no-files-found: ignore
+          retention-days: 30
       - uses: actions/upload-artifact@v4
         if: ${{ always() }}
         with:

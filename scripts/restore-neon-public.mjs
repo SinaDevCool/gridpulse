@@ -1,9 +1,10 @@
 import { readFile } from "node:fs/promises";
 import { resolve, basename, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { neon } from "@neondatabase/serverless";
+import { createRestoreQuery } from "./neon-restore-query.mjs";
 import { digest, verifyBatch } from "./neon-public-backup.mjs";
 import { projectionId, expectedCounts } from "../deployment/neon-finder/export-query.mjs";
+import targets from "../deployment/neon-finder/targets.json" with { type: "json" };
 
 /** Verifies every file before returning anything a restore may write. */
 export async function verifyBackup(directory, expectedManifestHash) {
@@ -55,49 +56,87 @@ export async function verifyBackup(directory, expectedManifestHash) {
   return { manifest, snapshot, status, records, counts };
 }
 
-export async function restoreBackup(directory, expectedManifestHash, connection) {
-  const verified = await verifyBackup(directory, expectedManifestHash);
+export function validateRestoreConnection(connection, environment) {
+  const target = targets[environment];
+  if (!target) throw new Error("Explicit registered restore environment required");
   const url = new URL(connection);
   if (
-    url.hostname !== "ep-patient-breeze-bhm3qx7z.c-10.eu-central-1.aws.neon.tech" ||
+    url.protocol !== "postgresql:" ||
+    url.hostname !== target.directHost ||
     url.username !== "gridpulse_owner" ||
-    url.pathname !== "/gridpulse"
+    url.pathname !== "/gridpulse" ||
+    url.searchParams.get("sslmode") !== "require" ||
+    !url.password
   )
-    throw new Error("Restore requires the dedicated staging owner and direct connection");
-  const sql = neon(connection, { fetchOptions: { signal: AbortSignal.timeout(60000) } });
-  const existing = await sql.query("select id from finder_public.snapshots where id=$1", [
-    projectionId,
-  ]);
-  if (existing.length)
+    throw new Error("Restore requires the registered owner and direct connection");
+}
+
+export async function restoreBackup(
+  directory,
+  expectedManifestHash,
+  connection,
+  environment,
+  progress = () => {},
+) {
+  const verified = await verifyBackup(directory, expectedManifestHash);
+  validateRestoreConnection(connection, environment);
+  // A fresh deadline belongs to each HTTP request, never the entire restore.
+  const query = createRestoreQuery(connection);
+  const existing = await query(
+    "select id,activated_at,extras->>'restore_manifest_sha256' as restore_hash from finder_public.snapshots where id=$1",
+    [projectionId],
+  );
+  if (
+    existing.length &&
+    (existing[0].activated_at || existing[0].restore_hash !== expectedManifestHash)
+  )
     throw new Error("Restore target snapshot already exists; refusing to overwrite it");
   const s = verified.snapshot;
-  await sql.query(
-    "insert into finder_public.snapshots(id,metadata,coverage,extras,expected_counts) values($1,$2::jsonb,$3::jsonb,$4::jsonb,$5::jsonb)",
-    [
-      s.id,
-      JSON.stringify(s.metadata),
-      JSON.stringify(s.coverage),
-      JSON.stringify(s.extras),
-      JSON.stringify(s.expected_counts),
-    ],
+  if (!existing.length)
+    await query(
+      "insert into finder_public.snapshots(id,metadata,coverage,extras,expected_counts) values($1,$2::jsonb,$3::jsonb,$4::jsonb,$5::jsonb)",
+      [
+        s.id,
+        JSON.stringify(s.metadata),
+        JSON.stringify(s.coverage),
+        JSON.stringify({ ...s.extras, restore_manifest_sha256: expectedManifestHash }),
+        JSON.stringify(s.expected_counts),
+      ],
+    );
+  let restored = 0;
+  const completed = new Map(
+    (
+      await query("select batch_id,records from finder_public.batches where snapshot_id=$1", [
+        projectionId,
+      ])
+    ).map((row) => [row.batch_id, Number(row.records)]),
   );
   for (const entry of verified.manifest.files) {
+    if (completed.has(entry.file)) {
+      if (completed.get(entry.file) !== entry.records)
+        throw new Error("Recorded restore batch count differs");
+      restored += entry.records;
+      progress({ restored, batch: entry.file, expected: verified.records, resumed: true });
+      continue;
+    }
     const bytes = await readFile(join(directory, entry.file));
     verifyBatch(bytes, entry.sha256);
-    await sql.query("select finder_public.import_batch($1,$2,$3::jsonb)", [
+    await query("select finder_public.import_batch($1,$2,$3::jsonb)", [
       projectionId,
       entry.file,
       bytes.toString("utf8"),
     ]);
+    restored += entry.records;
+    progress({ restored, batch: entry.file, expected: verified.records });
   }
-  await sql.query("select finder_public.import_status($1,$2,$3)", [
+  await query("select finder_public.import_status($1,$2,$3)", [
     projectionId,
     verified.status.payload_text,
     verified.status.payload_sha256,
   ]);
   for (const zoom of [4, 5, 6, 7])
-    await sql.query("select finder_public.build_overview($1,$2)", [projectionId, zoom]);
-  await sql.query(
+    await query("select finder_public.build_overview($1,$2)", [projectionId, zoom]);
+  await query(
     "analyze finder_public.features, finder_public.operational_status, finder_public.registry_overview, finder_public.snapshots, finder_public.active_snapshot",
   );
   // Activation remains an explicit qualification step; this loader never switches traffic.
@@ -112,7 +151,12 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     const result =
       action === "verify"
         ? await verifyBackup(resolve(directory), hash)
-        : await restoreBackup(resolve(directory), hash, process.env.NEON_RESTORE_DATABASE_URL);
+        : await restoreBackup(
+            resolve(directory),
+            hash,
+            process.env.NEON_RESTORE_DATABASE_URL,
+            process.env.NEON_RESTORE_ENVIRONMENT,
+          );
     console.log(
       JSON.stringify({
         verified: true,
