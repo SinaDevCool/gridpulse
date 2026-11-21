@@ -32,6 +32,25 @@ function upstream(source: string, status = "complete") {
 afterEach(() => vi.restoreAllMocks());
 
 describe("public property enrichment request", () => {
+  it("reports optional Neon enrichment unavailable without calling Supabase or inventing evidence", async () => {
+    const origin = vi.spyOn(globalThis, "fetch");
+    const result = await handlePublicPropertyEnrichment(request(["bkg_admin", "power_finder"]), {
+      ...env,
+      PUBLIC_FINDER_PROVIDER: "neon",
+    });
+    expect(result?.status).toBe(200);
+    const body = await result?.json();
+    expect(body.findings).toEqual([]);
+    expect(body.sourceStatus).toEqual({ bkg_admin: "unavailable", power_finder: "unavailable" });
+    expect(body.sourceResults).toHaveLength(2);
+    expect(
+      body.sourceResults.every(
+        (item: { releaseId: unknown; status: string }) =>
+          item.releaseId === null && item.status === "unavailable",
+      ),
+    ).toBe(true);
+    expect(origin).not.toHaveBeenCalled();
+  });
   it("accepts a bounded anonymous batch", () => {
     expect(
       parseEnrichmentRequest({

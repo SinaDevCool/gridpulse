@@ -8,6 +8,8 @@ export const staging = Object.freeze({
   site: "https://staging.gridpulseinsights.com",
   supabase: "https://vuudrdsjjxjyxxgmlhfn.supabase.co",
   api: "https://gridpulse-operations-staging.onrender.com",
+  neonHost: "ep-patient-breeze-bhm3qx7z-pooler.c-10.eu-central-1.aws.neon.tech",
+  dataRelease: "finder-public-20261121-v1",
 });
 
 export function checkBuildEnvironment(env) {
@@ -24,6 +26,7 @@ export function checkBuildEnvironment(env) {
     "META_API_KEY",
     "OPENAI_API_KEY",
     "CLOUDFLARE_API_TOKEN",
+    "NEON_DATABASE_URL",
   ])
     assert.ok(!env[key], `${key} must not be present in the build environment`);
 }
@@ -46,9 +49,15 @@ export async function checkStagingCandidate(root) {
   assert.equal(config.name, staging.worker, "Refusing a Worker other than staging");
   assert.equal(config.vars?.COPILOT_ENABLED, "false");
   assert.equal(config.vars?.PUBLIC_FINDER_EXPERIMENTAL_MODE, "false");
+  assert.equal(config.vars?.PUBLIC_FINDER_PROVIDER, "neon");
+  assert.equal(config.vars?.NEON_FINDER_HOST, staging.neonHost);
+  assert.equal(config.vars?.FINDER_DATA_RELEASE, staging.dataRelease);
   assert.deepEqual(Object.keys(config.vars).sort(), [
     "COPILOT_ENABLED",
+    "FINDER_DATA_RELEASE",
+    "NEON_FINDER_HOST",
     "PUBLIC_FINDER_EXPERIMENTAL_MODE",
+    "PUBLIC_FINDER_PROVIDER",
   ]);
   assert.deepEqual(config.routes, [
     { pattern: new URL(staging.site).hostname, custom_domain: true },
@@ -80,6 +89,8 @@ export async function checkStagingCandidate(root) {
         supabaseFound ||= source.includes(staging.supabase);
         apiFound ||= source.includes(staging.api);
         assert.ok(!source.includes("sb_secret_"), "Client contains a backend secret");
+        assert.ok(!/postgres(?:ql)?:\/\//i.test(source), "Client contains a database connection");
+        assert.ok(!source.includes("NEON_DATABASE_URL"), "Client contains a server-only binding");
       }
     }
   }

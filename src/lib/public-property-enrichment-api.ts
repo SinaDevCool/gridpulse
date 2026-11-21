@@ -163,6 +163,33 @@ export async function handlePublicPropertyEnrichment(request: Request, env: Publ
     if (!result.success)
       return json({ error: "Too many enrichment requests." }, 429, { "retry-after": "60" });
   }
+  if (env.PUBLIC_FINDER_PROVIDER && env.PUBLIC_FINDER_PROVIDER !== "supabase") {
+    if (env.PUBLIC_FINDER_PROVIDER !== "neon")
+      return json({ error: "Enrichment data is temporarily unavailable." }, 503);
+    // The staged snapshot contains map context, not the enrichment RPC's
+    // parcel/environment evidence model. Never substitute mapped proximity.
+    return json(
+      {
+        releaseFingerprint: "no-source-release",
+        findings: [],
+        sourceStatus: Object.fromEntries(input.sources.map((source) => [source, "unavailable"])),
+        sourceResults: input.properties.flatMap((property) =>
+          input.sources.map((source) => ({
+            propertyId: property.property_id,
+            source,
+            status: "unavailable",
+            findingCount: 0,
+            releaseId: null,
+            checkedAt: new Date().toISOString(),
+            limitation:
+              "Optional property enrichment is not included in this public Finder snapshot. No source check was completed.",
+          })),
+        ),
+      },
+      200,
+      { "cache-control": "no-store" },
+    );
+  }
   const supabaseUrl = envValue(env, "url");
   const key = envValue(env, "key");
   if (!supabaseUrl || !key)

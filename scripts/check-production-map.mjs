@@ -6,7 +6,10 @@ const baseUrl = (process.env.GRIDPULSE_HEALTH_BASE_URL ?? "https://gridpulseinsi
 );
 const screenshotPath =
   process.env.GRIDPULSE_MAP_FAILURE_SCREENSHOT ?? "test-results/production-map-failure.png";
-const browser = await chromium.launch({ headless: true, channel: process.env.GRIDPULSE_SMOKE_BROWSER_CHANNEL || undefined });
+const browser = await chromium.launch({
+  headless: true,
+  channel: process.env.GRIDPULSE_SMOKE_BROWSER_CHANNEL || undefined,
+});
 const page = await browser.newPage({ viewport: { width: 1600, height: 900 } });
 const failures = [];
 const mapResponses = { grid: false, registry: false, basemap: false };
@@ -37,7 +40,9 @@ page.on("response", (response) => {
 
 try {
   const operatorCatalogResponse = page.waitForResponse(
-    (response) => response.url().includes("/rest/v1/rpc/power_finder_public_operators"),
+    (response) =>
+      response.url().includes("/rest/v1/rpc/power_finder_public_operators") ||
+      response.url().includes("/api/power-finder/viewport?operators=true"),
     { timeout: 30_000 },
   );
   await page.goto(`${baseUrl}/power-finder`, { waitUntil: "domcontentloaded", timeout: 60_000 });

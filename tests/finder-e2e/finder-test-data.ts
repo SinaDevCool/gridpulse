@@ -7,10 +7,12 @@ import type { PowerFinderCollection } from "../../src/features/power-finder/fixt
 /** Fixed UI-test data only. Live release health is checked by check-production-map.mjs. */
 export async function useBrandenburgViewport(page: Page) {
   await page.route("**/api/power-finder/viewport?**", (route) =>
-    route.fulfill({
-      contentType: "application/json",
-      path: "public/power-finder/brandenburg-osm.json",
-    }),
+    new URL(route.request().url()).searchParams.get("operators") === "true"
+      ? route.fulfill({ json: [] })
+      : route.fulfill({
+          contentType: "application/json",
+          path: "public/power-finder/brandenburg-osm.json",
+        }),
   );
 }
 
@@ -57,6 +59,22 @@ export async function useSuccessfulEnrichment(page: Page) {
 }
 
 export async function useOperatorContextViewport(page: Page) {
+  const operators = [
+    {
+      name: "wesernetz Bremen GmbH",
+      type: "DSO / other",
+      featureCount: 1,
+      bounds: [8.5, 53.1, 8.7, 53.3],
+      tsoNames: [],
+    },
+    {
+      name: "TenneT TSO GmbH",
+      type: "TSO",
+      featureCount: 1,
+      bounds: [8.5, 53.1, 8.7, 53.3],
+      tsoNames: [],
+    },
+  ];
   await page.route("**/rest/v1/rpc/power_finder_public_operators", (route) =>
     route.fulfill({
       json: [
@@ -123,6 +141,11 @@ export async function useOperatorContextViewport(page: Page) {
     ],
   };
   await page.route("**/api/power-finder/viewport?**", (route) =>
-    route.fulfill({ json: collection }),
+    route.fulfill({
+      json:
+        new URL(route.request().url()).searchParams.get("operators") === "true"
+          ? operators
+          : collection,
+    }),
   );
 }

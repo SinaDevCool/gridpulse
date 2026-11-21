@@ -96,6 +96,14 @@ jobs:
           GH_TOKEN: ${{ secrets.RELEASE_POLICY_READ_TOKEN }}
           RELEASE_ENVIRONMENT: staging
           CHANGE_REFERENCE: ${{ inputs.change_reference }}
+      - name: Bind qualified Neon staging reader
+        run: node scripts/bind-neon-staging-secret.mjs
+        env:
+          NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      - run: node scripts/check-staging-candidate.mjs artifact
+      - run: node scripts/candidate-artifact.mjs verify
       - name: Deploy only the verified staging Worker
         run: npx wrangler deploy --config dist/server/wrangler.json
         env:
@@ -104,7 +112,7 @@ jobs:
       - name: Check staging pages
         run: node scripts/check-production-health.mjs
         env:
-          GRIDPULSE_HEALTH_PROFILE: staging-schema-only
+          GRIDPULSE_HEALTH_PROFILE: production
           GRIDPULSE_HEALTH_BASE_URL: https://staging.gridpulseinsights.com
       - name: Verify staging serves the exact deployed commit
         run: |

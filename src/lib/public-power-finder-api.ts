@@ -2,6 +2,13 @@ import { scopeFallback } from "../features/power-finder/fallback-scope";
 import type { PowerFinderCollection } from "@/features/power-finder/fixture-data";
 import { publicFinderCoverage } from "./public-finder-coverage";
 import { finderRequestAllowed } from "./finder-request-limit";
+import {
+  finderCachePartition,
+  finderProviderAllowed,
+  neonFinderConfigured,
+  neonPublicRpc,
+  type NeonFinderEnv,
+} from "./neon-finder-public";
 
 const PUBLIC_VIEWPORT_PATH = "/api/power-finder/viewport";
 const ACCEPTED_STATIC_FALLBACK_PATH = "/power-finder/brandenburg-osm.json";
@@ -10,7 +17,7 @@ const CACHE_SECONDS = 300;
 const TILE_CACHE_RELEASE = "finder-evidence-v3";
 const TILE_EDGE_CACHE_SECONDS = 300;
 
-export type PublicFinderEnv = {
+export type PublicFinderEnv = NeonFinderEnv & {
   ASSETS?: { fetch: (request: Request) => Promise<Response> };
   SUPABASE_URL?: string;
   SUPABASE_PUBLISHABLE_KEY?: string;
@@ -171,6 +178,30 @@ export async function handlePublicPowerFinderRequest(
     });
   }
   if (url.searchParams.get("coverage") === "true") return publicFinderCoverage(env);
+  if (url.searchParams.get("operators") === "true") {
+    if (!finderProviderAllowed(env))
+      return jsonResponse({ error: "Operator catalog unavailable." }, 503);
+    try {
+      if (env.PUBLIC_FINDER_PROVIDER === "neon") return await neonPublicRpc(env, "operators");
+      const origin = environmentValue(env, "SUPABASE_URL");
+      const key = environmentValue(env, "SUPABASE_PUBLISHABLE_KEY");
+      if (!origin || !key) return jsonResponse([], 503);
+      const headers: Record<string, string> = { apikey: key, "content-type": "application/json" };
+      if (key.startsWith("eyJ")) headers.authorization = `Bearer ${key}`;
+      const result = await fetch(`${origin}/rest/v1/rpc/power_finder_public_operators`, {
+        method: "POST",
+        headers,
+        body: "{}",
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!result.ok) return jsonResponse([], 502);
+      const data: unknown = await result.json();
+      if (!Array.isArray(data) || data.length > 5000) return jsonResponse([], 502);
+      return jsonResponse(data, 200, { "cache-control": "public, max-age=60, s-maxage=300" });
+    } catch {
+      return jsonResponse([], 502);
+    }
+  }
 
   let parameters: ViewportParameters;
   try {
@@ -184,11 +215,16 @@ export async function handlePublicPowerFinderRequest(
 
   const supabaseUrl = environmentValue(env, "SUPABASE_URL");
   const publishableKey = environmentValue(env, "SUPABASE_PUBLISHABLE_KEY");
-  if (!supabaseUrl || !publishableKey) {
+  if (
+    !finderProviderAllowed(env) ||
+    (!neonFinderConfigured(env) && (!supabaseUrl || !publishableKey))
+  ) {
     return jsonResponse({ error: "Public Finder data is temporarily unavailable." }, 503);
   }
 
-  const cacheRequest = new Request(normalizedCacheUrl(url, parameters), { method: "GET" });
+  const viewportCacheUrl = normalizedCacheUrl(url, parameters);
+  viewportCacheUrl.searchParams.set("provider", finderCachePartition(env));
+  const cacheRequest = new Request(viewportCacheUrl, { method: "GET" });
   const cache =
     typeof caches === "undefined" ? null : (caches as CacheStorage & { default: Cache }).default;
   const cached = await cache?.match(cacheRequest);
@@ -198,10 +234,10 @@ export async function handlePublicPowerFinderRequest(
   const timeout = setTimeout(() => controller.abort(), 8_000);
   try {
     const headers: Record<string, string> = {
-      apikey: publishableKey,
+      apikey: publishableKey ?? "",
       "content-type": "application/json",
     };
-    if (publishableKey.startsWith("eyJ")) headers.authorization = `Bearer ${publishableKey}`;
+    if (publishableKey?.startsWith("eyJ")) headers.authorization = `Bearer ${publishableKey}`;
     const rankingOnly = url.searchParams.get("ranking") === "true";
     const originUrl = `${supabaseUrl}/rest/v1/rpc/${rankingOnly ? "power_finder_public_candidate_nodes" : "power_finder_public_viewport"}`;
     const requestOptions = {
@@ -222,13 +258,31 @@ export async function handlePublicPowerFinderRequest(
       }),
       signal: controller.signal,
     } satisfies RequestInit;
-    let response = await fetch(originUrl, requestOptions);
-    if (response.status >= 500 && !controller.signal.aborted) {
+    let response =
+      env.PUBLIC_FINDER_PROVIDER === "neon"
+        ? await neonPublicRpc(env, "viewport", [
+            parameters.west,
+            parameters.south,
+            parameters.east,
+            parameters.north,
+            parameters.includeGeneration,
+            parameters.includeStorage,
+            rankingOnly,
+          ])
+        : await fetch(originUrl, requestOptions);
+    if (
+      env.PUBLIC_FINDER_PROVIDER !== "neon" &&
+      response.status >= 500 &&
+      !controller.signal.aborted
+    ) {
       response = await fetch(originUrl, requestOptions);
     }
     if (!response.ok) {
       console.error(`Public Finder origin returned ${response.status}.`);
-      const fallback = await acceptedStaticFallback(url, env, parameters);
+      const fallback =
+        env.PUBLIC_FINDER_PROVIDER === "neon"
+          ? null
+          : await acceptedStaticFallback(url, env, parameters);
       if (fallback) return fallback;
       return jsonResponse({ error: "Public Finder data is temporarily unavailable." }, 502);
     }
@@ -242,7 +296,8 @@ export async function handlePublicPowerFinderRequest(
         metadata?: Record<string, unknown> & { record_count?: number };
       };
       if (payload.metadata) {
-        payload.metadata.published_at_basis = "query_time";
+        if (env.PUBLIC_FINDER_PROVIDER !== "neon")
+          payload.metadata.published_at_basis = "query_time";
         payload.metadata.queried_at = new Date().toISOString();
         payload.metadata.retrieval_capped =
           Number(payload.metadata.record_count ?? 0) >= (rankingOnly ? 1000 : 2500);
@@ -268,9 +323,12 @@ export async function handlePublicPowerFinderRequest(
       else await cacheWrite;
     }
     return publicResponse;
-  } catch (error) {
-    console.error(error instanceof Error ? error.message : "Public Finder origin failed.");
-    const fallback = await acceptedStaticFallback(url, env, parameters);
+  } catch {
+    console.error("Public Finder origin failed.");
+    const fallback =
+      env.PUBLIC_FINDER_PROVIDER === "neon"
+        ? null
+        : await acceptedStaticFallback(url, env, parameters);
     if (fallback) return fallback;
     return jsonResponse({ error: "Public Finder data is temporarily unavailable." }, 502);
   } finally {
@@ -298,13 +356,17 @@ export async function handlePublicPowerFinderTileRequest(
   }
   const supabaseUrl = environmentValue(env, "SUPABASE_URL");
   const publishableKey = environmentValue(env, "SUPABASE_PUBLISHABLE_KEY");
-  if (!supabaseUrl || !publishableKey) {
+  if (
+    !finderProviderAllowed(env) ||
+    (!neonFinderConfigured(env) && (!supabaseUrl || !publishableKey))
+  ) {
     return jsonResponse({ error: "Public Finder data is temporarily unavailable." }, 503);
   }
   if (!(await finderRequestAllowed(request, env, "finder-tile")))
     return jsonResponse({ error: "Too many tile requests." }, 429, { "retry-after": "60" });
   const cacheUrl = new URL(requestUrl.pathname, requestUrl.origin);
   cacheUrl.searchParams.set("release", TILE_CACHE_RELEASE);
+  cacheUrl.searchParams.set("provider", finderCachePartition(env));
   cacheUrl.searchParams.set("content", registryOnly ? "registry" : "grid");
   cacheUrl.searchParams.set("generation", String(includeGeneration));
   cacheUrl.searchParams.set("storage", String(includeStorage));
@@ -318,27 +380,37 @@ export async function handlePublicPowerFinderTileRequest(
     return new Response(cached.body, { status: cached.status, headers });
   }
   const headers: Record<string, string> = {
-    apikey: publishableKey,
+    apikey: publishableKey ?? "",
     "content-type": "application/json",
   };
-  if (publishableKey.startsWith("eyJ")) headers.authorization = `Bearer ${publishableKey}`;
+  if (publishableKey?.startsWith("eyJ")) headers.authorization = `Bearer ${publishableKey}`;
   const startedAt = Date.now();
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 25_000);
   try {
     const rpc = registryOnly ? "power_finder_public_registry_tile" : "power_finder_public_tile";
-    const response = await fetch(`${supabaseUrl}/rest/v1/rpc/${rpc}`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        z,
-        x,
-        y,
-        include_generation: includeGeneration,
-        include_storage: includeStorage,
-      }),
-      signal: controller.signal,
-    });
+    const response =
+      env.PUBLIC_FINDER_PROVIDER === "neon"
+        ? await neonPublicRpc(env, "tile", [
+            z,
+            x,
+            y,
+            registryOnly,
+            includeGeneration,
+            includeStorage,
+          ])
+        : await fetch(`${supabaseUrl}/rest/v1/rpc/${rpc}`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({
+              z,
+              x,
+              y,
+              include_generation: includeGeneration,
+              include_storage: includeStorage,
+            }),
+            signal: controller.signal,
+          });
     if (!response.ok) return jsonResponse({ error: "Tile origin unavailable." }, 502);
     const encoded = (await response.json()) as string;
     if (typeof encoded !== "string" || !encoded.startsWith("\\x")) {

@@ -1,4 +1,5 @@
 import type { PublicFinderEnv } from "./public-power-finder-api";
+import { finderProviderAllowed, neonFinderConfigured, neonPublicRpc } from "./neon-finder-public";
 
 /** Existing read-only governed release RPC. No acceptance is inferred from query capability. */
 export async function publicFinderCoverage(env: PublicFinderEnv): Promise<Response> {
@@ -7,19 +8,25 @@ export async function publicFinderCoverage(env: PublicFinderEnv): Promise<Respon
     env.SUPABASE_PUBLISHABLE_KEY ||
     env.VITE_SUPABASE_PUBLISHABLE_KEY ||
     import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-  if (!origin || !key)
+  if (!finderProviderAllowed(env) || (!neonFinderConfigured(env) && (!origin || !key)))
     return Response.json({ coverage_status: "unavailable", releases: [] }, { status: 503 });
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 8000);
   try {
-    const headers: Record<string, string> = { apikey: key, "content-type": "application/json" };
-    if (key.startsWith("eyJ")) headers.authorization = `Bearer ${key}`;
-    const response = await fetch(`${origin}/rest/v1/rpc/power_finder_public_coverage`, {
-      method: "POST",
-      headers,
-      body: "{}",
-      signal: controller.signal,
-    });
+    const headers: Record<string, string> = {
+      apikey: key ?? "",
+      "content-type": "application/json",
+    };
+    if (key?.startsWith("eyJ")) headers.authorization = `Bearer ${key}`;
+    const response =
+      env.PUBLIC_FINDER_PROVIDER === "neon"
+        ? await neonPublicRpc(env, "coverage")
+        : await fetch(`${origin}/rest/v1/rpc/power_finder_public_coverage`, {
+            method: "POST",
+            headers,
+            body: "{}",
+            signal: controller.signal,
+          });
     if (!response.ok) throw new Error("Coverage unavailable");
     const payload = (await response.json()) as { coverage_status?: string; releases?: unknown[] };
     if (

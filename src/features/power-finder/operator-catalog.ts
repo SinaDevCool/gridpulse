@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { isFinderMvp } from "@/config/product-mode";
 import { canonicalOperatorName, knownOperatorRole } from "./operator-normalization";
 import { mergeOperatorBounds, type OperatorBounds } from "./operator-map-navigation";
 
@@ -22,7 +23,18 @@ function validBounds(value: unknown): value is OperatorBounds {
 }
 
 export async function loadGridOperatorCatalog(): Promise<GridOperatorOption[]> {
-  const { data, error } = await supabase.rpc("power_finder_public_operators");
+  const { data, error } = isFinderMvp()
+    ? await (async () => {
+        try {
+          const result = await fetch("/api/power-finder/viewport?operators=true", {
+            signal: AbortSignal.timeout(8000),
+          });
+          return { data: result.ok ? await result.json() : null, error: !result.ok };
+        } catch {
+          return { data: null, error: true };
+        }
+      })()
+    : await supabase.rpc("power_finder_public_operators");
   if (error || !Array.isArray(data)) return [];
   const merged = new Map<string, GridOperatorOption>();
   for (const item of data as GridOperatorOption[]) {
