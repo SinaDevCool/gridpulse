@@ -79,7 +79,7 @@ const schema = z
     targetConnectionDate: z.string(),
     commercialDeadline: z.string(),
     connectionChallenge: z.string().trim().min(20).max(3000),
-    consent: z.literal(true, { errorMap: () => ({ message: "Consent is required" }) }),
+    consent: z.literal(true, { error: "Consent is required" }),
     website: z.string().max(0),
   })
   .refine((values) => values.importMw > 0 || values.exportMw > 0, {

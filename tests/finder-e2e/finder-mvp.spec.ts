@@ -1,10 +1,98 @@
 import { expect, test } from "@playwright/test";
+import readXlsxFile from "read-excel-file/node";
 import {
   useBrandenburgViewport,
   useBrandenburgMapTiles,
   useSuccessfulEnrichment,
   useOperatorContextViewport,
 } from "./finder-test-data";
+
+test("portfolio XLSX export round-trips German names through the upgraded writer", async ({
+  page,
+}) => {
+  await useBrandenburgViewport(page);
+  await page.goto("/power-finder?lat=52.3316&lng=13.4995&mw=55");
+  await expect(page.getByText(/candidate site-to-node matches/i).first()).toBeVisible();
+  if (!(await page.getByLabel("Site opportunity").isVisible()))
+    await page.getByRole("button", { name: "Screening brief", exact: true }).click();
+  await page.getByLabel("Site opportunity").fill("München Prüfstätte");
+  await page.getByLabel("Site opportunity").press("Tab");
+  await expect(page.getByText(/candidate site-to-node matches/i).first()).toBeVisible();
+  await page.getByRole("button", { name: "Create pipeline site", exact: true }).click();
+  await expect(page).toHaveURL(/propertyId=/);
+  await page.goto("/portfolio");
+  await page.getByText("Workspace Data", { exact: true }).click();
+  const pending = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Portfolio XLSX", exact: true }).click();
+  const download = await pending;
+  const file = await download.path();
+  expect(file).toBeTruthy();
+  const rows = await readXlsxFile(file!);
+  expect(rows[0][0]).toBe("gridpulse_property_id");
+  expect(rows[1][1]).toBe("München Prüfstätte");
+});
+
+test("public URLs cannot activate synthetic capacity or load large benchmark fallbacks", async ({
+  page,
+}) => {
+  await useBrandenburgViewport(page);
+  const benchmarkRequests: string[] = [];
+  page.on("request", (request) => {
+    if (
+      /berlin-synthetic-capacity|c2-hourly-benchmark|c3-security-flexibility-benchmark/.test(
+        request.url(),
+      )
+    )
+      benchmarkRequests.push(request.url());
+  });
+  await page.goto(
+    "/power-finder?lat=52.3316&lng=13.4995&mapMode=capacity&capacitySource=berlin_synthetic",
+  );
+  await expect(page.getByText(/candidate site-to-node matches/i).first()).toBeVisible();
+  await expect(
+    page.getByText(
+      "Investigation priority only. Capacity and connection suitability are unverified.",
+    ),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: /Show .* on map, .*\/100/ })
+    .first()
+    .click();
+  await page.getByText("German site evidence & operator enquiry", { exact: true }).click();
+  await expect(page.getByLabel("Draft operator enquiry")).toHaveValue(
+    /Indicative connection enquiry/,
+  );
+  await expect(page.getByRole("button", { name: "Copy draft enquiry" })).toBeVisible();
+  await page.getByText("Screening evidence receipt", { exact: true }).click();
+  await expect(page.getByLabel("Screening evidence receipt text")).toHaveValue(
+    /Retrieved-input SHA-256: [a-f0-9]{64}/,
+  );
+  await expect(page.getByLabel("Screening evidence receipt text")).toHaveValue(
+    /Available import\/export MW.*remain unconfirmed/,
+  );
+  await expect(
+    page.getByRole("button", { name: "Copy evidence receipt", exact: true }),
+  ).toBeVisible();
+  expect(benchmarkRequests).toEqual([]);
+});
+
+test("public methodology identifies German references and historical utilisation limitations", async ({
+  page,
+}) => {
+  await page.goto("/data-sources");
+  await expect(
+    page.getByRole("heading", { name: "German site evidence and source access" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Historical generation utilisation" }),
+  ).toBeVisible();
+  await expect(page.getByRole("link", { name: /Large-unit generation.*SMARD/ })).toHaveAttribute(
+    "href",
+    /smard.de/,
+  );
+  await expect(page.getByText("Running hours", { exact: true })).toBeVisible();
+  await expect(page.getByText(/Subtracting capacity factor from 100%/)).toBeVisible();
+});
 
 test("Finder exploration and local property portfolio are anonymous", async ({ page }) => {
   const requests: string[] = [];

@@ -1,6 +1,3 @@
-import { isFinderMvp } from "../../config/product-mode";
-import { supabase } from "../../integrations/supabase/client";
-
 export type CoverageStatus = "accepted" | "partial" | "planned" | "unavailable";
 
 export interface PowerFinderCoverage {
@@ -21,30 +18,30 @@ export const fallbackCoverage: PowerFinderCoverage[] = [
   {
     regionCode: "DE",
     regionName: "Germany",
-    status: "accepted",
+    status: "unavailable",
     bounds: [5.866, 47.27, 15.042, 55.059],
     center: [10.45, 51.16],
     zoom: 7.6,
-    topology: true,
-    registeredAssets: true,
+    topology: false,
+    registeredAssets: false,
     publishedDemandCapacity: false,
-    lastAcceptedAt: "2026-08-10T00:00:00Z",
+    lastAcceptedAt: null,
     evidenceBoundary:
-      "Accepted Germany-wide OSM topology and MaStR asset context; demand headroom is not established.",
+      "Coverage has not been verified against active accepted releases; demand headroom is unknown.",
   },
   {
     regionCode: "DE-BB",
     regionName: "Brandenburg",
-    status: "accepted",
+    status: "unavailable",
     bounds: [11.27, 51.36, 14.77, 53.56],
     center: [13.36, 52.31],
     zoom: 8.2,
-    topology: true,
-    registeredAssets: true,
+    topology: false,
+    registeredAssets: false,
     publishedDemandCapacity: false,
-    lastAcceptedAt: "2026-07-23T00:00:00Z",
+    lastAcceptedAt: null,
     evidenceBoundary:
-      "Accepted OSM topology and MaStR asset context; demand headroom is not established.",
+      "Static geographic bounds only; source coverage and demand headroom are unverified.",
   },
   ...(
     [
@@ -67,36 +64,76 @@ export const fallbackCoverage: PowerFinderCoverage[] = [
   ).map(([regionCode, regionName, bounds, center]) => ({
     regionCode,
     regionName,
-    status: "accepted" as const,
+    status: "unavailable" as const,
     bounds: [...bounds] as [number, number, number, number],
     center: [...center] as [number, number],
     zoom: regionCode === "DE-BE" || regionCode === "DE-HB" || regionCode === "DE-HH" ? 10 : 8.2,
-    topology: true,
-    registeredAssets: true,
+    topology: false,
+    registeredAssets: false,
     publishedDemandCapacity: false,
-    lastAcceptedAt: "2026-08-10T00:00:00Z",
+    lastAcceptedAt: null,
     evidenceBoundary:
-      "Accepted Germany-wide OSM topology and MaStR asset context; demand headroom is not established.",
+      "Coverage has not been verified against active accepted releases; demand headroom is unknown.",
   })),
 ];
 
+export type GovernedCoverageRelease = {
+  source_id: string;
+  release_id: string;
+  scope: string;
+  activated_at: string | null;
+  layer_counts?: Record<string, number> | null;
+};
+
+export function resolveGovernedCoverage(payload: {
+  coverage_status?: string;
+  releases?: GovernedCoverageRelease[];
+}): PowerFinderCoverage[] {
+  if (
+    !["national_accepted", "partial"].includes(payload.coverage_status ?? "") ||
+    !Array.isArray(payload.releases)
+  )
+    return fallbackCoverage;
+  return fallbackCoverage.map((region) => {
+    const releases = payload.releases!.filter(
+      (release) =>
+        release.scope === "Germany" ||
+        release.scope === region.regionCode ||
+        release.scope === region.regionName,
+    );
+    if (!releases.length) return region;
+    const topology = releases.some((release) =>
+      ["node", "nodes", "line", "lines"].some(
+        (key) => Number(release.layer_counts?.[key] ?? 0) > 0,
+      ),
+    );
+    const registeredAssets = releases.some((release) =>
+      ["generation_asset", "generation_assets", "storage_asset", "storage_assets"].some(
+        (key) => Number(release.layer_counts?.[key] ?? 0) > 0,
+      ),
+    );
+    const acceptedDates = releases
+      .map((release) => release.activated_at)
+      .filter((date): date is string => Boolean(date && Number.isFinite(Date.parse(date))))
+      .sort();
+    return {
+      ...region,
+      status: topology || registeredAssets ? ("accepted" as const) : ("partial" as const),
+      topology,
+      registeredAssets,
+      lastAcceptedAt: acceptedDates.at(-1) ?? null,
+      evidenceBoundary:
+        "Active accepted release coverage; layer completeness and demand capacity are not established.",
+    };
+  });
+}
+
 export async function loadPowerFinderCoverage(): Promise<PowerFinderCoverage[]> {
-  if (isFinderMvp()) return fallbackCoverage;
-  const { data, error } = await supabase.rpc("power_finder_coverage");
-  if (error || !Array.isArray(data)) return fallbackCoverage;
-  const published = data.map((row) => ({
-    regionCode: row.region_code,
-    regionName: row.region_name,
-    status: row.status,
-    bounds: row.bounds,
-    center: row.center,
-    zoom: row.zoom,
-    topology: row.topology,
-    registeredAssets: row.registered_assets,
-    publishedDemandCapacity: row.published_demand_capacity,
-    lastAcceptedAt: row.last_accepted_at,
-    evidenceBoundary: row.evidence_boundary,
-  }));
-  const publishedCodes = new Set(published.map((item) => item.regionCode));
-  return [...published, ...fallbackCoverage.filter((item) => !publishedCodes.has(item.regionCode))];
+  try {
+    const response = await fetch("/api/power-finder/viewport?coverage=true");
+    if (!response.ok) return fallbackCoverage;
+    return resolveGovernedCoverage(await response.json());
+  } catch {
+    return fallbackCoverage;
+  }
 }

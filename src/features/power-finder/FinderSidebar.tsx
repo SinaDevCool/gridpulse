@@ -110,6 +110,17 @@ export function FinderSidebar({ model }: { model: FinderControllerContract }) {
                   : "accepted static fallback"}
             </span>
             <small>{collection.metadata.attribution}</small>
+            <small>
+              Source release:{" "}
+              {collection.metadata.published_at_basis === "source_release"
+                ? collection.metadata.published_at
+                : "not established"}
+            </small>
+            <small>
+              {collection.metadata.coverage_status === "accepted_static_fallback"
+                ? "Degraded service: static Brandenburg data only."
+                : activeCoverage.evidenceBoundary}
+            </small>
           </div>
         </footer>
       )}

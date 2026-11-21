@@ -2,6 +2,7 @@ import {
   loadBerlinSyntheticCapacity,
   loadCalculatedCapacityViewport,
 } from "@/features/power-finder/calculated-capacity";
+import { finderMvpFeatures } from "@/config/product-mode";
 import { useEffect } from "react";
 import type { FinderControllerContract } from "./controller-contract";
 type Context = Pick<
@@ -46,7 +47,7 @@ export function useFinderCapacityEffects(context: Context) {
       requestedMetric === "firm_import_mw"
         ? requestedMetric
         : "firm_import_mw";
-    setMapMode(search.mapMode ?? "voltage");
+    setMapMode(finderMvpFeatures.syntheticCapacity ? (search.mapMode ?? "voltage") : "voltage");
     setCapacitySource(privateCapacitySelected ? "private" : "berlin_synthetic");
     setCapacityMetric(safeMetric);
     setRequiredCapacityMw(search.requiredMw ?? project.importMw);
@@ -63,7 +64,7 @@ export function useFinderCapacityEffects(context: Context) {
     setRequiredCapacityMw,
   ]);
   useEffect(() => {
-    if (mapMode !== "capacity") {
+    if (!finderMvpFeatures.syntheticCapacity || mapMode !== "capacity") {
       return;
     }
     setCapacityState("loading");

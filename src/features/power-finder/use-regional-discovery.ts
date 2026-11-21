@@ -113,6 +113,8 @@ export function useRegionalDiscovery(model: DiscoveryModel) {
           ...samples[0].collection.metadata,
           title: `${activeCoverage.regionName} discovery sample`,
           record_count: byId.size,
+          retrieval_capped: samples.some((sample) => sample.collection.metadata.retrieval_capped),
+          published_at_basis: "unknown",
           geographic_scope: activeCoverage.bounds,
         },
       };

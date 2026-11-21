@@ -20,6 +20,11 @@ export function candidateSnapshot(candidate: CandidateOpportunity): AnonymousCan
     evidenceScore: candidate.evidenceScore,
     missingEvidence: candidate.missingEvidence,
     calculationVersion: candidate.calculationVersion,
+    sourceSnapshotSha256: candidate.sourceSnapshotSha256,
+    sourcePublishedAt: candidate.sourcePublishedAt,
+    retrievalCapped: candidate.retrievalCapped,
+    infrastructureClass: candidate.infrastructureClass,
+    suitabilityNote: candidate.suitabilityNote,
     capacityState: "not_established",
     evidenceClass: "open_mapping",
     capturedAt: new Date().toISOString(),
@@ -52,12 +57,17 @@ export function propertyFromFinder(
     ? {
         id: crypto.randomUUID(),
         propertyId: existing?.id ?? "pending",
-        status: "complete" as const,
+        status: capturedCandidates.some(
+          (candidate) => candidate.retrievalCapped || !candidate.sourceSnapshotSha256,
+        )
+          ? ("partial" as const)
+          : ("complete" as const),
         candidateIds: capturedCandidates.map((item) => item.id),
         recommendedCandidateId: capturedCandidates[0]?.id ?? null,
         shortlistedCandidateId: preferredCandidateId,
         calculationVersion: capturedCandidates[0]?.calculationVersion ?? "unavailable",
-        releaseFingerprint: "interactive-power-finder",
+        releaseFingerprint:
+          capturedCandidates[0]?.sourceSnapshotSha256 ?? "unverified-interactive-snapshot",
         screenedAt: now,
       }
     : null;

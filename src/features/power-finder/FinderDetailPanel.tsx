@@ -10,12 +10,15 @@ import { formatOperatorNames } from "@/features/power-finder/operator-normalizat
 import { savePowerFinderCandidate } from "@/features/power-finder/shortlist";
 import { Link } from "@tanstack/react-router";
 import { BookmarkPlus, GitCompareArrows, MapPin, Network, ShieldCheck, Zap } from "lucide-react";
-import { Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import type { FinderControllerContract } from "./controller-contract";
 import { FinderOperatorEvidence } from "./FinderOperatorEvidence";
 import { FinderSecurityStudy } from "./FinderSecurityStudy";
 import { distanceFormatter, kindLabels } from "./page-formatting";
 import { PowerFinderCandidateDetail } from "./page-support";
+const GermanSiteEvidence = lazy(() =>
+  import("./GermanSiteEvidence").then((module) => ({ default: module.GermanSiteEvidence })),
+);
 export function FinderDetailPanel({ model }: { model: FinderControllerContract }) {
   const {
     navigate,
@@ -51,6 +54,12 @@ export function FinderDetailPanel({ model }: { model: FinderControllerContract }
     comparedCandidates,
     coordinates,
   } = model;
+  const selectedDetailId = selectedDetailFeature?.id;
+  useEffect(() => {
+    if (selectedDetailId == null) return;
+    const frame = window.requestAnimationFrame(() => detailPanelRef.current?.focus());
+    return () => window.cancelAnimationFrame(frame);
+  }, [selectedDetailId, detailPanelRef]);
   return (
     <aside
       ref={detailPanelRef}
@@ -289,6 +298,15 @@ export function FinderDetailPanel({ model }: { model: FinderControllerContract }
                 Registered asset data provides local market context. It does not establish grid
                 headroom or connection availability.
               </p>
+            )}
+            {selectedOpportunity && (
+              <Suspense fallback={<p role="status">Loading German site evidence…</p>}>
+                <GermanSiteEvidence
+                  project={project}
+                  candidate={selectedOpportunity}
+                  property={activeProperty}
+                />
+              </Suspense>
             )}
             {selectedOpportunity && (
               <Suspense fallback={<p role="status">Loading candidate details…</p>}>

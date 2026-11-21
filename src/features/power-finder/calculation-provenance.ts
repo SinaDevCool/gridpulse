@@ -16,7 +16,7 @@ export const calculationClassLabels: Record<CalculationClass, string> = {
   synthetic: "Experimental demonstration",
 };
 
-export const PUBLIC_SCREENING_METHOD_VERSION = "evidence-investigation-priority-v2";
+export const PUBLIC_SCREENING_METHOD_VERSION = "evidence-investigation-priority-v3";
 
 export function publicScreeningProvenance(sourceIds: string[]): CalculationProvenance {
   return {

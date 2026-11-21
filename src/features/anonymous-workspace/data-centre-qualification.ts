@@ -21,11 +21,18 @@ export const qualificationLabels: Record<QualificationDimensionKey, string> = {
   municipality: "Municipality readiness",
 };
 
-export function evidenceIsCurrent(item: AnonymousEvidenceItem, now = new Date()) {
+export function evidenceIsCurrent(
+  item: Pick<AnonymousEvidenceItem, "validFrom" | "validTo">,
+  now = new Date(),
+) {
+  const from = item.validFrom ? Date.parse(item.validFrom) : -Infinity;
+  const to = item.validTo ? Date.parse(item.validTo) : Infinity;
   return (
-    !item.validTo ||
-    !Number.isFinite(Date.parse(item.validTo)) ||
-    Date.parse(item.validTo) >= now.getTime()
+    !Number.isNaN(from) &&
+    !Number.isNaN(to) &&
+    from <= to &&
+    from <= now.getTime() &&
+    to >= now.getTime()
   );
 }
 

@@ -13,6 +13,7 @@ import type { OperationsOverviewModel } from "../scenario-engine";
 import { useOperationsEvidenceDataStore } from "./evidence-store";
 import { useQueryClient } from "@tanstack/react-query";
 import { assessmentInput, assessmentQueryKey } from "../assessment-input";
+import { evidenceErrorMessage } from "../evidence-validation";
 
 export function usePowerEvidence(
   model: OperationsOverviewModel,
@@ -88,7 +89,7 @@ export function usePowerEvidence(
       onModeChange?.("historical");
     } catch (caught) {
       if (!pending.isCurrent()) return;
-      setError(caught instanceof Error ? caught.message : "Could not read facility measurements.");
+      setError(evidenceErrorMessage(caught, "Could not read facility measurements."));
     } finally {
       event.target.value = "";
     }
@@ -122,7 +123,7 @@ export function usePowerEvidence(
       onModeChange?.("historical");
     } catch (caught) {
       if (!pending.isCurrent()) return;
-      setError(caught instanceof Error ? caught.message : "Could not read battery measurements.");
+      setError(evidenceErrorMessage(caught, "Could not read battery measurements."));
     } finally {
       event.target.value = "";
     }

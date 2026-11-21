@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isFinderMvp } from "../../config/product-mode";
 const safeNumber = (minimum: number, maximum: number) =>
   z.coerce.number().min(minimum).max(maximum).optional().catch(undefined);
 export const finderSearchSchema = z.object({
@@ -39,7 +40,11 @@ export const finderSearchSchema = z.object({
     ])
     .optional()
     .catch(undefined),
-  mapMode: z.enum(["voltage", "evidence", "capacity"]).optional().catch(undefined),
+  mapMode: z
+    .enum(["voltage", "evidence", "capacity"])
+    .optional()
+    .catch(undefined)
+    .transform((value) => (isFinderMvp() && value === "capacity" ? ("voltage" as const) : value)),
   mapView: z.enum(["connection", "infrastructure", "generation"]).optional().catch(undefined),
   isolateVoltage: z
     .enum(["ehv", "220kv", "110kv", "distribution", "unknown"])

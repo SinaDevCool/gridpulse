@@ -1,3 +1,4 @@
+import type { FinderProjectType } from "../../features/power-finder/finder-project";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, Check, MapPin, Network, ShieldCheck, Zap } from "lucide-react";
 import { PublicLayout } from "./PublicLayout";
@@ -8,7 +9,7 @@ export type SectorContent = {
   title: string;
   lead: string;
   decision: string;
-  projectType: string;
+  projectType: FinderProjectType;
   metrics: readonly { value: string; label: string }[];
   questions: readonly { title: string; body: string }[];
   strategy: readonly string[];

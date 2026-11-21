@@ -54,7 +54,7 @@ export function resolveCandidateOperatorContext(
   // A joint role requires a distinct mapped DSO, not conflicting rows for one TSO.
   const hasDso = mappedNames.some(
     (name) =>
-      knownOperatorRole(name) !== "TSO" &&
+      knownOperatorRole(name) === "DSO" &&
       catalogEntries.some(
         (item) => item.type === "DSO / other" && sameOperatorIdentity(item.name, name),
       ),

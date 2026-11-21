@@ -12,7 +12,13 @@ export type C1StudyPayload = {
       binding_case?: string;
       binding_constraint?: string;
     };
-    model?: { key: string; version: string; source_name: string; source_url: string; licence: string };
+    model?: {
+      key: string;
+      version: string;
+      source_name: string;
+      source_url: string;
+      licence: string;
+    };
   };
   benchmark_validation: C1StudyPayload["node_study"];
   evidence_boundary: string;
@@ -40,7 +46,10 @@ export type C3AssessmentPayload = {
     import_capacity?: { values?: { firm_import_capacity_mw?: number } };
     export_capacity?: { values?: { firm_export_capacity_mw?: number } };
   };
-  fca?: { dynamic?: { status?: string; limit_mode?: string }; static?: { status?: string; limit_mode?: string } };
+  fca?: {
+    dynamic?: { status?: string; limit_mode?: string };
+    static?: { status?: string; limit_mode?: string };
+  };
   limitations?: string[];
   benchmark?: C3AssessmentPayload;
 };
@@ -76,115 +85,6 @@ export type C2EnvelopeResult = {
   sources?: Array<{ source_key: string; metric: string; source_url: string; licence: string }>;
 };
 
-type BenchmarkArtifact = {
-  validation_class: string;
-  generated_at: string;
-  model_id: string;
-  model_version: string;
-  provenance: { source: string; source_url: string; license: string };
-  results: Array<{
-    study_type: string;
-    provider: string;
-    solver_version: string;
-    values: C1StudyPayload["node_study"]["result"];
-  }>;
-};
-
-type C2BenchmarkArtifact = {
-  validation_class: string;
-  generated_at: string;
-  model: { id: string; version: string };
-  sources: Array<{
-    source_key: string;
-    metric: string;
-    provenance: { source_url: string; licence?: string; license?: string };
-  }>;
-  envelope: C2EnvelopeResult["summary"];
-  evidence_boundary: string;
-};
-
-async function localBenchmark(signal?: AbortSignal): Promise<C1StudyPayload> {
-  const [response, c2Response, c3Response] = await Promise.all([
-    fetch("/power-finder/c1-benchmark-validation.json", { signal }),
-    fetch("/power-finder/c2-hourly-benchmark.json", { signal }),
-    fetch("/power-finder/c3-security-flexibility-benchmark.json", { signal }),
-  ]);
-  if (!response.ok) throw new Error("C1 validation artifact is unavailable.");
-  const artifact = (await response.json()) as BenchmarkArtifact;
-  const c2Artifact = c2Response.ok ? ((await c2Response.json()) as C2BenchmarkArtifact) : null;
-  const c3Artifact = c3Response.ok ? (await c3Response.json()) as {
-    validation_class: string;
-    security: C3AssessmentPayload["security"];
-    flexibility: { summary: C3AssessmentPayload["flexibilitySummary"] };
-    fca: C3AssessmentPayload["fca"];
-    evidence_boundary: string;
-  } : null;
-  const capacity = artifact.results.find((result) => result.study_type === "capacity");
-  return {
-    node_study: {
-      available: false,
-      reason: "No reviewed operator electrical model is linked to this mapped node.",
-    },
-    benchmark_validation: {
-      available: Boolean(capacity),
-      validation_class: artifact.validation_class,
-      solver: capacity?.provider,
-      solver_version: capacity?.solver_version,
-      completed_at: artifact.generated_at,
-      result: capacity?.values,
-      model: {
-        key: artifact.model_id,
-        version: artifact.model_version,
-        source_name: artifact.provenance.source,
-        source_url: artifact.provenance.source_url,
-        licence: artifact.provenance.license,
-      },
-    },
-    evidence_boundary:
-      "Benchmark solver validation is not location capacity. A reviewed operator model must be linked before a node study can be shown.",
-    c2: {
-      node_envelope: {
-        available: false,
-        reason: "No reviewed operator hourly model is linked to this mapped node.",
-      },
-      benchmark_ensemble: c2Artifact
-        ? {
-            available: true,
-            validation_class: c2Artifact.validation_class,
-            completed_at: c2Artifact.generated_at,
-            target_year: c2Artifact.envelope?.target_year,
-            weather_years: c2Artifact.envelope?.weather_years,
-            summary: c2Artifact.envelope,
-            model: { key: c2Artifact.model.id, version: c2Artifact.model.version },
-            sources: c2Artifact.sources.map((source) => ({
-              source_key: source.source_key,
-              metric: source.metric,
-              source_url: source.provenance.source_url,
-              licence: source.provenance.licence ?? source.provenance.license ?? "see source",
-            })),
-          }
-        : { available: false, reason: "No C2 benchmark ensemble is available." },
-      evidence_boundary:
-        c2Artifact?.evidence_boundary ??
-        "Public hourly context does not establish node capacity without an operator model.",
-    },
-    c3: {
-      available: false,
-      representation: "no_operator_reviewed_security_or_flexibility_assessment",
-      message: "No operator-reviewed C3 assessment exists for this mapped node.",
-      benchmark: c3Artifact ? {
-        available: true,
-        validationClass: c3Artifact.validation_class,
-        representation: "benchmark_only_not_mapped_node_capacity",
-        security: c3Artifact.security,
-        flexibilitySummary: c3Artifact.flexibility.summary,
-        fca: c3Artifact.fca,
-        limitations: [c3Artifact.evidence_boundary],
-      } : undefined,
-    },
-  };
-}
-
 export async function loadC1Study(nodeId: string, signal?: AbortSignal) {
   try {
     const response = await fetch(`/api/power-finder/study?node=${encodeURIComponent(nodeId)}`, {
@@ -194,6 +94,17 @@ export async function loadC1Study(nodeId: string, signal?: AbortSignal) {
     return (await response.json()) as C1StudyPayload;
   } catch (error) {
     if (signal?.aborted) throw error;
-    return localBenchmark(signal);
+    return {
+      node_study: {
+        available: false,
+        reason: "Study service unavailable; no reviewed operator result was loaded.",
+      },
+      benchmark_validation: {
+        available: false,
+        reason: "Open the synthetic network study to inspect demonstration benchmarks.",
+      },
+      evidence_boundary:
+        "Unavailable study evidence is not zero capacity. No benchmark is substituted for this node.",
+    } satisfies C1StudyPayload;
   }
 }

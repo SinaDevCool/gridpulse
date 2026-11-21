@@ -14,6 +14,38 @@ afterEach(() => {
 });
 
 describe("public Power Finder API", () => {
+  it("reads governed coverage without substituting viewport or static fallback evidence", async () => {
+    const payload = { coverage_status: "partial", releases: [{ release_id: "release-1", scope: "DE-BB" }] };
+    const origin = vi.fn().mockResolvedValueOnce(Response.json(payload))
+      .mockResolvedValueOnce(Response.json({ releases: [] }))
+      .mockResolvedValueOnce(new Response("unavailable", { status: 503 }));
+    vi.stubGlobal("fetch", origin);
+    const request = () => new Request("https://gridpulseinsights.com/api/power-finder/viewport?coverage=true");
+    const env = { SUPABASE_URL: "https://example.supabase.co", SUPABASE_PUBLISHABLE_KEY: "sb_publishable_test" };
+    const accepted = await handlePublicPowerFinderRequest(request(), env);
+    expect(accepted?.status).toBe(200);
+    expect(accepted?.headers.get("cache-control")).toContain("s-maxage=300");
+    await expect(accepted?.json()).resolves.toEqual(payload);
+    for (let index = 0; index < 2; index++) {
+      const unavailable = await handlePublicPowerFinderRequest(request(), env);
+      expect(unavailable?.status).toBe(503);
+      await expect(unavailable?.json()).resolves.toEqual({ coverage_status: "unavailable", releases: [] });
+    }
+    expect(origin.mock.calls.every(([url]) => String(url).endsWith("/power_finder_public_coverage"))).toBe(true);
+  });
+
+  it("isolates limiter clients without retaining raw addresses in their keys", async () => {
+    const limit = vi.fn().mockResolvedValue({ success: false });
+    for (const address of ["192.0.2.1", "192.0.2.2"]) {
+      await handlePublicPowerFinderRequest(new Request(viewportUrl, { headers: { "cf-connecting-ip": address } }), {
+        PUBLIC_FINDER_RATE_LIMITER: { limit },
+      });
+    }
+    const keys = limit.mock.calls.map(([input]) => input.key);
+    expect(keys[0]).not.toBe(keys[1]);
+    expect(keys.every((key) => !key.includes("192.0.2."))).toBe(true);
+  });
+
   it("accepts bounded viewports across Germany", () => {
     expect(parsePublicViewportRequest(new URL(viewportUrl))).toMatchObject({
       west: 12.9,
@@ -126,8 +158,22 @@ describe("public Power Finder API", () => {
             type: "FeatureCollection",
             metadata: { evidence_boundary: "Open mapping for early screening only." },
             features: [
-              { type: "Feature", geometry: null, properties: { kind: "node" } },
-              { type: "Feature", geometry: null, properties: { kind: "line" } },
+              {
+                type: "Feature",
+                geometry: { type: "Point", coordinates: [13.2, 52.3] },
+                properties: { kind: "node" },
+              },
+              {
+                type: "Feature",
+                geometry: {
+                  type: "LineString",
+                  coordinates: [
+                    [13.2, 52.3],
+                    [13.4, 52.4],
+                  ],
+                },
+                properties: { kind: "line" },
+              },
             ],
           }),
           { status: 200 },
@@ -160,7 +206,13 @@ describe("public Power Finder API", () => {
           JSON.stringify({
             type: "FeatureCollection",
             metadata: { record_count: 1 },
-            features: [{ type: "Feature", geometry: null, properties: { kind: "node" } }],
+            features: [
+              {
+                type: "Feature",
+                geometry: { type: "Point", coordinates: [13.2, 52.3] },
+                properties: { kind: "node" },
+              },
+            ],
           }),
           { status: 200 },
         ),

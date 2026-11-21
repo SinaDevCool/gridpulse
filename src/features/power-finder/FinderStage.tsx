@@ -10,11 +10,13 @@ import {
   ShieldCheck,
   X,
 } from "lucide-react";
-import { Suspense } from "react";
+import { lazy, Suspense } from "react";
 import type { FinderControllerContract } from "./controller-contract";
 import { FinderComparisonPanel } from "./FinderComparisonPanel";
-import { FinderDetailPanel } from "./FinderDetailPanel";
 import { ActivationStudyPanel, InteractiveMapLegend, PowerFinderMap } from "./page-support";
+const FinderDetailPanel = lazy(() =>
+  import("./FinderDetailPanel").then((module) => ({ default: module.FinderDetailPanel })),
+);
 export function FinderStage({ model }: { model: FinderControllerContract }) {
   const {
     basemapMode,
@@ -426,7 +428,11 @@ export function FinderStage({ model }: { model: FinderControllerContract }) {
 
       {comparedCandidates.length > 0 && <FinderComparisonPanel model={model} />}
 
-      <FinderDetailPanel model={model} />
+      {model.selectedDetailFeature && (
+        <Suspense fallback={<p role="status">Loading selected infrastructure…</p>}>
+          <FinderDetailPanel model={model} />
+        </Suspense>
+      )}
     </section>
   );
 }

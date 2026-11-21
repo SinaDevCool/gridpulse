@@ -1,3 +1,4 @@
+import { finderRequestAllowed } from "./finder-request-limit";
 import type { PublicFinderEnv } from "./public-power-finder-api";
 
 const PATH = "/api/power-finder/study";
@@ -21,11 +22,10 @@ export async function handlePublicC1StudyRequest(request: Request, env: PublicFi
   if (nodeId && (!/^[A-Za-z0-9:._-]+$/.test(nodeId) || nodeId.length > 200)) {
     return response({ error: "Invalid node identifier." }, 400);
   }
-  if (env.PUBLIC_FINDER_RATE_LIMITER) {
-    const limit = await env.PUBLIC_FINDER_RATE_LIMITER.limit({ key: `c1-study:${url.hostname}` });
-    if (!limit.success) return response({ error: "Too many requests." }, 429);
-  }
-  const supabaseUrl = env.SUPABASE_URL || env.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL;
+  if (!(await finderRequestAllowed(request, env, "c1-study")))
+    return response({ error: "Too many requests." }, 429);
+  const supabaseUrl =
+    env.SUPABASE_URL || env.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL;
   const key =
     env.SUPABASE_PUBLISHABLE_KEY ||
     env.VITE_SUPABASE_PUBLISHABLE_KEY ||
@@ -44,20 +44,38 @@ export async function handlePublicC1StudyRequest(request: Request, env: PublicFi
     };
     const c3Options = { ...options, body: JSON.stringify({ p_node_record_id: nodeId }) };
     const benchmarkOptions = { ...options, body: JSON.stringify({ p_node_record_id: null }) };
-    const [c1Origin, c2Origin, c3Origin, c3BenchmarkOrigin] = await Promise.all([
+    const [c1Origin, c2Origin, c3Origin, c3BenchmarkOrigin] = await Promise.allSettled([
       fetch(`${supabaseUrl}/rest/v1/rpc/power_finder_public_c1_study`, options),
       fetch(`${supabaseUrl}/rest/v1/rpc/power_finder_public_c2_envelope`, options),
       fetch(`${supabaseUrl}/rest/v1/rpc/power_finder_public_c3_assessment`, c3Options),
       fetch(`${supabaseUrl}/rest/v1/rpc/power_finder_public_c3_assessment`, benchmarkOptions),
     ]);
-    if (!c1Origin.ok || !c2Origin.ok || !c3Origin.ok || !c3BenchmarkOrigin.ok) {
-      return response({ error: "Study registry is unavailable." }, 502);
-    }
-    return response({
-      ...(await c1Origin.json()),
-      c2: await c2Origin.json(),
-      c3: { ...(await c3Origin.json()), benchmark: await c3BenchmarkOrigin.json() },
-    }, 200);
+    const unavailable = { available: false, reason: "Optional study evidence is unavailable." };
+    const read = async (result: PromiseSettledResult<Response>, fallback: unknown) => {
+      if (result.status !== "fulfilled" || !result.value.ok) return fallback;
+      try {
+        return await result.value.json();
+      } catch {
+        return fallback;
+      }
+    };
+    const c1 = await read(c1Origin, null);
+    if (!c1) return response({ error: "Study registry is unavailable." }, 502);
+    return response(
+      {
+        ...c1,
+        c2: await read(c2Origin, {
+          node_envelope: unavailable,
+          benchmark_ensemble: unavailable,
+          evidence_boundary: "Hourly evidence unavailable.",
+        }),
+        c3: {
+          ...(await read(c3Origin, unavailable)),
+          benchmark: await read(c3BenchmarkOrigin, unavailable),
+        },
+      },
+      200,
+    );
   } catch {
     return response({ error: "Study registry is unavailable." }, 502);
   } finally {

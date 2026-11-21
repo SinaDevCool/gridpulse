@@ -1,10 +1,10 @@
 import { z } from "zod";
-export { analyticsJobSchema,jobAcceptedSchema,type AnalyticsJob } from "./job-contracts";
+export { analyticsJobSchema, jobAcceptedSchema, type AnalyticsJob } from "./job-contracts";
 export const c3RequestSchema = z
   .object({
-    network_model: z.record(z.unknown()),
-    security_criteria: z.record(z.unknown()),
-    portfolio: z.record(z.unknown()),
+    network_model: z.record(z.string(), z.unknown()),
+    security_criteria: z.record(z.string(), z.unknown()),
+    portfolio: z.record(z.string(), z.unknown()),
     timestamps: z.array(z.string()).min(1),
     demand_mw: z.array(z.number()).min(1),
     onsite_generation_mw: z.array(z.number()).min(1),
@@ -37,29 +37,48 @@ export const facilityPlanRequestSchema = z
   .object({
     schema_version: z.literal("gridpulse-facility-plan-request-v1"),
     portfolio_id: z.string().min(1).max(200),
-    requirement: z.record(z.unknown()),
-    intervals: z.array(z.record(z.unknown())).min(1).max(35_040),
-    facility: z.record(z.unknown()),
-    workloads: z.array(z.record(z.unknown())).min(1).max(5_000),
-    profiles: z.array(z.record(z.unknown())).min(1).max(5_000),
-    policy: z.record(z.unknown()),
-    economics: z.record(z.unknown()),
-    cooling: z.record(z.unknown()),
-    batteries: z.array(z.record(z.unknown())).max(100).optional(),
+    requirement: z.record(z.string(), z.unknown()),
+    intervals: z.array(z.record(z.string(), z.unknown())).min(1).max(35_040),
+    facility: z.record(z.string(), z.unknown()),
+    workloads: z.array(z.record(z.string(), z.unknown())).min(1).max(5_000),
+    profiles: z.array(z.record(z.string(), z.unknown())).min(1).max(5_000),
+    policy: z.record(z.string(), z.unknown()),
+    economics: z.record(z.string(), z.unknown()),
+    cooling: z.record(z.string(), z.unknown()),
+    batteries: z.array(z.record(z.string(), z.unknown())).max(100).optional(),
     onsite_generation_mw: z.array(z.number().finite().nonnegative()).min(1).max(35_040).optional(),
-    fatigue_limits: z.record(z.unknown()).nullable().optional(),
+    fatigue_limits: z.record(z.string(), z.unknown()).nullable().optional(),
     fleet_gpu_capacity: z.number().int().positive().optional(),
     idle_gpu_power_watts: z.number().finite().nonnegative().optional(),
     planning_context: z.record(z.string(), z.unknown()).optional(),
   })
   .strict();
 
-export const planDiagnosticEvidenceSchema = z.object({
-  basis: z.literal("canonical_physical_replay"), available: z.boolean(), causal_binding_constraints_assessed: z.literal(false),
-  findings: z.array(z.object({ code: z.enum(["peak_import_margin", "peak_target_margin", "minimum_battery_reserve_margin"]),
-    asset_id: z.string().max(200), interval_index: z.number().int().nonnegative(), value: z.number().finite(),
-    unit: z.enum(["MW", "MWh"]), source_field: z.string().max(200) }).strict()).max(16),
-}).strict();
+export const planDiagnosticEvidenceSchema = z
+  .object({
+    basis: z.literal("canonical_physical_replay"),
+    available: z.boolean(),
+    causal_binding_constraints_assessed: z.literal(false),
+    findings: z
+      .array(
+        z
+          .object({
+            code: z.enum([
+              "peak_import_margin",
+              "peak_target_margin",
+              "minimum_battery_reserve_margin",
+            ]),
+            asset_id: z.string().max(200),
+            interval_index: z.number().int().nonnegative(),
+            value: z.number().finite(),
+            unit: z.enum(["MW", "MWh"]),
+            source_field: z.string().max(200),
+          })
+          .strict(),
+      )
+      .max(16),
+  })
+  .strict();
 
 export const facilityPlanResultSchema = z
   .object({
@@ -70,7 +89,7 @@ export const facilityPlanResultSchema = z
     truth_class: z.string().min(1),
     capacity_claim: z.literal(false),
     automatic_live_dispatch_authorized: z.literal(false),
-    result: z.record(z.unknown()),
+    result: z.record(z.string(), z.unknown()),
     diagnostic_evidence: planDiagnosticEvidenceSchema.optional(),
   })
   .strict();
@@ -125,7 +144,7 @@ export const fcaIntervalResultSchema = z
     result_fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
     capacity_claim: z.literal(false),
     automatic_live_dispatch_authorized: z.literal(false),
-    result: z.record(z.unknown()),
+    result: z.record(z.string(), z.unknown()),
   })
   .strict();
 
@@ -181,7 +200,9 @@ export const facilityUncertaintyRequestSchema = z
       })
       .strict(),
     scenario_count: z.number().int().min(1).max(32),
-    evaluation_method: z.enum(["independent_scenario_benchmark","common_command_scenario_milp"]).default("independent_scenario_benchmark"),
+    evaluation_method: z
+      .enum(["independent_scenario_benchmark", "common_command_scenario_milp"])
+      .default("independent_scenario_benchmark"),
     seed: z.number().int(),
     risk_policy: z.enum(["chance_constrained", "distributionally_robust", "cvar"]),
     confidence: z.number().gt(0).lt(1),
@@ -203,8 +224,8 @@ export type FacilityUncertaintyRequest = z.infer<typeof facilityUncertaintyReque
 export const marketQualificationRequestSchema = z
   .object({
     schema_version: z.literal("gridpulse-market-qualification-request-v1"),
-    product: z.record(z.unknown()),
-    requirement: z.record(z.unknown()),
+    product: z.record(z.string(), z.unknown()),
+    requirement: z.record(z.string(), z.unknown()),
     uncertainty: z
       .object({
         schema_version: z.literal("gridpulse-facility-uncertainty-application-result-v1"),
@@ -214,7 +235,7 @@ export const marketQualificationRequestSchema = z
         truth_class: z.string().min(1),
         capacity_claim: z.literal(false),
         automatic_live_dispatch_authorized: z.literal(false),
-        result: z.record(z.unknown()),
+        result: z.record(z.string(), z.unknown()),
       })
       .strict(),
     settlement: z
@@ -268,15 +289,15 @@ export const rollingFacilityPlanRequestSchema = z
 export const marketQualificationResultSchema = z
   .object({
     schema_version: z.literal("gridpulse-market-qualification-application-result-v1"),
-    scope:z.literal("technical_scenario_screening_only_not_enrolment").optional(),
+    scope: z.literal("technical_scenario_screening_only_not_enrolment").optional(),
     engine_version: z.string().min(1),
     input_fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
     result_fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
     truth_class: z.string().min(1),
     capacity_claim: z.literal(false),
     automatic_live_dispatch_authorized: z.literal(false),
-    eligibility: z.record(z.unknown()),
-    settlement: z.record(z.unknown()).nullable(),
+    eligibility: z.record(z.string(), z.unknown()),
+    settlement: z.record(z.string(), z.unknown()).nullable(),
   })
   .strict();
 
@@ -289,7 +310,7 @@ export const rollingFacilityPlanResultSchema = z
     truth_class: z.string().min(1),
     capacity_claim: z.literal(false),
     automatic_live_dispatch_authorized: z.literal(false),
-    result: z.record(z.unknown()),
+    result: z.record(z.string(), z.unknown()),
   })
   .strict();
 
@@ -300,12 +321,12 @@ export const facilityHistoricalReplayRequestSchema = z
   .object({
     schema_version: z.literal("gridpulse-facility-historical-replay-request-v1"),
     planning_cutoff: z.string().min(1),
-    intervals: z.array(z.record(z.unknown())).min(1).max(35_040),
-    baseline: z.record(z.unknown()),
-    planned: z.record(z.unknown()),
-    portfolio: z.record(z.unknown()),
-    observations: z.array(z.record(z.unknown())).min(1).max(35_040),
-    tariff: z.record(z.unknown()),
+    intervals: z.array(z.record(z.string(), z.unknown())).min(1).max(35_040),
+    baseline: z.record(z.string(), z.unknown()),
+    planned: z.record(z.string(), z.unknown()),
+    portfolio: z.record(z.string(), z.unknown()),
+    observations: z.array(z.record(z.string(), z.unknown())).min(1).max(35_040),
+    tariff: z.record(z.string(), z.unknown()),
     event_intervals: z.array(z.boolean()).min(1).max(35_040),
     required_reduction_mw: z.number().nonnegative().max(2_000),
     battery_throughput_mwh: z.number().nonnegative().default(0),
@@ -324,7 +345,7 @@ export const operatorEnquiryPackageRequestSchema = z
     schema_version: z.literal("gridpulse-operator-enquiry-package-request-v1"),
     package_id: z.string().min(1).max(200),
     artifacts: z
-      .record(z.unknown())
+      .record(z.string(), z.unknown())
       .refine((value) => Object.keys(value).length > 0, "Artifacts are required"),
     blockers: z.array(z.string()).max(1_000).default([]),
     assumption_ids: z.array(z.string()).max(1_000).default([]),
@@ -340,10 +361,10 @@ export const operatorEnquiryPackageResultSchema = z
     capacity_claim: z.literal(false),
     automatic_live_dispatch_authorized: z.literal(false),
     package: z.object({
-      payload: z.record(z.unknown()),
+      payload: z.record(z.string(), z.unknown()),
       json_text: z.string(),
       markdown_text: z.string(),
-      manifest: z.record(z.unknown()),
+      manifest: z.record(z.string(), z.unknown()),
       package_fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
     }),
   })
@@ -354,28 +375,41 @@ export type OperatorEnquiryPackageResult = z.infer<typeof operatorEnquiryPackage
 
 export const shadowVerificationRequestSchema = z
   .object({
-    schema_version: z.enum(["gridpulse-shadow-verification-request-v1","gridpulse-shadow-verification-request-v2"]),
-    expected_measurement_ids:z.array(z.string().min(1)).min(1).max(1000).optional(),planning_cutoff:z.string().datetime({offset:true}).optional(),
+    schema_version: z.enum([
+      "gridpulse-shadow-verification-request-v1",
+      "gridpulse-shadow-verification-request-v2",
+    ]),
+    expected_measurement_ids: z.array(z.string().min(1)).min(1).max(1000).optional(),
+    planning_cutoff: z.string().datetime({ offset: true }).optional(),
     facility_id: z.string().min(1).max(200),
     generated_at: z.string().min(1),
     plan_fingerprint: z.string().regex(/^[a-fA-F0-9]{64}$/),
     planned_grid_import_mw: z.array(z.number().nonnegative()).min(1).max(35_040),
     observed_grid_import_mw: z.array(z.number().nonnegative()).min(1).max(35_040),
     uncertainty_band_mw: z.array(z.number().nonnegative()).min(1).max(35_040),
-    observations: z.array(z.record(z.unknown())).min(1).max(200_000),
+    observations: z.array(z.record(z.string(), z.unknown())).min(1).max(200_000),
     reference_times: z.array(z.string()).min(1).max(35_040),
     supplied_energy_mwh: z.number().nonnegative(),
     consumed_energy_mwh: z.number().nonnegative(),
     required_reduction_mw: z.number().nonnegative().max(2_000),
     delivered_reduction_mw: z.number().nonnegative().max(2_000),
-    security_controls: z.record(z.boolean()),
-    quality_thresholds: z.record(z.number()).default({}),
+    security_controls: z.record(z.string(), z.boolean()),
+    quality_thresholds: z.record(z.string(), z.number()).default({}),
     warning_consecutive_intervals: z.number().int().min(1).default(2),
     safe_limit_consecutive_intervals: z.number().int().min(1).default(3),
   })
   .strict()
   .superRefine((value, ctx) => {
-    if(value.schema_version.endsWith("v2") && (!value.expected_measurement_ids?.length || !value.planning_cutoff || value.reference_times.length!==value.planned_grid_import_mw.length))ctx.addIssue({code:"custom",message:"v2 requires expected channels, cutoff and aligned reference times"});
+    if (
+      value.schema_version.endsWith("v2") &&
+      (!value.expected_measurement_ids?.length ||
+        !value.planning_cutoff ||
+        value.reference_times.length !== value.planned_grid_import_mw.length)
+    )
+      ctx.addIssue({
+        code: "custom",
+        message: "v2 requires expected channels, cutoff and aligned reference times",
+      });
     const size = value.planned_grid_import_mw.length;
     if (value.observed_grid_import_mw.length !== size || value.uncertainty_band_mw.length !== size)
       ctx.addIssue({
@@ -411,7 +445,8 @@ export const shadowVerificationResultSchema = z
       delivered_reduction_mw: z.number(),
       automatic_live_dispatch_authorized: z.literal(false),
       telemetry: z.object({
-        completeness_fraction:z.number().min(0).max(1).optional(),provenance_qualified:z.boolean().optional(),
+        completeness_fraction: z.number().min(0).max(1).optional(),
+        provenance_qualified: z.boolean().optional(),
         accepted: z.boolean(),
         maximum_clock_offset_seconds: z.number(),
         maximum_sampling_jitter_seconds: z.number(),
@@ -452,12 +487,12 @@ export type ShadowVerificationResult = z.infer<typeof shadowVerificationResultSc
 export const capacityRequirementRequestSchema = z
   .object({
     schema_version: z.literal("gridpulse-capacity-requirement-request-v1"),
-    capacity_result: z.record(z.unknown()),
+    capacity_result: z.record(z.string(), z.unknown()),
     site_id: z.string().min(1).max(200),
     pcc_id: z.string().min(1).max(200),
     requested_import_mw: z.number().positive().max(2_000),
     expected_provenance_fingerprint: z.string().regex(/^[a-fA-F0-9]{64}$/),
-    operating_terms: z.record(z.unknown()).optional(),
+    operating_terms: z.record(z.string(), z.unknown()).optional(),
     assumption_ids: z.array(z.string()).max(1_000).optional(),
     capacity_is_lower_bound: z.boolean().optional(),
   })

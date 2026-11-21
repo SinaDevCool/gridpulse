@@ -4,6 +4,8 @@ import type {
   PowerFinderEvidenceClass,
   PowerFinderFeature,
 } from "./fixture-data";
+import { classifyInfrastructure } from "./infrastructure-suitability";
+import { sourcePublicationDate } from "./source-provenance";
 import { scoreFeature } from "./screening-score";
 import type { CapacityScenarioResult } from "./capacity-scenario";
 import type { ReleaseBNetworkResult } from "./release-b-network";
@@ -43,6 +45,10 @@ export type CandidateOpportunity = {
     sourceFreshness: number;
   };
   provenance?: CalculationProvenance;
+  infrastructureClass?: ReturnType<typeof classifyInfrastructure>["kind"];
+  suitabilityNote?: string;
+  sourceSnapshotSha256?: string;
+  retrievalCapped?: boolean;
   sourcePublishedAt?: string | null;
   missingEvidence: string[];
   constraints: string[];
@@ -136,7 +142,10 @@ export function applyPreferredVoltageContext(
         ...components,
         mappedVoltageRelevance: mappedVoltageRelevanceScore,
       };
-      const screeningRank = round1(weightedInvestigationPriority(rankComponents, weights));
+      const screeningRank = Math.min(
+        round1(weightedInvestigationPriority(rankComponents, weights)),
+        classifyInfrastructure(candidate.nodeName, candidate.operator).scoreCeiling,
+      );
       return { ...candidate, voltageFit, rankComponents, screeningRank };
     })
     .sort(
@@ -177,7 +186,7 @@ export function assetSpecificityScore(nodeName: string, operatorKnown: boolean):
 export function sourceFreshnessScore(publishedAt?: string | null, now = new Date()): number {
   if (!publishedAt) return 30;
   const published = new Date(publishedAt);
-  if (Number.isNaN(published.getTime())) return 30;
+  if (Number.isNaN(published.getTime()) || published.getTime() > now.getTime()) return 30;
   const ageDays = Math.max(0, (now.getTime() - published.getTime()) / 86_400_000);
   if (ageDays <= 31) return 100;
   if (ageDays <= 93) return 85;
@@ -304,8 +313,7 @@ export function rankPublishedCandidates(
           missingEvidence,
           calculationVersion: RANKING_MODEL_VERSION,
           source: "published_artifact",
-          sourcePublishedAt:
-            node.properties.source_published_at ?? collection.metadata.published_at,
+          sourcePublishedAt: sourcePublicationDate(collection, node),
         }),
       );
     }
@@ -374,8 +382,7 @@ export function rankCandidatesForLocation(
           missingEvidence,
           calculationVersion: RANKING_MODEL_VERSION,
           source: "published_artifact",
-          sourcePublishedAt:
-            node.properties.source_published_at ?? collection.metadata.published_at,
+          sourcePublishedAt: sourcePublicationDate(collection, node),
         }),
       ];
     })
@@ -397,7 +404,9 @@ export function rankCandidatesForLocation(
 function createOpportunity(
   value: Omit<CandidateOpportunity, "confidence" | "constraints">,
 ): CandidateOpportunity {
+  const infrastructure = classifyInfrastructure(value.nodeName, value.operator);
   const constraints = [
+    infrastructure.note,
     ...(value.voltageFit === "conditional"
       ? ["Mapped voltage differs from the selected search context."]
       : value.voltageFit === "unknown"
@@ -430,7 +439,9 @@ function createOpportunity(
   });
   return {
     ...value,
-    screeningRank: priority.score,
+    screeningRank: Math.min(priority.score, infrastructure.scoreCeiling),
+    infrastructureClass: infrastructure.kind,
+    suitabilityNote: infrastructure.note,
     rankComponents: priority.rankComponents,
     provenance: publicScreeningProvenance([value.nodeId, value.siteId]),
     confidence,

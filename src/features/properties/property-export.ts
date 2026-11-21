@@ -1,4 +1,4 @@
-import writeXlsxFile from "write-excel-file";
+import writeXlsxFile from "write-excel-file/browser";
 
 export type ExportableProperty = {
   id: string;
@@ -81,7 +81,7 @@ export async function downloadPropertyXlsx(properties: ExportableProperty[]) {
       }),
     ),
   ];
-  await writeXlsxFile(data, { fileName: "gridpulse-property-portfolio.xlsx" });
+  await writeXlsxFile(data).toFile("gridpulse-property-portfolio.xlsx");
 }
 
 export function downloadPropertyGeoJson(properties: ExportableProperty[]) {
