@@ -1,3 +1,4 @@
+import { FinderRecordContext } from "./FinderRecordContext";
 import { productCapabilities } from "@/config/product-mode";
 import { capacityMetricLabels } from "@/features/power-finder/calculated-capacity";
 import {
@@ -78,6 +79,7 @@ export function FinderDetailPanel({ model }: { model: FinderControllerContract }
             >
               ×
             </button>
+            <FinderRecordContext model={model} />
             <div className="detail-sticky-header">
               <p className="context-label">
                 {selectedOpportunity && selected.properties.kind === "node"

@@ -172,15 +172,24 @@ export function selectCandidates(
       const marginDifference = (rightFit.marginMw ?? -Infinity) - (leftFit.marginMw ?? -Infinity);
       if (marginDifference) return marginDifference;
     }
+    const tie = left.nodeName.localeCompare(right.nodeName) || left.id.localeCompare(right.id);
+    if (candidateSort === "distance") return left.distanceKm - right.distanceKm || tie;
+    if (candidateSort === "operator") {
+      const a = canonicalOperatorName(left.operator),
+        b = canonicalOperatorName(right.operator);
+      return a && b ? a.localeCompare(b) || tie : a ? -1 : b ? 1 : tie;
+    }
     if (candidateSort === "name") {
       return (
-        left.nodeName.localeCompare(right.nodeName) || left.siteName.localeCompare(right.siteName)
+        left.nodeName.localeCompare(right.nodeName) ||
+        left.siteName.localeCompare(right.siteName) ||
+        left.id.localeCompare(right.id)
       );
     }
     if (candidateSort === "voltage") {
-      return Math.max(0, ...right.voltageKv) - Math.max(0, ...left.voltageKv);
+      return Math.max(0, ...right.voltageKv) - Math.max(0, ...left.voltageKv) || tie;
     }
-    return right.screeningRank - left.screeningRank;
+    return right.screeningRank - left.screeningRank || tie;
   });
   return { items, tsoFallback, dsoFallback };
 }

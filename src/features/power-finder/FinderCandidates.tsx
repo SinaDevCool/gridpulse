@@ -48,6 +48,8 @@ export function FinderCandidates({ model }: { model: FinderControllerContract })
             <option value="context">Best investigation match</option>
             <option value="voltage">Mapped voltage</option>
             <option value="name">Name</option>
+            <option value="distance">Distance</option>
+            <option value="operator">Mapped operator</option>
           </select>
         </label>
       </header>
@@ -55,7 +57,7 @@ export function FinderCandidates({ model }: { model: FinderControllerContract })
         <button
           type="button"
           data-finder-view="cards"
-          aria-pressed={model.search.resultsView !== "table"}
+          aria-pressed={!model.search.resultsView || model.search.resultsView === "cards"}
           onClick={() => void updateSearch({ resultsView: undefined })}
         >
           Cards
@@ -66,6 +68,13 @@ export function FinderCandidates({ model }: { model: FinderControllerContract })
           onClick={() => void updateSearch({ resultsView: "table" })}
         >
           Table
+        </button>
+        <button
+          type="button"
+          aria-pressed={model.search.resultsView === "assets"}
+          onClick={() => void updateSearch({ resultsView: "assets" })}
+        >
+          Infrastructure
         </button>
       </div>
       {(project.latitude == null || project.longitude == null) && (
@@ -106,7 +115,7 @@ export function FinderCandidates({ model }: { model: FinderControllerContract })
       <p className="finder-evidence-boundary">
         Investigation priority only. Capacity and connection suitability are unverified.
       </p>
-      {model.search.resultsView !== "table" &&
+      {(!model.search.resultsView || model.search.resultsView === "cards") &&
         visibleCandidates.map((candidate, index) => {
           const capacityNode = activeCapacityNodes.find(
             (node) => node.publicNodeId === candidate.nodeId,
@@ -165,7 +174,9 @@ export function FinderCandidates({ model }: { model: FinderControllerContract })
             </button>
           );
         })}
-      {model.search.resultsView !== "table" && !showAllCandidates && candidates.length > 5 ? (
+      {(!model.search.resultsView || model.search.resultsView === "cards") &&
+      !showAllCandidates &&
+      candidates.length > 5 ? (
         <button
           type="button"
           className="candidate-show-more"
@@ -173,7 +184,9 @@ export function FinderCandidates({ model }: { model: FinderControllerContract })
         >
           Show all {candidates.length} candidates
         </button>
-      ) : model.search.resultsView !== "table" && showAllCandidates && candidates.length > 5 ? (
+      ) : (!model.search.resultsView || model.search.resultsView === "cards") &&
+        showAllCandidates &&
+        candidates.length > 5 ? (
         <button
           type="button"
           className="candidate-show-more"

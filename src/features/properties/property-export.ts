@@ -1,3 +1,4 @@
+import { downloadBlob as download, csvCell } from "@/lib/tabular-export";
 import writeXlsxFile from "write-excel-file/browser";
 
 export type ExportableProperty = {
@@ -44,19 +45,6 @@ const columns: Array<[keyof ExportableProperty, string]> = [
   ["operator_engagement_status", "operator_engagement_status"],
   ["critical_blockers", "critical_blockers"],
 ];
-
-function download(blob: Blob, fileName: string) {
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = fileName;
-  anchor.click();
-  URL.revokeObjectURL(url);
-}
-function csvCell(value: unknown) {
-  const text = value == null ? "" : String(value);
-  return `"${text.replaceAll('"', '""')}"`;
-}
 
 export function downloadPropertyCsv(properties: ExportableProperty[]) {
   const text = [

@@ -335,6 +335,7 @@ export type AnonymousWorkspaceBackup = {
   exportedAt: string;
   properties: AnonymousProperty[];
   settings?: AnonymousWorkspaceSettings;
+  finderViews?: import("./saved-finder-views").SavedFinderView[];
   documents?: AnonymousDocumentMetadata[];
   documentFiles?: Array<{ metadata: AnonymousDocumentMetadata; base64: string }>;
 };

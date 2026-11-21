@@ -1,6 +1,6 @@
 import {
-type DiscoveryLocation,
-type DiscoveryStrategy,
+  type DiscoveryLocation,
+  type DiscoveryStrategy,
 } from "@/features/power-finder/location-discovery";
 import { useState } from "react";
 import type { FinderSearch } from "./search-contract";
@@ -10,9 +10,13 @@ export function useFinderDiscoveryState(search: FinderSearch) {
     search.workflow ?? "screen",
   );
 
-  const [discoveryStrategy, setDiscoveryStrategy] = useState<DiscoveryStrategy>("balanced");
+  const [discoveryStrategy, setDiscoveryStrategy] = useState<DiscoveryStrategy>(
+    search.discoveryStrategy ?? "balanced",
+  );
 
-  const [discoveryResultCount, setDiscoveryResultCount] = useState<10 | 20>(10);
+  const [discoveryResultCount, setDiscoveryResultCount] = useState<10 | 20>(
+    search.discoveryCount === 20 ? 20 : 10,
+  );
 
   const [discoveryResults, setDiscoveryResults] = useState<DiscoveryLocation[]>([]);
 

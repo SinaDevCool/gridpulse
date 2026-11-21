@@ -1,18 +1,24 @@
 import type { VisibleLayerCounts } from "@/components/product/power-finder-map-data";
 import type { RzRegDataCentre } from "@/components/product/PowerFinderMap";
 import {
-initialSharedMapFilterState,
-sharedMapFilterReducer,
+  initialSharedMapFilterState,
+  sharedMapFilterReducer,
 } from "@/features/map/map-filter-state";
 import { mapIsolationFromSearch } from "@/features/map/map-url-state";
 import type { BasemapStatus } from "@/features/power-finder/basemap-config";
 import { type PowerFinderKind } from "@/features/power-finder/fixture-data";
-import { useReducer,useState } from "react";
-import { initialBounds } from './page-formatting';
+import { useReducer, useState } from "react";
+import { initialBounds } from "./page-formatting";
 import type { FinderSearch } from "./search-contract";
 
 export function useFinderMapState(search: FinderSearch) {
   const [enabled, setEnabled] = useState<Record<PowerFinderKind, boolean>>(() => {
+    if (search.layers)
+      return Object.fromEntries(
+        (["node", "line", "industrial_site", "generation_asset", "storage_asset"] as const).map(
+          (kind) => [kind, search.layers!.split(",").includes(kind)],
+        ),
+      ) as Record<PowerFinderKind, boolean>;
     if (search.mapView === "generation")
       return {
         node: false,
@@ -53,9 +59,10 @@ export function useFinderMapState(search: FinderSearch) {
   const [selectedDataCentre, setSelectedDataCentre] = useState<RzRegDataCentre | null>(null);
 
   const [generationGroup, setGenerationGroup] = useState<string>(
-    search.isolateTechnology && search.isolateTechnology !== "storage"
-      ? search.isolateTechnology
-      : "all",
+    search.generationGroup ??
+      (search.isolateTechnology && search.isolateTechnology !== "storage"
+        ? search.isolateTechnology
+        : "all"),
   );
 
   const [mapFilters, dispatchMapFilter] = useReducer(sharedMapFilterReducer, {
@@ -85,7 +92,16 @@ export function useFinderMapState(search: FinderSearch) {
         maxZoom?: number;
       }
     | undefined
-  >();
+  >(() =>
+    search.mapArea
+      ? {
+          requestId: 1,
+          kind: "bounds",
+          bounds: search.mapArea.split(",").map(Number) as [number, number, number, number],
+          maxZoom: 14,
+        }
+      : undefined,
+  );
   return {
     enabled,
     setEnabled,
