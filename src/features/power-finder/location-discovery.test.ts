@@ -155,7 +155,11 @@ describe("regional location discovery", () => {
     expect(largerLoad.energyScore).toBeLessThan(baseline.energyScore);
     expect(voltageMismatch.gridScore).toBeLessThan(baseline.gridScore);
     expect(connectionFirst.score).not.toBe(energyFirst.score);
-    expect(discoverLocations(collection, { ...base, maxNodeDistanceKm: 0.5 })).toEqual([]);
+    expect(
+      discoverLocations(collection, { ...base, maxNodeDistanceKm: 0.5 }).every(
+        (item) => item.landContext === "not_assessed",
+      ),
+    ).toBe(true);
     expect(discoverLocations(collection, base)).toHaveLength(1);
   });
 });

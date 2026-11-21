@@ -48,9 +48,21 @@ export function formatOperatorNames(value?: string | null) {
   return names.length ? names.join(" · ") : null;
 }
 
-export function knownOperatorRole(value?: string | null): "TSO" | null {
+const canonicalDsoNames = new Set([
+  "Avacon Netz GmbH",
+  "wesernetz Bremen GmbH",
+  "EWE Netz GmbH",
+  "E.DIS Netz GmbH",
+  "Stromnetz Berlin GmbH",
+]);
+
+export function knownOperatorRole(value?: string | null): "TSO" | "DSO" | null {
   const canonical = canonicalOperatorName(value);
-  return canonical && canonicalTsoNames.has(canonical) ? "TSO" : null;
+  return canonical && canonicalTsoNames.has(canonical)
+    ? "TSO"
+    : canonical && canonicalDsoNames.has(canonical)
+      ? "DSO"
+      : null;
 }
 
 export function sameOperatorIdentity(left?: string | null, right?: string | null) {
@@ -58,8 +70,7 @@ export function sameOperatorIdentity(left?: string | null, right?: string | null
   const canonicalRight = canonicalOperatorNames(right);
   return canonicalLeft.some((leftName) =>
     canonicalRight.some(
-      (rightName) =>
-        leftName.localeCompare(rightName, undefined, { sensitivity: "accent" }) === 0,
+      (rightName) => leftName.localeCompare(rightName, undefined, { sensitivity: "accent" }) === 0,
     ),
   );
 }

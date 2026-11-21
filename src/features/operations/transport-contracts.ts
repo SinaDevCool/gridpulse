@@ -95,7 +95,7 @@ export const overviewResultSchema = z
             .passthrough(),
         )
         .min(1),
-      summary: z.record(z.unknown()),
+      summary: z.record(z.string(), z.unknown()),
     }),
     planningWarnings: z.array(z.string()),
   })
@@ -148,7 +148,7 @@ export const assessmentEnvelopeSchema = z.object({
     completenessPercent: finite.min(0).max(100),
     warnings: z.array(z.string()),
   }),
-  result: z.record(z.unknown()),
+  result: z.record(z.string(), z.unknown()),
 });
 
 export const powerResultSchema = z

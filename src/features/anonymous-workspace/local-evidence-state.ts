@@ -1,13 +1,10 @@
+import { evidenceIsCurrent } from "./data-centre-qualification";
 import type { LocalCapacityEvidence } from "./schema";
 
 export type LocalCapacityState = "unknown" | "validated" | "stale";
 
 export function localEvidenceExpired(evidence: LocalCapacityEvidence | null, now = new Date()) {
-  return Boolean(
-    evidence?.validTo &&
-    Number.isFinite(Date.parse(evidence.validTo)) &&
-    Date.parse(evidence.validTo) < now.getTime(),
-  );
+  return Boolean(evidence && !evidenceIsCurrent(evidence, now));
 }
 
 export function isAcceptedLocalCapacityEvidence(
@@ -43,7 +40,7 @@ export function localEvidenceGaps(evidence: LocalCapacityEvidence | null, now = 
     .map((item) => (typeof item === "string" ? item : JSON.stringify(item)))
     .filter(Boolean);
   if (localEvidenceExpired(evidence, now))
-    gaps.unshift("Capacity evidence is past its validity date");
+    gaps.unshift("Capacity evidence is outside its valid period or has an invalid validity date");
   if (evidence.validationStatus !== "validated")
     gaps.unshift("Capacity evidence has not been validated");
   return Array.from(new Set(gaps));

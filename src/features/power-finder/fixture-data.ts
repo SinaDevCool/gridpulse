@@ -1,17 +1,9 @@
 import type { Feature, FeatureCollection, Geometry } from "geojson";
 
 export type PowerFinderKind =
-  | "node"
-  | "line"
-  | "industrial_site"
-  | "generation_asset"
-  | "storage_asset";
+  "node" | "line" | "industrial_site" | "generation_asset" | "storage_asset";
 export type PowerFinderEvidenceClass =
-  | "official_operator"
-  | "official_regulatory"
-  | "official_public"
-  | "open_mapping"
-  | "test_fixture";
+  "official_operator" | "official_regulatory" | "official_public" | "open_mapping" | "test_fixture";
 
 export type PowerFinderProperties = {
   kind: PowerFinderKind;
@@ -80,6 +72,10 @@ export type PowerFinderCollection = Omit<
     record_count: number;
     available_kinds?: PowerFinderKind[];
     kind_counts?: Partial<Record<PowerFinderKind, number>>;
+    published_at_basis?: "source_release" | "query_time" | "unknown";
+    queried_at?: string;
+    retrieval_capped?: boolean;
+    dataset_release?: string;
     coverage_status?: "accepted_partial" | "accepted_static_fallback" | "unavailable";
     voltage_coverage?: Partial<
       Record<

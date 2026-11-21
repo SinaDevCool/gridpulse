@@ -37,9 +37,7 @@ export const chronologicalShadowRequestSchema = z
 export const uncertaintyAnalysisResultSchema = z
   .object({
     ...common,
-    schema_version: z.literal(
-      "gridpulse-facility-uncertainty-application-result-v1",
-    ),
+    schema_version: z.literal("gridpulse-facility-uncertainty-application-result-v1"),
     truth_class: z.string(),
     capacity_claim: z.literal(false),
     result: z.discriminatedUnion("evaluation_method", [
@@ -50,7 +48,7 @@ export const uncertaintyAnalysisResultSchema = z
           common_plan_validated: z.literal(false),
           feasibility_probability: z.number().min(0).max(1),
           dependable_reduction_mw: z.number().nonnegative(),
-          outcomes: z.array(z.record(z.unknown())).max(32),
+          outcomes: z.array(z.record(z.string(), z.unknown())).max(32),
         })
         .passthrough(),
       z
@@ -58,10 +56,8 @@ export const uncertaintyAnalysisResultSchema = z
           evaluation_method: z.literal("common_command_scenario_milp"),
           accepted: z.boolean(),
           common_plan_validated: z.boolean(),
-          scenario_weights_basis: z.literal(
-            "assumed_not_calibrated_probability",
-          ),
-          outcomes: z.array(z.record(z.unknown())).max(4),
+          scenario_weights_basis: z.literal("assumed_not_calibrated_probability"),
+          outcomes: z.array(z.record(z.string(), z.unknown())).max(4),
         })
         .passthrough(),
     ]),
@@ -82,8 +78,8 @@ export const chronologicalShadowResultSchema = z
             available_at: z.string(),
             input_fingerprint: hash,
             accepted: z.boolean(),
-            initial_state: z.record(z.unknown()),
-            plan: z.record(z.unknown()),
+            initial_state: z.record(z.string(), z.unknown()),
+            plan: z.record(z.string(), z.unknown()),
           })
           .passthrough(),
       )

@@ -11,11 +11,7 @@ export type ScreeningScore = {
 };
 
 export type EvidenceConfidenceLevel =
-  | "confirmed"
-  | "corroborated"
-  | "mapped"
-  | "inferred"
-  | "unknown";
+  "confirmed" | "corroborated" | "mapped" | "inferred" | "unknown";
 
 export type EvidenceConfidenceItem = {
   label: string;
@@ -40,7 +36,8 @@ export function evidenceConfidence(
   const voltageAccepted =
     Boolean(props.voltage_kv?.length) &&
     !["ambiguous", "implausible"].includes(props.voltage_evidence_status ?? "accepted");
-  const publishedAt = props.source_published_at ?? fallbackPublishedAt;
+  const publishedAt = props.source_published_at;
+  void fallbackPublishedAt;
   const parsedPublishedAt = publishedAt ? new Date(publishedAt) : null;
   const validPublishedAt = parsedPublishedAt && !Number.isNaN(parsedPublishedAt.getTime());
   const publishedLabel = validPublishedAt
@@ -140,7 +137,9 @@ export function scoreFeature(feature: PowerFinderFeature): ScreeningScore | null
   const operatorPoints = props.operator ? 15 : 0;
   const assetIdentityPoints = props.name && String(feature.id) ? 15 : props.name ? 8 : 0;
   const statusPoints = props.status === "operational" ? 10 : props.status ? 5 : 0;
-  const freshnessPoints = props.evidence_class === "test_fixture" ? 0 : 10;
+  const published = props.source_published_at ? Date.parse(props.source_published_at) : NaN;
+  const ageDays = (Date.now() - published) / 86_400_000;
+  const freshnessPoints = Number.isFinite(ageDays) && ageDays >= 0 && ageDays <= 366 ? 10 : 0;
   const components = [
     {
       label: "Voltage context",
@@ -185,7 +184,7 @@ export function scoreFeature(feature: PowerFinderFeature): ScreeningScore | null
       maximum: 10,
       reason:
         freshnessPoints > 0
-          ? "The feature belongs to an accepted source release; review its date in provenance."
+          ? "A source publication within the last year is recorded; this is not operator confirmation."
           : "No accepted source-release freshness is available.",
     },
   ];

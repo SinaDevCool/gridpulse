@@ -70,7 +70,7 @@ export class SupabaseOperationsRepository implements OperationsEvidenceReader {
       signal: AbortSignal.timeout(10_000),
     });
     if (!result.ok) throw new Error(`${table}:${result.status}`);
-    return z.array(z.record(z.unknown())).parse(await result.json());
+    return z.array(z.record(z.string(), z.unknown())).parse(await result.json());
   }
 }
 

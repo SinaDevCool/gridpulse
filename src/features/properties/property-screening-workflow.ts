@@ -6,7 +6,12 @@ import type {
   AnonymousProperty,
   GridScreeningSnapshot,
 } from "@/features/anonymous-workspace/schema";
-import { rankCandidatesForLocation } from "@/features/power-finder/candidate-intelligence";
+import { retrieveCandidateContext } from "@/features/power-finder/candidate-retrieval";
+import { attachScreeningSnapshot } from "@/features/power-finder/screening-snapshot";
+import {
+  applyPreferredVoltageContext,
+  rankCandidatesForLocation,
+} from "@/features/power-finder/candidate-intelligence";
 import { loadPowerFinderViewport } from "@/features/power-finder/data-source";
 import { enrichProperties, mergeEnrichment } from "./property-enrichment";
 
@@ -105,9 +110,10 @@ export async function screenProperty(
 
     updateRun("screening_grid");
     onStatus?.("screening_grid", "Ranking mapped connection hypotheses");
-    const { collection } = await loadPowerFinderViewport(rankingBounds(property), undefined, {
-      fallbackAllowed: true,
-    });
+    const { collection } = await retrieveCandidateContext(
+      rankingBounds(property),
+      loadPowerFinderViewport,
+    );
     const ranked = rankCandidatesForLocation(
       collection,
       longitude,
@@ -115,8 +121,14 @@ export async function screenProperty(
       property.project.importMw,
       property.project.maxDistanceKm,
       property.name,
+      Number.MAX_SAFE_INTEGER,
     );
-    const top = ranked.candidates.slice(0, 3);
+    const traced = await attachScreeningSnapshot(ranked, collection);
+    const top = applyPreferredVoltageContext(
+      traced.candidates,
+      property.project.preferredVoltageKv,
+      property.project.type,
+    ).slice(0, 3);
     const captured = top.map(candidateSnapshot);
     const capturedIds = new Set(captured.map((item) => item.id));
     const retained = property.candidateSnapshots.filter((item) => !capturedIds.has(item.id));
@@ -124,12 +136,12 @@ export async function screenProperty(
     const gridSnapshot: GridScreeningSnapshot = {
       id: crypto.randomUUID(),
       propertyId: property.id,
-      status: top.length ? "complete" : "partial",
+      status: top.length && !collection.metadata.retrieval_capped ? "complete" : "partial",
       candidateIds: captured.map((item) => item.id),
       recommendedCandidateId: captured[0]?.id ?? null,
       shortlistedCandidateId: property.preferredCandidateId,
       calculationVersion: top[0]?.calculationVersion ?? "unavailable",
-      releaseFingerprint: enrichment.releaseFingerprint,
+      releaseFingerprint: top[0]?.sourceSnapshotSha256 ?? "unverified-grid-snapshot",
       screenedAt,
     };
 

@@ -21,7 +21,7 @@ const content = {
   lead: "Compare industrial connection candidates, separate process-critical demand from flexible production and assess how an hourly envelope changes project feasibility.",
   decision:
     "Match a high-load project to a location and production strategy that can respond to grid conditions.",
-  projectType: "hydrogen",
+  projectType: "electrolyser",
   metrics: [
     { value: "15", label: "Calculated Berlin nodes" },
     { value: "236,520", label: "Hourly states evaluated" },

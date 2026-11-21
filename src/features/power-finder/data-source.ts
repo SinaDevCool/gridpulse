@@ -4,6 +4,7 @@ import {
   type PowerFinderCollection,
 } from "@/features/power-finder/fixture-data";
 import { isFinderMvp } from "@/config/product-mode";
+import { scopeFallback } from "./fallback-scope";
 import { toPublicPowerFinderCollection } from "./public-data";
 
 export type PowerFinderBounds = {
@@ -17,10 +18,18 @@ const FALLBACK_URL = "/power-finder/brandenburg-osm.json";
 
 export type PowerFinderDataMode = "database" | "public_database" | "published_artifact";
 
-async function loadFallback(signal?: AbortSignal): Promise<PowerFinderCollection> {
+async function loadFallback(
+  bounds: PowerFinderBounds,
+  signal?: AbortSignal,
+): Promise<PowerFinderCollection> {
   const response = await fetch(FALLBACK_URL, { signal });
   if (!response.ok) throw new Error(`Power Finder fallback returned ${response.status}.`);
-  return toPublicPowerFinderCollection(parsePowerFinderCollection(await response.json()));
+  const scoped = scopeFallback(
+    toPublicPowerFinderCollection(parsePowerFinderCollection(await response.json())),
+    bounds,
+  );
+  if (!scoped.features.length) throw new Error("No accepted static fallback covers this viewport.");
+  return scoped;
 }
 
 async function loadPublicViewport(
@@ -50,17 +59,26 @@ export async function loadPowerFinderViewport(
   if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
   if (isFinderMvp()) {
     try {
+      const collection = await loadPublicViewport(bounds, signal, {
+        generation: options.includeRegistryAssets !== false,
+        storage: options.includeRegistryAssets !== false,
+      });
+      if (
+        options.fallbackAllowed === false &&
+        collection.metadata.coverage_status === "accepted_static_fallback"
+      )
+        throw new Error("Live regional data unavailable.");
       return {
-        collection: await loadPublicViewport(bounds, signal, {
-          generation: options.includeRegistryAssets !== false,
-          storage: options.includeRegistryAssets !== false,
-        }),
-        mode: "public_database",
+        collection,
+        mode:
+          collection.metadata.coverage_status === "accepted_static_fallback"
+            ? "published_artifact"
+            : "public_database",
       };
     } catch (error) {
       if (signal?.aborted) throw error;
       if (options.fallbackAllowed === false) throw error;
-      return { collection: await loadFallback(signal), mode: "published_artifact" };
+      return { collection: await loadFallback(bounds, signal), mode: "published_artifact" };
     }
   }
   try {
@@ -84,6 +102,6 @@ export async function loadPowerFinderViewport(
         "No accepted national viewport is available. Select Brandenburg or try the live database again.",
       );
     }
-    return { collection: await loadFallback(signal), mode: "published_artifact" };
+    return { collection: await loadFallback(bounds, signal), mode: "published_artifact" };
   }
 }

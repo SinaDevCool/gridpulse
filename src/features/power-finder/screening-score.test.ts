@@ -37,7 +37,7 @@ describe("Power Finder evidence readiness score", () => {
         status: "operational",
       }),
     );
-    expect(result?.total).toBe(100);
+    expect(result?.total).toBe(90); // No actual source date: no freshness credit.
     expect(result?.label).toBe("higher evidence completeness");
   });
 

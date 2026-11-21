@@ -1,6 +1,6 @@
 import type { FinderProjectType } from "./finder-project";
 
-export const RANKING_MODEL_VERSION = "data-centre-investigation-fit-v4";
+export const RANKING_MODEL_VERSION = "data-centre-investigation-fit-v5";
 
 export type RankingDimension =
   | "evidenceReadiness"

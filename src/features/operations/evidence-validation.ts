@@ -1,4 +1,11 @@
 import { z } from "zod";
+/** Zod 4 validation errors do not inherit from the native Error class. */
+export function evidenceErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof z.ZodError)
+    return error.issues.map((issue) => issue.message).join(" ");
+  return error instanceof Error ? error.message : fallback;
+}
+
 export function invalidEvidence(message: string): never {
   throw new z.ZodError([{ code: "custom", path: ["evidence"], message }]);
 }

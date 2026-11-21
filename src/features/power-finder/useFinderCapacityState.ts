@@ -1,15 +1,16 @@
 import {
-type BerlinSyntheticCapacityArtifact,
-type CalculatedCapacityViewport,
-type CapacityMetric,
+  type BerlinSyntheticCapacityArtifact,
+  type CalculatedCapacityViewport,
+  type CapacityMetric,
 } from "@/features/power-finder/calculated-capacity";
 import { type FinderProject } from "@/features/power-finder/finder-project";
+import { finderMvpFeatures } from "@/config/product-mode";
 import { useState } from "react";
 import type { FinderSearch } from "./search-contract";
 
 export function useFinderCapacityState(search: FinderSearch, project: FinderProject) {
   const [mapMode, setMapMode] = useState<"voltage" | "evidence" | "capacity">(
-    search.mapMode ?? "voltage",
+    finderMvpFeatures.syntheticCapacity ? (search.mapMode ?? "voltage") : "voltage",
   );
 
   const [capacityMetric, setCapacityMetric] = useState<CapacityMetric>(

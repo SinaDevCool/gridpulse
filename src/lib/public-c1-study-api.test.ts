@@ -7,6 +7,33 @@ afterEach(() => {
 });
 
 describe("public C1 study API", () => {
+  it("retains C1 evidence when an optional study origin fails", async () => {
+    const origin = vi
+      .fn()
+      .mockResolvedValueOnce(
+        Response.json({
+          node_study: { available: false },
+          benchmark_validation: { available: true },
+        }),
+      )
+      .mockRejectedValueOnce(new Error("C2 unavailable"))
+      .mockResolvedValueOnce(new Response("unavailable", { status: 503 }))
+      .mockResolvedValueOnce(new Response("invalid", { status: 200 }));
+    vi.stubGlobal("fetch", origin);
+    const result = await handlePublicC1StudyRequest(
+      new Request("https://gridpulseinsights.com/api/power-finder/study?node=n"),
+      {
+        SUPABASE_URL: "https://example.supabase.co",
+        SUPABASE_PUBLISHABLE_KEY: "test",
+      },
+    );
+    expect(result?.status).toBe(200);
+    await expect(result?.json()).resolves.toMatchObject({
+      benchmark_validation: { available: true },
+      c2: { node_envelope: { available: false } },
+      c3: { available: false },
+    });
+  });
   it("rejects malformed node identifiers before origin access", async () => {
     const origin = vi.fn();
     vi.stubGlobal("fetch", origin);
@@ -33,11 +60,11 @@ describe("public C1 study API", () => {
       .mockResolvedValueOnce(
         new Response(JSON.stringify({ node_envelope: { available: false } }), { status: 200 }),
       )
+      .mockResolvedValueOnce(new Response(JSON.stringify({ available: false }), { status: 200 }))
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({ available: false }), { status: 200 }),
-      )
-      .mockResolvedValueOnce(
-        new Response(JSON.stringify({ available: true, representation: "benchmark_only" }), { status: 200 }),
+        new Response(JSON.stringify({ available: true, representation: "benchmark_only" }), {
+          status: 200,
+        }),
       );
     vi.stubGlobal("fetch", origin);
     const result = await handlePublicC1StudyRequest(

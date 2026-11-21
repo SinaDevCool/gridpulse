@@ -20,6 +20,7 @@ const publicPropertyKeys = [
   "confidence_grade",
   "capacity_published_at",
   "source_url",
+  "source_published_at",
   "site_kind",
   "area_ha",
   "planning_status",
@@ -53,6 +54,10 @@ export function toPublicPowerFinderCollection(
       licence: collection.metadata.licence,
       attribution: collection.metadata.attribution,
       published_at: collection.metadata.published_at,
+      published_at_basis: collection.metadata.published_at_basis,
+      queried_at: collection.metadata.queried_at,
+      retrieval_capped: collection.metadata.retrieval_capped,
+      dataset_release: collection.metadata.dataset_release,
       geographic_scope: collection.metadata.geographic_scope,
       freshness: collection.metadata.freshness,
       artifact_sha256: collection.metadata.artifact_sha256,
@@ -62,13 +67,11 @@ export function toPublicPowerFinderCollection(
       coverage_status: collection.metadata.coverage_status,
       evidence_boundary: collection.metadata.evidence_boundary,
     },
-    features: collection.features.map(
-      (feature): PowerFinderFeature => ({
-        type: "Feature",
-        id: feature.id,
-        geometry: feature.geometry,
-        properties: publicProperties(feature.properties),
-      }),
-    ),
+    features: collection.features.map((feature): PowerFinderFeature => ({
+      type: "Feature",
+      id: feature.id,
+      geometry: feature.geometry,
+      properties: publicProperties(feature.properties),
+    })),
   };
 }

@@ -1,3 +1,4 @@
+import { GermanSourceContext } from "@/components/product/GermanSourceContext";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   AlertTriangle,
@@ -418,6 +419,7 @@ function FinderDataSourcesPage() {
         </PublicPageHero>
 
         <div className="public-page-content finder-methodology-content">
+          <GermanSourceContext />
           <section className="finder-methodology-value" aria-labelledby="finder-method-title">
             <div>
               <p className="context-label">What Powers the Shortlist</p>
@@ -611,8 +613,8 @@ function FinderDataSourcesPage() {
                 <Calculator aria-hidden="true" />
                 <h3>Berlin boundary</h3>
                 <p>
-                  The public Berlin colours remain Release 1 physics results; Release 2 does not
-                  alter them.
+                  Synthetic Berlin values belong to the separate demonstration. The public Finder
+                  does not enable a capacity overlay through URL parameters.
                 </p>
               </article>
             </div>

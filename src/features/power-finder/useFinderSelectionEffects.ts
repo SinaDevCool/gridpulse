@@ -23,7 +23,6 @@ export function useFinderSelectionEffects(context: Context) {
     collection,
     selected,
     setSelected,
-    detailPanelRef,
     updateSearch,
     setInteractionNotice,
     detailDismissedRef,
@@ -46,7 +45,6 @@ export function useFinderSelectionEffects(context: Context) {
   }, [candidates, search.candidate, search.propertyId]);
   useEffect(() => {
     if (!selectedDetailFeature) return;
-    const frame = window.requestAnimationFrame(() => detailPanelRef.current?.focus());
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
       event.preventDefault();
@@ -54,10 +52,9 @@ export function useFinderSelectionEffects(context: Context) {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => {
-      window.cancelAnimationFrame(frame);
       window.removeEventListener("keydown", handleKeyDown);
     };
-    // The selected feature identity controls panel focus; closeDetail intentionally uses current state.
+    // The selected feature identity controls dismissal; closeDetail intentionally uses current state.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDetailFeature?.id]);
   useEffect(() => {

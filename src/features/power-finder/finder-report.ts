@@ -1,14 +1,10 @@
+import { writeRepresentativeReport } from "./representative-report";
 import type { jsPDF as JsPdfDocument } from "jspdf";
 import type { PowerFinderCollection } from "./fixture-data";
 import { voltageFitLabels, type CandidateOpportunity } from "./candidate-intelligence";
 import { finderProjectTypes, projectOperatorQuestions, type FinderProject } from "./finder-project";
 import { ruleReferencesForVoltage } from "./german-rules-registry";
 import { calculationClassLabels } from "./calculation-provenance";
-import {
-  activationStatusLabel,
-  calculateRepresentativeCommercialValue,
-  createActivationStudyContext,
-} from "./activation-study";
 import {
   capacityMetricLabels,
   type CalculatedCapacityNode,
@@ -24,14 +20,12 @@ export type FinderReportCapacityContext = {
   evidenceBoundary: string;
 };
 
-const clean = (value: unknown) => String(value ?? "Not established").replace(/[^ -~]/g, "-");
+const clean = (value: unknown) =>
+  String(value ?? "Not established")
+    .replace(/[–—→]/g, "-")
+    .replace(/[^\u0020-\u00FF]/g, "?");
 const reportDate = new Intl.DateTimeFormat("en-GB", { dateStyle: "long" });
 const number = new Intl.NumberFormat("en-GB", { maximumFractionDigits: 1 });
-const money = new Intl.NumberFormat("en-GB", {
-  style: "currency",
-  currency: "EUR",
-  maximumFractionDigits: 0,
-});
 
 const ink = [18, 36, 49] as const;
 const muted = [92, 112, 126] as const;
@@ -364,37 +358,15 @@ export async function buildFinderReport(
         calculationClassLabels[candidate.provenance?.calculationClass ?? "heuristic"],
       ],
       ["Method version", candidate.provenance?.methodVersion ?? candidate.calculationVersion],
+      ["Input snapshot SHA-256", candidate.sourceSnapshotSha256 ?? "Not captured"],
+      ["Source publication", candidate.sourcePublishedAt ?? "Not established"],
+      [
+        "Retrieval complete",
+        candidate.retrievalCapped ? "No; search was capped" : "No cap reported",
+      ],
     ]);
 
-    const activation = createActivationStudyContext({ project, candidate, registeredStudy: null });
-    const recommended = activation.recommendedOption;
-    subsection("Representative activation pathway");
-    if (recommended) {
-      keyValueGrid([
-        ["Leading pathway", recommended.title],
-        ["Strategy", activationStatusLabel(recommended.operationalStatus)],
-        [
-          "Initial / eventual",
-          `${number.format(recommended.initialImportMw)} / ${number.format(recommended.eventualImportMw)} MW`,
-        ],
-        ["Demand served", `${recommended.analysis?.demandServedPercent ?? "Unavailable"}%`],
-        ["Restricted hours", recommended.analysis?.restrictedHours ?? "Unavailable"],
-        ["Residual energy", `${recommended.analysis?.residualUnservedMwh ?? "Unavailable"} MWh`],
-      ]);
-      paragraph(`Next validation action: ${recommended.nextAction}`);
-    } else paragraph("No representative pathway is established.");
-
-    const commercial = calculateRepresentativeCommercialValue(activation);
-    subsection("Commercial sensitivity - representative only");
-    keyValueGrid(
-      [
-        ["Low", money.format(commercial.lowIndicativeValueEur)],
-        ["Base", money.format(commercial.netIndicativeValueEur)],
-        ["High", money.format(commercial.highIndicativeValueEur)],
-      ],
-      3,
-    );
-    paragraph(commercial.boundary);
+    writeRepresentativeReport(project, candidate, { subsection, paragraph, keyValueGrid });
 
     if (candidate.capacityScenario || candidate.networkScenario) {
       callout(

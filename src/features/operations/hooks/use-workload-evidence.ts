@@ -1,4 +1,5 @@
 import { requestOperationsAssessment } from "@/lib/operations-api";
+import { evidenceErrorMessage } from "../evidence-validation";
 import { stableOperationsJson } from "@/lib/operations-request";
 import { useEffect, useMemo, useRef, type ChangeEvent } from "react";
 import { buildImportReport } from "../import-report";
@@ -121,7 +122,7 @@ export function useWorkloadEvidence(
       setSelectedId(null);
     } catch (reason) {
       if (revision !== importRevision.current) return;
-      setError(reason instanceof Error ? reason.message : "The workload file could not be read.");
+      setError(evidenceErrorMessage(reason, "The workload file could not be read."));
     } finally {
       event.target.value = "";
     }
@@ -158,7 +159,7 @@ export function useWorkloadEvidence(
       });
     } catch (reason) {
       if (revision !== importRevision.current) return;
-      setError(reason instanceof Error ? reason.message : "The telemetry file could not be read.");
+      setError(evidenceErrorMessage(reason, "The telemetry file could not be read."));
     } finally {
       event.target.value = "";
     }

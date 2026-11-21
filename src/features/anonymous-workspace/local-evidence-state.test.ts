@@ -32,7 +32,19 @@ describe("local evidence state", () => {
   it("marks past evidence stale and exposes the validity gap", () => {
     const item = evidence({ validTo: "2000-01-01T00:00:00.000Z" });
     expect(localCapacityState(item)).toBe("stale");
-    expect(localEvidenceGaps(item)).toContain("Capacity evidence is past its validity date");
+    expect(localEvidenceGaps(item)).toContain(
+      "Capacity evidence is outside its valid period or has an invalid validity date",
+    );
+  });
+  it.each([
+    { validFrom: "2099-01-01" },
+    { validTo: "invalid" },
+    { validFrom: "invalid" },
+    { validFrom: "2026-12-01", validTo: "2026-01-01" },
+  ])("does not accept invalid or not-yet-current validity windows: %j", (dates) => {
+    expect(isAcceptedLocalCapacityEvidence(evidence(dates), new Date("2026-11-21T00:00:00Z"))).toBe(
+      false,
+    );
   });
   it("keeps absent evidence unknown", () => expect(localCapacityState(null)).toBe("unknown"));
 });

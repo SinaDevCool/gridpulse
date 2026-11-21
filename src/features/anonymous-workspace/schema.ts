@@ -68,12 +68,7 @@ export type AnonymousEvidenceItem = {
 };
 
 export type EnrichmentSource =
-  | "bkg_admin"
-  | "osm_context"
-  | "bfn_protected"
-  | "mastr"
-  | "bkg_heavy_rain"
-  | "power_finder";
+  "bkg_admin" | "osm_context" | "bfn_protected" | "mastr" | "bkg_heavy_rain" | "power_finder";
 
 export type AnonymousEnrichmentFinding = {
   id: string;
@@ -165,12 +160,7 @@ export type AnonymousOperatorEngagement = {
   operatorLevel: "dso" | "tso" | "unknown";
   responsibilityStatus: "screening_only" | "customer_confirmed" | "operator_confirmed";
   enquiryStatus:
-    | "not_started"
-    | "preparing"
-    | "submitted"
-    | "acknowledged"
-    | "response_received"
-    | "closed";
+    "not_started" | "preparing" | "submitted" | "acknowledged" | "response_received" | "closed";
   enquiryReference: string | null;
   submittedAt: string | null;
   acknowledgedAt: string | null;
@@ -260,11 +250,7 @@ export const defaultWorkspaceSettings: AnonymousWorkspaceSettings = {
 };
 
 export type AnonymousPropertySource =
-  | "power_finder"
-  | "csv_import"
-  | "xlsx_import"
-  | "geojson_import"
-  | "workspace_restore";
+  "power_finder" | "csv_import" | "xlsx_import" | "geojson_import" | "workspace_restore";
 
 export type AnonymousCandidateSnapshot = Pick<
   CandidateOpportunity,
@@ -278,6 +264,11 @@ export type AnonymousCandidateSnapshot = Pick<
   | "evidenceScore"
   | "missingEvidence"
   | "calculationVersion"
+  | "sourceSnapshotSha256"
+  | "sourcePublishedAt"
+  | "retrievalCapped"
+  | "infrastructureClass"
+  | "suitabilityNote"
 > & {
   capacityState: string;
   evidenceClass: string;

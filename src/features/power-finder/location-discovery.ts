@@ -4,6 +4,7 @@ import {
   type PowerFinderCollection,
   type PowerFinderFeature,
 } from "./fixture-data";
+import { classifyInfrastructure } from "./infrastructure-suitability";
 import { mappedVoltageRelevance } from "./candidate-intelligence";
 import { isPointInGermanState } from "./german-state-boundaries";
 
@@ -105,7 +106,7 @@ export function discoverLocations(
     }
     return false;
   });
-  const origins = land.length > 0 ? land : nodes;
+  const origins = [...land, ...nodes];
   const candidates = origins.flatMap((origin) => {
     const coordinates = pointCoordinates(origin);
     if (!coordinates) return [];
@@ -115,7 +116,16 @@ export function discoverLocations(
     const nearest = nodes
       .map((node) => ({ node, distance: distanceKm(coordinates, pointCoordinates(node)!) }))
       .filter((item) => item.distance <= parameters.maxNodeDistanceKm)
-      .sort((left, right) => left.distance - right.distance)[0];
+      .sort(
+        (left, right) =>
+          voltageScore(right.node, parameters.preferredVoltageKv) -
+            voltageScore(left.node, parameters.preferredVoltageKv) ||
+          classifyInfrastructure(right.node.properties.name, right.node.properties.operator)
+            .scoreCeiling -
+            classifyInfrastructure(left.node.properties.name, left.node.properties.operator)
+              .scoreCeiling ||
+          left.distance - right.distance,
+      )[0];
     if (!nearest) return [];
     const nearby = energy.filter((feature) => {
       const position = pointCoordinates(feature);
@@ -133,13 +143,19 @@ export function discoverLocations(
         .map(generationGroup)
         .filter(Boolean),
     );
-    const proximity = Math.max(0, 100 * (1 - nearest.distance / parameters.maxNodeDistanceKm));
-    const gridScore =
+    const proximity =
+      origin.properties.kind === "node"
+        ? 50
+        : Math.max(0, 100 * (1 - nearest.distance / parameters.maxNodeDistanceKm));
+    const gridScore = Math.min(
+      classifyInfrastructure(nearest.node.properties.name, nearest.node.properties.operator)
+        .scoreCeiling,
       voltageScore(nearest.node, parameters.preferredVoltageKv) * 0.55 +
-      proximity * 0.3 +
-      (nearest.node.properties.operator ? 100 : 40) * 0.15;
+        proximity * 0.3 +
+        (nearest.node.properties.operator ? 100 : 40) * 0.15,
+    );
     const energyScore =
-      Math.min(100, (generationMw / Math.max(1, parameters.requiredMw)) * 45) +
+      Math.min(60, (generationMw / Math.max(1, parameters.requiredMw)) * 45) +
       Math.min(25, technologies.size * 7) +
       Math.min(15, (storageMw / Math.max(1, parameters.requiredMw)) * 15);
     const profile = weights[parameters.strategy];
@@ -166,6 +182,11 @@ export function discoverLocations(
         technologyCount: technologies.size,
         landContext: origin.properties.kind === "industrial_site" ? "mapped" : "not_assessed",
         reasons: [
+          origin.properties.kind === "node"
+            ? "Grid reference area only; developable land has not been assessed. Proximity receives a neutral score."
+            : "Mapped industrial context; ownership, availability and planning permission are unverified.",
+          classifyInfrastructure(nearest.node.properties.name, nearest.node.properties.operator)
+            .note,
           `${nearest.node.properties.voltage_kv?.join(" / ") || "Unknown"} kV mapped node ${round1(nearest.distance)} km away.`,
           `${round1(generationMw)} MW matching registered generation within 15 km.`,
           storageMw > 0

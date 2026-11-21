@@ -1,3 +1,4 @@
+import { attachScreeningSnapshot } from "./screening-snapshot";
 import { productCapabilities } from "@/config/product-mode";
 import { loadC1Study } from "@/features/power-finder/c1-study";
 import {
@@ -106,6 +107,7 @@ export function useFinderStudyEffects(context: Context) {
         requiredImportMw,
         maxDistanceKm,
         project.name,
+        Number.MAX_SAFE_INTEGER,
       ),
     );
     void resultPromise
@@ -117,6 +119,7 @@ export function useFinderStudyEffects(context: Context) {
           project.type,
         ),
       }))
+      .then((result) => attachScreeningSnapshot(result, sourceCollection))
       .then((result) => {
         if (!active) return;
         setRanking(result);

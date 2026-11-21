@@ -20,7 +20,7 @@ const content = {
   title: "Make power availability a site-selection decision, not a late-stage surprise.",
   lead: "Compare candidate grid locations, understand firm and flexible capacity, and test how workload and on-site storage could support a connection strategy.",
   decision: "Select a site that can support the critical load and a credible path to full demand.",
-  projectType: "data_center",
+  projectType: "data_centre",
   metrics: [
     { value: "N-1", label: "Firm-capacity security screen" },
     { value: "8,760", label: "Hourly states per scenario" },

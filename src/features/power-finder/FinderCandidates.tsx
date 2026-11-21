@@ -82,9 +82,19 @@ export function FinderCandidates({ model }: { model: FinderControllerContract })
         rankingState === "ready" &&
         candidates.length === 0 && (
           <p className="power-finder-no-results">
-            No candidate connection points are within {maxDistanceKm} km in this view.
+            No retrieved candidates match these filters within {maxDistanceKm} km. This does not
+            establish that no connection options exist.
           </p>
         )}
+      {rankingCollection?.metadata.retrieval_capped && (
+        <p role="status">
+          Candidate retrieval reached its limit. Narrow the search area; this shortlist is
+          incomplete.
+        </p>
+      )}
+      <p className="finder-evidence-boundary">
+        Investigation priority only. Capacity and connection suitability are unverified.
+      </p>
       {visibleCandidates.map((candidate, index) => {
         const capacityNode = activeCapacityNodes.find(
           (node) => node.publicNodeId === candidate.nodeId,
@@ -155,6 +165,10 @@ export function FinderCandidates({ model }: { model: FinderControllerContract })
                 <strong>{formatScore(candidate.screeningRank)}/100</strong>
                 <span>investigation fit</span>
                 <small>Capacity unknown</small>
+                {candidate.infrastructureClass === "possible_customer_asset" ||
+                candidate.infrastructureClass === "specialised" ? (
+                  <small>{candidate.suitabilityNote}</small>
+                ) : null}
               </span>
               {mapMode === "capacity" && (
                 <span className={`candidate-capacity-fit is-${capacityFit.fit}`}>

@@ -1,3 +1,4 @@
+import { retrieveCandidateContext } from "./candidate-retrieval";
 import { loadPowerFinderCoverage } from "@/features/power-finder/coverage";
 import { loadPowerFinderViewport } from "@/features/power-finder/data-source";
 import { loadGridOperatorCatalog } from "@/features/power-finder/operator-catalog";
@@ -98,15 +99,15 @@ export function useFinderDataEffects(context: Context) {
       0.08,
       maxDistanceKm / (111 * Math.max(0.3, Math.cos((project.latitude * Math.PI) / 180))),
     );
-    void loadPowerFinderViewport(
+    void retrieveCandidateContext(
       {
         west: project.longitude - longitudeRadius,
         south: project.latitude - latitudeRadius,
         east: project.longitude + longitudeRadius,
         north: project.latitude + latitudeRadius,
       },
+      loadPowerFinderViewport,
       controller.signal,
-      { fallbackAllowed: true, includeRegistryAssets: false },
     )
       .then(({ collection: siteCollection }) => setRankingCollection(siteCollection))
       .catch(() => {

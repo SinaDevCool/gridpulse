@@ -1,9 +1,14 @@
+import { scopeFallback } from "../features/power-finder/fallback-scope";
+import type { PowerFinderCollection } from "@/features/power-finder/fixture-data";
+import { publicFinderCoverage } from "./public-finder-coverage";
+import { finderRequestAllowed } from "./finder-request-limit";
+
 const PUBLIC_VIEWPORT_PATH = "/api/power-finder/viewport";
 const ACCEPTED_STATIC_FALLBACK_PATH = "/power-finder/brandenburg-osm.json";
 const PUBLIC_TILE_PATTERN = /^\/api\/power-finder\/tile\/(\d+)\/(\d+)\/(\d+)$/;
 const CACHE_SECONDS = 300;
-const TILE_CACHE_RELEASE = "20260926-tech-clusters-v2";
-const TILE_EDGE_CACHE_SECONDS = 2_592_000;
+const TILE_CACHE_RELEASE = "finder-evidence-v3";
+const TILE_EDGE_CACHE_SECONDS = 300;
 
 export type PublicFinderEnv = {
   ASSETS?: { fetch: (request: Request) => Promise<Response> };
@@ -76,7 +81,7 @@ function normalizedCacheUrl(requestUrl: URL, parameters: ViewportParameters) {
     north: parameters.north,
   };
   for (const [name, value] of Object.entries(values)) {
-    cacheUrl.searchParams.set(name, value.toFixed(3));
+    cacheUrl.searchParams.set(name, String(value));
   }
   cacheUrl.searchParams.set("generation", String(parameters.includeGeneration));
   cacheUrl.searchParams.set("storage", String(parameters.includeStorage));
@@ -95,18 +100,21 @@ function jsonResponse(body: unknown, status: number, extraHeaders?: HeadersInit)
   });
 }
 
-async function acceptedStaticFallback(requestUrl: URL, env: PublicFinderEnv) {
+async function acceptedStaticFallback(
+  requestUrl: URL,
+  env: PublicFinderEnv,
+  parameters: ViewportParameters,
+) {
   try {
     const fallbackRequest = new Request(new URL(ACCEPTED_STATIC_FALLBACK_PATH, requestUrl.origin));
     const response = env.ASSETS
       ? await env.ASSETS.fetch(fallbackRequest)
       : await fetch(fallbackRequest);
     if (!response.ok) return null;
-    const payload = (await response.json()) as {
-      type?: string;
-      metadata?: Record<string, unknown>;
-      features?: Array<{ properties?: { kind?: string } }>;
-    };
+    const raw = (await response.json()) as PowerFinderCollection;
+    if (raw.type !== "FeatureCollection" || !Array.isArray(raw.features)) return null;
+    const payload = scopeFallback(raw, parameters);
+    if (!payload.features.length) return null;
     if (payload.type !== "FeatureCollection" || !Array.isArray(payload.features)) return null;
     const availableKinds = [
       ...new Set(payload.features.map((feature) => feature.properties?.kind).filter(Boolean)),
@@ -157,6 +165,13 @@ export async function handlePublicPowerFinderRequest(
     return jsonResponse({ error: "Method not allowed." }, 405, { allow: "GET" });
   }
 
+  if (!(await finderRequestAllowed(request, env, "public-finder"))) {
+    return jsonResponse({ error: "Too many viewport requests. Please try again shortly." }, 429, {
+      "retry-after": "60",
+    });
+  }
+  if (url.searchParams.get("coverage") === "true") return publicFinderCoverage(env);
+
   let parameters: ViewportParameters;
   try {
     parameters = parsePublicViewportRequest(url);
@@ -165,17 +180,6 @@ export async function handlePublicPowerFinderRequest(
       { error: error instanceof Error ? error.message : "Invalid viewport." },
       400,
     );
-  }
-
-  if (env.PUBLIC_FINDER_RATE_LIMITER) {
-    const rateLimit = await env.PUBLIC_FINDER_RATE_LIMITER.limit({
-      key: `public-finder:${url.hostname}`,
-    });
-    if (!rateLimit.success) {
-      return jsonResponse({ error: "Too many viewport requests. Please try again shortly." }, 429, {
-        "retry-after": "60",
-      });
-    }
   }
 
   const supabaseUrl = environmentValue(env, "SUPABASE_URL");
@@ -224,7 +228,7 @@ export async function handlePublicPowerFinderRequest(
     }
     if (!response.ok) {
       console.error(`Public Finder origin returned ${response.status}.`);
-      const fallback = await acceptedStaticFallback(url, env);
+      const fallback = await acceptedStaticFallback(url, env, parameters);
       if (fallback) return fallback;
       return jsonResponse({ error: "Public Finder data is temporarily unavailable." }, 502);
     }
@@ -238,6 +242,10 @@ export async function handlePublicPowerFinderRequest(
         metadata?: Record<string, unknown> & { record_count?: number };
       };
       if (payload.metadata) {
+        payload.metadata.published_at_basis = "query_time";
+        payload.metadata.queried_at = new Date().toISOString();
+        payload.metadata.retrieval_capped =
+          Number(payload.metadata.record_count ?? 0) >= (rankingOnly ? 1000 : 2500);
         payload.metadata.coverage_status =
           Number(payload.metadata.record_count ?? 0) > 0 ? "accepted_partial" : "unavailable";
         publicBody = JSON.stringify(payload);
@@ -262,7 +270,7 @@ export async function handlePublicPowerFinderRequest(
     return publicResponse;
   } catch (error) {
     console.error(error instanceof Error ? error.message : "Public Finder origin failed.");
-    const fallback = await acceptedStaticFallback(url, env);
+    const fallback = await acceptedStaticFallback(url, env, parameters);
     if (fallback) return fallback;
     return jsonResponse({ error: "Public Finder data is temporarily unavailable." }, 502);
   } finally {
@@ -293,6 +301,8 @@ export async function handlePublicPowerFinderTileRequest(
   if (!supabaseUrl || !publishableKey) {
     return jsonResponse({ error: "Public Finder data is temporarily unavailable." }, 503);
   }
+  if (!(await finderRequestAllowed(request, env, "finder-tile")))
+    return jsonResponse({ error: "Too many tile requests." }, 429, { "retry-after": "60" });
   const cacheUrl = new URL(requestUrl.pathname, requestUrl.origin);
   cacheUrl.searchParams.set("release", TILE_CACHE_RELEASE);
   cacheUrl.searchParams.set("content", registryOnly ? "registry" : "grid");
@@ -342,7 +352,7 @@ export async function handlePublicPowerFinderTileRequest(
     const publicResponse = new Response(bytes, {
       headers: {
         "content-type": "application/vnd.mapbox-vector-tile",
-        "cache-control": `public, max-age=3600, s-maxage=${TILE_EDGE_CACHE_SECONDS}, stale-if-error=604800`,
+        "cache-control": `public, max-age=60, s-maxage=${TILE_EDGE_CACHE_SECONDS}, stale-if-error=300`,
         "x-content-type-options": "nosniff",
         "x-gridpulse-cache": "MISS",
         "server-timing": `tile-origin;dur=${Date.now() - startedAt}`,
