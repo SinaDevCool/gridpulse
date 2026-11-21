@@ -13,6 +13,7 @@ export const finderSearchSchema = z.object({
   tso: z.string().max(160).optional().catch(undefined),
   dso: z.string().max(160).optional().catch(undefined),
   sort: z.enum(["context", "voltage", "name"]).optional().catch(undefined),
+  resultsView: z.enum(["cards", "table"]).optional().catch(undefined),
   workflow: z.enum(["screen", "discover"]).optional().catch(undefined),
   mw: safeNumber(0.1, 1000),
   distance: safeNumber(1, 100),

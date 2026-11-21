@@ -174,7 +174,7 @@ export function selectCandidates(
     }
     if (candidateSort === "name") {
       return (
-        left.siteName.localeCompare(right.siteName) || left.nodeName.localeCompare(right.nodeName)
+        left.nodeName.localeCompare(right.nodeName) || left.siteName.localeCompare(right.siteName)
       );
     }
     if (candidateSort === "voltage") {

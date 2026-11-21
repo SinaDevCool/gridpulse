@@ -1,23 +1,18 @@
-import { opportunityNode } from "@/features/power-finder/candidate-intelligence";
+import { selectFinderCandidate } from "./select-finder-candidate";
 import { classifyCapacityOpportunity } from "@/features/power-finder/capacity-opportunity";
-import { type PowerFinderFeature } from "@/features/power-finder/fixture-data";
+
 import { formatOperatorNames } from "@/features/power-finder/operator-normalization";
 import { distanceFormatter, formatScore, type CandidateSort } from "./page-formatting";
 import type { FinderControllerContract } from "./controller-contract";
 export function FinderCandidates({ model }: { model: FinderControllerContract }) {
   const {
-    collection,
     project,
-    setSelected,
-    setSelectedOpportunitySnapshot,
     candidateSort,
     maxDistanceKm,
     showAllCandidates,
     setShowAllCandidates,
     updateSearch,
-    setInteractionNotice,
     setPreviewCandidateId,
-    navigateMapToPoint,
     ranking,
     rankingCollection,
     rankingState,
@@ -29,7 +24,6 @@ export function FinderCandidates({ model }: { model: FinderControllerContract })
     candidates,
     visibleCandidates,
     selectedOpportunity,
-    coordinates,
   } = model;
   return (
     <section className="power-finder-candidates">
@@ -57,6 +51,23 @@ export function FinderCandidates({ model }: { model: FinderControllerContract })
           </select>
         </label>
       </header>
+      <div className="finder-results-switch" role="group" aria-label="Candidate presentation">
+        <button
+          type="button"
+          data-finder-view="cards"
+          aria-pressed={model.search.resultsView !== "table"}
+          onClick={() => void updateSearch({ resultsView: undefined })}
+        >
+          Cards
+        </button>
+        <button
+          type="button"
+          aria-pressed={model.search.resultsView === "table"}
+          onClick={() => void updateSearch({ resultsView: "table" })}
+        >
+          Table
+        </button>
+      </div>
       {(project.latitude == null || project.longitude == null) && (
         <div className="finder-site-empty" role="status">
           <strong>No declared site yet</strong>
@@ -95,98 +106,66 @@ export function FinderCandidates({ model }: { model: FinderControllerContract })
       <p className="finder-evidence-boundary">
         Investigation priority only. Capacity and connection suitability are unverified.
       </p>
-      {visibleCandidates.map((candidate, index) => {
-        const capacityNode = activeCapacityNodes.find(
-          (node) => node.publicNodeId === candidate.nodeId,
-        );
-        const capacityFit = classifyCapacityOpportunity(
-          capacityNode,
-          capacityMetric,
-          requiredCapacityMw,
-        );
-        return (
-          <button
-            type="button"
-            key={candidate.id}
-            data-candidate-id={candidate.id}
-            className={selectedOpportunity?.id === candidate.id ? "active" : ""}
-            aria-pressed={selectedOpportunity?.id === candidate.id}
-            onClick={() => {
-              const node =
-                opportunityNode(candidate, rankingCollection) ??
-                opportunityNode(candidate, collection);
-              const detailNode =
-                node ??
-                ({
-                  type: "Feature",
-                  id: candidate.nodeId,
-                  geometry: {
-                    type: "Point",
-                    coordinates: [project.longitude ?? 0, project.latitude ?? 0],
-                  },
-                  properties: {
-                    kind: "node",
-                    name: candidate.nodeName,
-                    operator: candidate.operator ?? undefined,
-                    voltage_kv: candidate.voltageKv,
-                    max_voltage_kv: Math.max(0, ...candidate.voltageKv),
-                    evidence_class: "open_mapping",
-                    capacity_state: "not_established",
-                  },
-                } satisfies PowerFinderFeature);
-              setSelectedOpportunitySnapshot(candidate);
-              setSelected(detailNode);
-              if (detailNode.geometry.type === "Point") {
-                navigateMapToPoint(detailNode.geometry.coordinates as [number, number]);
-              }
-              setInteractionNotice(`${candidate.nodeName} selected and highlighted on the map.`);
-              void updateSearch({ candidate: candidate.id }).then(() => {
-                setSelectedOpportunitySnapshot(candidate);
-                setSelected(detailNode);
-              });
-            }}
-            onMouseEnter={() => setPreviewCandidateId(candidate.id)}
-            onMouseLeave={() => setPreviewCandidateId(null)}
-            onFocus={() => setPreviewCandidateId(candidate.id)}
-            onBlur={() => setPreviewCandidateId(null)}
-            aria-label={`Show ${candidate.nodeName} on map, ${formatScore(candidate.screeningRank)}/100`}
-          >
-            <span className="candidate-rank">{index + 1}</span>
-            <span>
-              <b>{candidate.nodeName}</b>
-              <small>
-                {candidate.voltageKv.length
-                  ? `${Math.max(...candidate.voltageKv)} kV`
-                  : "Voltage unknown"}{" "}
-                · {distanceFormatter.format(candidate.distanceKm)} km ·{" "}
-                {formatOperatorNames(candidate.operator) ?? "Operator unconfirmed"}
-              </small>
-              <span className="candidate-fit-summary">
-                <strong>{formatScore(candidate.screeningRank)}/100</strong>
-                <span>investigation fit</span>
-                <small>Capacity unknown</small>
-                {candidate.infrastructureClass === "possible_customer_asset" ||
-                candidate.infrastructureClass === "specialised" ? (
-                  <small>{candidate.suitabilityNote}</small>
-                ) : null}
-              </span>
-              {mapMode === "capacity" && (
-                <span className={`candidate-capacity-fit is-${capacityFit.fit}`}>
-                  {capacityFit.fit === "meets" &&
-                    `${capacityFit.valueMw?.toLocaleString("en-GB", { maximumFractionDigits: 1 })} MW · meets ${requiredCapacityMw} MW`}
-                  {capacityFit.fit === "activation" &&
-                    `${capacityFit.valueMw?.toLocaleString("en-GB", { maximumFractionDigits: 1 })} MW firm · ${capacityFit.alternative} pathway`}
-                  {capacityFit.fit === "below" &&
-                    `${capacityFit.valueMw?.toLocaleString("en-GB", { maximumFractionDigits: 1 })} MW · below requirement`}
-                  {capacityFit.fit === "stale" && "Recalculation required"}
-                  {capacityFit.fit === "unknown" && "Capacity not calculated"}
+      {model.search.resultsView !== "table" &&
+        visibleCandidates.map((candidate, index) => {
+          const capacityNode = activeCapacityNodes.find(
+            (node) => node.publicNodeId === candidate.nodeId,
+          );
+          const capacityFit = classifyCapacityOpportunity(
+            capacityNode,
+            capacityMetric,
+            requiredCapacityMw,
+          );
+          return (
+            <button
+              type="button"
+              key={candidate.id}
+              data-candidate-id={candidate.id}
+              className={selectedOpportunity?.id === candidate.id ? "active" : ""}
+              aria-pressed={selectedOpportunity?.id === candidate.id}
+              onClick={() => void selectFinderCandidate(model, candidate)}
+              onMouseEnter={() => setPreviewCandidateId(candidate.id)}
+              onMouseLeave={() => setPreviewCandidateId(null)}
+              onFocus={() => setPreviewCandidateId(candidate.id)}
+              onBlur={() => setPreviewCandidateId(null)}
+              aria-label={`Show ${candidate.nodeName} on map, ${formatScore(candidate.screeningRank)}/100`}
+            >
+              <span className="candidate-rank">{index + 1}</span>
+              <span>
+                <b>{candidate.nodeName}</b>
+                <small>
+                  {candidate.voltageKv.length
+                    ? `${Math.max(...candidate.voltageKv)} kV`
+                    : "Voltage unknown"}{" "}
+                  · {distanceFormatter.format(candidate.distanceKm)} km ·{" "}
+                  {formatOperatorNames(candidate.operator) ?? "Operator unconfirmed"}
+                </small>
+                <span className="candidate-fit-summary">
+                  <strong>{formatScore(candidate.screeningRank)}/100</strong>
+                  <span>investigation fit</span>
+                  <small>Capacity unknown</small>
+                  {candidate.infrastructureClass === "possible_customer_asset" ||
+                  candidate.infrastructureClass === "specialised" ? (
+                    <small>{candidate.suitabilityNote}</small>
+                  ) : null}
                 </span>
-              )}
-            </span>
-          </button>
-        );
-      })}
-      {!showAllCandidates && candidates.length > 5 ? (
+                {mapMode === "capacity" && (
+                  <span className={`candidate-capacity-fit is-${capacityFit.fit}`}>
+                    {capacityFit.fit === "meets" &&
+                      `${capacityFit.valueMw?.toLocaleString("en-GB", { maximumFractionDigits: 1 })} MW · meets ${requiredCapacityMw} MW`}
+                    {capacityFit.fit === "activation" &&
+                      `${capacityFit.valueMw?.toLocaleString("en-GB", { maximumFractionDigits: 1 })} MW firm · ${capacityFit.alternative} pathway`}
+                    {capacityFit.fit === "below" &&
+                      `${capacityFit.valueMw?.toLocaleString("en-GB", { maximumFractionDigits: 1 })} MW · below requirement`}
+                    {capacityFit.fit === "stale" && "Recalculation required"}
+                    {capacityFit.fit === "unknown" && "Capacity not calculated"}
+                  </span>
+                )}
+              </span>
+            </button>
+          );
+        })}
+      {model.search.resultsView !== "table" && !showAllCandidates && candidates.length > 5 ? (
         <button
           type="button"
           className="candidate-show-more"
@@ -194,7 +173,7 @@ export function FinderCandidates({ model }: { model: FinderControllerContract })
         >
           Show all {candidates.length} candidates
         </button>
-      ) : showAllCandidates && candidates.length > 5 ? (
+      ) : model.search.resultsView !== "table" && showAllCandidates && candidates.length > 5 ? (
         <button
           type="button"
           className="candidate-show-more"

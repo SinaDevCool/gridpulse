@@ -100,6 +100,7 @@ export function useFinderProjectEffects(context: Context) {
       "distance",
       "voltage",
       "sort",
+      "resultsView",
       "region",
       "mapMode",
       "projectType",

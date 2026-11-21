@@ -1,3 +1,4 @@
+import type { FinderSearch } from "./search-contract";
 import type { ActivationStudyTab } from "@/components/product/ActivationStudyPanel";
 import type { InteractiveLegendSection } from "@/components/product/InteractiveMapLegend";
 import { type CandidateOpportunity } from "@/features/power-finder/candidate-intelligence";
@@ -6,94 +7,7 @@ import { type PowerFinderCollection } from "@/features/power-finder/fixture-data
 import { type CandidateSort } from "./page-formatting";
 export interface FinderDataContract {
   basemapMode: import("../theme/theme-contract").ResolvedTheme;
-  search: {
-    sort?: "context" | "name" | "voltage" | undefined;
-    q?: string | undefined;
-    voltage?: number | undefined;
-    operator?: string | undefined;
-    tso?: string | undefined;
-    dso?: string | undefined;
-    workflow?: "screen" | "discover" | undefined;
-    mw?: number | undefined;
-    distance?: number | undefined;
-    candidate?: string | undefined;
-    compare?: string | undefined;
-    region?:
-      | "DE"
-      | "DE-BB"
-      | "DE-BW"
-      | "DE-BY"
-      | "DE-BE"
-      | "DE-HB"
-      | "DE-HH"
-      | "DE-HE"
-      | "DE-MV"
-      | "DE-NI"
-      | "DE-NW"
-      | "DE-RP"
-      | "DE-SL"
-      | "DE-SN"
-      | "DE-ST"
-      | "DE-SH"
-      | "DE-TH"
-      | undefined;
-    mapMode?: "voltage" | "evidence" | "capacity" | undefined;
-    mapView?: "connection" | "infrastructure" | "generation" | undefined;
-    isolateVoltage?: "ehv" | "220kv" | "110kv" | "distribution" | "unknown" | undefined;
-    isolateTechnology?:
-      | "storage"
-      | "solar"
-      | "wind"
-      | "biomass"
-      | "hydro"
-      | "geothermal"
-      | "nuclear"
-      | "gas"
-      | "fossil_other"
-      | "other"
-      | undefined;
-    generationMinMw?: number | undefined;
-    generationMaxMw?: number | undefined;
-    storageMinMw?: number | undefined;
-    storageMaxMw?: number | undefined;
-    capacitySource?: "reference" | "private" | "demo" | "berlin_synthetic" | undefined;
-    capacityMetric?:
-      | "n0_import_mw"
-      | "firm_import_mw"
-      | "flexible_import_mw"
-      | "bess_assisted_import_mw"
-      | "staged_initial_import_mw"
-      | "eventual_import_mw"
-      | undefined;
-    requiredMw?: number | undefined;
-    workspaceId?: string | undefined;
-    study?: "activation" | undefined;
-    studyTab?:
-      | "options"
-      | "evidence"
-      | "geographic"
-      | "overview"
-      | "topology"
-      | "hourly"
-      | "commercial"
-      | undefined;
-    lat?: number | undefined;
-    lng?: number | undefined;
-    projectType?:
-      | "data_centre"
-      | "industrial_load"
-      | "battery_storage"
-      | "co_location"
-      | "electrolyser"
-      | "charging_hub"
-      | undefined;
-    exportMw?: number | undefined;
-    flexibleMw?: number | undefined;
-    batteryMw?: number | undefined;
-    batteryMwh?: number | undefined;
-    preferredVoltage?: number | undefined;
-    propertyId?: string | undefined;
-  };
+  search: FinderSearch;
   collection: PowerFinderCollection | null;
   project: FinderProject;
   selected: import("@/features/power-finder/fixture-data").PowerFinderFeature | null;
@@ -203,11 +117,9 @@ export interface FinderDataContract {
   requiredCapacityMw: number;
   capacitySource: "private" | "berlin_synthetic";
   capacityViewport:
-    | import("@/features/power-finder/calculated-capacity").CalculatedCapacityViewport
-    | null;
+    import("@/features/power-finder/calculated-capacity").CalculatedCapacityViewport | null;
   berlinCapacity:
-    | import("@/features/power-finder/calculated-capacity").BerlinSyntheticCapacityArtifact
-    | null;
+    import("@/features/power-finder/calculated-capacity").BerlinSyntheticCapacityArtifact | null;
   capacityState: "error" | "idle" | "loading" | "ready";
   mapSourceSummary: import("@/features/map/map-source-registry").MapSourceSummary | null;
   registryAssetsUnavailable: boolean;
@@ -248,8 +160,7 @@ export interface FinderDataContract {
   selectedOpportunity: CandidateOpportunity | undefined;
   selectedDetailFeature: import("@/features/power-finder/fixture-data").PowerFinderFeature | null;
   selectedCapacity:
-    | import("@/features/power-finder/calculated-capacity").CalculatedCapacityNode
-    | null;
+    import("@/features/power-finder/calculated-capacity").CalculatedCapacityNode | null;
   selectedCapacityOpportunity: import("@/features/power-finder/capacity-opportunity").CapacityOpportunity;
   selectedNodePathways: CandidateOpportunity[];
   previewFeature: import("@/features/power-finder/fixture-data").PowerFinderFeature | null;
