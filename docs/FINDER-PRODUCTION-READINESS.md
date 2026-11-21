@@ -57,13 +57,42 @@ the metadata is retained as a 30-day workflow artifact. This restores applicatio
 code and bindings, not external database contents. The existing Supabase source
 and the admitted Neon snapshot remain intact.
 
-Local verification passed 44 deployment/tooling tests, focused API unit tests,
-encoding, TypeScript and architecture checks. Lint has no errors and one existing
-Operations fast-refresh warning. Final release and live checks are recorded below
-when their exact application commit has qualified.
+Verification passed 44 deployment/tooling tests, 809 unit tests (two existing
+skips), encoding, TypeScript, architecture, asset budgets and compiled Worker
+checks. Local browser validation passed all 12 fast and 43 Finder scenarios.
+Broad CI browser and isolation checks passed too. Lint has no errors and one
+existing Operations fast-refresh warning.
 
-Production traffic has not been switched by this preparation. A successful
-staging run must qualify the exact final application commit before production.
+## Production release completed
+
+PR #98 merged as `5c5b343a3d65a3d3a9468b75bf2342316000196c`.
+[Staging run 44918492997](https://github.com/SinaDevCool/gridpulse/actions/runs/44918492997)
+qualified that exact commit and the live public projection.
+[Production run 44919589899](https://github.com/SinaDevCool/gridpulse/actions/runs/44919589899)
+completed successfully, publishing Worker version
+`0f2facb6-7f72-42fa-a373-6b97f2e6dd67` to
+[GridPulse](https://gridpulseinsights.com/power-finder).
+
+The authenticated named reviewer's normal deployment approval was used under
+the user's explicit delegated instruction. No environment protections or freeze
+rules were removed. The production reader qualified immediately before binding;
+the packaged artifact was verified again before publishing without rebuilding.
+
+Live production health and map checks passed. Further real browser checks
+verified 2440 operators, grid and registry tiles, Berlin/Bremen/Munich candidate
+searches with cap disclosure, enquiry drafts and evidence receipts. Both tile
+layers loaded (nine successful tiles each), with zero failed Finder API requests.
+An outdated release request returned 409. Optional property enrichment remained
+explicitly unavailable with zero invented findings.
+
+The release also completed a real public facility MILP and checked the same
+accepted result across all three Operations tabs. The existing Meta-backed
+copilot passed three grounded conversational turns and its evidence-linked
+brief. These checks do not qualify grid-node import capacity or physical dispatch.
+
+The previous Worker identity is retained in the production rollback workflow
+artifact. Local completion records and live screenshots are retained under
+`C:/Users/sinak/.codex/backups/gridpulse/release-20261121/`.
 
 ## Remaining boundaries
 
@@ -72,5 +101,10 @@ staging run must qualify the exact final application commit before production.
   histories before a public headline or cohort comparison can be enabled.
 - Operator outcomes and written permissions require the relevant external parties.
 - Private workspaces/authentication are not migrated, and Supabase is not retired.
-- The local backup is retained; an off-workstation backup destination still needs
-  to be established within the user's storage/access choices.
+- Local recovery files are retained. An owner-only
+  [Drive backup](https://drive.google.com/drive/folders/16xdMQx6ft4ZrZ0HmmlnNPmOPUHyimSiH)
+  holds two archive parts and recovery metadata; both parts passed downloaded
+  SHA-256 readback checks. No credentials or private workspace records are included.
+
+The ordered implementation steps and external acceptance criteria are in
+[FINDER-REMAINING-ROADMAP.md](FINDER-REMAINING-ROADMAP.md).
