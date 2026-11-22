@@ -38,6 +38,12 @@ select * from jsonb_populate_recordset(null::public.canonical_energy_assets, $1:
 -- Use the corresponding retained row type for canonical_grid_lines.
 ```
 
-Use bounded batches and a transaction; do not paste archive data into executable SQL. The PostGIS geometry input accepts the stored EWKB hex. Read-only source-row round-trip checks covered scalar fields and geometry before retirement. Preserve the source/artifact/release parents because restored rows reference them. A complete restore also restores the old storage consumption, so establish sufficient capacity before doing it.
+Use bounded batches and a transaction; send verified UTF8 JSON text directly as the parameter, preserving numeric precision rather than parsing and reserializing numbers in JavaScript. Do not paste archive data into executable SQL. The PostGIS geometry input accepts the stored EWKB hex. Read-only archive-row round-trip checks passed for both retained table types, including scalar fields and geometry. Preserve the source/artifact/release parents because restored rows reference them. A complete restore also restores the old storage consumption, so establish sufficient capacity before doing it.
 
 The legacy Supabase viewport/tile/enrichment and refresh routines retain their definitions, but these two raw datasets are empty. Do not switch the public provider back to Supabase or refresh legacy materialized views expecting these source rows without recovery/reingestion. Future Finder ingestion should publish to the governed Neon snapshot pipeline. No application deployment or billing change is required for this data-only cleanup.
+
+## Post-cleanup verification
+
+Production health and map checks passed against the existing application SHA `1238c78a68cdf9f966ae72a0be98f9534331f165`. Live checks covered grid/registry tiles, Berlin/Bremen/Munich searches, operator catalogue, enquiry/receipt, table sorting, 1,285-match evidence export, infrastructure details, provenance and saved searches, with no failed Finder API requests. Two real public MILP jobs completed. The full copilot smoke passed three conversational turns and the provider-backed brief with Meta, preserving assessment identity, evidence references and review gates. Disposable browser instances closed after each serial check.
+
+After smoke-test writes, measured usage was about 439.8 MB. The two retired tables remained empty; node/site/context counts and Neon active-snapshot counts were unchanged. Health advisors remained clear. Only the expected new test sessions and analytics jobs were added. No app rebuild was needed because the deployed Finder already uses Neon.
