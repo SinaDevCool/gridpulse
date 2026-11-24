@@ -5,11 +5,41 @@ import json
 import re
 import urllib.request
 from datetime import datetime, timezone
+from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
+from urllib.parse import urljoin, urlsplit
 
 GERMANY_INDEX_URL = "https://download.geofabrik.de/europe/germany.html"
 USER_AGENT = "GridPulse grid-data/0.1 (+https://gridpulseinsights.com)"
+
+
+class _GermanyLinks(HTMLParser):
+    def __init__(self, base_url: str):
+        super().__init__()
+        self.base_url = base_url
+        self.files: dict[str, str] = {}
+
+    def handle_starttag(self, tag, attrs):
+        if tag != "a":
+            return
+        href = dict(attrs).get("href")
+        if not href:
+            return
+        url = urljoin(self.base_url, href)
+        parsed = urlsplit(url)
+        if (
+            parsed.scheme != "https"
+            or parsed.netloc != "download.geofabrik.de"
+            or parsed.query
+            or parsed.fragment
+            or not re.fullmatch(
+                r"/europe/(?:germany/)?germany-\d{6}\.osm\.pbf(?:\.md5)?", parsed.path
+            )
+        ):
+            return
+        self.files[parsed.path.rsplit("/", 1)[-1]] = url
+
 
 # Geofabrik publishes these as independent extracts.  Bremen is included in
 # Niedersachsen and Saarland in Rheinland-Pfalz; the manifest records that
@@ -39,14 +69,17 @@ def discover_germany_pbf(output_path: Path) -> dict[str, Any]:
     index_request = urllib.request.Request(GERMANY_INDEX_URL, headers={"User-Agent": USER_AGENT})
     with urllib.request.urlopen(index_request, timeout=60) as response:
         index_html = response.read(1_000_000).decode("utf-8", errors="replace")
-    files = set(re.findall(r"""href=["'](germany-\d{6}\.osm\.pbf(?:\.md5)?)["']""", index_html))
+        index_url = response.geturl() if hasattr(response, "geturl") else GERMANY_INDEX_URL
+    links = _GermanyLinks(index_url)
+    links.feed(index_html)
+    files = links.files
     releases = sorted(name for name in files if name.endswith(".osm.pbf"))
     if not releases:
         raise RuntimeError("Geofabrik did not advertise a dated Germany PBF release")
     filename = releases[-1]
-    if f"{filename}.md5" not in files:
+    pbf_url = files[filename]
+    if files.get(f"{filename}.md5") != f"{pbf_url}.md5":
         raise RuntimeError(f"Geofabrik checksum is missing for {filename}")
-    pbf_url = f"https://download.geofabrik.de/europe/{filename}"
     checksum_url = f"{pbf_url}.md5"
     request = urllib.request.Request(
         pbf_url,
