@@ -70,6 +70,48 @@ class GeofabrikManifestTests(unittest.TestCase):
                 discover_germany_pbf(output)
             self.assertFalse(output.exists())
 
+    def test_publisher_absolute_and_redirect_relative_urls(self) -> None:
+        for prefix, base in (
+            (
+                "https://download.geofabrik.de/europe/germany/",
+                "https://download.geofabrik.de/europe/germany.html",
+            ),
+            ("", "https://download.geofabrik.de/europe/germany/index.html"),
+        ):
+            with self.subTest(prefix=prefix), tempfile.TemporaryDirectory() as directory:
+                index = FakeResponse(
+                    self.index.replace(b'href="germany-', f'href="{prefix}germany-'.encode())
+                )
+                index.geturl = lambda base=base: base
+                responses = [
+                    index,
+                    FakeResponse(),
+                    FakeResponse(b"0123456789abcdef0123456789abcdef  germany-261104.osm.pbf"),
+                ]
+                with patch("urllib.request.urlopen", side_effect=responses):
+                    report = discover_germany_pbf(Path(directory) / "manifest.json")
+                self.assertEqual(
+                    report["url"],
+                    "https://download.geofabrik.de/europe/germany/germany-261104.osm.pbf",
+                )
+
+    def test_external_release_and_wrong_directory_checksum_fail_closed(self) -> None:
+        for index in (
+            self.index.replace(b'href="germany-', b'href="https://untrusted.example/germany-'),
+            self.index.replace(
+                b'href="germany-261104.osm.pbf.md5"',
+                b'href="https://download.geofabrik.de/europe/germany/germany-261104.osm.pbf.md5"',
+            ),
+        ):
+            with self.subTest(index=index), tempfile.TemporaryDirectory() as directory:
+                output = Path(directory) / "manifest.json"
+                with (
+                    patch("urllib.request.urlopen", return_value=FakeResponse(index)),
+                    self.assertRaises(RuntimeError),
+                ):
+                    discover_germany_pbf(output)
+                self.assertFalse(output.exists())
+
     def test_invalid_or_mismatched_checksum_cannot_be_accepted(self) -> None:
         for checksum in (
             b"not-a-digest  germany-261104.osm.pbf",

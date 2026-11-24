@@ -32,6 +32,7 @@ jobs:
           --output grid-source-health/geofabrik-germany.json
         if: ${{ !cancelled() }}
       - name: Snapshot official operator endpoints
+        if: ${{ !cancelled() }}
         env:
           PYTHONPATH: services/grid-data/src
         run: >-

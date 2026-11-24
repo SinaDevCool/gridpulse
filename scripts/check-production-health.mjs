@@ -73,6 +73,7 @@ const checks = [
   },
   {
     name: "public-grid-vector-tile",
+    timeoutMs: 30_000,
     url: `${baseUrl}/api/power-finder/tile/8/137/84?content=grid&generation=false&storage=false`,
     expectedStatus: 200,
     validate: async (response) => {
@@ -84,6 +85,7 @@ const checks = [
   },
   {
     name: "public-registry-vector-tile",
+    timeoutMs: 30_000,
     url: `${baseUrl}/api/power-finder/tile/8/137/84?content=registry`,
     expectedStatus: 200,
     validate: async (response) => {
@@ -307,7 +309,7 @@ for (const check of checks) {
       ...check.options,
       headers: check.options?.headers ?? check.headers,
       redirect: "follow",
-      signal: AbortSignal.timeout(20_000),
+      signal: AbortSignal.timeout(check.timeoutMs ?? 20_000),
     });
     if (response.status !== check.expectedStatus) {
       throw new Error(`expected HTTP ${check.expectedStatus}, received ${response.status}`);

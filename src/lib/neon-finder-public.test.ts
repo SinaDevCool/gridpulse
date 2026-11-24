@@ -80,10 +80,16 @@ describe("qualified staging public projection", () => {
     await expect(neonPublicRpc(env, "coverage")).rejects.toThrow("unavailable");
   });
   it("preserves the existing bytea transport for vector tiles", async () => {
+    const deadline = vi.spyOn(AbortSignal, "timeout");
     query.mockResolvedValue([{ payload: "1a02" }]);
     expect(await (await neonPublicRpc(env, "tile", [9, 275, 168, false, true, true])).json()).toBe(
       "\\x1a02",
     );
+    expect(deadline).toHaveBeenLastCalledWith(20_000);
+    query.mockResolvedValue([{ payload: {} }]);
+    await neonPublicRpc(env, "coverage");
+    expect(deadline).toHaveBeenLastCalledWith(8_000);
+    deadline.mockRestore();
   });
   it("fails closed before any database call when the staging credential is absent", async () => {
     const result = await handlePublicPowerFinderRequest(

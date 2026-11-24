@@ -77,7 +77,9 @@ export async function neonPublicRpc(
 ): Promise<Response> {
   if (!neonFinderConfigured(env)) throw new Error("Public projection is unavailable.");
   const sql = neon(env.NEON_DATABASE_URL!, {
-    fetchOptions: { signal: AbortSignal.timeout(8000) },
+    // Tile reads may wake suspended compute and cold spatial buffers. Stay
+    // inside the public tile handler's 25-second deadline; other RPCs keep 8s.
+    fetchOptions: { signal: AbortSignal.timeout(operation === "tile" ? 20_000 : 8_000) },
   });
   const rows = await sql.query(QUERIES[operation], [
     ...parameters,
